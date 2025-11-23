@@ -78,6 +78,9 @@ export class BoatPhysics {
             // Push back towards center
             const toCenter = new THREE.Vector3().subVectors(riverCenter, position).normalize();
             
+            // Hard clamp position to safe radius
+            position.copy(riverCenter).add(toCenter.multiplyScalar(-safeRadius));
+            
             // Reflect velocity? Or just stop?
             // Let's stop velocity perpendicular to the wall
             // Wall normal is approx toCenter
@@ -89,7 +92,7 @@ export class BoatPhysics {
                 this.velocity.sub(vNormal);
                 
                 // Add a little bounce
-                this.velocity.add(toCenter.multiplyScalar(2.0));
+                this.velocity.add(toCenter.multiplyScalar(5.0));
             }
         }
     }

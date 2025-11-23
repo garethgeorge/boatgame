@@ -131,6 +131,14 @@ export class RiverGenerator {
             indices.push(base + 1, base + 2, base + 8);
             indices.push(base + 1, base + 8, base + 7);
             
+            // Right Slope (3-4)
+            indices.push(base + 3, base + 4, base + 10);
+            indices.push(base + 3, base + 10, base + 9);
+            
+            // Right Flat Area (4-5)
+            indices.push(base + 4, base + 5, base + 11);
+            indices.push(base + 4, base + 11, base + 10);
+            
             // River Bed (2-3) - Wait, we want water mesh separate?
             // "Water: Generate a simple water mesh between the banks."
             // Let's create a separate water mesh or just add water faces here?
