@@ -4,18 +4,22 @@ export class BoatPhysics {
     constructor() {
         this.velocity = new THREE.Vector3();
         this.angularVelocity = 0;
-        this.acceleration = 15.0;
+        this.acceleration = 16.0; // Boost acceleration
+        this.autoAcceleration = 32.0; // Constant forward push (Base speed ~16)
         this.turnSpeed = 2.0;
         this.drag = 2.0;
         this.angularDrag = 3.0;
-        this.maxSpeed = 20.0;
+        this.maxSpeed = 25.0; // Cap at ~25
     }
 
     update(dt, input, rotationY) {
         // Forward vector based on current rotation
         const forward = new THREE.Vector3(Math.sin(rotationY), 0, Math.cos(rotationY));
         
-        // Apply thrust
+        // Always apply auto-forward thrust
+        this.velocity.add(forward.clone().multiplyScalar(this.autoAcceleration * dt));
+
+        // Apply boost thrust
         if (input.forward) {
             this.velocity.add(forward.clone().multiplyScalar(this.acceleration * dt));
         }
@@ -78,21 +82,18 @@ export class BoatPhysics {
             // Push back towards center
             const toCenter = new THREE.Vector3().subVectors(riverCenter, position).normalize();
             
-            // Hard clamp position to safe radius
-            position.copy(riverCenter).add(toCenter.multiplyScalar(-safeRadius));
+            // Soft push instead of hard clamp
+            const penetration = dist - safeRadius;
+            position.add(toCenter.multiplyScalar(penetration * 0.1)); // 10% correction per frame
             
-            // Reflect velocity? Or just stop?
-            // Let's stop velocity perpendicular to the wall
-            // Wall normal is approx toCenter
-            
+            // Dampen velocity perpendicular to wall
             const vDotN = this.velocity.dot(toCenter);
             if (vDotN < 0) { // Moving away from center (towards wall)
                 // Remove component of velocity towards wall
                 const vNormal = toCenter.clone().multiplyScalar(vDotN);
                 this.velocity.sub(vNormal);
                 
-                // Add a little bounce
-                this.velocity.add(toCenter.multiplyScalar(5.0));
+                // No bounce, just slide
             }
         }
     }
