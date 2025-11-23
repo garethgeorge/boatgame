@@ -58,23 +58,14 @@ export class Boat {
 
         // Simple bobbing animation
         this.mesh.position.y = Math.sin(Date.now() * 0.003) * 0.1;
-        this.mesh.rotation.z = Math.sin(Date.now() * 0.002) * 0.05 - (physicsState.angularVelocity * 0.5); // Bank into turns
-        this.mesh.rotation.x = physicsState.velocity.length() * 0.005; // Pitch up with speed (positive X is up in this model?)
-        // Wait, standard Three.js: +X rotation is pitching down (nose down). -X is nose up.
-        // Previous code was: -velocity.length() * 0.01 (Nose up)
-        // User says "tips forward when moving fast". Forward tip = Nose Down.
-        // So -0.01 was actually Nose Up?
-        // Let's check axes.
-        // If boat is facing -Z (standard forward).
-        // Rotation X axis.
-        // Right hand rule: Thumb +X (Right). Fingers curl Y->Z.
-        // +X rotation: Y goes to Z. Nose (at -Z) goes UP?
-        // Let's try inverting the sign and reducing magnitude.
-        this.mesh.rotation.x = -physicsState.velocity.length() * 0.005; // Try smaller magnitude first.
-        // If user said "tips forward", maybe they meant nose down.
-        // "it should actually tip up the front".
-        // If previous was -0.01 and it tipped forward, then -X is forward tip?
-        // Then +X should be backward tip (nose up).
+        
+        // Bank into turns, with clamping to prevent flipping
+        const maxBankAngle = 0.5; // radians, ~28 degrees
+        let bankAngle = -physicsState.angularVelocity * 0.3;
+        bankAngle = Math.max(-maxBankAngle, Math.min(maxBankAngle, bankAngle)); // Clamp
+        this.mesh.rotation.z = Math.sin(Date.now() * 0.002) * 0.05 + bankAngle;
+
+        // Pitch up with speed
         this.mesh.rotation.x = physicsState.velocity.length() * 0.005;
     }
 }
