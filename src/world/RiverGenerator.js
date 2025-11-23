@@ -1,95 +1,250 @@
 import * as THREE from 'three';
+import { RiverPath } from './RiverPath.js';
 
 export class RiverGenerator {
     constructor(scene) {
         this.scene = scene;
+        this.riverPath = new RiverPath();
         this.chunks = [];
-        this.chunkSize = 100; // Length of each river segment
+        this.chunkSize = 50; // Smaller chunks for smoother updates
         this.riverWidth = 40;
-        this.lastPoint = new THREE.Vector3(0, 0, 0);
-        this.lastTangent = new THREE.Vector3(0, 0, -1);
         
-        // Initial straight segment
-        this.generateChunk(true);
-        this.generateChunk();
-        this.generateChunk();
+        // Initial chunks
+        // Player starts at Z=0, moving to -Z
+        // Generate from +50 to -200
+        for (let z = 50; z > -200; z -= this.chunkSize) {
+            this.generateChunk(z);
+        }
     }
 
     update(playerPosition) {
-        // Generate new chunks ahead
+        // Generate new chunks ahead (negative Z)
         const lastChunk = this.chunks[this.chunks.length - 1];
-        if (lastChunk.endPoint.z > playerPosition.z - 200) { // Keep generating ahead
-            this.generateChunk();
+        if (lastChunk.zEnd > playerPosition.z - 200) {
+            this.generateChunk(lastChunk.zEnd);
         }
 
-        // Remove old chunks
-        if (this.chunks[0].endPoint.z > playerPosition.z + 100) {
+        // Remove old chunks (positive Z)
+        if (this.chunks[0].zStart > playerPosition.z + 100) {
             this.removeChunk(this.chunks[0]);
             this.chunks.shift();
         }
     }
 
-    generateChunk(isStraight = false) {
-        const points = [this.lastPoint.clone()];
-        const segments = 5;
-        const segmentLength = this.chunkSize / segments;
-        
-        let currentPoint = this.lastPoint.clone();
-        let currentTangent = this.lastTangent.clone();
-
-        for (let i = 0; i < segments; i++) {
-            // Wiggle the tangent
-            if (!isStraight) {
-                const angle = (Math.random() - 0.5) * 0.5; // Random turn
-                currentTangent.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
-                currentTangent.normalize();
-            }
-            
-            currentPoint.add(currentTangent.clone().multiplyScalar(segmentLength));
-            points.push(currentPoint.clone());
-        }
-
-        const curve = new THREE.CatmullRomCurve3(points);
-        const mesh = this.createRiverMesh(curve);
+    generateChunk(zStart) {
+        const zEnd = zStart - this.chunkSize;
+        const mesh = this.createChunkMesh(zStart, zEnd);
         this.scene.add(mesh);
 
-        // Bank decorations
-        const decorations = this.addDecorations(curve);
+        const decorations = this.addDecorations(zStart, zEnd);
 
         this.chunks.push({
             mesh: mesh,
-            curve: curve,
             decorations: decorations,
-            startPoint: this.lastPoint.clone(),
-            endPoint: currentPoint.clone()
+            zStart: zStart,
+            zEnd: zEnd
         });
-
-        this.lastPoint = currentPoint;
-        this.lastTangent = currentTangent;
     }
 
-    addDecorations(curve) {
+    createChunkMesh(zStart, zEnd) {
+        const segments = 20; 
+        const bankHeight = 4;
+        const bankSlopeWidth = 8;
+        const bankFlatWidth = 50; // Wide flat area for forests
+        
+        const vertices = [];
+        const indices = [];
+        const colors = [];
+        
+        const colorWater = new THREE.Color(0x0099ff);
+        const colorBank = new THREE.Color(0x228B22); // Solid Green
+
+        // We will build 3 separate strips or one combined mesh?
+        // Combined mesh is easier for management.
+        // Structure per slice:
+        // 0: Left Flat End
+        // 1: Left Bank Top
+        // 2: Left Water Edge
+        // 3: Right Water Edge
+        // 4: Right Bank Top
+        // 5: Right Flat End
+
+        for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            const z = zStart + t * (zEnd - zStart);
+            
+            const point = this.riverPath.getPointAt(z);
+            const tangent = this.riverPath.getTangentAt(z);
+            const width = this.riverPath.getWidthAt(z);
+            
+            const up = new THREE.Vector3(0, 1, 0);
+            const normal = new THREE.Vector3().crossVectors(tangent, up).normalize();
+            
+            // Calculate points
+            const leftWaterEdge = point.clone().add(normal.clone().multiplyScalar(-width/2));
+            const rightWaterEdge = point.clone().add(normal.clone().multiplyScalar(width/2));
+            
+            const leftBankTop = leftWaterEdge.clone().add(normal.clone().multiplyScalar(-bankSlopeWidth));
+            leftBankTop.y += bankHeight;
+            
+            const rightBankTop = rightWaterEdge.clone().add(normal.clone().multiplyScalar(bankSlopeWidth));
+            rightBankTop.y += bankHeight;
+            
+            const leftFlatEnd = leftBankTop.clone().add(normal.clone().multiplyScalar(-bankFlatWidth));
+            const rightFlatEnd = rightBankTop.clone().add(normal.clone().multiplyScalar(bankFlatWidth));
+            
+            // Push vertices
+            // 0: Left Flat End
+            vertices.push(leftFlatEnd.x, leftFlatEnd.y, leftFlatEnd.z);
+            colors.push(colorBank.r, colorBank.g, colorBank.b);
+            
+            // 1: Left Bank Top
+            vertices.push(leftBankTop.x, leftBankTop.y, leftBankTop.z);
+            colors.push(colorBank.r, colorBank.g, colorBank.b);
+            
+            // 2: Left Water Edge
+            vertices.push(leftWaterEdge.x, leftWaterEdge.y, leftWaterEdge.z);
+            colors.push(colorBank.r, colorBank.g, colorBank.b); // Bank color at water edge
+            
+            // 3: Right Water Edge
+            vertices.push(rightWaterEdge.x, rightWaterEdge.y, rightWaterEdge.z);
+            colors.push(colorBank.r, colorBank.g, colorBank.b);
+            
+            // 4: Right Bank Top
+            vertices.push(rightBankTop.x, rightBankTop.y, rightBankTop.z);
+            colors.push(colorBank.r, colorBank.g, colorBank.b);
+            
+            // 5: Right Flat End
+            vertices.push(rightFlatEnd.x, rightFlatEnd.y, rightFlatEnd.z);
+            colors.push(colorBank.r, colorBank.g, colorBank.b);
+        }
+        
+        // Indices
+        for (let i = 0; i < segments; i++) {
+            const base = i * 6;
+            
+            // Left Flat Area (0-1)
+            indices.push(base + 0, base + 1, base + 7);
+            indices.push(base + 0, base + 7, base + 6);
+            
+            // Left Slope (1-2)
+            indices.push(base + 1, base + 2, base + 8);
+            indices.push(base + 1, base + 8, base + 7);
+            
+            // River Bed (2-3) - Wait, we want water mesh separate?
+            // "Water: Generate a simple water mesh between the banks."
+            // Let's create a separate water mesh or just add water faces here?
+            // If we add water faces here, they will be green if we use shared vertices.
+            // We need separate vertices for water if we want it blue.
+            // Or we can just add a separate water plane.
+            // Let's add a separate water plane in this same function but as part of the same geometry?
+            // No, easier to just have a separate mesh for water to handle transparency/shader differently if needed.
+            // But for now, let's just add blue vertices for water.
+        }
+        
+        // Create Bank Mesh
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshStandardMaterial({ 
+            vertexColors: true,
+            roughness: 0.9,
+            metalness: 0.0,
+            side: THREE.DoubleSide,
+            flatShading: false
+        });
+        
+        const bankMesh = new THREE.Mesh(geometry, material);
+        bankMesh.receiveShadow = true;
+        
+        // Create Water Mesh
+        const waterMesh = this.createWaterMesh(zStart, zEnd, segments);
+        bankMesh.add(waterMesh); // Attach to bank mesh for easier management
+        
+        return bankMesh;
+    }
+
+    createWaterMesh(zStart, zEnd, segments) {
+        const vertices = [];
+        const indices = [];
+        const color = new THREE.Color(0x0099ff);
+        
+        for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            const z = zStart + t * (zEnd - zStart);
+            
+            const point = this.riverPath.getPointAt(z);
+            const tangent = this.riverPath.getTangentAt(z);
+            const width = this.riverPath.getWidthAt(z);
+            
+            const up = new THREE.Vector3(0, 1, 0);
+            const normal = new THREE.Vector3().crossVectors(tangent, up).normalize();
+            
+            const left = point.clone().add(normal.clone().multiplyScalar(-width/2));
+            const right = point.clone().add(normal.clone().multiplyScalar(width/2));
+            
+            // Lower slightly to avoid z-fighting with bank edge if they overlap exactly
+            left.y = -0.2;
+            right.y = -0.2;
+            
+            vertices.push(left.x, left.y, left.z);
+            vertices.push(right.x, right.y, right.z);
+        }
+        
+        for (let i = 0; i < segments; i++) {
+            const base = i * 2;
+            indices.push(base, base + 1, base + 3);
+            indices.push(base, base + 3, base + 2);
+        }
+        
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+        
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x0099ff,
+            roughness: 0.1,
+            metalness: 0.1,
+            transparent: true,
+            opacity: 0.9,
+            side: THREE.DoubleSide
+        });
+        
+        return new THREE.Mesh(geometry, material);
+    }
+
+    addDecorations(zStart, zEnd) {
+        // ... existing decoration logic ...
+        // Need to update to place on flat banks
         const decorations = [];
-        const count = 10; // Trees/Rocks per chunk
+        const count = 5;
         
         for (let i = 0; i < count; i++) {
             const t = Math.random();
-            const point = curve.getPoint(t);
-            const tangent = curve.getTangent(t);
-            const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+            const z = zStart + t * (zEnd - zStart);
             
-            // Random side (Left or Right bank)
+            const point = this.riverPath.getPointAt(z);
+            const tangent = this.riverPath.getTangentAt(z);
+            const width = this.riverPath.getWidthAt(z);
+            const normal = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
+            
             const side = Math.random() > 0.5 ? 1 : -1;
-            const distance = (this.riverWidth / 2) + 2 + Math.random() * 5;
+            // Place on the flat area: width/2 + slope + random offset
+            const bankSlopeWidth = 8;
+            const minDist = (width / 2) + bankSlopeWidth + 2;
+            const maxDist = minDist + 20;
+            const distance = minDist + Math.random() * (maxDist - minDist);
             
             const position = point.clone().add(normal.multiplyScalar(side * distance));
-            position.y = 2; // Bank height
+            position.y = 4; // Bank height
             
             const type = Math.random() > 0.3 ? 'tree' : 'rock';
             const mesh = this.createDecorationMesh(type);
             mesh.position.copy(position);
-            
-            // Random rotation
             mesh.rotation.y = Math.random() * Math.PI * 2;
             
             this.scene.add(mesh);
@@ -102,21 +257,18 @@ export class RiverGenerator {
         const group = new THREE.Group();
         
         if (type === 'tree') {
-            // Trunk
             const trunkGeo = new THREE.CylinderGeometry(0.5, 0.7, 2, 6);
             const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
             const trunk = new THREE.Mesh(trunkGeo, trunkMat);
             trunk.position.y = 1;
             group.add(trunk);
             
-            // Leaves
             const leavesGeo = new THREE.ConeGeometry(2, 4, 8);
             const leavesMat = new THREE.MeshStandardMaterial({ color: 0x228B22 });
             const leaves = new THREE.Mesh(leavesGeo, leavesMat);
             leaves.position.y = 3;
             group.add(leaves);
         } else {
-            // Rock
             const geo = new THREE.DodecahedronGeometry(1 + Math.random());
             const mat = new THREE.MeshStandardMaterial({ color: 0x808080 });
             const mesh = new THREE.Mesh(geo, mat);
@@ -125,101 +277,6 @@ export class RiverGenerator {
         
         group.castShadow = true;
         return group;
-    }
-
-    createRiverMesh(curve) {
-        const segments = 50; // Resolution along the curve
-        const riverWidth = this.riverWidth;
-        const bankWidth = 10;
-        const bankHeight = 5;
-        
-        const vertices = [];
-        const indices = [];
-        const colors = [];
-        
-        const colorWater = new THREE.Color(0x0099ff);
-        const colorBank = new THREE.Color(0x228B22);
-
-        // Generate vertices
-        for (let i = 0; i <= segments; i++) {
-            const t = i / segments;
-            const point = curve.getPoint(t);
-            const tangent = curve.getTangent(t);
-            
-            // Calculate side vector (normal)
-            // We assume the river is mostly flat, so Up is (0, 1, 0)
-            const up = new THREE.Vector3(0, 1, 0);
-            const normal = new THREE.Vector3().crossVectors(tangent, up).normalize();
-            
-            // Profile points relative to center point
-            // 0: Left Bank Top
-            // 1: Left Bank Bottom (Water edge)
-            // 2: Right Bank Bottom (Water edge)
-            // 3: Right Bank Top
-            
-            const leftBankTop = point.clone().add(normal.clone().multiplyScalar(-riverWidth/2 - bankWidth));
-            leftBankTop.y += bankHeight;
-            
-            const leftBankBottom = point.clone().add(normal.clone().multiplyScalar(-riverWidth/2));
-            leftBankBottom.y += 0; // Water level
-            
-            const rightBankBottom = point.clone().add(normal.clone().multiplyScalar(riverWidth/2));
-            rightBankBottom.y += 0;
-            
-            const rightBankTop = point.clone().add(normal.clone().multiplyScalar(riverWidth/2 + bankWidth));
-            rightBankTop.y += bankHeight;
-            
-            // Push vertices and colors
-            vertices.push(leftBankTop.x, leftBankTop.y, leftBankTop.z);
-            colors.push(colorBank.r, colorBank.g, colorBank.b);
-            
-            vertices.push(leftBankBottom.x, leftBankBottom.y, leftBankBottom.z);
-            colors.push(colorWater.r, colorWater.g, colorWater.b); // Blend? Or hard edge? Let's do hard edge by duplicating vertices if needed, but for low poly shared is fine
-            
-            vertices.push(rightBankBottom.x, rightBankBottom.y, rightBankBottom.z);
-            colors.push(colorWater.r, colorWater.g, colorWater.b);
-            
-            vertices.push(rightBankTop.x, rightBankTop.y, rightBankTop.z);
-            colors.push(colorBank.r, colorBank.g, colorBank.b);
-        }
-        
-        // Generate indices
-        for (let i = 0; i < segments; i++) {
-            const base = i * 4;
-            
-            // Left Bank Face
-            // TopL, BotL, NextBotL, NextTopL
-            indices.push(base + 0, base + 1, base + 5);
-            indices.push(base + 0, base + 5, base + 4);
-            
-            // River Bed Face
-            // BotL, BotR, NextBotR, NextBotL
-            indices.push(base + 1, base + 2, base + 6);
-            indices.push(base + 1, base + 6, base + 5);
-            
-            // Right Bank Face
-            // BotR, TopR, NextTopR, NextBotR
-            indices.push(base + 2, base + 3, base + 7);
-            indices.push(base + 2, base + 7, base + 6);
-        }
-        
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-        geometry.setIndex(indices);
-        geometry.computeVertexNormals();
-
-        const material = new THREE.MeshStandardMaterial({ 
-            vertexColors: true,
-            roughness: 0.8,
-            metalness: 0.1,
-            side: THREE.DoubleSide,
-            flatShading: true // Low poly look
-        });
-        
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.receiveShadow = true;
-        return mesh;
     }
     
     removeChunk(chunk) {
@@ -230,31 +287,15 @@ export class RiverGenerator {
         if (chunk.decorations) {
             chunk.decorations.forEach(mesh => {
                 this.scene.remove(mesh);
-                // Traverse and dispose geometry/material if needed for complex objects
             });
         }
     }
 
     getRiverTangent(z) {
-        // Find which chunk this Z belongs to
-        // This is a simplification, ideally we project point to curve
-        for (const chunk of this.chunks) {
-            if (z <= chunk.startPoint.z && z >= chunk.endPoint.z) {
-                // Approximate t
-                const t = (chunk.startPoint.z - z) / (chunk.startPoint.z - chunk.endPoint.z);
-                return chunk.curve.getTangent(Math.max(0, Math.min(1, t)));
-            }
-        }
-        return new THREE.Vector3(0, 0, -1); // Default forward
+        return this.riverPath.getTangentAt(z);
     }
     
     getRiverCenter(z) {
-         for (const chunk of this.chunks) {
-            if (z <= chunk.startPoint.z && z >= chunk.endPoint.z) {
-                const t = (chunk.startPoint.z - z) / (chunk.startPoint.z - chunk.endPoint.z);
-                return chunk.curve.getPoint(Math.max(0, Math.min(1, t)));
-            }
-        }
-        return new THREE.Vector3(0, 0, z);
+        return this.riverPath.getPointAt(z);
     }
 }

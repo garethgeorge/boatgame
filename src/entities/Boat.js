@@ -42,6 +42,10 @@ export class Boat {
         if (riverGenerator) {
             const riverTangent = riverGenerator.getRiverTangent(this.position.z);
             this.physics.constrainToRiver(this.rotation, riverTangent);
+            
+            const riverCenter = riverGenerator.getRiverCenter(this.position.z);
+            const riverWidth = riverGenerator.riverPath.getWidthAt(this.position.z);
+            this.physics.checkWallCollisions(this.position, riverCenter, riverWidth);
         }
         
         // Update position

@@ -67,4 +67,30 @@ export class BoatPhysics {
             this.velocity.multiplyScalar(0.95);
         }
     }
+
+    checkWallCollisions(position, riverCenter, riverWidth) {
+        // Calculate distance from river center
+        const dist = position.distanceTo(riverCenter);
+        const safeRadius = (riverWidth / 2) - 2; // Buffer for boat size
+        
+        if (dist > safeRadius) {
+            // Hit the wall
+            // Push back towards center
+            const toCenter = new THREE.Vector3().subVectors(riverCenter, position).normalize();
+            
+            // Reflect velocity? Or just stop?
+            // Let's stop velocity perpendicular to the wall
+            // Wall normal is approx toCenter
+            
+            const vDotN = this.velocity.dot(toCenter);
+            if (vDotN < 0) { // Moving away from center (towards wall)
+                // Remove component of velocity towards wall
+                const vNormal = toCenter.clone().multiplyScalar(vDotN);
+                this.velocity.sub(vNormal);
+                
+                // Add a little bounce
+                this.velocity.add(toCenter.multiplyScalar(2.0));
+            }
+        }
+    }
 }
