@@ -53,7 +53,7 @@ export class Game {
         const dt = this.clock.getDelta();
         const input = this.inputManager.getState();
 
-        this.boat.update(dt, input);
+        this.boat.update(dt, input, this.worldManager.riverGenerator);
         this.worldManager.update(dt, this.boat.position);
 
         this.checkCollisions();

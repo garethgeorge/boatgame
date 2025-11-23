@@ -8,10 +8,10 @@ export class ObstacleManager {
         this.spawnInterval = 2.0; // Seconds
     }
 
-    update(dt, playerPosition) {
+    update(dt, playerPosition, riverGenerator) {
         this.spawnTimer += dt;
         if (this.spawnTimer > this.spawnInterval) {
-            this.spawnObstacle(playerPosition);
+            this.spawnObstacle(playerPosition, riverGenerator);
             this.spawnTimer = 0;
         }
 
@@ -24,24 +24,29 @@ export class ObstacleManager {
             obstacle.mesh.rotation.y += dt * 0.5;
 
             // Despawn if too far behind
-            if (obstacle.mesh.position.z < playerPosition.z - 20) {
+            if (obstacle.mesh.position.z > playerPosition.z + 20) {
                 this.scene.remove(obstacle.mesh);
                 this.obstacles.splice(i, 1);
             }
         }
     }
 
-    spawnObstacle(playerPosition) {
+    spawnObstacle(playerPosition, riverGenerator) {
         const type = Math.random() > 0.5 ? 'crocodile' : 'trash';
         const mesh = this.createObstacleMesh(type);
         
-        // Spawn ahead of player
+        // Spawn ahead of player along river
         const spawnDistance = 50;
-        const spawnWidth = 40;
-        const x = (Math.random() - 0.5) * spawnWidth;
-        const z = playerPosition.z + spawnDistance;
+        const z = playerPosition.z - spawnDistance;
         
-        mesh.position.set(x, 0, z);
+        // Get river center at spawn Z
+        const center = riverGenerator.getRiverCenter(z);
+        
+        // Random offset from center
+        const spawnWidth = 20; // Narrower than full river width
+        const xOffset = (Math.random() - 0.5) * spawnWidth;
+        
+        mesh.position.set(center.x + xOffset, 0, center.z);
         this.scene.add(mesh);
         
         this.obstacles.push({

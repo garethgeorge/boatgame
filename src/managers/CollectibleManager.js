@@ -8,10 +8,10 @@ export class CollectibleManager {
         this.spawnInterval = 1.5; // Seconds
     }
 
-    update(dt, playerPosition) {
+    update(dt, playerPosition, riverGenerator) {
         this.spawnTimer += dt;
         if (this.spawnTimer > this.spawnInterval) {
-            this.spawnCollectible(playerPosition);
+            this.spawnCollectible(playerPosition, riverGenerator);
             this.spawnTimer = 0;
         }
 
@@ -21,22 +21,24 @@ export class CollectibleManager {
             collectible.mesh.rotation.y += dt * 2.0;
             collectible.mesh.position.y = Math.sin(Date.now() * 0.005 + collectible.offset) * 0.3 + 0.5;
 
-            if (collectible.mesh.position.z < playerPosition.z - 20) {
+            if (collectible.mesh.position.z > playerPosition.z + 20) {
                 this.scene.remove(collectible.mesh);
                 this.collectibles.splice(i, 1);
             }
         }
     }
 
-    spawnCollectible(playerPosition) {
+    spawnCollectible(playerPosition, riverGenerator) {
         const mesh = this.createBottleMesh();
         
         const spawnDistance = 50;
-        const spawnWidth = 40;
-        const x = (Math.random() - 0.5) * spawnWidth;
-        const z = playerPosition.z + spawnDistance;
+        const z = playerPosition.z - spawnDistance;
         
-        mesh.position.set(x, 0, z);
+        const center = riverGenerator.getRiverCenter(z);
+        const spawnWidth = 20;
+        const xOffset = (Math.random() - 0.5) * spawnWidth;
+        
+        mesh.position.set(center.x + xOffset, 0, center.z);
         this.scene.add(mesh);
         
         this.collectibles.push({

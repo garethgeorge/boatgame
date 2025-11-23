@@ -45,4 +45,26 @@ export class BoatPhysics {
             angularVelocity: this.angularVelocity
         };
     }
+
+    constrainToRiver(currentRotation, riverTangent) {
+        // Calculate angle between boat forward and river tangent
+        const boatForward = new THREE.Vector3(Math.sin(currentRotation), 0, Math.cos(currentRotation));
+        const angle = boatForward.angleTo(riverTangent);
+        
+        // If angle is too large (> 90 degrees), apply a correcting torque
+        if (angle > Math.PI / 2) {
+            // Determine which way to turn to align with river
+            const cross = new THREE.Vector3().crossVectors(boatForward, riverTangent);
+            const correctionStrength = 5.0;
+            
+            if (cross.y > 0) {
+                this.angularVelocity += correctionStrength * 0.016; // Assuming ~60fps dt
+            } else {
+                this.angularVelocity -= correctionStrength * 0.016;
+            }
+            
+            // Dampen velocity if trying to go backwards
+            this.velocity.multiplyScalar(0.95);
+        }
+    }
 }

@@ -1,29 +1,15 @@
 import * as THREE from 'three';
 import { ObstacleManager } from './ObstacleManager.js';
 import { CollectibleManager } from './CollectibleManager.js';
+import { RiverGenerator } from '../world/RiverGenerator.js';
 
 export class WorldManager {
     constructor(scene) {
         this.scene = scene;
+        this.riverGenerator = new RiverGenerator(scene);
         this.obstacleManager = new ObstacleManager(scene);
         this.collectibleManager = new CollectibleManager(scene);
-        this.initWater();
         this.initLighting();
-    }
-
-    initWater() {
-        const geometry = new THREE.PlaneGeometry(1000, 1000);
-        const material = new THREE.MeshStandardMaterial({ 
-            color: 0x0099ff,
-            roughness: 0.1,
-            metalness: 0.1,
-            transparent: true,
-            opacity: 0.8
-        });
-        this.water = new THREE.Mesh(geometry, material);
-        this.water.rotation.x = -Math.PI / 2;
-        this.water.receiveShadow = true;
-        this.scene.add(this.water);
     }
 
     initLighting() {
@@ -45,11 +31,8 @@ export class WorldManager {
     }
 
     update(dt, playerPosition) {
-        // Move water with player to create infinite ocean illusion
-        this.water.position.x = playerPosition.x;
-        this.water.position.z = playerPosition.z;
-
-        this.obstacleManager.update(dt, playerPosition);
-        this.collectibleManager.update(dt, playerPosition);
+        this.riverGenerator.update(playerPosition);
+        this.obstacleManager.update(dt, playerPosition, this.riverGenerator);
+        this.collectibleManager.update(dt, playerPosition, this.riverGenerator);
     }
 }

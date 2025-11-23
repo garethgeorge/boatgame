@@ -35,8 +35,14 @@ export class Boat {
         return group;
     }
 
-    update(dt, input) {
+    update(dt, input, riverGenerator) {
         const physicsState = this.physics.update(dt, input, this.rotation);
+        
+        // Constrain to river
+        if (riverGenerator) {
+            const riverTangent = riverGenerator.getRiverTangent(this.position.z);
+            this.physics.constrainToRiver(this.rotation, riverTangent);
+        }
         
         // Update position
         this.position.add(physicsState.velocity.clone().multiplyScalar(dt));
