@@ -7,7 +7,8 @@ export class Boat extends Entity {
         super({ scene, position: new THREE.Vector3(0, 0, 0) });
         this.physics = new BoatPhysics();
         this.rotation = Math.PI; // Y-axis rotation, start facing downriver
-        this.radius = 1.0; // Collision radius
+        this.radius = 1.0; // Collision radius (kept for broad phase or legacy)
+        this.size = new THREE.Vector3(1.2, 1.0, 3.0); // Width, Height, Length
         
         this.particles = [];
         this.particleGroup = new THREE.Group();

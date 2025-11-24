@@ -217,6 +217,8 @@ export class RiverGenerator {
 // ... (BIOMES constant remains)
 
     addDecorations(zStart, zEnd) {
+        // Spawning happens ONLY here, when the chunk is generated.
+        // There is no dynamic spawning over time.
         const decorations = [];
         const count = 5;
         

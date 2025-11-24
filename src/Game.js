@@ -103,8 +103,16 @@ export class Game {
                 
                 // Collectibles
                 if (deco.constructor.name === 'Collectible') {
-                    const dist = this.boat.position.distanceTo(deco.position);
-                    if (dist < this.boat.radius + deco.radius) {
+                    // Boat (OBB) vs Collectible (Circle)
+                    const result = this.boat.physics.checkOBBvsCircle(
+                        this.boat.position,
+                        this.boat.size,
+                        this.boat.rotation,
+                        deco.position,
+                        deco.radius
+                    );
+                    
+                    if (result.collided) {
                         // Collected!
                         this.score += deco.points;
                         this.updateScore();
@@ -115,35 +123,59 @@ export class Game {
                 }
                 // Obstacles (Log, Crocodile, Tire, BeachBall)
                 else if (deco.constructor.name === 'Obstacle') {
-                    if (deco.type === 'log') {
-                        // Rectangular collision
-                        const result = this.boat.physics.checkRectangularCollision(
+                    if (deco.type === 'log' || deco.type === 'crocodile') {
+                        // Boat (OBB) vs Obstacle (OBB)
+                        const result = this.boat.physics.checkOBBCollision(
                             this.boat.position,
-                            this.boat.radius,
+                            this.boat.size,
+                            this.boat.rotation,
                             deco.position,
                             deco.size,
-                            deco.mesh.rotation.y // Log rotation
+                            deco.mesh.rotation.y
                         );
                         
                         if (result.collided) {
-                            // Push out
-                            this.boat.position.add(result.normal.multiplyScalar(result.penetration));
-                            
-                            // Sliding response:
-                            // Remove velocity component towards the obstacle
-                            const vDotN = this.boat.physics.velocity.dot(result.normal);
-                            if (vDotN < 0) {
-                                const vNormal = result.normal.clone().multiplyScalar(vDotN);
-                                this.boat.physics.velocity.sub(vNormal);
+                            if (deco.type === 'log') {
+                                // Solid collision (Push & Slide)
+                                this.boat.position.add(result.normal.multiplyScalar(result.penetration));
                                 
-                                // Optional: Apply friction to the remaining tangent velocity
-                                this.boat.physics.velocity.multiplyScalar(0.9);
+                                // Sliding response
+                                const vDotN = this.boat.physics.velocity.dot(result.normal);
+                                if (vDotN < 0) {
+                                    const vNormal = result.normal.clone().multiplyScalar(vDotN);
+                                    this.boat.physics.velocity.sub(vNormal);
+                                    this.boat.physics.velocity.multiplyScalar(0.9);
+                                }
+                            } else {
+                                // Crocodile: Penalty (Soft collision)
+                                // We don't push the boat, just trigger hit
+                                this.score = Math.floor(this.score * 0.9); // Lose 10%
+                                this.updateScore();
+                                
+                                // Visual feedback
+                                this.boat.mesh.traverse(child => {
+                                    if (child.isMesh && child.material) {
+                                        const oldColor = child.material.color.clone();
+                                        child.material.color.setHex(0xff0000);
+                                        setTimeout(() => child.material.color.copy(oldColor), 200);
+                                    }
+                                });
+
+                                // Trigger animation
+                                deco.hit();
                             }
                         }
                     } else {
-                        // Radius collision
-                        const dist = this.boat.position.distanceTo(deco.position);
-                        if (dist < this.boat.radius + deco.radius) {
+                        // Boat (OBB) vs Obstacle (Circle) - Tire, BeachBall
+                        const result = this.boat.physics.checkOBBvsCircle(
+                            this.boat.position,
+                            this.boat.size,
+                            this.boat.rotation,
+                            deco.position,
+                            deco.radius
+                        );
+                        
+                        if (result.collided) {
                             // Penalty
                             this.score = Math.floor(this.score * 0.9); // Lose 10%
                             this.updateScore();
@@ -164,15 +196,15 @@ export class Game {
                 }
                 // Piers
                 else if (deco.constructor.name === 'Pier') {
-                    // Rectangular collision
-                    // Pier center is offset!
+                    // Boat (OBB) vs Pier (OBB)
                     const center = deco.position.clone().add(
                         deco.centerOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), deco.rotationY)
                     );
                     
-                    const result = this.boat.physics.checkRectangularCollision(
+                    const result = this.boat.physics.checkOBBCollision(
                         this.boat.position,
-                        this.boat.radius,
+                        this.boat.size,
+                        this.boat.rotation,
                         center,
                         deco.size,
                         deco.rotationY

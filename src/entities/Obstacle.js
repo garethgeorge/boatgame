@@ -45,6 +45,8 @@ export class Obstacle extends Entity {
             tail.position.z = 2.5;
             group.add(tail);
 
+            this.size = new THREE.Vector3(1.0, 0.5, 6.5); // Approximate OBB size
+
         } else if (this.type === 'tire') {
             const geo = new THREE.TorusGeometry(0.6, 0.25, 16, 32);
             const mat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
@@ -80,13 +82,16 @@ export class Obstacle extends Entity {
             // Adjust collision radius roughly
             this.radius = length * 0.4; 
             this.size = new THREE.Vector3(radius * 2, radius * 2, length); // Local size (before rotation)
+            
+            // Random Y rotation
+            this.rotation = Math.random() * Math.PI * 2;
+            group.rotation.y = this.rotation;
             // Note: The mesh is rotated, so we need to handle that.
             // In createMesh: mesh.rotation.x = Math.PI / 2; mesh.rotation.z = random;
             // The 'rectRotation' passed to physics should be the Y rotation of the entity.
             // But wait, the log rotates around Z?
             // If the log is just a cylinder lying flat, its bounding box in local space is (diameter, diameter, length).
             // But if it's rotated randomly around Y (which Obstacle.update does for others, but log has random roll),
-            // we need to be careful.
             // Obstacle.update says: } else if (this.type === 'tire' || this.type === 'log') { // Just float }
             // So it doesn't rotate in update.
             // In createMesh: mesh.rotation.z = Math.random() * Math.PI;

@@ -4,7 +4,7 @@ import { Entity } from './Entity.js';
 export class Collectible extends Entity {
     constructor({ scene, position, type = 'green' }) {
         super({ scene, position });
-        this.radius = 0.8;
+        this.radius = 1.5; // Increased radius for easier collection
         this.offset = Math.random() * 100; // For unique animation timing
         this.type = type;
         

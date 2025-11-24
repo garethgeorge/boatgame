@@ -291,4 +291,134 @@ export class BoatPhysics {
         
         return { collided: false };
     }
+    // OBB vs OBB Collision (Separating Axis Theorem)
+    checkOBBCollision(posA, sizeA, rotA, posB, sizeB, rotB) {
+        // 1. Prepare axes
+        const a1 = new THREE.Vector3(Math.cos(rotA), 0, -Math.sin(rotA)); // Local X (Right)
+        const a2 = new THREE.Vector3(Math.sin(rotA), 0, Math.cos(rotA));  // Local Z (Forward)
+        
+        const b1 = new THREE.Vector3(Math.cos(rotB), 0, -Math.sin(rotB));
+        const b2 = new THREE.Vector3(Math.sin(rotB), 0, Math.cos(rotB));
+        
+        const axes = [a1, a2, b1, b2];
+        
+        // 2. Prepare corners (half-extents)
+        // We only care about X and Z for 2D collision on water surface
+        const hA = { x: sizeA.x / 2, z: sizeA.z / 2 };
+        const hB = { x: sizeB.x / 2, z: sizeB.z / 2 };
+        
+        let minOverlap = Infinity;
+        let smallestAxis = null;
+        
+        for (const axis of axes) {
+            // Project both OBBs onto the axis
+            
+            // Project A
+            // Radius of A projected onto axis = sum of projections of half-extents
+            // rA = |(a1 dot axis) * hA.x| + |(a2 dot axis) * hA.z|
+            // Since a1, a2 are A's basis vectors:
+            // a1 dot axis is just cos(angle between a1 and axis)
+            // But we computed axis in world space.
+            
+            const rA = Math.abs(a1.dot(axis) * hA.x) + Math.abs(a2.dot(axis) * hA.z);
+            const rB = Math.abs(b1.dot(axis) * hB.x) + Math.abs(b2.dot(axis) * hB.z);
+            
+            // Project distance between centers
+            const centerDist = new THREE.Vector3().subVectors(posB, posA).dot(axis);
+            
+            // Overlap
+            const overlap = (rA + rB) - Math.abs(centerDist);
+            
+            if (overlap < 0) {
+                return { collided: false }; // Separating axis found
+            }
+            
+            if (overlap < minOverlap) {
+                minOverlap = overlap;
+                smallestAxis = axis;
+                // Ensure axis points from A to B
+                if (centerDist < 0) {
+                    smallestAxis = axis.clone().negate();
+                }
+            }
+        }
+        
+        // Collision detected
+        // Normal should point from B to A? Or A to B?
+        // My previous logic used normal pointing OUT of the obstacle (B) towards Boat (A).
+        // Here smallestAxis points from A to B (because of the check above).
+        // So we want normal = -smallestAxis (B to A).
+        const normal = smallestAxis.clone().negate();
+        
+        return {
+            collided: true,
+            normal: normal,
+            penetration: minOverlap
+        };
+    }
+
+    // OBB vs Circle Collision
+    checkOBBvsCircle(obbPos, obbSize, obbRot, circlePos, circleRadius) {
+        // Transform circle center into OBB local space
+        const localPos = circlePos.clone().sub(obbPos);
+        localPos.applyAxisAngle(new THREE.Vector3(0, 1, 0), -obbRot);
+        
+        // OBB half-extents
+        const halfWidth = obbSize.x / 2;
+        const halfDepth = obbSize.z / 2;
+        
+        // Find closest point on OBB to circle center
+        const closestX = Math.max(-halfWidth, Math.min(halfWidth, localPos.x));
+        const closestZ = Math.max(-halfDepth, Math.min(halfDepth, localPos.z));
+        
+        const closestPointLocal = new THREE.Vector3(closestX, 0, closestZ);
+        
+        // Distance from closest point to circle center
+        const distanceVec = new THREE.Vector3().subVectors(localPos, closestPointLocal);
+        const distanceSquared = distanceVec.lengthSq();
+        
+        if (distanceSquared < (circleRadius * circleRadius) || distanceSquared === 0) {
+            // Collision
+            const distance = Math.sqrt(distanceSquared);
+            
+            let normalLocal;
+            let penetration;
+            
+            if (distance > 0) {
+                // Normal points from OBB to Circle
+                normalLocal = distanceVec.clone().divideScalar(distance);
+                penetration = circleRadius - distance;
+            } else {
+                // Circle center is inside OBB
+                // Push out along smallest axis
+                const distToRight = halfWidth - localPos.x;
+                const distToLeft = localPos.x - (-halfWidth);
+                const distToFront = halfDepth - localPos.z;
+                const distToBack = localPos.z - (-halfDepth);
+                
+                const min = Math.min(distToRight, distToLeft, distToFront, distToBack);
+                
+                if (min === distToRight) normalLocal = new THREE.Vector3(1, 0, 0);
+                else if (min === distToLeft) normalLocal = new THREE.Vector3(-1, 0, 0);
+                else if (min === distToFront) normalLocal = new THREE.Vector3(0, 0, 1);
+                else normalLocal = new THREE.Vector3(0, 0, -1);
+                
+                penetration = min + circleRadius; 
+            }
+            
+            // We want normal pointing OUT of the obstacle (Circle) towards the Boat (OBB).
+            // normalLocal points OBB -> Circle.
+            // So we want -normalLocal.
+            
+            const normalWorld = normalLocal.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), obbRot);
+            
+            return {
+                collided: true,
+                normal: normalWorld.negate(), // Point towards OBB (Boat)
+                penetration: penetration
+            };
+        }
+        
+        return { collided: false };
+    }
 }
