@@ -84,10 +84,16 @@ export class Decoration extends Entity {
         trunk.position.y = trunkHeight / 2;
         group.add(trunk);
 
+        // Rounded top for trunk
+        const topGeo = new THREE.SphereGeometry(trunkRadius, 8, 8);
+        const top = new THREE.Mesh(topGeo, cactusMat);
+        top.position.y = trunkHeight / 2;
+        trunk.add(top);
+
         const armCount = Math.floor(Math.random() * 4); // 0-3 arms
         for (let i = 0; i < armCount; i++) {
             const arm = new THREE.Group();
-            const armRadius = trunkRadius * 0.9;
+            const armRadius = trunkRadius * 0.85;
 
             // Horizontal part
             const part1Length = 0.4 + Math.random() * 0.3;
@@ -99,6 +105,12 @@ export class Decoration extends Entity {
             part1.position.x = part1Length / 2;
             arm.add(part1);
 
+            // Elbow joint (Sphere)
+            const elbowGeo = new THREE.SphereGeometry(armRadius, 8, 8);
+            const elbow = new THREE.Mesh(elbowGeo, cactusMat);
+            elbow.position.x = part1Length;
+            arm.add(elbow);
+
             // Vertical part
             const part2Length = 0.7 + Math.random() * 0.8;
             const part2 = new THREE.Mesh(
@@ -109,11 +121,18 @@ export class Decoration extends Entity {
             part2.position.y = part2Length / 2;
             arm.add(part2);
 
+            // Rounded top for arm
+            const armTopGeo = new THREE.SphereGeometry(armRadius, 8, 8);
+            const armTop = new THREE.Mesh(armTopGeo, cactusMat);
+            armTop.position.y = part2Length / 2; // Relative to part2 center
+            part2.add(armTop);
+
             // Position the arm
-            arm.position.y = trunkHeight * 0.3 + Math.random() * trunkHeight * 0.5;
+            arm.position.y = trunkHeight * 0.3 + Math.random() * trunkHeight * 0.4;
             arm.rotation.y = Math.random() * Math.PI * 2;
-            arm.position.x = Math.cos(arm.rotation.y) * trunkRadius;
-            arm.position.z = Math.sin(arm.rotation.y) * trunkRadius;
+            // Push out slightly to embed in trunk
+            arm.position.x = Math.cos(arm.rotation.y) * (trunkRadius * 0.5);
+            arm.position.z = Math.sin(arm.rotation.y) * (trunkRadius * 0.5);
             
             group.add(arm);
         }

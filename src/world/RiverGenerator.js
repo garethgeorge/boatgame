@@ -220,7 +220,16 @@ export class RiverGenerator {
         // Spawning happens ONLY here, when the chunk is generated.
         // There is no dynamic spawning over time.
         const decorations = [];
-        const count = 5;
+        
+        // Calculate average humidity for this chunk to determine density
+        // We'll just sample the center for density purposes
+        const centerZ = (zStart + zEnd) / 2;
+        const chunkHumidity = this.riverPath.getHumidityAt(centerZ);
+        
+        // Density: 
+        // Base: 5
+        // Wet Bonus: Up to +15 for very wet areas
+        const count = Math.floor(5 + chunkHumidity * 15);
         
         // 1. Standard Decorations (Trees, Rocks, etc.)
         for (let i = 0; i < count; i++) {
@@ -245,7 +254,8 @@ export class RiverGenerator {
             
             // Determine Biome
             let biome = BIOMES.DESERT;
-            if (humidity > 0.5) {
+            // Bias towards forest: Threshold lowered from 0.5 to 0.3
+            if (humidity > 0.3) {
                 biome = BIOMES.FOREST;
             }
 
