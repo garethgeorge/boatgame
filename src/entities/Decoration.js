@@ -35,6 +35,9 @@ export class Decoration extends Entity {
             case 'dead_tree':
                 this.createFractalTree(group);
                 break;
+            case 'broadleaf_tree':
+                this.createBroadleafTree(group);
+                break;
             default:
                 this.createRock(group);
                 break;
@@ -51,16 +54,23 @@ export class Decoration extends Entity {
     }
 
     createPineTree(group) {
-        const trunkGeo = new THREE.CylinderGeometry(0.5, 0.7, 2, 6);
+        const scale = 0.8 + Math.random() * 0.6;
+        const trunkHeight = 1.5 * scale + Math.random() * 0.5;
+        const trunkRadius = 0.3 * scale + Math.random() * 0.1;
+        
+        const trunkGeo = new THREE.CylinderGeometry(trunkRadius * 0.7, trunkRadius, trunkHeight, 6);
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
         const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-        trunk.position.y = 1;
+        trunk.position.y = trunkHeight / 2;
         group.add(trunk);
         
-        const leavesGeo = new THREE.ConeGeometry(2, 4, 8);
+        const leavesHeight = 3 * scale + Math.random();
+        const leavesRadius = 1.5 * scale + Math.random() * 0.5;
+        
+        const leavesGeo = new THREE.ConeGeometry(leavesRadius, leavesHeight, 8);
         const leavesMat = new THREE.MeshStandardMaterial({ color: 0x228B22 });
         const leaves = new THREE.Mesh(leavesGeo, leavesMat);
-        leaves.position.y = 3;
+        leaves.position.y = trunkHeight + leavesHeight / 2 - 0.5;
         group.add(leaves);
     }
 
@@ -127,11 +137,24 @@ export class Decoration extends Entity {
         group.add(mesh);
     }
 
-    createFractalTree(group) {
+    createBroadleafTree(group) {
+        this.createFractalTree(group, { hasLeaves: true });
+    }
+
+    createFractalTree(group, config = { hasLeaves: false }) {
         const material = new THREE.MeshStandardMaterial({ color: 0x5C4033 });
+        const leafMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 }); // Forest Green
         
         const addBranch = (startPoint, length, radius, direction, depth) => {
-            if (depth === 0) return;
+            if (depth === 0) {
+                if (config.hasLeaves) {
+                    const leafGeo = new THREE.DodecahedronGeometry(0.8 + Math.random() * 0.5);
+                    const leafMesh = new THREE.Mesh(leafGeo, leafMaterial);
+                    leafMesh.position.copy(startPoint);
+                    group.add(leafMesh);
+                }
+                return;
+            }
 
             const endPoint = startPoint.clone().add(direction.clone().multiplyScalar(length));
             

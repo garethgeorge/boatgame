@@ -1,23 +1,22 @@
 import * as THREE from 'three';
 import { RiverPath } from './RiverPath.js';
 import { Decoration } from '../entities/Decoration.js';
-import { Crow } from '../entities/Crow.js';
 
 const BIOMES = {
     DESERT: {
         name: 'desert',
         decorations: [
-            { type: 'cactus', weight: 0.4 },
-            { type: 'rock', weight: 0.4 },
-            { type: 'crow', weight: 0.2 }
+            { type: 'cactus', weight: 0.5 },
+            { type: 'rock', weight: 0.5 }
         ]
     },
     FOREST: {
         name: 'forest',
         decorations: [
-            { type: 'tree', weight: 0.5 },
-            { type: 'bush', weight: 0.3 },
-            { type: 'dead_tree', weight: 0.2 }
+            { type: 'tree', weight: 0.4 },
+            { type: 'bush', weight: 0.2 },
+            { type: 'dead_tree', weight: 0.1 },
+            { type: 'broadleaf_tree', weight: 0.3 }
         ]
     }
 };
@@ -35,7 +34,7 @@ export class RiverGenerator {
         }
     }
 
-    update(playerPosition) {
+    update(playerPosition, elapsedTime) {
         // Generate new chunks ahead (negative Z)
         const lastChunk = this.chunks[this.chunks.length - 1];
         if (lastChunk.zEnd > playerPosition.z - 200) {
@@ -76,6 +75,7 @@ export class RiverGenerator {
 
         this.chunks.push({
             mesh: bankMesh, // Store combined mesh
+            waterMesh: waterMesh, // Store waterMesh separately for removal
             decorations: decorations,
             zStart: zStart,
             zEnd: zEnd
@@ -189,11 +189,11 @@ export class RiverGenerator {
         
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        geometry.setIndex(indices);
-        geometry.computeVertexNormals();
+        geometry.setIndex(indices); // Keep setIndex for proper geometry
+        geometry.computeVertexNormals(); // Add computeVertexNormals for lighting
         
         const material = new THREE.MeshStandardMaterial({
-            color: 0x0099ff,
+            color: 0x0077be,
             roughness: 0.1,
             metalness: 0.1,
             transparent: true,
@@ -247,19 +247,11 @@ export class RiverGenerator {
                 }
             }
             
-            let decoration;
-            if (type === 'crow') {
-                decoration = new Crow({
-                    scene: this.scene,
-                    position: position
-                });
-            } else {
-                decoration = new Decoration({
-                    scene: this.scene,
-                    position: position,
-                    type: type
-                });
-            }
+            let decoration = new Decoration({
+                scene: this.scene,
+                position: position,
+                type: type
+            });
             
             decorations.push(decoration);
         }
@@ -268,10 +260,13 @@ export class RiverGenerator {
     
     removeChunk(chunk) {
         this.scene.remove(chunk.mesh);
-        // Safely dispose of chunk mesh geometry and material
         if (chunk.mesh.geometry) chunk.mesh.geometry.dispose();
         if (chunk.mesh.material) chunk.mesh.material.dispose();
-        
+
+        // Water mesh is a child of bank mesh, so it's removed from scene, but we need to dispose resources
+        if (chunk.waterMesh.geometry) chunk.waterMesh.geometry.dispose();
+        if (chunk.waterMesh.material) chunk.waterMesh.material.dispose();
+
         if (chunk.decorations) {
             chunk.decorations.forEach(decoration => {
                 // Check if it has a destroy method (Entity should have it, but let's be safe)
