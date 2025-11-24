@@ -44,7 +44,7 @@ export class Boat extends Entity {
         hullGeo.rotateX(Math.PI / 2);
         
         const hullMat = new THREE.MeshStandardMaterial({ 
-            color: 0xff3300, // Racing Red
+            color: 0xffffff, // White
             roughness: 0.2,
             metalness: 0.6
         });
@@ -78,7 +78,34 @@ export class Boat extends Entity {
         engine.position.set(0, 0.3, -1.4);
         group.add(engine);
 
+        // Store original color for flash effect
+        group.traverse(child => {
+            if (child.isMesh && child.material) {
+                child.userData.originalColor = child.material.color.clone();
+            }
+        });
+
         return group;
+    }
+
+    flashDamage() {
+        if (this.isFlashing) return; // Prevent overlapping flashes
+        this.isFlashing = true;
+
+        this.mesh.traverse(child => {
+            if (child.isMesh && child.material) {
+                child.material.color.setHex(0xff0000);
+            }
+        });
+
+        setTimeout(() => {
+            this.mesh.traverse(child => {
+                if (child.isMesh && child.material && child.userData.originalColor) {
+                    child.material.color.copy(child.userData.originalColor);
+                }
+            });
+            this.isFlashing = false;
+        }, 200);
     }
 
     update(dt, input, riverGenerator) {
@@ -109,11 +136,14 @@ export class Boat extends Entity {
         // Visual effects: Bobbing
         this.mesh.position.y = Math.sin(Date.now() * 0.003) * 0.1;
         
-        // Banking
-        const maxBankAngle = 0.5;
-        let bankAngle = -physicsState.angularVelocity * 0.3;
+        // Banking (Lean into the turn)
+        const maxBankAngle = 0.25; // Reduced from 0.5 for subtlety
+        // Invert sign: Positive angular velocity (Left turn) -> Positive Z rotation (Left bank/Lean left)
+        let bankAngle = physicsState.angularVelocity * 0.2; // Reduced multiplier
         bankAngle = Math.max(-maxBankAngle, Math.min(maxBankAngle, bankAngle));
-        this.mesh.rotation.z = Math.sin(Date.now() * 0.002) * 0.05 + bankAngle;
+        
+        // Idle rocking (reduced)
+        this.mesh.rotation.z = Math.sin(Date.now() * 0.002) * 0.02 + bankAngle;
 
         // Pitch up with speed (positive rotation tips nose up for this model configuration?)
         const speed = physicsState.velocity.length();

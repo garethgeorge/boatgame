@@ -18,7 +18,7 @@ export class Game {
 
         this.clock = new THREE.Clock();
         this.isPlaying = false;
-        this.score = 0;
+        this.score = 100;
         
         // UI Elements
         this.startScreen = document.getElementById('start-screen');
@@ -39,7 +39,32 @@ export class Game {
         this.camera.position.set(0, 10, -10);
         this.camera.lookAt(0, 0, 0);
 
+        this.updateScore(); // Show initial score
         this.animate();
+    }
+// ... (skip to collision logic)
+
+    handleCollisionPenalty(deco) {
+        // Calculate penalty: Max of 50 or 10% of current score
+        const penalty = Math.max(50, Math.floor(this.score * 0.1));
+        this.score -= penalty;
+        
+        if (this.score <= 0) {
+            this.score = 0;
+            this.gameOver();
+        }
+        
+        this.updateScore();
+        this.boat.flashDamage();
+        
+        // Trigger entity animation (sink/hit)
+        if (deco.hit) deco.hit();
+    }
+
+    gameOver() {
+        this.isPlaying = false;
+        alert("Game Over! You ran out of points.");
+        location.reload(); // Simple restart for now
     }
 
     start() {
@@ -70,26 +95,6 @@ export class Game {
     }
 
     checkCollisions() {
-        // Check Obstacles & Piers (Unified list? No, separate managers or lists?)
-        // WorldManager has obstacleManager.
-        // RiverGenerator has chunks, chunks have decorations.
-        // The current Game.js uses worldManager.obstacleManager.obstacles.
-        // But RiverGenerator spawns Obstacles and Piers into 'decorations' list of chunks?
-        // Wait, RiverGenerator.js: decorations.push(new Obstacle(...));
-        // And Obstacle extends Entity.
-        // Does WorldManager track them?
-        // Let's check WorldManager.
-        // If not, I need to iterate chunks.
-        // The previous code: const obstacles = this.worldManager.obstacleManager.obstacles;
-        // This implies ObstacleManager exists.
-        // But RiverGenerator creates them.
-        // Let's assume RiverGenerator adds them to chunks, and maybe ObstacleManager is not used for these?
-        // Or maybe RiverGenerator adds them to the scene and also to a list?
-        // In RiverGenerator: decorations.push(decoration);
-        // And chunk.decorations = decorations.
-        // So they are in chunks.
-        
-        // I need to iterate over active chunks and their decorations.
         const chunks = this.worldManager.riverGenerator.chunks;
         
         chunks.forEach(chunk => {
@@ -136,33 +141,11 @@ export class Game {
                         
                         if (result.collided) {
                             if (deco.type === 'log') {
-                                // Solid collision (Push & Slide)
-                                this.boat.position.add(result.normal.multiplyScalar(result.penetration));
-                                
-                                // Sliding response
-                                const vDotN = this.boat.physics.velocity.dot(result.normal);
-                                if (vDotN < 0) {
-                                    const vNormal = result.normal.clone().multiplyScalar(vDotN);
-                                    this.boat.physics.velocity.sub(vNormal);
-                                    this.boat.physics.velocity.multiplyScalar(0.9);
-                                }
+                                // Log: Penalty + Sink
+                                this.handleCollisionPenalty(deco);
                             } else {
-                                // Crocodile: Penalty (Soft collision)
-                                // We don't push the boat, just trigger hit
-                                this.score = Math.floor(this.score * 0.9); // Lose 10%
-                                this.updateScore();
-                                
-                                // Visual feedback
-                                this.boat.mesh.traverse(child => {
-                                    if (child.isMesh && child.material) {
-                                        const oldColor = child.material.color.clone();
-                                        child.material.color.setHex(0xff0000);
-                                        setTimeout(() => child.material.color.copy(oldColor), 200);
-                                    }
-                                });
-
-                                // Trigger animation
-                                deco.hit();
+                                // Crocodile: Penalty
+                                this.handleCollisionPenalty(deco);
                             }
                         }
                     } else {
@@ -176,21 +159,7 @@ export class Game {
                         );
                         
                         if (result.collided) {
-                            // Penalty
-                            this.score = Math.floor(this.score * 0.9); // Lose 10%
-                            this.updateScore();
-                            
-                            // Visual feedback
-                            this.boat.mesh.traverse(child => {
-                                if (child.isMesh && child.material) {
-                                    const oldColor = child.material.color.clone();
-                                    child.material.color.setHex(0xff0000);
-                                    setTimeout(() => child.material.color.copy(oldColor), 200);
-                                }
-                            });
-
-                            // Trigger animation
-                            deco.hit();
+                            this.handleCollisionPenalty(deco);
                         }
                     }
                 }
@@ -211,7 +180,27 @@ export class Game {
                     );
                     
                     if (result.collided) {
-                        // Push out
+                        // Damage on first impact
+                        if (!deco.hasCollided) {
+                            deco.hasCollided = true;
+                            // Calculate penalty manually since Pier doesn't have hit() usually?
+                            // Or just use handleCollisionPenalty but ensure hit() exists or is safe.
+                            // Pier doesn't have hit(), but handleCollisionPenalty checks if (deco.hit).
+                            // So it's safe.
+                            
+                            const penalty = Math.max(50, Math.floor(this.score * 0.1));
+                            this.score -= penalty;
+                            
+                            if (this.score <= 0) {
+                                this.score = 0;
+                                this.gameOver();
+                            }
+                            
+                            this.updateScore();
+                            this.boat.flashDamage();
+                        }
+
+                        // Solid collision (Push & Slide)
                         this.boat.position.add(result.normal.multiplyScalar(result.penetration));
                         
                         // Sliding response

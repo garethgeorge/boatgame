@@ -68,7 +68,8 @@ export class Obstacle extends Entity {
             group.add(mesh);
 
         } else if (this.type === 'log') {
-            const length = 3 + Math.random() * 2;
+            // Length: 3 to 10 (was 3 to 5)
+            const length = 3 + Math.random() * 7;
             const radius = 0.4 + Math.random() * 0.2;
             const geo = new THREE.CylinderGeometry(radius, radius, length, 8);
             const mat = new THREE.MeshStandardMaterial({ color: 0x5C4033, roughness: 1.0 });

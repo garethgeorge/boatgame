@@ -280,9 +280,8 @@ export class RiverGenerator {
         };
 
         // 2. Collectibles
-        // Density: e.g., 0.1 per unit length? Chunk is 50 units. So ~5 items?
-        // Let's go with random count 1-3 per chunk for now to avoid clutter, or maybe density based.
-        const collectibleCount = Math.floor(1 + Math.random() * 3); // 1 to 3 per chunk
+        // Reduced density: 0 to 1 per chunk (average 0.5)
+        const collectibleCount = Math.floor(Math.random() * 2);
         
         for (let i = 0; i < collectibleCount; i++) {
             const z = zStart + Math.random() * (zEnd - zStart);
@@ -313,7 +312,15 @@ export class RiverGenerator {
         }
 
         // 3. Obstacles
-        const obstacleCount = Math.floor(1 + Math.random() * 3); // 1 to 3 per chunk
+        // Difficulty scaling: Increase count based on distance traveled (abs(zStart))
+        const distance = Math.abs(zStart);
+        // Max difficulty reached at 5000 units
+        const difficultyFactor = Math.min(1.0, distance / 5000); 
+        
+        // Base: 1-3. Max Extra: +4. Total max: ~7 per chunk
+        const baseCount = 1 + Math.random() * 2;
+        const extraCount = difficultyFactor * 4;
+        const obstacleCount = Math.floor(baseCount + extraCount);
         
         for (let i = 0; i < obstacleCount; i++) {
             const z = zStart + Math.random() * (zEnd - zStart);
