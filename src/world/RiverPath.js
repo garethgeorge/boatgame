@@ -112,4 +112,66 @@ export class RiverPath {
         const p2 = this.getPointAt(z - delta);
         return new THREE.Vector3().subVectors(p2, p1).normalize();
     }
+
+    getRiverBoundarySegments(zCenter, range) {
+        const segments = [];
+        const step = 5.0; // Segment length
+        const zStart = zCenter + range;
+        const zEnd = zCenter - range;
+        
+        // We iterate from positive Z to negative Z (downstream usually)
+        for (let z = zStart; z > zEnd; z -= step) {
+            const currZ = z;
+            const nextZ = z - step;
+            
+            // Current slice
+            const p1 = this.getPointAt(currZ);
+            const t1 = this.getTangentAt(currZ);
+            const w1 = this.getWidthAt(currZ);
+            const n1 = new THREE.Vector3().crossVectors(t1, new THREE.Vector3(0, 1, 0)).normalize();
+            
+            // Next slice
+            const p2 = this.getPointAt(nextZ);
+            const t2 = this.getTangentAt(nextZ);
+            const w2 = this.getWidthAt(nextZ);
+            const n2 = new THREE.Vector3().crossVectors(t2, new THREE.Vector3(0, 1, 0)).normalize();
+            
+            // Left Bank Segment
+            const l1 = p1.clone().add(n1.clone().multiplyScalar(-w1/2));
+            const l2 = p2.clone().add(n2.clone().multiplyScalar(-w2/2));
+            
+            // Right Bank Segment
+            const r1 = p1.clone().add(n1.clone().multiplyScalar(w1/2));
+            const r2 = p2.clone().add(n2.clone().multiplyScalar(w2/2));
+            
+            // Push segments. Normal points INWARDS to the river for collision logic?
+            // Actually, for "wall" logic, normal usually points OUT of the wall (towards the river).
+            // Left bank normal should point roughly +X (if river is -Z).
+            // Right bank normal should point roughly -X.
+            
+            // Left bank normal: (l2 - l1) cross UP
+            const leftDir = new THREE.Vector3().subVectors(l2, l1).normalize();
+            const leftNormal = new THREE.Vector3().crossVectors(leftDir, new THREE.Vector3(0, 1, 0)).normalize();
+            
+            // Right bank normal: (r2 - r1) cross DOWN (or UP and negate?)
+            // Let's stick to: Wall normal points towards the playable area (river center).
+            const rightDir = new THREE.Vector3().subVectors(r2, r1).normalize();
+            const rightNormal = new THREE.Vector3().crossVectors(rightDir, new THREE.Vector3(0, -1, 0)).normalize();
+
+            segments.push({
+                start: l1,
+                end: l2,
+                normal: leftNormal,
+                type: 'left'
+            });
+            
+            segments.push({
+                start: r1,
+                end: r2,
+                normal: rightNormal,
+                type: 'right'
+            });
+        }
+        return segments;
+    }
 }

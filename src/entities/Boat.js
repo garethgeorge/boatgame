@@ -90,9 +90,11 @@ export class Boat extends Entity {
         
         // Constrain to river walls
         if (riverGenerator) {
-            const riverCenter = riverGenerator.getRiverCenter(this.position.z);
-            const riverWidth = riverGenerator.riverPath.getWidthAt(this.position.z);
-            this.physics.checkWallCollisions(this.position, riverCenter, riverWidth);
+            // Get boundary segments around the boat
+            const range = 20; // Check 20 units ahead and behind
+            const segments = riverGenerator.riverPath.getRiverBoundarySegments(this.position.z, range);
+            
+            this.physics.checkEdgeCollisions(this.position, segments, this.radius);
         }
         
         // Update position from physics

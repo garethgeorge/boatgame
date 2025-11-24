@@ -141,27 +141,95 @@ export class BoatPhysics {
         };
     }
 
-    checkWallCollisions(position, riverCenter, riverWidth) {
-        // Calculate distance from river center
-        const dist = position.distanceTo(riverCenter);
-        const safeRadius = (riverWidth / 2) - 2; // Buffer for boat size
-        
-        if (dist > safeRadius) {
-            // Hit the wall
-            // Push back towards center
-            const toCenter = new THREE.Vector3().subVectors(riverCenter, position).normalize();
+    checkEdgeCollisions(position, segments, radius) {
+        let collisionDetected = false;
+
+        for (const segment of segments) {
+            // Segment vector
+            const segVec = new THREE.Vector3().subVectors(segment.end, segment.start);
+            const segLen = segVec.length();
+            const segDir = segVec.clone().divideScalar(segLen);
+
+            // Vector from start to boat
+            const toBoat = new THREE.Vector3().subVectors(position, segment.start);
             
-            // Soft push instead of hard clamp
-            const penetration = dist - safeRadius;
-            position.add(toCenter.multiplyScalar(penetration * 0.1)); // 10% correction per frame
+            // Project boat onto segment line (t is distance along segment)
+            const t = toBoat.dot(segDir);
             
-            // Dampen velocity perpendicular to wall
-            const vDotN = this.velocity.dot(toCenter);
-            if (vDotN < 0) { // Moving away from center (towards wall)
-                // Remove component of velocity towards wall
-                const vNormal = toCenter.clone().multiplyScalar(vDotN);
-                this.velocity.sub(vNormal.multiplyScalar(1.2)); // Bounce slightly
+            // Closest point on segment
+            let closestPoint;
+            if (t < 0) {
+                closestPoint = segment.start;
+            } else if (t > segLen) {
+                closestPoint = segment.end;
+            } else {
+                closestPoint = segment.start.clone().add(segDir.multiplyScalar(t));
+            }
+
+            // Distance to closest point
+            const distVec = new THREE.Vector3().subVectors(position, closestPoint);
+            const dist = distVec.length();
+
+            // Check collision
+            if (dist < radius) {
+                // Determine if we are on the "wrong" side.
+                // The normal points towards the river center (valid area).
+                // So if distVec dot normal < 0, we are behind the wall?
+                // Or if we are just overlapping the wall line.
+                
+                // Let's assume the wall is a hard boundary.
+                // We want to push the boat along the normal direction until dist >= radius.
+                
+                // Calculate penetration depth
+                const penetration = radius - dist;
+                
+                // Push direction: usually the normal of the wall.
+                // However, if we hit the endpoint, we might want to push away from the point.
+                // Let's use the segment normal for consistent sliding along the wall.
+                const pushDir = segment.normal.clone();
+                
+                // Check if we are actually "behind" the wall.
+                // Vector from wall to boat dot Normal.
+                const side = distVec.dot(segment.normal);
+                
+                // If side is negative, we are deep inside the wall/bank.
+                // If side is positive but < radius, we are just touching.
+                
+                // Correction
+                // If we are behind, we need to push out fully + radius.
+                // If we are in front, we push out by penetration.
+                
+                let correction;
+                if (side < 0) {
+                    // Behind wall
+                    // Push to the line, then add radius
+                    // Projected distance to line is 'side' (negative)
+                    correction = -side + radius;
+                } else {
+                    // In front but touching
+                    correction = radius - dist; // Approximate, assuming distVec aligns with normal
+                    // Better: correction = radius - side? 
+                    // If we use 'dist', we push away from the closest point (good for corners).
+                    // If we use 'side', we push away from the line (good for straight walls).
+                    
+                    // Let's use the wall normal for the push direction to ensure sliding.
+                    correction = radius - side;
+                }
+                
+                // Apply position correction
+                position.add(pushDir.multiplyScalar(correction * 0.2)); // Soft correction
+                
+                // Velocity damping
+                const vDotN = this.velocity.dot(pushDir);
+                if (vDotN < 0) {
+                    // Cancel velocity into the wall
+                    const vNormal = pushDir.clone().multiplyScalar(vDotN);
+                    this.velocity.sub(vNormal.multiplyScalar(1.5)); // Bounce/Slide
+                }
+                
+                collisionDetected = true;
             }
         }
+        return collisionDetected;
     }
 }
