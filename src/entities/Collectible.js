@@ -2,19 +2,39 @@ import * as THREE from 'three';
 import { Entity } from './Entity.js';
 
 export class Collectible extends Entity {
-    constructor({ scene, position }) {
+    constructor({ scene, position, type = 'green' }) {
         super({ scene, position });
         this.radius = 0.8;
         this.offset = Math.random() * 100; // For unique animation timing
+        this.type = type;
+        
+        const types = {
+            'green': { color: 0x00ff00, points: 10 },
+            'blue': { color: 0x0000ff, points: 20 },
+            'red': { color: 0xff0000, points: 50 },
+            'gold': { color: 0xffd700, points: 100 }
+        };
+        
+        this.config = types[type] || types['green'];
+        this.points = this.config.points;
+        
+        // Re-create mesh if needed (Entity constructor calls createMesh before we set config)
+        if (this.mesh) {
+            this.scene.remove(this.mesh);
+            this.mesh = this.createMesh();
+            this.mesh.position.copy(this.position);
+            this.scene.add(this.mesh);
+        }
     }
 
     createMesh() {
         const group = new THREE.Group();
+        const color = this.config ? this.config.color : 0x00ff00;
         
         // Bottle body
         const bodyGeo = new THREE.CylinderGeometry(0.3, 0.3, 1, 8);
         const bodyMat = new THREE.MeshStandardMaterial({ 
-            color: 0x00ff00,
+            color: color,
             transparent: true,
             opacity: 0.7,
             roughness: 0.2
@@ -44,6 +64,8 @@ export class Collectible extends Entity {
 
     update(dt) {
         this.mesh.rotation.y += dt * 2.0;
-        this.mesh.position.y = Math.sin(Date.now() * 0.005 + this.offset) * 0.3 + 0.5;
+        // Float lower in the water (y=0 is water surface roughly)
+        // Previous was 0.5 base, let's lower it to 0.0 or -0.2
+        this.mesh.position.y = Math.sin(Date.now() * 0.005 + this.offset) * 0.2 - 0.1;
     }
 }

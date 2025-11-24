@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { RiverPath } from './RiverPath.js';
 import { Decoration } from '../entities/Decoration.js';
+import { Pier } from '../entities/Pier.js';
+import { Collectible } from '../entities/Collectible.js';
+import { Obstacle } from '../entities/Obstacle.js';
 
 const BIOMES = {
     DESERT: {
@@ -204,10 +207,15 @@ export class RiverGenerator {
         return new THREE.Mesh(geometry, material);
     }
 
+
+
+// ... (BIOMES constant remains)
+
     addDecorations(zStart, zEnd) {
         const decorations = [];
         const count = 5;
         
+        // 1. Standard Decorations (Trees, Rocks, etc.)
         for (let i = 0; i < count; i++) {
             const t = Math.random();
             const z = zStart + t * (zEnd - zStart);
@@ -255,6 +263,118 @@ export class RiverGenerator {
             
             decorations.push(decoration);
         }
+
+        // Helper for normal distribution (approximate)
+        const randNormal = () => {
+            let u = 0, v = 0;
+            while(u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+            while(v === 0) v = Math.random();
+            return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+        };
+
+        // 2. Collectibles
+        // Density: e.g., 0.1 per unit length? Chunk is 50 units. So ~5 items?
+        // Let's go with random count 1-3 per chunk for now to avoid clutter, or maybe density based.
+        const collectibleCount = Math.floor(1 + Math.random() * 3); // 1 to 3 per chunk
+        
+        for (let i = 0; i < collectibleCount; i++) {
+            const z = zStart + Math.random() * (zEnd - zStart);
+            const point = this.riverPath.getPointAt(z);
+            const width = this.riverPath.getWidthAt(z);
+            
+            // Normal distribution centered at 0, sigma = width/6 (so 3 sigma covers half width mostly)
+            // Clamp to be safe inside river
+            let offset = randNormal() * (width / 6);
+            offset = Math.max(-width/2 + 2, Math.min(width/2 - 2, offset));
+            
+            const tangent = this.riverPath.getTangentAt(z);
+            const normal = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
+            const position = point.clone().add(normal.multiplyScalar(offset));
+            
+            // Random type
+            const r = Math.random();
+            let type = 'green';
+            if (r > 0.95) type = 'gold';
+            else if (r > 0.8) type = 'red';
+            else if (r > 0.5) type = 'blue';
+            
+            decorations.push(new Collectible({
+                scene: this.scene,
+                position: position,
+                type: type
+            }));
+        }
+
+        // 3. Obstacles
+        const obstacleCount = Math.floor(1 + Math.random() * 3); // 1 to 3 per chunk
+        
+        for (let i = 0; i < obstacleCount; i++) {
+            const z = zStart + Math.random() * (zEnd - zStart);
+            const point = this.riverPath.getPointAt(z);
+            const width = this.riverPath.getWidthAt(z);
+            
+            // Normal distribution
+            let offset = randNormal() * (width / 5); // Slightly wider spread for obstacles
+            offset = Math.max(-width/2 + 2, Math.min(width/2 - 2, offset));
+            
+            const tangent = this.riverPath.getTangentAt(z);
+            const normal = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
+            const position = point.clone().add(normal.multiplyScalar(offset));
+            
+            const r = Math.random();
+            let type = 'log';
+            if (r > 0.9) type = 'crocodile';
+            else if (r > 0.7) type = 'tire';
+            else if (r > 0.5) type = 'beachball';
+            
+            decorations.push(new Obstacle({
+                scene: this.scene,
+                position: position,
+                type: type
+            }));
+        }
+
+        // 4. Piers
+        if (Math.random() < 0.2) { // 20% chance per chunk
+            const z = zStart + Math.random() * (zEnd - zStart);
+            const point = this.riverPath.getPointAt(z);
+            const width = this.riverPath.getWidthAt(z);
+            const tangent = this.riverPath.getTangentAt(z);
+            const normal = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
+            
+            const side = Math.random() > 0.5 ? 1 : -1;
+            // Place at edge of water
+            const position = point.clone().add(normal.clone().multiplyScalar(side * width / 2));
+            position.y = 0.5; // Slightly above water
+            
+            // Rotate to face into river
+            const angle = Math.atan2(normal.x, normal.z);
+            // If side is 1 (right), normal points left? No, normal points right.
+            // We want pier to point INTO river.
+            // If side is 1, we are on right bank. Normal points right. Pier should point left (-normal).
+            // If side is -1, we are on left bank. Normal points right (wait, normal calc is consistent).
+            // Let's re-verify normal.
+            // normal = tangent X UP.
+            // If tangent is -Z (downstream), UP is +Y.
+            // (-Z) X (+Y) = (+X). So normal points Right.
+            
+            // If side is 1, we are at point + normal*width/2 (Right Bank).
+            // We want pier to point Left (-X).
+            // If side is -1, we are at point - normal*width/2 (Left Bank).
+            // We want pier to point Right (+X).
+            
+            let rotationY = angle;
+            if (side === 1) {
+                rotationY += Math.PI; // Face opposite to normal
+            }
+            
+            decorations.push(new Pier({
+                scene: this.scene,
+                position: position,
+                rotationY: rotationY
+            }));
+        }
+
         return decorations;
     }
     
