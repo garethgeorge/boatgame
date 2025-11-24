@@ -70,33 +70,28 @@ export class Game {
     }
 
     checkCollisions() {
-        const boatPos = this.boat.position;
-        const boatRadius = 1.0;
-
         // Check Obstacles
         const obstacles = this.worldManager.obstacleManager.obstacles;
         for (let i = obstacles.length - 1; i >= 0; i--) {
             const obstacle = obstacles[i];
-            const dist = boatPos.distanceTo(obstacle.mesh.position);
+            const dist = this.boat.position.distanceTo(obstacle.position);
             
-            if (dist < boatRadius + obstacle.radius) {
+            if (dist < this.boat.radius + obstacle.radius) {
                 // Collision!
                 this.score = Math.floor(this.score * 0.9); // Lose 10%
                 this.updateScore();
                 
                 // Visual feedback (flash red)
-                this.boat.mesh.children.forEach(child => {
-                    if (child.material) {
-                        const oldColor = child.material.color.getHex();
+                this.boat.mesh.traverse(child => {
+                    if (child.isMesh && child.material) {
+                        const oldColor = child.material.color.clone();
                         child.material.color.setHex(0xff0000);
-                        setTimeout(() => {
-                            child.material.color.setHex(oldColor);
-                        }, 200);
+                        setTimeout(() => child.material.color.copy(oldColor), 200);
                     }
                 });
 
                 // Remove obstacle
-                this.scene.remove(obstacle.mesh);
+                obstacle.destroy();
                 obstacles.splice(i, 1);
             }
         }
@@ -105,15 +100,15 @@ export class Game {
         const collectibles = this.worldManager.collectibleManager.collectibles;
         for (let i = collectibles.length - 1; i >= 0; i--) {
             const collectible = collectibles[i];
-            const dist = boatPos.distanceTo(collectible.mesh.position);
+            const dist = this.boat.position.distanceTo(collectible.position);
             
-            if (dist < boatRadius + collectible.radius) {
+            if (dist < this.boat.radius + collectible.radius) {
                 // Collected!
                 this.score += 100;
                 this.updateScore();
                 
                 // Remove collectible
-                this.scene.remove(collectible.mesh);
+                collectible.destroy();
                 collectibles.splice(i, 1);
             }
         }

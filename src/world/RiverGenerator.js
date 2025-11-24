@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RiverPath } from './RiverPath.js';
+import { Decoration } from '../entities/Decoration.js';
 
 export class RiverGenerator {
     constructor(scene) {
@@ -226,8 +227,6 @@ export class RiverGenerator {
     }
 
     addDecorations(zStart, zEnd) {
-        // ... existing decoration logic ...
-        // Need to update to place on flat banks
         const decorations = [];
         const count = 5;
         
@@ -241,7 +240,6 @@ export class RiverGenerator {
             const normal = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
             
             const side = Math.random() > 0.5 ? 1 : -1;
-            // Place on the flat area: width/2 + slope + random offset
             const bankSlopeWidth = 8;
             const minDist = (width / 2) + bankSlopeWidth + 2;
             const maxDist = minDist + 20;
@@ -251,50 +249,26 @@ export class RiverGenerator {
             position.y = 4; // Bank height
             
             const type = Math.random() > 0.3 ? 'tree' : 'rock';
-            const mesh = this.createDecorationMesh(type);
-            mesh.position.copy(position);
-            mesh.rotation.y = Math.random() * Math.PI * 2;
             
-            this.scene.add(mesh);
-            decorations.push(mesh);
+            const decoration = new Decoration({
+                scene: this.scene,
+                position: position,
+                type: type
+            });
+            decorations.push(decoration);
         }
         return decorations;
-    }
-
-    createDecorationMesh(type) {
-        const group = new THREE.Group();
-        
-        if (type === 'tree') {
-            const trunkGeo = new THREE.CylinderGeometry(0.5, 0.7, 2, 6);
-            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
-            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-            trunk.position.y = 1;
-            group.add(trunk);
-            
-            const leavesGeo = new THREE.ConeGeometry(2, 4, 8);
-            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x228B22 });
-            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
-            leaves.position.y = 3;
-            group.add(leaves);
-        } else {
-            const geo = new THREE.DodecahedronGeometry(1 + Math.random());
-            const mat = new THREE.MeshStandardMaterial({ color: 0x808080 });
-            const mesh = new THREE.Mesh(geo, mat);
-            group.add(mesh);
-        }
-        
-        group.castShadow = true;
-        return group;
     }
     
     removeChunk(chunk) {
         this.scene.remove(chunk.mesh);
-        chunk.mesh.geometry.dispose();
-        chunk.mesh.material.dispose();
+        // Safely dispose of chunk mesh geometry and material
+        if (chunk.mesh.geometry) chunk.mesh.geometry.dispose();
+        if (chunk.mesh.material) chunk.mesh.material.dispose();
         
         if (chunk.decorations) {
-            chunk.decorations.forEach(mesh => {
-                this.scene.remove(mesh);
+            chunk.decorations.forEach(decoration => {
+                decoration.destroy();
             });
         }
     }

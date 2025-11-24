@@ -1,15 +1,13 @@
 import * as THREE from 'three';
+import { Entity } from './Entity.js';
 import { BoatPhysics } from '../physics/BoatPhysics.js';
 
-export class Boat {
+export class Boat extends Entity {
     constructor(scene) {
-        this.scene = scene;
-        this.mesh = this.createMesh();
-        this.scene.add(this.mesh);
-        
+        super({ scene, position: new THREE.Vector3(0, 0, 0) });
         this.physics = new BoatPhysics();
-        this.position = new THREE.Vector3(0, 0, 0);
-        this.rotation = Math.PI;
+        this.rotation = Math.PI; // Y-axis rotation, start facing downriver
+        this.radius = 1.0; // Collision radius
     }
 
     createMesh() {
@@ -50,24 +48,22 @@ export class Boat {
             this.physics.checkWallCollisions(this.position, riverCenter, riverWidth);
         }
         
-        // Update position
+        // Update position from physics
         this.position.add(physicsState.velocity.clone().multiplyScalar(dt));
         this.rotation += physicsState.angularVelocity * dt;
 
-        // Sync mesh
+        // Sync mesh to this entity's position and rotation
         this.mesh.position.copy(this.position);
         this.mesh.rotation.y = this.rotation;
 
-        // Simple bobbing animation
+        // Visual effects
         this.mesh.position.y = Math.sin(Date.now() * 0.003) * 0.1;
         
-        // Bank into turns, with clamping to prevent flipping
-        const maxBankAngle = 0.5; // radians, ~28 degrees
+        const maxBankAngle = 0.5;
         let bankAngle = -physicsState.angularVelocity * 0.3;
-        bankAngle = Math.max(-maxBankAngle, Math.min(maxBankAngle, bankAngle)); // Clamp
+        bankAngle = Math.max(-maxBankAngle, Math.min(maxBankAngle, bankAngle));
         this.mesh.rotation.z = Math.sin(Date.now() * 0.002) * 0.05 + bankAngle;
 
-        // Pitch up with speed
         this.mesh.rotation.x = physicsState.velocity.length() * 0.005;
     }
 }
