@@ -4,9 +4,13 @@ import { SimplexNoise } from './SimplexNoise.js';
 export class RiverPath {
     constructor() {
         this.noise = new SimplexNoise();
+        this.humidityNoise = new SimplexNoise();
+        this.temperatureNoise = new SimplexNoise();
+
         this.widthScale = 0.01;
         this.baseWidth = 40.0;
         this.widthVar = 15.0;
+        this.biomeScale = 400;
         
         // Path generation state
         this.stepSize = 1.0; // Higher resolution (was 2.0)
@@ -22,6 +26,13 @@ export class RiverPath {
         this.points.set(-1, 0); // Backwards compatibility
         this.maxGenIndex = 1;
         this.minGenIndex = -1;
+    }
+
+    getHumidityAt(z) {
+        const rawHumidity = this.humidityNoise.noise2D(13.37, z / this.biomeScale);
+        // Apply a positive bias to make the world slightly wetter, then clamp to the original range.
+        const biasedHumidity = rawHumidity + 0.2; // Adjust this value for more/less wetness
+        return Math.min(1, Math.max(-1, biasedHumidity));
     }
 
     getPointAt(z) {

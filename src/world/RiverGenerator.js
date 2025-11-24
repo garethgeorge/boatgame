@@ -1,18 +1,35 @@
 import * as THREE from 'three';
 import { RiverPath } from './RiverPath.js';
 import { Decoration } from '../entities/Decoration.js';
+import { Crow } from '../entities/Crow.js';
+
+const BIOMES = {
+    DESERT: {
+        name: 'desert',
+        decorations: [
+            { type: 'cactus', weight: 0.4 },
+            { type: 'rock', weight: 0.4 },
+            { type: 'crow', weight: 0.2 }
+        ]
+    },
+    FOREST: {
+        name: 'forest',
+        decorations: [
+            { type: 'tree', weight: 0.5 },
+            { type: 'bush', weight: 0.3 },
+            { type: 'dead_tree', weight: 0.2 }
+        ]
+    }
+};
 
 export class RiverGenerator {
     constructor(scene) {
         this.scene = scene;
         this.riverPath = new RiverPath();
         this.chunks = [];
-        this.chunkSize = 50; // Smaller chunks for smoother updates
+        this.chunkSize = 50;
         this.riverWidth = 40;
         
-        // Initial chunks
-        // Player starts at Z=0, moving to -Z
-        // Generate from +50 to -200
         for (let z = 50; z > -200; z -= this.chunkSize) {
             this.generateChunk(z);
         }
@@ -30,49 +47,55 @@ export class RiverGenerator {
             this.removeChunk(this.chunks[0]);
             this.chunks.shift();
         }
+
+        // Update decorations (e.g. Crows)
+        this.chunks.forEach(chunk => {
+            if (chunk.decorations) {
+                chunk.decorations.forEach(decoration => {
+                    if (decoration.update) {
+                        // Pass a dummy dt as it's not crucial for simple Crow animation
+                        decoration.update(0.016, playerPosition);
+                    }
+                });
+            }
+        });
     }
 
     generateChunk(zStart) {
         const zEnd = zStart - this.chunkSize;
-        const mesh = this.createChunkMesh(zStart, zEnd);
-        this.scene.add(mesh);
+        const segments = 20;
+
+        const bankMesh = this.createChunkMesh(zStart, zEnd, segments);
+        const waterMesh = this.createWaterMesh(zStart, zEnd, segments);
+        
+        // Attach water to bank mesh for easier management as one mesh
+        bankMesh.add(waterMesh);
+        this.scene.add(bankMesh);
 
         const decorations = this.addDecorations(zStart, zEnd);
 
         this.chunks.push({
-            mesh: mesh,
+            mesh: bankMesh, // Store combined mesh
             decorations: decorations,
             zStart: zStart,
             zEnd: zEnd
         });
     }
 
-    createChunkMesh(zStart, zEnd) {
-        const segments = 20; 
-        const bankHeight = 4;
-        const bankSlopeWidth = 8;
-        const bankFlatWidth = 50; // Wide flat area for forests
-        
+    createChunkMesh(zStart, zEnd, segments) {
         const vertices = [];
         const indices = [];
         const colors = [];
         
-        const colorWater = new THREE.Color(0x0099ff);
-        const colorBank = new THREE.Color(0x228B22); // Solid Green
-
-        // We will build 3 separate strips or one combined mesh?
-        // Combined mesh is easier for management.
-        // Structure per slice:
-        // 0: Left Flat End
-        // 1: Left Bank Top
-        // 2: Left Water Edge
-        // 3: Right Water Edge
-        // 4: Right Bank Top
-        // 5: Right Flat End
+        const colorHighHumidity = new THREE.Color(0x228B22); // Forest Green
+        const colorLowHumidity = new THREE.Color(0xDAA520);  // Goldenrod
+        const bankColor = new THREE.Color();
 
         for (let i = 0; i <= segments; i++) {
             const t = i / segments;
             const z = zStart + t * (zEnd - zStart);
+            const humidity = this.riverPath.getHumidityAt(z);
+            bankColor.lerpColors(colorLowHumidity, colorHighHumidity, humidity);
             
             const point = this.riverPath.getPointAt(z);
             const tangent = this.riverPath.getTangentAt(z);
@@ -81,7 +104,10 @@ export class RiverGenerator {
             const up = new THREE.Vector3(0, 1, 0);
             const normal = new THREE.Vector3().crossVectors(tangent, up).normalize();
             
-            // Calculate points
+            const bankHeight = 4;
+            const bankSlopeWidth = 8;
+            const bankFlatWidth = 50;
+
             const leftWaterEdge = point.clone().add(normal.clone().multiplyScalar(-width/2));
             const rightWaterEdge = point.clone().add(normal.clone().multiplyScalar(width/2));
             
@@ -94,64 +120,24 @@ export class RiverGenerator {
             const leftFlatEnd = leftBankTop.clone().add(normal.clone().multiplyScalar(-bankFlatWidth));
             const rightFlatEnd = rightBankTop.clone().add(normal.clone().multiplyScalar(bankFlatWidth));
             
-            // Push vertices
-            // 0: Left Flat End
-            vertices.push(leftFlatEnd.x, leftFlatEnd.y, leftFlatEnd.z);
-            colors.push(colorBank.r, colorBank.g, colorBank.b);
-            
-            // 1: Left Bank Top
-            vertices.push(leftBankTop.x, leftBankTop.y, leftBankTop.z);
-            colors.push(colorBank.r, colorBank.g, colorBank.b);
-            
-            // 2: Left Water Edge
-            vertices.push(leftWaterEdge.x, leftWaterEdge.y, leftWaterEdge.z);
-            colors.push(colorBank.r, colorBank.g, colorBank.b); // Bank color at water edge
-            
-            // 3: Right Water Edge
-            vertices.push(rightWaterEdge.x, rightWaterEdge.y, rightWaterEdge.z);
-            colors.push(colorBank.r, colorBank.g, colorBank.b);
-            
-            // 4: Right Bank Top
-            vertices.push(rightBankTop.x, rightBankTop.y, rightBankTop.z);
-            colors.push(colorBank.r, colorBank.g, colorBank.b);
-            
-            // 5: Right Flat End
-            vertices.push(rightFlatEnd.x, rightFlatEnd.y, rightFlatEnd.z);
-            colors.push(colorBank.r, colorBank.g, colorBank.b);
+            [leftFlatEnd, leftBankTop, leftWaterEdge, rightWaterEdge, rightBankTop, rightFlatEnd].forEach(v => {
+                vertices.push(v.x, v.y, v.z);
+                colors.push(bankColor.r, bankColor.g, bankColor.b);
+            });
         }
         
-        // Indices
         for (let i = 0; i < segments; i++) {
             const base = i * 6;
-            
-            // Left Flat Area (0-1)
             indices.push(base + 0, base + 1, base + 7);
             indices.push(base + 0, base + 7, base + 6);
-            
-            // Left Slope (1-2)
             indices.push(base + 1, base + 2, base + 8);
             indices.push(base + 1, base + 8, base + 7);
-            
-            // Right Slope (3-4)
             indices.push(base + 3, base + 4, base + 10);
             indices.push(base + 3, base + 10, base + 9);
-            
-            // Right Flat Area (4-5)
             indices.push(base + 4, base + 5, base + 11);
             indices.push(base + 4, base + 11, base + 10);
-            
-            // River Bed (2-3) - Wait, we want water mesh separate?
-            // "Water: Generate a simple water mesh between the banks."
-            // Let's create a separate water mesh or just add water faces here?
-            // If we add water faces here, they will be green if we use shared vertices.
-            // We need separate vertices for water if we want it blue.
-            // Or we can just add a separate water plane.
-            // Let's add a separate water plane in this same function but as part of the same geometry?
-            // No, easier to just have a separate mesh for water to handle transparency/shader differently if needed.
-            // But for now, let's just add blue vertices for water.
         }
         
-        // Create Bank Mesh
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
         geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
@@ -162,24 +148,17 @@ export class RiverGenerator {
             vertexColors: true,
             roughness: 0.9,
             metalness: 0.0,
-            side: THREE.DoubleSide,
-            flatShading: false
+            side: THREE.DoubleSide
         });
         
         const bankMesh = new THREE.Mesh(geometry, material);
         bankMesh.receiveShadow = true;
-        
-        // Create Water Mesh
-        const waterMesh = this.createWaterMesh(zStart, zEnd, segments);
-        bankMesh.add(waterMesh); // Attach to bank mesh for easier management
-        
         return bankMesh;
     }
 
     createWaterMesh(zStart, zEnd, segments) {
         const vertices = [];
         const indices = [];
-        const color = new THREE.Color(0x0099ff);
         
         for (let i = 0; i <= segments; i++) {
             const t = i / segments;
@@ -195,7 +174,6 @@ export class RiverGenerator {
             const left = point.clone().add(normal.clone().multiplyScalar(-width/2));
             const right = point.clone().add(normal.clone().multiplyScalar(width/2));
             
-            // Lower slightly to avoid z-fighting with bank edge if they overlap exactly
             left.y = -0.2;
             right.y = -0.2;
             
@@ -248,13 +226,41 @@ export class RiverGenerator {
             const position = point.clone().add(normal.multiplyScalar(side * distance));
             position.y = 4; // Bank height
             
-            const type = Math.random() > 0.3 ? 'tree' : 'rock';
+            const humidity = this.riverPath.getHumidityAt(z);
             
-            const decoration = new Decoration({
-                scene: this.scene,
-                position: position,
-                type: type
-            });
+            // Determine Biome
+            let biome = BIOMES.DESERT;
+            if (humidity > 0.5) {
+                biome = BIOMES.FOREST;
+            }
+
+            // Select Decoration
+            const rand = Math.random();
+            let cumulativeWeight = 0;
+            let type = 'rock'; // Default
+            
+            for (const deco of biome.decorations) {
+                cumulativeWeight += deco.weight;
+                if (rand < cumulativeWeight) {
+                    type = deco.type;
+                    break;
+                }
+            }
+            
+            let decoration;
+            if (type === 'crow') {
+                decoration = new Crow({
+                    scene: this.scene,
+                    position: position
+                });
+            } else {
+                decoration = new Decoration({
+                    scene: this.scene,
+                    position: position,
+                    type: type
+                });
+            }
+            
             decorations.push(decoration);
         }
         return decorations;
@@ -268,7 +274,8 @@ export class RiverGenerator {
         
         if (chunk.decorations) {
             chunk.decorations.forEach(decoration => {
-                decoration.destroy();
+                // Check if it has a destroy method (Entity should have it, but let's be safe)
+                if (decoration.destroy) decoration.destroy();
             });
         }
     }
