@@ -6,6 +6,15 @@ export class Pier extends Entity {
         super({ scene, position });
         this.rotationY = rotationY;
         this.radius = 2.0; // Collision radius (approximate)
+        this.size = new THREE.Vector3(3, 1, 10); // Main walkway size (approx)
+        // Walkway is at z=5, size (3, 0.3, 10).
+        // Center of walkway is (0, 0, 5).
+        // The entity position is at the bank edge.
+        // The pier extends 10 units out.
+        // So the bounding box center is offset from the entity position!
+        // My checkRectangularCollision assumes rectPos is the center.
+        // So when checking, I need to pass (this.position + offset rotated).
+        this.centerOffset = new THREE.Vector3(0, 0, 5);
         
         // Re-create mesh
         if (this.mesh) this.scene.remove(this.mesh);

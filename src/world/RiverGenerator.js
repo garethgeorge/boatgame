@@ -50,15 +50,20 @@ export class RiverGenerator {
             this.chunks.shift();
         }
 
-        // Update decorations (e.g. Crows)
+        // Update decorations (e.g. Crows, Collectibles, Obstacles)
         this.chunks.forEach(chunk => {
             if (chunk.decorations) {
-                chunk.decorations.forEach(decoration => {
+                for (let i = chunk.decorations.length - 1; i >= 0; i--) {
+                    const decoration = chunk.decorations[i];
                     if (decoration.update) {
-                        // Pass a dummy dt as it's not crucial for simple Crow animation
                         decoration.update(0.016, playerPosition);
                     }
-                });
+                    
+                    if (decoration.markForRemoval) {
+                        decoration.destroy();
+                        chunk.decorations.splice(i, 1);
+                    }
+                }
             }
         });
     }
@@ -294,9 +299,9 @@ export class RiverGenerator {
             // Random type
             const r = Math.random();
             let type = 'green';
-            if (r > 0.95) type = 'gold';
-            else if (r > 0.8) type = 'red';
-            else if (r > 0.5) type = 'blue';
+            if (r > 0.95) type = 'red'; // Top 5%
+            else if (r > 0.80) type = 'blue'; // Next 15% (0.80 to 0.95)
+            else type = 'green'; // Bottom 80%
             
             decorations.push(new Collectible({
                 scene: this.scene,

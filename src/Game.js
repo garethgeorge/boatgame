@@ -70,48 +70,129 @@ export class Game {
     }
 
     checkCollisions() {
-        // Check Obstacles
-        const obstacles = this.worldManager.obstacleManager.obstacles;
-        for (let i = obstacles.length - 1; i >= 0; i--) {
-            const obstacle = obstacles[i];
-            const dist = this.boat.position.distanceTo(obstacle.position);
+        // Check Obstacles & Piers (Unified list? No, separate managers or lists?)
+        // WorldManager has obstacleManager.
+        // RiverGenerator has chunks, chunks have decorations.
+        // The current Game.js uses worldManager.obstacleManager.obstacles.
+        // But RiverGenerator spawns Obstacles and Piers into 'decorations' list of chunks?
+        // Wait, RiverGenerator.js: decorations.push(new Obstacle(...));
+        // And Obstacle extends Entity.
+        // Does WorldManager track them?
+        // Let's check WorldManager.
+        // If not, I need to iterate chunks.
+        // The previous code: const obstacles = this.worldManager.obstacleManager.obstacles;
+        // This implies ObstacleManager exists.
+        // But RiverGenerator creates them.
+        // Let's assume RiverGenerator adds them to chunks, and maybe ObstacleManager is not used for these?
+        // Or maybe RiverGenerator adds them to the scene and also to a list?
+        // In RiverGenerator: decorations.push(decoration);
+        // And chunk.decorations = decorations.
+        // So they are in chunks.
+        
+        // I need to iterate over active chunks and their decorations.
+        const chunks = this.worldManager.riverGenerator.chunks;
+        
+        chunks.forEach(chunk => {
+            if (!chunk.decorations) return;
             
-            if (dist < this.boat.radius + obstacle.radius) {
-                // Collision!
-                this.score = Math.floor(this.score * 0.9); // Lose 10%
-                this.updateScore();
+            for (let i = chunk.decorations.length - 1; i >= 0; i--) {
+                const deco = chunk.decorations[i];
                 
-                // Visual feedback (flash red)
-                this.boat.mesh.traverse(child => {
-                    if (child.isMesh && child.material) {
-                        const oldColor = child.material.color.clone();
-                        child.material.color.setHex(0xff0000);
-                        setTimeout(() => child.material.color.copy(oldColor), 200);
+                // Skip if already collected/hit (inactive)
+                if (deco.active === false) continue;
+                
+                // Collectibles
+                if (deco.constructor.name === 'Collectible') {
+                    const dist = this.boat.position.distanceTo(deco.position);
+                    if (dist < this.boat.radius + deco.radius) {
+                        // Collected!
+                        this.score += deco.points;
+                        this.updateScore();
+                        
+                        // Trigger animation
+                        deco.collect();
                     }
-                });
+                }
+                // Obstacles (Log, Crocodile, Tire, BeachBall)
+                else if (deco.constructor.name === 'Obstacle') {
+                    if (deco.type === 'log') {
+                        // Rectangular collision
+                        const result = this.boat.physics.checkRectangularCollision(
+                            this.boat.position,
+                            this.boat.radius,
+                            deco.position,
+                            deco.size,
+                            deco.mesh.rotation.y // Log rotation
+                        );
+                        
+                        if (result.collided) {
+                            // Push out
+                            this.boat.position.add(result.normal.multiplyScalar(result.penetration));
+                            
+                            // Sliding response:
+                            // Remove velocity component towards the obstacle
+                            const vDotN = this.boat.physics.velocity.dot(result.normal);
+                            if (vDotN < 0) {
+                                const vNormal = result.normal.clone().multiplyScalar(vDotN);
+                                this.boat.physics.velocity.sub(vNormal);
+                                
+                                // Optional: Apply friction to the remaining tangent velocity
+                                this.boat.physics.velocity.multiplyScalar(0.9);
+                            }
+                        }
+                    } else {
+                        // Radius collision
+                        const dist = this.boat.position.distanceTo(deco.position);
+                        if (dist < this.boat.radius + deco.radius) {
+                            // Penalty
+                            this.score = Math.floor(this.score * 0.9); // Lose 10%
+                            this.updateScore();
+                            
+                            // Visual feedback
+                            this.boat.mesh.traverse(child => {
+                                if (child.isMesh && child.material) {
+                                    const oldColor = child.material.color.clone();
+                                    child.material.color.setHex(0xff0000);
+                                    setTimeout(() => child.material.color.copy(oldColor), 200);
+                                }
+                            });
 
-                // Remove obstacle
-                obstacle.destroy();
-                obstacles.splice(i, 1);
+                            // Trigger animation
+                            deco.hit();
+                        }
+                    }
+                }
+                // Piers
+                else if (deco.constructor.name === 'Pier') {
+                    // Rectangular collision
+                    // Pier center is offset!
+                    const center = deco.position.clone().add(
+                        deco.centerOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), deco.rotationY)
+                    );
+                    
+                    const result = this.boat.physics.checkRectangularCollision(
+                        this.boat.position,
+                        this.boat.radius,
+                        center,
+                        deco.size,
+                        deco.rotationY
+                    );
+                    
+                    if (result.collided) {
+                        // Push out
+                        this.boat.position.add(result.normal.multiplyScalar(result.penetration));
+                        
+                        // Sliding response
+                        const vDotN = this.boat.physics.velocity.dot(result.normal);
+                        if (vDotN < 0) {
+                            const vNormal = result.normal.clone().multiplyScalar(vDotN);
+                            this.boat.physics.velocity.sub(vNormal);
+                            this.boat.physics.velocity.multiplyScalar(0.9); // Friction
+                        }
+                    }
+                }
             }
-        }
-
-        // Check Collectibles
-        const collectibles = this.worldManager.collectibleManager.collectibles;
-        for (let i = collectibles.length - 1; i >= 0; i--) {
-            const collectible = collectibles[i];
-            const dist = this.boat.position.distanceTo(collectible.position);
-            
-            if (dist < this.boat.radius + collectible.radius) {
-                // Collected!
-                this.score += 100;
-                this.updateScore();
-                
-                // Remove collectible
-                collectible.destroy();
-                collectibles.splice(i, 1);
-            }
-        }
+        });
     }
 
     updateUI() {

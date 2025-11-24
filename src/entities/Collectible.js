@@ -9,10 +9,10 @@ export class Collectible extends Entity {
         this.type = type;
         
         const types = {
-            'green': { color: 0x00ff00, points: 10 },
-            'blue': { color: 0x0000ff, points: 20 },
-            'red': { color: 0xff0000, points: 50 },
-            'gold': { color: 0xffd700, points: 100 }
+            'green': { color: 0x00ff00, points: 100 },
+            'blue': { color: 0x0000ff, points: 250 },
+            'red': { color: 0xff0000, points: 500 },
+            'gold': { color: 0xffd700, points: 1000 }
         };
         
         this.config = types[type] || types['green'];
@@ -63,9 +63,35 @@ export class Collectible extends Entity {
     }
 
     update(dt) {
+        if (this.isCollected) {
+            // Animation: Float up and fade
+            this.mesh.position.y += dt * 5.0; // Float up fast
+            this.mesh.rotation.y += dt * 10.0; // Spin fast
+            
+            // Fade out
+            this.mesh.traverse(child => {
+                if (child.isMesh && child.material) {
+                    child.material.transparent = true;
+                    child.material.opacity -= dt * 2.0;
+                    if (child.material.opacity < 0) child.material.opacity = 0;
+                }
+            });
+            
+            if (this.mesh.children[0].material.opacity <= 0) {
+                this.markForRemoval = true;
+            }
+            return;
+        }
+
         this.mesh.rotation.y += dt * 2.0;
         // Float lower in the water (y=0 is water surface roughly)
         // Previous was 0.5 base, let's lower it to 0.0 or -0.2
         this.mesh.position.y = Math.sin(Date.now() * 0.005 + this.offset) * 0.2 - 0.1;
+    }
+
+    collect() {
+        if (this.isCollected) return;
+        this.isCollected = true;
+        this.active = false; // Disable further collision
     }
 }

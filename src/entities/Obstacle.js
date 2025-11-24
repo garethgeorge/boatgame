@@ -79,6 +79,35 @@ export class Obstacle extends Entity {
             
             // Adjust collision radius roughly
             this.radius = length * 0.4; 
+            this.size = new THREE.Vector3(radius * 2, radius * 2, length); // Local size (before rotation)
+            // Note: The mesh is rotated, so we need to handle that.
+            // In createMesh: mesh.rotation.x = Math.PI / 2; mesh.rotation.z = random;
+            // The 'rectRotation' passed to physics should be the Y rotation of the entity.
+            // But wait, the log rotates around Z?
+            // If the log is just a cylinder lying flat, its bounding box in local space is (diameter, diameter, length).
+            // But if it's rotated randomly around Y (which Obstacle.update does for others, but log has random roll),
+            // we need to be careful.
+            // Obstacle.update says: } else if (this.type === 'tire' || this.type === 'log') { // Just float }
+            // So it doesn't rotate in update.
+            // In createMesh: mesh.rotation.z = Math.random() * Math.PI;
+            // This rotates the cylinder around its axis (rolling). It doesn't affect the bounding box orientation in XZ plane if it's aligned with Z.
+            // Wait, cylinder default is Y-up.
+            // mesh.rotation.x = Math.PI / 2 puts it along Z.
+            // mesh.rotation.z = random rolls it.
+            // So the log is aligned with Z axis in local space.
+            // So size is (diameter, diameter, length).
+            // And entity.rotation (which is Y rotation) determines its orientation in world.
+            // But Obstacle doesn't set this.rotation for logs?
+            // RiverGenerator sets position.
+            // Decoration (parent of Obstacle?) No, Obstacle extends Entity.
+            // RiverGenerator: decorations.push(new Obstacle(...));
+            // It doesn't set rotation. So rotation is 0.
+            // So logs are always aligned with Z?
+            // "Log: Floating cylinder with random roll."
+            // If they are always Z-aligned, they will look weird.
+            // Let's give them a random Y rotation in constructor.
+            this.rotation = Math.random() * Math.PI * 2;
+            this.mesh.rotation.y = this.rotation; // Apply to mesh group
         } else { // 'trash' fallback
             const geo = new THREE.DodecahedronGeometry(0.8);
             const mat = new THREE.MeshStandardMaterial({ color: 0x555555 });
@@ -95,6 +124,25 @@ export class Obstacle extends Entity {
     }
 
     update(dt, playerPosition) {
+        if (this.isHit) {
+            // Animation: Sink and fade
+            this.mesh.position.y -= dt * 2.0; // Sink
+            
+            // Fade out
+            this.mesh.traverse(child => {
+                if (child.isMesh && child.material) {
+                    child.material.transparent = true;
+                    child.material.opacity -= dt * 2.0;
+                    if (child.material.opacity < 0) child.material.opacity = 0;
+                }
+            });
+            
+            if (this.mesh.children[0].material.opacity <= 0) {
+                this.markForRemoval = true;
+            }
+            return;
+        }
+
         // Bobbing
         this.mesh.position.y = Math.sin(Date.now() * 0.005 + this.offset) * 0.1;
         
@@ -125,5 +173,11 @@ export class Obstacle extends Entity {
         this.mesh.position.x = this.position.x;
         this.mesh.position.z = this.position.z;
         // y is handled by bobbing above
+    }
+
+    hit() {
+        if (this.isHit) return;
+        this.isHit = true;
+        this.active = false; // Disable further collision
     }
 }

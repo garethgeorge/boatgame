@@ -232,4 +232,63 @@ export class BoatPhysics {
         }
         return collisionDetected;
     }
+    checkRectangularCollision(boatPos, boatRadius, rectPos, rectSize, rectRotation) {
+        // Transform boat position into rectangle's local space
+        const localPos = boatPos.clone().sub(rectPos);
+        localPos.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rectRotation);
+        
+        // Rectangle half-extents
+        const halfWidth = rectSize.x / 2;
+        const halfDepth = rectSize.z / 2;
+        
+        // Find closest point on rectangle to circle center
+        const closestX = Math.max(-halfWidth, Math.min(halfWidth, localPos.x));
+        const closestZ = Math.max(-halfDepth, Math.min(halfDepth, localPos.z));
+        
+        // Distance from closest point to circle center
+        const distanceX = localPos.x - closestX;
+        const distanceZ = localPos.z - closestZ;
+        
+        const distanceSquared = (distanceX * distanceX) + (distanceZ * distanceZ);
+        
+        if (distanceSquared < (boatRadius * boatRadius)) {
+            // Collision detected
+            const distance = Math.sqrt(distanceSquared);
+            
+            // Normal in local space
+            let normalLocal;
+            if (distance > 0) {
+                normalLocal = new THREE.Vector3(distanceX, 0, distanceZ).divideScalar(distance);
+            } else {
+                // Center is inside rectangle, push out along smallest axis
+                // This is a simplification, ideally we check which face is closest
+                const distToRight = halfWidth - localPos.x;
+                const distToLeft = localPos.x - (-halfWidth);
+                const distToFront = halfDepth - localPos.z;
+                const distToBack = localPos.z - (-halfDepth);
+                
+                const min = Math.min(distToRight, distToLeft, distToFront, distToBack);
+                
+                if (min === distToRight) normalLocal = new THREE.Vector3(1, 0, 0);
+                else if (min === distToLeft) normalLocal = new THREE.Vector3(-1, 0, 0);
+                else if (min === distToFront) normalLocal = new THREE.Vector3(0, 0, 1);
+                else normalLocal = new THREE.Vector3(0, 0, -1);
+            }
+            
+            // Transform normal back to world space
+            const normalWorld = normalLocal.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), rectRotation);
+            
+            // Penetration depth
+            const penetration = boatRadius - distance;
+            
+            // Return collision data
+            return {
+                collided: true,
+                normal: normalWorld,
+                penetration: penetration
+            };
+        }
+        
+        return { collided: false };
+    }
 }
