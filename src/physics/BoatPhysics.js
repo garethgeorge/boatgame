@@ -6,22 +6,24 @@ export class BoatPhysics {
         this.velocity = new THREE.Vector3();
         this.angularVelocity = 0;
 
-        // Configuration tuned for more responsive control
-        this.turnSpeed = 0.7; // Max rudder angle in radians (~40 degrees)
-        this.forwardDragCoeff = 3.0; // Increased forward drag to limit top speed
-        this.sidewaysDragCoeff = 25.0; // Increased for stronger 'bite'
-        this.rudderOffset = -2.5; // Increased for more steering authority
+        // Configuration tuned for a "speed boat" feel
+        this.turnSpeed = 0.4; // Allows a reasonable turning circle
+        this.forwardDragCoeff = 15.0; // High drag for quick deceleration
+        this.sidewaysDragCoeff = 35.0; // Very high sideways drag to prevent sliding
+        this.rudderOffset = -1.5; // Reduced to soften turn initiation
         this.mass = 200; // Heavier boat
-        this.momentOfInertia = 300; // Lowered to make rotation more responsive
-        this.angularDrag = 8.0; // Strong rotational damping
+        this.momentOfInertia = 200; // Lowered to make turning more nimble
+        this.angularDrag = 8.0; // Strong rotational damping for stability
+        this.riverFlowSpeed = 0.0; // No river current
+        this.rudderEffectiveness = 10.0; // Subtle rudder effect when coasting
 
         // Game-specific parameters
-        this.autoAcceleration = 0.0; // Eliminated constant forward push
-        this.boostAcceleration = 1000.0; // Increased for more power
-        this.reverseAcceleration = -800.0;
+        this.boostAcceleration = 5000.0; // High thrust for quick acceleration
+        this.throttleStep = 1.0; // Faster throttle response
         
-        // State for steering
+        // State
         this.currentSteeringAngle = 0;
+        this.throttle = 0.0;
     }
 
     lerp(start, end, t) {
@@ -36,13 +38,20 @@ export class BoatPhysics {
         return vec.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotationY);
     }
 
-    update(dt, input, rotationY) {
-        // --- 1. Gather Input ---
-        // Invert steerInput
-        const steerInput = -((input.left ? 1 : 0) - (input.right ? 1 : 0));
-        let throttleInput = 0;
-        if (input.forward) throttleInput = 1.0;
-        if (input.backward) throttleInput = -0.5;
+    update(dt, input, rotationY, riverTangent) {
+        // --- 1. Gather and process input ---
+        // Steering: A=Left, D=Right
+        const steerInput = (input.left ? 1 : 0) - (input.right ? 1 : 0);
+        
+        // Adjust throttle
+        if (input.forward) {
+            this.throttle += this.throttleStep * dt;
+        }
+        if (input.backward) {
+            this.throttle -= this.throttleStep * dt;
+        }
+        // Clamp throttle between 0% and 100%
+        this.throttle = Math.max(0.0, Math.min(1.0, this.throttle));
 
         // --- 2. Calculate Steering ---
         // Smooth the steering input
@@ -58,11 +67,11 @@ export class BoatPhysics {
         let totalTorque = 0;
 
         // a) Thrust
-        const thrustMagnitude = this.autoAcceleration + (throttleInput * (throttleInput > 0 ? this.boostAcceleration : this.reverseAcceleration));
+        const thrustMagnitude = this.throttle * this.boostAcceleration;
         
         // The thrust vector rotates with the rudder/engine
         const thrustLocalDir = new THREE.Vector3(
-            Math.sin(this.currentSteeringAngle),
+            -Math.sin(this.currentSteeringAngle), // Inverted for correct turning
             0,
             Math.cos(this.currentSteeringAngle)
         );
@@ -72,16 +81,22 @@ export class BoatPhysics {
         // Apply force for linear motion
         totalForce.add(thrustForceWorld);
         
-        // Apply torque for rotation (T = r x F)
-        // r is the lever arm from CoM to propeller. F is the thrust force.
-        // Simplified: Torque around Y is rudderOffset * local_force_X
+        // Apply torque for rotation from thrust
         const torqueFromThrust = this.rudderOffset * thrustForceLocal.x;
         totalTorque += torqueFromThrust;
 
-        // b) Hydrodynamics (Drag)
-        const localVel = this.inverseTransformDirection(this.velocity, rotationY);
-        const forwardSpeed = localVel.z;
-        const sideSpeed = localVel.x;
+        // b) Hydrodynamics (Drag & Rudder)
+        const riverVelocity = riverTangent ? riverTangent.clone().multiplyScalar(this.riverFlowSpeed) : new THREE.Vector3();
+        const relativeVelocity = this.velocity.clone().sub(riverVelocity);
+        const localRelativeVelocity = this.inverseTransformDirection(relativeVelocity, rotationY);
+        
+        const forwardSpeed = localRelativeVelocity.z;
+        const sideSpeed = localRelativeVelocity.x;
+
+        // Rudder force (based on water flow over the rudder)
+        const rudderSideForce = -this.rudderEffectiveness * forwardSpeed * Math.abs(forwardSpeed) * Math.sin(this.currentSteeringAngle); // Inverted for correct turning
+        const torqueFromRudder = this.rudderOffset * rudderSideForce;
+        totalTorque += torqueFromRudder;
 
         // Quadratic drag formula: F = -C * v * |v|
         const forwardDragForce = -this.forwardDragCoeff * forwardSpeed * Math.abs(forwardSpeed);
@@ -90,6 +105,22 @@ export class BoatPhysics {
         const resistanceLocal = new THREE.Vector3(sideDragForce, 0, forwardDragForce);
         const resistanceWorld = this.transformDirection(resistanceLocal, rotationY);
         totalForce.add(resistanceWorld);
+
+        // c) River boundary constraint
+        if (riverTangent) {
+            const boatForward = new THREE.Vector3(Math.sin(rotationY), 0, Math.cos(rotationY));
+            const angle = boatForward.angleTo(riverTangent);
+            if (angle > Math.PI / 2) {
+                const cross = new THREE.Vector3().crossVectors(boatForward, riverTangent);
+                const correctionStrength = 5.0;
+                if (cross.y > 0) {
+                    this.angularVelocity += correctionStrength * dt;
+                } else {
+                    this.angularVelocity -= correctionStrength * dt;
+                }
+                this.velocity.multiplyScalar(0.95);
+            }
+        }
 
         // --- 4. Update Physics State (Integrate) ---
         // Linear
@@ -108,28 +139,6 @@ export class BoatPhysics {
             velocity: this.velocity,
             angularVelocity: this.angularVelocity
         };
-    }
-
-    constrainToRiver(currentRotation, riverTangent) {
-        // Calculate angle between boat forward and river tangent
-        const boatForward = new THREE.Vector3(Math.sin(currentRotation), 0, Math.cos(currentRotation));
-        const angle = boatForward.angleTo(riverTangent);
-        
-        // If angle is too large (> 90 degrees), apply a correcting torque
-        if (angle > Math.PI / 2) {
-            // Determine which way to turn to align with river
-            const cross = new THREE.Vector3().crossVectors(boatForward, riverTangent);
-            const correctionStrength = 5.0; // This is a "magic" force, not physically based
-            
-            if (cross.y > 0) {
-                this.angularVelocity += correctionStrength * 0.016; // Assuming ~60fps dt
-            } else {
-                this.angularVelocity -= correctionStrength * 0.016;
-            }
-            
-            // Dampen velocity if trying to go backwards
-            this.velocity.multiplyScalar(0.95);
-        }
     }
 
     checkWallCollisions(position, riverCenter, riverWidth) {

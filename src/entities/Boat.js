@@ -9,7 +9,7 @@ export class Boat {
         
         this.physics = new BoatPhysics();
         this.position = new THREE.Vector3(0, 0, 0);
-        this.rotation = 0;
+        this.rotation = Math.PI;
     }
 
     createMesh() {
@@ -36,13 +36,15 @@ export class Boat {
     }
 
     update(dt, input, riverGenerator) {
-        const physicsState = this.physics.update(dt, input, this.rotation);
-        
-        // Constrain to river
+        let riverTangent = null;
         if (riverGenerator) {
-            const riverTangent = riverGenerator.getRiverTangent(this.position.z);
-            this.physics.constrainToRiver(this.rotation, riverTangent);
-            
+            riverTangent = riverGenerator.getRiverTangent(this.position.z);
+        }
+
+        const physicsState = this.physics.update(dt, input, this.rotation, riverTangent);
+        
+        // Constrain to river walls
+        if (riverGenerator) {
             const riverCenter = riverGenerator.getRiverCenter(this.position.z);
             const riverWidth = riverGenerator.riverPath.getWidthAt(this.position.z);
             this.physics.checkWallCollisions(this.position, riverCenter, riverWidth);

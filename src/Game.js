@@ -24,6 +24,7 @@ export class Game {
         this.startScreen = document.getElementById('start-screen');
         this.startBtn = document.getElementById('start-btn');
         this.scoreElement = document.getElementById('score');
+        this.thrustElement = document.getElementById('thrust-display');
         
         this.startBtn.addEventListener('click', () => this.start());
         window.addEventListener('resize', () => this.onWindowResize(), false);
@@ -57,6 +58,7 @@ export class Game {
         this.worldManager.update(dt, this.boat.position);
 
         this.checkCollisions();
+        this.updateUI();
 
         // Camera follow
         const idealOffset = new THREE.Vector3(0, 5, -10);
@@ -115,6 +117,11 @@ export class Game {
                 collectibles.splice(i, 1);
             }
         }
+    }
+
+    updateUI() {
+        const throttlePercent = Math.round(this.boat.physics.throttle * 100);
+        this.thrustElement.innerText = `Thrust: ${throttlePercent}%`;
     }
 
     updateScore() {
