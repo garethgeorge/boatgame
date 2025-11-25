@@ -14,7 +14,7 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "noEmit": true,
-    "unusedLocals": false,
+    "noUnusedLocals": false,
     "noImplicitAny": false,
     "noImplicitThis": true,
     "strictNullChecks": false
