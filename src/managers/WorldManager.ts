@@ -1,10 +1,15 @@
 import * as THREE from 'three';
-import { ObstacleManager } from './ObstacleManager.js';
-import { CollectibleManager } from './CollectibleManager.js';
-import { RiverGenerator } from '../world/RiverGenerator.js';
+import { ObstacleManager } from './ObstacleManager';
+import { CollectibleManager } from './CollectibleManager';
+import { RiverGenerator } from '../world/RiverGenerator';
 
 export class WorldManager {
-    constructor(scene) {
+    scene: THREE.Scene;
+    riverGenerator: RiverGenerator;
+    obstacleManager: ObstacleManager;
+    collectibleManager: CollectibleManager;
+
+    constructor(scene: THREE.Scene) {
         this.scene = scene;
         this.riverGenerator = new RiverGenerator(scene);
         this.obstacleManager = new ObstacleManager(scene);
@@ -30,8 +35,8 @@ export class WorldManager {
         this.scene.add(dirLight);
     }
 
-    update(dt, playerPosition) {
-        this.riverGenerator.update(playerPosition);
+    update(dt: number, playerPosition: THREE.Vector3) {
+        this.riverGenerator.update(playerPosition, dt);
         this.obstacleManager.update(dt, playerPosition, this.riverGenerator);
         this.collectibleManager.update(dt, playerPosition, this.riverGenerator);
     }

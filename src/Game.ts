@@ -1,11 +1,29 @@
 import * as THREE from 'three';
-import { Boat } from './entities/Boat.js';
-import { InputManager } from './managers/InputManager.js';
-import { WorldManager } from './managers/WorldManager.js';
+import { Boat } from './entities/Boat';
+import { InputManager } from './managers/InputManager';
+import { WorldManager } from './managers/WorldManager';
+import { Collectible } from './entities/Collectible';
+import { Obstacle } from './entities/Obstacle';
+import { Pier } from './entities/Pier';
 
 export class Game {
+    container: HTMLElement;
+    scene: THREE.Scene;
+    camera: THREE.PerspectiveCamera;
+    renderer: THREE.WebGLRenderer;
+    clock: THREE.Clock;
+    isPlaying: boolean;
+    score: number;
+    startScreen: HTMLElement;
+    startBtn: HTMLElement;
+    scoreElement: HTMLElement;
+    thrustElement: HTMLElement;
+    inputManager!: InputManager;
+    worldManager!: WorldManager;
+    boat!: Boat;
+
     constructor() {
-        this.container = document.getElementById('game-container');
+        this.container = document.getElementById('game-container') as HTMLElement;
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x87CEEB); // Sky blue
         this.scene.fog = new THREE.Fog(0x87CEEB, 20, 100);
@@ -19,13 +37,13 @@ export class Game {
         this.clock = new THREE.Clock();
         this.isPlaying = false;
         this.score = 100;
-        
+
         // UI Elements
-        this.startScreen = document.getElementById('start-screen');
-        this.startBtn = document.getElementById('start-btn');
-        this.scoreElement = document.getElementById('score');
-        this.thrustElement = document.getElementById('thrust-display');
-        
+        this.startScreen = document.getElementById('start-screen') as HTMLElement;
+        this.startBtn = document.getElementById('start-btn') as HTMLElement;
+        this.scoreElement = document.getElementById('score') as HTMLElement;
+        this.thrustElement = document.getElementById('thrust-display') as HTMLElement;
+
         this.startBtn.addEventListener('click', () => this.start());
         window.addEventListener('resize', () => this.onWindowResize(), false);
     }
@@ -34,7 +52,7 @@ export class Game {
         this.inputManager = new InputManager();
         this.worldManager = new WorldManager(this.scene);
         this.boat = new Boat(this.scene);
-        
+
         // Initial camera position
         this.camera.position.set(0, 10, -10);
         this.camera.lookAt(0, 0, 0);
@@ -42,21 +60,21 @@ export class Game {
         this.updateScore(); // Show initial score
         this.animate();
     }
-// ... (skip to collision logic)
+    // ... (skip to collision logic)
 
-    handleCollisionPenalty(deco) {
+    handleCollisionPenalty(deco: any) {
         // Calculate penalty: Max of 50 or 10% of current score
         const penalty = Math.max(50, Math.floor(this.score * 0.1));
         this.score -= penalty;
-        
+
         if (this.score <= 0) {
             this.score = 0;
             this.gameOver();
         }
-        
+
         this.updateScore();
         this.boat.flashDamage();
-        
+
         // Trigger entity animation (sink/hit)
         if (deco.hit) deco.hit();
     }
@@ -89,25 +107,27 @@ export class Game {
         const idealOffset = new THREE.Vector3(0, 5, -10);
         idealOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.boat.rotation);
         idealOffset.add(this.boat.position);
-        
+
         this.camera.position.lerp(idealOffset, dt * 2.0);
         this.camera.lookAt(this.boat.position);
     }
 
     checkCollisions() {
         const chunks = this.worldManager.riverGenerator.chunks;
-        
+
+        // ... (inside checkCollisions)
+
         chunks.forEach(chunk => {
             if (!chunk.decorations) return;
-            
+
             for (let i = chunk.decorations.length - 1; i >= 0; i--) {
                 const deco = chunk.decorations[i];
-                
+
                 // Skip if already collected/hit (inactive)
                 if (deco.active === false) continue;
-                
+
                 // Collectibles
-                if (deco.constructor.name === 'Collectible') {
+                if (deco instanceof Collectible) {
                     // Boat (OBB) vs Collectible (Circle)
                     const result = this.boat.physics.checkOBBvsCircle(
                         this.boat.position,
@@ -116,18 +136,18 @@ export class Game {
                         deco.position,
                         deco.radius
                     );
-                    
+
                     if (result.collided) {
                         // Collected!
                         this.score += deco.points;
                         this.updateScore();
-                        
+
                         // Trigger animation
                         deco.collect();
                     }
                 }
                 // Obstacles (Log, Crocodile, Tire, BeachBall)
-                else if (deco.constructor.name === 'Obstacle') {
+                else if (deco instanceof Obstacle) {
                     if (deco.type === 'log' || deco.type === 'crocodile') {
                         // Boat (OBB) vs Obstacle (OBB)
                         const result = this.boat.physics.checkOBBCollision(
@@ -138,7 +158,7 @@ export class Game {
                             deco.size,
                             deco.mesh.rotation.y
                         );
-                        
+
                         if (result.collided) {
                             if (deco.type === 'log') {
                                 // Log: Penalty + Sink
@@ -157,19 +177,19 @@ export class Game {
                             deco.position,
                             deco.radius
                         );
-                        
+
                         if (result.collided) {
                             this.handleCollisionPenalty(deco);
                         }
                     }
                 }
                 // Piers
-                else if (deco.constructor.name === 'Pier') {
+                else if (deco instanceof Pier) {
                     // Boat (OBB) vs Pier (OBB)
                     const center = deco.position.clone().add(
                         deco.centerOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), deco.rotationY)
                     );
-                    
+
                     const result = this.boat.physics.checkOBBCollision(
                         this.boat.position,
                         this.boat.size,
@@ -178,7 +198,7 @@ export class Game {
                         deco.size,
                         deco.rotationY
                     );
-                    
+
                     if (result.collided) {
                         // Damage on first impact
                         if (!deco.hasCollided) {
@@ -187,22 +207,22 @@ export class Game {
                             // Or just use handleCollisionPenalty but ensure hit() exists or is safe.
                             // Pier doesn't have hit(), but handleCollisionPenalty checks if (deco.hit).
                             // So it's safe.
-                            
+
                             const penalty = Math.max(50, Math.floor(this.score * 0.1));
                             this.score -= penalty;
-                            
+
                             if (this.score <= 0) {
                                 this.score = 0;
                                 this.gameOver();
                             }
-                            
+
                             this.updateScore();
                             this.boat.flashDamage();
                         }
 
                         // Solid collision (Push & Slide)
                         this.boat.position.add(result.normal.multiplyScalar(result.penetration));
-                        
+
                         // Sliding response
                         const vDotN = this.boat.physics.velocity.dot(result.normal);
                         if (vDotN < 0) {

@@ -1,13 +1,17 @@
 import * as THREE from 'three';
-import { Collectible } from '../entities/Collectible.js';
+import { Collectible } from '../entities/Collectible';
+import { RiverGenerator } from '../world/RiverGenerator';
 
 export class CollectibleManager {
-    constructor(scene) {
+    scene: THREE.Scene;
+    collectibles: Collectible[];
+
+    constructor(scene: THREE.Scene) {
         this.scene = scene;
         this.collectibles = [];
     }
 
-    update(dt, playerPosition, riverGenerator) {
+    update(dt: number, playerPosition: THREE.Vector3, riverGenerator: RiverGenerator) {
         // Dynamic spawning removed in favor of chunk-based spawning in RiverGenerator
 
         for (let i = this.collectibles.length - 1; i >= 0; i--) {

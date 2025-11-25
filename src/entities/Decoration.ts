@@ -1,11 +1,17 @@
 import * as THREE from 'three';
-import { Entity } from './Entity.js';
+import { Entity, EntityOptions } from './Entity';
+
+export interface DecorationOptions extends EntityOptions {
+    type: string;
+}
 
 export class Decoration extends Entity {
-    constructor({ scene, position, type }) {
-        super({ scene, position });
-        this.type = type;
-        
+    type: string;
+
+    constructor(options: DecorationOptions) {
+        super(options);
+        this.type = options.type;
+
         // Overwrite the mesh created by super() with the correct one
         if (this.mesh) {
             this.scene.remove(this.mesh);
@@ -16,9 +22,9 @@ export class Decoration extends Entity {
         this.scene.add(this.mesh);
     }
 
-    createMesh() {
+    createMesh(): THREE.Group {
         const group = new THREE.Group();
-        
+
         switch (this.type) {
             case 'tree':
                 this.createPineTree(group);
@@ -42,31 +48,31 @@ export class Decoration extends Entity {
                 this.createRock(group);
                 break;
         }
-        
+
         group.traverse(child => {
-            if (child.isMesh) {
+            if ((child as THREE.Mesh).isMesh) {
                 child.castShadow = true;
                 child.receiveShadow = true;
             }
         });
-        
+
         return group;
     }
 
-    createPineTree(group) {
+    createPineTree(group: THREE.Group) {
         const scale = 0.8 + Math.random() * 0.6;
         const trunkHeight = 1.5 * scale + Math.random() * 0.5;
         const trunkRadius = 0.3 * scale + Math.random() * 0.1;
-        
+
         const trunkGeo = new THREE.CylinderGeometry(trunkRadius * 0.7, trunkRadius, trunkHeight, 6);
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
         const trunk = new THREE.Mesh(trunkGeo, trunkMat);
         trunk.position.y = trunkHeight / 2;
         group.add(trunk);
-        
+
         const leavesHeight = 3 * scale + Math.random();
         const leavesRadius = 1.5 * scale + Math.random() * 0.5;
-        
+
         const leavesGeo = new THREE.ConeGeometry(leavesRadius, leavesHeight, 8);
         const leavesMat = new THREE.MeshStandardMaterial({ color: 0x228B22 });
         const leaves = new THREE.Mesh(leavesGeo, leavesMat);
@@ -74,7 +80,7 @@ export class Decoration extends Entity {
         group.add(leaves);
     }
 
-    createCactus(group) {
+    createCactus(group: THREE.Group) {
         const cactusMat = new THREE.MeshStandardMaterial({ color: 0x2E8B57, roughness: 0.8 });
 
         const trunkHeight = 3.5 + Math.random() * 3;
@@ -133,12 +139,12 @@ export class Decoration extends Entity {
             // Push out slightly to embed in trunk
             arm.position.x = Math.cos(arm.rotation.y) * (trunkRadius * 0.5);
             arm.position.z = Math.sin(arm.rotation.y) * (trunkRadius * 0.5);
-            
+
             group.add(arm);
         }
     }
 
-    createRock(group) {
+    createRock(group: THREE.Group) {
         const geo = new THREE.DodecahedronGeometry(1 + Math.random());
         const mat = new THREE.MeshStandardMaterial({ color: 0x808080 });
         const mesh = new THREE.Mesh(geo, mat);
@@ -147,7 +153,7 @@ export class Decoration extends Entity {
         group.add(mesh);
     }
 
-    createBush(group) {
+    createBush(group: THREE.Group) {
         const geo = new THREE.IcosahedronGeometry(0.8 + Math.random() * 0.5, 0);
         const mat = new THREE.MeshStandardMaterial({ color: 0x228B22 });
         const mesh = new THREE.Mesh(geo, mat);
@@ -156,15 +162,15 @@ export class Decoration extends Entity {
         group.add(mesh);
     }
 
-    createBroadleafTree(group) {
+    createBroadleafTree(group: THREE.Group) {
         this.createFractalTree(group, { hasLeaves: true });
     }
 
-    createFractalTree(group, config = { hasLeaves: false }) {
+    createFractalTree(group: THREE.Group, config = { hasLeaves: false }) {
         const material = new THREE.MeshStandardMaterial({ color: 0x5C4033 });
         const leafMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 }); // Forest Green
-        
-        const addBranch = (startPoint, length, radius, direction, depth) => {
+
+        const addBranch = (startPoint: THREE.Vector3, length: number, radius: number, direction: THREE.Vector3, depth: number) => {
             if (depth === 0) {
                 if (config.hasLeaves) {
                     const leafGeo = new THREE.DodecahedronGeometry(0.8 + Math.random() * 0.5);
@@ -176,12 +182,12 @@ export class Decoration extends Entity {
             }
 
             const endPoint = startPoint.clone().add(direction.clone().multiplyScalar(length));
-            
+
             // Create branch mesh
             const midPoint = startPoint.clone().add(endPoint).multiplyScalar(0.5);
             const orientation = new THREE.Quaternion();
             orientation.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize());
-            
+
             const geometry = new THREE.CylinderGeometry(radius * 0.7, radius, length, 6);
             const branch = new THREE.Mesh(geometry, material);
             branch.position.copy(midPoint);
@@ -194,12 +200,12 @@ export class Decoration extends Entity {
                 const angleX = (Math.random() - 0.5) * 1.5;
                 const angleZ = (Math.random() - 0.5) * 1.5;
                 const newDirection = direction.clone().applyEuler(new THREE.Euler(angleX, 0, angleZ)).normalize();
-                
+
                 addBranch(
-                    endPoint, 
-                    length * 0.7, 
-                    radius * 0.7, 
-                    newDirection, 
+                    endPoint,
+                    length * 0.7,
+                    radius * 0.7,
+                    newDirection,
                     depth - 1
                 );
             }
@@ -209,5 +215,5 @@ export class Decoration extends Entity {
     }
 
     // Decorations are static, so update is empty
-    update(dt) {}
+    update(dt: number) { }
 }

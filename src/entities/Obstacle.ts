@@ -1,13 +1,29 @@
 import * as THREE from 'three';
-import { Entity } from './Entity.js';
+import { Entity, EntityOptions } from './Entity';
+
+export interface ObstacleOptions extends EntityOptions {
+    type: string;
+}
 
 export class Obstacle extends Entity {
-    constructor({ scene, position, type }) {
-        super({ scene, position });
-        this.type = type;
-        this.radius = 1.0;
+    type: string;
+    offset: number;
+    size: THREE.Vector3;
+    rotation: number;
+    isHit: boolean;
+    active: boolean;
+    markForRemoval: boolean;
+
+    constructor(options: ObstacleOptions) {
+        super(options);
+        this.type = options.type;
         this.offset = Math.random() * 100;
-        
+        this.size = new THREE.Vector3(1, 1, 1); // Default size
+        this.rotation = 0;
+        this.isHit = false;
+        this.active = true;
+        this.markForRemoval = false;
+
         // Re-create mesh based on type
         if (this.mesh) this.scene.remove(this.mesh);
         this.mesh = this.createMesh();
@@ -17,18 +33,18 @@ export class Obstacle extends Entity {
 
     createMesh() {
         const group = new THREE.Group();
-        
+
         if (this.type === 'crocodile') {
             const bodyGeo = new THREE.BoxGeometry(1, 0.5, 3);
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0x00aa00, roughness: 0.8 });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             group.add(body);
-            
+
             const snoutGeo = new THREE.BoxGeometry(0.8, 0.4, 1.5);
             const snout = new THREE.Mesh(snoutGeo, bodyMat);
             snout.position.z = -2;
             group.add(snout);
-            
+
             // Eyes
             const eyeGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
             const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
@@ -56,8 +72,8 @@ export class Obstacle extends Entity {
 
         } else if (this.type === 'beachball') {
             const geo = new THREE.SphereGeometry(0.5, 16, 16);
-            const mat = new THREE.MeshStandardMaterial({ 
-                color: 0xff0000, 
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0xff0000,
                 roughness: 0.4,
                 metalness: 0.1
             });
@@ -76,14 +92,14 @@ export class Obstacle extends Entity {
             const mesh = new THREE.Mesh(geo, mat);
             // Random rotation handled in update or init?
             // Let's rotate the mesh here to align with Z then rotate group
-            mesh.rotation.x = Math.PI / 2; 
+            mesh.rotation.x = Math.PI / 2;
             mesh.rotation.z = Math.random() * Math.PI; // Random roll
             group.add(mesh);
-            
+
             // Adjust collision radius roughly
-            this.radius = length * 0.4; 
+            this.radius = length * 0.4;
             this.size = new THREE.Vector3(radius * 2, radius * 2, length); // Local size (before rotation)
-            
+
             // Random Y rotation
             this.rotation = Math.random() * Math.PI * 2;
             group.rotation.y = this.rotation;
@@ -120,7 +136,7 @@ export class Obstacle extends Entity {
             const mesh = new THREE.Mesh(geo, mat);
             group.add(mesh);
         }
-        
+
         group.traverse(child => {
             if (child.isMesh) {
                 child.castShadow = true;
@@ -133,7 +149,7 @@ export class Obstacle extends Entity {
         if (this.isHit) {
             // Animation: Sink and fade
             this.mesh.position.y -= dt * 2.0; // Sink
-            
+
             // Fade out
             this.mesh.traverse(child => {
                 if (child.isMesh && child.material) {
@@ -142,7 +158,7 @@ export class Obstacle extends Entity {
                     if (child.material.opacity < 0) child.material.opacity = 0;
                 }
             });
-            
+
             if (this.mesh.children[0].material.opacity <= 0) {
                 this.markForRemoval = true;
             }
@@ -151,7 +167,7 @@ export class Obstacle extends Entity {
 
         // Bobbing
         this.mesh.position.y = Math.sin(Date.now() * 0.005 + this.offset) * 0.1;
-        
+
         if (this.type === 'crocodile') {
             // Swim towards player if close
             if (playerPosition) {
@@ -174,7 +190,7 @@ export class Obstacle extends Entity {
         } else {
             this.mesh.rotation.y += dt * 0.5;
         }
-        
+
         // Sync mesh position (since we might have moved it in logic)
         this.mesh.position.x = this.position.x;
         this.mesh.position.z = this.position.z;

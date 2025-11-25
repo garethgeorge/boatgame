@@ -1,15 +1,29 @@
 import * as THREE from 'three';
-import { Entity } from './Entity.js';
-import { BoatPhysics } from '../physics/BoatPhysics.js';
+import { Entity } from './Entity';
+import { BoatPhysics } from '../physics/BoatPhysics';
+
+interface Particle {
+    mesh: THREE.Mesh;
+    life: number;
+    velocity: THREE.Vector3;
+}
 
 export class Boat extends Entity {
-    constructor(scene) {
+    physics: BoatPhysics;
+    rotation: number;
+    declare radius: number;
+    size: THREE.Vector3;
+    particles: Particle[];
+    particleGroup: THREE.Group;
+    isFlashing: boolean = false;
+
+    constructor(scene: THREE.Scene) {
         super({ scene, position: new THREE.Vector3(0, 0, 0) });
         this.physics = new BoatPhysics();
         this.rotation = Math.PI; // Y-axis rotation, start facing downriver
         this.radius = 1.0; // Collision radius (kept for broad phase or legacy)
         this.size = new THREE.Vector3(1.2, 1.0, 3.0); // Width, Height, Length
-        
+
         this.particles = [];
         this.particleGroup = new THREE.Group();
         this.scene.add(this.particleGroup);
@@ -42,8 +56,8 @@ export class Boat extends Entity {
         hullGeo.translate(0, -1.5, -0.3);
         // Rotate to lie flat
         hullGeo.rotateX(Math.PI / 2);
-        
-        const hullMat = new THREE.MeshStandardMaterial({ 
+
+        const hullMat = new THREE.MeshStandardMaterial({
             color: 0xffffff, // White
             roughness: 0.2,
             metalness: 0.6
@@ -54,9 +68,9 @@ export class Boat extends Entity {
 
         // Windshield
         const windshieldGeo = new THREE.BoxGeometry(1.0, 0.4, 0.1);
-        const windshieldMat = new THREE.MeshStandardMaterial({ 
-            color: 0x88ccff, 
-            transparent: true, 
+        const windshieldMat = new THREE.MeshStandardMaterial({
+            color: 0x88ccff,
+            transparent: true,
             opacity: 0.6,
             roughness: 0.0,
             metalness: 0.9
@@ -80,8 +94,10 @@ export class Boat extends Entity {
 
         // Store original color for flash effect
         group.traverse(child => {
-            if (child.isMesh && child.material) {
-                child.userData.originalColor = child.material.color.clone();
+            if ((child as THREE.Mesh).isMesh && (child as THREE.Mesh).material) {
+                const mesh = child as THREE.Mesh;
+                const material = mesh.material as THREE.MeshStandardMaterial;
+                mesh.userData.originalColor = material.color.clone();
             }
         });
 
@@ -93,38 +109,42 @@ export class Boat extends Entity {
         this.isFlashing = true;
 
         this.mesh.traverse(child => {
-            if (child.isMesh && child.material) {
-                child.material.color.setHex(0xff0000);
+            if ((child as THREE.Mesh).isMesh && (child as THREE.Mesh).material) {
+                const mesh = child as THREE.Mesh;
+                const material = mesh.material as THREE.MeshStandardMaterial;
+                material.color.setHex(0xff0000);
             }
         });
 
         setTimeout(() => {
             this.mesh.traverse(child => {
-                if (child.isMesh && child.material && child.userData.originalColor) {
-                    child.material.color.copy(child.userData.originalColor);
+                if ((child as THREE.Mesh).isMesh && (child as THREE.Mesh).material && child.userData.originalColor) {
+                    const mesh = child as THREE.Mesh;
+                    const material = mesh.material as THREE.MeshStandardMaterial;
+                    material.color.copy(child.userData.originalColor);
                 }
             });
             this.isFlashing = false;
         }, 200);
     }
 
-    update(dt, input, riverGenerator) {
+    update(dt: number, input: any, riverGenerator: any) {
         let riverTangent = null;
         if (riverGenerator) {
             riverTangent = riverGenerator.getRiverTangent(this.position.z);
         }
 
         const physicsState = this.physics.update(dt, input, this.rotation, riverTangent);
-        
+
         // Constrain to river walls
         if (riverGenerator) {
             // Get boundary segments around the boat
             const range = 20; // Check 20 units ahead and behind
             const segments = riverGenerator.riverPath.getRiverBoundarySegments(this.position.z, range);
-            
+
             this.physics.checkEdgeCollisions(this.position, segments, this.radius);
         }
-        
+
         // Update position from physics
         this.position.add(physicsState.velocity.clone().multiplyScalar(dt));
         this.rotation += physicsState.angularVelocity * dt;
@@ -135,13 +155,13 @@ export class Boat extends Entity {
 
         // Visual effects: Bobbing
         this.mesh.position.y = Math.sin(Date.now() * 0.003) * 0.1;
-        
+
         // Banking (Lean into the turn)
         const maxBankAngle = 0.25; // Reduced from 0.5 for subtlety
         // Invert sign: Positive angular velocity (Left turn) -> Positive Z rotation (Left bank/Lean left)
         let bankAngle = physicsState.angularVelocity * 0.2; // Reduced multiplier
         bankAngle = Math.max(-maxBankAngle, Math.min(maxBankAngle, bankAngle));
-        
+
         // Idle rocking (reduced)
         this.mesh.rotation.z = Math.sin(Date.now() * 0.002) * 0.02 + bankAngle;
 
@@ -153,7 +173,7 @@ export class Boat extends Entity {
         this.updateParticles(dt, speed);
     }
 
-    updateParticles(dt, speed) {
+    updateParticles(dt: number, speed: number) {
         // Spawn particles
         if (speed > 5) {
             const spawnRate = Math.floor(speed * 2);
@@ -168,33 +188,39 @@ export class Boat extends Entity {
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const p = this.particles[i];
             p.life -= dt;
-            
+
             if (p.life <= 0) {
                 this.particleGroup.remove(p.mesh);
                 p.mesh.geometry.dispose();
-                p.mesh.material.dispose();
+                const material = p.mesh.material as THREE.Material;
+                if (Array.isArray(material)) {
+                    material.forEach(m => m.dispose());
+                } else {
+                    material.dispose();
+                }
                 this.particles.splice(i, 1);
             } else {
                 p.mesh.position.add(p.velocity.clone().multiplyScalar(dt));
                 p.mesh.scale.multiplyScalar(0.95); // Shrink
-                p.mesh.material.opacity = p.life; // Fade
+                const material = p.mesh.material as THREE.Material;
+                material.opacity = p.life; // Fade
             }
         }
     }
 
     spawnParticle() {
         const geo = new THREE.SphereGeometry(0.1 + Math.random() * 0.1, 4, 4);
-        const mat = new THREE.MeshBasicMaterial({ 
-            color: 0xffffff, 
-            transparent: true, 
-            opacity: 0.8 
+        const mat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.8
         });
         const mesh = new THREE.Mesh(geo, mat);
 
         // Spawn at back of boat
         const offset = new THREE.Vector3(
-            (Math.random() - 0.5) * 0.5, 
-            -0.2, 
+            (Math.random() - 0.5) * 0.5,
+            -0.2,
             -1.5
         );
         offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.rotation);
@@ -222,7 +248,12 @@ export class Boat extends Entity {
         this.scene.remove(this.particleGroup);
         this.particles.forEach(p => {
             p.mesh.geometry.dispose();
-            p.mesh.material.dispose();
+            const material = p.mesh.material as THREE.Material;
+            if (Array.isArray(material)) {
+                material.forEach(m => m.dispose());
+            } else {
+                material.dispose();
+            }
         });
     }
 }

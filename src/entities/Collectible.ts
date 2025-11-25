@@ -1,23 +1,44 @@
 import * as THREE from 'three';
-import { Entity } from './Entity.js';
+import { Entity, EntityOptions } from './Entity';
+
+export interface CollectibleOptions extends EntityOptions {
+    type?: string;
+}
+
+interface CollectibleConfig {
+    color: number;
+    points: number;
+}
 
 export class Collectible extends Entity {
-    constructor({ scene, position, type = 'green' }) {
-        super({ scene, position });
+    type: string;
+    radius: number;
+    offset: number;
+    config: CollectibleConfig;
+    points: number;
+    isCollected: boolean;
+    active: boolean;
+    markForRemoval: boolean;
+
+    constructor(options: CollectibleOptions) {
+        super(options);
+        this.type = options.type || 'green';
         this.radius = 1.5; // Increased radius for easier collection
         this.offset = Math.random() * 100; // For unique animation timing
-        this.type = type;
-        
-        const types = {
+        this.isCollected = false;
+        this.active = true;
+        this.markForRemoval = false;
+
+        const types: { [key: string]: CollectibleConfig } = {
             'green': { color: 0x00ff00, points: 100 },
             'blue': { color: 0x0000ff, points: 250 },
             'red': { color: 0xff0000, points: 500 },
             'gold': { color: 0xffd700, points: 1000 }
         };
-        
-        this.config = types[type] || types['green'];
+
+        this.config = types[this.type] || types['green'];
         this.points = this.config.points;
-        
+
         // Re-create mesh if needed (Entity constructor calls createMesh before we set config)
         if (this.mesh) {
             this.scene.remove(this.mesh);
@@ -27,13 +48,13 @@ export class Collectible extends Entity {
         }
     }
 
-    createMesh() {
+    createMesh(): THREE.Group {
         const group = new THREE.Group();
         const color = this.config ? this.config.color : 0x00ff00;
-        
+
         // Bottle body
         const bodyGeo = new THREE.CylinderGeometry(0.3, 0.3, 1, 8);
-        const bodyMat = new THREE.MeshStandardMaterial({ 
+        const bodyMat = new THREE.MeshStandardMaterial({
             color: color,
             transparent: true,
             opacity: 0.7,
@@ -41,13 +62,13 @@ export class Collectible extends Entity {
         });
         const body = new THREE.Mesh(bodyGeo, bodyMat);
         group.add(body);
-        
+
         // Neck
         const neckGeo = new THREE.CylinderGeometry(0.1, 0.3, 0.4, 8);
         const neck = new THREE.Mesh(neckGeo, bodyMat);
         neck.position.y = 0.7;
         group.add(neck);
-        
+
         // Message inside (white paper)
         const paperGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.6, 8);
         const paperMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
@@ -55,30 +76,39 @@ export class Collectible extends Entity {
         group.add(paper);
 
         group.traverse(child => {
-            if (child.isMesh) {
+            if ((child as THREE.Mesh).isMesh) {
                 child.castShadow = true;
             }
         });
         return group;
     }
 
-    update(dt) {
+    update(dt: number) {
         if (this.isCollected) {
             // Animation: Float up and fade
             this.mesh.position.y += dt * 5.0; // Float up fast
             this.mesh.rotation.y += dt * 10.0; // Spin fast
-            
+
             // Fade out
             this.mesh.traverse(child => {
-                if (child.isMesh && child.material) {
-                    child.material.transparent = true;
-                    child.material.opacity -= dt * 2.0;
-                    if (child.material.opacity < 0) child.material.opacity = 0;
+                const mesh = child as THREE.Mesh;
+                if (mesh.isMesh && mesh.material) {
+                    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                    materials.forEach(mat => {
+                        mat.transparent = true;
+                        mat.opacity -= dt * 2.0;
+                        if (mat.opacity < 0) mat.opacity = 0;
+                    });
                 }
             });
-            
-            if (this.mesh.children[0].material.opacity <= 0) {
-                this.markForRemoval = true;
+
+            // Check if fully faded (using the first child as proxy)
+            const firstChild = this.mesh.children[0] as THREE.Mesh;
+            if (firstChild && firstChild.material) {
+                const mat = Array.isArray(firstChild.material) ? firstChild.material[0] : firstChild.material;
+                if (mat.opacity <= 0) {
+                    this.markForRemoval = true;
+                }
             }
             return;
         }

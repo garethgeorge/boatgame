@@ -1,4 +1,13 @@
+export interface InputState {
+    forward: boolean;
+    backward: boolean;
+    left: boolean;
+    right: boolean;
+}
+
 export class InputManager {
+    keys: InputState;
+
     constructor() {
         this.keys = {
             forward: false,
@@ -6,7 +15,7 @@ export class InputManager {
             left: false,
             right: false
         };
-        
+
         this.init();
     }
 
@@ -16,8 +25,8 @@ export class InputManager {
         // TODO: Add accelerometer support
     }
 
-    onKeyDown(e) {
-        switch(e.code) {
+    onKeyDown(e: KeyboardEvent) {
+        switch (e.code) {
             case 'ArrowUp':
             case 'KeyW':
                 this.keys.forward = true;
@@ -37,8 +46,8 @@ export class InputManager {
         }
     }
 
-    onKeyUp(e) {
-        switch(e.code) {
+    onKeyUp(e: KeyboardEvent) {
+        switch (e.code) {
             case 'ArrowUp':
             case 'KeyW':
                 this.keys.forward = false;
@@ -58,7 +67,7 @@ export class InputManager {
         }
     }
 
-    getState() {
+    getState(): InputState {
         return { ...this.keys };
     }
 }
