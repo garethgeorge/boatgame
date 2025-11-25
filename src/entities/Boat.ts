@@ -42,7 +42,23 @@ export class Boat extends Entity {
 
         // Load GLB Model
         const loader = new GLTFLoader();
-        loader.load('assets/Cute_cartoon_tug_boat_1125002001_texture.glb', (gltf) => {
+        // Use new URL to resolve the path relative to the module, ensuring it works in production builds
+        // We assume the asset is in public/assets, which Vite serves at /assets/
+        // However, for GitHub pages with a base URL, we want to be careful.
+        // If we put it in 'public', it's served at root.
+        // Let's try using the import URL pattern if possible, but for static assets in public, 
+        // we might need to rely on the base path.
+        // Actually, if we move it to public/assets, it is available at ./assets/... relative to index.html?
+        // Or we can use the `import` syntax if we move it to `src/assets`.
+
+        // Safest for Vite + GitHub Pages:
+        // 1. Move asset to `src/assets` and import it (Vite handles the URL)
+        // OR
+        // 2. Keep in public and use a relative path that respects base.
+
+        // Let's try the relative path first as requested by user: './assets/...'
+        // If index.html is at root, and assets is at root/assets (from public), then './assets/...' should work.
+        loader.load('./assets/Cute_cartoon_tug_boat_1125002001_texture.glb', (gltf) => {
             const model = gltf.scene;
 
             // Calculate bounding box to determine scale
