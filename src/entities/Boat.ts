@@ -28,6 +28,10 @@ export class Boat extends Entity {
         this.mesh.receiveShadow = true;
     }
 
+    get position(): THREE.Vector3 {
+        return this.mesh ? this.mesh.position : new THREE.Vector3();
+    }
+
     update(dt: number, input?: InputState) {
         if (!this.physicsBody || !input) return;
 
