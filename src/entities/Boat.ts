@@ -39,8 +39,8 @@ export class Boat extends Entity {
         // F = ma. If we want a = 5 m/s^2, F = 500 * 5 = 2500.
         // However, Matter.js forces are applied per step.
         // Let's try a force magnitude that feels right.
-        const forceMagnitude = 0.5; // Adjusted for mass 500
-        const torqueMagnitude = 25.0; // Adjusted for mass 500
+        const forceMagnitude = 0.125; // Reduced 4x from 0.5 based on user feedback
+        const torqueMagnitude = 0.04; // Reduced another 25x (Total 625x reduction from original)
 
         // Forward/Backward
         if (input.forward) {
