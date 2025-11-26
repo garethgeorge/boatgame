@@ -75,21 +75,43 @@ export class Game {
 
         // Camera Follow
         if (this.boat.mesh) {
-            const idealOffset = new THREE.Vector3(0, 20, -20); // Higher and further back
-            // We can rotate offset based on boat rotation if we want 3rd person, 
-            // or keep it fixed for top-down. User asked for top-down-ish?
-            // "The world segments should also be objects which have custom bounding boxes... render these boxes in 3d"
-            // Let's do a follow cam.
+            // Calculate ideal camera position based on boat's rotation
+            // We want the camera behind and above the boat.
+            // Boat faces -Z (in model space) or whatever direction physics says.
+            // Physics angle 0 is usually "up" (-Y in 2D, -Z in 3D world).
+            // Let's use the mesh rotation to be safe as it's synced.
 
-            // Simple follow:
-            const targetPos = this.boat.mesh.position.clone();
-            targetPos.y = 0; // Look at water level
+            const boatPos = this.boat.mesh.position.clone();
+            const boatRot = this.boat.mesh.rotation.y;
 
-            this.graphicsEngine.camera.position.lerp(
-                targetPos.clone().add(new THREE.Vector3(0, 30, 20)),
-                dt * 2.0
+            // Offset: Behind (positive Z relative to boat facing -Z) and Up (positive Y)
+            // If boat faces -Z, "behind" is +Z.
+            const offsetDistance = 20;
+            const offsetHeight = 15;
+
+            // Calculate offset vector based on rotation
+            // We want to be 'offsetDistance' units "behind" the boat.
+            // If boat rotation Y is 0 (facing -Z), we want to be at +Z.
+            // x = sin(angle) * dist
+            // z = cos(angle) * dist
+
+            const offsetX = Math.sin(boatRot) * offsetDistance;
+            const offsetZ = Math.cos(boatRot) * offsetDistance;
+
+            const idealPosition = new THREE.Vector3(
+                boatPos.x + offsetX,
+                boatPos.y + offsetHeight,
+                boatPos.z + offsetZ
             );
-            this.graphicsEngine.camera.lookAt(targetPos);
+
+            // Smoothly interpolate current camera position to ideal position (Spring effect)
+            // Lower factor = looser spring, Higher factor = tighter spring
+            const t = 1.0 - Math.pow(0.01, dt); // Time-independent lerp factor
+            this.graphicsEngine.camera.position.lerp(idealPosition, t * 2.0); // Adjust speed as needed
+
+            // Look at the boat (or slightly ahead)
+            const lookAtPos = boatPos.clone().add(new THREE.Vector3(0, 2, 0)); // Look slightly above center
+            this.graphicsEngine.camera.lookAt(lookAtPos);
         }
     }
 
