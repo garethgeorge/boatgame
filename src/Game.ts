@@ -2,8 +2,7 @@ import * as THREE from 'three';
 import { PhysicsEngine } from './core/PhysicsEngine';
 import { GraphicsEngine } from './core/GraphicsEngine';
 import { EntityManager } from './core/EntityManager';
-import { RiverSystem } from './world/procgen/RiverSystem';
-import { TerrainGenerator } from './world/procgen/TerrainGenerator';
+import { SimpleRiver } from './world/SimpleRiver';
 import { Boat } from './entities/Boat';
 import { InputManager } from './managers/InputManager';
 
@@ -24,9 +23,6 @@ export class Game {
 
     boat!: Boat;
 
-    riverSystem: RiverSystem;
-    terrainGenerator: TerrainGenerator;
-
     constructor() {
         this.container = document.getElementById('game-container') as HTMLElement;
 
@@ -36,10 +32,6 @@ export class Game {
         this.entityManager = new EntityManager(this.physicsEngine, this.graphicsEngine);
         this.inputManager = new InputManager();
         this.clock = new THREE.Clock();
-
-        // Procedural Generation
-        this.riverSystem = new RiverSystem();
-        this.terrainGenerator = new TerrainGenerator(this.riverSystem);
 
         // UI
         this.startScreen = document.getElementById('start-screen') as HTMLElement;
@@ -51,43 +43,14 @@ export class Game {
     }
 
     init() {
-        // Initial Generation
-        this.updateTerrain();
+        // Create World
+        new SimpleRiver(this.physicsEngine, this.graphicsEngine);
 
         // Create Boat
         this.boat = new Boat(0, 0);
         this.entityManager.add(this.boat);
 
         this.animate();
-    }
-
-    updateTerrain() {
-        // Update River System
-        const playerPos = this.boat ? this.boat.position : new THREE.Vector3(0, 0, 0);
-        this.riverSystem.update(playerPos);
-
-        // Generate Meshes and Collision for new segments
-        for (const seg of this.riverSystem.segments) {
-            if (seg.active && !seg.mesh) {
-                // Generate Mesh
-                seg.mesh = this.terrainGenerator.generateMesh(seg);
-                this.graphicsEngine.add(seg.mesh);
-
-                // Generate Collision
-                seg.colliderBodies = this.terrainGenerator.generateCollision(seg);
-                seg.colliderBodies.forEach(body => this.physicsEngine.addBody(body));
-            } else if (!seg.active && seg.mesh) {
-                // Remove Mesh
-                this.graphicsEngine.remove(seg.mesh);
-                seg.mesh.geometry.dispose();
-                (seg.mesh.material as THREE.Material).dispose();
-                seg.mesh = null;
-
-                // Remove Collision
-                seg.colliderBodies.forEach(body => this.physicsEngine.removeBody(body));
-                seg.colliderBodies = [];
-            }
-        }
     }
 
     start() {
@@ -109,9 +72,6 @@ export class Game {
         // We pass input to boat manually for now, or we could pass it to all entities
         this.boat.update(dt, input);
         this.entityManager.update(dt);
-
-        // Update Terrain (Procedural Generation)
-        this.updateTerrain();
 
         // Camera Follow
         if (this.boat.mesh) {
