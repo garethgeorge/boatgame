@@ -19,7 +19,8 @@ export class Boat extends Entity {
             type: 'dynamic',
             position: planck.Vec2(x, y),
             linearDamping: 1.0,
-            angularDamping: 4.0 // High angular drag to prevent spinning
+            angularDamping: 4.0, // High angular drag to prevent spinning
+            bullet: true // Prevent tunneling through obstacles at high speed
         });
 
         // Create fixture (shape)
@@ -31,6 +32,8 @@ export class Boat extends Entity {
             friction: 0.0, // Smooth sliding
             restitution: 0.0 // No bounce
         });
+
+        this.physicsBody.setUserData({ type: 'player', entity: this });
 
         // Graphics
         const geometry = new THREE.BoxGeometry(width, 1.0, height);

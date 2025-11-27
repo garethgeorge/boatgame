@@ -9,11 +9,11 @@ export class RiverSystem {
   private readonly PATH_SCALE = 0.002; // 500 units wavelength
   private readonly PATH_AMPLITUDE = 100;
 
-  private readonly WIDTH_SCALE = 0.002; // 500 units wavelength (faster variation)
-  private readonly BANK_NOISE_SCALE = 0.002; // 500 units wavelength (smoother banks)
+  private readonly WIDTH_SCALE = 0.002; // Frequency of width changes
+  private readonly BANK_NOISE_SCALE = 0.002; // Frequency of bank jaggedness
 
-  private readonly MIN_WIDTH = 30;
-  private readonly MAX_WIDTH = 150;
+  private readonly MIN_WIDTH = 15; // Was 30
+  private readonly MAX_WIDTH = 75; // Was 150
 
   private constructor() {
     this.noise = new SimplexNoise(100);
@@ -34,6 +34,17 @@ export class RiverSystem {
   }
 
   /**
+   * Returns the derivative (slope) of the river center at z.
+   * Useful for determining the tangent/normal vector of the bank.
+   */
+  public getRiverDerivative(z: number): number {
+    const epsilon = 1.0;
+    const x1 = this.getRiverCenter(z - epsilon);
+    const x2 = this.getRiverCenter(z + epsilon);
+    return (x2 - x1) / (2 * epsilon); // dx/dz
+  }
+
+  /**
    * Returns the width of the river at a given Z position.
    */
   public getRiverWidth(z: number): number {
@@ -48,10 +59,10 @@ export class RiverSystem {
     // Interpolate between Min and Max based on biome
     let baseWidth = this.lerp(this.MIN_WIDTH, this.MAX_WIDTH, biomeNoise);
 
-    // 2. Local Variation: Adds "roughness" to the width
-    const localNoise = this.noise.noise2D(200, z * this.BANK_NOISE_SCALE) * 10;
+    // 2. Local Variation: Removed for smoother banks as per user request
+    // const localNoise = this.noise.noise2D(200, z * this.BANK_NOISE_SCALE) * 10;
 
-    return Math.max(15, baseWidth + localNoise);
+    return Math.max(15, baseWidth);
   }
 
   /**

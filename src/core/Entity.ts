@@ -7,7 +7,11 @@ export abstract class Entity {
 
   constructor() { }
 
+  shouldRemove: boolean = false;
+
   abstract update(dt: number): void;
+
+  onHit(): void { }
 
   // Sync graphics position/rotation with physics body
   sync() {

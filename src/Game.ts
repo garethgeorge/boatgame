@@ -3,6 +3,7 @@ import { PhysicsEngine } from './core/PhysicsEngine';
 import { GraphicsEngine } from './core/GraphicsEngine';
 import { EntityManager } from './core/EntityManager';
 import { TerrainManager } from './world/TerrainManager';
+import { ObstacleManager } from './managers/ObstacleManager';
 import { Boat } from './entities/Boat';
 import { InputManager } from './managers/InputManager';
 
@@ -20,9 +21,14 @@ export class Game {
     startBtn: HTMLElement;
     scoreElement: HTMLElement;
     thrustElement: HTMLElement;
+    fuelElement: HTMLElement;
 
     boat!: Boat;
     terrainManager!: TerrainManager;
+    obstacleManager!: ObstacleManager;
+
+    score: number = 0;
+    fuel: number = 100;
 
     constructor() {
         this.container = document.getElementById('game-container') as HTMLElement;
@@ -39,6 +45,7 @@ export class Game {
         this.startBtn = document.getElementById('start-btn') as HTMLElement;
         this.scoreElement = document.getElementById('score') as HTMLElement;
         this.thrustElement = document.getElementById('thrust-display') as HTMLElement;
+        this.fuelElement = document.getElementById('fuel-display') as HTMLElement;
 
         this.startBtn.addEventListener('click', () => this.start());
     }
@@ -46,6 +53,7 @@ export class Game {
     init() {
         // Create World
         this.terrainManager = new TerrainManager(this.physicsEngine, this.graphicsEngine);
+        this.obstacleManager = new ObstacleManager(this.entityManager, this.physicsEngine);
 
         // Create Boat
         this.boat = new Boat(0, 0, this.physicsEngine);
@@ -53,6 +61,47 @@ export class Game {
 
         // Initial update to generate terrain around boat
         this.terrainManager.update(this.boat.mesh.position.z); // Use mesh position as it's synced with physics
+        this.obstacleManager.update(this.boat.mesh.position.z);
+
+        // Collision Listener
+        this.physicsEngine.world.on('begin-contact', (contact) => {
+            const fixtureA = contact.getFixtureA();
+            const fixtureB = contact.getFixtureB();
+            const bodyA = fixtureA.getBody();
+            const bodyB = fixtureB.getBody();
+            const userDataA = bodyA.getUserData() as any;
+            const userDataB = bodyB.getUserData() as any;
+
+            if (!userDataA || !userDataB) return;
+
+            let player = null;
+            let other = null;
+
+            if (userDataA.type === 'player') {
+                player = userDataA.entity;
+                other = userDataB;
+            } else if (userDataB.type === 'player') {
+                player = userDataB.entity;
+                other = userDataA;
+            }
+
+            if (player && other) {
+                if (other.type === 'obstacle') {
+                    if (other.subtype !== 'pier') {
+                        other.entity.onHit();
+                        // Collision penalty?
+                        this.fuel = Math.max(0, this.fuel - 5); // Lose fuel on impact
+                    }
+                } else if (other.type === 'collectable') {
+                    other.entity.onHit();
+                    if (other.subtype === 'gas') {
+                        this.fuel = Math.min(100, this.fuel + 20);
+                    } else if (other.subtype === 'bottle') {
+                        this.score += 100;
+                    }
+                }
+            }
+        });
 
         this.animate();
     }
@@ -79,7 +128,22 @@ export class Game {
         // Update Terrain
         if (this.boat.mesh) {
             this.terrainManager.update(this.boat.mesh.position.z);
+            this.obstacleManager.update(this.boat.mesh.position.z);
         }
+
+        // Update Game State
+        this.fuel -= dt * 0.5; // Burn fuel slowly
+        if (this.fuel <= 0) {
+            this.fuel = 0;
+            // Game Over logic? For now just stop boat?
+            // this.isPlaying = false; 
+        }
+
+        // Update UI
+        this.scoreElement.innerText = `Score: ${this.score}`;
+        this.fuelElement.innerText = `Fuel: ${Math.floor(this.fuel)}%`;
+        // Thrust display is handled elsewhere or static for now? 
+        // Boat doesn't expose thrust value easily, let's skip for now or add getter.
 
         // Camera Follow
         if (this.boat.mesh) {
