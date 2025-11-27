@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 
 export class Decorations {
-  private static treeMaterial = new THREE.MeshToonMaterial({ color: 0x8B4513 }); // Brown trunk
-  private static leafMaterial = new THREE.MeshToonMaterial({ color: 0x228B22 }); // Forest Green
-  private static dryBushMaterial = new THREE.MeshToonMaterial({ color: 0x8B5A2B }); // Brownish
-  private static greenBushMaterial = new THREE.MeshToonMaterial({ color: 0x32CD32 }); // Lime Green
-  private static cactusMaterial = new THREE.MeshToonMaterial({ color: 0x6B8E23 }); // Olive Drab
+  public static readonly treeMaterial = new THREE.MeshToonMaterial({ color: 0x8B4513 }); // Brown trunk
+  public static readonly leafMaterial = new THREE.MeshToonMaterial({ color: 0x228B22 }); // Forest Green
+  public static readonly dryBushMaterial = new THREE.MeshToonMaterial({ color: 0x8B5A2B }); // Brownish
+  public static readonly greenBushMaterial = new THREE.MeshToonMaterial({ color: 0x32CD32 }); // Lime Green
+  public static readonly cactusMaterial = new THREE.MeshToonMaterial({ color: 0x6B8E23 }); // Olive Drab
 
   private static cache: {
     trees: { mesh: THREE.Group, wetness: number }[],
@@ -161,8 +161,8 @@ export class Decorations {
       // FERN (Wet) - Larger
       const frondCount = 6 + Math.floor(Math.random() * 5);
       for (let i = 0; i < frondCount; i++) {
-        const length = 1.5 + Math.random() * 1.5; // 2-3x larger
-        const width = 0.5 + Math.random() * 0.3;
+        const length = (1.5 + Math.random() * 1.5) * 3.0; // 3x larger
+        const width = (0.5 + Math.random() * 0.3) * 3.0; // 3x larger
 
         const segments = 5;
         const segmentLen = length / segments;
@@ -237,27 +237,13 @@ export class Decorations {
         const angleX = 0.3 + Math.random() * 0.5; // Angle up from ground
 
         const startAngle = new THREE.Euler(
-          (Math.random() - 0.5) * 0.5, // Slight random tilt
+          (Math.random() - 0.5) * 1.5, // Widen spread
           angleY,
-          angleX // Lean out
+          (Math.random() - 0.5) * 1.5 // Widen spread
         );
 
-        // Convert Euler to vector direction to get correct start angle?
-        // Actually, my recursive function takes an Euler for direction.
-        // But Euler(0, angleY, angleX) might not be exactly "lean out".
-        // Let's construct a direction vector and lookAt it?
-        // Simpler: Just use random Euler angles that tend outwards.
-
-        const stemAngle = new THREE.Euler(
-          (Math.random() - 0.5) * 1.0,
-          Math.random() * Math.PI * 2,
-          (Math.random() - 0.5) * 1.0
-        );
-
-        // Ensure it points somewhat up
-        // Actually, let's just use the recursive function with a "up-ish" angle
-
-        generateJaggedBranch(new THREE.Vector3(0, 0, 0), 0.5, 0.1, 3, stemAngle);
+        // Increase base size by 3x
+        generateJaggedBranch(new THREE.Vector3(0, 0, 0), 0.5 * 3.0, 0.1 * 3.0, 3, startAngle);
       }
     }
 
