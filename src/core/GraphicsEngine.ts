@@ -24,7 +24,7 @@ export class GraphicsEngine {
     this.skybox = this.createSkybox();
 
     // Enhanced atmospheric fog
-    this.scene.fog = new THREE.FogExp2(0x9db4c0, 0.0015);
+    this.scene.fog = new THREE.FogExp2(0x9db4c0, 0.003); // Increased from 0.0015 for 50% view distance
 
     this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     this.camera.position.set(0, 10, -10);

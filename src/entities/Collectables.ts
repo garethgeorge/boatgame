@@ -149,6 +149,20 @@ export class MessageInABottle extends Entity {
       if (this.mesh) {
         this.mesh.position.y += dt * 10; // 5x faster (was 2)
         this.mesh.rotation.y += dt * 25; // 5x faster (was 5)
+
+        // Fade out
+        this.mesh.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            const mat = child.material as THREE.Material;
+            if (mat) {
+              mat.transparent = true;
+              if (mat.opacity > 0) {
+                mat.opacity -= dt * 2.0; // Fade out speed
+              }
+            }
+          }
+        });
+
         if (this.mesh.position.y > 5) {
           this.shouldRemove = true;
         }

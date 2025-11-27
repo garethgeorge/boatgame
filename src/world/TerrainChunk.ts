@@ -2,16 +2,18 @@ import * as THREE from 'three';
 import { SimplexNoise } from './SimplexNoise';
 import { GraphicsEngine } from '../core/GraphicsEngine';
 import { RiverSystem } from './RiverSystem';
+import { Decorations } from './Decorations';
 
 export class TerrainChunk {
   mesh: THREE.Mesh;
   waterMesh: THREE.Mesh;
+  decorations: THREE.Group;
 
   // Config
-  public static readonly CHUNK_SIZE = 500; // Size of chunk in Z
+  public static readonly CHUNK_SIZE = 125; // Size of chunk in Z (Reduced to 125 for incremental generation)
   private static readonly CHUNK_WIDTH = 400; // Width of world in X
-  private static readonly RESOLUTION_X = 160; // Vertices along X (Double fidelity perpendicular to river)
-  private static readonly RESOLUTION_Z = 200; // Vertices along Z (Halve fidelity along river)
+  private static readonly RESOLUTION_X = 160; // Vertices along X
+  private static readonly RESOLUTION_Z = 50; // Vertices along Z (Reduced to 50)
 
   zOffset: number;
   private noise: SimplexNoise;
@@ -27,9 +29,124 @@ export class TerrainChunk {
 
     this.mesh = this.generateMesh();
     this.waterMesh = this.generateWater();
+    this.decorations = this.generateDecorations();
 
     this.graphicsEngine.add(this.mesh);
     this.graphicsEngine.add(this.waterMesh);
+    this.graphicsEngine.add(this.decorations);
+  }
+
+  private generateDecorations(): THREE.Group {
+    const group = new THREE.Group();
+    const count = 1000; // Increased to 5x density
+
+    for (let i = 0; i < count; i++) {
+      // Random position in chunk local space
+      const localZ = Math.random() * TerrainChunk.CHUNK_SIZE;
+      const worldZ = this.zOffset + localZ;
+
+      // Random X across width
+      const u = Math.random() * 2 - 1; // -1 to 1
+      const localX = u * (TerrainChunk.CHUNK_WIDTH / 2);
+
+      const riverCenter = this.riverSystem.getRiverCenter(worldZ);
+      const worldX = localX + riverCenter;
+
+      // Check height and river proximity
+      const height = this.calculateHeight(localX, worldZ);
+      const riverWidth = this.riverSystem.getRiverWidth(worldZ);
+
+      // Bias towards river
+      const distFromCenter = Math.abs(localX);
+      const distFromBank = distFromCenter - riverWidth / 2;
+
+      // If inside river (negative distFromBank), we skip anyway via height check.
+      // If on land, we want higher probability near bank.
+      const biasDistance = 80; // Tighter bias distance
+      if (distFromBank > 0) {
+        // Exponential drop-off
+        const normalizedDist = Math.min(1.0, distFromBank / biasDistance);
+        const probability = Math.pow(1.0 - normalizedDist, 2); // Quadratic falloff
+
+        if (Math.random() > probability) continue;
+      } else {
+        // Inside river width (but might be on bank due to height check)
+        // Keep it.
+      }
+
+      // Only spawn on land (height > water level + buffer)
+      if (height < 2.0) continue; // Water is at 0, river bed is negative. Land starts > 0.
+
+      // Visibility Check: Raycast from river center to spawn point
+      if (!this.checkVisibility(localX, height, worldZ)) continue;
+
+      // Calculate Wetness (Same as mesh)
+      let wetness = this.noise.noise2D(worldX * 0.002, worldZ * 0.002);
+      wetness = (wetness + 1) / 2;
+
+      let object: THREE.Object3D | null = null;
+
+      if (wetness < 0.4) {
+        // Dry: Cactus or Dry Bush
+        if (Math.random() > 0.6) {
+          object = Decorations.getCactus();
+        } else {
+          object = Decorations.getBush(wetness);
+        }
+      } else if (wetness > 0.6) {
+        // Wet: Tree or Green Bush
+        if (Math.random() > 0.7) {
+          object = Decorations.getTree(wetness);
+        } else {
+          object = Decorations.getBush(wetness);
+        }
+      } else {
+        // Transition: Mix
+        if (Math.random() > 0.5) {
+          object = Decorations.getTree(wetness);
+        } else {
+          object = Decorations.getBush(wetness);
+        }
+      }
+
+      if (object) {
+        object.position.set(worldX, height, worldZ);
+        // Random rotation
+        object.rotation.y = Math.random() * Math.PI * 2;
+        group.add(object);
+      }
+    }
+    return group;
+  }
+
+  private checkVisibility(targetLocalX: number, targetHeight: number, worldZ: number): boolean {
+    // Ray start: River center (localX = 0), slightly above water (y = 2)
+    const startX = 0;
+    const startY = 2;
+
+    const endX = targetLocalX;
+    const endY = targetHeight;
+
+    const steps = 4; // Number of checks along the ray
+
+    for (let i = 1; i < steps; i++) {
+      const t = i / steps;
+      const checkX = startX + (endX - startX) * t;
+      const checkY = startY + (endY - startY) * t;
+
+      // Sample terrain height at this point
+      // We need worldZ for calculateHeight, which is constant along this cross-section ray
+      // (Assuming we are checking visibility roughly perpendicular to river, which is true for localX)
+      // Actually, calculateHeight takes localX and worldZ.
+      const terrainHeight = this.calculateHeight(checkX, worldZ);
+
+      // If terrain is significantly higher than ray point, it's occluded
+      if (terrainHeight > checkY + 0.5) { // 0.5 buffer
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private getDistributedX(u: number): number {
@@ -136,6 +253,14 @@ export class TerrainChunk {
     const positions = geometry.attributes.position;
     // const normals = geometry.attributes.normal; // Normals will be computed later
 
+    // Add color attribute
+    const count = positions.count;
+    const colors = new Float32Array(count * 3);
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const colorDry = new THREE.Color(0xE6C288); // Sand/Dry
+    const colorWet = new THREE.Color(0x5CB85C); // Grass/Wet
+
     for (let i = 0; i < positions.count; i++) {
       const localX = positions.getX(i);
       const localZ = positions.getZ(i); // This is 0 to CHUNK_SIZE
@@ -148,29 +273,41 @@ export class TerrainChunk {
       const worldX = localX + riverCenter;
 
       // Calculate height relative to river center
-      // We pass localX (relative to river center) to calculateHeight for profile
-      // But calculateHeight needs to know about the river width at this Z
       const height = this.calculateHeight(localX, worldZ);
 
       positions.setX(i, worldX); // Set actual world X
       positions.setY(i, height);
-      // Z is already set in createCustomGridGeometry
+
+      // Calculate Wetness
+      // Low frequency noise for wetness map
+      let wetness = this.noise.noise2D(worldX * 0.002, worldZ * 0.002);
+      wetness = (wetness + 1) / 2; // 0 to 1
+
+      // Bias wetness near river?
+      // Maybe slightly, but user said "varies slowly".
+      // Let's stick to the noise map primarily.
+
+      // Set Color
+      const color = new THREE.Color().lerpColors(colorDry, colorWet, wetness);
+      colors[i * 3] = color.r;
+      colors[i * 3 + 1] = color.g;
+      colors[i * 3 + 2] = color.b;
     }
 
     geometry.computeVertexNormals(); // Recompute with new heights
 
     // Create custom gradient for toon shading (3-step cartoon look)
-    const colors = new Uint8Array([
+    const gradientColors = new Uint8Array([
       0, 0, 0,        // Dark shadow
       100, 100, 100,  // Mid-tone
       200, 200, 200,  // Highlight
       255, 255, 255   // Bright highlight
     ]);
-    const gradientMap = new THREE.DataTexture(colors, 4, 1, THREE.RGBFormat);
+    const gradientMap = new THREE.DataTexture(gradientColors, 4, 1, THREE.RGBFormat);
     gradientMap.needsUpdate = true;
 
     const material = new THREE.MeshToonMaterial({
-      color: 0x5cb85c,
+      vertexColors: true, // Use vertex colors
       gradientMap: gradientMap,
     });
 
@@ -282,5 +419,12 @@ export class TerrainChunk {
     } else {
       this.waterMesh.material.dispose();
     }
+
+    this.graphicsEngine.remove(this.decorations);
+    // Dispose children materials/geometries if needed
+    // Since we reuse static materials in Decorations, we might not want to dispose them?
+    // Actually Decorations uses static materials, so we shouldn't dispose them here.
+    // Just remove from scene and clear children.
+    this.decorations.clear();
   }
 }

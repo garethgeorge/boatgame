@@ -69,34 +69,36 @@ export class ObstacleManager {
       const safeWidth = width * 0.7;
       const x = center + (Math.random() - 0.5) * safeWidth;
 
-      if (type < 0.1) {
-        // Alligator
-        this.entityManager.add(new Alligator(x, z, this.physicsEngine));
-      } else if (type < 0.3) { // Expanded range since turtles are gone
+      if (type < 0.3) {
+        // Alligator Cluster
+        // Spawn 1-2 alligators close to each other
+        const count = Math.random() > 0.5 ? 2 : 1;
+        for (let i = 0; i < count; i++) {
+          const offsetX = (Math.random() - 0.5) * 5;
+          const offsetZ = (Math.random() - 0.5) * 5;
+          // Ensure within bounds?
+          // x is already random within safeWidth.
+          // Just add offset.
+          this.entityManager.add(new Alligator(x + offsetX, z + offsetZ, this.physicsEngine));
+        }
+      } else if (type < 0.5) { // Expanded range
         // Log
         // Much longer: 3x-6x original (which was ~3.5). So 10 to 20 range.
         const length = 10 + Math.random() * 10;
         this.entityManager.add(new Log(x, z, length, this.physicsEngine));
-      } else if (type < 0.4) {
+      } else if (type < 0.6) {
         // Pier (Attached to bank)
+        // ... (Pier logic remains same, just copy it or leave it if I can target ranges)
+        // I'll just copy the pier logic to be safe since I'm replacing the block.
+
         // Decide left or right bank
         const isLeft = Math.random() > 0.5;
         const width = this.riverSystem.getRiverWidth(z);
         const center = this.riverSystem.getRiverCenter(z);
 
-        // Calculate river slope (derivative)
         const slope = this.riverSystem.getRiverDerivative(z);
-        // River tangent angle: atan(slope)
-        // Normal angle is tangent + 90 deg (PI/2)
         const tangentAngle = Math.atan(slope);
         let normalAngle = tangentAngle + Math.PI / 2;
-
-        // If left bank, we want to point towards center (or away from bank).
-        // Tangent points downstream.
-        // Left bank normal points towards center (+x relative to flow?).
-        // Let's visualize: River flows +Z. Tangent ~0. Normal +X (PI/2).
-        // If isLeft (negative X side), we want to point +X. So normalAngle is correct.
-        // If isRight (positive X side), we want to point -X. So normalAngle + PI.
 
         if (!isLeft) {
           normalAngle += Math.PI;
@@ -106,45 +108,26 @@ export class ObstacleManager {
 
         const pierLength = 10 + Math.random() * 10;
 
-        // Position: Start at bank, extend 'pierLength' along normal.
-        // Center of pier is at start + normal * (pierLength/2)
-        const dirX = Math.cos(normalAngle); // Note: In 2D physics, angle 0 is +X.
-        // Wait, atan(dx/dz) gives angle from Z axis?
-        // No, slope is dx/dz. tan(theta) = dx/dz. theta is angle from Z axis.
-        // In Planck/Box2D, angle 0 is +X axis.
-        // So if river flows +Z, angle is -PI/2 (270 deg) or +PI/2?
-        // Let's stick to standard math.
-        // Vector (dx, dz). Tangent vector T = (slope, 1). Normalized.
-        // Normal vector N = (-1, slope) or (1, -slope).
-
-        // Let's use vectors for safety.
         const T = planck.Vec2(slope, 1.0);
         T.normalize();
 
-        let N = planck.Vec2(1.0, -slope); // Perpendicular to T
+        let N = planck.Vec2(1.0, -slope);
         N.normalize();
 
-        // If isLeft, we are at x < center. We want to point towards center (approx +x).
-        // Check dot product with +X axis (1,0).
         if (isLeft) {
           if (N.x < 0) N.mul(-1);
         } else {
           if (N.x > 0) N.mul(-1);
         }
 
-        const angle = Math.atan2(N.y, N.x); // Physics angle (radians from +X)
+        const angle = Math.atan2(N.y, N.x);
 
-        // Center position
         const startPos = planck.Vec2(bankX, z);
         const centerPos = startPos.clone().add(N.clone().mul(pierLength / 2));
 
-        // Note: Pier constructor expects (x, y) where y is z-coord in 3D
         this.entityManager.add(new Pier(centerPos.x, centerPos.y, pierLength, angle, this.physicsEngine));
-      } else if (type < 0.7) {
-        // Gas Can
-        this.entityManager.add(new GasCan(x, z, this.physicsEngine));
       } else {
-        // Message in a Bottle
+        // Message in a Bottle (Rest of probability)
         this.entityManager.add(new MessageInABottle(x, z, this.physicsEngine));
       }
     }

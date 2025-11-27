@@ -3,6 +3,7 @@ import { PhysicsEngine } from './core/PhysicsEngine';
 import { GraphicsEngine } from './core/GraphicsEngine';
 import { EntityManager } from './core/EntityManager';
 import { TerrainManager } from './world/TerrainManager';
+import { Decorations } from './world/Decorations';
 import { ObstacleManager } from './managers/ObstacleManager';
 import { Boat } from './entities/Boat';
 import { InputManager } from './managers/InputManager';
@@ -39,6 +40,9 @@ export class Game {
         this.entityManager = new EntityManager(this.physicsEngine, this.graphicsEngine);
         this.inputManager = new InputManager();
         this.clock = new THREE.Clock();
+
+        // Initialize procedural generation caches
+        Decorations.initCache();
 
         // UI
         this.startScreen = document.getElementById('start-screen') as HTMLElement;
@@ -90,13 +94,11 @@ export class Game {
                     if (other.subtype !== 'pier') {
                         other.entity.onHit();
                         // Collision penalty?
-                        this.fuel = Math.max(0, this.fuel - 5); // Lose fuel on impact
+                        // Removed fuel penalty. Maybe slow down boat?
                     }
                 } else if (other.type === 'collectable') {
                     other.entity.onHit();
-                    if (other.subtype === 'gas') {
-                        this.fuel = Math.min(100, this.fuel + 20);
-                    } else if (other.subtype === 'bottle') {
+                    if (other.subtype === 'bottle') {
                         this.score += 100;
                     }
                 }
@@ -127,23 +129,28 @@ export class Game {
 
         // Update Terrain
         if (this.boat.mesh) {
+            this.terrainManager.setDebug(input.debug);
             this.terrainManager.update(this.boat.mesh.position.z);
             this.obstacleManager.update(this.boat.mesh.position.z);
         }
 
         // Update Game State
-        this.fuel -= dt * 0.5; // Burn fuel slowly
-        if (this.fuel <= 0) {
-            this.fuel = 0;
-            // Game Over logic? For now just stop boat?
-            // this.isPlaying = false; 
-        }
+        // No fuel anymore
 
         // Update UI
-        this.scoreElement.innerText = `Score: ${this.score}`;
-        this.fuelElement.innerText = `Fuel: ${Math.floor(this.fuel)}%`;
-        // Thrust display is handled elsewhere or static for now? 
-        // Boat doesn't expose thrust value easily, let's skip for now or add getter.
+        this.scoreElement.innerText = `Score: ${this.score} `;
+
+        // Update Thrust Display
+        if (this.boat) {
+            const throttle = this.boat.getThrottle();
+            const percentage = Math.round(throttle * 100);
+            this.thrustElement.innerText = `Thrust: ${percentage}% `;
+
+            // Color code
+            if (percentage > 0) this.thrustElement.style.color = 'white';
+            else if (percentage < 0) this.thrustElement.style.color = '#ffaaaa'; // Reddish for reverse
+            else this.thrustElement.style.color = '#aaaaaa'; // Grey for neutral
+        }
 
         // Camera Follow
         if (this.boat.mesh) {

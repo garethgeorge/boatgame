@@ -51,6 +51,16 @@ export class TerrainManager {
     this.updateCollision(boatZ);
   }
 
+  private debug: boolean = false;
+
+  setDebug(enabled: boolean) {
+    if (this.debug === enabled) return;
+    this.debug = enabled;
+    this.collisionMeshes.forEach(mesh => {
+      mesh.visible = this.debug;
+    });
+  }
+
   private updateCollision(boatZ: number) {
     // Generate collision segments around the boat
     const startZ = Math.floor((boatZ - this.collisionRadius) / this.collisionStep) * this.collisionStep;
@@ -77,7 +87,10 @@ export class TerrainManager {
       const segment = this.createCollisionSegment(z, z + this.collisionStep);
       this.collisionBodies.push(...segment.bodies);
       this.collisionMeshes.push(...segment.meshes);
-      segment.meshes.forEach(m => this.graphicsEngine.add(m));
+      segment.meshes.forEach(m => {
+        m.visible = this.debug; // Set initial visibility
+        this.graphicsEngine.add(m);
+      });
     }
   }
 
@@ -155,6 +168,7 @@ export class TerrainManager {
 
     mesh.position.set(midX, 2.5, midY);
     mesh.rotation.y = -angle;
+    mesh.visible = this.debug; // Ensure created mesh respects debug state
 
     return mesh;
   }
