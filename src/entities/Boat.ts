@@ -10,10 +10,27 @@ export class Boat extends Entity {
         // Physics
         const width = 1.2;
         const height = 3.0; // Length in 3D, height in 2D top-down
-        this.physicsBody = Matter.Bodies.rectangle(x, y, width, height, {
+
+        // Create a boat shape (pointed front)
+        // Vertices relative to center (0,0)
+        // Front is -y (in 2D physics space, which maps to -z in 3D world)
+        // Wait, boat moves in -Z direction.
+        // In Physics (2D):
+        // Forward force is applied as (0, -1). So -Y is forward.
+        // So the "Front" of the boat should be at negative Y.
+
+        const vertices = [
+            { x: 0, y: -height / 2 },          // Bow (Front tip)
+            { x: width / 2, y: -height / 4 },  // Front Right
+            { x: width / 2, y: height / 2 },   // Back Right
+            { x: -width / 2, y: height / 2 },  // Back Left
+            { x: -width / 2, y: -height / 4 }  // Front Left
+        ];
+
+        this.physicsBody = Matter.Bodies.fromVertices(x, y, [vertices], {
             frictionAir: 0.05, // Water resistance (high drag)
-            friction: 0.1, // Collision friction
-            restitution: 0.1, // Low bounce
+            friction: 0.0, // Collision friction (smooth sliding)
+            restitution: 0.0, // No bounce
             density: 0.001, // Default density
         });
 

@@ -7,7 +7,7 @@ export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
   private noise: SimplexNoise;
   private chunkSize = 100; // Must match TerrainChunk.CHUNK_SIZE
-  private renderDistance = 6; // Number of chunks ahead/behind to keep
+  private renderDistance = 10; // Number of chunks ahead/behind to keep
 
   constructor(
     private physicsEngine: PhysicsEngine,
