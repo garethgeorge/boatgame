@@ -1,35 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Boat Game</title>
-    <style>
-      body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-      #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-      #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box; }
-      #score { font-size: 32px; font-weight: bold; color: white; text-shadow: 2px 2px 0 #000; }
-      #controls-hint { color: white; text-align: center; text-shadow: 1px 1px 0 #000; font-size: 18px; opacity: 0.8; }
-      #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; flex-direction: column; color: white; pointer-events: auto; }
-      button { padding: 15px 30px; font-size: 24px; background: #ff9900; border: none; border-radius: 10px; color: white; cursor: pointer; font-weight: bold; box-shadow: 0 4px 0 #cc7a00; transition: transform 0.1s; }
-      button:active { transform: translateY(4px); box-shadow: none; }
-      h1 { font-size: 64px; margin-bottom: 20px; text-shadow: 4px 4px 0 #000; color: #ffeb3b; }
-    </style>
-  </head>
-  <body>
-    <div id="game-container"></div>
-    <div id="ui-layer">
-      <div>
-        <div id="score">Score: 0</div>
-        <div id="thrust-display" style="font-size: 24px; font-weight: bold; color: white; text-shadow: 2px 2px 0 #000; margin-top: 10px;">Thrust: 10%</div>
-        <div id="fuel-display" style="font-size: 24px; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 0 #000; margin-top: 10px;">Fuel: 100%</div>
-      </div>
-      <div id="controls-hint">W/S: Throttle | A/D: Steer</div>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boat Game</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #87CEEB;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    #game-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    #score {
+      font-size: 32px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    #controls-hint {
+      color: white;
+      text-align: center;
+      text-shadow: 1px 1px 0 #000;
+      font-size: 18px;
+      opacity: 0.8;
+    }
+
+    #start-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: white;
+      pointer-events: auto;
+      z-index: 10;
+      overflow: hidden;
+    }
+
+    #bg-video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+
+    #start-screen::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1;
+    }
+
+    #content-wrapper {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #unmute-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 64px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      z-index: 20;
+      padding: 0;
+      filter: drop-shadow(0 0 2px black);
+    }
+
+    #unmute-btn:hover {
+      transform: scale(1.1);
+    }
+
+    button {
+      padding: 15px 30px;
+      font-size: 24px;
+      background: #ff9900;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 4px 0 #cc7a00;
+      transition: transform 0.1s;
+    }
+
+    button:active {
+      transform: translateY(4px);
+      box-shadow: none;
+    }
+
+    h1 {
+      font-size: 64px;
+      margin-bottom: 20px;
+      text-shadow: 4px 4px 0 #000;
+      color: #ffeb3b;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="game-container"></div>
+  <div id="ui-layer">
+    <div>
+      <div id="score">Score: 0</div>
+      <div id="thrust-display"
+        style="font-size: 24px; font-weight: bold; color: white; text-shadow: 2px 2px 0 #000; margin-top: 10px;">Thrust:
+        10%</div>
+      <div id="fuel-display"
+        style="font-size: 24px; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 0 #000; margin-top: 10px;">Fuel:
+        100%</div>
     </div>
-    <div id="start-screen">
+    <div id="controls-hint">W/S: Throttle | A/D: Steer</div>
+  </div>
+  <div id="start-screen">
+    <video autoplay muted loop playsinline id="bg-video">
+      <source src="assets/background.mp4" type="video/mp4">
+    </video>
+    <button id="unmute-btn" title="Enable Sound">🔇</button>
+    <div id="content-wrapper">
       <h1>Boat Game</h1>
       <button id="start-btn">Start Game</button>
     </div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+  </div>
+  <script>
+    const video = document.getElementById('bg-video');
+    const unmuteBtn = document.getElementById('unmute-btn');
+    const startBtn = document.getElementById('start-btn');
+
+    unmuteBtn.addEventListener('click', () => {
+      if (video.muted) {
+        video.muted = false;
+        unmuteBtn.textContent = "🔊";
+        unmuteBtn.title = "Mute Sound";
+      } else {
+        video.muted = true;
+        unmuteBtn.textContent = "🔇";
+        unmuteBtn.title = "Enable Sound";
+      }
+    });
+
+    startBtn.addEventListener('click', () => {
+      video.pause();
+      video.currentTime = 0;
+    });
+  </script>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>
