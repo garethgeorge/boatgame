@@ -30,6 +30,7 @@ export class Boat extends Entity {
         this.physicsBody = Matter.Bodies.fromVertices(x, y, [vertices], {
             frictionAir: 0.05, // Water resistance (high drag)
             friction: 0.0, // Collision friction (smooth sliding)
+            frictionStatic: 0.0, // No stickiness
             restitution: 0.0, // No bounce
             density: 0.001, // Default density
         });

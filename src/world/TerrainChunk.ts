@@ -336,23 +336,36 @@ export class TerrainChunk {
       }
 
       // Calculate center for the body
-      const center = {
-        x: (vertices[0].x + vertices[1].x + vertices[2].x + vertices[3].x) / 4,
-        y: (vertices[0].y + vertices[1].y + vertices[2].y + vertices[3].y) / 4
-      };
+      // IMPORTANT: We must use the exact centroid calculated by Matter.js
+      // otherwise Matter.js will shift the vertices when creating the body.
+      const center = Matter.Vertices.centre(vertices);
 
-      const body = Matter.Bodies.fromVertices(center.x, center.y, [vertices], {
-        isStatic: true,
-        label: 'Shore'
+      // Create a part for this segment.
+      // Note: We don't set isStatic here, we set it on the parent body.
+      const part = Matter.Bodies.fromVertices(center.x, center.y, [vertices], {
+        restitution: 0.0,
+        friction: 0.0,
+        frictionStatic: 0.0
       });
 
-      if (body) {
-        parts.push(body);
+      if (part) {
+        parts.push(part);
       }
     }
 
     if (parts.length > 0) {
-      this.bodies.push(...parts);
+      // Create a single compound body from all parts
+      // This ensures internal edges are ignored for collision, preventing snagging.
+      const compoundBody = Matter.Body.create({
+        parts: parts,
+        isStatic: true,
+        label: 'Shore',
+        restitution: 0.0,
+        friction: 0.0,
+        frictionStatic: 0.0
+      });
+
+      this.bodies.push(compoundBody);
     }
   }
 
