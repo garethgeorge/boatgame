@@ -13,7 +13,7 @@ export class TerrainManager {
 
   // Collision Management
   private activeCollisionSegments: Map<number, { bodies: planck.Body[], meshes: THREE.Mesh[] }> = new Map();
-  private collisionStep = 10; // Distance between collision points
+  private collisionStep = 5; // Distance between collision points
   private collisionRadius = 150; // Radius around boat to generate collision
 
   constructor(
