@@ -14,9 +14,7 @@ export class EntityManager {
 
   add(entity: Entity) {
     this.entities.push(entity);
-    if (entity.physicsBody) {
-      this.physicsEngine.addBody(entity.physicsBody);
-    }
+    // Planck bodies are added to world upon creation, so no need to add here.
     if (entity.mesh) {
       this.graphicsEngine.add(entity.mesh);
     }
@@ -27,7 +25,7 @@ export class EntityManager {
     if (index > -1) {
       this.entities.splice(index, 1);
       if (entity.physicsBody) {
-        this.physicsEngine.removeBody(entity.physicsBody);
+        this.physicsEngine.world.destroyBody(entity.physicsBody);
       }
       if (entity.mesh) {
         this.graphicsEngine.remove(entity.mesh);

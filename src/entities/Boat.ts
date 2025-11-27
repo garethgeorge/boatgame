@@ -1,42 +1,36 @@
-import Matter from 'matter-js';
+import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../core/Entity';
 import { InputState } from '../managers/InputManager';
+import { PhysicsEngine } from '../core/PhysicsEngine';
 
 export class Boat extends Entity {
-    constructor(x: number, y: number) {
+    declare physicsBody: planck.Body;
+    declare mesh: THREE.Mesh;
+
+    constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
         super();
 
-        // Physics
         const width = 1.2;
-        const height = 3.0; // Length in 3D, height in 2D top-down
+        const height = 3.0;
 
-        // Create a boat shape (pointed front)
-        // Vertices relative to center (0,0)
-        // Front is -y (in 2D physics space, which maps to -z in 3D world)
-        // Wait, boat moves in -Z direction.
-        // In Physics (2D):
-        // Forward force is applied as (0, -1). So -Y is forward.
-        // So the "Front" of the boat should be at negative Y.
-
-        const vertices = [
-            { x: 0, y: -height / 2 },          // Bow (Front tip)
-            { x: width / 2, y: -height / 4 },  // Front Right
-            { x: width / 2, y: height / 2 },   // Back Right
-            { x: -width / 2, y: height / 2 },  // Back Left
-            { x: -width / 2, y: -height / 4 }  // Front Left
-        ];
-
-        this.physicsBody = Matter.Bodies.fromVertices(x, y, [vertices], {
-            frictionAir: 0.05, // Water resistance (high drag)
-            friction: 0.0, // Collision friction (smooth sliding)
-            frictionStatic: 0.0, // No stickiness
-            restitution: 0.0, // No bounce
-            density: 0.001, // Default density
+        // Create dynamic body
+        this.physicsBody = physicsEngine.world.createBody({
+            type: 'dynamic',
+            position: planck.Vec2(x, y),
+            linearDamping: 1.0,
+            angularDamping: 4.0 // High angular drag to prevent spinning
         });
 
-        // Set realistic mass (e.g., 500kg for a small boat)
-        Matter.Body.setMass(this.physicsBody, 500);
+        // Create fixture (shape)
+        // Using a Box for the boat. 
+        // Planck Box takes half-width and half-height.
+        this.physicsBody.createFixture({
+            shape: planck.Box(width / 2, height / 2),
+            density: 20.0, // High density to give it mass
+            friction: 0.0, // Smooth sliding
+            restitution: 0.0 // No bounce
+        });
 
         // Graphics
         const geometry = new THREE.BoxGeometry(width, 1.0, height);
@@ -49,36 +43,43 @@ export class Boat extends Entity {
     update(dt: number, input?: InputState) {
         if (!this.physicsBody || !input) return;
 
-        // Forces need to be scaled by mass to be effective
-        // F = ma. If we want a = 5 m/s^2, F = 500 * 5 = 2500.
-        // However, Matter.js forces are applied per step.
-        // Let's try a force magnitude that feels right.
-        const forceMagnitude = 0.125; // Reduced 4x from 0.5 based on user feedback
-        const torqueMagnitude = 0.04; // Reduced another 25x (Total 625x reduction from original)
+        // Anisotropic Drag (Water resistance)
+        const velocity = this.physicsBody.getLinearVelocity();
 
-        // Forward/Backward
+        // Forward direction relative to body (assuming local -Y is forward)
+        const forwardDir = this.physicsBody.getWorldVector(planck.Vec2(0, -1));
+        const rightDir = this.physicsBody.getWorldVector(planck.Vec2(1, 0));
+
+        const forwardSpeed = planck.Vec2.dot(velocity, forwardDir);
+        const lateralSpeed = planck.Vec2.dot(velocity, rightDir);
+
+        // Apply strong lateral drag (keel) to prevent drifting
+        const lateralDrag = 10.0;
+        const lateralImpulse = rightDir.clone().mul(-lateralSpeed * lateralDrag * dt * this.physicsBody.getMass());
+        this.physicsBody.applyLinearImpulse(lateralImpulse, this.physicsBody.getWorldCenter());
+
+        const forceMagnitude = 1500.0;
+        const torqueMagnitude = 500.0;
+
         if (input.forward) {
-            const force = {
-                x: Math.sin(this.physicsBody.angle) * forceMagnitude,
-                y: -Math.cos(this.physicsBody.angle) * forceMagnitude // -y is forward in 2D top-down if 0 angle is up
-            };
-            // Actually, let's verify orientation. 
-            // If angle 0 is "up" (negative Y), then:
-            // sin(0) = 0, -cos(0) = -1. Correct.
-            Matter.Body.applyForce(this.physicsBody, this.physicsBody.position, force);
+            const force = forwardDir.clone().mul(forceMagnitude);
+            this.physicsBody.applyForceToCenter(force);
         } else if (input.backward) {
-            const force = {
-                x: -Math.sin(this.physicsBody.angle) * forceMagnitude * 0.5,
-                y: Math.cos(this.physicsBody.angle) * forceMagnitude * 0.5
-            };
-            Matter.Body.applyForce(this.physicsBody, this.physicsBody.position, force);
+            const force = forwardDir.clone().mul(-forceMagnitude * 0.5);
+            this.physicsBody.applyForceToCenter(force);
         }
 
-        // Steering
         if (input.left) {
-            this.physicsBody.torque = -torqueMagnitude;
+            this.physicsBody.applyTorque(-torqueMagnitude);
         } else if (input.right) {
-            this.physicsBody.torque = torqueMagnitude;
+            this.physicsBody.applyTorque(torqueMagnitude);
         }
+
+        // Sync Mesh
+        const pos = this.physicsBody.getPosition();
+        const angle = this.physicsBody.getAngle();
+
+        this.mesh.position.set(pos.x, 0, pos.y);
+        this.mesh.rotation.y = -angle;
     }
 }

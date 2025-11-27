@@ -1,32 +1,17 @@
-import Matter from 'matter-js';
+import * as planck from 'planck';
 
 export class PhysicsEngine {
-  engine: Matter.Engine;
-  runner: Matter.Runner;
+  world: planck.World;
 
   constructor() {
-    this.engine = Matter.Engine.create();
-
-    // Disable gravity for top-down view
-    this.engine.gravity.y = 0;
-    this.engine.gravity.x = 0;
-    this.engine.gravity.scale = 0;
-
-    this.runner = Matter.Runner.create();
+    // Create world with no gravity
+    this.world = new planck.World(planck.Vec2(0, 0));
   }
 
   update(dt: number) {
-    // Matter.js uses fixed timesteps by default, but we can pass delta time
-    // dt is in seconds, Matter.Runner.tick expects milliseconds if used directly,
-    // but Engine.update expects milliseconds.
-    Matter.Engine.update(this.engine, dt * 1000);
-  }
-
-  addBody(body: Matter.Body) {
-    Matter.World.add(this.engine.world, body);
-  }
-
-  removeBody(body: Matter.Body) {
-    Matter.World.remove(this.engine.world, body);
+    // Step the world
+    // timeStep, velocityIterations, positionIterations
+    this.world.step(dt, 10, 10);
   }
 }
+

@@ -48,7 +48,7 @@ export class Game {
         this.terrainManager = new TerrainManager(this.physicsEngine, this.graphicsEngine);
 
         // Create Boat
-        this.boat = new Boat(0, 0);
+        this.boat = new Boat(0, 0, this.physicsEngine);
         this.entityManager.add(this.boat);
 
         // Initial update to generate terrain around boat
@@ -95,8 +95,12 @@ export class Game {
 
             // Offset: Behind (positive Z relative to boat facing -Z) and Up (positive Y)
             // If boat faces -Z, "behind" is +Z.
-            const offsetDistance = 20;
-            const offsetHeight = 15;
+            // Offset: Behind (positive Z relative to boat facing -Z) and Up (positive Y)
+            // If boat faces -Z, "behind" is +Z.
+
+            const viewMode = this.inputManager.keys.viewMode;
+            const offsetDistance = viewMode === 'far' ? 20 : 7;
+            const offsetHeight = viewMode === 'far' ? 15 : 3;
 
             // Calculate offset vector based on rotation
             // We want to be 'offsetDistance' units "behind" the boat.
