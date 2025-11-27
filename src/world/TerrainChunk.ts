@@ -179,10 +179,19 @@ export class TerrainChunk {
     // But we set positions.z = localZ.
     // So we need to move mesh to zOffset.
 
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x228B22,
-      flatShading: true,
-      side: THREE.DoubleSide
+    // Create custom gradient for toon shading (3-step cartoon look)
+    const colors = new Uint8Array([
+      0, 0, 0,        // Dark shadow
+      100, 100, 100,  // Mid-tone
+      200, 200, 200,  // Highlight
+      255, 255, 255   // Bright highlight
+    ]);
+    const gradientMap = new THREE.DataTexture(colors, 4, 1, THREE.RGBFormat);
+    gradientMap.needsUpdate = true;
+
+    const material = new THREE.MeshToonMaterial({
+      color: 0x5cb85c,
+      gradientMap: gradientMap,
     });
 
     const mesh = new THREE.Mesh(geometry, material);
@@ -208,11 +217,10 @@ export class TerrainChunk {
     }
     geometry.computeVertexNormals();
 
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x0000ff,
+    const material = new THREE.MeshToonMaterial({
+      color: 0x4da6ff,
       transparent: true,
-      opacity: 0.6,
-      side: THREE.DoubleSide
+      opacity: 0.8,
     });
 
     const mesh = new THREE.Mesh(geometry, material);

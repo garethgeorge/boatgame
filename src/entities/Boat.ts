@@ -34,7 +34,7 @@ export class Boat extends Entity {
 
         // Graphics
         const geometry = new THREE.BoxGeometry(width, 1.0, height);
-        const material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+        const material = new THREE.MeshToonMaterial({ color: 0xff4444 });
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.castShadow = true;
         this.mesh.receiveShadow = true;
