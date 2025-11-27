@@ -1,58 +1,35 @@
 import * as THREE from 'three';
 import { SimplexNoise } from './SimplexNoise';
 import { GraphicsEngine } from '../core/GraphicsEngine';
+import { RiverSystem } from './RiverSystem';
 
 export class TerrainChunk {
   mesh: THREE.Mesh;
   waterMesh: THREE.Mesh;
 
   // Config
-  private static readonly CHUNK_SIZE = 500; // Size of chunk in Z
+  public static readonly CHUNK_SIZE = 500; // Size of chunk in Z
   private static readonly CHUNK_WIDTH = 400; // Width of world in X
   private static readonly RESOLUTION_X = 160; // Vertices along X (Double fidelity perpendicular to river)
   private static readonly RESOLUTION_Z = 200; // Vertices along Z (Halve fidelity along river)
-  private static readonly RIVER_WIDTH = 40;
+
+  zOffset: number;
+  private noise: SimplexNoise;
+  private riverSystem: RiverSystem;
 
   constructor(
-    private zOffset: number,
+    zOffset: number,
     private graphicsEngine: GraphicsEngine,
-    private noise: SimplexNoise
   ) {
+    this.zOffset = zOffset;
+    this.noise = new SimplexNoise(200);
+    this.riverSystem = RiverSystem.getInstance();
+
     this.mesh = this.generateMesh();
     this.waterMesh = this.generateWater();
 
     this.graphicsEngine.add(this.mesh);
     this.graphicsEngine.add(this.waterMesh);
-  }
-
-  private getRiverOffset(z: number): number {
-    // Large scale noise for river path
-    // Scale 0.002 = 500 units per cycle
-    // Amplitude 100 = +/- 100 units sideways
-    return this.noise.noise2D(0, z * 0.002) * 100;
-  }
-
-  private calculateNormal(x: number, z: number): THREE.Vector3 {
-    const epsilon = 0.1;
-
-    // Calculate height gradient
-    const h0 = this.calculateHeight(x, z);
-    const hx = this.calculateHeight(x + epsilon, z);
-    const hz = this.calculateHeight(x, z + epsilon);
-
-    const dhdx = (hx - h0) / epsilon;
-    const dhdz = (hz - h0) / epsilon;
-
-    // Calculate river offset gradient
-    const off0 = this.getRiverOffset(z);
-    const offz = this.getRiverOffset(z + epsilon);
-    const doffdz = (offz - off0) / epsilon;
-
-    const nx = -dhdx;
-    const ny = 1;
-    const nz = dhdx * doffdz - dhdz;
-
-    return new THREE.Vector3(nx, ny, nz).normalize();
   }
 
   private getDistributedX(u: number): number {
@@ -138,46 +115,49 @@ export class TerrainChunk {
     return geometry;
   }
 
+  private calculateNormal(x: number, z: number): THREE.Vector3 {
+    const epsilon = 0.1;
+
+    const hL = this.calculateHeight(x - epsilon, z);
+    const hR = this.calculateHeight(x + epsilon, z);
+    const hD = this.calculateHeight(x, z - epsilon);
+    const hU = this.calculateHeight(x, z + epsilon);
+
+    // Normal vector: cross product of tangent vectors
+    const v1 = new THREE.Vector3(2 * epsilon, hR - hL, 0);
+    const v2 = new THREE.Vector3(0, hU - hD, 2 * epsilon);
+
+    const normal = new THREE.Vector3().crossVectors(v2, v1).normalize();
+    return normal;
+  }
+
   private generateMesh(): THREE.Mesh {
     const geometry = this.createCustomGridGeometry();
     const positions = geometry.attributes.position;
-    const normals = geometry.attributes.normal;
+    // const normals = geometry.attributes.normal; // Normals will be computed later
 
     for (let i = 0; i < positions.count; i++) {
       const localX = positions.getX(i);
       const localZ = positions.getZ(i); // This is 0 to CHUNK_SIZE
 
       // Transform to world space
-      // Note: In generateMesh previously, we had:
-      // worldZ = (this.zOffset + TerrainChunk.CHUNK_SIZE / 2) - vertex.y
-      // PlaneGeometry was rotated -PI/2.
-      // Here we are building upright geometry.
-      // Let's align worldZ:
       const worldZ = this.zOffset + localZ;
-      const worldX = localX;
 
-      // Calculate height
-      const height = this.calculateHeight(worldX, worldZ);
+      // Deform X based on river path
+      const riverCenter = this.riverSystem.getRiverCenter(worldZ);
+      const worldX = localX + riverCenter;
+
+      // Calculate height relative to river center
+      // We pass localX (relative to river center) to calculateHeight for profile
+      // But calculateHeight needs to know about the river width at this Z
+      const height = this.calculateHeight(localX, worldZ);
+
+      positions.setX(i, worldX); // Set actual world X
       positions.setY(i, height);
-
-      // Apply river bending offset
-      const offset = this.getRiverOffset(worldZ);
-      positions.setX(i, localX + offset);
-
-      // Calculate Normal
-      const normal = this.calculateNormal(worldX, worldZ);
-      normals.setXYZ(i, normal.x, normal.y, normal.z);
+      // Z is already set in createCustomGridGeometry
     }
 
-    // No rotation needed if we build it Y-up
-    // But we need to position the chunk correctly in Z
-    // localZ is 0..CHUNK_SIZE.
-    // We want the mesh to start at zOffset.
-    // So mesh.position.z = zOffset?
-    // Wait, we used worldZ = zOffset + localZ for noise.
-    // So if mesh is at (0,0,0), vertices are at (x, y, zOffset + localZ).
-    // But we set positions.z = localZ.
-    // So we need to move mesh to zOffset.
+    geometry.computeVertexNormals(); // Recompute with new heights
 
     // Create custom gradient for toon shading (3-step cartoon look)
     const colors = new Uint8Array([
@@ -211,8 +191,8 @@ export class TerrainChunk {
       const localZ = positions.getZ(i);
       const worldZ = this.zOffset + localZ;
 
-      const offset = this.getRiverOffset(worldZ);
-      positions.setX(i, localX + offset);
+      const riverCenter = this.riverSystem.getRiverCenter(worldZ);
+      positions.setX(i, localX + riverCenter);
       // Y is 0 by default
     }
     geometry.computeVertexNormals();
@@ -230,51 +210,62 @@ export class TerrainChunk {
   }
 
   private calculateHeight(x: number, z: number): number {
-    // 1. River Channel Profile
-    const riverEdge = TerrainChunk.RIVER_WIDTH / 2;
+    // x is distance from river center (localX)
+
+    const riverWidth = this.riverSystem.getRiverWidth(z);
+    const riverEdge = riverWidth / 2;
     const distFromCenter = Math.abs(x);
-
-    if (distFromCenter < riverEdge) {
-      // Underwater / River bed
-      const depth = 5;
-      const normalizedX = distFromCenter / riverEdge;
-      return -depth * (1 - normalizedX * normalizedX);
-    }
-
-    // Land Generation
     const distFromBank = distFromCenter - riverEdge;
 
+    // 1. Land Generation (Base Terrain)
     // "Mountainous" Map: Low frequency noise to determine biome
-    // 0 = Rolling Hills, 1 = Rugged Mountains
-    // Scale: 0.001 (very large features)
     let mountainMask = this.noise.noise2D(x * 0.001, z * 0.001);
     mountainMask = (mountainMask + 1) / 2; // Normalize to 0-1
     mountainMask = Math.pow(mountainMask, 2); // Bias towards 0 (more hills than mountains)
 
     // Rolling Hills (Low Amplitude, Smooth)
-    // FBM with low frequency
     const hillNoise =
       this.noise.noise2D(x * 0.01, z * 0.01) * 5 +
       this.noise.noise2D(x * 0.03, z * 0.03) * 2;
 
     // Rugged Mountains (High Amplitude, Ridged)
-    // Ridged Multifractal: 1 - abs(noise)
     const ridge1 = 1 - Math.abs(this.noise.noise2D(x * 0.005, z * 0.005));
     const ridge2 = 1 - Math.abs(this.noise.noise2D(x * 0.01, z * 0.01));
     const mountainNoise = (Math.pow(ridge1, 2) * 40 + Math.pow(ridge2, 2) * 10);
 
     // Blend based on mask
-    let terrainHeight = (hillNoise * (1 - mountainMask)) + (mountainNoise * mountainMask);
+    let rawLandHeight = (hillNoise * (1 - mountainMask)) + (mountainNoise * mountainMask);
 
     // Add detail noise everywhere
-    terrainHeight += this.noise.noise2D(x * 0.1, z * 0.1) * 1.0;
+    rawLandHeight += this.noise.noise2D(x * 0.1, z * 0.1) * 1.0;
 
-    // Transition from river bank
-    // Ensure smooth transition from 0 at bank to full terrain height
-    const bankTransition = Math.min(1.0, distFromBank / 30.0);
-    const finalHeight = Math.max(0.5, terrainHeight * bankTransition);
+    // FIX: Clamp land height to be strictly above water level to prevent inland lakes
+    // We add a base height (e.g. 2.0) and clamp
+    rawLandHeight = Math.max(2.0, rawLandHeight + 2.0);
 
-    return finalHeight;
+    // Apply Bank Taper: Force land height to 0 at the river edge
+    // Smoothly ramp up over 15 units
+    const bankTaper = this.smoothstep(0, 15, distFromBank);
+    const landHeight = rawLandHeight * bankTaper;
+
+    // 2. River Bed Generation
+    const depth = 8; // Deeper river
+    // Parabolic profile: 1 at center, 0 at edge
+    const normalizedX = Math.min(1.0, distFromCenter / riverEdge);
+    const riverBedHeight = -depth * (1 - normalizedX * normalizedX);
+
+    // 3. Blend Land and River
+    // We blend over a small zone around the edge to avoid hard creases
+    const transitionWidth = 8.0; // Slightly wider transition for smoother visuals
+    const mixFactor = this.smoothstep(riverEdge - transitionWidth / 2, riverEdge + transitionWidth / 2, distFromCenter);
+
+    // mixFactor is 0 inside river (bed), 1 outside (land)
+    return (1 - mixFactor) * riverBedHeight + mixFactor * landHeight;
+  }
+
+  private smoothstep(edge0: number, edge1: number, x: number): number {
+    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
   }
 
   dispose() {

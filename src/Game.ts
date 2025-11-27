@@ -63,10 +63,9 @@ export class Game {
         this.clock.start();
     }
 
-    update() {
+    update(dt: number) {
         if (!this.isPlaying) return;
 
-        const dt = this.clock.getDelta();
         const input = this.inputManager.getState();
 
         // Update Physics
@@ -93,8 +92,6 @@ export class Game {
             const boatPos = this.boat.mesh.position.clone();
             const boatRot = this.boat.mesh.rotation.y;
 
-            // Offset: Behind (positive Z relative to boat facing -Z) and Up (positive Y)
-            // If boat faces -Z, "behind" is +Z.
             // Offset: Behind (positive Z relative to boat facing -Z) and Up (positive Y)
             // If boat faces -Z, "behind" is +Z.
 
@@ -130,7 +127,16 @@ export class Game {
 
     animate() {
         requestAnimationFrame(() => this.animate());
-        this.update();
-        this.graphicsEngine.render();
+
+        const dt = this.clock.getDelta();
+
+        this.update(dt);
+
+        // Pass dt to graphics engine for day/night cycle
+        // Only advance time if playing? Or always? 
+        // Let's advance it always for ambience, or only when playing. 
+        // User said "every 30 real world minutes". 
+        // If we want it to match real world time passing, we should pass dt always.
+        this.graphicsEngine.render(dt);
     }
 }

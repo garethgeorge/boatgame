@@ -1,69 +1,54 @@
 import * as THREE from 'three';
 import * as planck from 'planck';
+
 import { PhysicsEngine } from '../core/PhysicsEngine';
 import { GraphicsEngine } from '../core/GraphicsEngine';
-import { SimplexNoise } from './SimplexNoise';
 import { TerrainChunk } from './TerrainChunk';
+import { RiverSystem } from './RiverSystem';
 
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
-  private noise: SimplexNoise;
-  private chunkSize = 500; // Must match TerrainChunk.CHUNK_SIZE
-  private renderDistance = 3; // Number of chunks ahead/behind to keep
+  private collisionBodies: planck.Body[] = [];
+  private collisionMeshes: THREE.Mesh[] = [];
 
-  // Collision Management
-  private activeCollisionSegments: Map<number, { bodies: planck.Body[], meshes: THREE.Mesh[] }> = new Map();
-  private collisionStep = 5; // Distance between collision points
-  private collisionRadius = 150; // Radius around boat to generate collision
+  private riverSystem: RiverSystem;
+
+  private readonly collisionRadius = 150; // Radius around boat to generate collision
+  private readonly collisionStep = 5; // Step size for collision segments
 
   constructor(
     private physicsEngine: PhysicsEngine,
     private graphicsEngine: GraphicsEngine
   ) {
-    this.noise = new SimplexNoise();
+
+    this.riverSystem = RiverSystem.getInstance();
   }
 
   update(boatZ: number) {
-    this.updateChunks(boatZ);
-    this.updateCollision(boatZ);
-  }
-
-  private updateChunks(boatZ: number) {
-    const currentChunkIndex = Math.floor(boatZ / this.chunksSize);
-    const minChunk = currentChunkIndex - this.renderDistance;
-    const maxChunk = currentChunkIndex + 1;
+    // 1. Manage Visual Chunks
+    const currentChunkIndex = Math.floor(boatZ / TerrainChunk.CHUNK_SIZE);
+    const renderDistance = 3; // Number of chunks to render in each direction
 
     // Create new chunks
-    for (let i = minChunk; i <= maxChunk; i++) {
-      if (!this.chunks.has(i)) {
-        const zOffset = i * this.chunkSize;
-        const chunk = new TerrainChunk(
-          zOffset,
-          this.graphicsEngine,
-          this.noise
-        );
-        this.chunks.set(i, chunk);
+    for (let i = -renderDistance; i <= renderDistance; i++) {
+      const index = currentChunkIndex + i;
+      if (!this.chunks.has(index)) {
+        const zOffset = index * TerrainChunk.CHUNK_SIZE;
+        const chunk = new TerrainChunk(zOffset, this.graphicsEngine);
+        this.chunks.set(index, chunk);
       }
     }
 
     // Remove old chunks
     for (const [index, chunk] of this.chunks) {
-      if (index < minChunk || index > maxChunk) {
-        // chunk.dispose(); // TerrainChunk doesn't have dispose yet, but we should implement it if needed
-        // For now just removing from map and letting GC handle it (meshes are in scene though)
-        // We need to remove meshes from scene.
-        // TerrainChunk should have a dispose method.
-        // Let's assume it handles it or we just leak for now (refactor later).
-        // Actually, TerrainChunk adds to graphicsEngine. It should remove.
-        this.graphicsEngine.remove(chunk.mesh);
-        this.graphicsEngine.remove(chunk.waterMesh);
+      if (Math.abs(index - currentChunkIndex) > renderDistance) {
+        chunk.dispose();
         this.chunks.delete(index);
       }
     }
-  }
 
-  private getRiverOffset(z: number): number {
-    return this.noise.noise2D(0, z * 0.002) * 100;
+    // 2. Manage Collision Segments
+    this.updateCollision(boatZ);
   }
 
   private updateCollision(boatZ: number) {
@@ -71,54 +56,55 @@ export class TerrainManager {
     const startZ = Math.floor((boatZ - this.collisionRadius) / this.collisionStep) * this.collisionStep;
     const endZ = Math.ceil((boatZ + this.collisionRadius) / this.collisionStep) * this.collisionStep;
 
-    // Add new segments
-    for (let z = startZ; z < endZ; z += this.collisionStep) {
-      if (!this.activeCollisionSegments.has(z)) {
-        const segment = this.createCollisionSegment(z, z + this.collisionStep);
-        this.activeCollisionSegments.set(z, segment);
-        segment.meshes.forEach(m => this.graphicsEngine.add(m));
-      }
-    }
+    // Clear old collision bodies
+    this.collisionBodies.forEach(b => this.physicsEngine.world.destroyBody(b));
+    this.collisionBodies = [];
 
-    // Remove old segments
-    for (const [z, segment] of this.activeCollisionSegments) {
-      if (z < startZ || z > endZ) {
-        segment.bodies.forEach(b => this.physicsEngine.world.destroyBody(b));
-        segment.meshes.forEach(m => this.graphicsEngine.remove(m));
-        // Dispose geometries and materials
-        segment.meshes.forEach(m => {
-          m.geometry.dispose();
-          if (Array.isArray(m.material)) {
-            m.material.forEach(mat => mat.dispose());
-          } else {
-            m.material.dispose();
-          }
-        });
-        this.activeCollisionSegments.delete(z);
+    // Clear debug meshes
+    this.collisionMeshes.forEach(m => {
+      this.graphicsEngine.remove(m);
+      m.geometry.dispose();
+      if (Array.isArray(m.material)) {
+        m.material.forEach(mat => mat.dispose());
+      } else {
+        m.material.dispose();
       }
+    });
+    this.collisionMeshes = [];
+
+    // Generate new segments
+    for (let z = startZ; z < endZ; z += this.collisionStep) {
+      const segment = this.createCollisionSegment(z, z + this.collisionStep);
+      this.collisionBodies.push(...segment.bodies);
+      this.collisionMeshes.push(...segment.meshes);
+      segment.meshes.forEach(m => this.graphicsEngine.add(m));
     }
   }
 
   private createCollisionSegment(zStart: number, zEnd: number): { bodies: planck.Body[], meshes: THREE.Mesh[] } {
     const bodies: planck.Body[] = [];
     const meshes: THREE.Mesh[] = [];
-    const riverWidth = 40; // Must match TerrainChunk.RIVER_WIDTH
-    const halfWidth = riverWidth / 2;
 
     // Calculate positions including ghost vertices
     const zPrev = zStart - this.collisionStep;
     const zNext = zEnd + this.collisionStep;
 
-    const offPrev = this.getRiverOffset(zPrev);
-    const offStart = this.getRiverOffset(zStart);
-    const offEnd = this.getRiverOffset(zEnd);
-    const offNext = this.getRiverOffset(zNext);
+    // Get river data from RiverSystem
+    const centerPrev = this.riverSystem.getRiverCenter(zPrev);
+    const centerStart = this.riverSystem.getRiverCenter(zStart);
+    const centerEnd = this.riverSystem.getRiverCenter(zEnd);
+    const centerNext = this.riverSystem.getRiverCenter(zNext);
+
+    const widthPrev = this.riverSystem.getRiverWidth(zPrev);
+    const widthStart = this.riverSystem.getRiverWidth(zStart);
+    const widthEnd = this.riverSystem.getRiverWidth(zEnd);
+    const widthNext = this.riverSystem.getRiverWidth(zNext);
 
     // Left Bank
-    const pPrevL = planck.Vec2(-halfWidth + offPrev, zPrev);
-    const pStartL = planck.Vec2(-halfWidth + offStart, zStart);
-    const pEndL = planck.Vec2(-halfWidth + offEnd, zEnd);
-    const pNextL = planck.Vec2(-halfWidth + offNext, zNext);
+    const pPrevL = planck.Vec2(centerPrev - widthPrev / 2, zPrev);
+    const pStartL = planck.Vec2(centerStart - widthStart / 2, zStart);
+    const pEndL = planck.Vec2(centerEnd - widthEnd / 2, zEnd);
+    const pNextL = planck.Vec2(centerNext - widthNext / 2, zNext);
 
     const bodyL = this.physicsEngine.world.createBody({ type: 'static' });
     const shapeL = planck.Edge(pStartL, pEndL);
@@ -134,10 +120,10 @@ export class TerrainManager {
     meshes.push(this.createDebugLine(pStartL, pEndL));
 
     // Right Bank
-    const pPrevR = planck.Vec2(halfWidth + offPrev, zPrev);
-    const pStartR = planck.Vec2(halfWidth + offStart, zStart);
-    const pEndR = planck.Vec2(halfWidth + offEnd, zEnd);
-    const pNextR = planck.Vec2(halfWidth + offNext, zNext);
+    const pPrevR = planck.Vec2(centerPrev + widthPrev / 2, zPrev);
+    const pStartR = planck.Vec2(centerStart + widthStart / 2, zStart);
+    const pEndR = planck.Vec2(centerEnd + widthEnd / 2, zEnd);
+    const pNextR = planck.Vec2(centerNext + widthNext / 2, zNext);
 
     const bodyR = this.physicsEngine.world.createBody({ type: 'static' });
     const shapeR = planck.Edge(pStartR, pEndR);
@@ -171,10 +157,5 @@ export class TerrainManager {
     mesh.rotation.y = -angle;
 
     return mesh;
-  }
-
-  // Getter for chunkSize to fix the typo above
-  get chunksSize() {
-    return this.chunkSize;
   }
 }
