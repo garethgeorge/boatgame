@@ -8,7 +8,7 @@ export class GraphicsEngine {
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x87CEEB); // Sky blue
-    this.scene.fog = new THREE.Fog(0x87CEEB, 20, 100);
+    this.scene.fog = new THREE.Fog(0x87CEEB, 100, 500);
 
     this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     this.camera.position.set(0, 10, -10);

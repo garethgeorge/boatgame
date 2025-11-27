@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { PhysicsEngine } from './core/PhysicsEngine';
 import { GraphicsEngine } from './core/GraphicsEngine';
 import { EntityManager } from './core/EntityManager';
-import { SimpleRiver } from './world/SimpleRiver';
+import { TerrainManager } from './world/TerrainManager';
 import { Boat } from './entities/Boat';
 import { InputManager } from './managers/InputManager';
 
@@ -22,6 +22,7 @@ export class Game {
     thrustElement: HTMLElement;
 
     boat!: Boat;
+    terrainManager!: TerrainManager;
 
     constructor() {
         this.container = document.getElementById('game-container') as HTMLElement;
@@ -44,11 +45,14 @@ export class Game {
 
     init() {
         // Create World
-        new SimpleRiver(this.physicsEngine, this.graphicsEngine);
+        this.terrainManager = new TerrainManager(this.physicsEngine, this.graphicsEngine);
 
         // Create Boat
         this.boat = new Boat(0, 0);
         this.entityManager.add(this.boat);
+
+        // Initial update to generate terrain around boat
+        this.terrainManager.update(this.boat.mesh.position.z); // Use mesh position as it's synced with physics
 
         this.animate();
     }
@@ -72,6 +76,11 @@ export class Game {
         // We pass input to boat manually for now, or we could pass it to all entities
         this.boat.update(dt, input);
         this.entityManager.update(dt);
+
+        // Update Terrain
+        if (this.boat.mesh) {
+            this.terrainManager.update(this.boat.mesh.position.z);
+        }
 
         // Camera Follow
         if (this.boat.mesh) {
