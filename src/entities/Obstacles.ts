@@ -43,7 +43,7 @@ export class Alligator extends Entity {
       // Assuming model is roughly unit scale or needs adjustment.
       // Let's start with a scale that makes it visible and adjust if needed.
       // If it's a typical model, it might need scaling.
-      model.scale.set(4.0, 4.0, 4.0);
+      model.scale.set(3.0, 3.0, 3.0);
 
       // Rotate to face correct direction if needed.
       // Physics body forward is usually -Y or +Y depending on game.
@@ -65,7 +65,7 @@ export class Alligator extends Entity {
       console.error('An error occurred loading the alligator model:', error);
     });
 
-    this.mesh.position.y = 0;
+    this.mesh.position.y = 0.5; // Raised by ~15% of model height
   }
 
   onHit() {
