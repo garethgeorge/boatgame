@@ -1,5 +1,6 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Entity } from '../core/Entity';
 import { InputState } from '../managers/InputManager';
 import { PhysicsEngine } from '../core/PhysicsEngine';
@@ -63,87 +64,43 @@ export class Boat extends Entity {
 
         this.physicsBody.setUserData({ type: 'player', entity: this });
 
-        // Graphics - Tugboat (Squat & Detailed)
+        // Graphics - Tugboat (GLB Model)
         this.mesh = new THREE.Group();
         this.innerMesh = new THREE.Group();
         this.mesh.add(this.innerMesh);
 
-        const hullColor = 0xcc3333; // Red hull
-        const deckColor = 0xeeeeee; // White deck/cabin
-        const chimneyColor = 0x333333; // Dark grey chimney
-        const windowColor = 0x87CEEB; // Light blue windows
+        const loader = new GLTFLoader();
+        loader.load('assets/Cute_cartoon_tug_boat_1125002001_texture.glb', (gltf) => {
+            const model = gltf.scene;
 
-        const hullMat = new THREE.MeshToonMaterial({ color: hullColor });
-        const deckMat = new THREE.MeshToonMaterial({ color: deckColor });
-        const chimneyMat = new THREE.MeshToonMaterial({ color: chimneyColor });
-        const windowMat = new THREE.MeshToonMaterial({ color: windowColor });
+            // Adjust scale and rotation to match physics body
+            // Physics body is approx 2.4 wide x 6.0 long
+            // Model scale needs to be determined. Let's start with a reasonable guess and adjust.
+            // Usually models are huge or tiny.
+            // User requested double size (was 1.5) -> 3.0
+            model.scale.set(3.0, 3.0, 3.0);
 
-        // Hull (Main body) - Lower profile (Half height)
-        const hullHeight = 0.4; // Was 0.8
-        // Middle section
-        const hullGeo = new THREE.BoxGeometry(width, hullHeight, height - width);
-        const hull = new THREE.Mesh(hullGeo, hullMat);
-        hull.position.y = hullHeight / 2;
-        hull.position.z = 0; // Center
-        this.innerMesh.add(hull);
+            // Rotate to face correct direction (Forward is -Z)
+            // User requested 180 degree rotation from previous 270 (backwards) -> 90 degrees (Math.PI * 0.5)
+            model.rotation.y = Math.PI * 0.5;
 
-        // Bow (Rounded front)
-        const bowCyl = new THREE.Mesh(new THREE.CylinderGeometry(width / 2, width / 2, hullHeight, 16), hullMat);
-        bowCyl.position.set(0, hullHeight / 2, -(height - width) / 2);
-        this.innerMesh.add(bowCyl);
+            // Adjust vertical position
+            // User requested 3/8ths of boat height (0.375)
+            const box = new THREE.Box3().setFromObject(model);
+            const height = box.max.y - box.min.y;
+            model.position.y = height * 0.375;
 
-        // Stern (Rounded back)
-        const sternCyl = new THREE.Mesh(new THREE.CylinderGeometry(width / 2, width / 2, hullHeight, 16), hullMat);
-        sternCyl.position.set(0, hullHeight / 2, (height - width) / 2);
-        this.innerMesh.add(sternCyl);
+            model.traverse((child) => {
+                if ((child as THREE.Mesh).isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
 
-        // Fender (Dark strip) - Wraps around?
-        // Just box for middle + cylinders for ends
-        const fenderHeight = 0.1;
-        const fenderY = hullHeight;
-
-        const fenderBox = new THREE.Mesh(new THREE.BoxGeometry(width + 0.2, fenderHeight, height - width), chimneyMat);
-        fenderBox.position.set(0, fenderY, 0);
-        this.innerMesh.add(fenderBox);
-
-        const fenderBow = new THREE.Mesh(new THREE.CylinderGeometry(width / 2 + 0.1, width / 2 + 0.1, fenderHeight, 16), chimneyMat);
-        fenderBow.position.set(0, fenderY, -(height - width) / 2);
-        this.innerMesh.add(fenderBow);
-
-        const fenderStern = new THREE.Mesh(new THREE.CylinderGeometry(width / 2 + 0.1, width / 2 + 0.1, fenderHeight, 16), chimneyMat);
-        fenderStern.position.set(0, fenderY, (height - width) / 2);
-        this.innerMesh.add(fenderStern);
-
-        // Cabin - Squatter
-        const cabinWidth = width * 0.7;
-        const cabinHeight = 0.4; // Was 0.8
-        const cabinLength = height * 0.3;
-        const cabinGeo = new THREE.BoxGeometry(cabinWidth, cabinHeight, cabinLength);
-        const cabin = new THREE.Mesh(cabinGeo, deckMat);
-        cabin.position.y = hullHeight + 0.05 + cabinHeight / 2;
-        cabin.position.z = 1.0;
-        this.innerMesh.add(cabin);
-
-        // Windows (Black strips on cabin)
-        const winGeo = new THREE.BoxGeometry(cabinWidth + 0.05, 0.15, cabinLength * 0.6); // Height 0.3 -> 0.15
-        const windows = new THREE.Mesh(winGeo, windowMat);
-        windows.position.y = cabin.position.y + 0.05;
-        windows.position.z = cabin.position.z;
-        this.innerMesh.add(windows);
-
-        // Chimney - Short and stout
-        const chimneyGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.5, 16); // Height 1.0 -> 0.5
-        const chimney = new THREE.Mesh(chimneyGeo, chimneyMat);
-        chimney.position.y = cabin.position.y + cabinHeight / 2 + 0.25;
-        chimney.position.z = 1.5;
-        this.innerMesh.add(chimney);
-
-        // Roof
-        const roofGeo = new THREE.BoxGeometry(cabinWidth + 0.2, 0.05, cabinLength + 0.2); // Height 0.1 -> 0.05
-        const roof = new THREE.Mesh(roofGeo, deckMat);
-        roof.position.y = cabin.position.y + cabinHeight / 2;
-        roof.position.z = cabin.position.z;
-        this.innerMesh.add(roof);
+            this.innerMesh.add(model);
+        }, undefined, (error) => {
+            console.error('An error occurred loading the boat model:', error);
+        });
 
         this.mesh.castShadow = true;
         this.mesh.receiveShadow = true;
