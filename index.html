@@ -135,6 +135,34 @@
       margin-bottom: 20px;
       text-shadow: 4px 4px 0 #000;
       color: #ffeb3b;
+      display: none;
+      /* Hide h1 as we are using image */
+    }
+
+    #game-title {
+      max-width: 80%;
+      height: auto;
+      margin-bottom: 20px;
+      filter: drop-shadow(4px 4px 0 #000);
+    }
+
+    #start-btn {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+      transition: transform 0.1s;
+    }
+
+    #start-btn img {
+      width: 25vw;
+      height: auto;
+      display: block;
+      /* Removes bottom space */
+    }
+
+    #start-btn:active {
+      transform: scale(0.95);
     }
   </style>
 </head>
@@ -156,8 +184,8 @@
     </video>
     <button id="unmute-btn" title="Enable Sound">🔇</button>
     <div id="content-wrapper">
-      <h1>Boat Game</h1>
-      <button id="start-btn">Start Game</button>
+      <img src="assets/game-title.png" id="game-title" alt="Boat Game">
+      <button id="start-btn"><img src="assets/button-start-game.png" alt="Start Game"></button>
     </div>
   </div>
   <script>
