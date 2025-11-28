@@ -151,7 +151,7 @@
     <div id="controls-hint">W/S: Throttle | A/D: Steer</div>
   </div>
   <div id="start-screen">
-    <video autoplay muted loop playsinline id="bg-video">
+    <video autoplay muted loop playsinline webkit-playsinline id="bg-video">
       <source src="assets/background.mp4" type="video/mp4">
     </video>
     <button id="unmute-btn" title="Enable Sound">🔇</button>
@@ -164,6 +164,9 @@
     const video = document.getElementById('bg-video');
     const unmuteBtn = document.getElementById('unmute-btn');
     const startBtn = document.getElementById('start-btn');
+
+    // Attempt to force play for Safari/iOS
+    video.play().catch(e => console.log("Autoplay prevented:", e));
 
     unmuteBtn.addEventListener('click', () => {
       if (video.muted) {
