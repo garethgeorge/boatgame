@@ -19,7 +19,7 @@ export class Boat extends Entity {
     private readonly MAX_THRUST = 7500.0; // Tuned for 500kg mass
     private readonly MAX_STEER_ANGLE = Math.PI / 4; // 45 degrees
     private readonly THROTTLE_SPEED = 1.0;
-    private readonly STEER_SPEED = 2.0;
+    private readonly STEER_SPEED = 10.0; // Increased from 2.0 to 10.0 (5x) for faster response
 
     // Drag Constants
     private readonly DRAG_FORWARD = 2.0; // Low resistance forward

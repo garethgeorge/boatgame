@@ -547,3 +547,99 @@ export class Buoy extends Entity {
     this.mesh.position.y = bobOffset;
   }
 }
+
+export class RiverRock extends Entity {
+  declare physicsBody: planck.Body;
+  declare mesh: THREE.Mesh;
+
+  constructor(x: number, y: number, radius: number, physicsEngine: PhysicsEngine) {
+    super();
+
+    // Physics: Static
+    this.physicsBody = physicsEngine.world.createBody({
+      type: 'static',
+      position: planck.Vec2(x, y),
+      angle: Math.random() * Math.PI * 2
+    });
+
+    // Circle shape for physics
+    this.physicsBody.createFixture({
+      shape: planck.Circle(radius * 0.8),
+      friction: 0.5,
+      restitution: 0.2
+    });
+
+    this.physicsBody.setUserData({ type: 'obstacle', subtype: 'rock', entity: this });
+
+    // Graphics: Vertical Rocky Outcrop
+    // Cylinder base
+    const height = radius * 4.0;
+    const geometry = new THREE.CylinderGeometry(radius * 0.4, radius * 1.2, height, 7, 5);
+    const posAttribute = geometry.attributes.position;
+    const normalAttribute = geometry.attributes.normal;
+    const vertex = new THREE.Vector3();
+    const normal = new THREE.Vector3();
+
+    // Deterministic Noise Function
+    const noise = (x: number, y: number, z: number) => {
+      return Math.sin(x * 2.0) * Math.cos(y * 1.5) * Math.sin(z * 2.0);
+    };
+
+    // Seed for this specific rock
+    const seedX = Math.random() * 100;
+    const seedY = Math.random() * 100;
+    const seedZ = Math.random() * 100;
+
+    for (let i = 0; i < posAttribute.count; i++) {
+      vertex.fromBufferAttribute(posAttribute, i);
+      normal.fromBufferAttribute(normalAttribute, i);
+
+      // Apply Noise
+      const n = noise(vertex.x + seedX, vertex.y + seedY, vertex.z + seedZ);
+      const displacement = n * radius * 0.4;
+
+      // Displace along normal (expands/contracts shape organically)
+      vertex.add(normal.clone().multiplyScalar(displacement));
+
+      // Extend bottom vertices deep down
+      // Cylinder is centered at 0, so bottom is at -height/2
+      if (vertex.y < -height * 0.45) {
+        vertex.y -= 8.0; // Extend deep into river bed
+        // Widen base further
+        vertex.x *= 1.5;
+        vertex.z *= 1.5;
+      }
+
+      posAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
+    }
+
+    geometry.computeVertexNormals();
+
+    const material = new THREE.MeshToonMaterial({
+      color: 0x696969, // Dim Grey
+    });
+    material.flatShading = true;
+
+    this.mesh = new THREE.Mesh(geometry, material);
+    this.mesh.castShadow = true;
+    this.mesh.receiveShadow = true;
+
+    // Random rotation (Y-axis only to keep it vertical)
+    this.mesh.rotation.y = Math.random() * Math.PI * 2;
+
+    // Position: Move up so it sits nicely
+    // Center of cylinder is at 0. Height is `height`.
+    // We want top to be visible.
+    // Water is at 0.
+    // If we place mesh at y=0, center is at 0. Top is at height/2. Bottom is at -height/2 (minus extension).
+    // This is perfect.
+  }
+
+  onHit() {
+    // Solid
+  }
+
+  update(dt: number) {
+    // Static
+  }
+}
