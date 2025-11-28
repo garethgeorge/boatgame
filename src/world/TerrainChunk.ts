@@ -16,6 +16,27 @@ export class TerrainChunk {
   public static readonly RESOLUTION_X = 160; // Vertices along X
   public static readonly RESOLUTION_Z = 25; // Vertices along Z (Reduced to 25)
 
+  private static biomeNoise = new SimplexNoise(200);
+
+  public static getBiomeFactor(z: number): number {
+    // Biome Selection (Z-dependent only)
+    // 50/50 split with rapid transition
+    // Use low frequency noise for biome patches
+    let biomeNoise = this.biomeNoise.noise2D(100, z * 0.001); // Offset X by 100 to avoid 0.0 at origin
+
+    // Helper for smoothstep
+    const smoothstep = (min: number, max: number, value: number): number => {
+      const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
+      return x * x * (3 - 2 * x);
+    };
+
+    // biomeNoise is -1 to 1.
+    // We want rapid transition around 0.
+    // Sigmoid-like transition: smoothstep around -0.1 to 0.1
+    // 0 = Desert, 1 = Forest
+    return smoothstep(-0.2, 0.2, biomeNoise);
+  }
+
   zOffset: number;
   private noise: SimplexNoise;
   private riverSystem: RiverSystem;
@@ -62,27 +83,13 @@ export class TerrainChunk {
       return C * u * (1 + (u * u));
     };
 
-    // Helper for smoothstep
-    const smoothstep = (min: number, max: number, value: number): number => {
-      const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
-      return x * x * (3 - 2 * x);
-    };
-
     // Generate Vertices
     for (let z = 0; z <= resZ; z++) {
       const v = z / resZ;
       const localZ = v * chunkSize;
       const worldZ = this.zOffset + localZ;
 
-      // Biome Selection (Z-dependent only)
-      // 50/50 split with rapid transition
-      // Use low frequency noise for biome patches
-      let biomeNoise = this.noise.noise2D(100, worldZ * 0.001); // Offset X by 100 to avoid 0.0 at origin
-      // biomeNoise is -1 to 1.
-      // We want rapid transition around 0.
-      // Sigmoid-like transition: smoothstep around -0.1 to 0.1
-      // 0 = Desert, 1 = Forest
-      const biomeFactor = smoothstep(-0.2, 0.2, biomeNoise);
+      const biomeFactor = TerrainChunk.getBiomeFactor(worldZ);
 
       for (let x = 0; x <= resX; x++) {
         const u = (x / resX) * 2 - 1;
@@ -193,14 +200,7 @@ export class TerrainChunk {
       if (!this.checkVisibility(localX, height, worldZ)) continue;
 
       // Biome Logic (Same as generateMesh)
-      // Helper for smoothstep
-      const smoothstep = (min: number, max: number, value: number): number => {
-        const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
-        return x * x * (3 - 2 * x);
-      };
-
-      let biomeNoise = this.noise.noise2D(100, worldZ * 0.001);
-      const biomeFactor = smoothstep(-0.2, 0.2, biomeNoise);
+      const biomeFactor = TerrainChunk.getBiomeFactor(worldZ);
 
       let object: THREE.Object3D | null = null;
 

@@ -6,6 +6,8 @@ export class GraphicsEngine {
   renderer: THREE.WebGLRenderer;
   private skybox: THREE.Mesh;
   private skyUniforms: { [uniform: string]: THREE.IUniform };
+  private screenTint: HTMLDivElement;
+  private currentBiomeFactor: number = 0; // 0 = Desert, 1 = Forest
 
   // Lighting references
   private sunLight: THREE.DirectionalLight;
@@ -44,6 +46,19 @@ export class GraphicsEngine {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
     container.appendChild(this.renderer.domElement);
+
+    // Create screen tint overlay
+    this.screenTint = document.createElement('div');
+    this.screenTint.style.position = 'absolute';
+    this.screenTint.style.top = '0';
+    this.screenTint.style.left = '0';
+    this.screenTint.style.width = '100%';
+    this.screenTint.style.height = '100%';
+    this.screenTint.style.pointerEvents = 'none';
+    this.screenTint.style.zIndex = '10';
+    this.screenTint.style.transition = 'background-color 1s ease';
+    this.screenTint.style.mixBlendMode = 'overlay'; // Better blending
+    container.appendChild(this.screenTint);
 
     // Enhanced lighting setup
     this.setupLighting();
@@ -222,6 +237,20 @@ export class GraphicsEngine {
       }
     }
 
+    // Apply Biome Modifier to Sky Colors
+    // Forest: Cooler, Crisper Blue
+    // Desert: Warmer, Duster (Default)
+
+    const forestTopMod = new THREE.Color(0x4488ff); // Crisp Blue
+    const forestBotMod = new THREE.Color(0xcceeff); // White/Blue Horizon
+
+    // Blend current sky colors towards forest colors based on biome factor
+    // We only affect Day colors significantly
+    if (isDay) {
+      currentTop.lerp(forestTopMod, this.currentBiomeFactor * 0.6); // 60% influence
+      currentBot.lerp(forestBotMod, this.currentBiomeFactor * 0.6);
+    }
+
     this.skyUniforms.topColor.value.copy(currentTop);
     this.skyUniforms.bottomColor.value.copy(currentBot);
 
@@ -235,6 +264,29 @@ export class GraphicsEngine {
     if (this.scene.fog instanceof THREE.FogExp2) {
       this.scene.fog.color.copy(currentBot);
     }
+  }
+
+  public updateBiome(biomeFactor: number) {
+    this.currentBiomeFactor = biomeFactor;
+
+    // Update Screen Tint
+    // Desert (0): Sepia/Warm
+    // Forest (1): Cool Blue
+
+    // We can interpolate CSS colors or just set them based on factor
+    // Since we have a transition on the element, we can just update it less frequently or let CSS handle smooth transition if we snap?
+    // But biomeFactor changes smoothly.
+    // Let's manually interpolate RGBA for full control.
+
+    const desertColor = { r: 180, g: 140, b: 100, a: 0.15 }; // Sepia
+    const forestColor = { r: 100, g: 150, b: 200, a: 0.15 }; // Cool Blue
+
+    const r = THREE.MathUtils.lerp(desertColor.r, forestColor.r, biomeFactor);
+    const g = THREE.MathUtils.lerp(desertColor.g, forestColor.g, biomeFactor);
+    const b = THREE.MathUtils.lerp(desertColor.b, forestColor.b, biomeFactor);
+    const a = THREE.MathUtils.lerp(desertColor.a, forestColor.a, biomeFactor);
+
+    this.screenTint.style.backgroundColor = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`;
   }
 
   render(dt: number) {
