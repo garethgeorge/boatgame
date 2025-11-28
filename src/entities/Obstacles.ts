@@ -1,14 +1,15 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Entity } from '../core/Entity';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 
 export class Alligator extends Entity {
   declare physicsBody: planck.Body;
   declare mesh: THREE.Group;
-  private mouth: THREE.Mesh;
-  private mouthOpen: boolean = false;
-  private mouthTimer: number = 0;
+  // private mouth: THREE.Mesh; // Removed procedural mouth
+  // private mouthOpen: boolean = false; // Removed procedural animation state
+  // private mouthTimer: number = 0; // Removed procedural animation state
 
   constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
     super();
@@ -33,128 +34,35 @@ export class Alligator extends Entity {
     // Graphics
     this.mesh = new THREE.Group();
 
-    const skinColor = 0x2E8B57; // Sea Green
-    const bellyColor = 0xF0E68C; // Khaki
-    const mat = new THREE.MeshToonMaterial({ color: skinColor });
-    const bellyMat = new THREE.MeshToonMaterial({ color: bellyColor });
+    const loader = new GLTFLoader();
+    loader.load('assets/alligator-model-1.glb', (gltf) => {
+      const model = gltf.scene;
 
-    // Body (Main torso) - Flatter and wider
-    const bodyGeo = new THREE.BoxGeometry(1.2, 0.6, 2.2);
-    const body = new THREE.Mesh(bodyGeo, mat);
-    body.position.z = 0.5;
-    body.position.y = 0.1;
-    this.mesh.add(body);
+      // Adjust scale and rotation to match physics body
+      // Physics body is 2m wide, 6m long.
+      // Assuming model is roughly unit scale or needs adjustment.
+      // Let's start with a scale that makes it visible and adjust if needed.
+      // If it's a typical model, it might need scaling.
+      model.scale.set(4.0, 4.0, 4.0);
 
-    // Ridges on back
-    const ridgeGeo = new THREE.ConeGeometry(0.1, 0.2, 4);
-    for (let i = 0; i < 3; i++) {
-      const ridgeLeft = new THREE.Mesh(ridgeGeo, mat);
-      ridgeLeft.position.set(-0.3, 0.4, 0.0 + i * 0.6);
-      this.mesh.add(ridgeLeft);
+      // Rotate to face correct direction if needed.
+      // Physics body forward is usually -Y or +Y depending on game.
+      // In Boat.ts, forward is -Z (ThreeJS) and boat is rotated Y by 90 deg.
+      // Here, let's assume model faces +Z or -Z.
+      // If the alligator swims along the river (Z axis?), we might need to rotate it.
+      // Let's assume standard orientation for now (face +Z or -Z).
+      model.rotation.y = Math.PI; // Rotate 180 degrees if it faces backwards
 
-      const ridgeRight = new THREE.Mesh(ridgeGeo, mat);
-      ridgeRight.position.set(0.3, 0.4, 0.0 + i * 0.6);
-      this.mesh.add(ridgeRight);
-    }
+      model.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
 
-    // Tail (Longer, tapered)
-    const tailGeo = new THREE.BoxGeometry(0.5, 0.4, 3.0);
-    const tail = new THREE.Mesh(tailGeo, mat);
-    // Taper the tail by scaling vertices? Hard with BoxGeometry.
-    // Use Cone for tip, Box for base? Or just a long thin box.
-    tail.position.z = 3.0;
-    tail.position.y = 0.1;
-    // tail.scale.x = 0.5; // Taper effect visually
-    this.mesh.add(tail);
-
-    // Head Group
-    const headGroup = new THREE.Group();
-    headGroup.position.z = -0.8; // Front of body
-    this.mesh.add(headGroup);
-
-    // Neck/Base
-    const neckGeo = new THREE.BoxGeometry(1.0, 0.5, 0.5);
-    const neck = new THREE.Mesh(neckGeo, mat);
-    neck.position.z = -0.25;
-    headGroup.add(neck);
-
-    // Lower Jaw (Static relative to head group)
-    const lowerJawGeo = new THREE.BoxGeometry(0.7, 0.15, 1.8);
-    const lowerJaw = new THREE.Mesh(lowerJawGeo, bellyMat);
-    lowerJaw.position.set(0, -0.1, -1.2); // Extending forward
-    headGroup.add(lowerJaw);
-
-    // Upper Jaw / Head Pivot (Animated)
-    // Pivot at the back of the head/neck
-    const upperJawPivot = new THREE.Group();
-    upperJawPivot.position.set(0, 0.1, -0.5); // Pivot point
-    headGroup.add(upperJawPivot);
-
-    // Upper Snout
-    const snoutGeo = new THREE.BoxGeometry(0.7, 0.2, 1.8);
-    const snout = new THREE.Mesh(snoutGeo, mat);
-    snout.position.set(0, 0, -0.9); // Relative to pivot (extending forward)
-    upperJawPivot.add(snout);
-
-    // Skull/Eyes (Attached to upper jaw pivot)
-    const skullGeo = new THREE.BoxGeometry(0.9, 0.3, 0.6);
-    const skull = new THREE.Mesh(skullGeo, mat);
-    skull.position.set(0, 0.15, 0.2); // Back of the snout
-    upperJawPivot.add(skull);
-
-    // Eyes
-    const eyeGeo = new THREE.BoxGeometry(0.15, 0.15, 0.15);
-    const leftEye = new THREE.Mesh(eyeGeo, mat);
-    leftEye.position.set(-0.3, 0.35, 0.2);
-    upperJawPivot.add(leftEye);
-
-    const rightEye = new THREE.Mesh(eyeGeo, mat);
-    rightEye.position.set(0.3, 0.35, 0.2);
-    upperJawPivot.add(rightEye);
-
-    // Teeth (White)
-    const toothGeo = new THREE.ConeGeometry(0.03, 0.1, 4);
-    const toothMat = new THREE.MeshToonMaterial({ color: 0xFFFFFF });
-    // Add teeth to snout
-    for (let i = 0; i < 4; i++) {
-      const tLeft = new THREE.Mesh(toothGeo, toothMat);
-      // Moved back from -0.4 start to -0.2 start, and spaced closer?
-      // Snout length is 1.8. Center is 0. Extends from -0.9 to +0.9 relative to snout center.
-      // Snout position is (0, 0, -0.9) relative to pivot.
-      // Wait, teeth are added to snout.
-      // Snout Z range: -0.9 to +0.9.
-      // Front of snout is at -0.9 (local).
-      // Previous code: -0.4 - i*0.4.
-      // i=0: -0.4. i=3: -1.6.
-      // -1.6 is outside the snout (past -0.9).
-      // Let's adjust range to be within -0.8 to +0.8.
-
-      const zPos = 0.6 - i * 0.4; // 0.6, 0.2, -0.2, -0.6
-
-      tLeft.position.set(-0.3, -0.1, zPos);
-      tLeft.rotation.x = Math.PI;
-      snout.add(tLeft);
-
-      const tRight = new THREE.Mesh(toothGeo, toothMat);
-      tRight.position.set(0.3, -0.1, zPos);
-      tRight.rotation.x = Math.PI;
-      snout.add(tRight);
-    }
-
-    // Legs
-    const legGeo = new THREE.BoxGeometry(0.3, 0.3, 0.5);
-    const legPositions = [
-      { x: -0.7, z: 0, r: 0.5 },
-      { x: 0.7, z: 0, r: -0.5 },
-      { x: -0.7, z: 1.5, r: 0.2 },
-      { x: 0.7, z: 1.5, r: -0.2 }
-    ];
-
-    legPositions.forEach(pos => {
-      const leg = new THREE.Mesh(legGeo, mat);
-      leg.position.set(pos.x, -0.1, pos.z);
-      leg.rotation.y = pos.r;
-      this.mesh.add(leg);
+      this.mesh.add(model);
+    }, undefined, (error) => {
+      console.error('An error occurred loading the alligator model:', error);
     });
 
     this.mesh.position.y = 0;
@@ -183,21 +91,17 @@ export class Alligator extends Entity {
     // Or just move forward in its current direction
     // For now, let's just make it drift and snap
 
-    // Mouth Animation (Upper Jaw moves)
+    // Mouth Animation (Upper Jaw moves) - REMOVED for GLB model
+    /*
     this.mouthTimer += dt;
     if (this.mouthTimer > 1.0) {
       this.mouthOpen = !this.mouthOpen;
       this.mouthTimer = 0;
     }
+    */
 
-    // Access the upper jaw pivot
-    // Structure:
-    // mesh children:
-    // ...
-    // headGroup (index check needed)
-    //   ...
-    //   upperJawPivot (index 2)
-
+    // Access the upper jaw pivot - REMOVED for GLB model
+    /*
     // Find headGroup
     // body (0), ridge*6 (1-6), tail (7), headGroup (8).
     const headGroup = this.mesh.children[8]; // Assuming headGroup is the 9th child (index 8)
@@ -207,6 +111,7 @@ export class Alligator extends Entity {
       const targetRot = this.mouthOpen ? 0.4 : 0;
       upperJawPivot.rotation.x = THREE.MathUtils.lerp(upperJawPivot.rotation.x, targetRot, dt * 5);
     }
+    */
 
     // AI: Swim towards player
     // We need player position. Currently update(dt) doesn't receive player pos.

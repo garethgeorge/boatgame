@@ -9,9 +9,26 @@ export class EntityManager {
   physicsEngine: PhysicsEngine;
   graphicsEngine: GraphicsEngine;
 
+  debugMode: boolean = false;
+
   constructor(physicsEngine: PhysicsEngine, graphicsEngine: GraphicsEngine) {
     this.physicsEngine = physicsEngine;
     this.graphicsEngine = graphicsEngine;
+  }
+
+  setDebug(enabled: boolean) {
+    if (this.debugMode === enabled) return;
+    this.debugMode = enabled;
+    for (const entity of this.entities) {
+      const debugMesh = entity.ensureDebugMesh();
+      if (debugMesh) {
+        if (this.debugMode) {
+          this.graphicsEngine.add(debugMesh);
+        } else {
+          this.graphicsEngine.remove(debugMesh);
+        }
+      }
+    }
   }
 
   add(entity: Entity) {
@@ -19,6 +36,12 @@ export class EntityManager {
     // Planck bodies are added to world upon creation, so no need to add here.
     if (entity.mesh) {
       this.graphicsEngine.add(entity.mesh);
+    }
+    if (this.debugMode) {
+      const debugMesh = entity.ensureDebugMesh();
+      if (debugMesh) {
+        this.graphicsEngine.add(debugMesh);
+      }
     }
   }
 
@@ -30,6 +53,9 @@ export class EntityManager {
       }
       if (entity.mesh) {
         this.graphicsEngine.remove(entity.mesh);
+      }
+      if (entity.debugMesh) {
+        this.graphicsEngine.remove(entity.debugMesh);
       }
     }
   }

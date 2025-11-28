@@ -129,6 +129,9 @@ export class Game {
 
         const input = this.inputManager.getState();
 
+        // Pause handling - skip all updates if paused
+        if (input.paused) return;
+
         // Update Physics
         this.physicsEngine.update(dt);
 
@@ -140,6 +143,7 @@ export class Game {
         // Update Terrain
         if (this.boat.mesh) {
             this.terrainManager.setDebug(input.debug);
+            this.entityManager.setDebug(input.debug);
             this.terrainManager.update(this.boat.mesh.position.z);
             // ObstacleManager update is now handled by TerrainManager events
         }

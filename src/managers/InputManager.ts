@@ -5,6 +5,7 @@ export interface InputState {
     right: boolean;
     viewMode: 'close' | 'far';
     debug: boolean;
+    paused: boolean;
 }
 
 export class InputManager {
@@ -17,7 +18,8 @@ export class InputManager {
             left: false,
             right: false,
             viewMode: 'close',
-            debug: false
+            debug: false,
+            paused: false
         };
 
         this.init();
@@ -52,6 +54,10 @@ export class InputManager {
                 break;
             case 'KeyZ':
                 this.keys.debug = !this.keys.debug;
+                break;
+            case 'Space':
+                this.keys.paused = !this.keys.paused;
+                e.preventDefault(); // Prevent scrolling
                 break;
         }
     }
