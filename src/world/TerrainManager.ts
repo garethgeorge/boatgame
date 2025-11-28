@@ -9,6 +9,7 @@ import { ObstacleManager } from '../managers/ObstacleManager';
 
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
+  private loadingChunks: Set<number> = new Set();
   private collisionBodies: planck.Body[] = [];
   private collisionMeshes: THREE.Mesh[] = [];
 
@@ -36,13 +37,17 @@ export class TerrainManager {
     // Create new chunks
     for (let i = -renderDistance; i <= renderDistance; i++) {
       const index = currentChunkIndex + i;
-      if (!this.chunks.has(index)) {
+      if (!this.chunks.has(index) && !this.loadingChunks.has(index)) {
         const zOffset = index * TerrainChunk.CHUNK_SIZE;
-        const chunk = new TerrainChunk(zOffset, this.graphicsEngine);
-        this.chunks.set(index, chunk);
+        this.loadingChunks.add(index);
 
-        // Spawn obstacles for this chunk
-        this.obstacleManager.spawnObstaclesForChunk(index, zOffset, zOffset + TerrainChunk.CHUNK_SIZE);
+        TerrainChunk.createAsync(zOffset, this.graphicsEngine).then(chunk => {
+          this.chunks.set(index, chunk);
+          this.loadingChunks.delete(index);
+
+          // Spawn obstacles for this chunk
+          this.obstacleManager.spawnObstaclesForChunk(index, zOffset, zOffset + TerrainChunk.CHUNK_SIZE);
+        });
       }
     }
 

@@ -51,7 +51,21 @@ export class Game {
         this.thrustElement = document.getElementById('thrust-display') as HTMLElement;
         this.fuelElement = document.getElementById('fuel-display') as HTMLElement;
 
-        this.startBtn.addEventListener('click', () => this.start());
+        this.startBtn.addEventListener('click', async () => {
+            // Request Accelerometer Permission (Mobile)
+            await this.inputManager.requestPermission();
+            this.start();
+        });
+
+        // Check for touch device to update UI text
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+            const instructions = document.createElement('p');
+            instructions.innerText = "Tap Start to Enable Tilt Controls";
+            instructions.style.color = "#aaa";
+            instructions.style.fontSize = "14px";
+            instructions.style.marginTop = "10px";
+            this.startScreen.appendChild(instructions);
+        }
     }
 
     init() {

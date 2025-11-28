@@ -21,8 +21,8 @@ export class TerrainChunk {
   public static getBiomeWeights(z: number): { desert: number, forest: number, ice: number } {
     // Biome Selection (Z-dependent only)
     // Noise -1 to 1
-    // Lower frequency for larger biomes
-    let n = this.biomeNoise.noise2D(100, z * 0.0005);
+    // Lower frequency for larger biomes (Tripled size: 0.0005 -> 0.000166)
+    let n = this.biomeNoise.noise2D(100, z * 0.000166);
 
     // Helper for smoothstep
     const smoothstep = (min: number, max: number, value: number): number => {
@@ -55,7 +55,7 @@ export class TerrainChunk {
   private riverSystem: RiverSystem;
   private graphicsEngine: GraphicsEngine;
 
-  constructor(
+  private constructor(
     zOffset: number,
     graphicsEngine: GraphicsEngine
   ) {
@@ -64,16 +64,40 @@ export class TerrainChunk {
     this.noise = new SimplexNoise(200);
     this.riverSystem = RiverSystem.getInstance();
 
-    this.mesh = this.generateMesh();
-    this.waterMesh = this.generateWater();
-    this.decorations = this.generateDecorations();
+    // Mesh generation is now async, handled in initAsync
+    // We initialize properties to null/empty first or rely on ! assertion if we are careful
+    // But typescript expects them to be initialized.
+    // Let's make them definite assignment assertion or initialize with empty.
+    this.mesh = new THREE.Mesh();
+    this.waterMesh = new THREE.Mesh();
+    this.decorations = new THREE.Group();
+  }
+
+  public static async createAsync(zOffset: number, graphicsEngine: GraphicsEngine): Promise<TerrainChunk> {
+    const chunk = new TerrainChunk(zOffset, graphicsEngine);
+    await chunk.initAsync();
+    return chunk;
+  }
+
+  private async initAsync() {
+    this.mesh = await this.generateMesh();
+    await this.yieldToMain();
+
+    this.waterMesh = this.generateWater(); // Fast enough to be sync? Or make async too?
+    // Water is simple plane, sync is fine.
+
+    this.decorations = await this.generateDecorations();
 
     this.graphicsEngine.add(this.mesh);
     this.graphicsEngine.add(this.waterMesh);
     this.graphicsEngine.add(this.decorations);
   }
 
-  private generateMesh(): THREE.Mesh {
+  private yieldToMain(): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, 0));
+  }
+
+  private async generateMesh(): Promise<THREE.Mesh> {
     const chunkSize = TerrainChunk.CHUNK_SIZE;
     const chunkWidth = TerrainChunk.CHUNK_WIDTH;
     const resX = TerrainChunk.RESOLUTION_X;
@@ -99,6 +123,9 @@ export class TerrainChunk {
 
     // Generate Vertices
     for (let z = 0; z <= resZ; z++) {
+      // Yield every few rows to keep frame rate smooth
+      if (z % 5 === 0) await this.yieldToMain();
+
       const v = z / resZ;
       const localZ = v * chunkSize;
       const worldZ = this.zOffset + localZ;
@@ -187,7 +214,7 @@ export class TerrainChunk {
     return mesh;
   }
 
-  private generateDecorations(): THREE.Group {
+  private async generateDecorations(): Promise<THREE.Group> {
     const group = new THREE.Group();
     const count = 1000; // Increased to 5x density
 
@@ -195,6 +222,9 @@ export class TerrainChunk {
     const geometriesByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
 
     for (let i = 0; i < count; i++) {
+      // Yield every 50 iterations
+      if (i % 50 === 0) await this.yieldToMain();
+
       // ... (Random position logic same as before) ...
       const localZ = Math.random() * TerrainChunk.CHUNK_SIZE;
       const worldZ = this.zOffset + localZ;
@@ -222,10 +252,15 @@ export class TerrainChunk {
       // Or just use probabilities?
       // Let's pick a biome based on weights
       let biomeType = 'forest';
-      const r = Math.random();
-      if (r < weights.desert) biomeType = 'desert';
-      else if (r < weights.desert + weights.forest) biomeType = 'forest';
-      else biomeType = 'ice';
+
+      // FIX: Force Ice biome if there is any significant ice weight to prevent green trees on snow
+      if (weights.ice > 0.1) {
+        biomeType = 'ice';
+      } else {
+        const r = Math.random();
+        if (r < weights.desert) biomeType = 'desert';
+        else biomeType = 'forest';
+      }
 
       let object: THREE.Object3D | null = null;
 
@@ -239,7 +274,7 @@ export class TerrainChunk {
       } else if (biomeType === 'forest') {
         // Forest
         if (Math.random() > 0.8) {
-          object = Decorations.getTree(Math.random(), false);
+          object = Decorations.getTree(Math.random(), false, false);
         } else if (Math.random() > 0.96) {
           object = Decorations.getRock('forest', Math.random());
         }
@@ -252,8 +287,12 @@ export class TerrainChunk {
         // Let's randomize sub-biome or just mix them.
 
         if (Math.random() > 0.8) {
-          // Snowy Tree
-          object = Decorations.getTree(Math.random(), true);
+          // Tree (Snowy or Leafless)
+          // 50% chance of leafless tree in ice biome
+          const isLeafless = Math.random() > 0.5;
+          // If leafless, isSnowy doesn't matter visually, but let's say false.
+          // If not leafless, it must be snowy in ice biome.
+          object = Decorations.getTree(Math.random(), !isLeafless, isLeafless);
         } else if (Math.random() > 0.90) { // More rocks in ice biome (10% vs 4%)
           // Icy Rock
           object = Decorations.getRock('ice', Math.random());

@@ -126,16 +126,32 @@ export class Boat extends Entity {
         }
 
         // Steering (Auto-center)
-        if (input.left) {
-            this.currentSteering = Math.min(this.MAX_STEER_ANGLE, this.currentSteering + this.STEER_SPEED * dt);
-        } else if (input.right) {
-            this.currentSteering = Math.max(-this.MAX_STEER_ANGLE, this.currentSteering - this.STEER_SPEED * dt);
+        // If tilt input is present (non-zero), use it directly (Analog Control)
+        if (Math.abs(input.tilt) > 0.05) {
+            // Map tilt (-1 to 1) to max steer angle
+            // Tilt Left (Negative?) -> Steer Left (Positive Angle)
+            // Let's assume Tilt Left is Negative.
+            // Steer Angle: Positive is Left Turn (CCW).
+            // So we want: Tilt Left (-1) -> Steer Left (+Max) ??
+            // Wait, usually Tilt Left means "Rotate Left".
+            // If I tilt phone left, I want boat to turn left.
+            // Boat Turn Left = Positive Steering Angle.
+            // So if Tilt is Negative, we want Positive Steering?
+            // Let's try: Steering = -Tilt * MaxAngle.
+            this.currentSteering = -input.tilt * this.MAX_STEER_ANGLE;
         } else {
-            // Decay steering
-            if (this.currentSteering > 0) {
-                this.currentSteering = Math.max(0, this.currentSteering - this.STEER_SPEED * dt);
-            } else if (this.currentSteering < 0) {
-                this.currentSteering = Math.min(0, this.currentSteering + this.STEER_SPEED * dt);
+            // Keyboard Control (Digital)
+            if (input.left) {
+                this.currentSteering = Math.min(this.MAX_STEER_ANGLE, this.currentSteering + this.STEER_SPEED * dt);
+            } else if (input.right) {
+                this.currentSteering = Math.max(-this.MAX_STEER_ANGLE, this.currentSteering - this.STEER_SPEED * dt);
+            } else {
+                // Decay steering
+                if (this.currentSteering > 0) {
+                    this.currentSteering = Math.max(0, this.currentSteering - this.STEER_SPEED * dt);
+                } else if (this.currentSteering < 0) {
+                    this.currentSteering = Math.min(0, this.currentSteering + this.STEER_SPEED * dt);
+                }
             }
         }
 

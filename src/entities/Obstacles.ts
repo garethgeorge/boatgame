@@ -253,7 +253,7 @@ export class Log extends Entity {
 
     this.physicsBody.createFixture({
       shape: planck.Box(length / 2, 0.6), // 1.2m thick log
-      density: 20.0, // Heavy wood, same density as boat to resist pushing
+      density: 100.0, // Heavy wood (5x increase from 20.0)
       friction: 0.8, // Rough
       restitution: 0.1
     });
@@ -371,7 +371,7 @@ export class Buoy extends Entity {
 
     this.physicsBody.createFixture({
       shape: planck.Circle(0.5), // 1m diameter
-      density: 1.0,
+      density: 5.0, // 5x increase from 1.0
       friction: 0.3,
       restitution: 0.5 // Bouncy
     });

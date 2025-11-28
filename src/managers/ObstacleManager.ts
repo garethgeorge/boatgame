@@ -40,7 +40,7 @@ export class ObstacleManager {
       const logProb = 0.04 * (1 - weights.ice); // Logs replaced by Icebergs
       const bottleProb = 0.04;
       const bonusProb = 0.005;
-      const icebergProb = 0.10 * weights.ice; // High chance in ice
+      const icebergProb = 0.30 * weights.ice; // High chance in ice (Tripled from 0.10)
 
       // Dynamic rates (Ramp with difficulty)
       // Buoys: 0% -> 8% (Start at 500m)

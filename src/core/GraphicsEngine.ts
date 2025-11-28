@@ -365,10 +365,9 @@ export class GraphicsEngine {
       const baseColor = new THREE.Color(0xffffff);
 
       // Ice Fog: Close in, "not 100% opaque" (meaning maybe not fully white? or just not too dense?)
-      // User said "close in but not 100% opaque".
-      // Let's bring 'far' in, but maybe keep 'near' reasonably close too?
-      const iceNear = 20;
-      const iceFar = 100; // Denser fog (was 150)
+      // User said "dramatically reduce... snow storm".
+      const iceNear = 0; // Start fog immediately
+      const iceFar = 20; // Extreme dense fog (Snow storm) - Reduced from 50
       const iceColor = new THREE.Color(0xE0F6FF); // Ice Blue
 
       // Lerp values

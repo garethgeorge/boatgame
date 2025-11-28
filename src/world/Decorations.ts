@@ -25,7 +25,7 @@ export class Decorations {
   private static rockNoise3D = createNoise3D();
 
   private static cache: {
-    trees: { mesh: THREE.Group, wetness: number, isSnowy: boolean }[],
+    trees: { mesh: THREE.Group, wetness: number, isSnowy: boolean, isLeafless: boolean }[],
     bushes: { mesh: THREE.Group, wetness: number }[],
     cactuses: THREE.Group[],
     rocks: { mesh: THREE.Group, size: number, isIcy: boolean }[]
@@ -36,12 +36,17 @@ export class Decorations {
     // Generate Trees
     for (let i = 0; i < 50; i++) {
       const wetness = Math.random();
-      this.cache.trees.push({ mesh: this.createTree(wetness, false), wetness, isSnowy: false });
+      this.cache.trees.push({ mesh: this.createTree(wetness, false, false), wetness, isSnowy: false, isLeafless: false });
     }
     // Generate Snowy Trees
     for (let i = 0; i < 30; i++) {
       const wetness = Math.random();
-      this.cache.trees.push({ mesh: this.createTree(wetness, true), wetness, isSnowy: true });
+      this.cache.trees.push({ mesh: this.createTree(wetness, true, false), wetness, isSnowy: true, isLeafless: false });
+    }
+    // Generate Leafless Trees (for Ice Biome)
+    for (let i = 0; i < 20; i++) {
+      const wetness = Math.random();
+      this.cache.trees.push({ mesh: this.createTree(wetness, false, true), wetness, isSnowy: false, isLeafless: true });
     }
     // Generate Bushes
     for (let i = 0; i < 50; i++) {
@@ -65,15 +70,15 @@ export class Decorations {
     console.log("Decoration Cache Initialized.");
   }
 
-  static getTree(wetness: number, isSnowy: boolean = false): THREE.Group {
+  static getTree(wetness: number, isSnowy: boolean = false, isLeafless: boolean = false): THREE.Group {
     if (this.cache.trees.length === 0) this.initCache();
 
-    const candidates = this.cache.trees.filter(t => t.isSnowy === isSnowy && Math.abs(t.wetness - wetness) < 0.3);
+    const candidates = this.cache.trees.filter(t => t.isSnowy === isSnowy && t.isLeafless === isLeafless && Math.abs(t.wetness - wetness) < 0.3);
     const source = candidates.length > 0
       ? candidates[Math.floor(Math.random() * candidates.length)]
-      : this.cache.trees.find(t => t.isSnowy === isSnowy) || this.cache.trees[0];
+      : this.cache.trees.find(t => t.isSnowy === isSnowy && t.isLeafless === isLeafless) || this.cache.trees[0];
 
-    if (!source) return this.createTree(wetness, isSnowy); // Fallback
+    if (!source) return this.createTree(wetness, isSnowy, isLeafless); // Fallback
     return source.mesh.clone();
   }
 
@@ -125,7 +130,7 @@ export class Decorations {
     return rock;
   }
 
-  static createTree(wetness: number, isSnowy: boolean): THREE.Group {
+  static createTree(wetness: number, isSnowy: boolean, isLeafless: boolean): THREE.Group {
     const group = new THREE.Group();
 
     // Tree parameters based on wetness
@@ -190,28 +195,34 @@ export class Decorations {
         branch.add(subBranch);
 
         // Leaf Cluster at end of sub-branch - SMALLER CANOPY
-        const leafSize = 1.0 + wetness * 0.5; // Reduced from 1.5+
-        const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
-        const leafMesh = new THREE.Mesh(leafGeo, isSnowy ? this.snowyLeafMaterial : this.leafMaterial);
-        leafMesh.position.set(0, subLen / 2, 0);
-        subBranch.add(leafMesh);
+        if (!isLeafless) {
+          const leafSize = 1.0 + wetness * 0.5; // Reduced from 1.5+
+          const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
+          const leafMesh = new THREE.Mesh(leafGeo, isSnowy ? this.snowyLeafMaterial : this.leafMaterial);
+          leafMesh.position.set(0, subLen / 2, 0);
+          subBranch.add(leafMesh);
+        }
       }
 
       // Leaf Cluster at end of main branch - SMALLER CANOPY
-      const leafSize = 1.2 + wetness * 0.6; // Reduced from 2.0+
-      const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
-      const leafMesh = new THREE.Mesh(leafGeo, isSnowy ? this.snowyLeafMaterial : this.leafMaterial);
+      if (!isLeafless) {
+        const leafSize = 1.2 + wetness * 0.6; // Reduced from 2.0+
+        const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
+        const leafMesh = new THREE.Mesh(leafGeo, isSnowy ? this.snowyLeafMaterial : this.leafMaterial);
 
-      leafMesh.position.set(0, branchLen / 2, 0);
-      branch.add(leafMesh);
+        leafMesh.position.set(0, branchLen / 2, 0);
+        branch.add(leafMesh);
+      }
     }
 
     // Top Leaf Cluster - SMALLER
-    const topLeafSize = 1.5 + wetness * 0.8; // Reduced from 2.5+
-    const topLeafGeo = new THREE.IcosahedronGeometry(topLeafSize, 0);
-    const topLeaf = new THREE.Mesh(topLeafGeo, isSnowy ? this.snowyLeafMaterial : this.leafMaterial);
-    topLeaf.position.y = height;
-    group.add(topLeaf);
+    if (!isLeafless) {
+      const topLeafSize = 1.5 + wetness * 0.8; // Reduced from 2.5+
+      const topLeafGeo = new THREE.IcosahedronGeometry(topLeafSize, 0);
+      const topLeaf = new THREE.Mesh(topLeafGeo, isSnowy ? this.snowyLeafMaterial : this.leafMaterial);
+      topLeaf.position.y = height;
+      group.add(topLeaf);
+    }
 
     return group;
   }
