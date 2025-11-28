@@ -99,13 +99,21 @@
       position: absolute;
       top: 20px;
       left: 20px;
-      font-size: 64px;
+      width: 64px;
+      height: 64px;
       background: transparent;
       border: none;
       cursor: pointer;
       z-index: 20;
       padding: 0;
       filter: drop-shadow(0 0 2px black);
+      box-shadow: none;
+    }
+
+    #unmute-btn img {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
     #unmute-btn:hover {
@@ -182,7 +190,7 @@
     <video autoplay muted loop playsinline webkit-playsinline id="bg-video">
       <source src="assets/background.mp4" type="video/mp4">
     </video>
-    <button id="unmute-btn" title="Enable Sound">🔇</button>
+    <button id="unmute-btn" title="Enable Sound"><img src="assets/audio-off.png" alt="Unmute"></button>
     <div id="content-wrapper">
       <img src="assets/game-title.png" id="game-title" alt="Boat Game">
       <button id="start-btn"><img src="assets/button-start-game.png" alt="Start Game"></button>
@@ -199,11 +207,11 @@
     unmuteBtn.addEventListener('click', () => {
       if (video.muted) {
         video.muted = false;
-        unmuteBtn.textContent = "🔊";
+        unmuteBtn.querySelector('img').src = "assets/audio-on.png";
         unmuteBtn.title = "Mute Sound";
       } else {
         video.muted = true;
-        unmuteBtn.textContent = "🔇";
+        unmuteBtn.querySelector('img').src = "assets/audio-off.png";
         unmuteBtn.title = "Enable Sound";
       }
     });
