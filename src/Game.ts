@@ -56,16 +56,17 @@ export class Game {
 
     init() {
         // Create World
-        this.terrainManager = new TerrainManager(this.physicsEngine, this.graphicsEngine);
+        // ObstacleManager must be created before TerrainManager now
         this.obstacleManager = new ObstacleManager(this.entityManager, this.physicsEngine);
+        this.terrainManager = new TerrainManager(this.physicsEngine, this.graphicsEngine, this.obstacleManager);
 
         // Create Boat
         this.boat = new Boat(0, 0, this.physicsEngine);
         this.entityManager.add(this.boat);
 
         // Initial update to generate terrain around boat
-        this.terrainManager.update(this.boat.mesh.position.z); // Use mesh position as it's synced with physics
-        this.obstacleManager.update(this.boat.mesh.position.z);
+        // This will now also trigger obstacle spawning via TerrainManager
+        this.terrainManager.update(this.boat.mesh.position.z);
 
         // Collision Listener
         this.physicsEngine.world.on('begin-contact', (contact) => {
@@ -131,7 +132,7 @@ export class Game {
         if (this.boat.mesh) {
             this.terrainManager.setDebug(input.debug);
             this.terrainManager.update(this.boat.mesh.position.z);
-            this.obstacleManager.update(this.boat.mesh.position.z);
+            // ObstacleManager update is now handled by TerrainManager events
         }
 
         // Update Game State

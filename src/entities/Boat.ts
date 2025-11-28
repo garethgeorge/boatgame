@@ -7,60 +7,65 @@ import { PhysicsEngine } from '../core/PhysicsEngine';
 
 export class Boat extends Entity {
     declare physicsBody: planck.Body;
-    declare mesh: THREE.Group; // Changed to Group for complex model
+    declare mesh: THREE.Group;
     private innerMesh: THREE.Group;
 
     private currentThrottle: number = 0;
     private currentSteering: number = 0;
 
-    private readonly MAX_THRUST = 4000.0; // 2x thrust (was 2000) to match 4x inertia/mass adjustments
-    private readonly MAX_STEER_ANGLE = Math.PI / 8; // 22.5 degrees
-    private readonly THROTTLE_SPEED = 0.5;
-    private readonly STEER_SPEED = 1.0; // Increased to make steering responsive (not sticky)
+    // Physics Constants
+    private readonly MAX_THRUST = 7500.0; // Tuned for 500kg mass
+    private readonly MAX_STEER_ANGLE = Math.PI / 4; // 45 degrees
+    private readonly THROTTLE_SPEED = 1.0;
+    private readonly STEER_SPEED = 2.0;
+
+    // Drag Constants
+    private readonly DRAG_FORWARD = 2.0; // Low resistance forward
+    private readonly DRAG_SIDEWAYS = 8.0; // High resistance sideways (Keel)
+    private readonly DRAG_ANGULAR = 4.0; // Resistance to rotation
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
         super();
 
-        const width = 2.4; // Doubled (was 1.2)
-        const height = 6.0; // Doubled (was 3.0)
+        const width = 2.4;
+        const height = 6.0;
 
         // Create dynamic body
         this.physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
             position: planck.Vec2(x, y),
-            linearDamping: 0.5, // Manual drag
-            angularDamping: 8.0, // 4x angular inertia (was 2.0)
+            linearDamping: 0.0, // We will apply manual drag
+            angularDamping: 2.0, // Base angular damping
             bullet: true
         });
 
-        // Create fixture (shape)
-        // Use a Capsule-like shape or multiple circles/boxes to avoid snagging?
-        // Planck doesn't have Capsule shape directly, but we can use two circles and a box, or just a box with rounded corners (not built-in).
-        // Or just a Box for the middle and Circles for ends.
-
-        // Main body box (slightly shorter)
+        // Main Hull Fixture
         this.physicsBody.createFixture({
-            shape: planck.Box(width / 2, (height - width) / 2), // Middle section
-            density: 5.0, // Reduced density (was 20) so Mass is same as original boat (Area 4x * Density 0.25x = 1x Mass). Inertia is 4x.
-            friction: 0.0,
-            restitution: 0.0
+            shape: planck.Box(width / 2, (height - width) / 2),
+            density: 20.0, // High density for stability
+            friction: 0.1,
+            restitution: 0.1
         });
 
-        // Bow Circle
+        // Bow
         this.physicsBody.createFixture({
             shape: planck.Circle(planck.Vec2(0, -(height - width) / 2), width / 2),
-            density: 5.0,
-            friction: 0.0,
-            restitution: 0.0
+            density: 20.0,
+            friction: 0.1,
+            restitution: 0.1
         });
 
-        // Stern Circle
+        // Stern
         this.physicsBody.createFixture({
             shape: planck.Circle(planck.Vec2(0, (height - width) / 2), width / 2),
-            density: 5.0,
-            friction: 0.0,
-            restitution: 0.0
+            density: 20.0,
+            friction: 0.1,
+            restitution: 0.1
         });
+
+        // Set mass to a standard value for consistent tuning
+        const massData = { mass: 500, center: planck.Vec2(0, 0), I: 2000 };
+        this.physicsBody.setMassData(massData);
 
         this.physicsBody.setUserData({ type: 'player', entity: this });
 
@@ -117,18 +122,14 @@ export class Boat extends Entity {
         } else if (input.backward) {
             this.currentThrottle = Math.max(-0.5, this.currentThrottle - this.THROTTLE_SPEED * dt);
         }
-        // No decay for throttle - it stays where it is
 
-        // Steering (Auto-center?)
-        // User said "turning is too fast". Slowing down STEER_SPEED helps.
-        // Did they want sticky steering too? "Also adjust the throttle control -- it should ... stay where it is".
-        // Implies steering might be fine auto-centering, just too fast.
+        // Steering (Auto-center)
         if (input.left) {
             this.currentSteering = Math.min(this.MAX_STEER_ANGLE, this.currentSteering + this.STEER_SPEED * dt);
         } else if (input.right) {
             this.currentSteering = Math.max(-this.MAX_STEER_ANGLE, this.currentSteering - this.STEER_SPEED * dt);
         } else {
-            // Decay steering (Auto-center)
+            // Decay steering
             if (this.currentSteering > 0) {
                 this.currentSteering = Math.max(0, this.currentSteering - this.STEER_SPEED * dt);
             } else if (this.currentSteering < 0) {
@@ -136,97 +137,61 @@ export class Boat extends Entity {
             }
         }
 
-        // --- Physics ---
+        // --- Physics Implementation ---
 
         const velocity = this.physicsBody.getLinearVelocity();
-        const speed = velocity.length();
+        const angularVelocity = this.physicsBody.getAngularVelocity();
 
-        // Directions
+        // Get local vectors
         const forwardDir = this.physicsBody.getWorldVector(planck.Vec2(0, -1));
         const rightDir = this.physicsBody.getWorldVector(planck.Vec2(1, 0));
 
-        // 1. Drag
+        // 1. Differential Drag
         // Project velocity onto local axes
         const forwardSpeed = planck.Vec2.dot(velocity, forwardDir);
         const lateralSpeed = planck.Vec2.dot(velocity, rightDir);
 
-        // Forward Drag (Low)
-        const forwardDragCoeff = 2.0; // Increased to 2.0 to balance 2x Thrust
-        // Quadratic drag: F = -c * v * |v|
-        const forwardDragForce = forwardDir.clone().mul(-forwardDragCoeff * forwardSpeed * Math.abs(forwardSpeed));
+        // Forward Drag (Quadratic) - Air/Water resistance
+        // F = -c * v * |v|
+        const forwardDragForce = forwardDir.clone().mul(-this.DRAG_FORWARD * forwardSpeed * Math.abs(forwardSpeed));
         this.physicsBody.applyForceToCenter(forwardDragForce);
 
-        // Lateral Drag (Keel)
-        // Reduced from 2.5 to 1.25 to increase drift by 2x
-        const lateralDragCoeff = 1.25;
-        // Linear or Quadratic? Linear is often more stable for keel effect at low speeds.
-        // Let's use linear impulse for "infinite" keel resistance approximation, or strong force.
-        // Previous implementation used impulse which is good for "canceling" lateral movement.
-        // Let's stick to force for consistency but make it strong.
-        const lateralDragForce = rightDir.clone().mul(-lateralDragCoeff * lateralSpeed * this.physicsBody.getMass());
+        // Lateral Drag (Linear/Quadratic) - Keel resistance
+        // Much higher than forward drag to prevent sliding
+        const lateralDragForce = rightDir.clone().mul(-this.DRAG_SIDEWAYS * lateralSpeed * this.physicsBody.getMass());
         this.physicsBody.applyForceToCenter(lateralDragForce);
 
-        // Rotational Drag (Angular Damping)
-        // We set angularDamping to 2.0 in body, but we can add more based on speed if needed.
-        // For now rely on body damping.
+        // Angular Drag - Resistance to spinning
+        this.physicsBody.setAngularDamping(this.DRAG_ANGULAR);
 
-        // 2. Thrust & Steering
-        // Thrust is applied at the back of the boat.
-        // Boat length 3.0. Center 0. Back is +1.5 (local Y).
-        // Thrust at back - Reduced from 12.0 to 6.0 to reduce steering authority
-        const thrustPosLocal = planck.Vec2(0, 6.0);
-        const thrustPosWorld = this.physicsBody.getWorldPoint(thrustPosLocal);
 
-        // Thrust direction: Forward (-Y) rotated by steering angle.
-        // Rotation matrix for 2D:
-        // x' = x cos - y sin
-        // y' = x sin + y cos
+        // 2. Outboard Motor Thrust
+        // Applied at the stern (back of the boat)
+        // Local position: (0, 4.0) roughly (closer to center of mass for better control)
+        const motorPosLocal = planck.Vec2(0, 4.0);
+        const motorPosWorld = this.physicsBody.getWorldPoint(motorPosLocal);
+
+        // Thrust Vector
+        // Rotated by steering angle relative to boat's forward direction
+        // Steering Left (positive) -> Thrust vector points Right (pushing stern Right, nose Left)
+        // Wait, if I turn engine Left, prop pushes water Back-Left. Reaction on boat is Forward-Right.
+        // Force at Stern: Forward-Right.
+        // Torque = r x F. r=(0, 2.5). F=(sin, -cos).
+        // Torque = 2.5 * sin(theta). Positive torque -> CCW rotation (Left turn). Correct.
+
+        // So: Steering Angle > 0 (Left) -> Thrust Angle > 0 (Rotated Left relative to Forward)
         // Forward is (0, -1).
-        // Rotated:
-        // x = 0 - (-1) * sin(angle) = sin(angle)
-        // y = 0 + (-1) * cos(angle) = -cos(angle)
-        // Wait, positive steering (Left key) should turn boat Left.
-        // If we apply force at BACK of boat:
-        // Pushing tail RIGHT turns boat LEFT (nose left).
-        // So if steering is positive (Left), we want thrust vector to point slightly Right?
-        // Let's visualize.
-        // Propeller turns. Thrust vector pushes the boat.
-        // If I turn prop Left (steering wheel Left), prop pushes water Back-Right? No, prop pushes water Back-Left?
-        // If outboard motor turns Left, the prop points Left. Thrust vector points Forward-Right (pushing boat).
-        // Wait, thrust pushes the boat.
-        // If I turn wheel Left, engine turns Left. Prop points Left-ish.
-        // Thrust pushes boat Forward and... tail moves Right?
-        // If engine turns Left, prop pushes water Back-Left. Reaction force on boat is Forward-Right.
-        // Force at tail: Forward-Right.
-        // Torque: Force X (Right) at Tail (+Y) -> Torque = r cross F = (0, 1.5) cross (F_x, F_y).
-        // 1.5 * F_x. If F_x is positive (Right), Torque is negative (Clockwise/Right turn?).
-        // Wait.
-        // To turn Left (CCW), we need positive Torque.
-        // So we need F_x at tail to be negative (Left).
-        // So thrust vector should point Forward-Left.
-        // So if steering is Positive (Left), Thrust angle should be Positive (Left).
-
-        // Let's calculate local thrust vector.
-        // Angle 0 = Forward (0, -1).
-        // Rotated by steering angle.
-        // x = -sin(angle)
-        // y = -cos(angle)
-        // If angle > 0 (Left), x is negative (Left).
-        // Force at (0, 1.5) is (-sin, -cos).
-        // Torque = r x F = 1.5 * (-sin) - 0 * (-cos) = -1.5 * sin.
-        // So we need F_x at tail to be Positive (Right).
-        // So if steering is Left (>0), we want F_x > 0.
-        // So we want thrust vector rotated Right (Negative angle).
-
-        // So effective thrust angle = currentSteering.
+        // Rotated by theta: (sin(theta), -cos(theta))
 
         const thrustAngle = this.currentSteering;
         const thrustDirLocal = planck.Vec2(Math.sin(thrustAngle), -Math.cos(thrustAngle));
         const thrustDirWorld = this.physicsBody.getWorldVector(thrustDirLocal);
 
-        const thrustForce = thrustDirWorld.mul(this.currentThrottle * this.MAX_THRUST);
-
-        this.physicsBody.applyForce(thrustForce, thrustPosWorld);
+        // Apply Thrust
+        if (Math.abs(this.currentThrottle) > 0.01) {
+            const thrustForce = thrustDirWorld.mul(this.currentThrottle * this.MAX_THRUST);
+            this.physicsBody.applyForce(thrustForce, motorPosWorld);
+        }
 
         // Sync Mesh
         const pos = this.physicsBody.getPosition();
@@ -235,8 +200,29 @@ export class Boat extends Entity {
         this.mesh.position.set(pos.x, 0, pos.y);
         this.mesh.rotation.y = -angle;
 
-        // Visual debug of prop?
-        // Maybe rotate a part of the mesh if we had one.
+        // Visual Tilt (Pitch & Roll) applied to innerMesh to separate from Physics Yaw
+        // Forward Speed -> Nose Up (Positive Pitch)
+        // Turning Left -> Roll Right (Negative Roll?)
+
+        // Clamp speed influence
+        const speedFactor = Math.min(Math.abs(forwardSpeed) / 10.0, 1.0);
+
+        // Pitch: Nose up when moving fast
+        // Max pitch: 15 degrees (0.26 rad)
+        const targetPitch = speedFactor * 0.2;
+
+        // Roll: Lean into turn? Or out?
+        // Real boats lean OUT (roll away from turn) due to centrifugal force, unless they have a deep keel/banking hull.
+        // Let's say lean IN for "arcade" feel or OUT for "tugboat" feel.
+        // Tugboat (high CG) leans OUT.
+        // Turning Left (Steering > 0) -> Centrifugal force pushes Right -> Boat rolls Right (Positive Z?)
+        // Let's try: Steering Left -> Roll Right.
+        const targetRoll = this.currentSteering * speedFactor * 0.5;
+
+        // Smoothly interpolate current rotation to target
+        const lerpFactor = Math.min(dt * 5.0, 1.0);
+        this.innerMesh.rotation.x = THREE.MathUtils.lerp(this.innerMesh.rotation.x, targetPitch, lerpFactor);
+        this.innerMesh.rotation.z = THREE.MathUtils.lerp(this.innerMesh.rotation.z, targetRoll, lerpFactor);
     }
 
     public getThrottle(): number {

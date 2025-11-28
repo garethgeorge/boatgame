@@ -4,10 +4,10 @@ import { PhysicsEngine } from '../core/PhysicsEngine';
 import { RiverSystem } from '../world/RiverSystem';
 import { Alligator, Turtle, Log, Pier } from '../entities/Obstacles';
 import { GasCan, MessageInABottle } from '../entities/Collectables';
+import { Entity } from '../core/Entity';
 
 export class ObstacleManager {
-  private spawnedChunks: Set<number> = new Set();
-  private readonly CHUNK_SIZE = 100; // Smaller chunks for obstacle density control
+  private chunkEntities: Map<number, Entity[]> = new Map(); // Track entities per chunk
   private riverSystem: RiverSystem;
 
   constructor(
@@ -17,49 +17,15 @@ export class ObstacleManager {
     this.riverSystem = RiverSystem.getInstance();
   }
 
-  update(boatZ: number) {
-    const currentChunk = Math.floor(boatZ / this.CHUNK_SIZE);
-    const spawnDistance = 5; // Spawn 5 chunks ahead
+  // Called by TerrainManager when a new chunk is created
+  spawnObstaclesForChunk(chunkIndex: number, zStart: number, zEnd: number) {
+    if (this.chunkEntities.has(chunkIndex)) return; // Already spawned
 
-    // Spawn new chunks
-    for (let i = -1; i <= spawnDistance; i++) {
-      const chunkIndex = currentChunk + i;
-      if (!this.spawnedChunks.has(chunkIndex)) {
-        this.spawnChunk(chunkIndex);
-        this.spawnedChunks.add(chunkIndex);
-      }
-    }
-
-    // Cleanup old chunks (optional, but entities clean themselves up? No, we need to remove them)
-    // For now, let's just keep spawning. Entities are lightweight-ish.
-    // Ideally we should cull entities behind the player.
-    // The EntityManager doesn't auto-cull.
-    // Let's implement culling later if needed, or just rely on a simple distance check in Game.ts
-
-    // Actually, let's cull here.
-    if (this.spawnedChunks.size > 20) {
-      const minChunk = currentChunk - 5;
-      for (const chunk of this.spawnedChunks) {
-        if (chunk < minChunk) {
-          this.spawnedChunks.delete(chunk);
-          // We'd need to track which entities belong to which chunk to remove them efficiently.
-          // For now, let's just rely on the EntityManager to handle updates and maybe add a "cull" method there.
-        }
-      }
-    }
-  }
-
-  private spawnChunk(chunkIndex: number) {
-    const zStart = chunkIndex * this.CHUNK_SIZE;
-    const zEnd = zStart + this.CHUNK_SIZE;
-
-    // Randomly spawn items in this chunk
-    // Randomly spawn items in this chunk
-    // Adjusted density based on user feedback (was too high)
-    const step = 15; // Increased from 5 to 15 to reduce clutter
+    const entities: Entity[] = [];
+    const step = 15;
 
     for (let z = zStart; z < zEnd; z += step) {
-      if (Math.random() > 0.6) continue; // 40% chance to spawn per step
+      if (Math.random() > 0.6) continue;
 
       const type = Math.random();
       const center = this.riverSystem.getRiverCenter(z);
@@ -71,27 +37,22 @@ export class ObstacleManager {
 
       if (type < 0.3) {
         // Alligator Cluster
-        // Spawn 1-2 alligators close to each other
         const count = Math.random() > 0.5 ? 2 : 1;
         for (let i = 0; i < count; i++) {
           const offsetX = (Math.random() - 0.5) * 5;
           const offsetZ = (Math.random() - 0.5) * 5;
-          // Ensure within bounds?
-          // x is already random within safeWidth.
-          // Just add offset.
-          this.entityManager.add(new Alligator(x + offsetX, z + offsetZ, this.physicsEngine));
+          const entity = new Alligator(x + offsetX, z + offsetZ, this.physicsEngine);
+          this.entityManager.add(entity);
+          entities.push(entity);
         }
-      } else if (type < 0.5) { // Expanded range
+      } else if (type < 0.5) {
         // Log
-        // Much longer: 3x-6x original (which was ~3.5). So 10 to 20 range.
         const length = 10 + Math.random() * 10;
-        this.entityManager.add(new Log(x, z, length, this.physicsEngine));
+        const entity = new Log(x, z, length, this.physicsEngine);
+        this.entityManager.add(entity);
+        entities.push(entity);
       } else if (type < 0.6) {
         // Pier (Attached to bank)
-        // ... (Pier logic remains same, just copy it or leave it if I can target ranges)
-        // I'll just copy the pier logic to be safe since I'm replacing the block.
-
-        // Decide left or right bank
         const isLeft = Math.random() > 0.5;
         const width = this.riverSystem.getRiverWidth(z);
         const center = this.riverSystem.getRiverCenter(z);
@@ -106,7 +67,8 @@ export class ObstacleManager {
 
         const bankX = center + (isLeft ? -width / 2 : width / 2);
 
-        const pierLength = 10 + Math.random() * 10;
+        const maxPierLength = width * 0.6;
+        const pierLength = Math.min(10 + Math.random() * 10, maxPierLength);
 
         const T = planck.Vec2(slope, 1.0);
         T.normalize();
@@ -125,11 +87,30 @@ export class ObstacleManager {
         const startPos = planck.Vec2(bankX, z);
         const centerPos = startPos.clone().add(N.clone().mul(pierLength / 2));
 
-        this.entityManager.add(new Pier(centerPos.x, centerPos.y, pierLength, angle, this.physicsEngine));
+        const entity = new Pier(centerPos.x, centerPos.y, pierLength, angle, this.physicsEngine);
+        this.entityManager.add(entity);
+        entities.push(entity);
       } else {
-        // Message in a Bottle (Rest of probability)
-        this.entityManager.add(new MessageInABottle(x, z, this.physicsEngine));
+        // Message in a Bottle
+        const entity = new MessageInABottle(x, z, this.physicsEngine);
+        this.entityManager.add(entity);
+        entities.push(entity);
       }
+    }
+
+    if (entities.length > 0) {
+      this.chunkEntities.set(chunkIndex, entities);
+    }
+  }
+
+  // Called by TerrainManager when a chunk is disposed
+  removeObstaclesForChunk(chunkIndex: number) {
+    const entities = this.chunkEntities.get(chunkIndex);
+    if (entities) {
+      for (const entity of entities) {
+        this.entityManager.remove(entity);
+      }
+      this.chunkEntities.delete(chunkIndex);
     }
   }
 }

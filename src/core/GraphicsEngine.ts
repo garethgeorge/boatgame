@@ -23,8 +23,8 @@ export class GraphicsEngine {
     // Create gradient skybox
     this.skybox = this.createSkybox();
 
-    // Enhanced atmospheric fog
-    this.scene.fog = new THREE.FogExp2(0x9db4c0, 0.003); // Increased from 0.0015 for 50% view distance
+    // Fog removed per user request
+    this.scene.fog = null;
 
     this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     this.camera.position.set(0, 10, -10);
@@ -35,7 +35,7 @@ export class GraphicsEngine {
       antialias: true,
       powerPreference: 'high-performance'
     });
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.enabled = false; // Shadows disabled per user request
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
@@ -53,7 +53,7 @@ export class GraphicsEngine {
 
   private createSkybox(): THREE.Mesh {
     // Create gradient sky using shader
-    const skyGeo = new THREE.SphereGeometry(500, 32, 15);
+    const skyGeo = new THREE.SphereGeometry(180, 32, 15);
 
     this.skyUniforms = {
       topColor: { value: new THREE.Color(0x0099ff) },
@@ -164,7 +164,7 @@ export class GraphicsEngine {
 
     // Update Light Intensities
     // Sun: Peak intensity at noon (sunHeight = 1), 0 at horizon
-    this.sunLight.intensity = THREE.MathUtils.lerp(0, 2.0, sunHeight); // Increased max to 2.0
+    this.sunLight.intensity = THREE.MathUtils.lerp(0, 1.5, sunHeight); // Reduced max to 1.5 to prevent washout
 
     // Moon: Peak intensity at midnight
     this.moonLight.intensity = THREE.MathUtils.lerp(0, 1.0, moonHeight); // Increased to 1.0
@@ -184,16 +184,16 @@ export class GraphicsEngine {
     // Use sunY directly but clamped/smoothed.
 
     // Sky Color Interpolation
-    // Day Sky: 0x0099ff (Top), 0xffffff (Bottom)
-    // Night Sky: 0x000033 (Top), 0x000011 (Bottom)
-    // Sunset/Sunrise: 0xff9900 (Top), 0xff3300 (Bottom) - Optional, for extra flair
+    // Pastel Sunset Vibe
+    // Day (Sunset): Lavender to Peach
+    // Night: Deep Slate Blue to Dark Purple
 
-    const dayTop = new THREE.Color(0x0099ff);
-    const dayBot = new THREE.Color(0xffffff);
-    const nightTop = new THREE.Color(0x000066); // Brighter night sky
-    const nightBot = new THREE.Color(0x000033); // Brighter night horizon
-    const sunsetTop = new THREE.Color(0x442266); // Purple-ish
-    const sunsetBot = new THREE.Color(0xff9900); // Orange
+    const dayTop = new THREE.Color(0xA69AC2); // Pastel Lavender
+    const dayBot = new THREE.Color(0xFFCBA4); // Pastel Peach
+    const nightTop = new THREE.Color(0x1A1A3A); // Dark Slate Blue
+    const nightBot = new THREE.Color(0x2D2D44); // Muted Dark Purple
+    const sunsetTop = new THREE.Color(0x967BB6); // Muted Purple
+    const sunsetBot = new THREE.Color(0xFF9966); // Soft Orange
 
     let currentTop: THREE.Color;
     let currentBot: THREE.Color;

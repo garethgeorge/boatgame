@@ -5,6 +5,7 @@ import { PhysicsEngine } from '../core/PhysicsEngine';
 import { GraphicsEngine } from '../core/GraphicsEngine';
 import { TerrainChunk } from './TerrainChunk';
 import { RiverSystem } from './RiverSystem';
+import { ObstacleManager } from '../managers/ObstacleManager';
 
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
@@ -18,13 +19,14 @@ export class TerrainManager {
 
   constructor(
     private physicsEngine: PhysicsEngine,
-    private graphicsEngine: GraphicsEngine
+    private graphicsEngine: GraphicsEngine,
+    private obstacleManager: ObstacleManager
   ) {
 
     this.riverSystem = RiverSystem.getInstance();
   }
 
-  private loadingChunks: Set<number> = new Set();
+
 
   update(boatZ: number) {
     // 1. Manage Visual Chunks
@@ -34,21 +36,13 @@ export class TerrainManager {
     // Create new chunks
     for (let i = -renderDistance; i <= renderDistance; i++) {
       const index = currentChunkIndex + i;
-      if (!this.chunks.has(index) && !this.loadingChunks.has(index)) {
-        this.loadingChunks.add(index);
+      if (!this.chunks.has(index)) {
         const zOffset = index * TerrainChunk.CHUNK_SIZE;
+        const chunk = new TerrainChunk(zOffset, this.graphicsEngine);
+        this.chunks.set(index, chunk);
 
-        // Async generation
-        TerrainChunk.generateChunkData(zOffset).then(data => {
-          if (!this.loadingChunks.has(index)) return; // Cancelled?
-
-          const chunk = new TerrainChunk(zOffset, this.graphicsEngine, data);
-          this.chunks.set(index, chunk);
-          this.loadingChunks.delete(index);
-        }).catch(err => {
-          console.error("Failed to generate chunk", index, err);
-          this.loadingChunks.delete(index);
-        });
+        // Spawn obstacles for this chunk
+        this.obstacleManager.spawnObstaclesForChunk(index, zOffset, zOffset + TerrainChunk.CHUNK_SIZE);
       }
     }
 
@@ -57,18 +51,13 @@ export class TerrainManager {
       if (Math.abs(index - currentChunkIndex) > renderDistance) {
         chunk.dispose();
         this.chunks.delete(index);
+
+        // Remove obstacles for this chunk
+        this.obstacleManager.removeObstaclesForChunk(index);
       }
     }
 
-    // Cancel loading of out-of-range chunks?
-    // Hard to cancel a promise, but we can check before adding.
-    // We can also remove from loadingChunks if it goes out of range, 
-    // and then check in the .then() block.
-    for (const index of this.loadingChunks) {
-      if (Math.abs(index - currentChunkIndex) > renderDistance) {
-        this.loadingChunks.delete(index);
-      }
-    }
+
 
     // 2. Manage Collision Segments
     this.updateCollision(boatZ);

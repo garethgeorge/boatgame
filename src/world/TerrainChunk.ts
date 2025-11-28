@@ -11,60 +11,26 @@ export class TerrainChunk {
   decorations: THREE.Group;
 
   // Config
-  public static readonly CHUNK_SIZE = 125; // Size of chunk in Z (Reduced to 125 for incremental generation)
+  public static readonly CHUNK_SIZE = 62.5; // Size of chunk in Z (Reduced to 62.5 for incremental generation)
   public static readonly CHUNK_WIDTH = 400; // Width of world in X
   public static readonly RESOLUTION_X = 160; // Vertices along X
-  public static readonly RESOLUTION_Z = 50; // Vertices along Z (Reduced to 50)
+  public static readonly RESOLUTION_Z = 25; // Vertices along Z (Reduced to 25)
 
   zOffset: number;
   private noise: SimplexNoise;
   private riverSystem: RiverSystem;
   private graphicsEngine: GraphicsEngine;
 
-  public static generateChunkData(zOffset: number): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const worker = new Worker(new URL('../workers/terrain.worker.ts', import.meta.url), { type: 'module' });
-
-      worker.onmessage = (e) => {
-        resolve(e.data);
-        worker.terminate();
-      };
-
-      worker.onerror = (e) => {
-        console.error("Worker Error:", e);
-        reject(e);
-        worker.terminate();
-      };
-
-      worker.postMessage({
-        zOffset,
-        chunkSize: TerrainChunk.CHUNK_SIZE,
-        chunkWidth: TerrainChunk.CHUNK_WIDTH,
-        resX: TerrainChunk.RESOLUTION_X,
-        resZ: TerrainChunk.RESOLUTION_Z
-      });
-    });
-  }
-
   constructor(
     zOffset: number,
-    graphicsEngine: GraphicsEngine,
-    terrainData: any
+    graphicsEngine: GraphicsEngine
   ) {
     this.zOffset = zOffset;
     this.graphicsEngine = graphicsEngine;
     this.noise = new SimplexNoise(200);
     this.riverSystem = RiverSystem.getInstance();
 
-    if (terrainData) {
-      this.mesh = this.createMeshFromData(terrainData);
-    } else {
-      // Fallback or error? For now, let's assume data is always passed.
-      // Or we could implement a sync fallback, but that defeats the purpose.
-      console.error("TerrainChunk created without data!");
-      this.mesh = new THREE.Mesh(); // Dummy
-    }
-
+    this.mesh = this.generateMesh();
     this.waterMesh = this.generateWater();
     this.decorations = this.generateDecorations();
 
@@ -73,21 +39,110 @@ export class TerrainChunk {
     this.graphicsEngine.add(this.decorations);
   }
 
-  private createMeshFromData(data: any): THREE.Mesh {
-    const geometry = new THREE.BufferGeometry();
+  private generateMesh(): THREE.Mesh {
+    const chunkSize = TerrainChunk.CHUNK_SIZE;
+    const chunkWidth = TerrainChunk.CHUNK_WIDTH;
+    const resX = TerrainChunk.RESOLUTION_X;
+    const resZ = TerrainChunk.RESOLUTION_Z;
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(data.positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(data.colors, 3));
-    geometry.setAttribute('uv', new THREE.BufferAttribute(data.uvs, 2));
-    geometry.setIndex(new THREE.BufferAttribute(data.indices, 1));
+    const numVertices = (resX + 1) * (resZ + 1);
+    const numIndices = resX * resZ * 6;
+
+    const positions = new Float32Array(numVertices * 3);
+    const colors = new Float32Array(numVertices * 3);
+    const uvs = new Float32Array(numVertices * 2);
+    const indices = new Uint32Array(numIndices);
+
+    const colorDry = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 }; // Ochre Yellow (Desert)
+    const colorWet = { r: 0x1A / 255, g: 0x33 / 255, b: 0x1A / 255 }; // Dark Green (Forest)
+
+    // Helper for distribution
+    const getDistributedX = (u: number, width: number): number => {
+      const C = width / 4;
+      return C * u * (1 + (u * u));
+    };
+
+    // Helper for smoothstep
+    const smoothstep = (min: number, max: number, value: number): number => {
+      const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
+      return x * x * (3 - 2 * x);
+    };
+
+    // Generate Vertices
+    for (let z = 0; z <= resZ; z++) {
+      const v = z / resZ;
+      const localZ = v * chunkSize;
+      const worldZ = this.zOffset + localZ;
+
+      // Biome Selection (Z-dependent only)
+      // 50/50 split with rapid transition
+      // Use low frequency noise for biome patches
+      let biomeNoise = this.noise.noise2D(100, worldZ * 0.001); // Offset X by 100 to avoid 0.0 at origin
+      // biomeNoise is -1 to 1.
+      // We want rapid transition around 0.
+      // Sigmoid-like transition: smoothstep around -0.1 to 0.1
+      // 0 = Desert, 1 = Forest
+      const biomeFactor = smoothstep(-0.2, 0.2, biomeNoise);
+
+      for (let x = 0; x <= resX; x++) {
+        const u = (x / resX) * 2 - 1;
+        const localX = getDistributedX(u, chunkWidth);
+
+        const index = z * (resX + 1) + x;
+
+        const riverCenter = this.riverSystem.getRiverCenter(worldZ);
+        const worldX = localX + riverCenter;
+        const height = this.calculateHeight(localX, worldZ);
+
+        positions[index * 3] = worldX;
+        positions[index * 3 + 1] = height;
+        positions[index * 3 + 2] = localZ;
+
+        // Colors
+        // Purely biome based, maybe slight noise variation but mostly solid
+        // Lerp between Desert and Forest based on biomeFactor
+
+        colors[index * 3] = colorDry.r * (1 - biomeFactor) + colorWet.r * biomeFactor;
+        colors[index * 3 + 1] = colorDry.g * (1 - biomeFactor) + colorWet.g * biomeFactor;
+        colors[index * 3 + 2] = colorDry.b * (1 - biomeFactor) + colorWet.b * biomeFactor;
+
+        // UVs
+        uvs[index * 2] = (localX / chunkWidth) + 0.5;
+        uvs[index * 2 + 1] = v;
+      }
+    }
+
+    // Generate Indices
+    let i = 0;
+    for (let z = 0; z < resZ; z++) {
+      for (let x = 0; x < resX; x++) {
+        const a = z * (resX + 1) + x;
+        const b = (z + 1) * (resX + 1) + x;
+        const c = (z + 1) * (resX + 1) + (x + 1);
+        const d = z * (resX + 1) + (x + 1);
+
+        indices[i++] = a;
+        indices[i++] = b;
+        indices[i++] = d;
+        indices[i++] = b;
+        indices[i++] = c;
+        indices[i++] = d;
+      }
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
     geometry.computeVertexNormals();
 
-    // Create custom gradient for toon shading (3-step cartoon look)
+    // Create custom gradient for toon shading
     const gradientColors = new Uint8Array([
-      50, 50, 50, 255,  // Dark shadow
-      100, 100, 100, 255, // Mid-tone
-      255, 255, 255, 255  // Highlight
+      50, 50, 50, 255,
+      100, 100, 100, 255,
+      255, 255, 255, 255
     ]);
     const gradientMap = new THREE.DataTexture(gradientColors, 3, 1, THREE.RGBAFormat);
     gradientMap.needsUpdate = true;
@@ -103,8 +158,8 @@ export class TerrainChunk {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(0, 0, this.zOffset);
 
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
 
     return mesh;
   }
@@ -137,20 +192,25 @@ export class TerrainChunk {
       if (height < 2.0) continue;
       if (!this.checkVisibility(localX, height, worldZ)) continue;
 
-      let wetness = this.noise.noise2D(worldX * 0.002, worldZ * 0.002);
-      wetness = (wetness + 1) / 2;
+      // Biome Logic (Same as generateMesh)
+      // Helper for smoothstep
+      const smoothstep = (min: number, max: number, value: number): number => {
+        const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
+        return x * x * (3 - 2 * x);
+      };
+
+      let biomeNoise = this.noise.noise2D(100, worldZ * 0.001);
+      const biomeFactor = smoothstep(-0.2, 0.2, biomeNoise);
 
       let object: THREE.Object3D | null = null;
 
-      if (wetness < 0.4) {
-        if (Math.random() > 0.6) object = Decorations.getCactus();
-        else object = Decorations.getBush(wetness);
-      } else if (wetness > 0.6) {
-        if (Math.random() > 0.7) object = Decorations.getTree(wetness);
-        else object = Decorations.getBush(wetness);
+      // biomeFactor: 0 = Desert, 1 = Forest
+      if (biomeFactor < 0.5) {
+        // Desert
+        if (Math.random() > 0.8) object = Decorations.getCactus();
       } else {
-        if (Math.random() > 0.5) object = Decorations.getTree(wetness);
-        else object = Decorations.getBush(wetness);
+        // Forest
+        if (Math.random() > 0.8) object = Decorations.getTree(biomeFactor);
       }
 
       if (object) {
