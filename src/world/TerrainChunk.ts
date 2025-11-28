@@ -74,8 +74,8 @@ export class TerrainChunk {
     const uvs = new Float32Array(numVertices * 2);
     const indices = new Uint32Array(numIndices);
 
-    const colorDry = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 }; // Ochre Yellow (Desert)
-    const colorWet = { r: 0x1A / 255, g: 0x33 / 255, b: 0x1A / 255 }; // Dark Green (Forest)
+    const colorDry = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 }; // Rich Ochre (Original)
+    const colorWet = { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 }; // Rich Dark Green
 
     // Helper for distribution
     const getDistributedX = (u: number, width: number): number => {
@@ -146,10 +146,11 @@ export class TerrainChunk {
     geometry.computeVertexNormals();
 
     // Create custom gradient for toon shading
+    // Brightened shadows
     const gradientColors = new Uint8Array([
-      50, 50, 50, 255,
-      100, 100, 100, 255,
-      255, 255, 255, 255
+      100, 100, 100, 255, // Shadow (was 50)
+      180, 180, 180, 255, // Mid (was 100)
+      255, 255, 255, 255  // Highlight
     ]);
     const gradientMap = new THREE.DataTexture(gradientColors, 3, 1, THREE.RGBAFormat);
     gradientMap.needsUpdate = true;

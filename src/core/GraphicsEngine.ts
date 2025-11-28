@@ -9,6 +9,10 @@ export class GraphicsEngine {
   private screenTint: HTMLDivElement;
   private currentBiomeFactor: number = 0; // 0 = Desert, 1 = Forest
 
+  // Celestial Bodies
+  private sunMesh: THREE.Mesh;
+  private moonMesh: THREE.Mesh;
+
   // Lighting references
   private sunLight: THREE.DirectionalLight;
   private moonLight: THREE.DirectionalLight;
@@ -16,8 +20,8 @@ export class GraphicsEngine {
   private ambientLight: THREE.AmbientLight;
 
   // Day/Night Cycle Config
-  private cycleTime: number = 30 * 60 * 0.25; // Start at Noon (1/4th of cycle)
-  private readonly cycleDuration: number = 30 * 60; // 30 minutes in seconds
+  private readonly cycleDuration: number = 5 * 60; // 5 minutes in seconds
+  private cycleTime: number = Math.random() * (5 * 60); // Start at random time
 
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
@@ -60,6 +64,19 @@ export class GraphicsEngine {
     this.screenTint.style.mixBlendMode = 'overlay'; // Better blending
     container.appendChild(this.screenTint);
 
+    // Create Sun Mesh
+    // Create Sun Mesh
+    const sunGeo = new THREE.SphereGeometry(30, 32, 32); // Increased size
+    const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffaa }); // Bright yellow/white
+    this.sunMesh = new THREE.Mesh(sunGeo, sunMat);
+    this.scene.add(this.sunMesh);
+
+    // Create Moon Mesh
+    const moonGeo = new THREE.SphereGeometry(20, 32, 32); // Increased size
+    const moonMat = new THREE.MeshBasicMaterial({ color: 0xeeeeff }); // Pale white/blue
+    this.moonMesh = new THREE.Mesh(moonGeo, moonMat);
+    this.scene.add(this.moonMesh);
+
     // Enhanced lighting setup
     this.setupLighting();
 
@@ -81,9 +98,11 @@ export class GraphicsEngine {
       uniforms: this.skyUniforms,
       vertexShader: `
         varying vec3 vWorldPosition;
+        varying vec3 vLocalPosition;
         void main() {
           vec4 worldPosition = modelMatrix * vec4(position, 1.0);
           vWorldPosition = worldPosition.xyz;
+          vLocalPosition = position;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
@@ -93,8 +112,10 @@ export class GraphicsEngine {
         uniform float offset;
         uniform float exponent;
         varying vec3 vWorldPosition;
+        varying vec3 vLocalPosition;
         void main() {
-          float h = normalize(vWorldPosition + offset).y;
+          // Use local position for gradient to keep it relative to camera/skybox center
+          float h = normalize(vLocalPosition + vec3(0, offset, 0)).y;
           gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
         }
       `,
@@ -155,48 +176,76 @@ export class GraphicsEngine {
     const angle = time * Math.PI * 2; // 0 to 2PI
 
     // Sun Position (Rotates around Z axis for simplicity, rising in East, setting in West)
-    // Assuming X is East-West, Y is Up-Down, Z is North-South
-    // Let's make it rise in X, set in -X
-    const radius = 100;
-    const sunX = Math.cos(angle) * radius;
-    const sunY = Math.sin(angle) * radius;
-    const sunZ = 50; // Slight offset
+    // "Small arc near the horizon line"
+    // "Too high and a bit too wide"
+
+    const radius = 200;
+    const orbitCenterZ = -150; // Keep it well in front (Down River is -Z)
+
+    // Orbit in X-Y plane, but shifted to -Z.
+    // "Small arc": Reduce X range significantly.
+    // "Near horizon": Reduce Y range significantly.
+
+    const sunX = Math.cos(angle) * radius * 0.4; // Very narrow arc
+    const sunY = Math.sin(angle) * radius * 0.3; // Low arc (max height ~60 units)
+    const sunZ = orbitCenterZ; // Fixed Z plane
 
     this.sunLight.position.set(sunX, sunY, sunZ);
-    this.sunLight.target.position.set(0, 0, 0);
+    this.sunLight.target.position.set(0, 0, -50); // Target slightly forward
     this.sunLight.target.updateMatrixWorld();
 
+    // Update Sun Mesh Position
+    const sunDir = new THREE.Vector3(sunX, sunY, sunZ).normalize();
+    this.sunMesh.position.copy(this.camera.position).add(sunDir.multiplyScalar(300)); // Inside skybox (360)
+
     // Moon Position (Opposite to Sun)
-    this.moonLight.position.set(-sunX, -sunY, sunZ);
-    this.moonLight.target.position.set(0, 0, 0);
+    const moonX = -sunX;
+    const moonY = -sunY;
+    const moonZ = orbitCenterZ;
+
+    this.moonLight.position.set(moonX, moonY, moonZ);
+    this.moonLight.target.position.set(0, 0, -50);
     this.moonLight.target.updateMatrixWorld();
+
+    const moonDir = new THREE.Vector3(moonX, moonY, moonZ).normalize();
+    this.moonMesh.position.copy(this.camera.position).add(moonDir.multiplyScalar(300));
 
     // Determine Day/Night Phase
     // sin(angle) > 0 is Day (Sun is up), < 0 is Night
     const isDay = sunY > 0;
-    const sunHeight = Math.max(0, sunY / radius); // 0 to 1
-    const moonHeight = Math.max(0, -sunY / radius); // 0 to 1
+    // Normalize height based on the new max Y (radius * 0.3)
+    const sunHeight = Math.max(0, sunY / (radius * 0.3));
+    const moonHeight = Math.max(0, -sunY / (radius * 0.3));
 
     // Update Light Intensities
-    // Sun: Peak intensity at noon (sunHeight = 1), 0 at horizon
-    this.sunLight.intensity = THREE.MathUtils.lerp(0, 1.5, sunHeight); // Reduced max to 1.5 to prevent washout
+    // Minimum light level: 0.5
 
-    // Moon: Peak intensity at midnight
-    this.moonLight.intensity = THREE.MathUtils.lerp(0, 1.0, moonHeight); // Increased to 1.0
+    // Sun Intensity: 0 to 1.5 (Reduced from 2.0 to prevent washout)
+    this.sunLight.intensity = THREE.MathUtils.lerp(0, 1.5, sunHeight);
 
-    // Hemisphere Light: Transitions from Blue/White (Day) to Dark Blue/Black (Night)
+    // Moon Intensity: 0 to 3.0 (Very bright moon)
+    this.moonLight.intensity = THREE.MathUtils.lerp(0, 3.0, moonHeight);
+
+    // Hemisphere Light (Ambient)
+    // Should never drop below 0.8
+    // Day: 1.2, Night: 0.8
+
+    let targetHemiIntensity = 0.8;
+    if (isDay) {
+      targetHemiIntensity = 0.8 + 0.4 * sunHeight;
+    } else {
+      targetHemiIntensity = 0.8 + 0.4 * moonHeight;
+    }
+    this.hemiLight.intensity = targetHemiIntensity;
+
+    // Hemisphere Light Colors
     const daySkyColor = new THREE.Color(0xffffff);
-    const dayGroundColor = new THREE.Color(0x888888);
-    const nightSkyColor = new THREE.Color(0x111144); // Brighter night blue
-    const nightGroundColor = new THREE.Color(0x111122); // Brighter night ground
+    const dayGroundColor = new THREE.Color(0xaaaaaa);
+    const nightSkyColor = new THREE.Color(0x6666aa); // Very bright night blue
+    const nightGroundColor = new THREE.Color(0x444466); // Very bright night ground
 
-    // Interpolate based on sun height (using a smooth step for transition)
-    // We need a value that goes 1 -> 0 -> 1 for Day -> Night -> Day
-    // Actually, let's just use sunY. If sunY > 0, we blend towards day. If sunY < 0, towards night.
-    // Smooth transition around horizon
-    const dayFactor = (Math.sin(angle) + 1) / 2; // 0 to 1, but sinusoidal
-    // Let's refine: Sharp transition at horizon isn't great.
-    // Use sunY directly but clamped/smoothed.
+    this.hemiLight.color.lerpColors(nightSkyColor, daySkyColor, isDay ? sunHeight : 0);
+    this.hemiLight.groundColor.lerpColors(nightGroundColor, dayGroundColor, isDay ? sunHeight : 0);
 
     // Sky Color Interpolation
     // Pastel Sunset Vibe
@@ -253,12 +302,6 @@ export class GraphicsEngine {
 
     this.skyUniforms.topColor.value.copy(currentTop);
     this.skyUniforms.bottomColor.value.copy(currentBot);
-
-    // Update Hemi Light Color
-    this.hemiLight.color.lerpColors(nightSkyColor, daySkyColor, isDay ? sunHeight : 0);
-    this.hemiLight.groundColor.lerpColors(nightGroundColor, dayGroundColor, isDay ? sunHeight : 0);
-    // Ensure minimum brightness
-    this.hemiLight.intensity = isDay ? 0.6 + 0.4 * sunHeight : 0.4;
 
     // Update Fog Color to match horizon (bottom color)
     if (this.scene.fog instanceof THREE.FogExp2) {
