@@ -53,7 +53,7 @@ export class GraphicsEngine {
 
   private createSkybox(): THREE.Mesh {
     // Create gradient sky using shader
-    const skyGeo = new THREE.SphereGeometry(180, 32, 15);
+    const skyGeo = new THREE.SphereGeometry(360, 32, 15);
 
     this.skyUniforms = {
       topColor: { value: new THREE.Color(0x0099ff) },
