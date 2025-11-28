@@ -2,7 +2,8 @@ import * as planck from 'planck';
 import { EntityManager } from '../core/EntityManager';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 import { RiverSystem } from '../world/RiverSystem';
-import { Alligator, Turtle, Log, Pier, Buoy, RiverRock } from '../entities/Obstacles';
+import { TerrainChunk } from '../world/TerrainChunk';
+import { Alligator, Turtle, Log, Pier, Buoy, RiverRock, Iceberg } from '../entities/Obstacles';
 import { GasCan, MessageInABottle } from '../entities/Collectables';
 import { Entity } from '../core/Entity';
 
@@ -29,20 +30,24 @@ export class ObstacleManager {
       const distance = Math.abs(z);
       const difficulty = Math.min(distance / 7500, 1.0);
 
+      // Biome Weights
+      const weights = TerrainChunk.getBiomeWeights(z);
+
       // Independent Spawn Rates (Probability per step)
       // Base rates (Constant)
-      const pierProb = distance > 200 ? 0.04 : 0;
-      const rockProb = 0.04;
-      const logProb = 0.04;
+      const pierProb = (distance > 200 ? 0.04 : 0) * (1 - weights.ice); // No piers in ice
+      const rockProb = 0.04 * (1 - weights.ice); // Rocks replaced by Icebergs in ice
+      const logProb = 0.04 * (1 - weights.ice); // Logs replaced by Icebergs
       const bottleProb = 0.04;
       const bonusProb = 0.005;
+      const icebergProb = 0.10 * weights.ice; // High chance in ice
 
       // Dynamic rates (Ramp with difficulty)
       // Buoys: 0% -> 8% (Start at 500m)
-      const buoyProb = distance > 500 ? 0.08 * Math.max(0, (difficulty - 0.06) / (1 - 0.06)) : 0;
+      const buoyProb = (distance > 500 ? 0.08 * Math.max(0, (difficulty - 0.06) / (1 - 0.06)) : 0) * (1 - weights.ice);
 
       // Crocs: 0% -> 8% (Start at 1000m)
-      const crocProb = distance > 1000 ? 0.08 * Math.max(0, (difficulty - 0.13) / (1 - 0.13)) : 0;
+      const crocProb = (distance > 1000 ? 0.08 * Math.max(0, (difficulty - 0.13) / (1 - 0.13)) : 0) * (1 - weights.ice);
 
       const probs: { [key: string]: number } = {
         'pier': pierProb,
@@ -51,7 +56,8 @@ export class ObstacleManager {
         'bottle': bottleProb,
         'buoy': buoyProb,
         'croc': crocProb,
-        'bonus': bonusProb
+        'bonus': bonusProb,
+        'iceberg': icebergProb
       };
 
       // Calculate Total Probability
@@ -217,6 +223,16 @@ export class ObstacleManager {
 
         const radius = 1.5 + Math.random() * 3.0; // 1.5 to 4.5m radius (3x larger)
         const entity = new RiverRock(rockX, z, radius, this.physicsEngine);
+        this.entityManager.add(entity);
+        entities.push(entity);
+
+      } else if (type === 'iceberg') {
+        // Iceberg
+        // Similar placement to rocks (bias towards shores? or everywhere?)
+        // Icebergs drift, so they can be anywhere.
+        // Let's place them randomly across width.
+        const radius = 2.0 + Math.random() * 3.0; // Large
+        const entity = new Iceberg(x, z, radius, this.physicsEngine);
         this.entityManager.add(entity);
         entities.push(entity);
 

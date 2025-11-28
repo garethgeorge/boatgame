@@ -7,7 +7,7 @@ export class GraphicsEngine {
   private skybox: THREE.Mesh;
   private skyUniforms: { [uniform: string]: THREE.IUniform };
   private screenTint: HTMLDivElement;
-  private currentBiomeFactor: number = 0; // 0 = Desert, 1 = Forest
+  private currentBiomeWeights: { desert: number, forest: number, ice: number } = { desert: 1, forest: 0, ice: 0 };
 
   // Celestial Bodies
   private sunMesh: THREE.Mesh;
@@ -33,7 +33,8 @@ export class GraphicsEngine {
     this.skybox = this.createSkybox();
 
     // Fog removed per user request
-    this.scene.fog = null;
+    // Fog setup
+    this.scene.fog = new THREE.Fog(0xffffff, 100, 1000);
 
     this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     this.camera.position.set(0, 10, -10);
@@ -313,41 +314,86 @@ export class GraphicsEngine {
 
     // Blend current sky colors towards forest colors based on biome factor
     // We only affect Day colors significantly
+    // Blend current sky colors towards forest/ice colors based on biome weights
+    // We only affect Day colors significantly
     if (isDay) {
-      currentTop.lerp(forestTopMod, this.currentBiomeFactor * 0.6); // 60% influence
-      currentBot.lerp(forestBotMod, this.currentBiomeFactor * 0.6);
+      // Forest Influence
+      currentTop.lerp(forestTopMod, this.currentBiomeWeights.forest * 0.6);
+      currentBot.lerp(forestBotMod, this.currentBiomeWeights.forest * 0.6);
+
+      // Ice Influence (Cooler, whiter)
+      const iceTopMod = new THREE.Color(0xddeeff); // Pale Ice Blue
+      const iceBotMod = new THREE.Color(0xffffff); // White
+      currentTop.lerp(iceTopMod, this.currentBiomeWeights.ice * 0.8);
+      currentBot.lerp(iceBotMod, this.currentBiomeWeights.ice * 0.8);
     }
 
     this.skyUniforms.topColor.value.copy(currentTop);
     this.skyUniforms.bottomColor.value.copy(currentBot);
 
     // Update Fog Color to match horizon (bottom color)
-    if (this.scene.fog instanceof THREE.FogExp2) {
+    if (this.scene.fog) {
       this.scene.fog.color.copy(currentBot);
     }
   }
 
-  public updateBiome(biomeFactor: number) {
-    this.currentBiomeFactor = biomeFactor;
+  public updateBiome(weights: { desert: number, forest: number, ice: number }) {
+    this.currentBiomeWeights = weights;
 
     // Update Screen Tint
-    // Desert (0): Sepia/Warm
-    // Forest (1): Cool Blue
-
-    // We can interpolate CSS colors or just set them based on factor
-    // Since we have a transition on the element, we can just update it less frequently or let CSS handle smooth transition if we snap?
-    // But biomeFactor changes smoothly.
-    // Let's manually interpolate RGBA for full control.
+    // Desert: Sepia/Warm
+    // Forest: Cool Blue
+    // Ice: Cold Cyan/White
 
     const desertColor = { r: 180, g: 140, b: 100, a: 0.15 }; // Sepia
     const forestColor = { r: 100, g: 150, b: 200, a: 0.15 }; // Cool Blue
+    const iceColor = { r: 200, g: 240, b: 255, a: 0.20 }; // Cold Cyan (Higher opacity)
 
-    const r = THREE.MathUtils.lerp(desertColor.r, forestColor.r, biomeFactor);
-    const g = THREE.MathUtils.lerp(desertColor.g, forestColor.g, biomeFactor);
-    const b = THREE.MathUtils.lerp(desertColor.b, forestColor.b, biomeFactor);
-    const a = THREE.MathUtils.lerp(desertColor.a, forestColor.a, biomeFactor);
+    // Blend
+    const r = desertColor.r * weights.desert + forestColor.r * weights.forest + iceColor.r * weights.ice;
+    const g = desertColor.g * weights.desert + forestColor.g * weights.forest + iceColor.g * weights.ice;
+    const b = desertColor.b * weights.desert + forestColor.b * weights.forest + iceColor.b * weights.ice;
+    const a = desertColor.a * weights.desert + forestColor.a * weights.forest + iceColor.a * weights.ice;
 
     this.screenTint.style.backgroundColor = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`;
+
+    // Update Fog
+    if (this.scene.fog instanceof THREE.Fog) {
+      // Base Fog (Desert/Forest): Far away, subtle
+      const baseNear = 100;
+      const baseFar = 800;
+      const baseColor = new THREE.Color(0xffffff);
+
+      // Ice Fog: Close in, "not 100% opaque" (meaning maybe not fully white? or just not too dense?)
+      // User said "close in but not 100% opaque".
+      // Let's bring 'far' in, but maybe keep 'near' reasonably close too?
+      const iceNear = 20;
+      const iceFar = 100; // Denser fog (was 150)
+      const iceColor = new THREE.Color(0xE0F6FF); // Ice Blue
+
+      // Lerp values
+      const targetNear = THREE.MathUtils.lerp(baseNear, iceNear, weights.ice);
+      const targetFar = THREE.MathUtils.lerp(baseFar, iceFar, weights.ice);
+
+      this.scene.fog.near = targetNear;
+      this.scene.fog.far = targetFar;
+
+      // Blend fog color with sky bottom color (which is already updated in update())
+      // But we want specific ice fog color?
+      // Actually, update() sets fog color to match sky bottom.
+      // Let's override that behavior if we want specific control, or just let update() handle color
+      // and we handle distance here.
+      // In update(): "this.scene.fog.color.copy(currentBot);"
+      // This is good for blending.
+      // But for Ice, we might want it to be more distinct?
+      // Let's let update() handle color for consistency, but we control distance here.
+    }
+
+    // Update Desaturation (CSS Filter)
+    // Desert/Forest: 0% grayscale
+    // Ice: 90% grayscale (Strong desaturation)
+    const grayscale = weights.ice * 0.9;
+    this.renderer.domElement.style.filter = `grayscale(${grayscale})`;
   }
 
   render(dt: number) {

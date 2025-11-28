@@ -92,7 +92,7 @@ export class Game {
 
             if (player && other) {
                 if (other.type === 'obstacle') {
-                    if (other.subtype === 'alligator' || other.subtype === 'buoy') {
+                    if (other.subtype === 'alligator' || other.subtype === 'buoy' || other.subtype === 'iceberg') {
                         if (!other.entity.hasCausedPenalty) {
                             this.score -= 100;
                             this.boat.flashRed();

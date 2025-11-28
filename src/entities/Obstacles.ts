@@ -573,16 +573,16 @@ export class RiverRock extends Entity {
 
     // Graphics: Vertical Rocky Outcrop
     // Cylinder base
-    const height = radius * 4.0;
-    const geometry = new THREE.CylinderGeometry(radius * 0.4, radius * 1.2, height, 7, 5);
+    const height = radius * 3.0;
+    const geometry = new THREE.CylinderGeometry(radius * 0.3, radius * 1.0, height, 8, 5);
     const posAttribute = geometry.attributes.position;
     const normalAttribute = geometry.attributes.normal;
     const vertex = new THREE.Vector3();
     const normal = new THREE.Vector3();
 
-    // Deterministic Noise Function
+    // Deterministic Noise Function (Smoother)
     const noise = (x: number, y: number, z: number) => {
-      return Math.sin(x * 2.0) * Math.cos(y * 1.5) * Math.sin(z * 2.0);
+      return Math.sin(x * 1.0) * Math.cos(y * 0.8) * Math.sin(z * 1.0);
     };
 
     // Seed for this specific rock
@@ -594,11 +594,11 @@ export class RiverRock extends Entity {
       vertex.fromBufferAttribute(posAttribute, i);
       normal.fromBufferAttribute(normalAttribute, i);
 
-      // Apply Noise
+      // Apply Noise (Reduced amplitude)
       const n = noise(vertex.x + seedX, vertex.y + seedY, vertex.z + seedZ);
-      const displacement = n * radius * 0.4;
+      const displacement = n * radius * 0.2;
 
-      // Displace along normal (expands/contracts shape organically)
+      // Displace along normal
       vertex.add(normal.clone().multiplyScalar(displacement));
 
       // Extend bottom vertices deep down
@@ -606,8 +606,8 @@ export class RiverRock extends Entity {
       if (vertex.y < -height * 0.45) {
         vertex.y -= 8.0; // Extend deep into river bed
         // Widen base further
-        vertex.x *= 1.5;
-        vertex.z *= 1.5;
+        vertex.x *= 1.2;
+        vertex.z *= 1.2;
       }
 
       posAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
@@ -618,6 +618,7 @@ export class RiverRock extends Entity {
     const material = new THREE.MeshToonMaterial({
       color: 0x696969, // Dim Grey
     });
+    // @ts-ignore
     material.flatShading = true;
 
     this.mesh = new THREE.Mesh(geometry, material);
@@ -633,6 +634,11 @@ export class RiverRock extends Entity {
     // Water is at 0.
     // If we place mesh at y=0, center is at 0. Top is at height/2. Bottom is at -height/2 (minus extension).
     // This is perfect.
+    // Lower it so only the top sticks out
+    // Height is 3r. Top is at 1.5r.
+    // We want top to be at ~0.5m above water.
+    // So shift down by 1.5r - 0.5.
+    this.mesh.position.y = -(height / 2) + 0.5 + (Math.random() * 0.5);
   }
 
   onHit() {
@@ -641,5 +647,98 @@ export class RiverRock extends Entity {
 
   update(dt: number) {
     // Static
+  }
+}
+
+export class Iceberg extends Entity {
+  declare physicsBody: planck.Body;
+  declare mesh: THREE.Group;
+
+  constructor(x: number, y: number, radius: number, physicsEngine: PhysicsEngine) {
+    super();
+
+    // Physics: Dynamic but heavy (drifting ice)
+    this.physicsBody = physicsEngine.world.createBody({
+      type: 'dynamic',
+      position: planck.Vec2(x, y),
+      linearDamping: 1.0, // Water resistance
+      angularDamping: 1.0,
+      angle: Math.random() * Math.PI * 2
+    });
+
+    // Polygon shape for physics (approximate with circle for now for stability, or box?)
+    // Circle is best for drifting objects to avoid getting stuck.
+    this.physicsBody.createFixture({
+      shape: planck.Circle(radius * 0.8),
+      density: 10.0, // Heavy ice (5x increase)
+      friction: 0.1, // Slippery
+      restitution: 0.2
+    });
+
+    this.physicsBody.setUserData({ type: 'obstacle', subtype: 'iceberg', entity: this });
+
+    // Graphics: Floating Jagged Ice Sheet
+    // Use ExtrudeGeometry for a flat top and jagged perimeter
+    const shape = new THREE.Shape();
+    const numPoints = 12;
+    const angleStep = (Math.PI * 2) / numPoints;
+
+    // Generate random jagged points
+    for (let i = 0; i < numPoints; i++) {
+      const angle = i * angleStep;
+      // Vary radius: 0.7 to 1.3 of base radius
+      const r = radius * (0.7 + Math.random() * 0.6);
+      const x = Math.cos(angle) * r;
+      const y = Math.sin(angle) * r; // Shape is in XY plane initially
+
+      if (i === 0) shape.moveTo(x, y);
+      else shape.lineTo(x, y);
+    }
+    shape.closePath();
+
+    const extrudeSettings = {
+      steps: 1,
+      depth: 1.5, // Thickness of the ice sheet
+      bevelEnabled: true,
+      bevelThickness: 0.2,
+      bevelSize: 0.1,
+      bevelSegments: 1
+    };
+
+    const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+    // Center the geometry
+    geometry.center();
+
+    const material = new THREE.MeshToonMaterial({
+      color: 0xE0F6FF, // Ice Blue
+      transparent: true,
+      opacity: 0.9,
+      side: THREE.DoubleSide
+    });
+    // @ts-ignore
+    material.flatShading = true;
+
+    this.mesh = new THREE.Group(); // Parent group handles Y-rotation (yaw) from physics
+    const innerMesh = new THREE.Mesh(geometry, material);
+
+    // Rotate inner mesh to lie flat on water
+    innerMesh.rotation.x = -Math.PI / 2;
+
+    // Position inner mesh
+    innerMesh.position.y = 0.2;
+
+    this.mesh.add(innerMesh);
+
+    this.mesh.castShadow = true;
+    this.mesh.receiveShadow = true;
+  }
+
+  onHit() {
+    // Solid
+  }
+
+  update(dt: number) {
+    // Drifts naturally
   }
 }

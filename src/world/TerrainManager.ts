@@ -63,8 +63,8 @@ export class TerrainManager {
     this.updateCollision(boatZ);
 
     // 3. Update Biome Visuals
-    const biomeFactor = TerrainChunk.getBiomeFactor(boatZ);
-    this.graphicsEngine.updateBiome(biomeFactor);
+    const weights = TerrainChunk.getBiomeWeights(boatZ);
+    this.graphicsEngine.updateBiome(weights);
   }
 
   private debug: boolean = false;

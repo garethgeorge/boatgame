@@ -9,6 +9,8 @@ export class Decorations {
   public static readonly cactusMaterial = new THREE.MeshToonMaterial({ color: 0x6B8E23 }); // Olive Drab
   public static readonly rockMaterialDesert = new THREE.MeshToonMaterial({ color: 0xE6C288 }); // Yellow Sandstone
   public static readonly rockMaterialForest = new THREE.MeshToonMaterial({ color: 0x888888 }); // Grey
+  public static readonly snowyLeafMaterial = new THREE.MeshToonMaterial({ color: 0xFFFFFF }); // White
+  public static readonly iceRockMaterial = new THREE.MeshToonMaterial({ color: 0xE0F6FF }); // Ice Blue
 
   static {
     // Cast to any to avoid TS error if property is missing in definition but present in runtime
@@ -16,15 +18,17 @@ export class Decorations {
     (this.rockMaterialDesert as any).needsUpdate = true;
     (this.rockMaterialForest as any).flatShading = true;
     (this.rockMaterialForest as any).needsUpdate = true;
+    (this.iceRockMaterial as any).flatShading = true;
+    (this.iceRockMaterial as any).needsUpdate = true;
   }
 
   private static rockNoise3D = createNoise3D();
 
   private static cache: {
-    trees: { mesh: THREE.Group, wetness: number }[],
+    trees: { mesh: THREE.Group, wetness: number, isSnowy: boolean }[],
     bushes: { mesh: THREE.Group, wetness: number }[],
     cactuses: THREE.Group[],
-    rocks: { mesh: THREE.Group, size: number }[]
+    rocks: { mesh: THREE.Group, size: number, isIcy: boolean }[]
   } = { trees: [], bushes: [], cactuses: [], rocks: [] };
 
   static initCache() {
@@ -32,7 +36,12 @@ export class Decorations {
     // Generate Trees
     for (let i = 0; i < 50; i++) {
       const wetness = Math.random();
-      this.cache.trees.push({ mesh: this.createTree(wetness), wetness });
+      this.cache.trees.push({ mesh: this.createTree(wetness, false), wetness, isSnowy: false });
+    }
+    // Generate Snowy Trees
+    for (let i = 0; i < 30; i++) {
+      const wetness = Math.random();
+      this.cache.trees.push({ mesh: this.createTree(wetness, true), wetness, isSnowy: true });
     }
     // Generate Bushes
     for (let i = 0; i < 50; i++) {
@@ -46,20 +55,25 @@ export class Decorations {
     // Generate Rocks
     for (let i = 0; i < 30; i++) {
       const size = Math.random();
-      this.cache.rocks.push({ mesh: this.createRock(size), size });
+      this.cache.rocks.push({ mesh: this.createRock(size, false), size, isIcy: false });
+    }
+    // Generate Icy Rocks
+    for (let i = 0; i < 20; i++) {
+      const size = Math.random();
+      this.cache.rocks.push({ mesh: this.createRock(size, true), size, isIcy: true });
     }
     console.log("Decoration Cache Initialized.");
   }
 
-  static getTree(wetness: number): THREE.Group {
+  static getTree(wetness: number, isSnowy: boolean = false): THREE.Group {
     if (this.cache.trees.length === 0) this.initCache();
 
-    const candidates = this.cache.trees.filter(t => Math.abs(t.wetness - wetness) < 0.3);
+    const candidates = this.cache.trees.filter(t => t.isSnowy === isSnowy && Math.abs(t.wetness - wetness) < 0.3);
     const source = candidates.length > 0
       ? candidates[Math.floor(Math.random() * candidates.length)]
-      : this.cache.trees[Math.floor(Math.random() * this.cache.trees.length)];
+      : this.cache.trees.find(t => t.isSnowy === isSnowy) || this.cache.trees[0];
 
-    if (!source) return this.createTree(wetness); // Fallback
+    if (!source) return this.createTree(wetness, isSnowy); // Fallback
     return source.mesh.clone();
   }
 
@@ -82,30 +96,36 @@ export class Decorations {
     return this.cache.cactuses[Math.floor(Math.random() * this.cache.cactuses.length)].clone();
   }
 
-  static getRock(biomeFactor: number, size: number): THREE.Group {
+  static getRock(biome: 'desert' | 'forest' | 'ice', size: number): THREE.Group {
     if (this.cache.rocks.length === 0) this.initCache();
 
-    const candidates = this.cache.rocks.filter(r => Math.abs(r.size - size) < 0.3);
+    const isIcy = biome === 'ice';
+    const candidates = this.cache.rocks.filter(r => r.isIcy === isIcy && Math.abs(r.size - size) < 0.3);
     const source = candidates.length > 0
       ? candidates[Math.floor(Math.random() * candidates.length)]
-      : this.cache.rocks[Math.floor(Math.random() * this.cache.rocks.length)];
+      : this.cache.rocks.find(r => r.isIcy === isIcy) || this.cache.rocks[0];
 
-    const rock = source ? source.mesh.clone() : this.createRock(size);
+    const rock = source ? source.mesh.clone() : this.createRock(size, isIcy);
 
-    // Apply biome material
-    // We need to traverse and set material because the cached mesh has a default material (or we just swap it here)
-    const material = biomeFactor < 0.5 ? this.rockMaterialDesert : this.rockMaterialForest;
+    // Apply biome material if not icy (icy rocks are pre-generated with ice material)
+    // Actually, createRock uses the material passed or default?
+    // Let's look at createRock. It uses rockMaterialForest by default.
+    // We should ensure createRock uses correct material.
 
-    rock.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.material = material;
-      }
-    });
+    // If it's not icy, we might need to swap between Desert and Forest
+    if (!isIcy) {
+      const material = biome === 'desert' ? this.rockMaterialDesert : this.rockMaterialForest;
+      rock.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.material = material;
+        }
+      });
+    }
 
     return rock;
   }
 
-  static createTree(wetness: number): THREE.Group {
+  static createTree(wetness: number, isSnowy: boolean): THREE.Group {
     const group = new THREE.Group();
 
     // Tree parameters based on wetness
@@ -172,7 +192,7 @@ export class Decorations {
         // Leaf Cluster at end of sub-branch - SMALLER CANOPY
         const leafSize = 1.0 + wetness * 0.5; // Reduced from 1.5+
         const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
-        const leafMesh = new THREE.Mesh(leafGeo, this.leafMaterial);
+        const leafMesh = new THREE.Mesh(leafGeo, isSnowy ? this.snowyLeafMaterial : this.leafMaterial);
         leafMesh.position.set(0, subLen / 2, 0);
         subBranch.add(leafMesh);
       }
@@ -180,7 +200,7 @@ export class Decorations {
       // Leaf Cluster at end of main branch - SMALLER CANOPY
       const leafSize = 1.2 + wetness * 0.6; // Reduced from 2.0+
       const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
-      const leafMesh = new THREE.Mesh(leafGeo, this.leafMaterial);
+      const leafMesh = new THREE.Mesh(leafGeo, isSnowy ? this.snowyLeafMaterial : this.leafMaterial);
 
       leafMesh.position.set(0, branchLen / 2, 0);
       branch.add(leafMesh);
@@ -189,7 +209,7 @@ export class Decorations {
     // Top Leaf Cluster - SMALLER
     const topLeafSize = 1.5 + wetness * 0.8; // Reduced from 2.5+
     const topLeafGeo = new THREE.IcosahedronGeometry(topLeafSize, 0);
-    const topLeaf = new THREE.Mesh(topLeafGeo, this.leafMaterial);
+    const topLeaf = new THREE.Mesh(topLeafGeo, isSnowy ? this.snowyLeafMaterial : this.leafMaterial);
     topLeaf.position.y = height;
     group.add(topLeaf);
 
@@ -332,7 +352,7 @@ export class Decorations {
     return group;
   }
 
-  static createRock(size: number): THREE.Group {
+  static createRock(size: number, isIcy: boolean): THREE.Group {
     const group = new THREE.Group();
 
     // Size: 0 (Small rock) to 1 (Large boulder)
@@ -406,7 +426,7 @@ export class Decorations {
 
     // Default material (will be swapped)
     // Important: flatShading: true in material
-    const mesh = new THREE.Mesh(geo, this.rockMaterialForest);
+    const mesh = new THREE.Mesh(geo, isIcy ? this.iceRockMaterial : this.rockMaterialForest);
 
     // Random rotation
     mesh.rotation.set(
@@ -446,7 +466,7 @@ export class Decorations {
       geo2.computeVertexNormals();
       geo2.scale(1, 0.7, 1);
 
-      const mesh2 = new THREE.Mesh(geo2, this.rockMaterialForest);
+      const mesh2 = new THREE.Mesh(geo2, isIcy ? this.iceRockMaterial : this.rockMaterialForest);
 
       const offsetDir = Math.random() * Math.PI * 2;
       const offsetDist = baseScale * 0.9;

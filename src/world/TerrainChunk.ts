@@ -18,11 +18,11 @@ export class TerrainChunk {
 
   private static biomeNoise = new SimplexNoise(200);
 
-  public static getBiomeFactor(z: number): number {
+  public static getBiomeWeights(z: number): { desert: number, forest: number, ice: number } {
     // Biome Selection (Z-dependent only)
-    // 50/50 split with rapid transition
-    // Use low frequency noise for biome patches
-    let biomeNoise = this.biomeNoise.noise2D(100, z * 0.001); // Offset X by 100 to avoid 0.0 at origin
+    // Noise -1 to 1
+    // Lower frequency for larger biomes
+    let n = this.biomeNoise.noise2D(100, z * 0.0005);
 
     // Helper for smoothstep
     const smoothstep = (min: number, max: number, value: number): number => {
@@ -30,11 +30,24 @@ export class TerrainChunk {
       return x * x * (3 - 2 * x);
     };
 
-    // biomeNoise is -1 to 1.
-    // We want rapid transition around 0.
-    // Sigmoid-like transition: smoothstep around -0.1 to 0.1
-    // 0 = Desert, 1 = Forest
-    return smoothstep(-0.2, 0.2, biomeNoise);
+    // Define Ranges:
+    // n < -0.2: Mostly Desert
+    // -0.2 < n < 0.2: Transition Desert -> Forest
+    // 0.2 < n < 0.5: Mostly Forest
+    // 0.5 < n < 0.9: Transition Forest -> Ice
+    // n > 0.9: Mostly Ice
+
+    // Desert Weight: 1.0 at -1.0, 0.0 at 0.0
+    const desert = 1.0 - smoothstep(-0.4, 0.1, n);
+
+    // Ice Weight: 0.0 at 0.4, 1.0 at 0.9
+    const ice = smoothstep(0.4, 0.9, n);
+
+    // Forest Weight: Remainder
+    // Clamp to ensure no negative values (though logic above should prevent overlap > 1)
+    const forest = Math.max(0, 1.0 - desert - ice);
+
+    return { desert, forest, ice };
   }
 
   zOffset: number;
@@ -74,8 +87,9 @@ export class TerrainChunk {
     const uvs = new Float32Array(numVertices * 2);
     const indices = new Uint32Array(numIndices);
 
-    const colorDry = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 }; // Rich Ochre (Original)
-    const colorWet = { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 }; // Rich Dark Green
+    const colorDry = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 }; // Rich Ochre (Desert)
+    const colorWet = { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 }; // Rich Dark Green (Forest)
+    const colorIce = { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 }; // White/Blue (Ice)
 
     // Helper for distribution
     const getDistributedX = (u: number, width: number): number => {
@@ -89,7 +103,7 @@ export class TerrainChunk {
       const localZ = v * chunkSize;
       const worldZ = this.zOffset + localZ;
 
-      const biomeFactor = TerrainChunk.getBiomeFactor(worldZ);
+      const weights = TerrainChunk.getBiomeWeights(worldZ);
 
       for (let x = 0; x <= resX; x++) {
         const u = (x / resX) * 2 - 1;
@@ -109,9 +123,10 @@ export class TerrainChunk {
         // Purely biome based, maybe slight noise variation but mostly solid
         // Lerp between Desert and Forest based on biomeFactor
 
-        colors[index * 3] = colorDry.r * (1 - biomeFactor) + colorWet.r * biomeFactor;
-        colors[index * 3 + 1] = colorDry.g * (1 - biomeFactor) + colorWet.g * biomeFactor;
-        colors[index * 3 + 2] = colorDry.b * (1 - biomeFactor) + colorWet.b * biomeFactor;
+        // Blend 3 colors
+        colors[index * 3] = colorDry.r * weights.desert + colorWet.r * weights.forest + colorIce.r * weights.ice;
+        colors[index * 3 + 1] = colorDry.g * weights.desert + colorWet.g * weights.forest + colorIce.g * weights.ice;
+        colors[index * 3 + 2] = colorDry.b * weights.desert + colorWet.b * weights.forest + colorIce.b * weights.ice;
 
         // UVs
         uvs[index * 2] = (localX / chunkWidth) + 0.5;
@@ -200,39 +215,48 @@ export class TerrainChunk {
       if (height < 2.0) continue;
       if (!this.checkVisibility(localX, height, worldZ)) continue;
 
-      // Biome Logic (Same as generateMesh)
-      const biomeFactor = TerrainChunk.getBiomeFactor(worldZ);
+      // Biome Logic
+      const weights = TerrainChunk.getBiomeWeights(worldZ);
+
+      // Determine dominant biome for this object
+      // Or just use probabilities?
+      // Let's pick a biome based on weights
+      let biomeType = 'forest';
+      const r = Math.random();
+      if (r < weights.desert) biomeType = 'desert';
+      else if (r < weights.desert + weights.forest) biomeType = 'forest';
+      else biomeType = 'ice';
 
       let object: THREE.Object3D | null = null;
 
-      // biomeFactor: 0 = Desert, 1 = Forest
-      if (biomeFactor < 0.5) {
+      if (biomeType === 'desert') {
         // Desert
         if (Math.random() > 0.8) {
           object = Decorations.getCactus();
-        } else if (Math.random() > 0.96) { // 1/5th of remaining 20%? No, 1/5th of total density?
-          // User said: "Spawn at ~1/5th the frequency of trees / cactuses"
-          // Current tree/cactus prob is 0.2 (since > 0.8).
-          // So rock prob should be 0.04.
-          // We can do an independent check or chain it.
-          // Let's chain: if not cactus, maybe rock.
-          // 0.8 to 1.0 is cactus (20%).
-          // We want 4% rocks.
-          // Let's use a separate random roll for type if a decoration is spawned?
-          // Or just:
-          // if (rnd > 0.8) -> Cactus
-          // else if (rnd > 0.76) -> Rock
-          // This keeps total density roughly same (24% vs 20%).
-          // Or did user mean *in addition*? "Occasional... 1/5th frequency".
-          // Let's add it.
-          object = Decorations.getRock(biomeFactor, Math.random());
+        } else if (Math.random() > 0.96) {
+          object = Decorations.getRock('desert', Math.random());
         }
-      } else {
+      } else if (biomeType === 'forest') {
         // Forest
         if (Math.random() > 0.8) {
-          object = Decorations.getTree(biomeFactor);
+          object = Decorations.getTree(Math.random(), false);
         } else if (Math.random() > 0.96) {
-          object = Decorations.getRock(biomeFactor, Math.random());
+          object = Decorations.getRock('forest', Math.random());
+        }
+      } else if (biomeType === 'ice') {
+        // Ice / Tundra
+        // Trees (Snowy) or Rocks (Icy)
+        // Tundra has more rocks, fewer trees?
+        // "Planes of rocks and ice... snow covered pine trees in the forest"
+        // Let's say Ice biome is a mix of Snowy Forest and Tundra.
+        // Let's randomize sub-biome or just mix them.
+
+        if (Math.random() > 0.8) {
+          // Snowy Tree
+          object = Decorations.getTree(Math.random(), true);
+        } else if (Math.random() > 0.90) { // More rocks in ice biome (10% vs 4%)
+          // Icy Rock
+          object = Decorations.getRock('ice', Math.random());
         }
       }
 
