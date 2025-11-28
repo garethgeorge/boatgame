@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createNoise3D } from 'simplex-noise';
 
 export class Decorations {
   public static readonly treeMaterial = new THREE.MeshToonMaterial({ color: 0x8B4513 }); // Brown trunk
@@ -6,12 +7,25 @@ export class Decorations {
   public static readonly dryBushMaterial = new THREE.MeshToonMaterial({ color: 0x8B5A2B }); // Brownish
   public static readonly greenBushMaterial = new THREE.MeshToonMaterial({ color: 0x32CD32 }); // Lime Green
   public static readonly cactusMaterial = new THREE.MeshToonMaterial({ color: 0x6B8E23 }); // Olive Drab
+  public static readonly rockMaterialDesert = new THREE.MeshToonMaterial({ color: 0xE6C288 }); // Yellow Sandstone
+  public static readonly rockMaterialForest = new THREE.MeshToonMaterial({ color: 0x888888 }); // Grey
+
+  static {
+    // Cast to any to avoid TS error if property is missing in definition but present in runtime
+    (this.rockMaterialDesert as any).flatShading = true;
+    (this.rockMaterialDesert as any).needsUpdate = true;
+    (this.rockMaterialForest as any).flatShading = true;
+    (this.rockMaterialForest as any).needsUpdate = true;
+  }
+
+  private static rockNoise3D = createNoise3D();
 
   private static cache: {
     trees: { mesh: THREE.Group, wetness: number }[],
     bushes: { mesh: THREE.Group, wetness: number }[],
-    cactuses: THREE.Group[]
-  } = { trees: [], bushes: [], cactuses: [] };
+    cactuses: THREE.Group[],
+    rocks: { mesh: THREE.Group, size: number }[]
+  } = { trees: [], bushes: [], cactuses: [], rocks: [] };
 
   static initCache() {
     console.log("Initializing Decoration Cache...");
@@ -28,6 +42,11 @@ export class Decorations {
     // Generate Cactuses
     for (let i = 0; i < 20; i++) {
       this.cache.cactuses.push(this.createCactus());
+    }
+    // Generate Rocks
+    for (let i = 0; i < 30; i++) {
+      const size = Math.random();
+      this.cache.rocks.push({ mesh: this.createRock(size), size });
     }
     console.log("Decoration Cache Initialized.");
   }
@@ -61,6 +80,29 @@ export class Decorations {
 
     if (this.cache.cactuses.length === 0) return this.createCactus(); // Fallback if init failed?
     return this.cache.cactuses[Math.floor(Math.random() * this.cache.cactuses.length)].clone();
+  }
+
+  static getRock(biomeFactor: number, size: number): THREE.Group {
+    if (this.cache.rocks.length === 0) this.initCache();
+
+    const candidates = this.cache.rocks.filter(r => Math.abs(r.size - size) < 0.3);
+    const source = candidates.length > 0
+      ? candidates[Math.floor(Math.random() * candidates.length)]
+      : this.cache.rocks[Math.floor(Math.random() * this.cache.rocks.length)];
+
+    const rock = source ? source.mesh.clone() : this.createRock(size);
+
+    // Apply biome material
+    // We need to traverse and set material because the cached mesh has a default material (or we just swap it here)
+    const material = biomeFactor < 0.5 ? this.rockMaterialDesert : this.rockMaterialForest;
+
+    rock.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.material = material;
+      }
+    });
+
+    return rock;
   }
 
   static createTree(wetness: number): THREE.Group {
@@ -285,6 +327,134 @@ export class Decorations {
         arm2.rotation.z = -side * -Math.PI / 4;
         group.add(arm2);
       }
+    }
+
+    return group;
+  }
+
+  static createRock(size: number): THREE.Group {
+    const group = new THREE.Group();
+
+    // Size: 0 (Small rock) to 1 (Large boulder)
+    // Scale factor: 0.5 to 2.5
+    const baseScale = 0.5 + size * 2.0;
+
+    // Use Icosahedron for base shape (triangular)
+    // Detail 0 = 20 faces (Low poly)
+    // Detail 1 = 80 faces (Mid poly) - Let's use 0 for very low poly, or 1 for slightly better shape?
+    // User said "nice looking rocks out of triangular geometry... keep vertex count relatively low".
+    // Detail 0 is very blocky (D20 die). Detail 1 is better for displacement.
+    // Let's try Detail 1 for larger rocks, Detail 0 for small ones?
+    // Or just Detail 0 and rely on displacement to make it interesting?
+    // Let's use Detail 1 but keep it low poly style.
+    const detail = size > 0.5 ? 1 : 0;
+    const geo = new THREE.IcosahedronGeometry(baseScale, detail);
+
+    // Convert to non-indexed to allow flat shading (sharp edges)
+    // BufferGeometryUtils.mergeVertices might be needed if we wanted smooth, but we want sharp.
+    // toNonIndexed() splits vertices so each face has its own normals.
+    // Actually IcosahedronGeometry is already indexed.
+    // We want to displace vertices *before* splitting them, so the mesh stays watertight?
+    // If we split first, faces will separate when displaced.
+    // So: Displace -> Compute Normals -> (Optional) ToNonIndexed for hard edges?
+    // MeshToonMaterial with flatShading: true calculates face normals in shader or uses flat normals.
+    // If we want true flat look, we usually want non-indexed geometry or use flatShading: true.
+    // Let's stick to indexed for displacement, then rely on material flatShading.
+
+    const posAttribute = geo.attributes.position;
+    const vertex = new THREE.Vector3();
+
+    // Noise parameters
+    const noiseScale = 0.5; // How frequent the noise is
+    const noiseStrength = baseScale * 0.4; // How much to displace
+
+    // Seed offset for variety
+    const seedOffset = Math.random() * 100;
+
+    for (let i = 0; i < posAttribute.count; i++) {
+      vertex.fromBufferAttribute(posAttribute, i);
+
+      // 3D Noise
+      const n = this.rockNoise3D(
+        vertex.x * noiseScale + seedOffset,
+        vertex.y * noiseScale + seedOffset,
+        vertex.z * noiseScale + seedOffset
+      );
+
+      // Displace along normal (for sphere, normal is just normalized position)
+      // Or just add to position?
+      // Radial displacement preserves convexity mostly.
+      const displacement = n * noiseStrength;
+
+      // Apply displacement
+      // vertex.normalize().multiplyScalar(baseScale + displacement); 
+      // But we already have the shape. Let's just add along radial vector.
+      const dir = vertex.clone().normalize();
+      vertex.add(dir.multiplyScalar(displacement));
+
+      posAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
+    }
+
+    geo.computeVertexNormals();
+
+    // Non-uniform scaling for variety (flattened, stretched)
+    geo.scale(
+      1.0 + (Math.random() - 0.5) * 0.4,
+      0.6 + (Math.random() - 0.5) * 0.4, // Generally flatter
+      1.0 + (Math.random() - 0.5) * 0.4
+    );
+
+    // Default material (will be swapped)
+    // Important: flatShading: true in material
+    const mesh = new THREE.Mesh(geo, this.rockMaterialForest);
+
+    // Random rotation
+    mesh.rotation.set(
+      Math.random() * Math.PI,
+      Math.random() * Math.PI,
+      Math.random() * Math.PI
+    );
+
+    // Sink slightly into ground
+    // Calculate bounding box to know how deep?
+    // Or just heuristic.
+    mesh.position.y = baseScale * 0.2;
+
+    group.add(mesh);
+
+    // Add a second smaller rock sometimes (Cluster)
+    if (size > 0.4 && Math.random() > 0.6) {
+      const size2 = size * 0.5;
+      const scale2 = baseScale * 0.5;
+      const geo2 = new THREE.IcosahedronGeometry(scale2, 0);
+
+      const posAttribute2 = geo2.attributes.position;
+      const vertex2 = new THREE.Vector3();
+      const seedOffset2 = Math.random() * 100;
+
+      for (let i = 0; i < posAttribute2.count; i++) {
+        vertex2.fromBufferAttribute(posAttribute2, i);
+        const n = this.rockNoise3D(
+          vertex2.x * noiseScale + seedOffset2,
+          vertex2.y * noiseScale + seedOffset2,
+          vertex2.z * noiseScale + seedOffset2
+        );
+        const dir = vertex2.clone().normalize();
+        vertex2.add(dir.multiplyScalar(n * scale2 * 0.4));
+        posAttribute2.setXYZ(i, vertex2.x, vertex2.y, vertex2.z);
+      }
+      geo2.computeVertexNormals();
+      geo2.scale(1, 0.7, 1);
+
+      const mesh2 = new THREE.Mesh(geo2, this.rockMaterialForest);
+
+      const offsetDir = Math.random() * Math.PI * 2;
+      const offsetDist = baseScale * 0.9;
+
+      mesh2.position.set(Math.cos(offsetDir) * offsetDist, scale2 * 0.2, Math.sin(offsetDir) * offsetDist);
+      mesh2.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+
+      group.add(mesh2);
     }
 
     return group;

@@ -8,6 +8,7 @@ export abstract class Entity {
   constructor() { }
 
   shouldRemove: boolean = false;
+  hasCausedPenalty: boolean = false;
 
   abstract update(dt: number): void;
 

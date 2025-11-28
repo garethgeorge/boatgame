@@ -92,7 +92,14 @@ export class Game {
 
             if (player && other) {
                 if (other.type === 'obstacle') {
-                    if (other.subtype !== 'pier') {
+                    if (other.subtype === 'alligator' || other.subtype === 'buoy') {
+                        if (!other.entity.hasCausedPenalty) {
+                            this.score -= 100;
+                            this.boat.flashRed();
+                            other.entity.hasCausedPenalty = true;
+                        }
+                        other.entity.onHit();
+                    } else if (other.subtype !== 'pier') {
                         other.entity.onHit();
                         // Collision penalty?
                         // Removed fuel penalty. Maybe slow down boat?
@@ -100,7 +107,9 @@ export class Game {
                 } else if (other.type === 'collectable') {
                     other.entity.onHit();
                     if (other.subtype === 'bottle') {
-                        this.score += 100;
+                        // Cast to MessageInABottle to access points, default to 100 if missing
+                        const points = (other.entity as any).points || 100;
+                        this.score += points;
                     }
                 }
             }

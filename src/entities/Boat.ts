@@ -13,6 +13,8 @@ export class Boat extends Entity {
     private currentThrottle: number = 0;
     private currentSteering: number = 0;
 
+    private flashTimer: number = 0;
+
     // Physics Constants
     private readonly MAX_THRUST = 7500.0; // Tuned for 500kg mass
     private readonly MAX_STEER_ANGLE = Math.PI / 4; // 45 degrees
@@ -223,6 +225,36 @@ export class Boat extends Entity {
         const lerpFactor = Math.min(dt * 5.0, 1.0);
         this.innerMesh.rotation.x = THREE.MathUtils.lerp(this.innerMesh.rotation.x, targetPitch, lerpFactor);
         this.innerMesh.rotation.z = THREE.MathUtils.lerp(this.innerMesh.rotation.z, targetRoll, lerpFactor);
+
+        // Flash Effect
+        if (this.flashTimer > 0) {
+            this.flashTimer -= dt;
+            if (this.flashTimer <= 0) {
+                // Restore original materials (remove emissive)
+                this.innerMesh.traverse((child) => {
+                    if ((child as THREE.Mesh).isMesh) {
+                        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+                        if (mat && mat.emissive) {
+                            mat.emissive.setHex(0x000000);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    public flashRed() {
+        this.flashTimer = 0.2; // 200ms flash
+        this.innerMesh.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+                const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+                if (mat && mat.emissive) {
+                    mat.emissive.setHex(0xFF0000);
+                    // Ensure intensity is high enough to be seen
+                    mat.emissiveIntensity = 1.0;
+                }
+            }
+        });
     }
 
     public getThrottle(): number {

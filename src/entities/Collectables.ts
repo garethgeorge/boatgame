@@ -89,9 +89,11 @@ export class MessageInABottle extends Entity {
   declare physicsBody: planck.Body;
   declare mesh: THREE.Group;
   private floatOffset: number = Math.random() * Math.PI * 2;
+  public points: number;
 
-  constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
+  constructor(x: number, y: number, physicsEngine: PhysicsEngine, color: number = 0x88FF88, points: number = 100) {
     super();
+    this.points = points;
 
     this.physicsBody = physicsEngine.world.createBody({
       type: 'static',
@@ -111,7 +113,7 @@ export class MessageInABottle extends Entity {
     // Bottle Body
     const bodyGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 8); // Doubled
     const glassMat = new THREE.MeshToonMaterial({
-      color: 0x88FF88,
+      color: color,
       transparent: true,
       opacity: 0.6
     });

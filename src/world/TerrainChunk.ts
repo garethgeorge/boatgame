@@ -208,10 +208,32 @@ export class TerrainChunk {
       // biomeFactor: 0 = Desert, 1 = Forest
       if (biomeFactor < 0.5) {
         // Desert
-        if (Math.random() > 0.8) object = Decorations.getCactus();
+        if (Math.random() > 0.8) {
+          object = Decorations.getCactus();
+        } else if (Math.random() > 0.96) { // 1/5th of remaining 20%? No, 1/5th of total density?
+          // User said: "Spawn at ~1/5th the frequency of trees / cactuses"
+          // Current tree/cactus prob is 0.2 (since > 0.8).
+          // So rock prob should be 0.04.
+          // We can do an independent check or chain it.
+          // Let's chain: if not cactus, maybe rock.
+          // 0.8 to 1.0 is cactus (20%).
+          // We want 4% rocks.
+          // Let's use a separate random roll for type if a decoration is spawned?
+          // Or just:
+          // if (rnd > 0.8) -> Cactus
+          // else if (rnd > 0.76) -> Rock
+          // This keeps total density roughly same (24% vs 20%).
+          // Or did user mean *in addition*? "Occasional... 1/5th frequency".
+          // Let's add it.
+          object = Decorations.getRock(biomeFactor, Math.random());
+        }
       } else {
         // Forest
-        if (Math.random() > 0.8) object = Decorations.getTree(biomeFactor);
+        if (Math.random() > 0.8) {
+          object = Decorations.getTree(biomeFactor);
+        } else if (Math.random() > 0.96) {
+          object = Decorations.getRock(biomeFactor, Math.random());
+        }
       }
 
       if (object) {

@@ -20,8 +20,11 @@ export class GraphicsEngine {
   private ambientLight: THREE.AmbientLight;
 
   // Day/Night Cycle Config
-  private readonly cycleDuration: number = 5 * 60; // 5 minutes in seconds
-  private cycleTime: number = Math.random() * (5 * 60); // Start at random time
+  // Day/Night Cycle Config
+  private readonly cycleDuration: number = 15 * 60; // 15 minutes in seconds
+  // Start at High Morning (Angle 30 degrees)
+  // 30/360 * 15*60 = 1/12 * 900 = 75 seconds.
+  private cycleTime: number = 75;
 
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
@@ -187,7 +190,9 @@ export class GraphicsEngine {
     // "Near horizon": Reduce Y range significantly.
 
     const sunX = Math.cos(angle) * radius * 0.4; // Very narrow arc
-    const sunY = Math.sin(angle) * radius * 0.3; // Low arc (max height ~60 units)
+    // Shift sine wave up by 0.5 to get 2:1 Day/Night ratio
+    // sin(angle) + 0.5 > 0 for 240 degrees (Day), < 0 for 120 degrees (Night)
+    const sunY = (Math.sin(angle) + 0.5) * radius * 0.3; // Low arc
     const sunZ = orbitCenterZ; // Fixed Z plane
 
     this.sunLight.position.set(sunX, sunY, sunZ);
@@ -214,8 +219,21 @@ export class GraphicsEngine {
     // sin(angle) > 0 is Day (Sun is up), < 0 is Night
     const isDay = sunY > 0;
     // Normalize height based on the new max Y (radius * 0.3)
-    const sunHeight = Math.max(0, sunY / (radius * 0.3));
-    const moonHeight = Math.max(0, -sunY / (radius * 0.3));
+    // Normalize height based on the new max Y
+    // Max Y is (1 + 0.5) * radius * 0.3 = 1.5 * radius * 0.3
+    // But we just want a 0-1 factor for intensity.
+    // Let's use max(0, sunY / maxPossibleY)
+    const maxSunY = 1.5 * radius * 0.3;
+    const sunHeight = Math.max(0, sunY / maxSunY);
+
+    // Moon is opposite.
+    // moonY = -sunY = -(sin + 0.5) = -sin - 0.5.
+    // Moon is up when -sin - 0.5 > 0 => sin < -0.5.
+    // This matches the 120 degree night window.
+    // Max moon height is when sin = -1 => -(-1) - 0.5 = 0.5.
+    // So max moonY is 0.5 * radius * 0.3.
+    const maxMoonY = 0.5 * radius * 0.3;
+    const moonHeight = Math.max(0, moonY / maxMoonY);
 
     // Update Light Intensities
     // Minimum light level: 0.5
