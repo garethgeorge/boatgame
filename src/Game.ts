@@ -6,6 +6,7 @@ import { TerrainManager } from './world/TerrainManager';
 import { Decorations } from './world/Decorations';
 import { ObstacleManager } from './managers/ObstacleManager';
 import { Boat } from './entities/Boat';
+import { Alligator } from './entities/obstacles/Alligator';
 import { InputManager } from './managers/InputManager';
 import { Profiler } from './core/Profiler';
 
@@ -67,6 +68,14 @@ export class Game {
             instructions.style.marginTop = "10px";
             this.startScreen.appendChild(instructions);
         }
+    }
+
+    async preload() {
+        // Preload all assets here
+        await Promise.all([
+            Alligator.preload(),
+            // Add other entities here as needed
+        ]);
     }
 
     init() {

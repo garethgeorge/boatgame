@@ -11,42 +11,39 @@ export class Alligator extends Entity {
 
     private static cachedModel: THREE.Group | null = null;
     private static cachedAnimations: THREE.AnimationClip[] = [];
-    private static pendingInstances: Alligator[] = [];
-    private static isLoading: boolean = false;
+    private static loadPromise: Promise<void> | null = null;
 
-    private static loadModel() {
-        if (this.cachedModel || this.isLoading) return;
-        this.isLoading = true;
+    public static async preload(): Promise<void> {
+        if (this.cachedModel) return;
+        if (this.loadPromise) return this.loadPromise;
 
-        const loader = new GLTFLoader();
-        loader.load('assets/alligator-model-1.glb', (gltf) => {
-            const model = gltf.scene;
+        this.loadPromise = new Promise((resolve, reject) => {
+            const loader = new GLTFLoader();
+            loader.load('assets/alligator-model-1.glb', (gltf) => {
+                const model = gltf.scene;
 
-            // Adjust scale and rotation to match physics body
-            model.scale.set(3.0, 3.0, 3.0);
-            model.rotation.y = Math.PI; // Rotate 180 degrees if it faces backwards
-            model.position.y = -0.2;
+                // Adjust scale and rotation to match physics body
+                model.scale.set(3.0, 3.0, 3.0);
+                model.rotation.y = Math.PI; // Rotate 180 degrees if it faces backwards
+                model.position.y = -0.2;
 
-            model.traverse((child) => {
-                if ((child as THREE.Mesh).isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
+                model.traverse((child) => {
+                    if ((child as THREE.Mesh).isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+
+                this.cachedModel = model;
+                this.cachedAnimations = gltf.animations || [];
+                resolve();
+            }, undefined, (error) => {
+                console.error('An error occurred loading the alligator model:', error);
+                reject(error);
             });
-
-            this.cachedModel = model;
-            this.cachedAnimations = gltf.animations || [];
-            this.isLoading = false;
-
-            // Process pending instances
-            for (const instance of this.pendingInstances) {
-                instance.applyModel(this.cachedModel, this.cachedAnimations);
-            }
-            this.pendingInstances = [];
-        }, undefined, (error) => {
-            console.error('An error occurred loading the alligator model:', error);
-            this.isLoading = false;
         });
+
+        return this.loadPromise;
     }
 
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
@@ -87,8 +84,12 @@ export class Alligator extends Entity {
         if (Alligator.cachedModel) {
             this.applyModel(Alligator.cachedModel, Alligator.cachedAnimations);
         } else {
-            Alligator.pendingInstances.push(this);
-            Alligator.loadModel();
+            // Fallback if not preloaded (though it should be)
+            Alligator.preload().then(() => {
+                if (Alligator.cachedModel) {
+                    this.applyModel(Alligator.cachedModel, Alligator.cachedAnimations);
+                }
+            });
         }
     }
 
