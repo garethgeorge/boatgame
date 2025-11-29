@@ -1,15 +1,64 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 
 export class Alligator extends Entity {
     declare physicsBody: planck.Body;
     declare mesh: THREE.Group;
-    // private mouth: THREE.Mesh; // Removed procedural mouth
-    // private mouthOpen: boolean = false; // Removed procedural animation state
-    // private mouthTimer: number = 0; // Removed procedural animation state
+
+    private static cachedModel: THREE.Group | null = null;
+    private static cachedAnimations: THREE.AnimationClip[] = [];
+    private static pendingInstances: Alligator[] = [];
+    private static isLoading: boolean = false;
+
+    private static loadModel() {
+        if (this.cachedModel || this.isLoading) return;
+        this.isLoading = true;
+
+        const loader = new GLTFLoader();
+        loader.load('assets/alligator-model-1.glb', (gltf) => {
+            const model = gltf.scene;
+
+            // Adjust scale and rotation to match physics body
+            model.scale.set(3.0, 3.0, 3.0);
+            model.rotation.y = Math.PI; // Rotate 180 degrees if it faces backwards
+            model.position.y = -0.2;
+
+            model.traverse((child) => {
+                if ((child as THREE.Mesh).isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            this.cachedModel = model;
+            this.cachedAnimations = gltf.animations || [];
+            this.isLoading = false;
+
+            // Process pending instances
+            for (const instance of this.pendingInstances) {
+                instance.applyModel(this.cachedModel, this.cachedAnimations);
+            }
+            this.pendingInstances = [];
+        }, undefined, (error) => {
+            console.error('An error occurred loading the alligator model:', error);
+            this.isLoading = false;
+        });
+    }
+
+    private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
+        const clonedModel = SkeletonUtils.clone(model);
+        this.mesh.add(clonedModel);
+
+        if (animations.length > 0) {
+            this.mixer = new THREE.AnimationMixer(clonedModel);
+            const action = this.mixer.clipAction(animations[0]);
+            action.play();
+        }
+    }
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
         super();
@@ -33,48 +82,14 @@ export class Alligator extends Entity {
 
         // Graphics
         this.mesh = new THREE.Group();
-
-        const loader = new GLTFLoader();
-        loader.load('assets/alligator-model-1.glb', (gltf) => {
-            const model = gltf.scene;
-
-            // Adjust scale and rotation to match physics body
-            // Physics body is 2m wide, 6m long.
-            // Assuming model is roughly unit scale or needs adjustment.
-            // Let's start with a scale that makes it visible and adjust if needed.
-            // If it's a typical model, it might need scaling.
-            model.scale.set(3.0, 3.0, 3.0);
-
-            // Rotate to face correct direction if needed.
-            // Physics body forward is usually -Y or +Y depending on game.
-            // In Boat.ts, forward is -Z (ThreeJS) and boat is rotated Y by 90 deg.
-            // Here, let's assume model faces +Z or -Z.
-            // If the alligator swims along the river (Z axis?), we might need to rotate it.
-            // Let's assume standard orientation for now (face +Z or -Z).
-            model.rotation.y = Math.PI; // Rotate 180 degrees if it faces backwards
-
-            // Lower the alligator a little
-            model.position.y = -0.2;
-
-            model.traverse((child) => {
-                if ((child as THREE.Mesh).isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
-            });
-
-            this.mesh.add(model);
-
-            if (gltf.animations && gltf.animations.length > 0) {
-                this.mixer = new THREE.AnimationMixer(model);
-                const action = this.mixer.clipAction(gltf.animations[0]);
-                action.play();
-            }
-        }, undefined, (error) => {
-            console.error('An error occurred loading the alligator model:', error);
-        });
-
         this.mesh.position.y = 0.5; // Raised by ~15% of model height
+
+        if (Alligator.cachedModel) {
+            this.applyModel(Alligator.cachedModel, Alligator.cachedAnimations);
+        } else {
+            Alligator.pendingInstances.push(this);
+            Alligator.loadModel();
+        }
     }
 
     private mixer: THREE.AnimationMixer | null = null;
