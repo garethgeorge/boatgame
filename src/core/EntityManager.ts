@@ -1,7 +1,7 @@
 import { Entity } from './Entity';
 import { PhysicsEngine } from './PhysicsEngine';
 import { GraphicsEngine } from './GraphicsEngine';
-import { Alligator } from '../entities/Obstacles';
+import { Alligator } from '../entities/obstacles';
 import * as planck from 'planck';
 
 export class EntityManager {

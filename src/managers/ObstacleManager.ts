@@ -5,7 +5,7 @@ import { RiverSystem } from '../world/RiverSystem';
 import { GraphicsEngine } from '../core/GraphicsEngine';
 import { Profiler } from '../core/Profiler';
 import { TerrainChunk } from '../world/TerrainChunk';
-import { Alligator, Turtle, Log, Pier, Buoy, RiverRock, Iceberg } from '../entities/Obstacles';
+import { Alligator, Turtle, Log, Pier, Buoy, RiverRock, Iceberg } from '../entities/obstacles';
 import { GasCan, MessageInABottle } from '../entities/Collectables';
 import { Entity } from '../core/Entity';
 
