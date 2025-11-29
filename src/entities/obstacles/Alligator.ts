@@ -61,12 +61,20 @@ export class Alligator extends Entity {
             });
 
             this.mesh.add(model);
+
+            if (gltf.animations && gltf.animations.length > 0) {
+                this.mixer = new THREE.AnimationMixer(model);
+                const action = this.mixer.clipAction(gltf.animations[0]);
+                action.play();
+            }
         }, undefined, (error) => {
             console.error('An error occurred loading the alligator model:', error);
         });
 
         this.mesh.position.y = 0.5; // Raised by ~15% of model height
     }
+
+    private mixer: THREE.AnimationMixer | null = null;
 
     onHit() {
         if (this.physicsBody) {
@@ -76,6 +84,10 @@ export class Alligator extends Entity {
     }
 
     update(dt: number) {
+        if (this.mixer) {
+            this.mixer.update(dt);
+        }
+
         if (!this.physicsBody) {
             // Sinking animation
             if (this.mesh) {
