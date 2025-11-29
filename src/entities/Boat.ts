@@ -118,11 +118,17 @@ export class Boat extends Entity {
 
         // --- Input Handling ---
 
-        // Throttle (Sticky)
-        if (input.forward) {
-            this.currentThrottle = Math.min(1.0, this.currentThrottle + this.THROTTLE_SPEED * dt);
-        } else if (input.backward) {
-            this.currentThrottle = Math.max(-0.5, this.currentThrottle - this.THROTTLE_SPEED * dt);
+        // Throttle (Sticky or Touch)
+        // If touch throttle is active (non-zero), use it directly (Spring-loaded)
+        if (Math.abs(input.touchThrottle) > 0.05) {
+            this.currentThrottle = input.touchThrottle;
+        } else {
+            // Keyboard Control (Sticky)
+            if (input.forward) {
+                this.currentThrottle = Math.min(1.0, this.currentThrottle + this.THROTTLE_SPEED * dt);
+            } else if (input.backward) {
+                this.currentThrottle = Math.max(-0.5, this.currentThrottle - this.THROTTLE_SPEED * dt);
+            }
         }
 
         // Steering (Auto-center)

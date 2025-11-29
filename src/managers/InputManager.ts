@@ -7,6 +7,7 @@ export interface InputState {
     debug: boolean;
     paused: boolean;
     tilt: number; // -1.0 to 1.0 (Left to Right)
+    touchThrottle: number; // -1.0 to 1.0 (Down to Up)
 }
 
 export class InputManager {
@@ -21,7 +22,8 @@ export class InputManager {
             viewMode: 'close',
             debug: false,
             paused: false,
-            tilt: 0
+            tilt: 0,
+            touchThrottle: 0
         };
 
         this.init();
@@ -34,6 +36,47 @@ export class InputManager {
 
         // Accelerometer support
         window.addEventListener('deviceorientation', (e) => this.onDeviceOrientation(e));
+
+        // Touch support for throttle
+        window.addEventListener('touchstart', (e) => this.onTouchStart(e), { passive: false });
+        window.addEventListener('touchmove', (e) => this.onTouchMove(e), { passive: false });
+        window.addEventListener('touchend', (e) => this.onTouchEnd(e));
+    }
+
+    private touchStartY: number | null = null;
+
+    onTouchStart(e: TouchEvent) {
+        if (e.touches.length > 0) {
+            this.touchStartY = e.touches[0].clientY;
+            // Don't prevent default here, might interfere with UI? 
+            // Actually, we want to prevent scrolling.
+            // But maybe only if we are "grabbing" the joystick?
+            // User said "tap on screen and drag".
+            // Let's prevent default to stop scrolling.
+            // e.preventDefault(); 
+        }
+    }
+
+    onTouchMove(e: TouchEvent) {
+        if (this.touchStartY !== null && e.touches.length > 0) {
+            const currentY = e.touches[0].clientY;
+            const deltaY = this.touchStartY - currentY; // Up is positive delta (smaller Y)
+
+            // Map delta to throttle
+            // Let's say 150px drag = full throttle
+            const range = 150;
+            const throttle = Math.max(-1, Math.min(1, deltaY / range));
+
+            this.keys.touchThrottle = throttle;
+
+            // Prevent scrolling while dragging
+            if (e.cancelable) e.preventDefault();
+        }
+    }
+
+    onTouchEnd(e: TouchEvent) {
+        this.touchStartY = null;
+        this.keys.touchThrottle = 0; // Reset on release
     }
 
     async requestPermission(): Promise<boolean> {
