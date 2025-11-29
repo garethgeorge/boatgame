@@ -53,6 +53,9 @@ export class Alligator extends Entity {
             // Let's assume standard orientation for now (face +Z or -Z).
             model.rotation.y = Math.PI; // Rotate 180 degrees if it faces backwards
 
+            // Lower the alligator a little
+            model.position.y = -0.2;
+
             model.traverse((child) => {
                 if ((child as THREE.Mesh).isMesh) {
                     child.castShadow = true;
