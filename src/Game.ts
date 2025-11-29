@@ -147,6 +147,8 @@ export class Game {
         // Pause handling - skip all updates if paused
         if (input.paused) return;
 
+        Profiler.setVisibility(input.debug);
+
         // Update Physics
         Profiler.start('Physics');
         this.physicsEngine.update(dt);

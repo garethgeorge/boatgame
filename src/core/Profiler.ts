@@ -19,6 +19,14 @@ export class Profiler {
     this.overlay.style.pointerEvents = 'none';
     this.overlay.style.zIndex = '1000';
     document.body.appendChild(this.overlay);
+    this.overlay.style.display = 'none'; // Hidden by default
+  }
+
+  static setVisibility(visible: boolean) {
+    this.initOverlay();
+    if (this.overlay) {
+      this.overlay.style.display = visible ? 'block' : 'none';
+    }
   }
 
   static start(label: string) {
