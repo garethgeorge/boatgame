@@ -7,6 +7,7 @@ import { Decorations } from './world/Decorations';
 import { ObstacleManager } from './managers/ObstacleManager';
 import { Boat } from './entities/Boat';
 import { InputManager } from './managers/InputManager';
+import { Profiler } from './core/Profiler';
 
 export class Game {
     container: HTMLElement;
@@ -147,19 +148,25 @@ export class Game {
         if (input.paused) return;
 
         // Update Physics
+        Profiler.start('Physics');
         this.physicsEngine.update(dt);
+        Profiler.end('Physics');
 
         // Update Entities (includes syncing physics -> graphics)
         // We pass input to boat manually for now, or we could pass it to all entities
+        Profiler.start('Entities');
         this.boat.update(dt, input);
         this.entityManager.update(dt);
+        Profiler.end('Entities');
 
         // Update Terrain
         if (this.boat.mesh) {
+            Profiler.start('Terrain');
             this.terrainManager.setDebug(input.debug);
             this.entityManager.setDebug(input.debug);
             this.terrainManager.update(this.boat.mesh.position.z);
             // ObstacleManager update is now handled by TerrainManager events
+            Profiler.end('Terrain');
         }
 
         // Update Game State
@@ -232,10 +239,10 @@ export class Game {
         this.update(dt);
 
         // Pass dt to graphics engine for day/night cycle
-        // Only advance time if playing? Or always? 
-        // Let's advance it always for ambience, or only when playing. 
-        // User said "every 30 real world minutes". 
-        // If we want it to match real world time passing, we should pass dt always.
+        Profiler.start('Render');
         this.graphicsEngine.render(dt);
+        Profiler.end('Render');
+
+        Profiler.update();
     }
 }

@@ -57,6 +57,7 @@ export class EntityManager {
       if (entity.debugMesh) {
         this.graphicsEngine.remove(entity.debugMesh);
       }
+      entity.dispose();
     }
   }
 

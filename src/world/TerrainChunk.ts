@@ -4,6 +4,7 @@ import { GraphicsEngine } from '../core/GraphicsEngine';
 import { RiverSystem } from './RiverSystem';
 import { Decorations } from './Decorations';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { Profiler } from '../core/Profiler';
 
 export class TerrainChunk {
   mesh: THREE.Mesh;
@@ -122,9 +123,14 @@ export class TerrainChunk {
     };
 
     // Generate Vertices
+    Profiler.start('GenMeshBatch');
     for (let z = 0; z <= resZ; z++) {
       // Yield every few rows to keep frame rate smooth
-      if (z % 5 === 0) await this.yieldToMain();
+      if (z % 5 === 0) {
+        Profiler.end('GenMeshBatch');
+        await this.yieldToMain();
+        Profiler.start('GenMeshBatch');
+      }
 
       const v = z / resZ;
       const localZ = v * chunkSize;
@@ -160,6 +166,7 @@ export class TerrainChunk {
         uvs[index * 2 + 1] = v;
       }
     }
+    Profiler.end('GenMeshBatch');
 
     // Generate Indices
     let i = 0;
@@ -221,9 +228,14 @@ export class TerrainChunk {
     // Buckets for geometry merging
     const geometriesByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
 
+    Profiler.start('GenDecoBatch');
     for (let i = 0; i < count; i++) {
       // Yield every 50 iterations
-      if (i % 50 === 0) await this.yieldToMain();
+      if (i % 50 === 0) {
+        Profiler.end('GenDecoBatch');
+        await this.yieldToMain();
+        Profiler.start('GenDecoBatch');
+      }
 
       // ... (Random position logic same as before) ...
       const localZ = Math.random() * TerrainChunk.CHUNK_SIZE;
@@ -335,6 +347,7 @@ export class TerrainChunk {
         });
       }
     }
+    Profiler.end('GenDecoBatch');
 
     // Merge and create meshes
     for (const [material, geometries] of geometriesByMaterial) {
@@ -375,6 +388,14 @@ export class TerrainChunk {
     // Since we reuse static materials in Decorations, we might not want to dispose them?
     // Actually Decorations uses static materials, so we shouldn't dispose them here.
     // Just remove from scene and clear children.
+
+    // BUT, the geometries are merged and unique to this chunk! We MUST dispose them.
+    this.decorations.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose();
+        // Material is shared, do not dispose.
+      }
+    });
     this.decorations.clear();
   }
 

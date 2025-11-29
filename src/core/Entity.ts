@@ -15,6 +15,34 @@ export abstract class Entity {
 
   onHit(): void { }
 
+  dispose() {
+    if (this.mesh) {
+      this.mesh.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach((m: THREE.Material) => m.dispose());
+          } else {
+            (child.material as THREE.Material).dispose();
+          }
+        }
+      });
+    }
+
+    if (this.debugMesh) {
+      this.debugMesh.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach((m: THREE.Material) => m.dispose());
+          } else {
+            (child.material as THREE.Material).dispose();
+          }
+        }
+      });
+    }
+  }
+
   // Sync graphics position/rotation with physics body
   sync() {
     if (this.physicsBody) {

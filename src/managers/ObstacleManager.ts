@@ -2,6 +2,8 @@ import * as planck from 'planck';
 import { EntityManager } from '../core/EntityManager';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 import { RiverSystem } from '../world/RiverSystem';
+import { GraphicsEngine } from '../core/GraphicsEngine';
+import { Profiler } from '../core/Profiler';
 import { TerrainChunk } from '../world/TerrainChunk';
 import { Alligator, Turtle, Log, Pier, Buoy, RiverRock, Iceberg } from '../entities/Obstacles';
 import { GasCan, MessageInABottle } from '../entities/Collectables';
@@ -19,13 +21,26 @@ export class ObstacleManager {
   }
 
   // Called by TerrainManager when a new chunk is created
-  spawnObstaclesForChunk(chunkIndex: number, zStart: number, zEnd: number) {
-    if (this.chunkEntities.has(chunkIndex)) return; // Already spawned
+  public async spawnObstaclesForChunk(chunkIndex: number, zStart: number, zEnd: number) {
+    Profiler.start('SpawnObstacles');
+    if (this.chunkEntities.has(chunkIndex)) {
+      Profiler.end('SpawnObstacles');
+      return; // Already spawned
+    }
 
+    // Seed random based on chunk index for deterministic spawning?
+    // For now, just use Math.random() but we might want to be careful if we re-generate.
+    // Since we only generate once per chunk index, it's fine.
     const entities: Entity[] = [];
     const step = 15;
 
     for (let z = zStart; z < zEnd; z += step) {
+      // Yield every 10 steps (150m) to prevent blocking
+      if ((z - zStart) % (step * 10) === 0) {
+        Profiler.end('SpawnObstacles');
+        await this.yieldToMain();
+        Profiler.start('SpawnObstacles');
+      }
       // Difficulty Calculation (0.0 to 1.0 over 7500m)
       const distance = Math.abs(z);
       const difficulty = Math.min(distance / 7500, 1.0);
@@ -258,5 +273,8 @@ export class ObstacleManager {
       }
       this.chunkEntities.delete(chunkIndex);
     }
+  }
+  private yieldToMain(): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, 0));
   }
 }
