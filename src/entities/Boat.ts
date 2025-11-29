@@ -77,7 +77,7 @@ export class Boat extends Entity {
         this.mesh.add(this.innerMesh);
 
         const loader = new GLTFLoader();
-        loader.load('assets/Cute_cartoon_tug_boat_1125002001_texture.glb', (gltf) => {
+        loader.load('assets/boat-model-1.glb', (gltf) => {
             const model = gltf.scene;
 
             // Adjust scale and rotation to match physics body
