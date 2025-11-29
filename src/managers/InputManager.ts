@@ -3,6 +3,7 @@ export interface InputState {
     backward: boolean;
     left: boolean;
     right: boolean;
+    stop: boolean;
     viewMode: 'close' | 'far';
     debug: boolean;
     paused: boolean;
@@ -19,6 +20,7 @@ export class InputManager {
             backward: false,
             left: false,
             right: false,
+            stop: false,
             viewMode: 'close',
             debug: false,
             paused: false,
@@ -152,6 +154,9 @@ export class InputManager {
             case 'KeyD':
                 this.keys.right = true;
                 break;
+            case 'KeyX':
+                this.keys.stop = true;
+                break;
             case 'KeyV':
                 this.keys.viewMode = this.keys.viewMode === 'close' ? 'far' : 'close';
                 break;
@@ -182,6 +187,9 @@ export class InputManager {
             case 'ArrowRight':
             case 'KeyD':
                 this.keys.right = false;
+                break;
+            case 'KeyX':
+                this.keys.stop = false;
                 break;
         }
     }

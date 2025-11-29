@@ -120,7 +120,11 @@ export class Boat extends Entity {
 
         // Throttle (Sticky or Touch)
         // If touch throttle is active (non-zero), use it directly (Spring-loaded)
-        if (Math.abs(input.touchThrottle) > 0.05) {
+        if (input.stop) {
+            this.currentThrottle = 0;
+            this.physicsBody.setLinearVelocity(planck.Vec2(0, 0));
+            this.physicsBody.setAngularVelocity(0);
+        } else if (Math.abs(input.touchThrottle) > 0.05) {
             this.currentThrottle = input.touchThrottle;
         } else {
             // Keyboard Control (Sticky)
