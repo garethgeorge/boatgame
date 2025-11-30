@@ -76,30 +76,29 @@ export const WaterShader = {
       vec2 warpedUV = flowUV + vec2(warp * 0.2, 0.0); // Distort X primarily
       
       // Flow Parameters
-      float speed = 2.0; // Reverted to fast speed
-      float stretch = 0.2;
+      float speed = 0.6; 
+      float stretch = 0.15; 
       float scale = 10.0;
       
-      // Cross Ripples - Layer 1 (Rotated Left)
-      vec2 uv1 = rotate(warpedUV, -0.4); // ~23 degrees
-      uv1.y += uTime * speed; // Flow
-      uv1.y *= stretch; // Stretch
+      // Primary Flow Layer
+      vec2 uv1 = warpedUV;
+      uv1.y += uTime * speed; // Flow along Y (which is now downstream)
+      uv1.y *= stretch; 
       float noise1 = snoise(vec2(uv1.x * scale, uv1.y)); 
       
-      // Cross Ripples - Layer 2 (Rotated Right)
-      vec2 uv2 = rotate(warpedUV, 0.4); // ~23 degrees
-      uv2.y += uTime * speed * 1.1; // Slightly different speed to avoid standing waves
+      // Secondary Flow Layer
+      vec2 uv2 = warpedUV;
+      uv2.y += uTime * speed * 1.2;
       uv2.y *= stretch;
-      float noise2 = snoise(vec2(uv2.x * scale, uv2.y));
+      float noise2 = snoise(vec2(uv2.x * scale * 1.5 + 10.0, uv2.y * 1.5));
       
-      // Combine Cross Ripples
-      // Max blending creates a nice "choppy" look where waves intersect
-      float flowPattern = max(noise1, noise2);
+      // Combine
+      float flowPattern = noise1 * 0.7 + noise2 * 0.3;
       
       // Threshold for "vector" lines
-      float lineMix = smoothstep(0.5, 0.8, flowPattern);
+      float lineMix = smoothstep(0.4, 0.7, flowPattern);
       
-      // Pulse (Subtle brightness variation)
+      // Pulse
       float pulse = sin(uTime * 3.0 + vWorldPosition.x * 0.5) * 0.1 + 0.9;
       lineMix *= pulse;
       
@@ -113,18 +112,11 @@ export const WaterShader = {
       else if (diff > 0.5) lightIntensity = 0.8;
       else lightIntensity = 0.6;
       
-      // Specular
-      vec3 viewDir = normalize(cameraPosition - vWorldPosition);
-      vec3 reflectDir = reflect(-lightDir, vNormal);
-      float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
-      float specIntensity = step(0.5, spec); // Hard specular
-      
       // Final Color
       vec3 baseColor = uColor * lightIntensity;
       vec3 lineColor = vec3(1.0); // White lines
       
-      vec3 finalColor = mix(baseColor, lineColor, lineMix * 0.3); // Blend lines
-      finalColor += specIntensity * 0.5; // Add specular
+      vec3 finalColor = mix(baseColor, lineColor, lineMix * 0.1); // Subtle lines
       
       gl_FragColor = vec4(finalColor, 0.8); // Transparency
     }

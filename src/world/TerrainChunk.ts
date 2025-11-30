@@ -428,8 +428,6 @@ export class TerrainChunk {
     }
     geometry.computeVertexNormals();
 
-    geometry.computeVertexNormals();
-
     if (!TerrainChunk.waterMaterial) {
       TerrainChunk.waterMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.clone(WaterShader.uniforms),

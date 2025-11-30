@@ -10,6 +10,7 @@ export class Boat extends Entity {
 
     private currentThrottle: number = 0;
     private currentSteering: number = 0;
+    private smoothedSpeed: number = 0;
 
     private flashTimer: number = 0;
 
@@ -206,8 +207,13 @@ export class Boat extends Entity {
         // Base Entity.sync() handles position/rotation for the first body/mesh pair.
         // We just need to handle the visual tilt.
 
+        // Smooth speed for visual stability
+        // Use a time-independent lerp factor for smoothing
+        const smoothFactor = 1.0 - Math.pow(0.1, dt); // Fast smoothing
+        this.smoothedSpeed = THREE.MathUtils.lerp(this.smoothedSpeed, Math.abs(forwardSpeed), smoothFactor);
+
         // Clamp speed influence
-        const speedFactor = Math.min(Math.abs(forwardSpeed) / 10.0, 1.0);
+        const speedFactor = Math.min(this.smoothedSpeed / 10.0, 1.0);
 
         // Pitch: Nose up when moving fast
         const targetPitch = speedFactor * 0.2;
@@ -216,9 +222,10 @@ export class Boat extends Entity {
         const targetRoll = this.currentSteering * speedFactor * 0.5;
 
         // Smoothly interpolate current rotation to target
-        const lerpFactor = Math.min(dt * 5.0, 1.0);
-        this.innerMesh.rotation.x = THREE.MathUtils.lerp(this.innerMesh.rotation.x, targetPitch, lerpFactor);
-        this.innerMesh.rotation.z = THREE.MathUtils.lerp(this.innerMesh.rotation.z, targetRoll, lerpFactor);
+        // Use correct time-independent lerp
+        const rotLerpFactor = 1.0 - Math.pow(0.001, dt); // Very smooth
+        this.innerMesh.rotation.x = THREE.MathUtils.lerp(this.innerMesh.rotation.x, targetPitch, rotLerpFactor);
+        this.innerMesh.rotation.z = THREE.MathUtils.lerp(this.innerMesh.rotation.z, targetRoll, rotLerpFactor);
 
         // Flash Effect
         if (this.flashTimer > 0) {
