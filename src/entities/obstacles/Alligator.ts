@@ -52,7 +52,11 @@ export class Alligator extends Entity {
 
         if (animations.length > 0) {
             this.mixer = new THREE.AnimationMixer(clonedModel);
+            // Randomize speed between 1.8 and 2.2
+            this.mixer.timeScale = 1.8 + Math.random() * 0.4;
             const action = this.mixer.clipAction(animations[0]);
+            // Randomize start time
+            action.time = Math.random() * action.getClip().duration;
             action.play();
         }
     }
