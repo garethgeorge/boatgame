@@ -1,7 +1,7 @@
 import { Entity } from './Entity';
 import { PhysicsEngine } from './PhysicsEngine';
 import { GraphicsEngine } from './GraphicsEngine';
-import { Alligator } from '../entities/obstacles';
+import { Alligator, Hippo } from '../entities/obstacles';
 import * as planck from 'planck';
 
 export class EntityManager {
@@ -98,7 +98,7 @@ export class EntityManager {
       entity.update(dt);
 
       // Update AI if applicable
-      if (playerPos && entity instanceof Alligator) {
+      if (playerPos && (entity instanceof Alligator || entity instanceof Hippo)) {
         entity.setTarget(playerPos);
       }
 

@@ -5,7 +5,7 @@ import { RiverSystem } from '../world/RiverSystem';
 import { GraphicsEngine } from '../core/GraphicsEngine';
 import { Profiler } from '../core/Profiler';
 import { TerrainChunk } from '../world/TerrainChunk';
-import { Alligator, Turtle, Log, Pier, Buoy, RiverRock, Iceberg } from '../entities/obstacles';
+import { Alligator, Hippo, Turtle, Log, Pier, Buoy, RiverRock, Iceberg } from '../entities/obstacles';
 import { GasCan, MessageInABottle } from '../entities/Collectables';
 import { Entity } from '../core/Entity';
 
@@ -160,12 +160,18 @@ export class ObstacleManager {
         }
 
       } else if (type === 'croc') {
-        // Alligator Cluster
+        // Alligator or Hippo Cluster
         const count = Math.random() > 0.5 ? 2 : 1;
         for (let i = 0; i < count; i++) {
           const offsetX = (Math.random() - 0.5) * 5;
           const offsetZ = (Math.random() - 0.5) * 5;
-          const entity = new Alligator(x + offsetX, z + offsetZ, this.physicsEngine);
+
+          // Randomly choose between Alligator and Hippo
+          const isHippo = Math.random() > 0.5;
+          const entity = isHippo
+            ? new Hippo(x + offsetX, z + offsetZ, this.physicsEngine)
+            : new Alligator(x + offsetX, z + offsetZ, this.physicsEngine);
+
           this.entityManager.add(entity);
           entities.push(entity);
         }

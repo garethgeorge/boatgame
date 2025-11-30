@@ -5,3 +5,4 @@ export { Pier } from './Pier';
 export { Buoy } from './Buoy';
 export { RiverRock } from './RiverRock';
 export { Iceberg } from './Iceberg';
+export { Hippo } from './Hippo';

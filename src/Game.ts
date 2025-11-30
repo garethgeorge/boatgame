@@ -7,6 +7,7 @@ import { Decorations } from './world/Decorations';
 import { ObstacleManager } from './managers/ObstacleManager';
 import { Boat } from './entities/Boat';
 import { Alligator } from './entities/obstacles/Alligator';
+import { Hippo } from './entities/obstacles/Hippo';
 import { InputManager } from './managers/InputManager';
 import { Profiler } from './core/Profiler';
 
@@ -74,6 +75,7 @@ export class Game {
         // Preload all assets here
         await Promise.all([
             Alligator.preload(),
+            Hippo.preload(),
             // Add other entities here as needed
         ]);
     }
@@ -123,7 +125,7 @@ export class Game {
 
             if (player && other) {
                 if (other.type === 'obstacle') {
-                    if (other.subtype === 'alligator' || other.subtype === 'buoy' || other.subtype === 'iceberg') {
+                    if (other.subtype === 'alligator' || other.subtype === 'hippo' || other.subtype === 'buoy' || other.subtype === 'iceberg') {
                         if (!other.entity.hasCausedPenalty) {
                             this.score -= 100;
                             this.boat.flashRed();
