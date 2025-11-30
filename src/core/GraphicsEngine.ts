@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { TerrainChunk } from '../world/TerrainChunk';
 
 export class GraphicsEngine {
   scene: THREE.Scene;
@@ -400,6 +401,13 @@ export class GraphicsEngine {
 
     // Update skybox position to follow camera
     this.skybox.position.copy(this.camera.position);
+
+    // Update Water Shader Uniforms
+    if (TerrainChunk.waterMaterial) {
+      TerrainChunk.waterMaterial.uniforms.uTime.value += dt;
+      TerrainChunk.waterMaterial.uniforms.uSunPosition.value.copy(this.sunLight.position);
+    }
+
     this.renderer.render(this.scene, this.camera);
   }
 

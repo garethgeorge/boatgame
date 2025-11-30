@@ -5,6 +5,7 @@ import { RiverSystem } from './RiverSystem';
 import { Decorations } from './Decorations';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Profiler } from '../core/Profiler';
+import { WaterShader } from '../shaders/WaterShader';
 
 export class TerrainChunk {
   mesh: THREE.Mesh;
@@ -17,7 +18,10 @@ export class TerrainChunk {
   public static readonly RESOLUTION_X = 160; // Vertices along X
   public static readonly RESOLUTION_Z = 25; // Vertices along Z (Reduced to 25)
 
+
+
   private static biomeNoise = new SimplexNoise(200);
+  public static waterMaterial: THREE.ShaderMaterial; // Shared material
 
   public static getBiomeWeights(z: number): { desert: number, forest: number, ice: number } {
     // Biome Selection (Z-dependent only)
@@ -377,11 +381,12 @@ export class TerrainChunk {
     }
 
     this.waterMesh.geometry.dispose();
-    if (Array.isArray(this.waterMesh.material)) {
-      this.waterMesh.material.forEach(m => m.dispose());
-    } else {
-      this.waterMesh.material.dispose();
-    }
+    // Do NOT dispose shared water material
+    // if (Array.isArray(this.waterMesh.material)) {
+    //   this.waterMesh.material.forEach(m => m.dispose());
+    // } else {
+    //   this.waterMesh.material.dispose();
+    // }
 
     this.graphicsEngine.remove(this.decorations);
     // Dispose children materials/geometries if needed
@@ -423,13 +428,19 @@ export class TerrainChunk {
     }
     geometry.computeVertexNormals();
 
-    const material = new THREE.MeshToonMaterial({
-      color: 0x4da6ff,
-      transparent: true,
-      opacity: 0.8,
-    });
+    geometry.computeVertexNormals();
 
-    const mesh = new THREE.Mesh(geometry, material);
+    if (!TerrainChunk.waterMaterial) {
+      TerrainChunk.waterMaterial = new THREE.ShaderMaterial({
+        uniforms: THREE.UniformsUtils.clone(WaterShader.uniforms),
+        vertexShader: WaterShader.vertexShader,
+        fragmentShader: WaterShader.fragmentShader,
+        transparent: true,
+        side: THREE.DoubleSide // Ensure water is visible from below if needed, though mostly top-down
+      });
+    }
+
+    const mesh = new THREE.Mesh(geometry, TerrainChunk.waterMaterial);
     mesh.position.set(0, 0, this.zOffset);
 
     return mesh;
