@@ -1,25 +1,25 @@
 import * as THREE from 'three';
-import { Entity, EntityOptions } from './Entity';
+import { Entity } from '../core/Entity';
 
-export interface DecorationOptions extends EntityOptions {
+export interface DecorationOptions {
     type: string;
+    position?: THREE.Vector3;
 }
 
 export class Decoration extends Entity {
     type: string;
 
     constructor(options: DecorationOptions) {
-        super(options);
+        super();
         this.type = options.type;
 
-        // Overwrite the mesh created by super() with the correct one
-        if (this.mesh) {
-            this.scene.remove(this.mesh);
+        // Create mesh
+        const mesh = this.createMesh();
+        if (options.position) {
+            mesh.position.copy(options.position);
         }
-        this.mesh = this.createMesh();
-        this.mesh.position.copy(this.position);
-        this.mesh.rotation.y = Math.random() * Math.PI * 2;
-        this.scene.add(this.mesh);
+        mesh.rotation.y = Math.random() * Math.PI * 2;
+        this.meshes.push(mesh);
     }
 
     createMesh(): THREE.Group {

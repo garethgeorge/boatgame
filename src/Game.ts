@@ -84,13 +84,20 @@ export class Game {
         this.obstacleManager = new ObstacleManager(this.entityManager, this.physicsEngine);
         this.terrainManager = new TerrainManager(this.physicsEngine, this.graphicsEngine, this.obstacleManager);
 
+        // Wire up interpolation
+        this.physicsEngine.onStep = () => {
+            this.entityManager.savePreviousState();
+        };
+
         // Create Boat
         this.boat = new Boat(0, 0, this.physicsEngine);
         this.entityManager.add(this.boat);
 
         // Initial update to generate terrain around boat
         // This will now also trigger obstacle spawning via TerrainManager
-        this.terrainManager.update(this.boat.mesh.position.z);
+        if (this.boat.meshes.length > 0) {
+            this.terrainManager.update(this.boat.meshes[0].position.z);
+        }
 
         // Collision Listener
         this.physicsEngine.world.on('begin-contact', (contact) => {
@@ -171,11 +178,11 @@ export class Game {
         Profiler.end('Entities');
 
         // Update Terrain
-        if (this.boat.mesh) {
+        if (this.boat.meshes.length > 0) {
             Profiler.start('Terrain');
             this.terrainManager.setDebug(input.debug);
             this.entityManager.setDebug(input.debug);
-            this.terrainManager.update(this.boat.mesh.position.z);
+            this.terrainManager.update(this.boat.meshes[0].position.z);
             // ObstacleManager update is now handled by TerrainManager events
             Profiler.end('Terrain');
         }
@@ -199,15 +206,16 @@ export class Game {
         }
 
         // Camera Follow
-        if (this.boat.mesh) {
+        if (this.boat.meshes.length > 0) {
             // Calculate ideal camera position based on boat's rotation
             // We want the camera behind and above the boat.
             // Boat faces -Z (in model space) or whatever direction physics says.
             // Physics angle 0 is usually "up" (-Y in 2D, -Z in 3D world).
             // Let's use the mesh rotation to be safe as it's synced.
 
-            const boatPos = this.boat.mesh.position.clone();
-            const boatRot = this.boat.mesh.rotation.y;
+            const boatMesh = this.boat.meshes[0];
+            const boatPos = boatMesh.position.clone();
+            const boatRot = boatMesh.rotation.y;
 
             // Offset: Behind (positive Z relative to boat facing -Z) and Up (positive Y)
             // If boat faces -Z, "behind" is +Z.

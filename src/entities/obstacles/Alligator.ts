@@ -6,8 +6,7 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 
 export class Alligator extends Entity {
-    declare physicsBody: planck.Body;
-    declare mesh: THREE.Group;
+
 
     private static cachedModel: THREE.Group | null = null;
     private static cachedAnimations: THREE.AnimationClip[] = [];
@@ -48,7 +47,9 @@ export class Alligator extends Entity {
 
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
         const clonedModel = SkeletonUtils.clone(model);
-        this.mesh.add(clonedModel);
+        if (this.meshes.length > 0) {
+            this.meshes[0].add(clonedModel);
+        }
 
         if (animations.length > 0) {
             this.mixer = new THREE.AnimationMixer(clonedModel);
@@ -65,25 +66,28 @@ export class Alligator extends Entity {
         super();
 
         // Physics
-        this.physicsBody = physicsEngine.world.createBody({
+        const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
             position: planck.Vec2(x, y),
             linearDamping: 2.0,
             angularDamping: 1.0
         });
+        this.physicsBodies.push(physicsBody);
 
-        this.physicsBody.createFixture({
+        physicsBody.createFixture({
             shape: planck.Box(1.0, 3.0), // 2m wide, 6m long (Doubled)
             density: 5.0,
             friction: 0.1,
             restitution: 0.0
         });
 
-        this.physicsBody.setUserData({ type: 'obstacle', subtype: 'alligator', entity: this });
+        physicsBody.setUserData({ type: 'obstacle', subtype: 'alligator', entity: this });
 
         // Graphics
-        this.mesh = new THREE.Group();
-        this.mesh.position.y = 0.5; // Raised by ~15% of model height
+        const mesh = new THREE.Group();
+        this.meshes.push(mesh);
+
+        mesh.position.y = 0.5; // Raised by ~15% of model height
 
         if (Alligator.cachedModel) {
             this.applyModel(Alligator.cachedModel, Alligator.cachedAnimations);
@@ -100,10 +104,7 @@ export class Alligator extends Entity {
     private mixer: THREE.AnimationMixer | null = null;
 
     onHit() {
-        if (this.physicsBody) {
-            this.physicsBody.getWorld().destroyBody(this.physicsBody);
-            this.physicsBody = null;
-        }
+        this.shouldRemove = true;
     }
 
     update(dt: number) {
@@ -111,11 +112,12 @@ export class Alligator extends Entity {
             this.mixer.update(dt);
         }
 
-        if (!this.physicsBody) {
+        if (this.physicsBodies.length === 0) {
             // Sinking animation
-            if (this.mesh) {
-                this.mesh.position.y -= dt * 2;
-                if (this.mesh.position.y < -2) {
+            if (this.meshes.length > 0) {
+                const mesh = this.meshes[0];
+                mesh.position.y -= dt * 2;
+                if (mesh.position.y < -2) {
                     this.shouldRemove = true;
                 }
             }
@@ -170,9 +172,10 @@ export class Alligator extends Entity {
 
     // New method to set target
     setTarget(target: planck.Vec2) {
-        if (!this.physicsBody) return;
+        if (this.physicsBodies.length === 0) return;
+        const physicsBody = this.physicsBodies[0];
 
-        const pos = this.physicsBody.getPosition();
+        const pos = physicsBody.getPosition();
         const diff = target.clone().sub(pos);
         const dist = diff.length();
 
@@ -180,8 +183,8 @@ export class Alligator extends Entity {
             diff.normalize();
             // Move towards target
             const speed = 2.0;
-            const force = diff.mul(speed * this.physicsBody.getMass());
-            this.physicsBody.applyForceToCenter(force);
+            const force = diff.mul(speed * physicsBody.getMass());
+            physicsBody.applyForceToCenter(force);
 
             // Rotate towards target
             // In planck.js, angle 0 typically means the body's local X-axis points along global X.
@@ -191,7 +194,7 @@ export class Alligator extends Entity {
             // The angle of (0, -1) is -PI/2.
             // So, desiredAngle = atan2(diff.y, diff.x) - (-PI/2) = atan2(diff.y, diff.x) + PI/2.
             const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
-            const currentAngle = this.physicsBody.getAngle();
+            const currentAngle = physicsBody.getAngle();
 
             // Simple lerp for rotation
             // Calculate shortest angle difference
@@ -200,7 +203,7 @@ export class Alligator extends Entity {
             while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
 
             const rotationSpeed = 0.1; // How quickly it turns
-            this.physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60)); // Adjust for dt if needed, but setAngularVelocity is per-frame
+            physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60)); // Adjust for dt if needed, but setAngularVelocity is per-frame
         }
     }
 }

@@ -130,7 +130,10 @@ export class ObstacleManager {
 
         // Anchor Entity (Hidden)
         class AnchorEntity extends Entity {
-          constructor(body: planck.Body) { super(); this.physicsBody = body; }
+          constructor(body: planck.Body) {
+            super();
+            this.physicsBodies.push(body);
+          }
           update(dt: number) { }
           onHit() { }
         }
@@ -151,9 +154,9 @@ export class ObstacleManager {
             frequencyHz: 2.0,
             dampingRatio: 0.5,
             collideConnected: false
-          }, prevBody, buoy.physicsBody, prevBody.getPosition(), buoy.physicsBody.getPosition());
+          }, prevBody, buoy.physicsBodies[0], prevBody.getPosition(), buoy.physicsBodies[0].getPosition());
           this.physicsEngine.world.createJoint(joint);
-          prevBody = buoy.physicsBody;
+          prevBody = buoy.physicsBodies[0];
         }
 
       } else if (type === 'croc') {

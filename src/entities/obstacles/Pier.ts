@@ -4,39 +4,40 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 
 export class Pier extends Entity {
-    declare physicsBody: planck.Body;
-    declare mesh: THREE.Group;
+
 
     constructor(x: number, y: number, length: number, angle: number, physicsEngine: PhysicsEngine) {
         super();
 
         // Static body
-        this.physicsBody = physicsEngine.world.createBody({
+        const physicsBody = physicsEngine.world.createBody({
             type: 'static',
             position: planck.Vec2(x, y),
             angle: angle // Set rotation
         });
+        this.physicsBodies.push(physicsBody);
 
         // Box is axis-aligned in local coords.
         // Length is along X (extending from bank). Width is along Y (thickness).
         // shape: Box(halfWidth, halfHeight)
         // We want length to be the long dimension.
-        this.physicsBody.createFixture({
+        physicsBody.createFixture({
             shape: planck.Box(length / 2, 1.0),
             friction: 0.5
         });
 
-        this.physicsBody.setUserData({ type: 'obstacle', subtype: 'pier', entity: this });
+        physicsBody.setUserData({ type: 'obstacle', subtype: 'pier', entity: this });
 
         // Graphics
-        this.mesh = new THREE.Group();
+        const mesh = new THREE.Group();
+        this.meshes.push(mesh);
 
         // Deck
         const deckGeo = new THREE.BoxGeometry(length, 0.5, 2.0); // Thinner deck
         const deckMat = new THREE.MeshToonMaterial({ color: 0xA0522D }); // Sienna
         const deck = new THREE.Mesh(deckGeo, deckMat);
         deck.position.y = 1.5; // Raised up
-        this.mesh.add(deck);
+        mesh.add(deck);
 
         // Piles (Supports)
         const pileGeo = new THREE.CylinderGeometry(0.2, 0.2, 4.0, 8);
@@ -51,11 +52,11 @@ export class Pier extends Entity {
             // Two piles per row (front and back)
             const pile1 = new THREE.Mesh(pileGeo, pileMat);
             pile1.position.set(xPos, 0, -0.8);
-            this.mesh.add(pile1);
+            mesh.add(pile1);
 
             const pile2 = new THREE.Mesh(pileGeo, pileMat);
             pile2.position.set(xPos, 0, 0.8);
-            this.mesh.add(pile2);
+            mesh.add(pile2);
         }
 
         // Apply initial rotation to mesh to match physics
@@ -66,8 +67,8 @@ export class Pier extends Entity {
         // Since it's static, sync() might not be called every frame if we optimized it, 
         // but EntityManager calls sync() every frame for all entities.
         // So we don't strictly need to set it here, but good for init.
-        this.mesh.rotation.y = -angle;
-        this.mesh.position.set(x, 0, y);
+        mesh.rotation.y = -angle;
+        mesh.position.set(x, 0, y);
     }
 
     update(dt: number) {

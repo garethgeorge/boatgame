@@ -6,8 +6,6 @@ import { InputState } from '../managers/InputManager';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 
 export class Boat extends Entity {
-    declare physicsBody: planck.Body;
-    declare mesh: THREE.Group;
     private innerMesh: THREE.Group;
 
     private currentThrottle: number = 0;
@@ -33,16 +31,17 @@ export class Boat extends Entity {
         const height = 6.0;
 
         // Create dynamic body
-        this.physicsBody = physicsEngine.world.createBody({
+        const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
             position: planck.Vec2(x, y),
             linearDamping: 0.0, // We will apply manual drag
             angularDamping: 2.0, // Base angular damping
             bullet: true
         });
+        this.physicsBodies.push(physicsBody);
 
         // Main Hull Fixture
-        this.physicsBody.createFixture({
+        physicsBody.createFixture({
             shape: planck.Box(width / 2, (height - width) / 2),
             density: 20.0, // High density for stability
             friction: 0.1,
@@ -50,7 +49,7 @@ export class Boat extends Entity {
         });
 
         // Bow
-        this.physicsBody.createFixture({
+        physicsBody.createFixture({
             shape: planck.Circle(planck.Vec2(0, -(height - width) / 2), width / 2),
             density: 20.0,
             friction: 0.1,
@@ -58,7 +57,7 @@ export class Boat extends Entity {
         });
 
         // Stern
-        this.physicsBody.createFixture({
+        physicsBody.createFixture({
             shape: planck.Circle(planck.Vec2(0, (height - width) / 2), width / 2),
             density: 20.0,
             friction: 0.1,
@@ -67,14 +66,16 @@ export class Boat extends Entity {
 
         // Set mass to a standard value for consistent tuning
         const massData = { mass: 500, center: planck.Vec2(0, 0), I: 2000 };
-        this.physicsBody.setMassData(massData);
+        physicsBody.setMassData(massData);
 
-        this.physicsBody.setUserData({ type: 'player', entity: this });
+        physicsBody.setUserData({ type: 'player', entity: this });
 
         // Graphics - Tugboat (GLB Model)
-        this.mesh = new THREE.Group();
+        const mesh = new THREE.Group();
+        this.meshes.push(mesh);
+
         this.innerMesh = new THREE.Group();
-        this.mesh.add(this.innerMesh);
+        mesh.add(this.innerMesh);
 
         const loader = new GLTFLoader();
         loader.load('assets/boat-model-1.glb', (gltf) => {
@@ -109,12 +110,13 @@ export class Boat extends Entity {
             console.error('An error occurred loading the boat model:', error);
         });
 
-        this.mesh.castShadow = true;
-        this.mesh.receiveShadow = true;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
     }
 
     update(dt: number, input?: InputState) {
-        if (!this.physicsBody || !input) return;
+        if (this.physicsBodies.length === 0 || !input) return;
+        const physicsBody = this.physicsBodies[0];
 
         // --- Input Handling ---
 
@@ -122,8 +124,8 @@ export class Boat extends Entity {
         // If touch throttle is active (non-zero), use it directly (Spring-loaded)
         if (input.stop) {
             this.currentThrottle = 0;
-            this.physicsBody.setLinearVelocity(planck.Vec2(0, 0));
-            this.physicsBody.setAngularVelocity(0);
+            physicsBody.setLinearVelocity(planck.Vec2(0, 0));
+            physicsBody.setAngularVelocity(0);
         } else if (Math.abs(input.touchThrottle) > 0.05) {
             this.currentThrottle = input.touchThrottle;
         } else {
@@ -138,16 +140,6 @@ export class Boat extends Entity {
         // Steering (Auto-center)
         // If tilt input is present (non-zero), use it directly (Analog Control)
         if (Math.abs(input.tilt) > 0.05) {
-            // Map tilt (-1 to 1) to max steer angle
-            // Tilt Left (Negative?) -> Steer Left (Positive Angle)
-            // Let's assume Tilt Left is Negative.
-            // Steer Angle: Positive is Left Turn (CCW).
-            // So we want: Tilt Left (-1) -> Steer Left (+Max) ??
-            // Wait, usually Tilt Left means "Rotate Left".
-            // If I tilt phone left, I want boat to turn left.
-            // Boat Turn Left = Positive Steering Angle.
-            // So if Tilt is Negative, we want Positive Steering?
-            // Let's try: Steering = -Tilt * MaxAngle.
             this.currentSteering = -input.tilt * this.MAX_STEER_ANGLE;
         } else {
             // Keyboard Control (Digital)
@@ -167,12 +159,12 @@ export class Boat extends Entity {
 
         // --- Physics Implementation ---
 
-        const velocity = this.physicsBody.getLinearVelocity();
-        const angularVelocity = this.physicsBody.getAngularVelocity();
+        const velocity = physicsBody.getLinearVelocity();
+        const angularVelocity = physicsBody.getAngularVelocity();
 
         // Get local vectors
-        const forwardDir = this.physicsBody.getWorldVector(planck.Vec2(0, -1));
-        const rightDir = this.physicsBody.getWorldVector(planck.Vec2(1, 0));
+        const forwardDir = physicsBody.getWorldVector(planck.Vec2(0, -1));
+        const rightDir = physicsBody.getWorldVector(planck.Vec2(1, 0));
 
         // 1. Differential Drag
         // Project velocity onto local axes
@@ -182,69 +174,45 @@ export class Boat extends Entity {
         // Forward Drag (Quadratic) - Air/Water resistance
         // F = -c * v * |v|
         const forwardDragForce = forwardDir.clone().mul(-this.DRAG_FORWARD * forwardSpeed * Math.abs(forwardSpeed));
-        this.physicsBody.applyForceToCenter(forwardDragForce);
+        physicsBody.applyForceToCenter(forwardDragForce);
 
         // Lateral Drag (Linear/Quadratic) - Keel resistance
         // Much higher than forward drag to prevent sliding
-        const lateralDragForce = rightDir.clone().mul(-this.DRAG_SIDEWAYS * lateralSpeed * this.physicsBody.getMass());
-        this.physicsBody.applyForceToCenter(lateralDragForce);
+        const lateralDragForce = rightDir.clone().mul(-this.DRAG_SIDEWAYS * lateralSpeed * physicsBody.getMass());
+        physicsBody.applyForceToCenter(lateralDragForce);
 
         // Angular Drag - Resistance to spinning
-        this.physicsBody.setAngularDamping(this.DRAG_ANGULAR);
+        physicsBody.setAngularDamping(this.DRAG_ANGULAR);
 
 
         // 2. Outboard Motor Thrust
         // Applied at the stern (back of the boat)
         // Local position: (0, 4.0) roughly (closer to center of mass for better control)
         const motorPosLocal = planck.Vec2(0, 4.0);
-        const motorPosWorld = this.physicsBody.getWorldPoint(motorPosLocal);
+        const motorPosWorld = physicsBody.getWorldPoint(motorPosLocal);
 
         // Thrust Vector
-        // Rotated by steering angle relative to boat's forward direction
-        // Steering Left (positive) -> Thrust vector points Right (pushing stern Right, nose Left)
-        // Wait, if I turn engine Left, prop pushes water Back-Left. Reaction on boat is Forward-Right.
-        // Force at Stern: Forward-Right.
-        // Torque = r x F. r=(0, 2.5). F=(sin, -cos).
-        // Torque = 2.5 * sin(theta). Positive torque -> CCW rotation (Left turn). Correct.
-
-        // So: Steering Angle > 0 (Left) -> Thrust Angle > 0 (Rotated Left relative to Forward)
-        // Forward is (0, -1).
-        // Rotated by theta: (sin(theta), -cos(theta))
-
         const thrustAngle = this.currentSteering;
         const thrustDirLocal = planck.Vec2(Math.sin(thrustAngle), -Math.cos(thrustAngle));
-        const thrustDirWorld = this.physicsBody.getWorldVector(thrustDirLocal);
+        const thrustDirWorld = physicsBody.getWorldVector(thrustDirLocal);
 
         // Apply Thrust
         if (Math.abs(this.currentThrottle) > 0.01) {
             const thrustForce = thrustDirWorld.mul(this.currentThrottle * this.MAX_THRUST);
-            this.physicsBody.applyForce(thrustForce, motorPosWorld);
+            physicsBody.applyForce(thrustForce, motorPosWorld);
         }
 
-        // Sync Mesh
-        const pos = this.physicsBody.getPosition();
-        const angle = this.physicsBody.getAngle();
-
-        this.mesh.position.set(pos.x, 0, pos.y);
-        this.mesh.rotation.y = -angle;
-
-        // Visual Tilt (Pitch & Roll) applied to innerMesh to separate from Physics Yaw
-        // Forward Speed -> Nose Up (Positive Pitch)
-        // Turning Left -> Roll Right (Negative Roll?)
+        // Sync Mesh Visuals (Tilt/Roll)
+        // Base Entity.sync() handles position/rotation for the first body/mesh pair.
+        // We just need to handle the visual tilt.
 
         // Clamp speed influence
         const speedFactor = Math.min(Math.abs(forwardSpeed) / 10.0, 1.0);
 
         // Pitch: Nose up when moving fast
-        // Max pitch: 15 degrees (0.26 rad)
         const targetPitch = speedFactor * 0.2;
 
-        // Roll: Lean into turn? Or out?
-        // Real boats lean OUT (roll away from turn) due to centrifugal force, unless they have a deep keel/banking hull.
-        // Let's say lean IN for "arcade" feel or OUT for "tugboat" feel.
-        // Tugboat (high CG) leans OUT.
-        // Turning Left (Steering > 0) -> Centrifugal force pushes Right -> Boat rolls Right (Positive Z?)
-        // Let's try: Steering Left -> Roll Right.
+        // Roll: Lean into turn
         const targetRoll = this.currentSteering * speedFactor * 0.5;
 
         // Smoothly interpolate current rotation to target

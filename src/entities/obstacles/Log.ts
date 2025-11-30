@@ -4,8 +4,7 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 
 export class Log extends Entity {
-    declare physicsBody: planck.Body;
-    declare mesh: THREE.Mesh;
+
 
     constructor(x: number, y: number, length: number, physicsEngine: PhysicsEngine) {
         super();
@@ -14,22 +13,23 @@ export class Log extends Entity {
         // Physics Box takes (halfWidth, halfHeight).
         // We want length along X. So halfWidth = length/2, halfHeight = 0.5.
 
-        this.physicsBody = physicsEngine.world.createBody({
+        const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
             position: planck.Vec2(x, y),
             linearDamping: 2.0, // Heavy water resistance
             angularDamping: 1.0,
             bullet: true
         });
+        this.physicsBodies.push(physicsBody);
 
-        this.physicsBody.createFixture({
+        physicsBody.createFixture({
             shape: planck.Box(length / 2, 0.6), // 1.2m thick log
             density: 100.0, // Heavy wood (5x increase from 20.0)
             friction: 0.8, // Rough
             restitution: 0.1
         });
 
-        this.physicsBody.setUserData({ type: 'obstacle', subtype: 'log', entity: this });
+        physicsBody.setUserData({ type: 'obstacle', subtype: 'log', entity: this });
 
         // Graphics
         // Cylinder is Y-up by default.
@@ -37,10 +37,12 @@ export class Log extends Entity {
         // Rotate around Z axis by 90 deg.
         const geo = new THREE.CylinderGeometry(0.6, 0.6, length, 12);
         const mat = new THREE.MeshToonMaterial({ color: 0x5C4033 }); // Darker Brown
-        this.mesh = new THREE.Mesh(geo, mat);
-        this.mesh.rotation.z = Math.PI / 2;
-        this.mesh.castShadow = true;
-        this.mesh.receiveShadow = true;
+        const mesh = new THREE.Mesh(geo, mat);
+        this.meshes.push(mesh);
+
+        mesh.rotation.z = Math.PI / 2;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
     }
 
     onHit() {

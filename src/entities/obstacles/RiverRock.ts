@@ -4,27 +4,27 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 
 export class RiverRock extends Entity {
-    declare physicsBody: planck.Body;
-    declare mesh: THREE.Mesh;
+
 
     constructor(x: number, y: number, radius: number, physicsEngine: PhysicsEngine) {
         super();
 
         // Physics: Static
-        this.physicsBody = physicsEngine.world.createBody({
+        const physicsBody = physicsEngine.world.createBody({
             type: 'static',
             position: planck.Vec2(x, y),
             angle: Math.random() * Math.PI * 2
         });
+        this.physicsBodies.push(physicsBody);
 
         // Circle shape for physics
-        this.physicsBody.createFixture({
+        physicsBody.createFixture({
             shape: planck.Circle(radius * 0.8),
             friction: 0.5,
             restitution: 0.2
         });
 
-        this.physicsBody.setUserData({ type: 'obstacle', subtype: 'rock', entity: this });
+        physicsBody.setUserData({ type: 'obstacle', subtype: 'rock', entity: this });
 
         // Graphics: Vertical Rocky Outcrop
         // Cylinder base
@@ -76,12 +76,14 @@ export class RiverRock extends Entity {
         // @ts-ignore
         material.flatShading = true;
 
-        this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.castShadow = true;
-        this.mesh.receiveShadow = true;
+        const mesh = new THREE.Mesh(geometry, material);
+        this.meshes.push(mesh);
+
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
 
         // Random rotation (Y-axis only to keep it vertical)
-        this.mesh.rotation.y = Math.random() * Math.PI * 2;
+        mesh.rotation.y = Math.random() * Math.PI * 2;
 
         // Position: Move up so it sits nicely
         // Center of cylinder is at 0. Height is `height`.
@@ -93,7 +95,7 @@ export class RiverRock extends Entity {
         // Height is 3r. Top is at 1.5r.
         // We want top to be at ~0.5m above water.
         // So shift down by 1.5r - 0.5.
-        this.mesh.position.y = -(height / 2) + 0.5 + (Math.random() * 0.5);
+        mesh.position.y = -(height / 2) + 0.5 + (Math.random() * 0.5);
     }
 
     onHit() {

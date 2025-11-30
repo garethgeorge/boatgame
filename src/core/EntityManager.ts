@@ -20,8 +20,8 @@ export class EntityManager {
     if (this.debugMode === enabled) return;
     this.debugMode = enabled;
     for (const entity of this.entities) {
-      const debugMesh = entity.ensureDebugMesh();
-      if (debugMesh) {
+      const debugMeshes = entity.ensureDebugMeshes();
+      for (const debugMesh of debugMeshes) {
         if (this.debugMode) {
           this.graphicsEngine.add(debugMesh);
         } else {
@@ -34,12 +34,13 @@ export class EntityManager {
   add(entity: Entity) {
     this.entities.add(entity);
     // Planck bodies are added to world upon creation, so no need to add here.
-    if (entity.mesh) {
-      this.graphicsEngine.add(entity.mesh);
+    for (const mesh of entity.meshes) {
+      this.graphicsEngine.add(mesh);
     }
+
     if (this.debugMode) {
-      const debugMesh = entity.ensureDebugMesh();
-      if (debugMesh) {
+      const debugMeshes = entity.ensureDebugMeshes();
+      for (const debugMesh of debugMeshes) {
         this.graphicsEngine.add(debugMesh);
       }
     }
@@ -48,16 +49,26 @@ export class EntityManager {
   remove(entity: Entity) {
     if (this.entities.has(entity)) {
       this.entities.delete(entity);
-      if (entity.physicsBody) {
-        this.physicsEngine.world.destroyBody(entity.physicsBody);
+
+      for (const body of entity.physicsBodies) {
+        this.physicsEngine.world.destroyBody(body);
       }
-      if (entity.mesh) {
-        this.graphicsEngine.remove(entity.mesh);
+
+      for (const mesh of entity.meshes) {
+        this.graphicsEngine.remove(mesh);
       }
-      if (entity.debugMesh) {
-        this.graphicsEngine.remove(entity.debugMesh);
+
+      for (const debugMesh of entity.debugMeshes) {
+        this.graphicsEngine.remove(debugMesh);
       }
+
       entity.dispose();
+    }
+  }
+
+  savePreviousState() {
+    for (const entity of this.entities) {
+      entity.savePreviousState();
     }
   }
 
@@ -65,14 +76,20 @@ export class EntityManager {
     // Find player first (optimization: cache it?)
     let playerPos: planck.Vec2 | null = null;
     for (const entity of this.entities) {
-      if (entity.physicsBody && entity.physicsBody.getUserData()) {
-        const userData = entity.physicsBody.getUserData() as any;
-        if (userData.type === 'player') {
-          playerPos = entity.physicsBody.getPosition();
-          break;
+      // Check first body for player tag
+      if (entity.physicsBodies.length > 0) {
+        const body = entity.physicsBodies[0];
+        if (body.getUserData()) {
+          const userData = body.getUserData() as any;
+          if (userData.type === 'player') {
+            playerPos = body.getPosition();
+            break;
+          }
         }
       }
     }
+
+    const alpha = this.physicsEngine.getAlpha();
 
     // Convert Set to Array to allow reverse iteration and safe removal
     const entitiesArray = Array.from(this.entities);
@@ -85,7 +102,7 @@ export class EntityManager {
         entity.setTarget(playerPos);
       }
 
-      entity.sync();
+      entity.sync(alpha);
 
       if (entity.shouldRemove) {
         this.remove(entity);

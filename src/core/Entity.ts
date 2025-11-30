@@ -2,9 +2,10 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 
 export abstract class Entity {
-  physicsBody: planck.Body | null = null;
-  mesh: THREE.Object3D | null = null;
-  debugMesh: THREE.Mesh | THREE.Group | null = null;
+  physicsBodies: planck.Body[] = [];
+  meshes: THREE.Object3D[] = [];
+  materials: THREE.Material[] = [];
+  debugMeshes: THREE.Object3D[] = [];
 
   constructor() { }
 
@@ -16,111 +17,152 @@ export abstract class Entity {
   onHit(): void { }
 
   dispose() {
-    if (this.mesh) {
-      this.mesh.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.geometry.dispose();
-          if (Array.isArray(child.material)) {
-            child.material.forEach((m: THREE.Material) => m.dispose());
-          } else {
-            (child.material as THREE.Material).dispose();
-          }
-        }
-      });
+    // Dispose of all meshes
+    for (const mesh of this.meshes) {
+      this.disposeObject3D(mesh);
     }
+    this.meshes = [];
 
-    if (this.debugMesh) {
-      this.debugMesh.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
+    // Dispose of all debug meshes
+    for (const mesh of this.debugMeshes) {
+      this.disposeObject3D(mesh);
+    }
+    this.debugMeshes = [];
+
+    // Dispose of tracked materials
+    for (const material of this.materials) {
+      material.dispose();
+    }
+    this.materials = [];
+  }
+
+  private disposeObject3D(object: THREE.Object3D) {
+    object.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        if (child.geometry) {
           child.geometry.dispose();
+        }
+        if (child.material) {
           if (Array.isArray(child.material)) {
             child.material.forEach((m: THREE.Material) => m.dispose());
           } else {
             (child.material as THREE.Material).dispose();
           }
         }
-      });
+      }
+    });
+  }
+
+  // Interpolation state
+  private prevPos: Map<planck.Body, planck.Vec2> = new Map();
+  private prevAngle: Map<planck.Body, number> = new Map();
+
+  savePreviousState() {
+    for (const body of this.physicsBodies) {
+      this.prevPos.set(body, body.getPosition().clone());
+      this.prevAngle.set(body, body.getAngle());
     }
   }
 
   // Sync graphics position/rotation with physics body
-  sync() {
-    if (this.physicsBody) {
-      const pos = this.physicsBody.getPosition();
-      const angle = this.physicsBody.getAngle();
+  // By default, syncs the first mesh with the first body
+  // Subclasses can override or call this manually for specific pairs
+  sync(alpha: number = 1.0) {
+    if (this.physicsBodies.length > 0 && this.meshes.length > 0) {
+      const body = this.physicsBodies[0];
+      const mesh = this.meshes[0];
+      this.syncBodyMesh(body, mesh, alpha);
+    }
 
-      if (this.mesh) {
-        this.mesh.position.x = pos.x;
-        this.mesh.position.z = pos.y; // Map 2D Physics Y to 3D Graphics Z
-        this.mesh.rotation.y = -angle;
-      }
-
-      if (this.debugMesh) {
-        this.debugMesh.position.x = pos.x;
-        this.debugMesh.position.z = pos.y;
-        this.debugMesh.rotation.y = -angle;
-      }
+    // Sync debug meshes - assuming 1:1 mapping if they exist, or just rebuild them?
+    // Actually, ensureDebugMeshes creates a group for each body usually?
+    // Let's iterate if counts match
+    for (let i = 0; i < Math.min(this.physicsBodies.length, this.debugMeshes.length); i++) {
+      this.syncBodyMesh(this.physicsBodies[i], this.debugMeshes[i], alpha);
     }
   }
 
-  ensureDebugMesh(): THREE.Object3D | null {
-    if (this.debugMesh) return this.debugMesh;
-    if (!this.physicsBody) return null;
+  protected syncBodyMesh(body: planck.Body, mesh: THREE.Object3D, alpha: number) {
+    const currPos = body.getPosition();
+    const currAngle = body.getAngle();
 
-    const group = new THREE.Group();
+    let pos = currPos;
+    let angle = currAngle;
 
-    for (let fixture = this.physicsBody.getFixtureList(); fixture; fixture = fixture.getNext()) {
-      const shape = fixture.getShape();
-      const type = shape.getType();
+    // Interpolate if we have previous state
+    if (this.prevPos.has(body) && this.prevAngle.has(body)) {
+      const prevPos = this.prevPos.get(body)!;
+      const prevAngle = this.prevAngle.get(body)!;
 
-      let mesh: THREE.Mesh | null = null;
-      const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+      const x = prevPos.x * (1 - alpha) + currPos.x * alpha;
+      const y = prevPos.y * (1 - alpha) + currPos.y * alpha;
+      pos = planck.Vec2(x, y);
 
-      if (type === 'circle') {
-        const circle = shape as planck.Circle;
-        const radius = circle.getRadius();
-        const center = circle.getCenter();
-
-        const geometry = new THREE.CylinderGeometry(radius, radius, 1, 16);
-        mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(center.x, 0, center.y); // Local offset
-
-      } else if (type === 'polygon') {
-        // Handle Box (which is a polygon)
-        // We need to construct geometry from vertices
-        // But for simple boxes, we can try to detect if it's a box or just draw lines
-        // Let's just draw lines for the polygon
-        const poly = shape as planck.Polygon;
-        const vertices = (poly as any).m_vertices;
-
-        const points: THREE.Vector3[] = [];
-        for (const v of vertices) {
-          points.push(new THREE.Vector3(v.x, 0, v.y)); // Map 2D -> 3D (Y -> Z)
-        }
-        // Close the loop
-        if (points.length > 0) {
-          points.push(points[0].clone());
-        }
-
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xff0000 }));
-        group.add(line);
-        continue; // Skip adding mesh, we added line
-      }
-
-      if (mesh) {
-        group.add(mesh);
-      }
+      // Interpolate angle (handle wrap-around if necessary, but Planck angles are continuous)
+      angle = prevAngle * (1 - alpha) + currAngle * alpha;
     }
 
-    this.debugMesh = group;
-    // Initial sync
-    const pos = this.physicsBody.getPosition();
-    const angle = this.physicsBody.getAngle();
-    this.debugMesh.position.set(pos.x, 0, pos.y);
-    this.debugMesh.rotation.y = -angle;
+    mesh.position.x = pos.x;
+    mesh.position.z = pos.y; // Map 2D Physics Y to 3D Graphics Z
+    mesh.rotation.y = -angle;
+  }
 
-    return this.debugMesh;
+  ensureDebugMeshes(): THREE.Object3D[] {
+    if (this.debugMeshes.length > 0) return this.debugMeshes;
+    if (this.physicsBodies.length === 0) return [];
+
+    for (const body of this.physicsBodies) {
+      const group = new THREE.Group();
+
+      for (let fixture = body.getFixtureList(); fixture; fixture = fixture.getNext()) {
+        const shape = fixture.getShape();
+        const type = shape.getType();
+
+        let mesh: THREE.Mesh | null = null;
+        const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+        this.materials.push(material); // Track for disposal
+
+        if (type === 'circle') {
+          const circle = shape as planck.Circle;
+          const radius = circle.getRadius();
+          const center = circle.getCenter();
+
+          const geometry = new THREE.CylinderGeometry(radius, radius, 1, 16);
+          mesh = new THREE.Mesh(geometry, material);
+          mesh.position.set(center.x, 0, center.y); // Local offset
+
+        } else if (type === 'polygon') {
+          const poly = shape as planck.Polygon;
+          const vertices = (poly as any).m_vertices;
+
+          const points: THREE.Vector3[] = [];
+          for (const v of vertices) {
+            points.push(new THREE.Vector3(v.x, 0, v.y));
+          }
+          if (points.length > 0) {
+            points.push(points[0].clone());
+          }
+
+          const geometry = new THREE.BufferGeometry().setFromPoints(points);
+          const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xff0000 }));
+          // Lines don't have geometry in the same way for disposal, but BufferGeometry is disposable.
+          // We should probably track this geometry too?
+          // For now, let's just add the line.
+          group.add(line);
+          continue;
+        }
+
+        if (mesh) {
+          group.add(mesh);
+        }
+      }
+
+      // Initial sync
+      this.syncBodyMesh(body, group);
+      this.debugMeshes.push(group);
+    }
+
+    return this.debugMeshes;
   }
 }
 

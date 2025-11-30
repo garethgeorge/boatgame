@@ -4,31 +4,31 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 
 export class Iceberg extends Entity {
-    declare physicsBody: planck.Body;
-    declare mesh: THREE.Group;
+
 
     constructor(x: number, y: number, radius: number, physicsEngine: PhysicsEngine) {
         super();
 
         // Physics: Dynamic but heavy (drifting ice)
-        this.physicsBody = physicsEngine.world.createBody({
+        const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
             position: planck.Vec2(x, y),
             linearDamping: 1.0, // Water resistance
             angularDamping: 1.0,
             angle: Math.random() * Math.PI * 2
         });
+        this.physicsBodies.push(physicsBody);
 
         // Polygon shape for physics (approximate with circle for now for stability, or box?)
         // Circle is best for drifting objects to avoid getting stuck.
-        this.physicsBody.createFixture({
+        physicsBody.createFixture({
             shape: planck.Circle(radius * 0.8),
             density: 10.0, // Heavy ice (5x increase)
             friction: 0.1, // Slippery
             restitution: 0.2
         });
 
-        this.physicsBody.setUserData({ type: 'obstacle', subtype: 'iceberg', entity: this });
+        physicsBody.setUserData({ type: 'obstacle', subtype: 'iceberg', entity: this });
 
         // Graphics: Floating Jagged Ice Sheet
         // Use ExtrudeGeometry for a flat top and jagged perimeter
@@ -72,7 +72,9 @@ export class Iceberg extends Entity {
         // @ts-ignore
         material.flatShading = true;
 
-        this.mesh = new THREE.Group(); // Parent group handles Y-rotation (yaw) from physics
+        const mesh = new THREE.Group(); // Parent group handles Y-rotation (yaw) from physics
+        this.meshes.push(mesh);
+
         const innerMesh = new THREE.Mesh(geometry, material);
 
         // Rotate inner mesh to lie flat on water
@@ -81,10 +83,10 @@ export class Iceberg extends Entity {
         // Position inner mesh
         innerMesh.position.y = 0.2;
 
-        this.mesh.add(innerMesh);
+        mesh.add(innerMesh);
 
-        this.mesh.castShadow = true;
-        this.mesh.receiveShadow = true;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
     }
 
     onHit() {
