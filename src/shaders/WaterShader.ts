@@ -122,6 +122,10 @@ export const WaterShader = {
       
       // History Trail (Persistent Wake)
       vec2 prevPos = uBoatPosition.xz;
+      float minDist = 1000.0;
+      float currentWidth = 0.0;
+      float ageAtMinDist = 0.0;
+      
       for (int i = 0; i < 8; i++) {
         vec2 histPos = uBoatHistory[i].xz;
         
@@ -132,22 +136,37 @@ export const WaterShader = {
         
         // Trail width expands with age
         float age = float(i);
-        float width = 1.5 + age * 0.8; 
+        float width = 1.0 + age * 2.0; 
         
-        if (d < width) {
-          float intensity = smoothstep(width, width * 0.5, d);
-          
-          // Add noise to trail
-          float trailNoise = snoise(vWorldPosition.xz * 0.5 + uTime * 0.5);
-          intensity *= (0.5 + 0.5 * trailNoise);
-          
-          // Fade based on index (age)
-          float ageFade = 1.0 - (age / 8.0);
-          
-          wakeMix = max(wakeMix, intensity * ageFade * 0.6);
+        if (d < minDist) {
+            minDist = d;
+            currentWidth = width;
+            ageAtMinDist = age;
         }
         
         prevPos = histPos;
+      }
+      
+      // Simple Dithered Wake
+      // Relaxed cutoff to allow for soft edges
+      if (minDist < currentWidth + 4.0) {
+          // Noise for dithering (Larger scale, softer)
+          // Reduced scale for bigger ripples, removed directional stretch
+          float noise = snoise(vWorldPosition.xz * 1.5 + uTime * 2.0);
+          
+          // Soft Edge Calculation
+          // Fade from 1.0 (inside) to 0.0 (outside)
+          // The transition happens around 'currentWidth'
+          // We add noise to minDist to distort the shape
+          float distWithNoise = minDist - noise * 1.5;
+          float alpha = 1.0 - smoothstep(currentWidth - 2.0, currentWidth + 1.0, distWithNoise);
+          
+          // Intensity fade
+          float fade = 1.0 - (ageAtMinDist / 8.0);
+          fade = pow(fade, 2.0); // Faster age fade
+          fade *= exp(-length(vWorldPosition.xz - uBoatPosition.xz) * 0.03); // Slower distance fade to show expansion
+          
+          wakeMix = alpha * fade * 0.8; 
       }
       
       // Clamp wake
@@ -167,12 +186,13 @@ export const WaterShader = {
       
       // Final Color
       vec3 baseColor = uColor * lightIntensity;
-      vec3 lineColor = vec3(1.0); // White lines
+      vec3 wakeColor = vec3(0.9, 0.9, 0.9); // Light Grey/White
       
       // Combine flow lines and wake
-      float totalWhiteMix = clamp(lineMix * 0.1 + wakeMix * 0.8, 0.0, 1.0);
+      // Flow lines are subtle, wake is dominant
+      float totalMix = clamp(lineMix * 0.1 + wakeMix, 0.0, 1.0);
       
-      vec3 finalColor = mix(baseColor, lineColor, totalWhiteMix);
+      vec3 finalColor = mix(baseColor, wakeColor, totalMix);
       
       gl_FragColor = vec4(finalColor, 0.8); // Transparency
     }
