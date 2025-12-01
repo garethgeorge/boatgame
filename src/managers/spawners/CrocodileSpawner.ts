@@ -1,6 +1,5 @@
 import { Spawnable, SpawnContext, BiomeWeights } from '../Spawnable';
 import { Alligator } from '../../entities/obstacles/Alligator';
-import { Hippo } from '../../entities/obstacles/Hippo';
 
 export class CrocodileSpawner implements Spawnable {
   id = 'croc';
@@ -15,9 +14,10 @@ export class CrocodileSpawner implements Spawnable {
 
     // Ramp: 0% -> 8% (0.08 per 15m)
     // 0.08 per 15m = 0.0053 per meter
+    // We split the density between crocs and hippos, so use half: 0.00265
     // Ramp factor: (difficulty - 0.13) / (1 - 0.13)
     const ramp = Math.max(0, (difficulty - 0.13) / 0.87);
-    const baseDensity = 0.0053 * ramp;
+    const baseDensity = 0.00265 * ramp;
 
     const count = chunkLength * baseDensity;
 
@@ -42,12 +42,7 @@ export class CrocodileSpawner implements Spawnable {
           const x = centerPos.x + offsetX;
           const z = centerPos.z + offsetZ;
 
-          // Randomly choose between Alligator and Hippo
-          const isHippo = Math.random() > 0.5;
-          const entity = isHippo
-            ? new Hippo(x, z, context.physicsEngine)
-            : new Alligator(x, z, context.physicsEngine);
-
+          const entity = new Alligator(x, z, context.physicsEngine);
           context.entityManager.add(entity, context.chunkIndex);
         }
       }
