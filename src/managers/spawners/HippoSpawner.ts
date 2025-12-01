@@ -42,10 +42,12 @@ export class HippoSpawner implements Spawnable {
                     const x = centerPos.x + offsetX;
                     const z = centerPos.z + offsetZ;
 
-                    const entity = new Hippo(x, z, context.physicsEngine);
+                    const angle = Math.random() * Math.PI * 2;
+                    const entity = new Hippo(x, z, context.physicsEngine, angle);
                     context.entityManager.add(entity, context.chunkIndex);
                 }
             }
         }
     }
 }
+

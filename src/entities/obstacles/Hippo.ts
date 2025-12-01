@@ -62,13 +62,14 @@ export class Hippo extends Entity {
         }
     }
 
-    constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
+    constructor(x: number, y: number, physicsEngine: PhysicsEngine, angle: number = 0) {
         super();
 
         // Physics
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
             position: planck.Vec2(x, y),
+            angle: angle,
             linearDamping: 2.0,
             angularDamping: 1.0
         });
