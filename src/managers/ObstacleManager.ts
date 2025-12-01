@@ -2,22 +2,46 @@ import * as planck from 'planck';
 import { EntityManager } from '../core/EntityManager';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 import { RiverSystem } from '../world/RiverSystem';
-import { GraphicsEngine } from '../core/GraphicsEngine';
 import { Profiler } from '../core/Profiler';
 import { TerrainChunk } from '../world/TerrainChunk';
-import { Alligator, Hippo, Turtle, Log, Pier, Buoy, RiverRock, Iceberg } from '../entities/obstacles';
-import { GasCan, MessageInABottle } from '../entities/Collectables';
 import { Entity } from '../core/Entity';
+import { Spawnable, SpawnContext } from './Spawnable';
+import { PlacementHelper } from './PlacementHelper';
+
+// Spawners
+import { LogSpawner } from './spawners/LogSpawner';
+import { RockSpawner } from './spawners/RockSpawner';
+import { IcebergSpawner } from './spawners/IcebergSpawner';
+import { PierSpawner } from './spawners/PierSpawner';
+import { BuoySpawner } from './spawners/BuoySpawner';
+import { CrocodileSpawner } from './spawners/CrocodileSpawner';
+import { BottleSpawner } from './spawners/BottleSpawner';
 
 export class ObstacleManager {
   private chunkEntities: Map<number, Entity[]> = new Map(); // Track entities per chunk
   private riverSystem: RiverSystem;
+  private registry: Map<string, Spawnable> = new Map();
 
   constructor(
     private entityManager: EntityManager,
     private physicsEngine: PhysicsEngine
   ) {
     this.riverSystem = RiverSystem.getInstance();
+    this.registerSpawners();
+  }
+
+  private registerSpawners() {
+    this.register(new LogSpawner());
+    this.register(new RockSpawner());
+    this.register(new IcebergSpawner());
+    this.register(new PierSpawner());
+    this.register(new BuoySpawner());
+    this.register(new CrocodileSpawner());
+    this.register(new BottleSpawner());
+  }
+
+  private register(spawner: Spawnable) {
+    this.registry.set(spawner.id, spawner);
   }
 
   // Called by TerrainManager when a new chunk is created
@@ -28,249 +52,72 @@ export class ObstacleManager {
       return; // Already spawned
     }
 
-    // Seed random based on chunk index for deterministic spawning?
-    // For now, just use Math.random() but we might want to be careful if we re-generate.
-    // Since we only generate once per chunk index, it's fine.
     const entities: Entity[] = [];
-    const step = 15;
 
-    for (let z = zStart; z < zEnd; z += step) {
-      // Yield every 10 steps (150m) to prevent blocking
-      if ((z - zStart) % (step * 10) === 0) {
-        Profiler.end('SpawnObstacles');
-        await this.yieldToMain();
-        Profiler.start('SpawnObstacles');
-      }
-      // Difficulty Calculation (0.0 to 1.0 over 7500m)
-      const distance = Math.abs(z);
-      const difficulty = Math.min(distance / 7500, 1.0);
+    // Capture entities added during this process
+    // We need to intercept entityManager.add or just track them manually?
+    // The spawners call entityManager.add directly.
+    // We can wrap entityManager or pass a proxy?
+    // Or just ask spawners to return entities?
+    // The interface says `spawn` returns Promise<void>.
+    // Let's modify SpawnContext to include a way to track entities.
+    // Actually, `SpawnContext` has `entityManager`. We can pass a proxy that tracks added entities.
 
-      // Biome Weights
-      const weights = TerrainChunk.getBiomeWeights(z);
-
-      // Independent Spawn Rates (Probability per step)
-      // Base rates (Constant)
-      const pierProb = (distance > 200 ? 0.04 : 0) * (1 - weights.ice); // No piers in ice
-      const rockProb = 0.04 * (1 - weights.ice); // Rocks replaced by Icebergs in ice
-      const logProb = 0.04 * (1 - weights.ice); // Logs replaced by Icebergs
-      const bottleProb = 0.04;
-      const bonusProb = 0.005;
-      const icebergProb = 0.30 * weights.ice; // High chance in ice (Tripled from 0.10)
-
-      // Dynamic rates (Ramp with difficulty)
-      // Buoys: 0% -> 8% (Start at 500m)
-      const buoyProb = (distance > 500 ? 0.08 * Math.max(0, (difficulty - 0.06) / (1 - 0.06)) : 0) * (1 - weights.ice);
-
-      // Crocs: 0% -> 8% (Start at 1000m)
-      const crocProb = (distance > 1000 ? 0.08 * Math.max(0, (difficulty - 0.13) / (1 - 0.13)) : 0) * (1 - weights.ice);
-
-      const probs: { [key: string]: number } = {
-        'pier': pierProb,
-        'rock': rockProb,
-        'log': logProb,
-        'bottle': bottleProb,
-        'buoy': buoyProb,
-        'croc': crocProb,
-        'bonus': bonusProb,
-        'iceberg': icebergProb
-      };
-
-      // Calculate Total Probability
-      let totalProb = 0;
-      for (const key in probs) totalProb += probs[key];
-
-      // Debug Log (First few spawns)
-      if (Math.random() < 0.001) {
-        console.log(`[ObstacleManager] z=${z.toFixed(1)} dist=${distance.toFixed(1)} diff=${difficulty.toFixed(3)} totalProb=${totalProb.toFixed(3)}`);
-      }
-
-      // Determine if we spawn anything
-      if (Math.random() > totalProb) continue;
-
-      // Select Type (Normalized Weights)
-      let random = Math.random() * totalProb;
-      let type = 'bottle'; // Default
-
-      for (const key in probs) {
-        random -= probs[key];
-        if (random <= 0) {
-          type = key;
-          break;
-        }
-      }
-
-      // Defensive Gating (Double check)
-      if (type === 'croc' && distance < 1000) {
-        type = 'log';
-      }
-      if (type === 'buoy' && distance < 500) {
-        type = 'log';
-      }
-
-      const center = this.riverSystem.getRiverCenter(z);
-      const width = this.riverSystem.getRiverWidth(z);
-      const safeWidth = width * 0.7;
-      const x = center + (Math.random() - 0.5) * safeWidth;
-
-      if (type === 'buoy') {
-        // Chained Buoys (Anchored to bank)
-        const isLeft = Math.random() > 0.5;
-        const riverWidth = this.riverSystem.getRiverWidth(z);
-        const riverCenter = this.riverSystem.getRiverCenter(z);
-        const bankX = riverCenter + (isLeft ? -riverWidth / 2 : riverWidth / 2);
-        const direction = isLeft ? 1 : -1;
-        const chainLength = (0.3 + Math.random() * 0.2) * riverWidth; // 30-50% width
-        const spacing = 4.0;
-        const buoyCount = Math.floor(chainLength / spacing);
-
-        const anchorBody = this.physicsEngine.world.createBody({
-          type: 'static',
-          position: planck.Vec2(bankX, z)
-        });
-
-        // Anchor Entity (Hidden)
-        class AnchorEntity extends Entity {
-          constructor(body: planck.Body) {
-            super();
-            this.physicsBodies.push(body);
-          }
-          update(dt: number) { }
-          onHit() { }
-        }
-        const anchorEntity = new AnchorEntity(anchorBody);
-        this.entityManager.add(anchorEntity);
-        entities.push(anchorEntity);
-
-        let prevBody = anchorBody;
-        for (let i = 1; i <= buoyCount; i++) {
-          const dist = i * spacing;
-          const bx = bankX + direction * dist;
-          const jitterZ = (Math.random() - 0.5) * 1.0;
-          const buoy = new Buoy(bx, z + jitterZ, this.physicsEngine);
-          this.entityManager.add(buoy);
-          entities.push(buoy);
-
-          const joint = planck.DistanceJoint({
-            frequencyHz: 2.0,
-            dampingRatio: 0.5,
-            collideConnected: false
-          }, prevBody, buoy.physicsBodies[0], prevBody.getPosition(), buoy.physicsBodies[0].getPosition());
-          this.physicsEngine.world.createJoint(joint);
-          prevBody = buoy.physicsBodies[0];
-        }
-
-      } else if (type === 'croc') {
-        // Alligator or Hippo Cluster
-        const count = Math.random() > 0.5 ? 2 : 1;
-        for (let i = 0; i < count; i++) {
-          const offsetX = (Math.random() - 0.5) * 5;
-          const offsetZ = (Math.random() - 0.5) * 5;
-
-          // Randomly choose between Alligator and Hippo
-          const isHippo = Math.random() > 0.5;
-          const entity = isHippo
-            ? new Hippo(x + offsetX, z + offsetZ, this.physicsEngine)
-            : new Alligator(x + offsetX, z + offsetZ, this.physicsEngine);
-
-          this.entityManager.add(entity);
-          entities.push(entity);
-        }
-
-      } else if (type === 'log') {
-        // Log
-        const length = 10 + Math.random() * 10;
-        const entity = new Log(x, z, length, this.physicsEngine);
+    const trackedEntities: Entity[] = [];
+    const entityProxy = {
+      add: (entity: Entity) => {
         this.entityManager.add(entity);
-        entities.push(entity);
+        trackedEntities.push(entity);
+      },
+      remove: (entity: Entity) => {
+        this.entityManager.remove(entity);
+        const idx = trackedEntities.indexOf(entity);
+        if (idx > -1) trackedEntities.splice(idx, 1);
+      },
+      entities: this.entityManager.entities // Read-only access if needed
+    } as unknown as EntityManager; // Cast to satisfy type
 
-      } else if (type === 'pier') {
-        // Pier
-        const isLeft = Math.random() > 0.5;
-        const width = this.riverSystem.getRiverWidth(z);
-        const center = this.riverSystem.getRiverCenter(z);
-        const slope = this.riverSystem.getRiverDerivative(z);
-        const tangentAngle = Math.atan(slope);
-        let normalAngle = tangentAngle + Math.PI / 2;
-        if (!isLeft) normalAngle += Math.PI;
+    const placementHelper = new PlacementHelper();
+    const chunkLength = zEnd - zStart;
 
-        const bankX = center + (isLeft ? -width / 2 : width / 2);
-        const maxPierLength = width * 0.6;
-        const pierLength = Math.min(10 + Math.random() * 10, maxPierLength);
+    const context: SpawnContext = {
+      entityManager: entityProxy,
+      physicsEngine: this.physicsEngine,
+      placementHelper: placementHelper,
+      chunkIndex: chunkIndex,
+      zStart: zStart,
+      zEnd: zEnd
+    };
 
-        let N = planck.Vec2(1.0, -slope);
-        N.normalize();
-        if (isLeft) { if (N.x < 0) N.mul(-1); }
-        else { if (N.x > 0) N.mul(-1); }
-        const angle = Math.atan2(N.y, N.x);
+    // Calculate Biome Weights (at center of chunk)
+    const centerZ = (zStart + zEnd) / 2;
+    const weights = TerrainChunk.getBiomeWeights(centerZ);
+    const biomeWeights = {
+      forest: weights.forest,
+      desert: weights.desert,
+      ice: weights.ice
+    };
 
-        const startPos = planck.Vec2(bankX, z);
-        const centerPos = startPos.clone().add(N.clone().mul(pierLength / 2));
+    // Calculate Difficulty
+    const distance = Math.abs(centerZ);
+    const difficulty = Math.min(distance / 7500, 1.0);
 
-        const entity = new Pier(centerPos.x, centerPos.y, pierLength, angle, this.physicsEngine);
-        this.entityManager.add(entity);
-        entities.push(entity);
-
-      } else if (type === 'bonus') {
-        // Bonus Bottle Arc
-        const count = 8;
-        const arcLength = 60;
-        const spacing = arcLength / count;
-        const riverWidth = this.riverSystem.getRiverWidth(z);
-        const amplitude = riverWidth * 0.15;
-        const frequency = Math.PI / arcLength;
-        const phase = Math.random() * Math.PI * 2;
-
-        for (let i = 0; i < count; i++) {
-          const dz = i * spacing;
-          const currentZ = z + dz;
-          const currentCenter = this.riverSystem.getRiverCenter(currentZ);
-          const offsetX = Math.sin(dz * frequency + phase) * amplitude;
-          const entity = new MessageInABottle(currentCenter + offsetX, currentZ, this.physicsEngine, 0x0088FF, 50);
-          this.entityManager.add(entity);
-          entities.push(entity);
-        }
-
-      } else if (type === 'rock') {
-        // River Rock
-        // Bias towards shores
-        const isShore = Math.random() < 0.7; // 70% chance near shore
-        let rockX = x;
-
-        if (isShore) {
-          const riverWidth = this.riverSystem.getRiverWidth(z);
-          const riverCenter = this.riverSystem.getRiverCenter(z);
-          const side = Math.random() > 0.5 ? 1 : -1;
-          // Place in outer 20% of river
-          const offset = (riverWidth / 2) * (0.8 + Math.random() * 0.2);
-          rockX = riverCenter + side * offset;
-        }
-
-        const radius = 1.5 + Math.random() * 3.0; // 1.5 to 4.5m radius (3x larger)
-        const entity = new RiverRock(rockX, z, radius, this.physicsEngine);
-        this.entityManager.add(entity);
-        entities.push(entity);
-
-      } else if (type === 'iceberg') {
-        // Iceberg
-        // Similar placement to rocks (bias towards shores? or everywhere?)
-        // Icebergs drift, so they can be anywhere.
-        // Let's place them randomly across width.
-        const radius = 2.0 + Math.random() * 3.0; // Large
-        const entity = new Iceberg(x, z, radius, this.physicsEngine);
-        this.entityManager.add(entity);
-        entities.push(entity);
-
-      } else {
-        // Normal Bottle
-        const entity = new MessageInABottle(x, z, this.physicsEngine);
-        this.entityManager.add(entity);
-        entities.push(entity);
+    // Iterate Spawners
+    for (const spawner of this.registry.values()) {
+      const count = spawner.getSpawnCount(context, biomeWeights, difficulty, chunkLength);
+      if (count > 0) {
+        await spawner.spawn(context, count, biomeWeights);
       }
+
+      // Yield to main thread occasionally if needed?
+      // Spawners are async, so we can await.
     }
 
-    if (entities.length > 0) {
-      this.chunkEntities.set(chunkIndex, entities);
+    if (trackedEntities.length > 0) {
+      this.chunkEntities.set(chunkIndex, trackedEntities);
     }
+
+    Profiler.end('SpawnObstacles');
   }
 
   // Called by TerrainManager when a chunk is disposed
@@ -282,8 +129,5 @@ export class ObstacleManager {
       }
       this.chunkEntities.delete(chunkIndex);
     }
-  }
-  private yieldToMain(): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, 0));
   }
 }

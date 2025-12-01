@@ -1,0 +1,65 @@
+import * as planck from 'planck';
+import { Spawnable, SpawnContext, BiomeWeights } from '../Spawnable';
+import { Pier } from '../../entities/obstacles/Pier';
+import { RiverSystem } from '../../world/RiverSystem';
+
+export class PierSpawner implements Spawnable {
+  id = 'pier';
+
+  getSpawnCount(context: SpawnContext, biomeWeights: BiomeWeights, difficulty: number, chunkLength: number): number {
+    // No piers in ice
+    if (biomeWeights.ice > 0.5) return 0;
+
+    // Start after 200m
+    const dist = Math.abs(context.zStart);
+    if (dist < 200) return 0;
+
+    // 0.04 per 15m = 0.0026 per meter
+    const baseDensity = 0.0026;
+    const count = chunkLength * baseDensity;
+
+    return Math.floor(count + Math.random());
+  }
+
+  async spawn(context: SpawnContext, count: number, biomeWeights: BiomeWeights): Promise<void> {
+    const riverSystem = RiverSystem.getInstance();
+
+    for (let i = 0; i < count; i++) {
+      // Piers need to be attached to the bank
+      // Logic from original ObstacleManager
+
+      // We need to pick a Z first
+      const z = context.zStart + Math.random() * (context.zEnd - context.zStart);
+
+      const isLeft = Math.random() > 0.5;
+      const width = riverSystem.getRiverWidth(z);
+      const center = riverSystem.getRiverCenter(z);
+      const slope = riverSystem.getRiverDerivative(z);
+
+      // Calculate Pier Geometry
+      const bankX = center + (isLeft ? -width / 2 : width / 2);
+      const maxPierLength = width * 0.6;
+      const pierLength = Math.min(10 + Math.random() * 10, maxPierLength);
+
+      // Calculate Angle
+      let N = planck.Vec2(1.0, -slope);
+      N.normalize();
+      if (isLeft) { if (N.x < 0) N.mul(-1); }
+      else { if (N.x > 0) N.mul(-1); }
+      const angle = Math.atan2(N.y, N.x);
+
+      const startPos = planck.Vec2(bankX, z);
+      const centerPos = startPos.clone().add(N.clone().mul(pierLength / 2));
+
+      // Register with placement helper to avoid collisions
+      // Approximate pier as a circle or just register the center?
+      // Pier is a rectangle. Let's register a few circles along it?
+      // Or just one big circle at the tip?
+      // Let's register the tip area so boats don't spawn right on it.
+      context.placementHelper.registerPlacement(centerPos.x, centerPos.y, pierLength / 2);
+
+      const pier = new Pier(centerPos.x, centerPos.y, pierLength, angle, context.physicsEngine);
+      context.entityManager.add(pier);
+    }
+  }
+}
