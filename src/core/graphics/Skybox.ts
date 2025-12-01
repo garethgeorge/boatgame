@@ -1,0 +1,57 @@
+import * as THREE from 'three';
+
+export class Skybox {
+    public mesh: THREE.Mesh;
+    private uniforms: { [uniform: string]: THREE.IUniform };
+
+    constructor(scene: THREE.Scene) {
+        this.mesh = this.createSkybox();
+        scene.add(this.mesh);
+    }
+
+    private createSkybox(): THREE.Mesh {
+        const skyGeo = new THREE.SphereGeometry(360, 32, 15);
+
+        this.uniforms = {
+            topColor: { value: new THREE.Color(0x0099ff) },
+            bottomColor: { value: new THREE.Color(0xffffff) },
+            offset: { value: 33 },
+            exponent: { value: 0.5 }
+        };
+
+        const skyMat = new THREE.ShaderMaterial({
+            uniforms: this.uniforms,
+            vertexShader: `
+        varying vec3 vWorldPosition;
+        varying vec3 vLocalPosition;
+        void main() {
+          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPosition.xyz;
+          vLocalPosition = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+            fragmentShader: `
+        uniform vec3 topColor;
+        uniform vec3 bottomColor;
+        uniform float offset;
+        uniform float exponent;
+        varying vec3 vWorldPosition;
+        varying vec3 vLocalPosition;
+        void main() {
+          float h = normalize(vLocalPosition + vec3(0, offset, 0)).y;
+          gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
+        }
+      `,
+            side: THREE.BackSide
+        });
+
+        return new THREE.Mesh(skyGeo, skyMat);
+    }
+
+    update(cameraPosition: THREE.Vector3, topColor: THREE.Color, bottomColor: THREE.Color) {
+        this.mesh.position.copy(cameraPosition);
+        this.uniforms.topColor.value.copy(topColor);
+        this.uniforms.bottomColor.value.copy(bottomColor);
+    }
+}

@@ -1,28 +1,29 @@
 import * as THREE from 'three';
 import { TerrainChunk } from '../world/TerrainChunk';
+import { Skybox } from './graphics/Skybox';
+import { Sun } from './graphics/Sun';
+import { Moon } from './graphics/Moon';
+import { ScreenOverlay } from './graphics/ScreenOverlay';
 
 export class GraphicsEngine {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer;
-  private skybox: THREE.Mesh;
-  private skyUniforms: { [uniform: string]: THREE.IUniform };
-  private screenTint: HTMLDivElement;
+
+  private skybox: Skybox;
+  private screenOverlay: ScreenOverlay;
   private currentBiomeWeights: { desert: number, forest: number, ice: number } = { desert: 1, forest: 0, ice: 0 };
 
   // Celestial Bodies
-  private sunMesh: THREE.Mesh;
-  private moonMesh: THREE.Mesh;
+  private sun: Sun;
+  private moon: Moon;
 
   // Lighting references
-  private sunLight: THREE.DirectionalLight;
-  private moonLight: THREE.DirectionalLight;
   private hemiLight: THREE.HemisphereLight;
   private ambientLight: THREE.AmbientLight;
 
   // Day/Night Cycle Config
-  // Day/Night Cycle Config
-  private readonly cycleDuration: number = 15 * 60; // 15 minutes in seconds
+  private readonly cycleDuration: number = 1 * 60; // 15 minutes in seconds
   // Start at High Morning (Angle 30 degrees)
   // 30/360 * 15*60 = 1/12 * 900 = 75 seconds.
   private cycleTime: number = 75;
@@ -31,7 +32,7 @@ export class GraphicsEngine {
     this.scene = new THREE.Scene();
 
     // Create gradient skybox
-    this.skybox = this.createSkybox();
+    this.skybox = new Skybox(this.scene);
 
     // Fog removed per user request
     // Fog setup
@@ -57,30 +58,13 @@ export class GraphicsEngine {
     container.appendChild(this.renderer.domElement);
 
     // Create screen tint overlay
-    this.screenTint = document.createElement('div');
-    this.screenTint.style.position = 'absolute';
-    this.screenTint.style.top = '0';
-    this.screenTint.style.left = '0';
-    this.screenTint.style.width = '100%';
-    this.screenTint.style.height = '100%';
-    this.screenTint.style.pointerEvents = 'none';
-    this.screenTint.style.zIndex = '10';
-    this.screenTint.style.transition = 'background-color 1s ease';
-    this.screenTint.style.mixBlendMode = 'overlay'; // Better blending
-    container.appendChild(this.screenTint);
+    this.screenOverlay = new ScreenOverlay(container, this.renderer.domElement);
 
-    // Create Sun Mesh
-    // Create Sun Mesh
-    const sunGeo = new THREE.SphereGeometry(30, 32, 32); // Increased size
-    const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffaa }); // Bright yellow/white
-    this.sunMesh = new THREE.Mesh(sunGeo, sunMat);
-    this.scene.add(this.sunMesh);
+    // Create Sun
+    this.sun = new Sun(this.scene);
 
-    // Create Moon Mesh
-    const moonGeo = new THREE.SphereGeometry(20, 32, 32); // Increased size
-    const moonMat = new THREE.MeshBasicMaterial({ color: 0xeeeeff }); // Pale white/blue
-    this.moonMesh = new THREE.Mesh(moonGeo, moonMat);
-    this.scene.add(this.moonMesh);
+    // Create Moon
+    this.moon = new Moon(this.scene, this.sun.light);
 
     // Enhanced lighting setup
     this.setupLighting();
@@ -88,82 +72,11 @@ export class GraphicsEngine {
     window.addEventListener('resize', () => this.onWindowResize(), false);
   }
 
-  private createSkybox(): THREE.Mesh {
-    // Create gradient sky using shader
-    const skyGeo = new THREE.SphereGeometry(360, 32, 15);
-
-    this.skyUniforms = {
-      topColor: { value: new THREE.Color(0x0099ff) },
-      bottomColor: { value: new THREE.Color(0xffffff) },
-      offset: { value: 33 },
-      exponent: { value: 0.5 }
-    };
-
-    const skyMat = new THREE.ShaderMaterial({
-      uniforms: this.skyUniforms,
-      vertexShader: `
-        varying vec3 vWorldPosition;
-        varying vec3 vLocalPosition;
-        void main() {
-          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-          vWorldPosition = worldPosition.xyz;
-          vLocalPosition = position;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 topColor;
-        uniform vec3 bottomColor;
-        uniform float offset;
-        uniform float exponent;
-        varying vec3 vWorldPosition;
-        varying vec3 vLocalPosition;
-        void main() {
-          // Use local position for gradient to keep it relative to camera/skybox center
-          float h = normalize(vLocalPosition + vec3(0, offset, 0)).y;
-          gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
-        }
-      `,
-      side: THREE.BackSide
-    });
-    const sky = new THREE.Mesh(skyGeo, skyMat);
-    this.scene.add(sky);
-    return sky;
-  }
-
   private setupLighting() {
     // Hemisphere light for natural ambient lighting
     this.hemiLight = new THREE.HemisphereLight(0xffffff, 0x888888, 0.8);
     this.hemiLight.position.set(0, 50, 0);
     this.scene.add(this.hemiLight);
-
-    // Main directional light (sun) - brighter for cartoon style
-    this.sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    this.sunLight.position.set(50, 100, 50);
-    this.sunLight.castShadow = true;
-
-    // Enhanced shadow settings
-    this.sunLight.shadow.mapSize.width = 2048;
-    this.sunLight.shadow.mapSize.height = 2048;
-    this.sunLight.shadow.camera.near = 0.5;
-    this.sunLight.shadow.camera.far = 500;
-    this.sunLight.shadow.camera.left = -100;
-    this.sunLight.shadow.camera.right = 100;
-    this.sunLight.shadow.camera.top = 100;
-    this.sunLight.shadow.camera.bottom = -100;
-    this.sunLight.shadow.bias = -0.0001;
-
-    this.scene.add(this.sunLight);
-
-    // Moon Light (initially off or low intensity)
-    this.moonLight = new THREE.DirectionalLight(0x6666ff, 0.0); // Blueish tint for night
-    this.moonLight.position.set(-50, 100, -50);
-    this.moonLight.castShadow = true;
-    // Copy shadow settings from sun for simplicity, or tune separately
-    this.moonLight.shadow.mapSize.width = 2048;
-    this.moonLight.shadow.mapSize.height = 2048;
-    this.moonLight.shadow.camera = this.sunLight.shadow.camera.clone();
-    this.scene.add(this.moonLight);
 
     // Ambient light for base visibility
     this.ambientLight = new THREE.AmbientLight(0x404040, 0.2); // Soft white light
@@ -180,93 +93,31 @@ export class GraphicsEngine {
     const time = this.cycleTime / this.cycleDuration; // 0 to 1
     const angle = time * Math.PI * 2; // 0 to 2PI
 
-    // Sun Position (Rotates around Z axis for simplicity, rising in East, setting in West)
-    // "Small arc near the horizon line"
-    // "Too high and a bit too wide"
+    // Update Sun and Moon
+    this.sun.update(angle, this.camera.position);
+    this.moon.update(angle, this.camera.position);
 
-    const radius = 200;
-    const orbitCenterZ = -150; // Keep it well in front (Down River is -Z)
-
-    // Orbit in X-Y plane, but shifted to -Z.
-    // "Small arc": Reduce X range significantly.
-    // "Near horizon": Reduce Y range significantly.
-
-    const sunX = Math.cos(angle) * radius * 0.4; // Very narrow arc
-    // Shift sine wave up by 0.5 to get 2:1 Day/Night ratio
-    // sin(angle) + 0.5 > 0 for 240 degrees (Day), < 0 for 120 degrees (Night)
-    const sunY = (Math.sin(angle) + 0.5) * radius * 0.3; // Low arc
-    const sunZ = orbitCenterZ; // Fixed Z plane
-
-    this.sunLight.position.set(sunX, sunY, sunZ);
-    this.sunLight.target.position.set(0, 0, -50); // Target slightly forward
-    this.sunLight.target.updateMatrixWorld();
-
-    // Update Sun Mesh Position
-    const sunDir = new THREE.Vector3(sunX, sunY, sunZ).normalize();
-    this.sunMesh.position.copy(this.camera.position).add(sunDir.multiplyScalar(300)); // Inside skybox (360)
-
-    // Moon Position (Opposite to Sun)
-    const moonX = -sunX;
-    const moonY = -sunY;
-    const moonZ = orbitCenterZ;
-
-    this.moonLight.position.set(moonX, moonY, moonZ);
-    this.moonLight.target.position.set(0, 0, -50);
-    this.moonLight.target.updateMatrixWorld();
-
-    const moonDir = new THREE.Vector3(moonX, moonY, moonZ).normalize();
-    this.moonMesh.position.copy(this.camera.position).add(moonDir.multiplyScalar(300));
+    const sunY = this.sun.light.position.y;
+    const moonY = this.moon.light.position.y;
 
     // Determine Day/Night Phase
     // sin(angle) > 0 is Day (Sun is up), < 0 is Night
-    const isDay = sunY > 0;
     // Normalize height based on the new max Y (radius * 0.3)
-    // Normalize height based on the new max Y
-    // Max Y is (1 + 0.5) * radius * 0.3 = 1.5 * radius * 0.3
-    // But we just want a 0-1 factor for intensity.
-    // Let's use max(0, sunY / maxPossibleY)
-    const maxSunY = 1.5 * radius * 0.3;
+    // Max Y is (1 + 0.5) * radius * 0.3 = 1.5 * 200 * 0.3 = 90
+    const maxSunY = 90;
     const sunHeight = Math.max(0, sunY / maxSunY);
 
     // Moon is opposite.
-    // moonY = -sunY = -(sin + 0.5) = -sin - 0.5.
-    // Moon is up when -sin - 0.5 > 0 => sin < -0.5.
-    // This matches the 120 degree night window.
     // Max moon height is when sin = -1 => -(-1) - 0.5 = 0.5.
-    // So max moonY is 0.5 * radius * 0.3.
-    const maxMoonY = 0.5 * radius * 0.3;
+    // So max moonY is 0.5 * radius * 0.3 = 0.5 * 200 * 0.3 = 30
+    const maxMoonY = 30;
     const moonHeight = Math.max(0, moonY / maxMoonY);
 
-    // Update Light Intensities
-    // Minimum light level: 0.5
+    this.updateHemiLight(sunHeight, moonHeight);
+    this.updateSkyAndFog(sunY);
+  }
 
-    // Sun Intensity: 0 to 1.5 (Reduced from 2.0 to prevent washout)
-    this.sunLight.intensity = THREE.MathUtils.lerp(0, 1.5, sunHeight);
-
-    // Moon Intensity: 0 to 3.0 (Very bright moon)
-    this.moonLight.intensity = THREE.MathUtils.lerp(0, 3.0, moonHeight);
-
-    // Hemisphere Light (Ambient)
-    // Should never drop below 0.8
-    // Day: 1.2, Night: 0.8
-
-    let targetHemiIntensity = 0.8;
-    if (isDay) {
-      targetHemiIntensity = 0.8 + 0.4 * sunHeight;
-    } else {
-      targetHemiIntensity = 0.8 + 0.4 * moonHeight;
-    }
-    this.hemiLight.intensity = targetHemiIntensity;
-
-    // Hemisphere Light Colors
-    const daySkyColor = new THREE.Color(0xffffff);
-    const dayGroundColor = new THREE.Color(0xaaaaaa);
-    const nightSkyColor = new THREE.Color(0x6666aa); // Very bright night blue
-    const nightGroundColor = new THREE.Color(0x444466); // Very bright night ground
-
-    this.hemiLight.color.lerpColors(nightSkyColor, daySkyColor, isDay ? sunHeight : 0);
-    this.hemiLight.groundColor.lerpColors(nightGroundColor, dayGroundColor, isDay ? sunHeight : 0);
-
+  private updateSkyAndFog(sunY: number) {
     // Sky Color Interpolation
     // Pastel Sunset Vibe
     // Day (Sunset): Lavender to Peach
@@ -317,7 +168,7 @@ export class GraphicsEngine {
     // We only affect Day colors significantly
     // Blend current sky colors towards forest/ice colors based on biome weights
     // We only affect Day colors significantly
-    if (isDay) {
+    if (sunY > 0) {
       // Forest Influence
       currentTop.lerp(forestTopMod, this.currentBiomeWeights.forest * 0.6);
       currentBot.lerp(forestBotMod, this.currentBiomeWeights.forest * 0.6);
@@ -329,8 +180,7 @@ export class GraphicsEngine {
       currentBot.lerp(iceBotMod, this.currentBiomeWeights.ice * 0.8);
     }
 
-    this.skyUniforms.topColor.value.copy(currentTop);
-    this.skyUniforms.bottomColor.value.copy(currentBot);
+    this.skybox.update(this.camera.position, currentTop, currentBot);
 
     // Update Fog Color to match horizon (bottom color)
     if (this.scene.fog) {
@@ -338,38 +188,46 @@ export class GraphicsEngine {
     }
   }
 
+  private updateHemiLight(sunHeight: number, moonHeight: number) {
+    const isDay = sunHeight > 0;
+
+    // Hemisphere Light (Ambient)
+    // Should never drop below 0.8
+    // Day: 1.2, Night: 0.8
+
+    let targetHemiIntensity = 0.8;
+    if (isDay) {
+      targetHemiIntensity = 0.8 + 0.4 * sunHeight;
+    } else {
+      targetHemiIntensity = 0.8 + 0.4 * moonHeight;
+    }
+    this.hemiLight.intensity = targetHemiIntensity;
+
+    // Hemisphere Light Colors
+    const daySkyColor = new THREE.Color(0xffffff);
+    const dayGroundColor = new THREE.Color(0xaaaaaa);
+    const nightSkyColor = new THREE.Color(0x6666aa); // Very bright night blue
+    const nightGroundColor = new THREE.Color(0x444466); // Very bright night ground
+
+    this.hemiLight.color.lerpColors(nightSkyColor, daySkyColor, isDay ? sunHeight : 0);
+    this.hemiLight.groundColor.lerpColors(nightGroundColor, dayGroundColor, isDay ? sunHeight : 0);
+  }
+
   public updateBiome(weights: { desert: number, forest: number, ice: number }) {
     this.currentBiomeWeights = weights;
 
-    // Update Screen Tint
-    // Desert: Sepia/Warm
-    // Forest: Cool Blue
-    // Ice: Cold Cyan/White
-
-    const desertColor = { r: 180, g: 140, b: 100, a: 0.15 }; // Sepia
-    const forestColor = { r: 100, g: 150, b: 200, a: 0.15 }; // Cool Blue
-    const iceColor = { r: 200, g: 240, b: 255, a: 0.20 }; // Cold Cyan (Higher opacity)
-
-    // Blend
-    const r = desertColor.r * weights.desert + forestColor.r * weights.forest + iceColor.r * weights.ice;
-    const g = desertColor.g * weights.desert + forestColor.g * weights.forest + iceColor.g * weights.ice;
-    const b = desertColor.b * weights.desert + forestColor.b * weights.forest + iceColor.b * weights.ice;
-    const a = desertColor.a * weights.desert + forestColor.a * weights.forest + iceColor.a * weights.ice;
-
-    this.screenTint.style.backgroundColor = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`;
+    this.screenOverlay.update(weights);
 
     // Update Fog
     if (this.scene.fog instanceof THREE.Fog) {
       // Base Fog (Desert/Forest): Far away, subtle
       const baseNear = 100;
       const baseFar = 800;
-      const baseColor = new THREE.Color(0xffffff);
 
       // Ice Fog: Close in, "not 100% opaque" (meaning maybe not fully white? or just not too dense?)
       // User said "dramatically reduce... snow storm".
       const iceNear = 0; // Start fog immediately
       const iceFar = 20; // Extreme dense fog (Snow storm) - Reduced from 50
-      const iceColor = new THREE.Color(0xE0F6FF); // Ice Blue
 
       // Lerp values
       const targetNear = THREE.MathUtils.lerp(baseNear, iceNear, weights.ice);
@@ -377,35 +235,16 @@ export class GraphicsEngine {
 
       this.scene.fog.near = targetNear;
       this.scene.fog.far = targetFar;
-
-      // Blend fog color with sky bottom color (which is already updated in update())
-      // But we want specific ice fog color?
-      // Actually, update() sets fog color to match sky bottom.
-      // Let's override that behavior if we want specific control, or just let update() handle color
-      // and we handle distance here.
-      // In update(): "this.scene.fog.color.copy(currentBot);"
-      // This is good for blending.
-      // But for Ice, we might want it to be more distinct?
-      // Let's let update() handle color for consistency, but we control distance here.
     }
-
-    // Update Desaturation (CSS Filter)
-    // Desert/Forest: 0% grayscale
-    // Ice: 90% grayscale (Strong desaturation)
-    const grayscale = weights.ice * 0.9;
-    this.renderer.domElement.style.filter = `grayscale(${grayscale})`;
   }
 
   render(dt: number) {
     this.update(dt);
 
-    // Update skybox position to follow camera
-    this.skybox.position.copy(this.camera.position);
-
     // Update Water Shader Uniforms
     if (TerrainChunk.waterMaterial) {
       TerrainChunk.waterMaterial.uniforms.uTime.value += dt;
-      TerrainChunk.waterMaterial.uniforms.uSunPosition.value.copy(this.sunLight.position);
+      TerrainChunk.waterMaterial.uniforms.uSunPosition.value.copy(this.sun.light.position);
     }
 
     this.renderer.render(this.scene, this.camera);
