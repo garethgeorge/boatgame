@@ -102,22 +102,13 @@ export class GraphicsEngine {
 
     // Determine Day/Night Phase
     // sin(angle) > 0 is Day (Sun is up), < 0 is Night
-    // Normalize height based on the new max Y (radius * 0.3)
-    // Max Y is (1 + 0.5) * radius * 0.3 = 1.5 * 200 * 0.3 = 90
-    const maxSunY = 90;
-    const sunHeight = Math.max(0, sunY / maxSunY);
+    const dayness = Math.sin(angle);
 
-    // Moon is opposite.
-    // Max moon height is when sin = -1 => -(-1) - 0.5 = 0.5.
-    // So max moonY is 0.5 * radius * 0.3 = 0.5 * 200 * 0.3 = 30
-    const maxMoonY = 30;
-    const moonHeight = Math.max(0, moonY / maxMoonY);
-
-    this.updateHemiLight(sunHeight, moonHeight);
-    this.updateSkyAndFog(sunY);
+    this.updateHemiLight(dayness);
+    this.updateSkyAndFog(dayness);
   }
 
-  private updateSkyAndFog(sunY: number) {
+  private updateSkyAndFog(dayness: number) {
     // Sky Color Interpolation
     // Pastel Sunset Vibe
     // Day (Sunset): Lavender to Peach
@@ -133,11 +124,14 @@ export class GraphicsEngine {
     let currentTop: THREE.Color;
     let currentBot: THREE.Color;
 
-    if (sunY > 0) {
+    // Transition threshold (approx 20 degrees / 200 radius = 0.1)
+    const transitionThreshold = 0.1;
+
+    if (dayness > 0) {
       // Day
-      if (sunY < 20) {
+      if (dayness < transitionThreshold) {
         // Sunrise / Sunset transition
-        const t = sunY / 20;
+        const t = dayness / transitionThreshold;
         currentTop = sunsetTop.clone().lerp(dayTop, t);
         currentBot = sunsetBot.clone().lerp(dayBot, t);
       } else {
@@ -146,9 +140,9 @@ export class GraphicsEngine {
       }
     } else {
       // Night
-      if (sunY > -20) {
+      if (dayness > -transitionThreshold) {
         // Twilight
-        const t = -sunY / 20;
+        const t = -dayness / transitionThreshold;
         currentTop = sunsetTop.clone().lerp(nightTop, t);
         currentBot = sunsetBot.clone().lerp(nightBot, t);
       } else {
@@ -168,7 +162,7 @@ export class GraphicsEngine {
     // We only affect Day colors significantly
     // Blend current sky colors towards forest/ice colors based on biome weights
     // We only affect Day colors significantly
-    if (sunY > 0) {
+    if (dayness > 0) {
       // Forest Influence
       currentTop.lerp(forestTopMod, this.currentBiomeWeights.forest * 0.6);
       currentBot.lerp(forestBotMod, this.currentBiomeWeights.forest * 0.6);
@@ -188,20 +182,14 @@ export class GraphicsEngine {
     }
   }
 
-  private updateHemiLight(sunHeight: number, moonHeight: number) {
-    const isDay = sunHeight > 0;
-
+  private updateHemiLight(dayness: number) {
     // Hemisphere Light (Ambient)
     // Should never drop below 0.8
-    // Day: 1.2, Night: 0.8
+    // Day: 1.2, Night: 1.2 (at peak)
+    // dayness ranges from -1 (Night) to 1 (Day)
 
-    let targetHemiIntensity = 0.8;
-    if (isDay) {
-      targetHemiIntensity = 0.8 + 0.4 * sunHeight;
-    } else {
-      targetHemiIntensity = 0.8 + 0.4 * moonHeight;
-    }
-    this.hemiLight.intensity = targetHemiIntensity;
+    const intensity = 0.8 + 0.4 * Math.abs(dayness);
+    this.hemiLight.intensity = intensity;
 
     // Hemisphere Light Colors
     const daySkyColor = new THREE.Color(0xffffff);
@@ -209,8 +197,11 @@ export class GraphicsEngine {
     const nightSkyColor = new THREE.Color(0x6666aa); // Very bright night blue
     const nightGroundColor = new THREE.Color(0x444466); // Very bright night ground
 
-    this.hemiLight.color.lerpColors(nightSkyColor, daySkyColor, isDay ? sunHeight : 0);
-    this.hemiLight.groundColor.lerpColors(nightGroundColor, dayGroundColor, isDay ? sunHeight : 0);
+    // Interpolate based on dayness (-1 to 1) mapped to 0 to 1
+    const t = (dayness + 1) / 2;
+
+    this.hemiLight.color.lerpColors(nightSkyColor, daySkyColor, t);
+    this.hemiLight.groundColor.lerpColors(nightGroundColor, dayGroundColor, t);
   }
 
   public updateBiome(weights: { desert: number, forest: number, ice: number }) {

@@ -38,15 +38,10 @@ export class Sun {
         const radius = 200;
         const orbitCenterZ = -150; // Keep it well in front (Down River is -Z)
 
-        // Orbit in X-Y plane, but shifted to -Z.
-        // "Small arc": Reduce X range significantly.
-        // "Near horizon": Reduce Y range significantly.
-
-        const sunX = Math.cos(angle) * radius * 0.4; // Very narrow arc
-        // Shift sine wave up by 0.5 to get 2:1 Day/Night ratio
-        // sin(angle) + 0.5 > 0 for 240 degrees (Day), < 0 for 120 degrees (Night)
-        const sunY = (Math.sin(angle) + 0.5) * radius * 0.3; // Low arc
-        const sunZ = orbitCenterZ; // Fixed Z plane
+        // Simple circular orbit in X-Y plane
+        const sunX = Math.cos(angle) * radius;
+        const sunY = Math.sin(angle) * radius;
+        const sunZ = orbitCenterZ;
 
         this.light.position.set(sunX, sunY, sunZ);
         this.light.target.position.set(0, 0, -50); // Target slightly forward
@@ -57,8 +52,8 @@ export class Sun {
         this.mesh.position.copy(cameraPosition).add(sunDir.multiplyScalar(300)); // Inside skybox (360)
 
         // Calculate Intensity
-        // Max Y is (1 + 0.5) * radius * 0.3 = 1.5 * radius * 0.3
-        const maxSunY = 1.5 * radius * 0.3;
+        // Max Y is radius
+        const maxSunY = radius;
         const sunHeight = Math.max(0, sunY / maxSunY);
         const intensity = THREE.MathUtils.lerp(0, 1.5, sunHeight);
         this.light.intensity = intensity;
