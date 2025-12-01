@@ -22,7 +22,7 @@ export class SkyManager {
     private currentBiomeWeights: { desert: number, forest: number, ice: number } = { desert: 1, forest: 0, ice: 0 };
 
     // Day/Night Cycle Config
-    private readonly cycleDuration: number = 1 * 60; // 15 minutes in seconds
+    private readonly cycleDuration: number = 15 * 60; // 15 minutes in seconds
     // Start at High Morning (Angle 30 degrees)
     // 30/360 * 15*60 = 1/12 * 900 = 75 seconds.
     private cycleTime: number = 75;
