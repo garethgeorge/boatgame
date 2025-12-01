@@ -31,30 +31,32 @@ export class Sun {
     }
 
     update(angle: number, cameraPosition: THREE.Vector3) {
-        // Sun Position (Rotates around Z axis for simplicity, rising in East, setting in West)
-        // "Small arc near the horizon line"
-        // "Too high and a bit too wide"
+        const orbitRadius = 1000;
+        const inclination = Math.PI / 6; // 30 degrees inclination
 
-        const radius = 200;
-        const orbitCenterZ = -150; // Keep it well in front (Down River is -Z)
+        // Calculate position on a circle in the XZ plane
+        const sunAngle = angle;
 
-        // Simple circular orbit in X-Y plane
-        const sunX = Math.cos(angle) * radius;
-        const sunY = Math.sin(angle) * radius;
-        const sunZ = orbitCenterZ;
+        const x = Math.cos(sunAngle) * orbitRadius;
+        const y = 0;
+        const z = -Math.sin(sunAngle) * orbitRadius;
 
-        this.light.position.set(sunX, sunY, sunZ);
-        this.light.target.position.set(0, 0, -50); // Target slightly forward
+        // Apply inclination (rotate around X-axis)
+        // y' = y*cos(theta) - z*sin(theta)
+        // z' = y*sin(theta) + z*cos(theta)
+        const yInclined = y * Math.cos(inclination) - z * Math.sin(inclination);
+        const zInclined = y * Math.sin(inclination) + z * Math.cos(inclination);
+
+        this.light.position.set(x, yInclined, zInclined);
+        this.light.target.position.set(0, 0, 0);
         this.light.target.updateMatrixWorld();
 
         // Update Sun Mesh Position
-        const sunDir = new THREE.Vector3(sunX, sunY, sunZ).normalize();
+        const sunDir = new THREE.Vector3(x, yInclined, zInclined).normalize();
         this.mesh.position.copy(cameraPosition).add(sunDir.multiplyScalar(300)); // Inside skybox (360)
 
         // Calculate Intensity
-        // Max Y is radius
-        const maxSunY = radius;
-        const sunHeight = Math.max(0, sunY / maxSunY);
+        const sunHeight = Math.max(0, Math.sin(sunAngle));
         const intensity = THREE.MathUtils.lerp(0, 1.5, sunHeight);
         this.light.intensity = intensity;
     }

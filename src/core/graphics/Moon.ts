@@ -25,22 +25,28 @@ export class Moon {
     }
 
     update(angle: number, cameraPosition: THREE.Vector3) {
-        const radius = 200;
-        const orbitCenterZ = -150; // Keep it well in front (Down River is -Z)
+        const orbitRadius = 1000;
+        const inclination = Math.PI / 8; // 22.5 degrees inclination
 
-        // Simple circular orbit in X-Y plane (Opposite to Sun)
-        const sunX = Math.cos(angle) * radius;
-        const sunY = Math.sin(angle) * radius;
+        // Calculate position on a circle in the XZ plane
+        // We use -angle to make it opposite to the sun if the sun uses angle
+        const moonAngle = angle + Math.PI;
 
-        const moonX = -sunX;
-        const moonY = -sunY;
-        const moonZ = orbitCenterZ;
+        const x = Math.cos(moonAngle) * orbitRadius;
+        const y = 0;
+        const z = -Math.sin(moonAngle) * orbitRadius;
 
-        this.light.position.set(moonX, moonY, moonZ);
-        this.light.target.position.set(0, 0, -50);
+        // Apply inclination (rotate around X-axis)
+        // y' = y*cos(theta) - z*sin(theta)
+        // z' = y*sin(theta) + z*cos(theta)
+        const yInclined = y * Math.cos(inclination) - z * Math.sin(inclination);
+        const zInclined = y * Math.sin(inclination) + z * Math.cos(inclination);
+
+        this.light.position.set(x, yInclined, zInclined);
+        this.light.target.position.set(0, 0, 0);
         this.light.target.updateMatrixWorld();
 
-        const moonDir = new THREE.Vector3(moonX, moonY, moonZ).normalize();
+        const moonDir = new THREE.Vector3(x, yInclined, zInclined).normalize();
         this.mesh.position.copy(cameraPosition).add(moonDir.multiplyScalar(300));
     }
 }
