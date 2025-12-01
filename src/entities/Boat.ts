@@ -16,7 +16,7 @@ export class Boat extends Entity {
 
     // Physics Constants
     private readonly MAX_THRUST = 4000.0;
-    private readonly MAX_STEER_ANGLE = Math.PI / 8; // 22.5 degrees 
+    private readonly MAX_STEER_ANGLE = Math.PI * 3.0 / 16.0; // 33.75 degrees (Increased by 50%) 
     private readonly THROTTLE_SPEED = 1.0;
     private readonly STEER_SPEED = 10.0;
 
