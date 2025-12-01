@@ -326,38 +326,65 @@ export class Decorations {
   static createCactus(): THREE.Group {
     const group = new THREE.Group();
 
-    // Main stem
-    const height = 1.5 + Math.random() * 1.5;
-    const width = 0.2 + Math.random() * 0.1;
-    const stemGeo = new THREE.CapsuleGeometry(width, height, 4, 8);
-    const stem = new THREE.Mesh(stemGeo, this.cactusMaterial);
-    stem.position.y = height / 2;
-    group.add(stem);
+    // Saguaro Parameters (2x Scale)
+    const height = 3.0 + Math.random() * 3.0; // 3m to 6m
+    const trunkRadius = 0.25 + Math.random() * 0.15; // Thicker trunk
+
+    // Trunk
+    const trunkGeo = new THREE.CapsuleGeometry(trunkRadius, height - trunkRadius * 2, 8, 16);
+    const trunk = new THREE.Mesh(trunkGeo, this.cactusMaterial);
+    trunk.position.y = height / 2;
+    trunk.castShadow = true;
+    trunk.receiveShadow = true;
+    group.add(trunk);
 
     // Arms
-    if (Math.random() > 0.3) {
-      const armHeight = height * 0.4;
-      const armGeo = new THREE.CapsuleGeometry(width * 0.8, armHeight, 4, 8);
-      const arm = new THREE.Mesh(armGeo, this.cactusMaterial);
+    // Saguaros usually have 0-5 arms
+    const armCount = Math.floor(Math.random() * 4); // 0 to 3 arms
 
-      // Position arm
-      const side = Math.random() > 0.5 ? 1 : -1;
-      const y = height * 0.4 + Math.random() * 0.3;
+    for (let i = 0; i < armCount; i++) {
+      // Arm parameters
+      const armRadius = trunkRadius * (0.6 + Math.random() * 0.2); // Slightly thinner than trunk
+      const startHeight = height * (0.3 + Math.random() * 0.4); // Start 30-70% up
+      const armLengthVertical = (height - startHeight) * (0.5 + Math.random() * 0.5); // Go up a bit
+      const armOutwardDist = 0.5 + Math.random() * 0.5; // How far out before going up
 
-      // Arm structure: Horizontal out, then vertical up?
-      // Simple approach: Just a rotated capsule sticking out
-      arm.position.set(side * width * 0.8, y, 0);
-      arm.rotation.z = side * -Math.PI / 4;
+      const angle = Math.random() * Math.PI * 2;
+
+      // Create Curve
+      // Start at trunk surface
+      const startPoint = new THREE.Vector3(Math.cos(angle) * trunkRadius * 0.8, startHeight, Math.sin(angle) * trunkRadius * 0.8);
+
+      // Control point: Outwards and slightly up
+      const controlPoint = new THREE.Vector3(
+        Math.cos(angle) * (trunkRadius + armOutwardDist),
+        startHeight,
+        Math.sin(angle) * (trunkRadius + armOutwardDist)
+      );
+
+      // End point: Upwards
+      const endPoint = new THREE.Vector3(
+        Math.cos(angle) * (trunkRadius + armOutwardDist),
+        startHeight + armLengthVertical,
+        Math.sin(angle) * (trunkRadius + armOutwardDist)
+      );
+
+      const curve = new THREE.QuadraticBezierCurve3(startPoint, controlPoint, endPoint);
+
+      // Tube Geometry
+      const tubeGeo = new THREE.TubeGeometry(curve, 8, armRadius, 8, false);
+      const arm = new THREE.Mesh(tubeGeo, this.cactusMaterial);
+      arm.castShadow = true;
+      arm.receiveShadow = true;
       group.add(arm);
 
-      // Second arm?
-      if (Math.random() > 0.5) {
-        const arm2 = new THREE.Mesh(armGeo, this.cactusMaterial);
-        const y2 = height * 0.3 + Math.random() * 0.3;
-        arm2.position.set(-side * width * 0.8, y2, 0);
-        arm2.rotation.z = -side * -Math.PI / 4;
-        group.add(arm2);
-      }
+      // Cap the top of the arm
+      const capGeo = new THREE.SphereGeometry(armRadius, 8, 8);
+      const cap = new THREE.Mesh(capGeo, this.cactusMaterial);
+      cap.position.copy(endPoint);
+      cap.castShadow = true;
+      cap.receiveShadow = true;
+      group.add(cap);
     }
 
     return group;
