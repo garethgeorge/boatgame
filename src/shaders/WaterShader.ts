@@ -6,6 +6,10 @@ export const WaterShader = {
     uColor: { value: new THREE.Color(0x4da6ff) },
     uFlowDirection: { value: new THREE.Vector2(0, 1) }, // Flow along Z
     uSunPosition: { value: new THREE.Vector3(50, 100, 50) },
+    uBoatPosition: { value: new THREE.Vector3(0, 0, 0) },
+    uBoatVelocity: { value: new THREE.Vector2(0, 0) },
+    uBoatDirection: { value: new THREE.Vector2(0, -1) },
+    uBoatHistory: { value: new Array(8).fill(new THREE.Vector3(0, 0, 0)) },
   },
   vertexShader: `
     varying vec2 vUv;
@@ -25,6 +29,10 @@ export const WaterShader = {
     uniform vec3 uColor;
     uniform vec2 uFlowDirection;
     uniform vec3 uSunPosition;
+    uniform vec3 uBoatPosition;
+    uniform vec2 uBoatVelocity;
+    uniform vec2 uBoatDirection;
+    uniform vec3 uBoatHistory[8];
 
     varying vec2 vUv;
     varying vec3 vWorldPosition;
@@ -66,14 +74,21 @@ export const WaterShader = {
       return m * v;
     }
 
+    // Distance from point p to line segment ab
+    float distToSegment(vec2 p, vec2 a, vec2 b) {
+      vec2 pa = p - a;
+      vec2 ba = b - a;
+      float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+      return length(pa - ba * h);
+    }
+
     void main() {
       // Base UVs
       vec2 flowUV = vWorldPosition.xz * 0.05; 
       
       // Domain Warping for "Random Curvature"
-      // Large scale noise to distort the flow paths
       float warp = snoise(flowUV * 0.5 + uTime * 0.1);
-      vec2 warpedUV = flowUV + vec2(warp * 0.2, 0.0); // Distort X primarily
+      vec2 warpedUV = flowUV + vec2(warp * 0.2, 0.0); 
       
       // Flow Parameters
       float speed = 0.6; 
@@ -82,7 +97,7 @@ export const WaterShader = {
       
       // Primary Flow Layer
       vec2 uv1 = warpedUV;
-      uv1.y += uTime * speed; // Flow along Y (which is now downstream)
+      uv1.y += uTime * speed; 
       uv1.y *= stretch; 
       float noise1 = snoise(vec2(uv1.x * scale, uv1.y)); 
       
@@ -101,6 +116,44 @@ export const WaterShader = {
       // Pulse
       float pulse = sin(uTime * 3.0 + vWorldPosition.x * 0.5) * 0.1 + 0.9;
       lineMix *= pulse;
+
+      // --- Boat Wake Logic ---
+      float wakeMix = 0.0;
+      
+      // History Trail (Persistent Wake)
+      vec2 prevPos = uBoatPosition.xz;
+      for (int i = 0; i < 8; i++) {
+        vec2 histPos = uBoatHistory[i].xz;
+        
+        // Skip if history point is effectively zero (uninitialized)
+        if (length(histPos) < 0.1) break;
+        
+        float d = distToSegment(vWorldPosition.xz, prevPos, histPos);
+        
+        // Trail width expands with age
+        float age = float(i);
+        float width = 1.5 + age * 0.8; 
+        
+        if (d < width) {
+          float intensity = smoothstep(width, width * 0.5, d);
+          
+          // Add noise to trail
+          float trailNoise = snoise(vWorldPosition.xz * 0.5 + uTime * 0.5);
+          intensity *= (0.5 + 0.5 * trailNoise);
+          
+          // Fade based on index (age)
+          float ageFade = 1.0 - (age / 8.0);
+          
+          wakeMix = max(wakeMix, intensity * ageFade * 0.6);
+        }
+        
+        prevPos = histPos;
+      }
+      
+      // Clamp wake
+      wakeMix = clamp(wakeMix, 0.0, 1.0);
+      
+      // --- End Wake Logic ---
       
       // Toon Shading (Lighting)
       vec3 lightDir = normalize(uSunPosition);
@@ -116,7 +169,10 @@ export const WaterShader = {
       vec3 baseColor = uColor * lightIntensity;
       vec3 lineColor = vec3(1.0); // White lines
       
-      vec3 finalColor = mix(baseColor, lineColor, lineMix * 0.1); // Subtle lines
+      // Combine flow lines and wake
+      float totalWhiteMix = clamp(lineMix * 0.1 + wakeMix * 0.8, 0.0, 1.0);
+      
+      vec3 finalColor = mix(baseColor, lineColor, totalWhiteMix);
       
       gl_FragColor = vec4(finalColor, 0.8); // Transparency
     }

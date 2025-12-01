@@ -31,7 +31,7 @@ export class RockSpawner implements Spawnable {
 
       if (pos) {
         const rock = new RiverRock(pos.x, pos.z, radius, context.physicsEngine);
-        context.entityManager.add(rock);
+        context.entityManager.add(rock, context.chunkIndex);
       }
     }
   }

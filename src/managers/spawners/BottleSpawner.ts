@@ -35,7 +35,7 @@ export class BottleSpawner implements Spawnable {
 
       if (pos) {
         const bottle = new MessageInABottle(pos.x, pos.z, context.physicsEngine);
-        context.entityManager.add(bottle);
+        context.entityManager.add(bottle, context.chunkIndex);
       }
     }
   }
@@ -62,7 +62,7 @@ export class BottleSpawner implements Spawnable {
       // But better to check?
       // Let's just place them.
       const entity = new MessageInABottle(currentCenter + offsetX, currentZ, context.physicsEngine, 0x0088FF, 50);
-      context.entityManager.add(entity);
+      context.entityManager.add(entity, context.chunkIndex);
     }
   }
 }

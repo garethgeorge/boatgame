@@ -15,15 +15,15 @@ export class Boat extends Entity {
     private flashTimer: number = 0;
 
     // Physics Constants
-    private readonly MAX_THRUST = 7500.0; // Tuned for 500kg mass
-    private readonly MAX_STEER_ANGLE = Math.PI / 4; // 45 degrees
+    private readonly MAX_THRUST = 7500.0; // Reduced by 50% as requested
+    private readonly MAX_STEER_ANGLE = Math.PI / 8; // 22.5 degrees (Halved)
     private readonly THROTTLE_SPEED = 1.0;
-    private readonly STEER_SPEED = 10.0; // Increased from 2.0 to 10.0 (5x) for faster response
+    private readonly STEER_SPEED = 10.0;
 
     // Drag Constants
-    private readonly DRAG_FORWARD = 2.0; // Low resistance forward
-    private readonly DRAG_SIDEWAYS = 8.0; // High resistance sideways (Keel)
-    private readonly DRAG_ANGULAR = 4.0; // Resistance to rotation
+    private readonly DRAG_FORWARD = 4.0; // Low resistance forward (Doubled)
+    private readonly DRAG_SIDEWAYS = 16.0; // High resistance sideways (Keel) (Doubled)
+    private readonly DRAG_ANGULAR = 8.0; // Resistance to rotation (Doubled)
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
         super();

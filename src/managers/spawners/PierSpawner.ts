@@ -59,7 +59,7 @@ export class PierSpawner implements Spawnable {
       context.placementHelper.registerPlacement(centerPos.x, centerPos.y, pierLength / 2);
 
       const pier = new Pier(centerPos.x, centerPos.y, pierLength, angle, context.physicsEngine);
-      context.entityManager.add(pier);
+      context.entityManager.add(pier, context.chunkIndex);
     }
   }
 }

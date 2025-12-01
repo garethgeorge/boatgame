@@ -7,6 +7,8 @@ import { TerrainChunk } from './TerrainChunk';
 import { RiverSystem } from './RiverSystem';
 import { ObstacleManager } from '../managers/ObstacleManager';
 
+import { Boat } from '../entities/Boat';
+
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
   private loadingChunks: Set<number> = new Set();
@@ -27,9 +29,64 @@ export class TerrainManager {
     this.riverSystem = RiverSystem.getInstance();
   }
 
+  private boatHistory: THREE.Vector3[] = [];
 
+  update(boat: Boat) {
+    const boatZ = boat.meshes[0].position.z;
+    const currentPos = boat.meshes[0].position.clone();
 
-  update(boatZ: number) {
+    // Update History
+    if (this.boatHistory.length === 0) {
+      this.boatHistory.push(currentPos);
+    } else {
+      const lastPos = this.boatHistory[0];
+      const dist = currentPos.distanceTo(lastPos);
+      if (dist > 2.0) { // Only record if moved enough
+        this.boatHistory.unshift(currentPos);
+        if (this.boatHistory.length > 8) {
+          this.boatHistory.pop();
+        }
+      }
+    }
+
+    // Update Water Shader Uniforms
+    if (TerrainChunk.waterMaterial) {
+      TerrainChunk.waterMaterial.uniforms.uBoatPosition.value.copy(boat.meshes[0].position);
+
+      // Velocity needs to be calculated or retrieved from physics body
+      // Boat has getVelocity() or we can use physics body directly
+      if (boat.physicsBodies.length > 0) {
+        const vel = boat.physicsBodies[0].getLinearVelocity();
+        TerrainChunk.waterMaterial.uniforms.uBoatVelocity.value.set(vel.x, vel.y); // Physics Y is World Z
+
+        // Direction from rotation
+        const rot = boat.meshes[0].rotation.y;
+        // Boat faces -Z at rotation 0?
+        // Rotation Y: 0 = -Z, PI/2 = -X, PI = +Z, -PI/2 = +X
+        // Direction vector: (-sin(rot), -cos(rot))
+        TerrainChunk.waterMaterial.uniforms.uBoatDirection.value.set(-Math.sin(rot), -Math.cos(rot));
+      }
+
+      // Update History Uniform
+      for (let i = 0; i < 8; i++) {
+        if (i < this.boatHistory.length) {
+          TerrainChunk.waterMaterial.uniforms.uBoatHistory.value[i].copy(this.boatHistory[i]);
+        } else {
+          // Fill remaining with last known or zero?
+          // Zero might be interpreted as valid position (0,0,0).
+          // Let's use the last valid position or zero if empty.
+          // Or just leave it, shader checks for length(histPos) < 0.1
+          // But (0,0,0) is valid world pos.
+          // Let's copy the oldest point to fill.
+          if (this.boatHistory.length > 0) {
+            TerrainChunk.waterMaterial.uniforms.uBoatHistory.value[i].copy(this.boatHistory[this.boatHistory.length - 1]);
+          } else {
+            TerrainChunk.waterMaterial.uniforms.uBoatHistory.value[i].set(0, 0, 0);
+          }
+        }
+      }
+    }
+
     // 1. Manage Visual Chunks
     const currentChunkIndex = Math.floor(boatZ / TerrainChunk.CHUNK_SIZE);
     const renderDistance = 6; // Number of chunks to render in each direction

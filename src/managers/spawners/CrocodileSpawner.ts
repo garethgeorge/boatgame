@@ -48,7 +48,7 @@ export class CrocodileSpawner implements Spawnable {
             ? new Hippo(x, z, context.physicsEngine)
             : new Alligator(x, z, context.physicsEngine);
 
-          context.entityManager.add(entity);
+          context.entityManager.add(entity, context.chunkIndex);
         }
       }
     }

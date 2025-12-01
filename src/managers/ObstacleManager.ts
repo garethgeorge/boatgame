@@ -18,7 +18,6 @@ import { CrocodileSpawner } from './spawners/CrocodileSpawner';
 import { BottleSpawner } from './spawners/BottleSpawner';
 
 export class ObstacleManager {
-  private chunkEntities: Map<number, Entity[]> = new Map(); // Track entities per chunk
   private riverSystem: RiverSystem;
   private registry: Map<string, Spawnable> = new Map();
 
@@ -47,41 +46,16 @@ export class ObstacleManager {
   // Called by TerrainManager when a new chunk is created
   public async spawnObstaclesForChunk(chunkIndex: number, zStart: number, zEnd: number) {
     Profiler.start('SpawnObstacles');
-    if (this.chunkEntities.has(chunkIndex)) {
-      Profiler.end('SpawnObstacles');
-      return; // Already spawned
-    }
-
-    const entities: Entity[] = [];
-
-    // Capture entities added during this process
-    // We need to intercept entityManager.add or just track them manually?
-    // The spawners call entityManager.add directly.
-    // We can wrap entityManager or pass a proxy?
-    // Or just ask spawners to return entities?
-    // The interface says `spawn` returns Promise<void>.
-    // Let's modify SpawnContext to include a way to track entities.
-    // Actually, `SpawnContext` has `entityManager`. We can pass a proxy that tracks added entities.
-
-    const trackedEntities: Entity[] = [];
-    const entityProxy = {
-      add: (entity: Entity) => {
-        this.entityManager.add(entity);
-        trackedEntities.push(entity);
-      },
-      remove: (entity: Entity) => {
-        this.entityManager.remove(entity);
-        const idx = trackedEntities.indexOf(entity);
-        if (idx > -1) trackedEntities.splice(idx, 1);
-      },
-      entities: this.entityManager.entities // Read-only access if needed
-    } as unknown as EntityManager; // Cast to satisfy type
+    // We don't check for existing chunk here because EntityManager handles duplicates/idempotency if needed,
+    // but strictly speaking we rely on TerrainManager not calling this twice.
+    // Or we could check if chunk has entities in EntityManager?
+    // Let's trust TerrainManager for now.
 
     const placementHelper = new PlacementHelper();
     const chunkLength = zEnd - zStart;
 
     const context: SpawnContext = {
-      entityManager: entityProxy,
+      entityManager: this.entityManager,
       physicsEngine: this.physicsEngine,
       placementHelper: placementHelper,
       chunkIndex: chunkIndex,
@@ -113,21 +87,11 @@ export class ObstacleManager {
       // Spawners are async, so we can await.
     }
 
-    if (trackedEntities.length > 0) {
-      this.chunkEntities.set(chunkIndex, trackedEntities);
-    }
-
     Profiler.end('SpawnObstacles');
   }
 
   // Called by TerrainManager when a chunk is disposed
   removeObstaclesForChunk(chunkIndex: number) {
-    const entities = this.chunkEntities.get(chunkIndex);
-    if (entities) {
-      for (const entity of entities) {
-        this.entityManager.remove(entity);
-      }
-      this.chunkEntities.delete(chunkIndex);
-    }
+    this.entityManager.removeChunk(chunkIndex);
   }
 }

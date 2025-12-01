@@ -37,7 +37,7 @@ export class LogSpawner implements Spawnable {
 
       if (pos) {
         const log = new Log(pos.x, pos.z, length, context.physicsEngine);
-        context.entityManager.add(log);
+        context.entityManager.add(log, context.chunkIndex);
       }
     }
   }
