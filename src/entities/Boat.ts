@@ -16,7 +16,8 @@ export class Boat extends Entity {
 
     // Physics Constants
     private readonly MAX_THRUST = 4000.0;
-    private readonly MAX_STEER_ANGLE = Math.PI * 3.0 / 16.0; // 33.75 degrees (Increased by 50%) 
+    private readonly MAX_STEER_ANGLE_KEYBOARD = Math.PI / 4; // 45 degrees
+    private readonly MAX_STEER_ANGLE_TILT = Math.PI * 75.0 / 180.0; // 75 degrees
     private readonly THROTTLE_SPEED = 1.0;
     private readonly STEER_SPEED = 10.0;
 
@@ -141,13 +142,13 @@ export class Boat extends Entity {
         // Steering (Auto-center)
         // If tilt input is present (non-zero), use it directly (Analog Control)
         if (Math.abs(input.tilt) > 0.05) {
-            this.currentSteering = -input.tilt * this.MAX_STEER_ANGLE;
+            this.currentSteering = -input.tilt * this.MAX_STEER_ANGLE_TILT;
         } else {
             // Keyboard Control (Digital)
             if (input.left) {
-                this.currentSteering = Math.min(this.MAX_STEER_ANGLE, this.currentSteering + this.STEER_SPEED * dt);
+                this.currentSteering = Math.min(this.MAX_STEER_ANGLE_KEYBOARD, this.currentSteering + this.STEER_SPEED * dt);
             } else if (input.right) {
-                this.currentSteering = Math.max(-this.MAX_STEER_ANGLE, this.currentSteering - this.STEER_SPEED * dt);
+                this.currentSteering = Math.max(-this.MAX_STEER_ANGLE_KEYBOARD, this.currentSteering - this.STEER_SPEED * dt);
             } else {
                 // Decay steering
                 if (this.currentSteering > 0) {
