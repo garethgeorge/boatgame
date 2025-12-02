@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { createNoise3D } from 'simplex-noise';
 
 export class Decorations {
@@ -28,8 +30,9 @@ export class Decorations {
     trees: { mesh: THREE.Group, wetness: number, isSnowy: boolean, isLeafless: boolean }[],
     bushes: { mesh: THREE.Group, wetness: number }[],
     cactuses: THREE.Group[],
-    rocks: { mesh: THREE.Group, size: number, isIcy: boolean }[]
-  } = { trees: [], bushes: [], cactuses: [], rocks: [] };
+    rocks: { mesh: THREE.Group, size: number, isIcy: boolean }[],
+    polarBear: { model: THREE.Group | null, animations: THREE.AnimationClip[] }
+  } = { trees: [], bushes: [], cactuses: [], rocks: [], polarBear: { model: null, animations: [] } };
 
   private static loadPromise: Promise<void> | null = null;
 
@@ -73,15 +76,39 @@ export class Decorations {
   }
 
   static async preload(): Promise<void> {
-    if (this.cache.trees.length > 0) return;
+    if (this.cache.trees.length > 0 && this.cache.polarBear.model) return;
     if (this.loadPromise) return this.loadPromise;
 
-    this.loadPromise = new Promise((resolve) => {
-      // Use setTimeout to allow this to be async and not block immediately if called
-      setTimeout(() => {
-        this.generateCache();
-        resolve();
-      }, 0);
+    this.loadPromise = new Promise((resolve, reject) => {
+      // Load polar bear model first
+      const loader = new GLTFLoader();
+      loader.load('assets/polar-bear-model-1.glb', (gltf) => {
+        const model = gltf.scene;
+
+        // Configure model
+        model.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        this.cache.polarBear.model = model;
+        this.cache.polarBear.animations = gltf.animations || [];
+
+        // Generate procedural decorations
+        setTimeout(() => {
+          this.generateCache();
+          resolve();
+        }, 0);
+      }, undefined, (error) => {
+        console.error('An error occurred loading the polar bear model:', error);
+        // Continue even if polar bear fails to load
+        setTimeout(() => {
+          this.generateCache();
+          resolve();
+        }, 0);
+      });
     });
 
     return this.loadPromise;
@@ -116,6 +143,19 @@ export class Decorations {
 
     if (this.cache.cactuses.length === 0) return this.createCactus(); // Fallback if init failed?
     return this.cache.cactuses[Math.floor(Math.random() * this.cache.cactuses.length)].clone();
+  }
+
+  static getPolarBear(): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
+    if (!this.cache.polarBear.model) {
+      console.warn('Polar bear model not loaded yet');
+      return null;
+    }
+
+    const clonedModel = SkeletonUtils.clone(this.cache.polarBear.model) as THREE.Group;
+    return {
+      model: clonedModel,
+      animations: this.cache.polarBear.animations
+    };
   }
 
   static getRock(biome: 'desert' | 'forest' | 'ice', size: number): THREE.Group {
