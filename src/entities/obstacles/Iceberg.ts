@@ -2,9 +2,10 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { Decorations } from '../../world/Decorations';
 
 export class Iceberg extends Entity {
-
+    private animationMixer?: THREE.AnimationMixer;
 
     constructor(x: number, y: number, radius: number, physicsEngine: PhysicsEngine) {
         super();
@@ -87,6 +88,28 @@ export class Iceberg extends Entity {
 
         mesh.castShadow = true;
         mesh.receiveShadow = true;
+
+        // Add polar bear decoration with 1/3 probability
+        if (Math.random() < 0.333) {
+            const polarBearData = Decorations.getPolarBear();
+            if (polarBearData) {
+                const { model, animations } = polarBearData;
+
+                // Position the polar bear on top of the iceberg
+                model.position.y = 1.0; // Place on top of the ice sheet
+                model.scale.set(3.0, 3.0, 3.0);
+                model.rotation.y = Math.random() * Math.PI * 2; // Random rotation
+
+                mesh.add(model);
+
+                // Play animation if available
+                if (animations.length > 0) {
+                    this.animationMixer = new THREE.AnimationMixer(model);
+                    const action = this.animationMixer.clipAction(animations[0]);
+                    action.play();
+                }
+            }
+        }
     }
 
     onHit() {
@@ -94,6 +117,10 @@ export class Iceberg extends Entity {
     }
 
     update(dt: number) {
+        // Update animation mixer if present
+        if (this.animationMixer) {
+            this.animationMixer.update(dt);
+        }
         // Drifts naturally
     }
 }
