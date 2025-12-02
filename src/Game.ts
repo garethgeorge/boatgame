@@ -77,8 +77,6 @@ export class Game {
     async preload() {
         // Preload all assets here
         await Promise.all([
-            Alligator.preload(),
-            Hippo.preload(),
             Decorations.preload(),
             // Add other entities here as needed
         ]);

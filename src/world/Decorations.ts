@@ -31,8 +31,18 @@ export class Decorations {
     bushes: { mesh: THREE.Group, wetness: number }[],
     cactuses: THREE.Group[],
     rocks: { mesh: THREE.Group, size: number, isIcy: boolean }[],
-    polarBear: { model: THREE.Group | null, animations: THREE.AnimationClip[] }
-  } = { trees: [], bushes: [], cactuses: [], rocks: [], polarBear: { model: null, animations: [] } };
+    polarBear: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
+    hippo: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
+    alligator: { model: THREE.Group | null, animations: THREE.AnimationClip[] }
+  } = {
+      trees: [],
+      bushes: [],
+      cactuses: [],
+      rocks: [],
+      polarBear: { model: null, animations: [] },
+      hippo: { model: null, animations: [] },
+      alligator: { model: null, animations: [] }
+    };
 
   private static loadPromise: Promise<void> | null = null;
 
@@ -76,38 +86,74 @@ export class Decorations {
   }
 
   static async preload(): Promise<void> {
-    if (this.cache.trees.length > 0 && this.cache.polarBear.model) return;
+    if (this.cache.trees.length > 0 && this.cache.polarBear.model && this.cache.hippo.model && this.cache.alligator.model) return;
     if (this.loadPromise) return this.loadPromise;
 
     this.loadPromise = new Promise((resolve, reject) => {
-      // Load polar bear model first
       const loader = new GLTFLoader();
+      let loadedCount = 0;
+      const totalModels = 3;
+
+      const onModelLoaded = () => {
+        loadedCount++;
+        if (loadedCount === totalModels) {
+          // All models loaded, generate procedural decorations
+          setTimeout(() => {
+            this.generateCache();
+            resolve();
+          }, 0);
+        }
+      };
+
+      // Load polar bear model
       loader.load('assets/polar-bear-model-1.glb', (gltf) => {
         const model = gltf.scene;
-
-        // Configure model
         model.traverse((child) => {
           if ((child as THREE.Mesh).isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
           }
         });
-
         this.cache.polarBear.model = model;
         this.cache.polarBear.animations = gltf.animations || [];
-
-        // Generate procedural decorations
-        setTimeout(() => {
-          this.generateCache();
-          resolve();
-        }, 0);
+        onModelLoaded();
       }, undefined, (error) => {
         console.error('An error occurred loading the polar bear model:', error);
-        // Continue even if polar bear fails to load
-        setTimeout(() => {
-          this.generateCache();
-          resolve();
-        }, 0);
+        onModelLoaded(); // Continue even if this model fails
+      });
+
+      // Load hippo model
+      loader.load('assets/hippo-model-1.glb', (gltf) => {
+        const model = gltf.scene;
+        model.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        this.cache.hippo.model = model;
+        this.cache.hippo.animations = gltf.animations || [];
+        onModelLoaded();
+      }, undefined, (error) => {
+        console.error('An error occurred loading the hippo model:', error);
+        onModelLoaded(); // Continue even if this model fails
+      });
+
+      // Load alligator model
+      loader.load('assets/alligator-model-1.glb', (gltf) => {
+        const model = gltf.scene;
+        model.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        this.cache.alligator.model = model;
+        this.cache.alligator.animations = gltf.animations || [];
+        onModelLoaded();
+      }, undefined, (error) => {
+        console.error('An error occurred loading the alligator model:', error);
+        onModelLoaded(); // Continue even if this model fails
       });
     });
 
@@ -155,6 +201,32 @@ export class Decorations {
     return {
       model: clonedModel,
       animations: this.cache.polarBear.animations
+    };
+  }
+
+  static getHippo(): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
+    if (!this.cache.hippo.model) {
+      console.warn('Hippo model not loaded yet');
+      return null;
+    }
+
+    const clonedModel = SkeletonUtils.clone(this.cache.hippo.model) as THREE.Group;
+    return {
+      model: clonedModel,
+      animations: this.cache.hippo.animations
+    };
+  }
+
+  static getAlligator(): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
+    if (!this.cache.alligator.model) {
+      console.warn('Alligator model not loaded yet');
+      return null;
+    }
+
+    const clonedModel = SkeletonUtils.clone(this.cache.alligator.model) as THREE.Group;
+    return {
+      model: clonedModel,
+      animations: this.cache.alligator.animations
     };
   }
 

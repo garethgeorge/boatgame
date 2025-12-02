@@ -1,58 +1,22 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { Decorations } from '../../world/Decorations';
 
 export class Alligator extends Entity {
-
-
-    private static cachedModel: THREE.Group | null = null;
-    private static cachedAnimations: THREE.AnimationClip[] = [];
-    private static loadPromise: Promise<void> | null = null;
-
-    public static async preload(): Promise<void> {
-        if (this.cachedModel) return;
-        if (this.loadPromise) return this.loadPromise;
-
-        this.loadPromise = new Promise((resolve, reject) => {
-            const loader = new GLTFLoader();
-            loader.load('assets/alligator-model-1.glb', (gltf) => {
-                const model = gltf.scene;
-
-                // Adjust scale and rotation to match physics body
-                model.scale.set(3.0, 3.0, 3.0);
-                model.rotation.y = Math.PI; // Rotate 180 degrees if it faces backwards
-                model.position.y = -0.2;
-
-                model.traverse((child) => {
-                    if ((child as THREE.Mesh).isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
-                });
-
-                this.cachedModel = model;
-                this.cachedAnimations = gltf.animations || [];
-                resolve();
-            }, undefined, (error) => {
-                console.error('An error occurred loading the alligator model:', error);
-                reject(error);
-            });
-        });
-
-        return this.loadPromise;
-    }
-
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
-        const clonedModel = SkeletonUtils.clone(model);
+        // Apply model transformations
+        model.scale.set(3.0, 3.0, 3.0);
+        model.rotation.y = Math.PI;
+        model.position.y = -0.2;
+
         if (this.meshes.length > 0) {
-            this.meshes[0].add(clonedModel);
+            this.meshes[0].add(model);
         }
 
         if (animations.length > 0) {
-            this.mixer = new THREE.AnimationMixer(clonedModel);
+            this.mixer = new THREE.AnimationMixer(model);
             // Randomize speed between 1.8 and 2.2
             this.mixer.timeScale = 1.8 + Math.random() * 0.4;
             const action = this.mixer.clipAction(animations[0]);
@@ -90,15 +54,9 @@ export class Alligator extends Entity {
 
         mesh.position.y = 0.5; // Raised by ~15% of model height
 
-        if (Alligator.cachedModel) {
-            this.applyModel(Alligator.cachedModel, Alligator.cachedAnimations);
-        } else {
-            // Fallback if not preloaded (though it should be)
-            Alligator.preload().then(() => {
-                if (Alligator.cachedModel) {
-                    this.applyModel(Alligator.cachedModel, Alligator.cachedAnimations);
-                }
-            });
+        const alligatorData = Decorations.getAlligator();
+        if (alligatorData) {
+            this.applyModel(alligatorData.model, alligatorData.animations);
         }
     }
 
