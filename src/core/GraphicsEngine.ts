@@ -1,13 +1,11 @@
 import * as THREE from 'three';
 import { TerrainChunk } from '../world/TerrainChunk';
-import { SkyManager } from '../sky/SkyManager';
 
 export class GraphicsEngine {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer;
 
-  private skyManager: SkyManager;
 
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
@@ -31,28 +29,13 @@ export class GraphicsEngine {
 
     container.appendChild(this.renderer.domElement);
 
-    // Initialize SkyManager
-    this.skyManager = new SkyManager(this.scene, container, this.renderer.domElement);
 
     window.addEventListener('resize', () => this.onWindowResize(), false);
   }
 
-  update(dt: number) {
-    this.skyManager.update(dt, this.camera.position);
-  }
 
-  public updateBiome(weights: { desert: number, forest: number, ice: number }) {
-    this.skyManager.updateBiome(weights);
-  }
 
   render(dt: number) {
-    this.update(dt);
-
-    // Update Water Shader Uniforms
-    if (TerrainChunk.waterMaterial) {
-      TerrainChunk.waterMaterial.uniforms.uTime.value += dt;
-      TerrainChunk.waterMaterial.uniforms.uSunPosition.value.copy(this.skyManager.getSunPosition());
-    }
 
     this.renderer.render(this.scene, this.camera);
   }

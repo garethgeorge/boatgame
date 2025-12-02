@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from './core/PhysicsEngine';
 import { GraphicsEngine } from './core/GraphicsEngine';
+import { SkyManager } from './sky/SkyManager';
 import { EntityManager } from './core/EntityManager';
 import { TerrainManager } from './world/TerrainManager';
+import { TerrainChunk } from './world/TerrainChunk';
 import { Decorations } from './world/Decorations';
 import { ObstacleManager } from './managers/ObstacleManager';
 import { Boat } from './entities/Boat';
@@ -15,6 +17,7 @@ export class Game {
     container: HTMLElement;
     physicsEngine: PhysicsEngine;
     graphicsEngine: GraphicsEngine;
+    skyManager: SkyManager;
     entityManager: EntityManager;
     inputManager: InputManager;
     clock: THREE.Clock;
@@ -40,6 +43,7 @@ export class Game {
         // Initialize Engines
         this.physicsEngine = new PhysicsEngine();
         this.graphicsEngine = new GraphicsEngine(this.container);
+        this.skyManager = new SkyManager(this.graphicsEngine.scene, this.container, this.graphicsEngine.renderer.domElement);
         this.entityManager = new EntityManager(this.physicsEngine, this.graphicsEngine);
         this.inputManager = new InputManager();
         this.clock = new THREE.Clock();
@@ -84,7 +88,7 @@ export class Game {
         // Create World
         // ObstacleManager must be created before TerrainManager now
         this.obstacleManager = new ObstacleManager(this.entityManager, this.physicsEngine);
-        this.terrainManager = new TerrainManager(this.physicsEngine, this.graphicsEngine, this.obstacleManager);
+        this.terrainManager = new TerrainManager(this.physicsEngine, this.graphicsEngine, this.obstacleManager, this.skyManager);
 
         // Wire up interpolation
         this.physicsEngine.onStep = () => {
@@ -249,6 +253,15 @@ export class Game {
             // Look at the boat (or slightly ahead)
             const lookAtPos = boatPos.clone().add(new THREE.Vector3(0, 2, 0)); // Look slightly above center
             this.graphicsEngine.camera.lookAt(lookAtPos);
+        }
+
+        // Update Sky
+        this.skyManager.update(dt, this.graphicsEngine.camera.position);
+
+        // Update Water Shader Uniforms
+        if (TerrainChunk.waterMaterial) {
+            TerrainChunk.waterMaterial.uniforms.uTime.value += dt;
+            TerrainChunk.waterMaterial.uniforms.uSunPosition.value.copy(this.skyManager.getSunPosition());
         }
     }
 
