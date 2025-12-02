@@ -9,7 +9,7 @@ export class Alligator extends Entity {
         // Apply model transformations
         model.scale.set(3.0, 3.0, 3.0);
         model.rotation.y = Math.PI;
-        model.position.y = -0.2;
+        model.position.y = -1.0;
 
         if (this.meshes.length > 0) {
             this.meshes[0].add(model);
@@ -51,8 +51,6 @@ export class Alligator extends Entity {
         // Graphics
         const mesh = new THREE.Group();
         this.meshes.push(mesh);
-
-        mesh.position.y = 0.5; // Raised by ~15% of model height
 
         const alligatorData = Decorations.getAlligator();
         if (alligatorData) {

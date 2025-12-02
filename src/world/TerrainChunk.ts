@@ -227,10 +227,24 @@ export class TerrainChunk {
 
   private async generateDecorations(): Promise<THREE.Group> {
     const group = new THREE.Group();
-    const count = 1000; // Increased to 5x density
-
-    // Buckets for geometry merging
     const geometriesByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
+
+    // Generate procedural decorations (trees, rocks, bushes, etc.)
+    await this.generateProceduralDecorations(geometriesByMaterial);
+
+    // Generate shore animals (polar bears and alligators)
+    await this.generateShoreAnimals(group);
+
+    // Merge geometries and create meshes
+    this.mergeAndAddGeometries(geometriesByMaterial, group);
+
+    return group;
+  }
+
+  private async generateProceduralDecorations(
+    geometriesByMaterial: Map<THREE.Material, THREE.BufferGeometry[]>
+  ): Promise<void> {
+    const count = 1000;
 
     Profiler.start('GenDecoBatch');
     for (let i = 0; i < count; i++) {
@@ -241,119 +255,239 @@ export class TerrainChunk {
         Profiler.start('GenDecoBatch');
       }
 
-      // ... (Random position logic same as before) ...
-      const localZ = Math.random() * TerrainChunk.CHUNK_SIZE;
-      const worldZ = this.zOffset + localZ;
-      const u = Math.random() * 2 - 1;
-      const localX = u * (TerrainChunk.CHUNK_WIDTH / 2);
-      const riverCenter = this.riverSystem.getRiverCenter(worldZ);
-      const worldX = localX + riverCenter;
-      const height = this.calculateHeight(localX, worldZ);
-      const riverWidth = this.riverSystem.getRiverWidth(worldZ);
-      const distFromCenter = Math.abs(localX);
-      const distFromBank = distFromCenter - riverWidth / 2;
-      const biasDistance = 80;
-      if (distFromBank > 0) {
-        const normalizedDist = Math.min(1.0, distFromBank / biasDistance);
-        const probability = Math.pow(1.0 - normalizedDist, 2);
-        if (Math.random() > probability) continue;
-      }
-      if (height < 2.0) continue;
-      if (!this.checkVisibility(localX, height, worldZ)) continue;
+      const position = this.generateRandomPosition();
+      if (!this.isValidDecorationPosition(position)) continue;
 
-      // Biome Logic
-      const weights = TerrainChunk.getBiomeWeights(worldZ);
+      const biomeType = this.selectBiomeType(position.worldZ);
+      const decoration = this.selectDecoration(biomeType);
 
-      // Determine dominant biome for this object
-      // Or just use probabilities?
-      // Let's pick a biome based on weights
-      let biomeType = 'forest';
-
-      // FIX: Force Ice biome if there is any significant ice weight to prevent green trees on snow
-      if (weights.ice > 0.1) {
-        biomeType = 'ice';
-      } else {
-        const r = Math.random();
-        if (r < weights.desert) biomeType = 'desert';
-        else biomeType = 'forest';
-      }
-
-      let object: THREE.Object3D | null = null;
-
-      if (biomeType === 'desert') {
-        // Desert
-        if (Math.random() > 0.8) {
-          object = Decorations.getCactus();
-        } else if (Math.random() > 0.96) {
-          object = Decorations.getRock('desert', Math.random());
-        }
-      } else if (biomeType === 'forest') {
-        // Forest
-        if (Math.random() > 0.8) {
-          object = Decorations.getTree(Math.random(), false, false);
-        } else if (Math.random() > 0.96) {
-          object = Decorations.getRock('forest', Math.random());
-        }
-      } else if (biomeType === 'ice') {
-        // Ice / Tundra
-        // Trees (Snowy) or Rocks (Icy)
-        // Tundra has more rocks, fewer trees?
-        // "Planes of rocks and ice... snow covered pine trees in the forest"
-        // Let's say Ice biome is a mix of Snowy Forest and Tundra.
-        // Let's randomize sub-biome or just mix them.
-
-        if (Math.random() > 0.8) {
-          // Tree (Snowy or Leafless)
-          // 50% chance of leafless tree in ice biome
-          const isLeafless = Math.random() > 0.5;
-          // If leafless, isSnowy doesn't matter visually, but let's say false.
-          // If not leafless, it must be snowy in ice biome.
-          object = Decorations.getTree(Math.random(), !isLeafless, isLeafless);
-        } else if (Math.random() > 0.90) { // More rocks in ice biome (10% vs 4%)
-          // Icy Rock
-          object = Decorations.getRock('ice', Math.random());
-        }
-      }
-
-      if (object) {
-        object.position.set(worldX, height, worldZ);
-        object.rotation.y = Math.random() * Math.PI * 2;
-        object.updateMatrixWorld(true); // Ensure matrix is up to date
-
-        // Traverse and collect geometries
-        object.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            const geometry = child.geometry.clone();
-            geometry.applyMatrix4(child.matrixWorld);
-
-            // Reset position/rotation/scale since we applied it to geometry
-            // Actually we just want the raw geometry transformed into world space (relative to chunk?)
-            // Wait, the chunk itself is at (0,0,0) but its content is at world coords?
-            // No, TerrainChunk.mesh is at (0,0, zOffset).
-            // But my worker generated positions at worldX, height, localZ.
-            // And I set mesh.position.z = zOffset.
-            // So localZ + zOffset = worldZ.
-
-            // Here, object.position is (worldX, height, worldZ).
-            // If I add this to the chunk group, and the chunk group is at (0,0,0)?
-            // TerrainChunk.decorations is added to graphicsEngine directly?
-            // Yes: this.graphicsEngine.add(this.decorations);
-            // So decorations should be in world coordinates.
-
-            // So applying matrixWorld (which includes object position) is correct.
-
-            let material = child.material as THREE.Material;
-            if (!geometriesByMaterial.has(material)) {
-              geometriesByMaterial.set(material, []);
-            }
-            geometriesByMaterial.get(material)!.push(geometry);
-          }
-        });
+      if (decoration) {
+        this.positionAndCollectGeometry(decoration, position, geometriesByMaterial);
       }
     }
     Profiler.end('GenDecoBatch');
+  }
 
-    // Merge and create meshes
+  private generateRandomPosition() {
+    const localZ = Math.random() * TerrainChunk.CHUNK_SIZE;
+    const worldZ = this.zOffset + localZ;
+    const u = Math.random() * 2 - 1;
+    const localX = u * (TerrainChunk.CHUNK_WIDTH / 2);
+    const riverCenter = this.riverSystem.getRiverCenter(worldZ);
+    const worldX = localX + riverCenter;
+    const height = this.calculateHeight(localX, worldZ);
+
+    return { localX, localZ, worldX, worldZ, height };
+  }
+
+  private isValidDecorationPosition(position: {
+    localX: number;
+    worldZ: number;
+    height: number;
+  }): boolean {
+    const riverWidth = this.riverSystem.getRiverWidth(position.worldZ);
+    const distFromCenter = Math.abs(position.localX);
+    const distFromBank = distFromCenter - riverWidth / 2;
+
+    // Apply distance-based probability bias
+    if (distFromBank > 0) {
+      const biasDistance = 80;
+      const normalizedDist = Math.min(1.0, distFromBank / biasDistance);
+      const probability = Math.pow(1.0 - normalizedDist, 2);
+      if (Math.random() > probability) return false;
+    }
+
+    // Check minimum height
+    if (position.height < 2.0) return false;
+
+    // Check visibility
+    if (!this.checkVisibility(position.localX, position.height, position.worldZ)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private selectBiomeType(worldZ: number): 'desert' | 'forest' | 'ice' {
+    const weights = TerrainChunk.getBiomeWeights(worldZ);
+
+    // Force Ice biome if there is any significant ice weight
+    if (weights.ice > 0.1) {
+      return 'ice';
+    }
+
+    const r = Math.random();
+    if (r < weights.desert) return 'desert';
+    return 'forest';
+  }
+
+  private selectDecoration(biomeType: 'desert' | 'forest' | 'ice'): THREE.Object3D | null {
+    if (biomeType === 'desert') {
+      if (Math.random() > 0.8) {
+        return Decorations.getCactus();
+      } else if (Math.random() > 0.96) {
+        return Decorations.getRock('desert', Math.random());
+      }
+    } else if (biomeType === 'forest') {
+      if (Math.random() > 0.8) {
+        return Decorations.getTree(Math.random(), false, false);
+      } else if (Math.random() > 0.96) {
+        return Decorations.getRock('forest', Math.random());
+      }
+    } else if (biomeType === 'ice') {
+      if (Math.random() > 0.8) {
+        const isLeafless = Math.random() > 0.5;
+        return Decorations.getTree(Math.random(), !isLeafless, isLeafless);
+      } else if (Math.random() > 0.90) {
+        return Decorations.getRock('ice', Math.random());
+      }
+    }
+
+    return null;
+  }
+
+  private positionAndCollectGeometry(
+    object: THREE.Object3D,
+    position: { worldX: number; height: number; worldZ: number },
+    geometriesByMaterial: Map<THREE.Material, THREE.BufferGeometry[]>
+  ): void {
+    object.position.set(position.worldX, position.height, position.worldZ);
+    object.rotation.y = Math.random() * Math.PI * 2;
+    object.updateMatrixWorld(true);
+
+    // Collect geometries for merging
+    object.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        const geometry = child.geometry.clone();
+        geometry.applyMatrix4(child.matrixWorld);
+
+        const material = child.material as THREE.Material;
+        if (!geometriesByMaterial.has(material)) {
+          geometriesByMaterial.set(material, []);
+        }
+        geometriesByMaterial.get(material)!.push(geometry);
+      }
+    });
+  }
+
+  private async generateShoreAnimals(group: THREE.Group): Promise<void> {
+    Profiler.start('GenShoreAnimals');
+    const shoreAnimalCount = 5;
+
+    for (let i = 0; i < shoreAnimalCount; i++) {
+      const localZ = Math.random() * TerrainChunk.CHUNK_SIZE;
+      const worldZ = this.zOffset + localZ;
+      const weights = TerrainChunk.getBiomeWeights(worldZ);
+
+      const animalData = this.selectShoreAnimal(weights);
+      if (!animalData) continue;
+
+      const placement = this.calculateShoreAnimalPlacement(worldZ);
+      //if (placement.height <= 2.0) continue;
+
+      // Check slope (must be < 30 degrees from upright)
+      const normal = this.calculateNormal(placement.localX, placement.worldZ);
+      const up = new THREE.Vector3(0, 1, 0);
+      if (normal.angleTo(up) > THREE.MathUtils.degToRad(20)) continue;
+
+      this.placeShoreAnimal(animalData, placement, group);
+    }
+
+    Profiler.end('GenShoreAnimals');
+  }
+
+  private selectShoreAnimal(weights: {
+    desert: number;
+    forest: number;
+    ice: number;
+  }): { model: THREE.Group; animations: THREE.AnimationClip[] } | null {
+    if (weights.ice > 0.5 && Math.random() < 0.3) {
+      return Decorations.getPolarBear();
+    } else if (weights.desert > 0.5 && Math.random() < 0.3) {
+      return Decorations.getAlligator();
+    }
+    return null;
+  }
+
+  private calculateShoreAnimalPlacement(worldZ: number) {
+    const riverWidth = this.riverSystem.getRiverWidth(worldZ);
+    const riverCenter = this.riverSystem.getRiverCenter(worldZ);
+    const isLeftBank = Math.random() > 0.5;
+    const distFromBank = 2.5 + Math.random() * 3.0;
+    const localX = (isLeftBank ? -1 : 1) * (riverWidth / 2 + distFromBank);
+    const worldX = localX + riverCenter;
+    const height = this.calculateHeight(localX, worldZ);
+
+    return { localX, worldX, worldZ, height, isLeftBank };
+  }
+
+  private placeShoreAnimal(
+    animalData: { model: THREE.Group; animations: THREE.AnimationClip[] },
+    placement: { localX: number; worldX: number; worldZ: number; height: number; isLeftBank: boolean },
+    group: THREE.Group
+  ): void {
+    const animal = animalData.model;
+    animal.position.set(placement.worldX, placement.height, placement.worldZ);
+
+    // Calculate and apply rotation
+    const terrainNormal = this.calculateNormal(placement.localX, placement.worldZ);
+    this.orientAnimalToTerrain(animal, terrainNormal, placement.isLeftBank, placement.worldZ);
+
+    // Scale
+    const baseScale = 3.0;
+    const scale = baseScale * (0.9 + Math.random() * 0.2);
+    animal.scale.set(scale, scale, scale);
+
+    // Setup animation
+    if (animalData.animations.length > 0) {
+      const mixer = new THREE.AnimationMixer(animal);
+      const action = mixer.clipAction(animalData.animations[0]);
+      action.play();
+    }
+
+    // Enable shadows
+    animal.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
+    group.add(animal);
+  }
+
+  private orientAnimalToTerrain(
+    animal: THREE.Group,
+    terrainNormal: THREE.Vector3,
+    isLeftBank: boolean,
+    worldZ: number
+  ): void {
+    // Align model's Y-axis with terrain normal
+    const modelUpAxis = new THREE.Vector3(0, 1, 0);
+    const quaternion = new THREE.Quaternion();
+    quaternion.setFromUnitVectors(modelUpAxis, terrainNormal);
+    animal.quaternion.copy(quaternion);
+
+    // Rotate around normal to face water with +/- 45 degrees variation
+    const riverDerivative = this.riverSystem.getRiverDerivative(worldZ);
+    const riverAngle = Math.atan(riverDerivative);
+    let baseAngle = isLeftBank ? Math.PI / 2 : -Math.PI / 2;
+    baseAngle += riverAngle;
+
+    // Add random variation between -45 and +45 degrees (PI/4)
+    // (Math.random() - 0.5) is [-0.5, 0.5]
+    // Multiply by PI/2 to get [-PI/4, PI/4]
+    baseAngle += (Math.random() - 0.5) * (Math.PI / 2);
+
+    const rotationAroundNormal = new THREE.Quaternion();
+    rotationAroundNormal.setFromAxisAngle(terrainNormal, baseAngle);
+    animal.quaternion.premultiply(rotationAroundNormal);
+  }
+
+  private mergeAndAddGeometries(
+    geometriesByMaterial: Map<THREE.Material, THREE.BufferGeometry[]>,
+    group: THREE.Group
+  ): void {
     for (const [material, geometries] of geometriesByMaterial) {
       if (geometries.length === 0) continue;
       const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries);
@@ -362,8 +496,6 @@ export class TerrainChunk {
       mesh.receiveShadow = true;
       group.add(mesh);
     }
-
-    return group;
   }
 
   dispose() {
