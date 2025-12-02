@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { TerrainChunk } from '../world/TerrainChunk';
-import { SkyManager } from './graphics/SkyManager';
+import { SkyManager } from '../sky/SkyManager';
 
 export class GraphicsEngine {
   scene: THREE.Scene;
