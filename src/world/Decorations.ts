@@ -31,8 +31,10 @@ export class Decorations {
     rocks: { mesh: THREE.Group, size: number, isIcy: boolean }[]
   } = { trees: [], bushes: [], cactuses: [], rocks: [] };
 
-  static initCache() {
-    console.log("Initializing Decoration Cache...");
+  private static loadPromise: Promise<void> | null = null;
+
+  private static generateCache() {
+    console.log("Generating Decoration Cache...");
     // Generate Trees
     for (let i = 0; i < 50; i++) {
       const wetness = Math.random();
@@ -67,11 +69,26 @@ export class Decorations {
       const size = Math.random();
       this.cache.rocks.push({ mesh: this.createRock(size, true), size, isIcy: true });
     }
-    console.log("Decoration Cache Initialized.");
+    console.log("Decoration Cache Generated.");
+  }
+
+  static async preload(): Promise<void> {
+    if (this.cache.trees.length > 0) return;
+    if (this.loadPromise) return this.loadPromise;
+
+    this.loadPromise = new Promise((resolve) => {
+      // Use setTimeout to allow this to be async and not block immediately if called
+      setTimeout(() => {
+        this.generateCache();
+        resolve();
+      }, 0);
+    });
+
+    return this.loadPromise;
   }
 
   static getTree(wetness: number, isSnowy: boolean = false, isLeafless: boolean = false): THREE.Group {
-    if (this.cache.trees.length === 0) this.initCache();
+    if (this.cache.trees.length === 0) this.generateCache();
 
     const candidates = this.cache.trees.filter(t => t.isSnowy === isSnowy && t.isLeafless === isLeafless && Math.abs(t.wetness - wetness) < 0.3);
     const source = candidates.length > 0
@@ -83,7 +100,7 @@ export class Decorations {
   }
 
   static getBush(wetness: number): THREE.Group {
-    if (this.cache.bushes.length === 0) this.initCache();
+    if (this.cache.bushes.length === 0) this.generateCache();
 
     const candidates = this.cache.bushes.filter(b => Math.abs(b.wetness - wetness) < 0.3);
     const source = candidates.length > 0
@@ -95,14 +112,14 @@ export class Decorations {
   }
 
   static getCactus(): THREE.Group {
-    if (this.cache.cactuses.length === 0) this.initCache();
+    if (this.cache.cactuses.length === 0) this.generateCache();
 
     if (this.cache.cactuses.length === 0) return this.createCactus(); // Fallback if init failed?
     return this.cache.cactuses[Math.floor(Math.random() * this.cache.cactuses.length)].clone();
   }
 
   static getRock(biome: 'desert' | 'forest' | 'ice', size: number): THREE.Group {
-    if (this.cache.rocks.length === 0) this.initCache();
+    if (this.cache.rocks.length === 0) this.generateCache();
 
     const isIcy = biome === 'ice';
     const candidates = this.cache.rocks.filter(r => r.isIcy === isIcy && Math.abs(r.size - size) < 0.3);

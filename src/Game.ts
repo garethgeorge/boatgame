@@ -48,8 +48,7 @@ export class Game {
         this.inputManager = new InputManager();
         this.clock = new THREE.Clock();
 
-        // Initialize procedural generation caches
-        Decorations.initCache();
+
 
         // UI
         this.startScreen = document.getElementById('start-screen') as HTMLElement;
@@ -80,6 +79,7 @@ export class Game {
         await Promise.all([
             Alligator.preload(),
             Hippo.preload(),
+            Decorations.preload(),
             // Add other entities here as needed
         ]);
     }
