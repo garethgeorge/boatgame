@@ -1,14 +1,16 @@
 import * as THREE from 'three';
 
 export class Sun {
-    public mesh: THREE.Mesh;
+    public mesh: THREE.Sprite;
     public light: THREE.DirectionalLight;
 
     constructor(scene: THREE.Scene) {
-        // Create Sun Mesh
-        const sunGeo = new THREE.SphereGeometry(30, 32, 32);
-        const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
-        this.mesh = new THREE.Mesh(sunGeo, sunMat);
+        // Create Sun Sprite
+        const textureLoader = new THREE.TextureLoader();
+        const sunTexture = textureLoader.load('assets/sun.png');
+        const sunMat = new THREE.SpriteMaterial({ map: sunTexture, color: 0xfdf983 });
+        this.mesh = new THREE.Sprite(sunMat);
+        this.mesh.scale.set(50, 50, 1); // Adjust scale as needed
         scene.add(this.mesh);
 
         // Create Sun Light
