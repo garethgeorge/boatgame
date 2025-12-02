@@ -100,7 +100,7 @@ export class Game {
         // Initial update to generate terrain around boat
         // This will now also trigger obstacle spawning via TerrainManager
         if (this.boat.meshes.length > 0) {
-            this.terrainManager.update(this.boat);
+            this.terrainManager.update(this.boat, 0.016);
         }
 
         // Collision Listener
@@ -186,7 +186,7 @@ export class Game {
             Profiler.start('Terrain');
             this.terrainManager.setDebug(input.debug);
             this.entityManager.setDebug(input.debug);
-            this.terrainManager.update(this.boat);
+            this.terrainManager.update(this.boat, dt);
             // ObstacleManager update is now handled by TerrainManager events
             Profiler.end('Terrain');
         }

@@ -33,7 +33,12 @@ export class TerrainManager {
 
   private boatHistory: THREE.Vector3[] = [];
 
-  update(boat: Boat) {
+  update(boat: Boat, dt: number) {
+    // Update all chunks (e.g. for animations)
+    for (const chunk of this.chunks.values()) {
+      chunk.update(dt);
+    }
+
     const boatZ = boat.meshes[0].position.z;
     const currentPos = boat.meshes[0].position.clone();
 

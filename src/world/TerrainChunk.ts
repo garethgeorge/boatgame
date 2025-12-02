@@ -78,6 +78,14 @@ export class TerrainChunk {
     this.decorations = new THREE.Group();
   }
 
+  private mixers: THREE.AnimationMixer[] = [];
+
+  public update(dt: number) {
+    for (const mixer of this.mixers) {
+      mixer.update(dt);
+    }
+  }
+
   public static async createAsync(zOffset: number, graphicsEngine: GraphicsEngine): Promise<TerrainChunk> {
     const chunk = new TerrainChunk(zOffset, graphicsEngine);
     await chunk.initAsync();
@@ -441,8 +449,11 @@ export class TerrainChunk {
     // Setup animation
     if (animalData.animations.length > 0) {
       const mixer = new THREE.AnimationMixer(animal);
+      // Randomize start time
       const action = mixer.clipAction(animalData.animations[0]);
+      action.time = Math.random() * action.getClip().duration;
       action.play();
+      this.mixers.push(mixer);
     }
 
     // Enable shadows
@@ -534,6 +545,10 @@ export class TerrainChunk {
       }
     });
     this.decorations.clear();
+
+    // Stop animations
+    this.mixers.forEach(mixer => mixer.stopAllAction());
+    this.mixers = [];
   }
 
   private generateWater(): THREE.Mesh {

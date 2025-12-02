@@ -106,6 +106,7 @@ export class Iceberg extends Entity {
                 if (animations.length > 0) {
                     this.animationMixer = new THREE.AnimationMixer(model);
                     const action = this.animationMixer.clipAction(animations[0]);
+                    action.time = Math.random() * action.getClip().duration;
                     action.play();
                 }
             }
