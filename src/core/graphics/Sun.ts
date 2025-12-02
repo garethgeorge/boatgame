@@ -61,5 +61,8 @@ export class Sun {
         const sunHeight = Math.max(0, Math.sin(sunAngle));
         const intensity = THREE.MathUtils.lerp(0, 1.5, sunHeight);
         this.light.intensity = intensity;
+
+        // Rotate the sun sprite
+        this.mesh.material.rotation = angle * 4;
     }
 }

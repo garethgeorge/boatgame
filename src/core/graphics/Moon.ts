@@ -1,14 +1,16 @@
 import * as THREE from 'three';
 
 export class Moon {
-    public mesh: THREE.Mesh;
+    public mesh: THREE.Sprite;
     public light: THREE.DirectionalLight;
 
     constructor(scene: THREE.Scene, sunLight: THREE.DirectionalLight) {
-        // Create Moon Mesh
-        const moonGeo = new THREE.SphereGeometry(20, 32, 32);
-        const moonMat = new THREE.MeshBasicMaterial({ color: 0xeeeeff });
-        this.mesh = new THREE.Mesh(moonGeo, moonMat);
+        // Create Moon Sprite
+        const textureLoader = new THREE.TextureLoader();
+        const moonTexture = textureLoader.load('assets/moon.png');
+        const moonMat = new THREE.SpriteMaterial({ map: moonTexture, color: 0xaadaff });
+        this.mesh = new THREE.Sprite(moonMat);
+        this.mesh.scale.set(35, 35, 1); // Adjust scale to match previous size
         scene.add(this.mesh);
 
         // Create Moon Light
