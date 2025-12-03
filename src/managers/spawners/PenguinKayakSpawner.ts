@@ -9,8 +9,8 @@ export class PenguinKayakSpawner implements Spawnable {
         if (biomeWeights.ice < 0.1) return 0;
 
         // Iceberg is 0.02 per meter.
-        // PenguinKayak should be 1/10th of that -> 0.002 per meter.
-        const baseDensity = 0.002 * biomeWeights.ice;
+        // PenguinKayak should be 1/2 of that -> 0.01 per meter.
+        const baseDensity = 0.01 * biomeWeights.ice;
         const count = chunkLength * baseDensity;
 
         return Math.floor(count + Math.random());

@@ -380,7 +380,7 @@ export class TerrainChunk {
 
   private async generateShoreAnimals(group: THREE.Group): Promise<void> {
     Profiler.start('GenShoreAnimals');
-    const shoreAnimalCount = 5;
+    const shoreAnimalCount = 2;
 
     for (let i = 0; i < shoreAnimalCount; i++) {
       const localZ = Math.random() * TerrainChunk.CHUNK_SIZE;
