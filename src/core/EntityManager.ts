@@ -1,7 +1,6 @@
 import { Entity } from './Entity';
 import { PhysicsEngine } from './PhysicsEngine';
 import { GraphicsEngine } from './GraphicsEngine';
-import { Alligator, Hippo } from '../entities/obstacles';
 import * as planck from 'planck';
 
 export class EntityManager {
@@ -110,22 +109,6 @@ export class EntityManager {
   }
 
   update(dt: number) {
-    // Find player first (optimization: cache it?)
-    let playerBody: planck.Body | null = null;
-    for (const entity of this.entities) {
-      // Check first body for player tag
-      if (entity.physicsBodies.length > 0) {
-        const body = entity.physicsBodies[0];
-        if (body.getUserData()) {
-          const userData = body.getUserData() as any;
-          if (userData.type === 'player') {
-            playerBody = body;
-            break;
-          }
-        }
-      }
-    }
-
     const alpha = this.physicsEngine.getAlpha();
 
     // Convert Set to Array to allow reverse iteration and safe removal
@@ -133,11 +116,6 @@ export class EntityManager {
     for (let i = entitiesArray.length - 1; i >= 0; i--) {
       const entity = entitiesArray[i];
       entity.update(dt);
-
-      // Update AI if applicable
-      if (playerBody && (entity instanceof Alligator || entity instanceof Hippo)) {
-        entity.setTarget(playerBody);
-      }
 
       entity.sync(alpha);
 

@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
+import { Boat } from '../Boat';
 
 export class Alligator extends Entity {
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
@@ -80,15 +81,17 @@ export class Alligator extends Entity {
             }
             return;
         }
+
+        this.updateAI();
     }
 
     private state: 'IDLE' | 'TURNING' | 'ATTACKING' = 'IDLE';
 
-    // New method to set target
-    setTarget(targetBody: planck.Body) {
-        if (this.physicsBodies.length === 0) return;
-        const physicsBody = this.physicsBodies[0];
+    private updateAI() {
+        const targetBody = Boat.getPlayerBody();
+        if (!targetBody || this.physicsBodies.length === 0) return;
 
+        const physicsBody = this.physicsBodies[0];
         const pos = physicsBody.getPosition();
         const target = targetBody.getPosition();
         const diff = target.clone().sub(pos);

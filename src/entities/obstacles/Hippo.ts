@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
+import { Boat } from '../Boat';
 
 export class Hippo extends Entity {
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
@@ -124,13 +125,15 @@ export class Hippo extends Entity {
                 mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, 0.0, dt * 2);
             }
         }
+
+        this.updateAI();
     }
 
-    // New method to set target
-    setTarget(targetBody: planck.Body) {
-        if (this.physicsBodies.length === 0) return;
-        const physicsBody = this.physicsBodies[0];
+    private updateAI() {
+        const targetBody = Boat.getPlayerBody();
+        if (!targetBody || this.physicsBodies.length === 0) return;
 
+        const physicsBody = this.physicsBodies[0];
         const pos = physicsBody.getPosition();
         const targetPos = targetBody.getPosition();
         const diff = targetPos.clone().sub(pos);

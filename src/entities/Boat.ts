@@ -26,8 +26,16 @@ export class Boat extends Entity {
     private readonly DRAG_SIDEWAYS = 8.0; // High resistance sideways (Keel) 
     private readonly DRAG_ANGULAR = 8.0; // Resistance to rotation 
 
+    private static instance: Boat | null = null;
+
+    public static getPlayerBody(): planck.Body | null {
+        if (!Boat.instance || Boat.instance.physicsBodies.length === 0) return null;
+        return Boat.instance.physicsBodies[0];
+    }
+
     constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
         super();
+        Boat.instance = this;
 
         const width = 2.4;
         const height = 6.0;
