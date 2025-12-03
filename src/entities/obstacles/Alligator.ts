@@ -80,52 +80,9 @@ export class Alligator extends Entity {
             }
             return;
         }
-
-        // Swim towards player (simplified: just move forward slowly and rotate occasionally?)
-        // Or just move forward in its current direction
-        // For now, let's just make it drift and snap
-
-        // Mouth Animation (Upper Jaw moves) - REMOVED for GLB model
-        /*
-        this.mouthTimer += dt;
-        if (this.mouthTimer > 1.0) {
-          this.mouthOpen = !this.mouthOpen;
-          this.mouthTimer = 0;
-        }
-        */
-
-        // Access the upper jaw pivot - REMOVED for GLB model
-        /*
-        // Find headGroup
-        // body (0), ridge*6 (1-6), tail (7), headGroup (8).
-        const headGroup = this.mesh.children[8]; // Assuming headGroup is the 9th child (index 8)
-        if (headGroup && headGroup.children.length > 2) {
-          const upperJawPivot = headGroup.children[2];
-          // Invert direction: Rotate UP (positive X)
-          const targetRot = this.mouthOpen ? 0.4 : 0;
-          upperJawPivot.rotation.x = THREE.MathUtils.lerp(upperJawPivot.rotation.x, targetRot, dt * 5);
-        }
-        */
-
-        // AI: Swim towards player
-        // We need player position. Currently update(dt) doesn't receive player pos.
-        // We can pass it in EntityManager or just cheat and find 'player' userData in physics world?
-        // Or just make them swim forward relative to themselves, and maybe turn slowly?
-        // Let's make them swim towards the boat if close.
-
-        // For now, let's just make them swim forward in the river flow direction (approx +Z)
-        // But they face +Z initially.
-        // Let's add a simple "seek" behavior if we can access player.
-        // Since we don't have player ref easily here without changing signature, 
-        // let's just make them patrol or swim forward.
-        // User asked for "slowly swim towards the player".
-        // I'll update EntityManager to pass player position or target.
-
-        // ... wait, I can't easily change Entity.update signature across all entities without touching them all.
-        // But I can add a method setTarget(target: Entity) or similar.
-        // Or just look for the player in the physics world bodies list? Expensive.
-        // Let's just make them move forward for now, and I'll update EntityManager in next step to pass player.
     }
+
+    private state: 'IDLE' | 'TURNING' | 'ATTACKING' = 'IDLE';
 
     // New method to set target
     setTarget(target: planck.Vec2) {
@@ -136,31 +93,44 @@ export class Alligator extends Entity {
         const diff = target.clone().sub(pos);
         const dist = diff.length();
 
-        if (dist < 30) { // Aggro range
-            diff.normalize();
-            // Move towards target
-            const speed = 2.0;
-            const force = diff.mul(speed * physicsBody.getMass());
-            physicsBody.applyForceToCenter(force);
+        // Reset if player goes far away
+        if (dist > 50) {
+            this.state = 'IDLE';
+        }
 
-            // Rotate towards target
-            // In planck.js, angle 0 typically means the body's local X-axis points along global X.
-            // If our model's forward is -Y (in 2D planck space), then its angle is PI/2.
-            // We want the body's forward vector (which is (0, -1) in its local space) to align with 'diff'.
-            // The angle of vector (x, y) is atan2(y, x).
-            // The angle of (0, -1) is -PI/2.
-            // So, desiredAngle = atan2(diff.y, diff.x) - (-PI/2) = atan2(diff.y, diff.x) + PI/2.
+        if (dist < 30) { // Aggro range
+            // Calculate desired angle
             const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
             const currentAngle = physicsBody.getAngle();
-
-            // Simple lerp for rotation
-            // Calculate shortest angle difference
             let angleDiff = desiredAngle - currentAngle;
             while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
             while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
 
-            const rotationSpeed = 0.1; // How quickly it turns
-            physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60)); // Adjust for dt if needed, but setAngularVelocity is per-frame
+            if (this.state === 'IDLE') {
+                this.state = 'TURNING';
+            } else if (this.state === 'TURNING') {
+                // Rotate towards target
+                const rotationSpeed = 0.05; // Very slow turn
+                physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60));
+
+                // Drag to stop movement while turning
+                physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.9));
+
+                // Check if facing target (within ~15 degrees = 0.26 rad)
+                if (Math.abs(angleDiff) < 0.26) {
+                    this.state = 'ATTACKING';
+                }
+            } else if (this.state === 'ATTACKING') {
+                diff.normalize();
+                // Move towards target
+                const speed = 8.0; // Faster drift
+                const force = diff.mul(speed * physicsBody.getMass());
+                physicsBody.applyForceToCenter(force);
+
+                // Continue rotating to track
+                const rotationSpeed = 0.05;
+                physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60));
+            }
         }
     }
 }

@@ -111,7 +111,7 @@ export class EntityManager {
 
   update(dt: number) {
     // Find player first (optimization: cache it?)
-    let playerPos: planck.Vec2 | null = null;
+    let playerBody: planck.Body | null = null;
     for (const entity of this.entities) {
       // Check first body for player tag
       if (entity.physicsBodies.length > 0) {
@@ -119,7 +119,7 @@ export class EntityManager {
         if (body.getUserData()) {
           const userData = body.getUserData() as any;
           if (userData.type === 'player') {
-            playerPos = body.getPosition();
+            playerBody = body;
             break;
           }
         }
@@ -135,8 +135,8 @@ export class EntityManager {
       entity.update(dt);
 
       // Update AI if applicable
-      if (playerPos && (entity instanceof Alligator || entity instanceof Hippo)) {
-        entity.setTarget(playerPos);
+      if (playerBody && (entity instanceof Alligator || entity instanceof Hippo)) {
+        entity.setTarget(playerBody);
       }
 
       entity.sync(alpha);
