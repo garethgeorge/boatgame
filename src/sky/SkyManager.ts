@@ -20,6 +20,7 @@ export class SkyManager {
 
     // State
     private currentBiomeWeights: { desert: number, forest: number, ice: number } = { desert: 1, forest: 0, ice: 0 };
+    private targetBiomeWeights: { desert: number, forest: number, ice: number } = { desert: 1, forest: 0, ice: 0 };
 
     // Day/Night Cycle Config
     private readonly cycleDuration: number = 15 * 60; // 15 minutes in seconds
@@ -79,7 +80,15 @@ export class SkyManager {
         const dayness = Math.sin(angle);
 
         this.updateHemiLight(dayness);
+
+        // Smoothly interpolate biome weights
+        const lerpSpeed = 1.0 * dt; // Adjust speed as needed
+        this.currentBiomeWeights.desert = THREE.MathUtils.lerp(this.currentBiomeWeights.desert, this.targetBiomeWeights.desert, lerpSpeed);
+        this.currentBiomeWeights.forest = THREE.MathUtils.lerp(this.currentBiomeWeights.forest, this.targetBiomeWeights.forest, lerpSpeed);
+        this.currentBiomeWeights.ice = THREE.MathUtils.lerp(this.currentBiomeWeights.ice, this.targetBiomeWeights.ice, lerpSpeed);
+
         this.updateSkyAndFog(dayness, cameraPosition);
+        this.screenOverlay.update(this.currentBiomeWeights);
     }
 
     private updateSkyAndFog(dayness: number, cameraPosition: THREE.Vector3) {
@@ -154,6 +163,25 @@ export class SkyManager {
         if (this.scene.fog) {
             this.scene.fog.color.copy(currentBot);
         }
+
+        // Update Fog Density based on biome
+        if (this.scene.fog instanceof THREE.Fog) {
+            // Base Fog (Desert/Forest): Far away, subtle
+            const baseNear = 100;
+            const baseFar = 800;
+
+            // Ice Fog: Close in, "not 100% opaque" (meaning maybe not fully white? or just not too dense?)
+            // User said "dramatically reduce... snow storm".
+            const iceNear = 0; // Start fog immediately
+            const iceFar = 20; // Extreme dense fog (Snow storm) - Reduced from 50
+
+            // Lerp values
+            const targetNear = THREE.MathUtils.lerp(baseNear, iceNear, this.currentBiomeWeights.ice);
+            const targetFar = THREE.MathUtils.lerp(baseFar, iceFar, this.currentBiomeWeights.ice);
+
+            this.scene.fog.near = targetNear;
+            this.scene.fog.far = targetFar;
+        }
     }
 
     private updateHemiLight(dayness: number) {
@@ -178,28 +206,15 @@ export class SkyManager {
         this.hemiLight.groundColor.lerpColors(nightGroundColor, dayGroundColor, t);
     }
 
-    public updateBiome(weights: { desert: number, forest: number, ice: number }) {
-        this.currentBiomeWeights = weights;
-
-        this.screenOverlay.update(weights);
-
-        // Update Fog
-        if (this.scene.fog instanceof THREE.Fog) {
-            // Base Fog (Desert/Forest): Far away, subtle
-            const baseNear = 100;
-            const baseFar = 800;
-
-            // Ice Fog: Close in, "not 100% opaque" (meaning maybe not fully white? or just not too dense?)
-            // User said "dramatically reduce... snow storm".
-            const iceNear = 0; // Start fog immediately
-            const iceFar = 20; // Extreme dense fog (Snow storm) - Reduced from 50
-
-            // Lerp values
-            const targetNear = THREE.MathUtils.lerp(baseNear, iceNear, weights.ice);
-            const targetFar = THREE.MathUtils.lerp(baseFar, iceFar, weights.ice);
-
-            this.scene.fog.near = targetNear;
-            this.scene.fog.far = targetFar;
+    public updateBiome(biomeType: string) {
+        // Set target weights based on biome type
+        this.targetBiomeWeights = { desert: 0, forest: 0, ice: 0 };
+        if (biomeType === 'desert') {
+            this.targetBiomeWeights.desert = 1;
+        } else if (biomeType === 'forest') {
+            this.targetBiomeWeights.forest = 1;
+        } else if (biomeType === 'ice') {
+            this.targetBiomeWeights.ice = 1;
         }
     }
 

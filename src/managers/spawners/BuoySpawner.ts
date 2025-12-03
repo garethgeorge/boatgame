@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import { Spawnable, SpawnContext, BiomeWeights } from '../Spawnable';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
 import { Buoy } from '../../entities/obstacles/Buoy';
 import { Entity } from '../../core/Entity';
 import { RiverSystem } from '../../world/RiverSystem';
@@ -7,9 +7,9 @@ import { RiverSystem } from '../../world/RiverSystem';
 export class BuoySpawner implements Spawnable {
   id = 'buoy';
 
-  getSpawnCount(context: SpawnContext, biomeWeights: BiomeWeights, difficulty: number, chunkLength: number): number {
+  getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
     // No buoys in ice
-    if (biomeWeights.ice > 0.5) return 0;
+    if (biomeType === 'ice') return 0;
 
     // Start at 500m
     const dist = Math.abs(context.zStart);
@@ -26,7 +26,7 @@ export class BuoySpawner implements Spawnable {
     return Math.floor(count + Math.random());
   }
 
-  async spawn(context: SpawnContext, count: number, biomeWeights: BiomeWeights): Promise<void> {
+  async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
     const riverSystem = RiverSystem.getInstance();
 
     for (let i = 0; i < count; i++) {

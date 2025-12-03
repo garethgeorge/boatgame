@@ -67,14 +67,9 @@ export class ObstacleManager {
       zEnd: zEnd
     };
 
-    // Calculate Biome Weights (at center of chunk)
+    // Calculate Biome Type (at center of chunk)
     const centerZ = (zStart + zEnd) / 2;
-    const weights = this.riverSystem.getBiomeWeights(centerZ);
-    const biomeWeights = {
-      forest: weights.forest,
-      desert: weights.desert,
-      ice: weights.ice
-    };
+    const biomeType = this.riverSystem.selectBiomeType(centerZ);
 
     // Calculate Difficulty
     const distance = Math.abs(centerZ);
@@ -82,9 +77,9 @@ export class ObstacleManager {
 
     // Iterate Spawners
     for (const spawner of this.registry.values()) {
-      const count = spawner.getSpawnCount(context, biomeWeights, difficulty, chunkLength);
+      const count = spawner.getSpawnCount(context, biomeType, difficulty, chunkLength);
       if (count > 0) {
-        await spawner.spawn(context, count, biomeWeights);
+        await spawner.spawn(context, count, biomeType);
       }
 
       // Yield to main thread occasionally if needed?

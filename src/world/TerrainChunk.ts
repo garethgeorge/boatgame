@@ -89,9 +89,7 @@ export class TerrainChunk {
     const uvs = new Float32Array(numVertices * 2);
     const indices = new Uint32Array(numIndices);
 
-    const colorDry = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 }; // Rich Ochre (Desert)
-    const colorWet = { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 }; // Rich Dark Green (Forest)
-    const colorIce = { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 }; // White/Blue (Ice)
+
 
     // Helper for distribution
     const getDistributedX = (u: number, width: number): number => {
@@ -113,7 +111,7 @@ export class TerrainChunk {
       const localZ = v * chunkSize;
       const worldZ = this.zOffset + localZ;
 
-      const weights = this.riverSystem.getBiomeWeights(worldZ);
+
 
       for (let x = 0; x <= resX; x++) {
         const u = (x / resX) * 2 - 1;
@@ -133,10 +131,10 @@ export class TerrainChunk {
         // Purely biome based, maybe slight noise variation but mostly solid
         // Lerp between Desert and Forest based on biomeFactor
 
-        // Blend 3 colors
-        colors[index * 3] = colorDry.r * weights.desert + colorWet.r * weights.forest + colorIce.r * weights.ice;
-        colors[index * 3 + 1] = colorDry.g * weights.desert + colorWet.g * weights.forest + colorIce.g * weights.ice;
-        colors[index * 3 + 2] = colorDry.b * weights.desert + colorWet.b * weights.forest + colorIce.b * weights.ice;
+        const color = this.riverSystem.getBiomeColor(worldZ);
+        colors[index * 3] = color.r;
+        colors[index * 3 + 1] = color.g;
+        colors[index * 3 + 2] = color.b;
 
         // UVs
         uvs[index * 2] = (localX / chunkWidth) + 0.5;
@@ -337,9 +335,9 @@ export class TerrainChunk {
     for (let i = 0; i < shoreAnimalCount; i++) {
       const localZ = Math.random() * TerrainChunk.CHUNK_SIZE;
       const worldZ = this.zOffset + localZ;
-      const weights = this.riverSystem.getBiomeWeights(worldZ);
+      const biomeType = this.riverSystem.selectBiomeType(worldZ);
 
-      const animalData = this.selectShoreAnimal(weights);
+      const animalData = this.selectShoreAnimal(biomeType);
       if (!animalData) continue;
 
       const placement = this.calculateShoreAnimalPlacement(worldZ);
@@ -356,14 +354,10 @@ export class TerrainChunk {
     Profiler.end('GenShoreAnimals');
   }
 
-  private selectShoreAnimal(weights: {
-    desert: number;
-    forest: number;
-    ice: number;
-  }): { model: THREE.Group; animations: THREE.AnimationClip[] } | null {
-    if (weights.ice > 0.5 && Math.random() < 0.3) {
+  private selectShoreAnimal(biomeType: 'desert' | 'forest' | 'ice'): { model: THREE.Group; animations: THREE.AnimationClip[] } | null {
+    if (biomeType === 'ice' && Math.random() < 0.3) {
       return Decorations.getPolarBear();
-    } else if (weights.desert > 0.5 && Math.random() < 0.3) {
+    } else if (biomeType === 'desert' && Math.random() < 0.3) {
       return Decorations.getAlligator();
     }
     return null;

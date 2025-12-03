@@ -1,12 +1,12 @@
-import { Spawnable, SpawnContext, BiomeWeights } from '../Spawnable';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
 import { Alligator } from '../../entities/obstacles/Alligator';
 
 export class CrocodileSpawner implements Spawnable {
   id = 'croc';
 
-  getSpawnCount(context: SpawnContext, biomeWeights: BiomeWeights, difficulty: number, chunkLength: number): number {
+  getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
     // No crocs in ice
-    if (biomeWeights.ice > 0.5) return 0;
+    if (biomeType === 'ice') return 0;
 
     // Start at 1000m
     const dist = Math.abs(context.zStart);
@@ -24,7 +24,7 @@ export class CrocodileSpawner implements Spawnable {
     return Math.floor(count + Math.random());
   }
 
-  async spawn(context: SpawnContext, count: number, biomeWeights: BiomeWeights): Promise<void> {
+  async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
     for (let i = 0; i < count; i++) {
       // Cluster logic: 1 or 2
       const clusterSize = Math.random() > 0.5 ? 2 : 1;

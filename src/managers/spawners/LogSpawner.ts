@@ -1,10 +1,10 @@
-import { Spawnable, SpawnContext, BiomeWeights } from '../Spawnable';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
 import { Log } from '../../entities/obstacles/Log';
 
 export class LogSpawner implements Spawnable {
   id = 'log';
 
-  getSpawnCount(context: SpawnContext, biomeWeights: BiomeWeights, difficulty: number, chunkLength: number): number {
+  getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
     // Base probability: 0.04 per 15m step in original code.
     // Chunk size is usually larger. Let's assume chunk is ~150m?
     // Original loop: step=15, zStart to zEnd.
@@ -15,7 +15,7 @@ export class LogSpawner implements Spawnable {
     // Count = Length * 0.0026.
 
     // No logs in Ice biome
-    if (biomeWeights.ice > 0.5) return 0;
+    if (biomeType === 'ice') return 0;
 
     const baseDensity = 0.003; // Slightly higher than 0.0026
     const count = chunkLength * baseDensity;
@@ -24,7 +24,7 @@ export class LogSpawner implements Spawnable {
     return Math.floor(count + Math.random());
   }
 
-  async spawn(context: SpawnContext, count: number, biomeWeights: BiomeWeights): Promise<void> {
+  async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
     for (let i = 0; i < count; i++) {
       const length = 10 + Math.random() * 10;
       // Logs are long, so radius is roughly half length for collision check purposes?

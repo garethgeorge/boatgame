@@ -1,11 +1,11 @@
-import { Spawnable, SpawnContext, BiomeWeights } from '../Spawnable';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
 import { MessageInABottle } from '../../entities/Collectables';
 import { RiverSystem } from '../../world/RiverSystem';
 
 export class BottleSpawner implements Spawnable {
   id = 'bottle';
 
-  getSpawnCount(context: SpawnContext, biomeWeights: BiomeWeights, difficulty: number, chunkLength: number): number {
+  getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
     // 0.04 per 15m = 0.0026 per meter (Normal)
     // 0.005 per 15m = 0.00033 per meter (Bonus)
     // Combined? Or separate bonus spawner?
@@ -19,7 +19,7 @@ export class BottleSpawner implements Spawnable {
     return Math.floor(count + Math.random());
   }
 
-  async spawn(context: SpawnContext, count: number, biomeWeights: BiomeWeights): Promise<void> {
+  async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
     // Check for Bonus Arc (Rare event per chunk?)
     // Original: 0.005 probability per step.
     // Let's say 10% chance per chunk to have a bonus arc?

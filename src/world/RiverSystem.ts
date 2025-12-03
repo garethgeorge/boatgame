@@ -15,6 +15,10 @@ export class RiverSystem {
   private readonly MIN_WIDTH = 15; // Was 30
   private readonly MAX_WIDTH = 75; // Was 150
 
+  private readonly COLOR_DESERT = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 }; // Rich Ochre
+  private readonly COLOR_FOREST = { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 }; // Rich Dark Green
+  private readonly COLOR_ICE = { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 }; // White/Blue
+
   private constructor() {
     this.noise = new SimplexNoise(100);
   }
@@ -83,7 +87,7 @@ export class RiverSystem {
     };
   }
 
-  public getBiomeWeights(z: number): { desert: number, forest: number, ice: number } {
+  private getBiomeWeights(z: number): { desert: number, forest: number, ice: number } {
     // Biome Selection (Z-dependent only)
     // Noise -1 to 1
     // Lower frequency for larger biomes (Tripled size: 0.0005 -> 0.000166)
@@ -115,7 +119,16 @@ export class RiverSystem {
     return { desert, forest, ice };
   }
 
-  public selectBiomeType(worldZ: number): 'desert' | 'forest' | 'ice' {
+  public getBiomeColor(z: number): { r: number, g: number, b: number } {
+    const weights = this.getBiomeWeights(z);
+    return {
+      r: this.COLOR_DESERT.r * weights.desert + this.COLOR_FOREST.r * weights.forest + this.COLOR_ICE.r * weights.ice,
+      g: this.COLOR_DESERT.g * weights.desert + this.COLOR_FOREST.g * weights.forest + this.COLOR_ICE.g * weights.ice,
+      b: this.COLOR_DESERT.b * weights.desert + this.COLOR_FOREST.b * weights.forest + this.COLOR_ICE.b * weights.ice
+    };
+  }
+
+  public selectBiomeType(worldZ: number, randomValue?: number): 'desert' | 'forest' | 'ice' {
     const weights = this.getBiomeWeights(worldZ);
 
     // Force Ice biome if there is any significant ice weight
@@ -123,7 +136,7 @@ export class RiverSystem {
       return 'ice';
     }
 
-    const r = Math.random();
+    const r = randomValue !== undefined ? randomValue : Math.random();
     if (r < weights.desert) return 'desert';
     return 'forest';
   }
