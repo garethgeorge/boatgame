@@ -33,7 +33,8 @@ export class Decorations {
     rocks: { mesh: THREE.Group, size: number, isIcy: boolean }[],
     polarBear: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
     hippo: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
-    alligator: { model: THREE.Group | null, animations: THREE.AnimationClip[] }
+    alligator: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
+    penguinKayak: { model: THREE.Group | null, animations: THREE.AnimationClip[] }
   } = {
       trees: [],
       bushes: [],
@@ -41,7 +42,8 @@ export class Decorations {
       rocks: [],
       polarBear: { model: null, animations: [] },
       hippo: { model: null, animations: [] },
-      alligator: { model: null, animations: [] }
+      alligator: { model: null, animations: [] },
+      penguinKayak: { model: null, animations: [] }
     };
 
   private static loadPromise: Promise<void> | null = null;
@@ -86,13 +88,13 @@ export class Decorations {
   }
 
   static async preload(): Promise<void> {
-    if (this.cache.trees.length > 0 && this.cache.polarBear.model && this.cache.hippo.model && this.cache.alligator.model) return;
+    if (this.cache.trees.length > 0 && this.cache.polarBear.model && this.cache.hippo.model && this.cache.alligator.model && this.cache.penguinKayak.model) return;
     if (this.loadPromise) return this.loadPromise;
 
     this.loadPromise = new Promise((resolve, reject) => {
       const loader = new GLTFLoader();
       let loadedCount = 0;
-      const totalModels = 3;
+      const totalModels = 4;
 
       const onModelLoaded = () => {
         loadedCount++;
@@ -153,6 +155,23 @@ export class Decorations {
         onModelLoaded();
       }, undefined, (error) => {
         console.error('An error occurred loading the alligator model:', error);
+        onModelLoaded(); // Continue even if this model fails
+      });
+
+      // Load penguin kayak model
+      loader.load('assets/penguin-kayak-model-1.glb', (gltf) => {
+        const model = gltf.scene;
+        model.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        this.cache.penguinKayak.model = model;
+        this.cache.penguinKayak.animations = gltf.animations || [];
+        onModelLoaded();
+      }, undefined, (error) => {
+        console.error('An error occurred loading the penguin kayak model:', error);
         onModelLoaded(); // Continue even if this model fails
       });
     });
@@ -227,6 +246,19 @@ export class Decorations {
     return {
       model: clonedModel,
       animations: this.cache.alligator.animations
+    };
+  }
+
+  static getPenguinKayak(): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
+    if (!this.cache.penguinKayak.model) {
+      console.warn('Penguin Kayak model not loaded yet');
+      return null;
+    }
+
+    const clonedModel = SkeletonUtils.clone(this.cache.penguinKayak.model) as THREE.Group;
+    return {
+      model: clonedModel,
+      animations: this.cache.penguinKayak.animations
     };
   }
 

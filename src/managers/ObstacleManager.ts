@@ -17,6 +17,7 @@ import { BuoySpawner } from './spawners/BuoySpawner';
 import { CrocodileSpawner } from './spawners/CrocodileSpawner';
 import { HippoSpawner } from './spawners/HippoSpawner';
 import { BottleSpawner } from './spawners/BottleSpawner';
+import { PenguinKayakSpawner } from './spawners/PenguinKayakSpawner';
 
 export class ObstacleManager {
   private riverSystem: RiverSystem;
@@ -39,6 +40,7 @@ export class ObstacleManager {
     this.register(new CrocodileSpawner());
     this.register(new HippoSpawner());
     this.register(new BottleSpawner());
+    this.register(new PenguinKayakSpawner());
   }
 
   private register(spawner: Spawnable) {
