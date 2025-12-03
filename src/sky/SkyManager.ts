@@ -20,10 +20,6 @@ export class SkyManager {
     private hemiLight: THREE.HemisphereLight;
     private ambientLight: THREE.AmbientLight;
 
-    // State
-    private currentBiomeWeights: { desert: number, forest: number, ice: number } = { desert: 1, forest: 0, ice: 0 };
-    private targetBiomeWeights: { desert: number, forest: number, ice: number } = { desert: 1, forest: 0, ice: 0 };
-
     // Day/Night Cycle Config
     private readonly cycleDuration: number = 15 * 60; // 15 minutes in seconds
     // Start at High Morning (Angle 30 degrees)
@@ -63,23 +59,14 @@ export class SkyManager {
         this.scene.add(this.ambientLight);
     }
 
-    public updateBiome(biomeType: string) {
-        // Set target weights based on biome type
-        this.targetBiomeWeights = { desert: 0, forest: 0, ice: 0 };
-        if (biomeType === 'desert') {
-            this.targetBiomeWeights.desert = 1;
-        } else if (biomeType === 'forest') {
-            this.targetBiomeWeights.forest = 1;
-        } else if (biomeType === 'ice') {
-            this.targetBiomeWeights.ice = 1;
-        }
-    }
-
     public getSunPosition(): THREE.Vector3 {
         return this.sun.light.position;
     }
 
     public update(dt: number, cameraPosition: THREE.Vector3, boat: Boat) {
+
+        const boatZ = boat.meshes[0].position.z;
+
         // Update Day/Night Cycle
         this.cycleTime += dt;
         if (this.cycleTime > this.cycleDuration) {
@@ -94,99 +81,26 @@ export class SkyManager {
         this.moon.update(angle, cameraPosition);
 
         // Determine Day/Night Phase
-        // sin(angle) > 0 is Day (Sun is up), < 0 is Night
         const dayness = Math.sin(angle);
-
         this.updateHemiLight(dayness);
-
-        // Update Biome based on boat position
-        if (boat && boat.meshes.length > 0) {
-            const z = boat.meshes[0].position.z;
-            const biomeType = RiverSystem.getInstance().getBiomeType(z);
-            this.updateBiome(biomeType);
-        }
-
-        // Smoothly interpolate biome weights
-        const lerpSpeed = 1.0 * dt; // Adjust speed as needed
-        this.currentBiomeWeights.desert = THREE.MathUtils.lerp(this.currentBiomeWeights.desert, this.targetBiomeWeights.desert, lerpSpeed);
-        this.currentBiomeWeights.forest = THREE.MathUtils.lerp(this.currentBiomeWeights.forest, this.targetBiomeWeights.forest, lerpSpeed);
-        this.currentBiomeWeights.ice = THREE.MathUtils.lerp(this.currentBiomeWeights.ice, this.targetBiomeWeights.ice, lerpSpeed);
-
-        this.updateSkyAndFog(dayness, cameraPosition);
-        this.screenOverlay.update(this.currentBiomeWeights);
+        this.updateSkyAndFog(boatZ, dayness, cameraPosition);
     }
 
-    private updateSkyAndFog(dayness: number, cameraPosition: THREE.Vector3) {
-        // Sky Color Interpolation
-        // Pastel Sunset Vibe
-        // Day (Sunset): Lavender to Peach
-        // Night: Deep Slate Blue to Dark Purple
+    private updateSkyAndFog(boatZ: number, dayness: number, cameraPosition: THREE.Vector3) {
 
-        const dayTop = new THREE.Color(0xA69AC2); // Pastel Lavender
-        const dayBot = new THREE.Color(0xFFCBA4); // Pastel Peach
-        const nightTop = new THREE.Color(0x1A1A3A); // Dark Slate Blue
-        const nightBot = new THREE.Color(0x2D2D44); // Muted Dark Purple
-        const sunsetTop = new THREE.Color(0x967BB6); // Muted Purple
-        const sunsetBot = new THREE.Color(0xFF9966); // Soft Orange
+        const biomeSkyGradient = RiverSystem.getInstance().getBiomeSkyGradient(boatZ, dayness);
+        const biomeGroundColor = RiverSystem.getInstance().getBiomeGroundColor(boatZ);
+        const biomeFogDensity = RiverSystem.getInstance().getBiomeFogDensity(boatZ);
 
-        let currentTop: THREE.Color;
-        let currentBot: THREE.Color;
+        // Screen overlay
+        this.screenOverlay.update(biomeGroundColor, biomeFogDensity);
 
-        // Transition threshold (approx 20 degrees / 200 radius = 0.1)
-        const transitionThreshold = 0.1;
-
-        if (dayness > 0) {
-            // Day
-            if (dayness < transitionThreshold) {
-                // Sunrise / Sunset transition
-                const t = dayness / transitionThreshold;
-                currentTop = sunsetTop.clone().lerp(dayTop, t);
-                currentBot = sunsetBot.clone().lerp(dayBot, t);
-            } else {
-                currentTop = dayTop;
-                currentBot = dayBot;
-            }
-        } else {
-            // Night
-            if (dayness > -transitionThreshold) {
-                // Twilight
-                const t = -dayness / transitionThreshold;
-                currentTop = sunsetTop.clone().lerp(nightTop, t);
-                currentBot = sunsetBot.clone().lerp(nightBot, t);
-            } else {
-                currentTop = nightTop;
-                currentBot = nightBot;
-            }
-        }
-
-        // Apply Biome Modifier to Sky Colors
-        // Forest: Cooler, Crisper Blue
-        // Desert: Warmer, Duster (Default)
-
-        const forestTopMod = new THREE.Color(0x4488ff); // Crisp Blue
-        const forestBotMod = new THREE.Color(0xcceeff); // White/Blue Horizon
-
-        // Blend current sky colors towards forest colors based on biome factor
-        // We only affect Day colors significantly
-        // Blend current sky colors towards forest/ice colors based on biome weights
-        // We only affect Day colors significantly
-        if (dayness > 0) {
-            // Forest Influence
-            currentTop.lerp(forestTopMod, this.currentBiomeWeights.forest * 0.6);
-            currentBot.lerp(forestBotMod, this.currentBiomeWeights.forest * 0.6);
-
-            // Ice Influence (Cooler, whiter)
-            const iceTopMod = new THREE.Color(0xddeeff); // Pale Ice Blue
-            const iceBotMod = new THREE.Color(0xffffff); // White
-            currentTop.lerp(iceTopMod, this.currentBiomeWeights.ice * 0.8);
-            currentBot.lerp(iceBotMod, this.currentBiomeWeights.ice * 0.8);
-        }
-
-        this.skybox.update(cameraPosition, currentTop, currentBot);
+        // Sky gradient
+        this.skybox.update(cameraPosition, biomeSkyGradient.top, biomeSkyGradient.bottom);
 
         // Update Fog Color to match horizon (bottom color)
         if (this.scene.fog) {
-            this.scene.fog.color.copy(currentBot);
+            this.scene.fog.color.copy(biomeSkyGradient.bottom);
         }
 
         // Update Fog Density based on biome
@@ -201,8 +115,8 @@ export class SkyManager {
             const iceFar = 20; // Extreme dense fog (Snow storm) - Reduced from 50
 
             // Lerp values
-            const targetNear = THREE.MathUtils.lerp(baseNear, iceNear, this.currentBiomeWeights.ice);
-            const targetFar = THREE.MathUtils.lerp(baseFar, iceFar, this.currentBiomeWeights.ice);
+            const targetNear = THREE.MathUtils.lerp(baseNear, iceNear, biomeFogDensity);
+            const targetFar = THREE.MathUtils.lerp(baseFar, iceFar, biomeFogDensity);
 
             this.scene.fog.near = targetNear;
             this.scene.fog.far = targetFar;

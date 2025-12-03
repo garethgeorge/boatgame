@@ -135,7 +135,7 @@ export class TerrainChunk {
         // Purely biome based, maybe slight noise variation but mostly solid
         // Lerp between Desert and Forest based on biomeFactor
 
-        const color = this.riverSystem.getBiomeColor(worldZ);
+        const color = this.riverSystem.getBiomeGroundColor(worldZ);
         colors[index * 3] = color.r;
         colors[index * 3 + 1] = color.g;
         colors[index * 3 + 2] = color.b;
