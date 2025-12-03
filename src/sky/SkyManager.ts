@@ -3,6 +3,8 @@ import { Skybox } from './Skybox';
 import { Sun } from './Sun';
 import { Moon } from './Moon';
 import { ScreenOverlay } from './ScreenOverlay';
+import { Boat } from '../entities/Boat';
+import { RiverSystem } from '../world/RiverSystem';
 
 export class SkyManager {
     private scene: THREE.Scene;
@@ -11,8 +13,8 @@ export class SkyManager {
     // Components
     private skybox: Skybox;
     private screenOverlay: ScreenOverlay;
-    public sun: Sun;
-    public moon: Moon;
+    private sun: Sun;
+    private moon: Moon;
 
     // Lighting
     private hemiLight: THREE.HemisphereLight;
@@ -61,7 +63,23 @@ export class SkyManager {
         this.scene.add(this.ambientLight);
     }
 
-    public update(dt: number, cameraPosition: THREE.Vector3) {
+    public updateBiome(biomeType: string) {
+        // Set target weights based on biome type
+        this.targetBiomeWeights = { desert: 0, forest: 0, ice: 0 };
+        if (biomeType === 'desert') {
+            this.targetBiomeWeights.desert = 1;
+        } else if (biomeType === 'forest') {
+            this.targetBiomeWeights.forest = 1;
+        } else if (biomeType === 'ice') {
+            this.targetBiomeWeights.ice = 1;
+        }
+    }
+
+    public getSunPosition(): THREE.Vector3 {
+        return this.sun.light.position;
+    }
+
+    public update(dt: number, cameraPosition: THREE.Vector3, boat: Boat) {
         // Update Day/Night Cycle
         this.cycleTime += dt;
         if (this.cycleTime > this.cycleDuration) {
@@ -80,6 +98,13 @@ export class SkyManager {
         const dayness = Math.sin(angle);
 
         this.updateHemiLight(dayness);
+
+        // Update Biome based on boat position
+        if (boat && boat.meshes.length > 0) {
+            const z = boat.meshes[0].position.z;
+            const biomeType = RiverSystem.getInstance().getBiomeType(z);
+            this.updateBiome(biomeType);
+        }
 
         // Smoothly interpolate biome weights
         const lerpSpeed = 1.0 * dt; // Adjust speed as needed
@@ -204,21 +229,5 @@ export class SkyManager {
 
         this.hemiLight.color.lerpColors(nightSkyColor, daySkyColor, t);
         this.hemiLight.groundColor.lerpColors(nightGroundColor, dayGroundColor, t);
-    }
-
-    public updateBiome(biomeType: string) {
-        // Set target weights based on biome type
-        this.targetBiomeWeights = { desert: 0, forest: 0, ice: 0 };
-        if (biomeType === 'desert') {
-            this.targetBiomeWeights.desert = 1;
-        } else if (biomeType === 'forest') {
-            this.targetBiomeWeights.forest = 1;
-        } else if (biomeType === 'ice') {
-            this.targetBiomeWeights.ice = 1;
-        }
-    }
-
-    public getSunPosition(): THREE.Vector3 {
-        return this.sun.light.position;
     }
 }

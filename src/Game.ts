@@ -86,7 +86,7 @@ export class Game {
         // Create World
         // ObstacleManager must be created before TerrainManager now
         this.obstacleManager = new ObstacleManager(this.entityManager, this.physicsEngine);
-        this.terrainManager = new TerrainManager(this.physicsEngine, this.graphicsEngine, this.obstacleManager, this.skyManager);
+        this.terrainManager = new TerrainManager(this.physicsEngine, this.graphicsEngine, this.obstacleManager);
 
         // Wire up interpolation
         this.physicsEngine.onStep = () => {
@@ -254,7 +254,7 @@ export class Game {
         }
 
         // Update Sky
-        this.skyManager.update(dt, this.graphicsEngine.camera.position);
+        this.skyManager.update(dt, this.graphicsEngine.camera.position, this.boat);
 
         // Update Water Shader Uniforms
         if (TerrainChunk.waterMaterial) {

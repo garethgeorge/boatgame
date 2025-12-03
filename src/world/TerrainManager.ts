@@ -6,7 +6,6 @@ import { GraphicsEngine } from '../core/GraphicsEngine';
 import { TerrainChunk } from './TerrainChunk';
 import { RiverSystem } from './RiverSystem';
 import { ObstacleManager } from '../managers/ObstacleManager';
-import { SkyManager } from '../sky/SkyManager';
 
 import { Boat } from '../entities/Boat';
 
@@ -24,8 +23,7 @@ export class TerrainManager {
   constructor(
     private physicsEngine: PhysicsEngine,
     private graphicsEngine: GraphicsEngine,
-    private obstacleManager: ObstacleManager,
-    private skyManager: SkyManager
+    private obstacleManager: ObstacleManager
   ) {
 
     this.riverSystem = RiverSystem.getInstance();
@@ -126,14 +124,8 @@ export class TerrainManager {
       }
     }
 
-
-
     // 2. Manage Collision Segments
     this.updateCollision(boatZ);
-
-    // 3. Update Biome Visuals
-    const biomeType = this.riverSystem.getBiomeType(boatZ);
-    this.skyManager.updateBiome(biomeType);
   }
 
   private debug: boolean = false;
