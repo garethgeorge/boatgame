@@ -85,11 +85,12 @@ export class Alligator extends Entity {
     private state: 'IDLE' | 'TURNING' | 'ATTACKING' = 'IDLE';
 
     // New method to set target
-    setTarget(target: planck.Vec2) {
+    setTarget(targetBody: planck.Body) {
         if (this.physicsBodies.length === 0) return;
         const physicsBody = this.physicsBodies[0];
 
         const pos = physicsBody.getPosition();
+        const target = targetBody.getPosition();
         const diff = target.clone().sub(pos);
         const dist = diff.length();
 
