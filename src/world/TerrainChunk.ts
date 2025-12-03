@@ -135,7 +135,7 @@ export class TerrainChunk {
         // Purely biome based, maybe slight noise variation but mostly solid
         // Lerp between Desert and Forest based on biomeFactor
 
-        const color = this.riverSystem.getBiomeGroundColor(worldZ);
+        const color = this.riverSystem.getBiomeManager().getBiomeGroundColor(worldZ);
         colors[index * 3] = color.r;
         colors[index * 3 + 1] = color.g;
         colors[index * 3 + 2] = color.b;
@@ -233,7 +233,7 @@ export class TerrainChunk {
       const position = this.generateRandomPosition();
       if (!this.isValidDecorationPosition(position)) continue;
 
-      const biomeType = this.riverSystem.getBiomeType(position.worldZ);
+      const biomeType = this.riverSystem.getBiomeManager().getBiomeType(position.worldZ);
       const decoration = this.selectDecoration(biomeType);
 
       if (decoration) {
@@ -339,7 +339,7 @@ export class TerrainChunk {
     for (let i = 0; i < shoreAnimalCount; i++) {
       const localZ = Math.random() * TerrainChunk.CHUNK_SIZE;
       const worldZ = this.zOffset + localZ;
-      const biomeType = this.riverSystem.getBiomeType(worldZ);
+      const biomeType = this.riverSystem.getBiomeManager().getBiomeType(worldZ);
 
       const animalData = this.selectShoreAnimal(biomeType);
       if (!animalData) continue;

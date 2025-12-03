@@ -88,9 +88,9 @@ export class SkyManager {
 
     private updateSkyAndFog(boatZ: number, dayness: number, cameraPosition: THREE.Vector3) {
 
-        const biomeSkyGradient = RiverSystem.getInstance().getBiomeSkyGradient(boatZ, dayness);
-        const biomeGroundColor = RiverSystem.getInstance().getBiomeGroundColor(boatZ);
-        const biomeFogDensity = RiverSystem.getInstance().getBiomeFogDensity(boatZ);
+        const biomeSkyGradient = RiverSystem.getInstance().getBiomeManager().getBiomeSkyGradient(boatZ, dayness);
+        const biomeGroundColor = RiverSystem.getInstance().getBiomeManager().getBiomeGroundColor(boatZ);
+        const biomeFogDensity = RiverSystem.getInstance().getBiomeManager().getBiomeFogDensity(boatZ);
 
         // Screen overlay
         this.screenOverlay.update(biomeGroundColor, biomeFogDensity);
