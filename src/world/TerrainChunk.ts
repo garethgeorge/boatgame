@@ -229,7 +229,7 @@ export class TerrainChunk {
       const position = this.generateRandomPosition();
       if (!this.isValidDecorationPosition(position)) continue;
 
-      const biomeType = this.riverSystem.selectBiomeType(position.worldZ);
+      const biomeType = this.riverSystem.getBiomeType(position.worldZ);
       const decoration = this.selectDecoration(biomeType);
 
       if (decoration) {
@@ -335,7 +335,7 @@ export class TerrainChunk {
     for (let i = 0; i < shoreAnimalCount; i++) {
       const localZ = Math.random() * TerrainChunk.CHUNK_SIZE;
       const worldZ = this.zOffset + localZ;
-      const biomeType = this.riverSystem.selectBiomeType(worldZ);
+      const biomeType = this.riverSystem.getBiomeType(worldZ);
 
       const animalData = this.selectShoreAnimal(biomeType);
       if (!animalData) continue;

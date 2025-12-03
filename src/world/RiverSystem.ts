@@ -128,16 +128,16 @@ export class RiverSystem {
     };
   }
 
-  public selectBiomeType(worldZ: number, randomValue?: number): 'desert' | 'forest' | 'ice' {
+  public getBiomeType(worldZ: number): 'desert' | 'forest' | 'ice' {
     const weights = this.getBiomeWeights(worldZ);
 
     // Force Ice biome if there is any significant ice weight
-    if (weights.ice > 0.1) {
+    if (weights.ice > 0.1)
       return 'ice';
-    }
 
-    const r = randomValue !== undefined ? randomValue : Math.random();
-    if (r < weights.desert) return 'desert';
+    if (weights.desert > 0.5)
+      return 'desert';
+
     return 'forest';
   }
 

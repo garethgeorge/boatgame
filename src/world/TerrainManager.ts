@@ -132,7 +132,7 @@ export class TerrainManager {
     this.updateCollision(boatZ);
 
     // 3. Update Biome Visuals
-    const biomeType = this.riverSystem.selectBiomeType(boatZ, 0.5);
+    const biomeType = this.riverSystem.getBiomeType(boatZ);
     this.skyManager.updateBiome(biomeType);
   }
 
