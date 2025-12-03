@@ -83,6 +83,51 @@ export class RiverSystem {
     };
   }
 
+  public getBiomeWeights(z: number): { desert: number, forest: number, ice: number } {
+    // Biome Selection (Z-dependent only)
+    // Noise -1 to 1
+    // Lower frequency for larger biomes (Tripled size: 0.0005 -> 0.000166)
+    let n = this.noise.noise2D(100, z * 0.000166);
+
+    // Helper for smoothstep
+    const smoothstep = (min: number, max: number, value: number): number => {
+      const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
+      return x * x * (3 - 2 * x);
+    };
+
+    // Define Ranges:
+    // n < -0.2: Mostly Desert
+    // -0.2 < n < 0.2: Transition Desert -> Forest
+    // 0.2 < n < 0.5: Mostly Forest
+    // 0.5 < n < 0.9: Transition Forest -> Ice
+    // n > 0.9: Mostly Ice
+
+    // Desert Weight: 1.0 at -1.0, 0.0 at 0.0
+    const desert = 1.0 - smoothstep(-0.4, 0.1, n);
+
+    // Ice Weight: 0.0 at 0.4, 1.0 at 0.9
+    const ice = smoothstep(0.4, 0.9, n);
+
+    // Forest Weight: Remainder
+    // Clamp to ensure no negative values (though logic above should prevent overlap > 1)
+    const forest = Math.max(0, 1.0 - desert - ice);
+
+    return { desert, forest, ice };
+  }
+
+  public selectBiomeType(worldZ: number): 'desert' | 'forest' | 'ice' {
+    const weights = this.getBiomeWeights(worldZ);
+
+    // Force Ice biome if there is any significant ice weight
+    if (weights.ice > 0.1) {
+      return 'ice';
+    }
+
+    const r = Math.random();
+    if (r < weights.desert) return 'desert';
+    return 'forest';
+  }
+
   private lerp(start: number, end: number, t: number): number {
     return start * (1 - t) + end * t;
   }

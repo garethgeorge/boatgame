@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { SimplexNoise } from './SimplexNoise';
+import { TerrainChunkGeometry } from './TerrainChunkGeometry';
 import { GraphicsEngine } from '../core/GraphicsEngine';
 import { RiverSystem } from './RiverSystem';
 import { Decorations } from './Decorations';
@@ -11,6 +12,7 @@ export class TerrainChunk {
   mesh: THREE.Mesh;
   waterMesh: THREE.Mesh;
   decorations: THREE.Group;
+  zOffset: number;
 
   // Config
   public static readonly CHUNK_SIZE = 62.5; // Size of chunk in Z (Reduced to 62.5 for incremental generation)
@@ -18,47 +20,11 @@ export class TerrainChunk {
   public static readonly RESOLUTION_X = 160; // Vertices along X
   public static readonly RESOLUTION_Z = 25; // Vertices along Z (Reduced to 25)
 
-
-
-  private static biomeNoise = new SimplexNoise(200);
-  public static waterMaterial: THREE.ShaderMaterial; // Shared material
-
-  public static getBiomeWeights(z: number): { desert: number, forest: number, ice: number } {
-    // Biome Selection (Z-dependent only)
-    // Noise -1 to 1
-    // Lower frequency for larger biomes (Tripled size: 0.0005 -> 0.000166)
-    let n = this.biomeNoise.noise2D(100, z * 0.000166);
-
-    // Helper for smoothstep
-    const smoothstep = (min: number, max: number, value: number): number => {
-      const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
-      return x * x * (3 - 2 * x);
-    };
-
-    // Define Ranges:
-    // n < -0.2: Mostly Desert
-    // -0.2 < n < 0.2: Transition Desert -> Forest
-    // 0.2 < n < 0.5: Mostly Forest
-    // 0.5 < n < 0.9: Transition Forest -> Ice
-    // n > 0.9: Mostly Ice
-
-    // Desert Weight: 1.0 at -1.0, 0.0 at 0.0
-    const desert = 1.0 - smoothstep(-0.4, 0.1, n);
-
-    // Ice Weight: 0.0 at 0.4, 1.0 at 0.9
-    const ice = smoothstep(0.4, 0.9, n);
-
-    // Forest Weight: Remainder
-    // Clamp to ensure no negative values (though logic above should prevent overlap > 1)
-    const forest = Math.max(0, 1.0 - desert - ice);
-
-    return { desert, forest, ice };
-  }
-
-  zOffset: number;
-  private noise: SimplexNoise;
+  // private noise: SimplexNoise; // Removed, now in geometry
+  private geometry: TerrainChunkGeometry;
   private riverSystem: RiverSystem;
   private graphicsEngine: GraphicsEngine;
+  private mixers: THREE.AnimationMixer[] = [];
 
   private constructor(
     zOffset: number,
@@ -66,7 +32,8 @@ export class TerrainChunk {
   ) {
     this.zOffset = zOffset;
     this.graphicsEngine = graphicsEngine;
-    this.noise = new SimplexNoise(200);
+    // this.noise = new SimplexNoise(200);
+    this.geometry = new TerrainChunkGeometry();
     this.riverSystem = RiverSystem.getInstance();
 
     // Mesh generation is now async, handled in initAsync
@@ -77,8 +44,6 @@ export class TerrainChunk {
     this.waterMesh = new THREE.Mesh();
     this.decorations = new THREE.Group();
   }
-
-  private mixers: THREE.AnimationMixer[] = [];
 
   public update(dt: number) {
     for (const mixer of this.mixers) {
@@ -148,7 +113,7 @@ export class TerrainChunk {
       const localZ = v * chunkSize;
       const worldZ = this.zOffset + localZ;
 
-      const weights = TerrainChunk.getBiomeWeights(worldZ);
+      const weights = this.riverSystem.getBiomeWeights(worldZ);
 
       for (let x = 0; x <= resX; x++) {
         const u = (x / resX) * 2 - 1;
@@ -158,7 +123,7 @@ export class TerrainChunk {
 
         const riverCenter = this.riverSystem.getRiverCenter(worldZ);
         const worldX = localX + riverCenter;
-        const height = this.calculateHeight(localX, worldZ);
+        const height = this.geometry.calculateHeight(localX, worldZ);
 
         positions[index * 3] = worldX;
         positions[index * 3 + 1] = height;
@@ -266,7 +231,7 @@ export class TerrainChunk {
       const position = this.generateRandomPosition();
       if (!this.isValidDecorationPosition(position)) continue;
 
-      const biomeType = this.selectBiomeType(position.worldZ);
+      const biomeType = this.riverSystem.selectBiomeType(position.worldZ);
       const decoration = this.selectDecoration(biomeType);
 
       if (decoration) {
@@ -283,7 +248,7 @@ export class TerrainChunk {
     const localX = u * (TerrainChunk.CHUNK_WIDTH / 2);
     const riverCenter = this.riverSystem.getRiverCenter(worldZ);
     const worldX = localX + riverCenter;
-    const height = this.calculateHeight(localX, worldZ);
+    const height = this.geometry.calculateHeight(localX, worldZ);
 
     return { localX, localZ, worldX, worldZ, height };
   }
@@ -309,24 +274,11 @@ export class TerrainChunk {
     if (position.height < 2.0) return false;
 
     // Check visibility
-    if (!this.checkVisibility(position.localX, position.height, position.worldZ)) {
+    if (!this.geometry.checkVisibility(position.localX, position.height, position.worldZ)) {
       return false;
     }
 
     return true;
-  }
-
-  private selectBiomeType(worldZ: number): 'desert' | 'forest' | 'ice' {
-    const weights = TerrainChunk.getBiomeWeights(worldZ);
-
-    // Force Ice biome if there is any significant ice weight
-    if (weights.ice > 0.1) {
-      return 'ice';
-    }
-
-    const r = Math.random();
-    if (r < weights.desert) return 'desert';
-    return 'forest';
   }
 
   private selectDecoration(biomeType: 'desert' | 'forest' | 'ice'): THREE.Object3D | null {
@@ -385,7 +337,7 @@ export class TerrainChunk {
     for (let i = 0; i < shoreAnimalCount; i++) {
       const localZ = Math.random() * TerrainChunk.CHUNK_SIZE;
       const worldZ = this.zOffset + localZ;
-      const weights = TerrainChunk.getBiomeWeights(worldZ);
+      const weights = this.riverSystem.getBiomeWeights(worldZ);
 
       const animalData = this.selectShoreAnimal(weights);
       if (!animalData) continue;
@@ -394,7 +346,7 @@ export class TerrainChunk {
       //if (placement.height <= 2.0) continue;
 
       // Check slope (must be < 30 degrees from upright)
-      const normal = this.calculateNormal(placement.localX, placement.worldZ);
+      const normal = this.geometry.calculateNormal(placement.localX, placement.worldZ);
       const up = new THREE.Vector3(0, 1, 0);
       if (normal.angleTo(up) > THREE.MathUtils.degToRad(20)) continue;
 
@@ -424,7 +376,7 @@ export class TerrainChunk {
     const distFromBank = 2.5 + Math.random() * 3.0;
     const localX = (isLeftBank ? -1 : 1) * (riverWidth / 2 + distFromBank);
     const worldX = localX + riverCenter;
-    const height = this.calculateHeight(localX, worldZ);
+    const height = this.geometry.calculateHeight(localX, worldZ);
 
     return { localX, worldX, worldZ, height, isLeftBank };
   }
@@ -438,7 +390,7 @@ export class TerrainChunk {
     animal.position.set(placement.worldX, placement.height, placement.worldZ);
 
     // Calculate and apply rotation
-    const terrainNormal = this.calculateNormal(placement.localX, placement.worldZ);
+    const terrainNormal = this.geometry.calculateNormal(placement.localX, placement.worldZ);
     this.orientAnimalToTerrain(animal, terrainNormal, placement.isLeftBank, placement.worldZ);
 
     // Scale
@@ -591,108 +543,5 @@ export class TerrainChunk {
     return mesh;
   }
 
-  private checkVisibility(targetLocalX: number, targetHeight: number, worldZ: number): boolean {
-    // Ray start: River center (localX = 0), slightly above water (y = 2)
-    const startX = 0;
-    const startY = 2;
 
-    const endX = targetLocalX;
-    const endY = targetHeight;
-
-    const steps = 4; // Number of checks along the ray
-
-    for (let i = 1; i < steps; i++) {
-      const t = i / steps;
-      const checkX = startX + (endX - startX) * t;
-      const checkY = startY + (endY - startY) * t;
-
-      // Sample terrain height at this point
-      // We need worldZ for calculateHeight, which is constant along this cross-section ray
-      // (Assuming we are checking visibility roughly perpendicular to river, which is true for localX)
-      // Actually, calculateHeight takes localX and worldZ.
-      const terrainHeight = this.calculateHeight(checkX, worldZ);
-
-      // If terrain is significantly higher than ray point, it's occluded
-      if (terrainHeight > checkY + 0.5) { // 0.5 buffer
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  private calculateNormal(x: number, z: number): THREE.Vector3 {
-    const epsilon = 0.1;
-
-    const hL = this.calculateHeight(x - epsilon, z);
-    const hR = this.calculateHeight(x + epsilon, z);
-    const hD = this.calculateHeight(x, z - epsilon);
-    const hU = this.calculateHeight(x, z + epsilon);
-
-    // Normal vector: cross product of tangent vectors
-    const v1 = new THREE.Vector3(2 * epsilon, hR - hL, 0);
-    const v2 = new THREE.Vector3(0, hU - hD, 2 * epsilon);
-
-    const normal = new THREE.Vector3().crossVectors(v2, v1).normalize();
-    return normal;
-  }
-
-  private calculateHeight(x: number, z: number): number {
-    // x is distance from river center (localX)
-
-    const riverWidth = this.riverSystem.getRiverWidth(z);
-    const riverEdge = riverWidth / 2;
-    const distFromCenter = Math.abs(x);
-    const distFromBank = distFromCenter - riverEdge;
-
-    // 1. Land Generation (Base Terrain)
-    // "Mountainous" Map: Low frequency noise to determine biome
-    let mountainMask = this.noise.noise2D(x * 0.001, z * 0.001);
-    mountainMask = (mountainMask + 1) / 2; // Normalize to 0-1
-    mountainMask = Math.pow(mountainMask, 2); // Bias towards 0 (more hills than mountains)
-
-    // Rolling Hills (Low Amplitude, Smooth)
-    const hillNoise =
-      this.noise.noise2D(x * 0.01, z * 0.01) * 5 +
-      this.noise.noise2D(x * 0.03, z * 0.03) * 2;
-
-    // Rugged Mountains (High Amplitude, Ridged)
-    const ridge1 = 1 - Math.abs(this.noise.noise2D(x * 0.005, z * 0.005));
-    const ridge2 = 1 - Math.abs(this.noise.noise2D(x * 0.01, z * 0.01));
-    const mountainNoise = (Math.pow(ridge1, 2) * 40 + Math.pow(ridge2, 2) * 10);
-
-    // Blend based on mask
-    let rawLandHeight = (hillNoise * (1 - mountainMask)) + (mountainNoise * mountainMask);
-
-    // Add detail noise everywhere
-    rawLandHeight += this.noise.noise2D(x * 0.1, z * 0.1) * 1.0;
-
-    // FIX: Clamp land height to be strictly above water level to prevent inland lakes
-    // We add a base height (e.g. 2.0) and clamp
-    rawLandHeight = Math.max(2.0, rawLandHeight + 2.0);
-
-    // Apply Bank Taper: Force land height to 0 at the river edge
-    // Smoothly ramp up over 15 units
-    const bankTaper = this.smoothstep(0, 15, distFromBank);
-    const landHeight = rawLandHeight * bankTaper;
-
-    // 2. River Bed Generation
-    const depth = 8; // Deeper river
-    // Parabolic profile: 1 at center, 0 at edge
-    const normalizedX = Math.min(1.0, distFromCenter / riverEdge);
-    const riverBedHeight = -depth * (1 - normalizedX * normalizedX);
-
-    // 3. Blend Land and River
-    // We blend over a small zone around the edge to avoid hard creases
-    const transitionWidth = 8.0; // Slightly wider transition for smoother visuals
-    const mixFactor = this.smoothstep(riverEdge - transitionWidth / 2, riverEdge + transitionWidth / 2, distFromCenter);
-
-    // mixFactor is 0 inside river (bed), 1 outside (land)
-    return (1 - mixFactor) * riverBedHeight + mixFactor * landHeight;
-  }
-
-  private smoothstep(edge0: number, edge1: number, x: number): number {
-    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
-    return t * t * (3 - 2 * t);
-  }
 }

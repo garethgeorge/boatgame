@@ -132,7 +132,7 @@ export class TerrainManager {
     this.updateCollision(boatZ);
 
     // 3. Update Biome Visuals
-    const weights = TerrainChunk.getBiomeWeights(boatZ);
+    const weights = this.riverSystem.getBiomeWeights(boatZ);
     this.skyManager.updateBiome(weights);
   }
 

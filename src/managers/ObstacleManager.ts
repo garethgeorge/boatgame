@@ -69,7 +69,7 @@ export class ObstacleManager {
 
     // Calculate Biome Weights (at center of chunk)
     const centerZ = (zStart + zEnd) / 2;
-    const weights = TerrainChunk.getBiomeWeights(centerZ);
+    const weights = this.riverSystem.getBiomeWeights(centerZ);
     const biomeWeights = {
       forest: weights.forest,
       desert: weights.desert,
