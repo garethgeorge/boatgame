@@ -9,6 +9,10 @@ import { Profiler } from '../core/Profiler';
 import { WaterShader } from '../shaders/WaterShader';
 
 export class TerrainChunk {
+
+  // Materials
+  static waterMaterial: THREE.ShaderMaterial | null = null;
+
   mesh: THREE.Mesh;
   waterMesh: THREE.Mesh;
   decorations: THREE.Group;
