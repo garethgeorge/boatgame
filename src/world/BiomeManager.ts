@@ -88,7 +88,9 @@ export class BiomeManager {
     public getBiomeFogDensity(z: number): number {
         const biomeType = this.getBiomeType(z);
         if (biomeType === 'ice') {
-            const fraction = z - Math.floor(z * this.BIOME_SCALE);
+            const continuousIndex = z * this.BIOME_SCALE;
+            const currentIndex = Math.floor(continuousIndex);
+            const fraction = Math.abs(continuousIndex - currentIndex);
             return fraction < this.BIOME_TRANSITION_WIDTH ?
                 smoothstep(fraction / this.BIOME_TRANSITION_WIDTH, 0.0, 0.9) :
                 fraction < 1.0 - this.BIOME_TRANSITION_WIDTH ? 0.9 :

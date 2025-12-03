@@ -112,7 +112,7 @@ export class SkyManager {
             // Ice Fog: Close in, "not 100% opaque" (meaning maybe not fully white? or just not too dense?)
             // User said "dramatically reduce... snow storm".
             const iceNear = 0; // Start fog immediately
-            const iceFar = 20; // Extreme dense fog (Snow storm) - Reduced from 50
+            const iceFar = 100; // Extreme dense fog (Snow storm) - Reduced from 50
 
             // Lerp values
             const targetNear = THREE.MathUtils.lerp(baseNear, iceNear, biomeFogDensity);
