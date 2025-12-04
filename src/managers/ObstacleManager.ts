@@ -18,6 +18,7 @@ import { AlligatorSpawner } from './spawners/AlligatorSpawner';
 import { HippoSpawner } from './spawners/HippoSpawner';
 import { MessageInABottleSpawner } from './spawners/MessageInABottleSpawner';
 import { PenguinKayakSpawner } from './spawners/PenguinKayakSpawner';
+import { PolarBearSpawner } from './spawners/PolarBearSpawner';
 
 export class ObstacleManager {
   private riverSystem: RiverSystem;
@@ -41,6 +42,7 @@ export class ObstacleManager {
     this.register(new HippoSpawner());
     this.register(new MessageInABottleSpawner());
     this.register(new PenguinKayakSpawner());
+    this.register(new PolarBearSpawner());
   }
 
   private register(spawner: Spawnable) {
