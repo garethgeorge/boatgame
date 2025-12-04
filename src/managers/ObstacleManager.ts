@@ -14,7 +14,7 @@ import { RockSpawner } from './spawners/RockSpawner';
 import { IcebergSpawner } from './spawners/IcebergSpawner';
 import { PierSpawner } from './spawners/PierSpawner';
 import { BuoySpawner } from './spawners/BuoySpawner';
-import { CrocodileSpawner } from './spawners/CrocodileSpawner';
+import { AlligatorSpawner } from './spawners/AlligatorSpawner';
 import { HippoSpawner } from './spawners/HippoSpawner';
 import { MessageInABottleSpawner } from './spawners/MessageInABottleSpawner';
 import { PenguinKayakSpawner } from './spawners/PenguinKayakSpawner';
@@ -37,7 +37,7 @@ export class ObstacleManager {
     this.register(new IcebergSpawner());
     this.register(new PierSpawner());
     this.register(new BuoySpawner());
-    this.register(new CrocodileSpawner());
+    this.register(new AlligatorSpawner());
     this.register(new HippoSpawner());
     this.register(new MessageInABottleSpawner());
     this.register(new PenguinKayakSpawner());
