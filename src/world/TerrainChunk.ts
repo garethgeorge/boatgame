@@ -26,24 +26,27 @@ export class TerrainChunk {
   public static readonly RESOLUTION_X = 160; // Vertices along X
   public static readonly RESOLUTION_Z = 25; // Vertices along Z (Reduced to 25)
 
-
-
-  // ... (imports)
-
   private geometry: TerrainChunkGeometry;
   private riverSystem: RiverSystem;
   private graphicsEngine: GraphicsEngine;
   private mixers: THREE.AnimationMixer[] = [];
-  private decorators: TerrainDecorator[];
+
+  public static async createAsync(
+    zOffset: number,
+    graphicsEngine: GraphicsEngine,
+    decorators: TerrainDecorator[]):
+    Promise<TerrainChunk> {
+    const chunk = new TerrainChunk(zOffset, graphicsEngine);
+    await chunk.initAsync(decorators);
+    return chunk;
+  }
 
   private constructor(
     zOffset: number,
-    graphicsEngine: GraphicsEngine,
-    decorators: TerrainDecorator[]
+    graphicsEngine: GraphicsEngine
   ) {
     this.zOffset = zOffset;
     this.graphicsEngine = graphicsEngine;
-    this.decorators = decorators;
     // this.noise = new SimplexNoise(200);
     this.geometry = new TerrainChunkGeometry();
     this.riverSystem = RiverSystem.getInstance();
@@ -63,24 +66,14 @@ export class TerrainChunk {
     }
   }
 
-  public addMixer(mixer: THREE.AnimationMixer) {
-    this.mixers.push(mixer);
-  }
-
-  public static async createAsync(zOffset: number, graphicsEngine: GraphicsEngine, decorators: TerrainDecorator[]): Promise<TerrainChunk> {
-    const chunk = new TerrainChunk(zOffset, graphicsEngine, decorators);
-    await chunk.initAsync();
-    return chunk;
-  }
-
-  private async initAsync() {
+  private async initAsync(decorators: TerrainDecorator[]) {
     this.mesh = await this.generateMesh();
     await this.yieldToMain();
 
     this.waterMesh = this.generateWater(); // Fast enough to be sync? Or make async too?
     // Water is simple plane, sync is fine.
 
-    this.decorations = await this.generateDecorations();
+    this.decorations = await this.generateDecorations(decorators);
 
     this.graphicsEngine.add(this.mesh);
     this.graphicsEngine.add(this.waterMesh);
@@ -89,30 +82,31 @@ export class TerrainChunk {
 
   // ... (yieldToMain, generateMesh)
 
-  private async generateDecorations(): Promise<THREE.Group> {
-    const group = new THREE.Group();
+  private async generateDecorations(decorators: TerrainDecorator[]): Promise<THREE.Group> {
+    const geometryGroup = new THREE.Group();
     const geometriesByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
 
     const context: DecorationContext = {
       chunk: this,
       riverSystem: this.riverSystem,
-      geometry: this.geometry,
+      chunkGeometry: this.geometry,
       geometriesByMaterial: geometriesByMaterial,
-      group: group,
+      geometryGroup: geometryGroup,
+      animationMixers: this.mixers,
       zOffset: this.zOffset
     };
 
     Profiler.start('GenDecoBatch');
-    for (const decorator of this.decorators) {
+    for (const decorator of decorators) {
       await decorator.decorate(context);
       await this.yieldToMain();
     }
     Profiler.end('GenDecoBatch');
 
     // Merge geometries and create meshes
-    this.mergeAndAddGeometries(geometriesByMaterial, group);
+    this.mergeAndAddGeometries(geometriesByMaterial, geometryGroup);
 
-    return group;
+    return geometryGroup;
   }
 
   private yieldToMain(): Promise<void> {
