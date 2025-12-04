@@ -1,13 +1,10 @@
 import * as THREE from 'three';
-import { SimplexNoise } from './SimplexNoise';
-import { TerrainChunkGeometry } from './TerrainChunkGeometry';
 import { GraphicsEngine } from '../core/GraphicsEngine';
 import { RiverSystem } from './RiverSystem';
 import { Decorations } from './Decorations';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Profiler } from '../core/Profiler';
 import { WaterShader } from '../shaders/WaterShader';
-
 import { TerrainDecorator, DecorationContext } from './decorators/TerrainDecorator';
 
 export class TerrainChunk {
@@ -26,7 +23,6 @@ export class TerrainChunk {
   public static readonly RESOLUTION_X = 160; // Vertices along X
   public static readonly RESOLUTION_Z = 25; // Vertices along Z (Reduced to 25)
 
-  private geometry: TerrainChunkGeometry;
   private riverSystem: RiverSystem;
   private graphicsEngine: GraphicsEngine;
   private mixers: THREE.AnimationMixer[] = [];
@@ -47,8 +43,6 @@ export class TerrainChunk {
   ) {
     this.zOffset = zOffset;
     this.graphicsEngine = graphicsEngine;
-    // this.noise = new SimplexNoise(200);
-    this.geometry = new TerrainChunkGeometry();
     this.riverSystem = RiverSystem.getInstance();
 
     // Mesh generation is now async, handled in initAsync
@@ -89,7 +83,6 @@ export class TerrainChunk {
     const context: DecorationContext = {
       chunk: this,
       riverSystem: this.riverSystem,
-      chunkGeometry: this.geometry,
       geometriesByMaterial: geometriesByMaterial,
       geometryGroup: geometryGroup,
       animationMixers: this.mixers,
@@ -159,7 +152,7 @@ export class TerrainChunk {
 
         const riverCenter = this.riverSystem.getRiverCenter(worldZ);
         const worldX = localX + riverCenter;
-        const height = this.geometry.calculateHeight(localX, worldZ);
+        const height = this.riverSystem.terrainGeometry.calculateHeight(localX, worldZ);
 
         positions[index * 3] = worldX;
         positions[index * 3 + 1] = height;

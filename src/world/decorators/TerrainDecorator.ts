@@ -1,15 +1,13 @@
 import * as THREE from 'three';
 import { TerrainChunk } from '../TerrainChunk';
 import { RiverSystem } from '../RiverSystem';
-import { TerrainChunkGeometry } from '../TerrainChunkGeometry';
+import { TerrainGeometry } from '../TerrainGeometry';
 
 export interface DecorationContext {
     // The chunk we are decorating
     chunk: TerrainChunk;
     // The river system
     riverSystem: RiverSystem;
-    // The chunk geometry
-    chunkGeometry: TerrainChunkGeometry;
     // Output for geometries that are grouped by material. These can be
     // merged for better performance. 
     geometriesByMaterial: Map<THREE.Material, THREE.BufferGeometry[]>;

@@ -23,7 +23,7 @@ export abstract class ShoreAnimalDecorator extends BaseDecorator {
             const placement = this.calculateShoreAnimalPlacement(worldZ, context);
 
             // Check slope (must be < 20 degrees from upright)
-            const normal = context.chunkGeometry.calculateNormal(placement.localX, placement.worldZ);
+            const normal = context.riverSystem.terrainGeometry.calculateNormal(placement.localX, placement.worldZ);
             const up = new THREE.Vector3(0, 1, 0);
             if (normal.angleTo(up) > THREE.MathUtils.degToRad(20)) continue;
 
@@ -39,7 +39,7 @@ export abstract class ShoreAnimalDecorator extends BaseDecorator {
         const distFromBank = 2.5 + Math.random() * 3.0;
         const localX = (isLeftBank ? -1 : 1) * (riverWidth / 2 + distFromBank);
         const worldX = localX + riverCenter;
-        const height = context.chunkGeometry.calculateHeight(localX, worldZ);
+        const height = context.riverSystem.terrainGeometry.calculateHeight(localX, worldZ);
 
         return { localX, worldX, worldZ, height, isLeftBank };
     }
@@ -53,7 +53,7 @@ export abstract class ShoreAnimalDecorator extends BaseDecorator {
         animal.position.set(placement.worldX, placement.height, placement.worldZ);
 
         // Calculate and apply rotation
-        const terrainNormal = context.chunkGeometry.calculateNormal(placement.localX, placement.worldZ);
+        const terrainNormal = context.riverSystem.terrainGeometry.calculateNormal(placement.localX, placement.worldZ);
         this.orientAnimalToTerrain(animal, terrainNormal, placement.isLeftBank, placement.worldZ, context);
 
         // Scale

@@ -1,8 +1,10 @@
 import { SimplexNoise } from './SimplexNoise';
 import { BiomeManager } from './BiomeManager';
+import { TerrainGeometry } from './TerrainGeometry';
 
 export class RiverSystem {
   private static instance: RiverSystem;
+
   private noise: SimplexNoise;
   private biomeManager: BiomeManager;
 
@@ -16,9 +18,12 @@ export class RiverSystem {
   private readonly MIN_WIDTH = 15; // Was 30
   private readonly MAX_WIDTH = 75; // Was 150
 
+  public terrainGeometry: TerrainGeometry;
+
   private constructor() {
     this.noise = new SimplexNoise(100);
     this.biomeManager = new BiomeManager();
+    this.terrainGeometry = new TerrainGeometry(this);
   }
 
   public static getInstance(): RiverSystem {

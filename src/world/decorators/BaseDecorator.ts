@@ -12,7 +12,7 @@ export abstract class BaseDecorator implements TerrainDecorator {
         const localX = u * (TerrainChunk.CHUNK_WIDTH / 2);
         const riverCenter = context.riverSystem.getRiverCenter(worldZ);
         const worldX = localX + riverCenter;
-        const height = context.chunkGeometry.calculateHeight(localX, worldZ);
+        const height = context.riverSystem.terrainGeometry.calculateHeight(localX, worldZ);
 
         return { localX, localZ, worldX, worldZ, height };
     }
@@ -37,7 +37,7 @@ export abstract class BaseDecorator implements TerrainDecorator {
         if (position.height < 2.0) return false;
 
         // Check visibility
-        if (!context.chunkGeometry.checkVisibility(position.localX, position.height, position.worldZ)) {
+        if (!context.riverSystem.terrainGeometry.checkVisibility(position.localX, position.height, position.worldZ)) {
             return false;
         }
 

@@ -2,13 +2,13 @@ import * as THREE from 'three';
 import { SimplexNoise } from './SimplexNoise';
 import { RiverSystem } from './RiverSystem';
 
-export class TerrainChunkGeometry {
+export class TerrainGeometry {
     private noise: SimplexNoise;
     private riverSystem: RiverSystem;
 
-    constructor() {
+    constructor(riverSystem: RiverSystem) {
         this.noise = new SimplexNoise(200);
-        this.riverSystem = RiverSystem.getInstance();
+        this.riverSystem = riverSystem;
     }
 
     public calculateHeight(x: number, z: number): number {
