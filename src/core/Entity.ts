@@ -12,6 +12,11 @@ export abstract class Entity {
   shouldRemove: boolean = false;
   hasCausedPenalty: boolean = false;
 
+  // Optional normal vector for terrain alignment
+  // If set, mesh will be tilted so its Y-axis aligns with this normal
+  // while still following physics rotation around Y
+  protected normalVector: THREE.Vector3 | null = null;
+
   abstract update(dt: number): void;
 
   onHit(): void { }
@@ -104,7 +109,25 @@ export abstract class Entity {
 
     mesh.position.x = pos.x;
     mesh.position.z = pos.y; // Map 2D Physics Y to 3D Graphics Z
-    mesh.rotation.y = -angle;
+
+    // Apply rotation with optional normal alignment
+    if (this.normalVector) {
+      // Step 1: Rotate around world Y by physics angle
+      const physicsRotation = new THREE.Quaternion();
+      physicsRotation.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -angle);
+
+      // Step 2: Tilt so model's Y-axis aligns with normal vector
+      const modelUpAxis = new THREE.Vector3(0, 1, 0);
+      const normalAlignment = new THREE.Quaternion();
+      normalAlignment.setFromUnitVectors(modelUpAxis, this.normalVector);
+
+      // Apply: physics rotation first, then normal alignment
+      mesh.quaternion.copy(physicsRotation);
+      mesh.quaternion.premultiply(normalAlignment);
+    } else {
+      // Standard rotation around Y
+      mesh.rotation.y = -angle;
+    }
   }
 
   ensureDebugMeshes(): THREE.Object3D[] {

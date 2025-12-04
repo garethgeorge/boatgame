@@ -51,8 +51,7 @@ export class PolarBearSpawner implements Spawnable {
                     context.physicsEngine,
                     baseAngle,
                     placement.height,
-                    normal,
-                    baseAngle
+                    normal
                 );
 
                 context.entityManager.add(entity, context.chunkIndex);
