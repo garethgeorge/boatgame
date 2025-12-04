@@ -1,8 +1,8 @@
 import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
-import { MessageInABottle } from '../../entities/Collectables';
+import { MessageInABottle } from '../../entities/obstacles/MessageInABottle';
 import { RiverSystem } from '../../world/RiverSystem';
 
-export class BottleSpawner implements Spawnable {
+export class MessageInABottleSpawner implements Spawnable {
   id = 'bottle';
 
   getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {

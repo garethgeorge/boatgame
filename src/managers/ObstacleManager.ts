@@ -16,7 +16,7 @@ import { PierSpawner } from './spawners/PierSpawner';
 import { BuoySpawner } from './spawners/BuoySpawner';
 import { CrocodileSpawner } from './spawners/CrocodileSpawner';
 import { HippoSpawner } from './spawners/HippoSpawner';
-import { BottleSpawner } from './spawners/BottleSpawner';
+import { MessageInABottleSpawner } from './spawners/MessageInABottleSpawner';
 import { PenguinKayakSpawner } from './spawners/PenguinKayakSpawner';
 
 export class ObstacleManager {
@@ -39,7 +39,7 @@ export class ObstacleManager {
     this.register(new BuoySpawner());
     this.register(new CrocodileSpawner());
     this.register(new HippoSpawner());
-    this.register(new BottleSpawner());
+    this.register(new MessageInABottleSpawner());
     this.register(new PenguinKayakSpawner());
   }
 
