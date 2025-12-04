@@ -8,6 +8,12 @@ import { RiverSystem } from './RiverSystem';
 import { ObstacleManager } from '../managers/ObstacleManager';
 
 import { Boat } from '../entities/Boat';
+import { TerrainDecorator } from './decorators/TerrainDecorator';
+import { TreeDecorator } from './decorators/TreeDecorator';
+import { RockDecorator } from './decorators/RockDecorator';
+import { CactusDecorator } from './decorators/CactusDecorator';
+import { PolarBearDecorator } from './decorators/PolarBearDecorator';
+import { AlligatorDecorator } from './decorators/AlligatorDecorator';
 
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
@@ -27,6 +33,21 @@ export class TerrainManager {
   ) {
 
     this.riverSystem = RiverSystem.getInstance();
+    this.registerDecorators();
+  }
+
+  private decorators: TerrainDecorator[] = [];
+
+  private registerDecorators() {
+    this.decorators.push(new TreeDecorator());
+    this.decorators.push(new RockDecorator());
+    this.decorators.push(new CactusDecorator());
+    this.decorators.push(new PolarBearDecorator());
+    this.decorators.push(new AlligatorDecorator());
+  }
+
+  public getDecorators(): TerrainDecorator[] {
+    return this.decorators;
   }
 
   private boatHistory: THREE.Vector3[] = [];
@@ -103,7 +124,7 @@ export class TerrainManager {
         const zOffset = index * TerrainChunk.CHUNK_SIZE;
         this.loadingChunks.add(index);
 
-        TerrainChunk.createAsync(zOffset, this.graphicsEngine).then(chunk => {
+        TerrainChunk.createAsync(zOffset, this.graphicsEngine, this.getDecorators()).then(chunk => {
           this.chunks.set(index, chunk);
           this.loadingChunks.delete(index);
 
