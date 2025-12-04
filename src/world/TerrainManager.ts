@@ -12,7 +12,6 @@ import { TerrainDecorator } from './decorators/TerrainDecorator';
 import { TreeDecorator } from './decorators/TreeDecorator';
 import { RockDecorator } from './decorators/RockDecorator';
 import { CactusDecorator } from './decorators/CactusDecorator';
-import { PolarBearDecorator } from './decorators/PolarBearDecorator';
 import { AlligatorDecorator } from './decorators/AlligatorDecorator';
 
 export class TerrainManager {
@@ -42,7 +41,6 @@ export class TerrainManager {
     this.decorators.push(new TreeDecorator());
     this.decorators.push(new RockDecorator());
     this.decorators.push(new CactusDecorator());
-    //this.decorators.push(new PolarBearDecorator());
     this.decorators.push(new AlligatorDecorator());
   }
 
