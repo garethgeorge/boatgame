@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
 import { Alligator } from '../../entities/obstacles/Alligator';
 import { RiverSystem } from '../../world/RiverSystem';
-import { TerrainChunk } from '../../world/TerrainChunk';
+import { PlacementHelper } from '../PlacementHelper';
 
 export class AlligatorShoreSpawner implements Spawnable {
     id = 'alligatorshore';
@@ -25,25 +25,15 @@ export class AlligatorShoreSpawner implements Spawnable {
             const maxAttempts = 20;
 
             for (let attempt = 0; attempt < maxAttempts && !placed; attempt++) {
-                // Random Z position in chunk
-                const z = context.zStart + Math.random() * (context.zEnd - context.zStart);
+                const placement = context.placementHelper.findShorePlacement(
+                    context.zStart,
+                    context.zEnd,
+                    riverSystem,
+                    3.0,
+                    3.0
+                );
 
-                const placement = this.calculateShoreAnimalPlacement(z, riverSystem);
-
-                // Check slope (must be < 20 degrees from upright)
-                const normal = riverSystem.terrainGeometry.calculateNormal(placement.localX, placement.worldZ);
-                const up = new THREE.Vector3(0, 1, 0);
-                if (normal.angleTo(up) > THREE.MathUtils.degToRad(20))
-                    continue;
-
-                // Rotate around normal to face water with +/- 45 degrees variation
-                const riverDerivative = riverSystem.getRiverDerivative(placement.worldZ);
-                const riverAngle = Math.atan(riverDerivative);
-                let baseAngle = placement.isLeftBank ? -Math.PI / 2 : Math.PI / 2;
-                baseAngle += riverAngle;
-
-                // Add random variation between -45 and +45 degrees (PI/4)
-                baseAngle += (Math.random() - 0.5) * (Math.PI / 2);
+                if (!placement) continue;
 
                 // Create the alligator entity with terrain-based positioning
                 // Pass onShore=true to enable ONSHORE state
@@ -51,9 +41,9 @@ export class AlligatorShoreSpawner implements Spawnable {
                     placement.worldX,
                     placement.worldZ,
                     context.physicsEngine,
-                    baseAngle,
+                    placement.rotation,
                     placement.height,
-                    normal,
+                    placement.normal,
                     true  // onShore = true
                 );
 
@@ -62,17 +52,4 @@ export class AlligatorShoreSpawner implements Spawnable {
             }
         }
     }
-
-    private calculateShoreAnimalPlacement(worldZ: number, riverSystem: RiverSystem) {
-        const riverWidth = riverSystem.getRiverWidth(worldZ);
-        const riverCenter = riverSystem.getRiverCenter(worldZ);
-        const isLeftBank = Math.random() > 0.5;
-        const distFromBank = 3.0 + Math.random() * 3.0;
-        const localX = (isLeftBank ? -1 : 1) * (riverWidth / 2 + distFromBank);
-        const worldX = localX + riverCenter;
-        const height = riverSystem.terrainGeometry.calculateHeight(localX, worldZ);
-
-        return { localX, worldX, worldZ, height, isLeftBank };
-    }
-
 }

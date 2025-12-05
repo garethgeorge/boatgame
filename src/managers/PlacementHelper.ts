@@ -1,4 +1,5 @@
 import * as planck from 'planck';
+import * as THREE from 'three';
 import { RiverSystem } from '../world/RiverSystem';
 
 export interface PlacementOptions {
@@ -102,4 +103,56 @@ export class PlacementHelper {
   public registerPlacement(x: number, z: number, radius: number) {
     this.placedObjects.push({ x, z, radius });
   }
+
+  public findShorePlacement(
+    zStart: number,
+    zEnd: number,
+    riverSystem: RiverSystem,
+    minDistFromBank: number,
+    variableDistFromBank: number,
+    maxSlopeDegrees: number = 20
+  ): ShorePlacement | null {
+    // Random Z position in chunk
+    const worldZ = zStart + Math.random() * (zEnd - zStart);
+
+    const riverWidth = riverSystem.getRiverWidth(worldZ);
+    const riverCenter = riverSystem.getRiverCenter(worldZ);
+    const isLeftBank = Math.random() > 0.5;
+    const distFromBank = minDistFromBank + Math.random() * variableDistFromBank;
+    const localX = (isLeftBank ? -1 : 1) * (riverWidth / 2 + distFromBank);
+    const worldX = localX + riverCenter;
+    const height = riverSystem.terrainGeometry.calculateHeight(localX, worldZ);
+
+    // Check slope
+    const normal = riverSystem.terrainGeometry.calculateNormal(localX, worldZ);
+    const up = new THREE.Vector3(0, 1, 0);
+    if (normal.angleTo(up) > THREE.MathUtils.degToRad(maxSlopeDegrees)) {
+      return null;
+    }
+
+    // Rotate around normal to face water with +/- 45 degrees variation
+    const riverDerivative = riverSystem.getRiverDerivative(worldZ);
+    const riverAngle = Math.atan(riverDerivative);
+    let baseAngle = isLeftBank ? -Math.PI / 2 : Math.PI / 2;
+    baseAngle += riverAngle;
+
+    // Add random variation between -45 and +45 degrees (PI/4)
+    baseAngle += (Math.random() - 0.5) * (Math.PI / 2);
+
+    return {
+      worldX,
+      worldZ,
+      height,
+      rotation: baseAngle,
+      normal
+    };
+  }
+}
+
+export interface ShorePlacement {
+  worldX: number;
+  worldZ: number;
+  height: number;
+  rotation: number;
+  normal: THREE.Vector3;
 }
