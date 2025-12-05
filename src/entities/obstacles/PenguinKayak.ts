@@ -7,7 +7,7 @@ import { Decorations } from '../../world/Decorations';
 export class PenguinKayak extends Entity {
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
         // Apply model transformations
-        model.scale.set(1.5, 1.5, 1.5);
+        model.scale.set(2.0, 2.0, 2.0);
         model.rotation.y = Math.PI / 2.0;
         model.position.y = -0.4;
 

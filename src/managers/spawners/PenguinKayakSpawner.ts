@@ -5,6 +5,7 @@ export class PenguinKayakSpawner implements Spawnable {
     id = 'penguinKayak';
 
     getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
+        return 2;
         // Only in Ice biome
         if (biomeType !== 'ice') return 0;
 
