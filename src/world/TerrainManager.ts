@@ -41,7 +41,6 @@ export class TerrainManager {
     this.decorators.push(new TreeDecorator());
     this.decorators.push(new RockDecorator());
     this.decorators.push(new CactusDecorator());
-    this.decorators.push(new AlligatorDecorator());
   }
 
   public getDecorators(): TerrainDecorator[] {

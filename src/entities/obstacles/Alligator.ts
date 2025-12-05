@@ -10,7 +10,6 @@ export class Alligator extends Entity {
         // Apply model transformations
         model.scale.set(3.0, 3.0, 3.0);
         model.rotation.y = Math.PI;
-        model.position.y = -1.0;
 
         if (this.meshes.length > 0) {
             this.meshes[0].add(model);
@@ -27,14 +26,22 @@ export class Alligator extends Entity {
         }
     }
 
-    constructor(x: number, y: number, physicsEngine: PhysicsEngine, angle: number = 0) {
+    constructor(
+        x: number,
+        y: number,
+        physicsEngine: PhysicsEngine,
+        angle: number = 0,
+        height?: number,
+        terrainNormal?: THREE.Vector3,
+        onShore: boolean = false
+    ) {
         super();
 
         // Physics
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
             position: planck.Vec2(x, y),
-            angle: angle,
+            angle: -angle,
             linearDamping: 2.0,
             angularDamping: 1.0
         });
@@ -57,6 +64,18 @@ export class Alligator extends Entity {
         if (alligatorData) {
             this.applyModel(alligatorData.model, alligatorData.animations);
         }
+
+        // Shore-specific setup
+        if (onShore)
+            this.state = 'ONSHORE';
+
+        // Set terrain alignment
+        if (terrainNormal)
+            this.normalVector = terrainNormal.clone();
+
+        // Set height
+        if (height !== undefined)
+            mesh.position.y = height;
     }
 
     private mixer: THREE.AnimationMixer | null = null;
@@ -85,9 +104,12 @@ export class Alligator extends Entity {
         this.updateAI();
     }
 
-    private state: 'IDLE' | 'TURNING' | 'ATTACKING' = 'IDLE';
+    private state: 'IDLE' | 'TURNING' | 'ATTACKING' | 'ONSHORE' = 'IDLE';
 
     private updateAI() {
+        // Shore alligators don't have AI
+        if (this.state === 'ONSHORE') return;
+
         const targetBody = Boat.getPlayerBody();
         if (!targetBody || this.physicsBodies.length === 0) return;
 

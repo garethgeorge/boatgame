@@ -1,16 +1,17 @@
 import * as THREE from 'three';
 import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
-import { PolarBear } from '../../entities/obstacles/PolarBear';
+import { Alligator } from '../../entities/obstacles/Alligator';
 import { RiverSystem } from '../../world/RiverSystem';
+import { TerrainChunk } from '../../world/TerrainChunk';
 
-export class PolarBearSpawner implements Spawnable {
-    id = 'polarbear';
+export class AlligatorShoreSpawner implements Spawnable {
+    id = 'alligatorshore';
 
     getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-        // Only spawn in ice biome
-        if (biomeType !== 'ice') return 0;
+        // Only spawn in desert biome
+        if (biomeType !== 'desert') return 0;
 
-        const probability = 0.1 / chunkLength; // roughly 0.1 bears per 15m chunk
+        const probability = 0.1 / chunkLength; // roughly 0.3 alligators per 15m chunk
 
         return Math.random() * probability
     }
@@ -44,14 +45,16 @@ export class PolarBearSpawner implements Spawnable {
                 // Add random variation between -45 and +45 degrees (PI/4)
                 baseAngle += (Math.random() - 0.5) * (Math.PI / 2);
 
-                // Create the polar bear entity with terrain-based positioning
-                const entity = new PolarBear(
+                // Create the alligator entity with terrain-based positioning
+                // Pass onShore=true to enable ONSHORE state
+                const entity = new Alligator(
                     placement.worldX,
                     placement.worldZ,
                     context.physicsEngine,
                     baseAngle,
                     placement.height,
-                    normal
+                    normal,
+                    true  // onShore = true
                 );
 
                 context.entityManager.add(entity, context.chunkIndex);
@@ -64,7 +67,7 @@ export class PolarBearSpawner implements Spawnable {
         const riverWidth = riverSystem.getRiverWidth(worldZ);
         const riverCenter = riverSystem.getRiverCenter(worldZ);
         const isLeftBank = Math.random() > 0.5;
-        const distFromBank = 2.5 + Math.random() * 3.0;
+        const distFromBank = 3.0 + Math.random() * 3.0;
         const localX = (isLeftBank ? -1 : 1) * (riverWidth / 2 + distFromBank);
         const worldX = localX + riverCenter;
         const height = riverSystem.terrainGeometry.calculateHeight(localX, worldZ);

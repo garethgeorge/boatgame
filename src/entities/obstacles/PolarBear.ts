@@ -17,6 +17,7 @@ export class PolarBear extends Entity {
 
         // Apply model transformations
         model.scale.set(3.0, 3.0, 3.0);
+        model.rotation.y = Math.PI;
 
         if (animations.length > 0) {
             this.mixer = new THREE.AnimationMixer(model);
