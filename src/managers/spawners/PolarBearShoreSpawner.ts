@@ -3,7 +3,7 @@ import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
 import { PolarBear } from '../../entities/obstacles/PolarBear';
 import { RiverSystem } from '../../world/RiverSystem';
 
-export class PolarBearSpawner implements Spawnable {
+export class PolarBearShoreSpawner implements Spawnable {
     id = 'polarbear';
 
     getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {

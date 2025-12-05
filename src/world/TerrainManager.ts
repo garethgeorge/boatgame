@@ -12,7 +12,6 @@ import { TerrainDecorator } from './decorators/TerrainDecorator';
 import { TreeDecorator } from './decorators/TreeDecorator';
 import { RockDecorator } from './decorators/RockDecorator';
 import { CactusDecorator } from './decorators/CactusDecorator';
-import { AlligatorDecorator } from './decorators/AlligatorDecorator';
 
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
