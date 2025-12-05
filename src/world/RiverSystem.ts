@@ -80,13 +80,9 @@ export class RiverSystem {
     const width = this.getRiverWidth(worldZ);
     const halfWidth = width / 2;
 
-    // Optional: Add independent noise to banks for asymmetry
-    // We can perturb the center slightly based on width to make one bank wider than the other
-    const asymmetry = this.noise.noise2D(300, z * this.WIDTH_SCALE) * (width * 0.2);
-
     return {
-      left: center - halfWidth + asymmetry,
-      right: center + halfWidth + asymmetry
+      left: center - halfWidth,
+      right: center + halfWidth
     };
   }
 

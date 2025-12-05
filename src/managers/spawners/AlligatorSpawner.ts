@@ -43,8 +43,7 @@ export class AlligatorSpawner implements Spawnable {
                     const z = centerPos.z + offsetZ;
 
                     const angle = Math.random() * Math.PI * 2;
-                    const height = -1.0;
-                    const entity = new Alligator(x, z, context.physicsEngine, angle, height);
+                    const entity = new Alligator(x, z, context.physicsEngine, angle);
                     context.entityManager.add(entity, context.chunkIndex);
                 }
             }

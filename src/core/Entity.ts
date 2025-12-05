@@ -112,20 +112,9 @@ export abstract class Entity {
 
     // Apply rotation with optional normal alignment
     if (this.normalVector) {
-      // Step 1: Rotate around world Y by physics angle
-      const physicsRotation = new THREE.Quaternion();
-      physicsRotation.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -angle);
-
-      // Step 2: Tilt so model's Y-axis aligns with normal vector
-      const modelUpAxis = new THREE.Vector3(0, 1, 0);
-      const normalAlignment = new THREE.Quaternion();
-      normalAlignment.setFromUnitVectors(modelUpAxis, this.normalVector);
-
-      // Apply: physics rotation first, then normal alignment
-      mesh.quaternion.copy(physicsRotation);
-      mesh.quaternion.premultiply(normalAlignment);
+      mesh.setRotationFromAxisAngle(this.normalVector.clone(), -angle);
     } else {
-      // Standard rotation around Y
+      // Standard rotation around Y. Intentionally preserves any other rotations.
       mesh.rotation.y = -angle;
     }
   }

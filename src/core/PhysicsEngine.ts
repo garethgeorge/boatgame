@@ -35,3 +35,8 @@ export class PhysicsEngine {
   }
 }
 
+
+export const CollisionCategories = {
+  DEFAULT: 0x0001,
+  TERRAIN: 0x0008
+};

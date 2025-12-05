@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as planck from 'planck';
 
-import { PhysicsEngine } from '../core/PhysicsEngine';
+import { PhysicsEngine, CollisionCategories } from '../core/PhysicsEngine';
 import { GraphicsEngine } from '../core/GraphicsEngine';
 import { TerrainChunk } from './TerrainChunk';
 import { RiverSystem } from './RiverSystem';
@@ -221,7 +221,9 @@ export class TerrainManager {
     bodyL.createFixture({
       shape: shapeL,
       friction: 0.0,
-      restitution: 0.0
+      restitution: 0.0,
+      filterCategoryBits: CollisionCategories.TERRAIN,
+      filterMaskBits: 0xFFFF
     });
     bodies.push(bodyL);
     meshes.push(this.createDebugLine(pStartL, pEndL));
@@ -240,7 +242,9 @@ export class TerrainManager {
     bodyR.createFixture({
       shape: shapeR,
       friction: 0.0,
-      restitution: 0.0
+      restitution: 0.0,
+      filterCategoryBits: CollisionCategories.TERRAIN,
+      filterMaskBits: 0xFFFF
     });
     bodies.push(bodyR);
     meshes.push(this.createDebugLine(pStartR, pEndR));
