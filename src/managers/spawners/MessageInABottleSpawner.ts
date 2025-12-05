@@ -42,19 +42,19 @@ export class MessageInABottleSpawner implements Spawnable {
 
   private spawnBonusArc(context: SpawnContext) {
     const riverSystem = RiverSystem.getInstance();
-    const z = context.zStart + Math.random() * (context.zEnd - context.zStart - 60); // Ensure space for arc
+    const worldZ = context.zStart + Math.random() * (context.zEnd - context.zStart - 60); // Ensure space for arc
 
     const count = 8;
     const arcLength = 60;
     const spacing = arcLength / count;
-    const riverWidth = riverSystem.getRiverWidth(z);
+    const riverWidth = riverSystem.getRiverWidth(worldZ);
     const amplitude = riverWidth * 0.15;
     const frequency = Math.PI / arcLength;
     const phase = Math.random() * Math.PI * 2;
 
     for (let i = 0; i < count; i++) {
       const dz = i * spacing;
-      const currentZ = z + dz;
+      const currentZ = worldZ + dz;
       const currentCenter = riverSystem.getRiverCenter(currentZ);
       const offsetX = Math.sin(dz * frequency + phase) * amplitude;
 

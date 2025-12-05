@@ -85,10 +85,10 @@ export class BiomeManager {
         return { biome1, biome2, weight1, weight2 };
     }
 
-    public getBiomeFogDensity(z: number): number {
-        const biomeType = this.getBiomeType(z);
+    public getBiomeFogDensity(worldZ: number): number {
+        const biomeType = this.getBiomeType(worldZ);
         if (biomeType === 'ice') {
-            const continuousIndex = z * this.BIOME_SCALE;
+            const continuousIndex = worldZ * this.BIOME_SCALE;
             const currentIndex = Math.floor(continuousIndex);
             const fraction = Math.abs(continuousIndex - currentIndex);
             return fraction < this.BIOME_TRANSITION_WIDTH ?
@@ -99,8 +99,8 @@ export class BiomeManager {
         return 0.0;
     }
 
-    public getBiomeGroundColor(z: number): { r: number, g: number, b: number } {
-        const mixture = this.getBiomeMixture(z);
+    public getBiomeGroundColor(worldZ: number): { r: number, g: number, b: number } {
+        const mixture = this.getBiomeMixture(worldZ);
 
         // Get colors for both biomes
         const color1 = this.getBiomeColor(mixture.biome1);
@@ -122,8 +122,8 @@ export class BiomeManager {
         }
     }
 
-    public getBiomeSkyGradient(z: number, dayness: number): { top: THREE.Color, bottom: THREE.Color } {
-        const mixture = this.getBiomeMixture(z);
+    public getBiomeSkyGradient(worldZ: number, dayness: number): { top: THREE.Color, bottom: THREE.Color } {
+        const mixture = this.getBiomeMixture(worldZ);
 
         // Get sky gradient for each biome
         const sky1 = this.getBiomeSkyColors(mixture.biome1, dayness);

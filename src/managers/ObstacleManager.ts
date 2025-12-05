@@ -73,7 +73,7 @@ export class ObstacleManager {
 
     // Calculate Biome Type (at center of chunk)
     const centerZ = (zStart + zEnd) / 2;
-    const biomeType = this.riverSystem.getBiomeManager().getBiomeType(centerZ);
+    const biomeType = this.riverSystem.biomeManager.getBiomeType(centerZ);
 
     // Calculate Difficulty
     const distance = Math.abs(centerZ);

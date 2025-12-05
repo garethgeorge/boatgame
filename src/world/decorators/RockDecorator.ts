@@ -10,7 +10,7 @@ export class RockDecorator extends BaseDecorator {
             const position = this.generateRandomPosition(context);
             if (!this.isValidDecorationPosition(context, position)) continue;
 
-            const biomeType = context.riverSystem.getBiomeManager().getBiomeType(position.worldZ);
+            const biomeType = context.riverSystem.biomeManager.getBiomeType(position.worldZ);
 
             let threshold = 1.0;
             if (biomeType === 'desert') threshold = 0.96;

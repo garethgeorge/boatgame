@@ -6,7 +6,6 @@ export class RiverSystem {
   private static instance: RiverSystem;
 
   private noise: SimplexNoise;
-  private biomeManager: BiomeManager;
 
   // Configuration
   private readonly PATH_SCALE = 0.002; // 500 units wavelength
@@ -18,6 +17,7 @@ export class RiverSystem {
   private readonly MIN_WIDTH = 15; // Was 30
   private readonly MAX_WIDTH = 75; // Was 150
 
+  public biomeManager: BiomeManager;
   public terrainGeometry: TerrainGeometry;
 
   private constructor() {
@@ -36,28 +36,28 @@ export class RiverSystem {
   /**
    * Returns the X coordinate of the river center at a given Z position.
    */
-  public getRiverCenter(z: number): number {
-    return this.noise.noise2D(0, z * this.PATH_SCALE) * this.PATH_AMPLITUDE;
+  public getRiverCenter(worldZ: number): number {
+    return this.noise.noise2D(0, worldZ * this.PATH_SCALE) * this.PATH_AMPLITUDE;
   }
 
   /**
    * Returns the derivative (slope) of the river center at z.
    * Useful for determining the tangent/normal vector of the bank.
    */
-  public getRiverDerivative(z: number): number {
+  public getRiverDerivative(worldZ: number): number {
     const epsilon = 1.0;
-    const x1 = this.getRiverCenter(z - epsilon);
-    const x2 = this.getRiverCenter(z + epsilon);
+    const x1 = this.getRiverCenter(worldZ - epsilon);
+    const x2 = this.getRiverCenter(worldZ + epsilon);
     return (x2 - x1) / (2 * epsilon); // dx/dz
   }
 
   /**
    * Returns the width of the river at a given Z position.
    */
-  public getRiverWidth(z: number): number {
+  public getRiverWidth(worldZ: number): number {
     // 1. Biome Noise: Determines if we are in a wide or narrow section
     // Normalized to 0..1
-    const biomeNoise = (this.noise.noise2D(100, z * this.WIDTH_SCALE) + 1) / 2;
+    const biomeNoise = (this.noise.noise2D(100, worldZ * this.WIDTH_SCALE) + 1) / 2;
 
     // Non-linear mapping to bias towards wider areas occasionally but mostly average
     // biome^2 pushes values lower (narrower), biome^0.5 pushes higher (wider)
@@ -75,9 +75,9 @@ export class RiverSystem {
   /**
    * Returns the X coordinates for the left and right banks.
    */
-  public getBankPositions(z: number): { left: number, right: number } {
-    const center = this.getRiverCenter(z);
-    const width = this.getRiverWidth(z);
+  public getBankPositions(worldZ: number): { left: number, right: number } {
+    const center = this.getRiverCenter(worldZ);
+    const width = this.getRiverWidth(worldZ);
     const halfWidth = width / 2;
 
     // Optional: Add independent noise to banks for asymmetry
@@ -88,10 +88,6 @@ export class RiverSystem {
       left: center - halfWidth + asymmetry,
       right: center + halfWidth + asymmetry
     };
-  }
-
-  public getBiomeManager(): BiomeManager {
-    return this.biomeManager;
   }
 
   private lerp(start: number, end: number, t: number): number {

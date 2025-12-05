@@ -39,11 +39,11 @@ export class PlacementHelper {
 
     for (let i = 0; i < maxAttempts; i++) {
       // Random Z
-      const z = zMin + Math.random() * (zMax - zMin);
+      const worldZ = zMin + Math.random() * (zMax - zMin);
 
       // Get River Bounds
-      const center = this.riverSystem.getRiverCenter(z);
-      const width = this.riverSystem.getRiverWidth(z);
+      const center = this.riverSystem.getRiverCenter(worldZ);
+      const width = this.riverSystem.getRiverWidth(worldZ);
 
       // Calculate safe width (accounting for object radius and bank buffer)
       const safeHalfWidth = (width / 2) - radius - minDistFromBank;
@@ -77,7 +77,7 @@ export class PlacementHelper {
       let collision = false;
       for (const obj of this.placedObjects) {
         const dx = x - obj.x;
-        const dz = z - obj.z;
+        const dz = worldZ - obj.z;
         const distSq = dx * dx + dz * dz;
         const minSep = radius + obj.radius + minDistFromOthers;
 
@@ -89,8 +89,8 @@ export class PlacementHelper {
 
       if (!collision) {
         // Valid placement found
-        this.placedObjects.push({ x, z, radius });
-        return { x, z };
+        this.placedObjects.push({ x, z: worldZ, radius });
+        return { x, z: worldZ };
       }
     }
 

@@ -31,11 +31,11 @@ export class BuoySpawner implements Spawnable {
 
     for (let i = 0; i < count; i++) {
       // Chained Buoys logic
-      const z = context.zStart + Math.random() * (context.zEnd - context.zStart);
+      const wz = context.zStart + Math.random() * (context.zEnd - context.zStart);
 
       const isLeft = Math.random() > 0.5;
-      const riverWidth = riverSystem.getRiverWidth(z);
-      const riverCenter = riverSystem.getRiverCenter(z);
+      const riverWidth = riverSystem.getRiverWidth(wz);
+      const riverCenter = riverSystem.getRiverCenter(wz);
       const bankX = riverCenter + (isLeft ? -riverWidth / 2 : riverWidth / 2);
       const direction = isLeft ? 1 : -1;
       const chainLength = (0.3 + Math.random() * 0.2) * riverWidth; // 30-50% width
@@ -44,7 +44,7 @@ export class BuoySpawner implements Spawnable {
 
       const anchorBody = context.physicsEngine.world.createBody({
         type: 'static',
-        position: planck.Vec2(bankX, z)
+        position: planck.Vec2(bankX, wz)
       });
 
       // Anchor Entity (Hidden)
@@ -66,9 +66,9 @@ export class BuoySpawner implements Spawnable {
         const jitterZ = (Math.random() - 0.5) * 1.0;
 
         // Register placement
-        context.placementHelper.registerPlacement(bx, z + jitterZ, 1.0);
+        context.placementHelper.registerPlacement(bx, wz + jitterZ, 1.0);
 
-        const buoy = new Buoy(bx, z + jitterZ, context.physicsEngine);
+        const buoy = new Buoy(bx, wz + jitterZ, context.physicsEngine);
         context.entityManager.add(buoy, context.chunkIndex);
 
         const joint = planck.DistanceJoint({

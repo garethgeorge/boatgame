@@ -15,7 +15,7 @@ export abstract class ShoreAnimalDecorator extends BaseDecorator {
         for (let i = 0; i < count; i++) {
             const localZ = Math.random() * TerrainChunk.CHUNK_SIZE;
             const worldZ = context.zOffset + localZ;
-            const biomeType = context.riverSystem.getBiomeManager().getBiomeType(worldZ);
+            const biomeType = context.riverSystem.biomeManager.getBiomeType(worldZ);
 
             if (biomeType !== biomeFilter) continue;
             if (Math.random() >= spawnProbability) continue;

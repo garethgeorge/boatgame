@@ -29,12 +29,12 @@ export class PierSpawner implements Spawnable {
       // Logic from original ObstacleManager
 
       // We need to pick a Z first
-      const z = context.zStart + Math.random() * (context.zEnd - context.zStart);
+      const worldZ = context.zStart + Math.random() * (context.zEnd - context.zStart);
 
       const isLeft = Math.random() > 0.5;
-      const width = riverSystem.getRiverWidth(z);
-      const center = riverSystem.getRiverCenter(z);
-      const slope = riverSystem.getRiverDerivative(z);
+      const width = riverSystem.getRiverWidth(worldZ);
+      const center = riverSystem.getRiverCenter(worldZ);
+      const slope = riverSystem.getRiverDerivative(worldZ);
 
       // Calculate Pier Geometry
       const bankX = center + (isLeft ? -width / 2 : width / 2);
@@ -48,7 +48,7 @@ export class PierSpawner implements Spawnable {
       else { if (N.x > 0) N.mul(-1); }
       const angle = Math.atan2(N.y, N.x);
 
-      const startPos = planck.Vec2(bankX, z);
+      const startPos = planck.Vec2(bankX, worldZ);
       const centerPos = startPos.clone().add(N.clone().mul(pierLength / 2));
 
       // Register with placement helper to avoid collisions
