@@ -5,24 +5,26 @@ import { TerrainChunk } from '../TerrainChunk';
 export abstract class BaseDecorator implements TerrainDecorator {
     abstract decorate(context: DecorationContext): Promise<void>;
 
-    protected generateRandomPosition(context: DecorationContext) {
-        const localZ = Math.random() * TerrainChunk.CHUNK_SIZE;
-        const worldZ = context.zOffset + localZ;
+    // Generate a random world position within
+    protected generateRandomPosition(context: DecorationContext): { worldX: number; worldZ: number; height: number } {
+        const dz = Math.random() * TerrainChunk.CHUNK_SIZE;
+        const wz = context.zOffset + dz;
         const u = Math.random() * 2 - 1;
-        const localX = u * (TerrainChunk.CHUNK_WIDTH / 2);
-        const riverCenter = context.riverSystem.getRiverCenter(worldZ);
-        const worldX = localX + riverCenter;
-        const height = context.riverSystem.terrainGeometry.calculateHeight(localX, worldZ);
+        const dx = u * (TerrainChunk.CHUNK_WIDTH / 2);
+        const riverCenter = context.riverSystem.getRiverCenter(wz);
+        const wx = dx + riverCenter;
+        const height = context.riverSystem.terrainGeometry.calculateHeight(wx, wz);
 
-        return { localX, localZ, worldX, worldZ, height };
+        return { worldX: wx, worldZ: wz, height };
     }
 
     protected isValidDecorationPosition(
         context: DecorationContext,
-        position: { localX: number; worldZ: number; height: number }
+        position: { worldX: number; worldZ: number; height: number }
     ): boolean {
         const riverWidth = context.riverSystem.getRiverWidth(position.worldZ);
-        const distFromCenter = Math.abs(position.localX);
+        const riverCenter = context.riverSystem.getRiverCenter(position.worldZ);
+        const distFromCenter = Math.abs(position.worldX - riverCenter);
         const distFromBank = distFromCenter - riverWidth / 2;
 
         // Apply distance-based probability bias
@@ -37,7 +39,7 @@ export abstract class BaseDecorator implements TerrainDecorator {
         if (position.height < 2.0) return false;
 
         // Check visibility
-        if (!context.riverSystem.terrainGeometry.checkVisibility(position.localX, position.height, position.worldZ)) {
+        if (!context.riverSystem.terrainGeometry.checkVisibility(position.worldX, position.height, position.worldZ)) {
             return false;
         }
 

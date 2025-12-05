@@ -11,35 +11,31 @@ export class TerrainGeometry {
         this.riverSystem = riverSystem;
     }
 
-    public calculateHeight(x: number, z: number): number {
-        // x is distance from river center (localX)
-
-        const riverWidth = this.riverSystem.getRiverWidth(z);
-        const riverEdge = riverWidth / 2;
-        const distFromCenter = Math.abs(x);
-        const distFromBank = distFromCenter - riverEdge;
+    // Returns height of terrain at world space position (wx, wz)
+    public calculateHeight(wx: number, wz: number): number {
 
         // 1. Land Generation (Base Terrain)
+        // Note that land coordinates are in world space
         // "Mountainous" Map: Low frequency noise to determine biome
-        let mountainMask = this.noise.noise2D(x * 0.001, z * 0.001);
+        let mountainMask = this.noise.noise2D(wx * 0.001, wz * 0.001);
         mountainMask = (mountainMask + 1) / 2; // Normalize to 0-1
         mountainMask = Math.pow(mountainMask, 2); // Bias towards 0 (more hills than mountains)
 
         // Rolling Hills (Low Amplitude, Smooth)
         const hillNoise =
-            this.noise.noise2D(x * 0.01, z * 0.01) * 5 +
-            this.noise.noise2D(x * 0.03, z * 0.03) * 2;
+            this.noise.noise2D(wx * 0.01, wz * 0.01) * 5 +
+            this.noise.noise2D(wx * 0.03, wz * 0.03) * 2;
 
         // Rugged Mountains (High Amplitude, Ridged)
-        const ridge1 = 1 - Math.abs(this.noise.noise2D(x * 0.005, z * 0.005));
-        const ridge2 = 1 - Math.abs(this.noise.noise2D(x * 0.01, z * 0.01));
+        const ridge1 = 1 - Math.abs(this.noise.noise2D(wx * 0.005, wz * 0.005));
+        const ridge2 = 1 - Math.abs(this.noise.noise2D(wx * 0.01, wz * 0.01));
         const mountainNoise = (Math.pow(ridge1, 2) * 40 + Math.pow(ridge2, 2) * 10);
 
         // Blend based on mask
         let rawLandHeight = (hillNoise * (1 - mountainMask)) + (mountainNoise * mountainMask);
 
         // Add detail noise everywhere
-        rawLandHeight += this.noise.noise2D(x * 0.1, z * 0.1) * 1.0;
+        rawLandHeight += this.noise.noise2D(wx * 0.1, wz * 0.1) * 1.0;
 
         // FIX: Clamp land height to be strictly above water level to prevent inland lakes
         // We add a base height (e.g. 2.0) and clamp
@@ -47,6 +43,13 @@ export class TerrainGeometry {
 
         // Apply Bank Taper: Force land height to 0 at the river edge
         // Smoothly ramp up over 15 units
+        const riverCenter = this.riverSystem.getRiverCenter(wz);
+        const riverWidth = this.riverSystem.getRiverWidth(wz);
+
+        const riverEdge = riverWidth / 2;
+        const distFromCenter = Math.abs(wx - riverCenter);
+        const distFromBank = distFromCenter - riverEdge;
+
         const bankTaper = this.smoothstep(0, 15, distFromBank);
         const landHeight = rawLandHeight * bankTaper;
 
@@ -65,13 +68,14 @@ export class TerrainGeometry {
         return (1 - mixFactor) * riverBedHeight + mixFactor * landHeight;
     }
 
-    public calculateNormal(x: number, z: number): THREE.Vector3 {
+    // Returns normal of terrain at world space position (wx, wz)
+    public calculateNormal(wx: number, wz: number): THREE.Vector3 {
         const epsilon = 0.1;
 
-        const hL = this.calculateHeight(x - epsilon, z);
-        const hR = this.calculateHeight(x + epsilon, z);
-        const hD = this.calculateHeight(x, z - epsilon);
-        const hU = this.calculateHeight(x, z + epsilon);
+        const hL = this.calculateHeight(wx - epsilon, wz);
+        const hR = this.calculateHeight(wx + epsilon, wz);
+        const hD = this.calculateHeight(wx, wz - epsilon);
+        const hU = this.calculateHeight(wx, wz + epsilon);
 
         // Normal vector: cross product of tangent vectors
         const v1 = new THREE.Vector3(2 * epsilon, hR - hL, 0);
@@ -81,12 +85,13 @@ export class TerrainGeometry {
         return normal;
     }
 
-    public checkVisibility(targetLocalX: number, targetHeight: number, worldZ: number): boolean {
-        // Ray start: River center (localX = 0), slightly above water (y = 2)
-        const startX = 0;
+    public checkVisibility(targetWorldX: number, targetHeight: number, worldZ: number): boolean {
+        // Ray start: River center (world coordinates), slightly above water (y = 2)
+        const riverCenter = this.riverSystem.getRiverCenter(worldZ);
+        const startX = riverCenter;
         const startY = 2;
 
-        const endX = targetLocalX;
+        const endX = targetWorldX;
         const endY = targetHeight;
 
         const steps = 4; // Number of checks along the ray

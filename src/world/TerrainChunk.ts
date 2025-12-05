@@ -120,9 +120,7 @@ export class TerrainChunk {
     const uvs = new Float32Array(numVertices * 2);
     const indices = new Uint32Array(numIndices);
 
-
-
-    // Helper for distribution
+    // Maps [-1,1] to [-width/2,width/2] with closer spacing near 0
     const getDistributedX = (u: number, width: number): number => {
       const C = width / 4;
       return C * u * (1 + (u * u));
@@ -130,58 +128,64 @@ export class TerrainChunk {
 
     // Generate Vertices
     Profiler.start('GenMeshBatch');
-    for (let z = 0; z <= resZ; z++) {
+
+    // Iterate from chunk near to far
+    for (let iz = 0; iz <= resZ; iz++) {
       // Yield every few rows to keep frame rate smooth
-      if (z % 5 === 0) {
+      if (iz % 5 === 0) {
         Profiler.end('GenMeshBatch');
         await this.yieldToMain();
         Profiler.start('GenMeshBatch');
       }
 
-      const v = z / resZ;
-      const localZ = v * chunkSize;
-      const worldZ = this.zOffset + localZ;
+      // tz is parametric [0,1] from chunk near to far
+      // dz is chunk relative z position
+      // wz is world z position
+      const tz = iz / resZ;
+      const dz = tz * chunkSize;
+      const wz = this.zOffset + dz;
 
+      // Now iterate across chunk width
+      for (let ix = 0; ix <= resX; ix++) {
+        // tx is parametric [-1,1] from chunk edge to edge
+        const tx = (ix / resX) * 2 - 1;
+        // dx is chunk offset relative to center with a non linear distribution
+        const dx = getDistributedX(tx, chunkWidth);
 
+        // river system center in world space
+        const riverCenter = this.riverSystem.getRiverCenter(wz);
+        const wx = dx + riverCenter;
+        const height = this.riverSystem.terrainGeometry.calculateHeight(wx, wz);
 
-      for (let x = 0; x <= resX; x++) {
-        const u = (x / resX) * 2 - 1;
-        const localX = getDistributedX(u, chunkWidth);
-
-        const index = z * (resX + 1) + x;
-
-        const riverCenter = this.riverSystem.getRiverCenter(worldZ);
-        const worldX = localX + riverCenter;
-        const height = this.riverSystem.terrainGeometry.calculateHeight(localX, worldZ);
-
-        positions[index * 3] = worldX;
+        const index = iz * (resX + 1) + ix;
+        positions[index * 3] = wx;
         positions[index * 3 + 1] = height;
-        positions[index * 3 + 2] = localZ;
+        positions[index * 3 + 2] = wz;
 
         // Colors
         // Purely biome based, maybe slight noise variation but mostly solid
         // Lerp between Desert and Forest based on biomeFactor
-
-        const color = this.riverSystem.getBiomeManager().getBiomeGroundColor(worldZ);
+        const color = this.riverSystem.getBiomeManager().getBiomeGroundColor(wz);
         colors[index * 3] = color.r;
         colors[index * 3 + 1] = color.g;
         colors[index * 3 + 2] = color.b;
 
-        // UVs
-        uvs[index * 2] = (localX / chunkWidth) + 0.5;
-        uvs[index * 2 + 1] = v;
+        // u = [0, 1] from chunk edge to edge
+        // v = [0, 1] from chunk near to far
+        uvs[index * 2] = (wx / chunkWidth) + 0.5;
+        uvs[index * 2 + 1] = tz;
       }
     }
     Profiler.end('GenMeshBatch');
 
-    // Generate Indices
+    // Generate triangle indices
     let i = 0;
-    for (let z = 0; z < resZ; z++) {
-      for (let x = 0; x < resX; x++) {
-        const a = z * (resX + 1) + x;
-        const b = (z + 1) * (resX + 1) + x;
-        const c = (z + 1) * (resX + 1) + (x + 1);
-        const d = z * (resX + 1) + (x + 1);
+    for (let iz = 0; iz < resZ; iz++) {
+      for (let ix = 0; ix < resX; ix++) {
+        const a = iz * (resX + 1) + ix;
+        const b = (iz + 1) * (resX + 1) + ix;
+        const c = (iz + 1) * (resX + 1) + (ix + 1);
+        const d = iz * (resX + 1) + (ix + 1);
 
         indices[i++] = a;
         indices[i++] = b;
@@ -219,7 +223,8 @@ export class TerrainChunk {
     });
 
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(0, 0, this.zOffset);
+    // Vertices are already in world coordinates, no mesh offset needed
+    mesh.position.set(0, 0, 0);
 
     mesh.castShadow = false;
     mesh.receiveShadow = false;
@@ -305,7 +310,9 @@ export class TerrainChunk {
       const worldZ = this.zOffset + localZ;
 
       const riverCenter = this.riverSystem.getRiverCenter(worldZ);
+      // Convert to world coordinates for both X and Z
       positions.setX(i, localX + riverCenter);
+      positions.setZ(i, worldZ);
     }
     geometry.computeVertexNormals();
 
@@ -320,7 +327,8 @@ export class TerrainChunk {
     }
 
     const mesh = new THREE.Mesh(geometry, TerrainChunk.waterMaterial);
-    mesh.position.set(0, 0, this.zOffset);
+    // Vertices are already in world coordinates, no mesh offset needed
+    mesh.position.set(0, 0, 0);
 
     return mesh;
   }

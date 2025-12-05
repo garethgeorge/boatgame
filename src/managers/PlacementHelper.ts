@@ -121,10 +121,10 @@ export class PlacementHelper {
     const distFromBank = minDistFromBank + Math.random() * variableDistFromBank;
     const localX = (isLeftBank ? -1 : 1) * (riverWidth / 2 + distFromBank);
     const worldX = localX + riverCenter;
-    const height = riverSystem.terrainGeometry.calculateHeight(localX, worldZ);
+    const height = riverSystem.terrainGeometry.calculateHeight(worldX, worldZ);
 
     // Check slope
-    const normal = riverSystem.terrainGeometry.calculateNormal(localX, worldZ);
+    const normal = riverSystem.terrainGeometry.calculateNormal(worldX, worldZ);
     const up = new THREE.Vector3(0, 1, 0);
     if (normal.angleTo(up) > THREE.MathUtils.degToRad(maxSlopeDegrees)) {
       return null;
