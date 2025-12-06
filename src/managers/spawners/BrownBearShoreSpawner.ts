@@ -8,7 +8,6 @@ export class BrownBearShoreSpawner implements Spawnable {
     id = 'brownbear';
 
     getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-        return 2;
         // Only spawn in forest biome
         if (biomeType !== 'forest') return 0;
 
@@ -39,7 +38,8 @@ export class BrownBearShoreSpawner implements Spawnable {
                     context.physicsEngine,
                     placement.rotation,
                     placement.height,
-                    placement.normal
+                    placement.normal,
+                    true // onShore
                 );
 
                 context.entityManager.add(entity, context.chunkIndex);

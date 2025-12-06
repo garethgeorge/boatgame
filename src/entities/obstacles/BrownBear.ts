@@ -4,6 +4,8 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 
+import { AttackAnimalBehavior } from '../behaviors/AttackAnimalBehavior';
+
 export class BrownBear extends Entity {
     private applyModel(mesh: THREE.Group) {
         const bearData = Decorations.getBrownBear();
@@ -36,7 +38,8 @@ export class BrownBear extends Entity {
         physicsEngine: PhysicsEngine,
         angle: number = 0,
         height: number,
-        terrainNormal?: THREE.Vector3
+        terrainNormal?: THREE.Vector3,
+        onShore: boolean = false
     ) {
         super();
 
@@ -75,9 +78,12 @@ export class BrownBear extends Entity {
         if (terrainNormal) {
             this.normalVector = terrainNormal.clone();
         }
+
+        this.behavior = new AttackAnimalBehavior(this, onShore);
     }
 
     private mixer: THREE.AnimationMixer | null = null;
+    private behavior: AttackAnimalBehavior;
 
     onHit() {
         this.shouldRemove = true;
@@ -99,5 +105,7 @@ export class BrownBear extends Entity {
             }
             return;
         }
+
+        this.behavior.update();
     }
 }
