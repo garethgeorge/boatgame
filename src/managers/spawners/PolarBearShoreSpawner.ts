@@ -20,21 +20,15 @@ export class PolarBearShoreSpawner implements Spawnable {
         const riverSystem = RiverSystem.getInstance();
 
         for (let i = 0; i < count; i++) {
-            // Try multiple times to find a valid shore placement
-            let placed = false;
-            const maxAttempts = 20;
+            const placement = context.placementHelper.findShorePlacement(
+                context.zStart,
+                context.zEnd,
+                riverSystem,
+                2.5,
+                3.0
+            );
 
-            for (let attempt = 0; attempt < maxAttempts && !placed; attempt++) {
-                const placement = context.placementHelper.findShorePlacement(
-                    context.zStart,
-                    context.zEnd,
-                    riverSystem,
-                    2.5,
-                    3.0
-                );
-
-                if (!placement) continue;
-
+            if (placement) {
                 // Create the polar bear entity with terrain-based positioning
                 const entity = new PolarBear(
                     placement.worldX,
@@ -46,7 +40,6 @@ export class PolarBearShoreSpawner implements Spawnable {
                 );
 
                 context.entityManager.add(entity, context.chunkIndex);
-                placed = true;
             }
         }
     }

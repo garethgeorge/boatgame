@@ -112,40 +112,47 @@ export class PlacementHelper {
     variableDistFromBank: number,
     maxSlopeDegrees: number = 20
   ): ShorePlacement | null {
-    // Random Z position in chunk
-    const worldZ = zStart + Math.random() * (zEnd - zStart);
 
-    const riverWidth = riverSystem.getRiverWidth(worldZ);
-    const riverCenter = riverSystem.getRiverCenter(worldZ);
-    const isLeftBank = Math.random() > 0.5;
-    const distFromBank = minDistFromBank + Math.random() * variableDistFromBank;
-    const localX = (isLeftBank ? -1 : 1) * (riverWidth / 2 + distFromBank);
-    const worldX = localX + riverCenter;
-    const height = riverSystem.terrainGeometry.calculateHeight(worldX, worldZ);
+    const maxAttempts = 20;
 
-    // Check slope
-    const normal = riverSystem.terrainGeometry.calculateNormal(worldX, worldZ);
-    const up = new THREE.Vector3(0, 1, 0);
-    if (normal.angleTo(up) > THREE.MathUtils.degToRad(maxSlopeDegrees)) {
-      return null;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // Random Z position in chunk
+      const worldZ = zStart + Math.random() * (zEnd - zStart);
+
+      const riverWidth = riverSystem.getRiverWidth(worldZ);
+      const riverCenter = riverSystem.getRiverCenter(worldZ);
+      const isLeftBank = Math.random() > 0.5;
+      const distFromBank = minDistFromBank + Math.random() * variableDistFromBank;
+      const localX = (isLeftBank ? -1 : 1) * (riverWidth / 2 + distFromBank);
+      const worldX = localX + riverCenter;
+      const height = riverSystem.terrainGeometry.calculateHeight(worldX, worldZ);
+
+      // Check slope
+      const normal = riverSystem.terrainGeometry.calculateNormal(worldX, worldZ);
+      const up = new THREE.Vector3(0, 1, 0);
+      if (normal.angleTo(up) > THREE.MathUtils.degToRad(maxSlopeDegrees)) {
+        continue;
+      }
+
+      // Rotate around normal to face water with +/- 45 degrees variation
+      const riverDerivative = riverSystem.getRiverDerivative(worldZ);
+      const riverAngle = Math.atan(riverDerivative);
+      let baseAngle = isLeftBank ? -Math.PI / 2 : Math.PI / 2;
+      baseAngle += riverAngle;
+
+      // Add random variation between -45 and +45 degrees (PI/4)
+      baseAngle += (Math.random() - 0.5) * (Math.PI / 2);
+
+      return {
+        worldX,
+        worldZ,
+        height,
+        rotation: baseAngle,
+        normal
+      };
     }
 
-    // Rotate around normal to face water with +/- 45 degrees variation
-    const riverDerivative = riverSystem.getRiverDerivative(worldZ);
-    const riverAngle = Math.atan(riverDerivative);
-    let baseAngle = isLeftBank ? -Math.PI / 2 : Math.PI / 2;
-    baseAngle += riverAngle;
-
-    // Add random variation between -45 and +45 degrees (PI/4)
-    baseAngle += (Math.random() - 0.5) * (Math.PI / 2);
-
-    return {
-      worldX,
-      worldZ,
-      height,
-      rotation: baseAngle,
-      normal
-    };
+    return null;
   }
 }
 

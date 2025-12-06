@@ -34,7 +34,8 @@ export class Decorations {
     polarBear: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
     hippo: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
     alligator: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
-    penguinKayak: { model: THREE.Group | null, animations: THREE.AnimationClip[] }
+    penguinKayak: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
+    brownBear: { model: THREE.Group | null, animations: THREE.AnimationClip[] }
   } = {
       trees: [],
       bushes: [],
@@ -43,7 +44,8 @@ export class Decorations {
       polarBear: { model: null, animations: [] },
       hippo: { model: null, animations: [] },
       alligator: { model: null, animations: [] },
-      penguinKayak: { model: null, animations: [] }
+      penguinKayak: { model: null, animations: [] },
+      brownBear: { model: null, animations: [] }
     };
 
   private static loadPromise: Promise<void> | null = null;
@@ -88,13 +90,13 @@ export class Decorations {
   }
 
   static async preload(): Promise<void> {
-    if (this.cache.trees.length > 0 && this.cache.polarBear.model && this.cache.hippo.model && this.cache.alligator.model && this.cache.penguinKayak.model) return;
+    if (this.cache.trees.length > 0 && this.cache.polarBear.model && this.cache.hippo.model && this.cache.alligator.model && this.cache.penguinKayak.model && this.cache.brownBear.model) return;
     if (this.loadPromise) return this.loadPromise;
 
     this.loadPromise = new Promise((resolve, reject) => {
       const loader = new GLTFLoader();
       let loadedCount = 0;
-      const totalModels = 4;
+      const totalModels = 5;
 
       const onModelLoaded = () => {
         loadedCount++;
@@ -172,6 +174,23 @@ export class Decorations {
         onModelLoaded();
       }, undefined, (error) => {
         console.error('An error occurred loading the penguin kayak model:', error);
+        onModelLoaded(); // Continue even if this model fails
+      });
+
+      // Load brown bear model
+      loader.load('assets/brown-bear-model-1.glb', (gltf) => {
+        const model = gltf.scene;
+        model.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        this.cache.brownBear.model = model;
+        this.cache.brownBear.animations = gltf.animations || [];
+        onModelLoaded();
+      }, undefined, (error) => {
+        console.error('An error occurred loading the brown bear model:', error);
         onModelLoaded(); // Continue even if this model fails
       });
     });
@@ -259,6 +278,19 @@ export class Decorations {
     return {
       model: clonedModel,
       animations: this.cache.penguinKayak.animations
+    };
+  }
+
+  static getBrownBear(): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
+    if (!this.cache.brownBear.model) {
+      console.warn('Brown Bear model not loaded yet');
+      return null;
+    }
+
+    const clonedModel = SkeletonUtils.clone(this.cache.brownBear.model) as THREE.Group;
+    return {
+      model: clonedModel,
+      animations: this.cache.brownBear.animations
     };
   }
 
