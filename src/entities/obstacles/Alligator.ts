@@ -7,8 +7,9 @@ import { RiverSystem } from '../../world/RiverSystem';
 import { Boat } from '../Boat';
 
 import { AttackAnimalBehavior } from '../behaviors/AttackAnimalBehavior';
+import { AttackAnimal } from '../behaviors/AttackAnimal';
 
-export class Alligator extends Entity {
+export class Alligator extends Entity implements AttackAnimal {
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
         // Apply model transformations
         model.scale.set(3.0, 3.0, 3.0);
@@ -80,7 +81,7 @@ export class Alligator extends Entity {
         else
             this.normalVector = new THREE.Vector3(0, 1, 0);
 
-        this.behavior = new AttackAnimalBehavior(this, onShore);
+        this.behavior = new AttackAnimalBehavior(this, onShore, -1.0);
     }
 
     private mixer: THREE.AnimationMixer | null = null;
@@ -108,5 +109,27 @@ export class Alligator extends Entity {
         }
 
         this.behavior.update();
+    }
+
+    // AttackAnimal interface implementation
+    getPhysicsBody(): planck.Body | null {
+        if (this.physicsBodies.length > 0) {
+            return this.physicsBodies[0];
+        }
+        return null;
+    }
+
+    setLandPosition(height: number, normal: THREE.Vector3): void {
+        if (this.meshes.length > 0) {
+            this.meshes[0].position.y = height;
+        }
+        this.normalVector.copy(normal);
+    }
+
+    setWaterPosition(height: number): void {
+        if (this.meshes.length > 0) {
+            this.meshes[0].position.y = height;
+        }
+        this.normalVector.set(0, 1, 0);
     }
 }

@@ -5,8 +5,9 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 
 import { AttackAnimalBehavior } from '../behaviors/AttackAnimalBehavior';
+import { AttackAnimal } from '../behaviors/AttackAnimal';
 
-export class BrownBear extends Entity {
+export class BrownBear extends Entity implements AttackAnimal {
     private applyModel(mesh: THREE.Group) {
         const bearData = Decorations.getBrownBear();
         if (!bearData)
@@ -79,7 +80,7 @@ export class BrownBear extends Entity {
             this.normalVector = terrainNormal.clone();
         }
 
-        this.behavior = new AttackAnimalBehavior(this, onShore);
+        this.behavior = new AttackAnimalBehavior(this, onShore, -2.0);
     }
 
     private mixer: THREE.AnimationMixer | null = null;
@@ -107,5 +108,27 @@ export class BrownBear extends Entity {
         }
 
         this.behavior.update();
+    }
+
+    // AttackAnimal interface implementation
+    getPhysicsBody(): planck.Body | null {
+        if (this.physicsBodies.length > 0) {
+            return this.physicsBodies[0];
+        }
+        return null;
+    }
+
+    setLandPosition(height: number, normal: THREE.Vector3): void {
+        if (this.meshes.length > 0) {
+            this.meshes[0].position.y = height;
+        }
+        this.normalVector.copy(normal);
+    }
+
+    setWaterPosition(height: number): void {
+        if (this.meshes.length > 0) {
+            this.meshes[0].position.y = height;
+        }
+        this.normalVector.set(0, 1, 0);
     }
 }

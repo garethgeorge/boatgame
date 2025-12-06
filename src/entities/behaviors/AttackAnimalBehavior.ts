@@ -1,16 +1,18 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { Entity } from '../../core/Entity';
 import { CollisionCategories } from '../../core/PhysicsEngine';
 import { RiverSystem } from '../../world/RiverSystem';
 import { Boat } from '../Boat';
+import { AttackAnimal } from './AttackAnimal';
 
 export class AttackAnimalBehavior {
-    private entity: Entity;
+    private entity: AttackAnimal;
     private state: 'IDLE' | 'TURNING' | 'ATTACKING' | 'ONSHORE' | 'ENTERING_WATER' = 'IDLE';
+    private targetWaterHeight: number;
 
-    constructor(entity: Entity, startOnShore: boolean = false) {
+    constructor(entity: AttackAnimal, startOnShore: boolean = false, targetWaterHeight: number = -1.0) {
         this.entity = entity;
+        this.targetWaterHeight = targetWaterHeight;
         if (startOnShore) {
             this.state = 'ONSHORE';
         }
@@ -18,9 +20,10 @@ export class AttackAnimalBehavior {
 
     update() {
         const targetBody = Boat.getPlayerBody();
-        if (!targetBody || this.entity.physicsBodies.length === 0) return;
+        const physicsBody = this.entity.getPhysicsBody();
 
-        const physicsBody = this.entity.physicsBodies[0];
+        if (!targetBody || !physicsBody) return;
+
         const pos = physicsBody.getPosition();
         const target = targetBody.getPosition();
         const diff = target.clone().sub(pos);
@@ -71,7 +74,7 @@ export class AttackAnimalBehavior {
         const distIntoWater = Math.min(distFromLeft, distFromRight);
 
         // Target (water) values
-        const targetHeight = -1.0;
+        const targetHeight = this.targetWaterHeight;
         const targetNormal = new THREE.Vector3(0, 1, 0);
 
         const epsilon = 0.1;
@@ -79,12 +82,8 @@ export class AttackAnimalBehavior {
         if (distIntoWater < epsilon) {
             // Still on land
             const height = RiverSystem.getInstance().terrainGeometry.calculateHeight(pos.x, pos.y);
-            if (this.entity.meshes.length > 0) {
-                this.entity.meshes[0].position.y = height;
-            }
-
             const normal = RiverSystem.getInstance().terrainGeometry.calculateNormal(pos.x, pos.y);
-            this.entity.normalVector = normal;
+            this.entity.setLandPosition(height, normal);
         } else if (distIntoWater < 0) {
             // Close to water edge don't update height/normal because it's not stable 
         } else if (distIntoWater < margin) {
@@ -93,20 +92,17 @@ export class AttackAnimalBehavior {
 
             // Interpolate height
             const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(pos.x, pos.y);
-            if (this.entity.meshes.length > 0) {
-                this.entity.meshes[0].position.y = THREE.MathUtils.lerp(terrainHeight, targetHeight, t);
-            }
+            const height = THREE.MathUtils.lerp(terrainHeight, targetHeight, t);
 
             // Interpolate normal
             const terrainNormal = RiverSystem.getInstance().terrainGeometry.calculateNormal(pos.x, pos.y);
-            this.entity.normalVector.copy(terrainNormal).lerp(targetNormal, t).normalize();
+            const normal = terrainNormal.clone().lerp(targetNormal, t).normalize();
+
+            this.entity.setLandPosition(height, normal);
         } else {
             // Fully in water
             this.state = 'IDLE';
-            this.entity.normalVector.copy(targetNormal);
-            if (this.entity.meshes.length > 0) {
-                this.entity.meshes[0].position.y = targetHeight;
-            }
+            this.entity.setWaterPosition(targetHeight);
 
             // Restore collision with terrain
             this.setCollisionMask(physicsBody, 0xFFFF);
