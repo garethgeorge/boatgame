@@ -52,6 +52,7 @@ export class AttackAnimalBehavior {
         // Activate when boat is within 100 units
         if (dist < 100) {
             this.state = 'ENTERING_WATER';
+            this.entity.didStartEnteringWater?.();
 
             // Ignore terrain collision
             this.setCollisionMask(physicsBody, 0xFFFF ^ CollisionCategories.TERRAIN);

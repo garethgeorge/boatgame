@@ -8,7 +8,9 @@ import { AttackAnimalBehavior } from '../behaviors/AttackAnimalBehavior';
 import { AttackAnimal } from '../behaviors/AttackAnimal';
 
 export class BrownBear extends Entity implements AttackAnimal {
-    private applyModel(mesh: THREE.Group) {
+    private action: THREE.AnimationAction | null = null;
+
+    private applyModel(mesh: THREE.Group, onShore: boolean) {
         const bearData = Decorations.getBrownBear();
         if (!bearData)
             return;
@@ -26,10 +28,15 @@ export class BrownBear extends Entity implements AttackAnimal {
             this.mixer = new THREE.AnimationMixer(model);
             // Randomize speed between 1.8 and 2.2
             this.mixer.timeScale = 1.8 + Math.random() * 0.4;
-            const action = this.mixer.clipAction(animations[0]);
+            this.action = this.mixer.clipAction(animations[0]);
             // Randomize start time
-            action.time = Math.random() * action.getClip().duration;
-            action.play();
+            this.action.time = Math.random() * this.action.getClip().duration;
+
+            if (onShore) {
+                // If on shore, wait for trigger
+            } else {
+                this.action.play();
+            }
         }
     }
 
@@ -69,7 +76,7 @@ export class BrownBear extends Entity implements AttackAnimal {
         this.meshes.push(mesh);
 
         // Apply the polar bear model
-        this.applyModel(mesh);
+        this.applyModel(mesh, onShore);
 
         // Set height offset (Y position)
         // Entity.sync() will control X and Z from physics body
@@ -130,5 +137,11 @@ export class BrownBear extends Entity implements AttackAnimal {
             this.meshes[0].position.y = height;
         }
         this.normalVector.set(0, 1, 0);
+    }
+
+    didStartEnteringWater(): void {
+        if (this.action) {
+            this.action.play();
+        }
     }
 }

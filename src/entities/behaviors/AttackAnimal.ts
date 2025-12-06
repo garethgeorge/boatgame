@@ -5,4 +5,5 @@ export interface AttackAnimal {
     getPhysicsBody(): planck.Body | null;
     setLandPosition(height: number, normal: THREE.Vector3): void;
     setWaterPosition(height: number): void;
+    didStartEnteringWater?(): void;
 }
