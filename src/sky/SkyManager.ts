@@ -91,9 +91,10 @@ export class SkyManager {
         const biomeSkyGradient = RiverSystem.getInstance().biomeManager.getBiomeSkyGradient(boatZ, dayness);
         const biomeGroundColor = RiverSystem.getInstance().biomeManager.getBiomeGroundColor(boatZ);
         const biomeFogDensity = RiverSystem.getInstance().biomeManager.getBiomeFogDensity(boatZ);
+        const biomeScreenTint = RiverSystem.getInstance().biomeManager.getBiomeScreenTint(boatZ);
 
         // Screen overlay
-        this.screenOverlay.update(biomeGroundColor, biomeFogDensity * 0.75);
+        this.screenOverlay.update(biomeScreenTint, biomeFogDensity * 0.75);
 
         // Sky gradient
         this.skybox.update(cameraPosition, biomeSkyGradient.top, biomeSkyGradient.bottom);

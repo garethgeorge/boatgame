@@ -59,17 +59,24 @@ export class RiverSystem {
     // Normalized to 0..1
     const biomeNoise = (this.noise.noise2D(100, worldZ * this.WIDTH_SCALE) + 1) / 2;
 
-    // Non-linear mapping to bias towards wider areas occasionally but mostly average
-    // biome^2 pushes values lower (narrower), biome^0.5 pushes higher (wider)
-    // Let's keep it somewhat linear but clamped
-
     // Interpolate between Min and Max based on biome
     let baseWidth = this.lerp(this.MIN_WIDTH, this.MAX_WIDTH, biomeNoise);
 
-    // 2. Local Variation: Removed for smoother banks as per user request
-    // const localNoise = this.noise.noise2D(200, z * this.BANK_NOISE_SCALE) * 10;
+    // Apply Swamp Modifier: Widen river significantly
+    const mixture = this.biomeManager.getBiomeMixture(worldZ);
+    const getWidthMultiplier = (biome: 'desert' | 'forest' | 'ice' | 'swamp') => {
+      if (biome === 'swamp') return 5.0;
+      if (biome === 'ice') return 4.0; // Ice biome also has wider rivers deep in
+      return 1.0;
+    };
 
-    return Math.max(15, baseWidth);
+    const widthMultiplier = getWidthMultiplier(mixture.biome1) * mixture.weight1 + getWidthMultiplier(mixture.biome2) * mixture.weight2;
+
+    // For ice biome, we previously had logic to widen it "deeper" into the biome.
+    // The simple multiplier above is a good approximation, but let's refine if needed.
+    // The user request for swamp is "~5x the default".
+
+    return Math.max(15, baseWidth * widthMultiplier);
   }
 
   /**

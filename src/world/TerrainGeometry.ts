@@ -48,6 +48,18 @@ export class TerrainGeometry {
         // We add a base height (e.g. 2.0) and clamp
         rawLandHeight = Math.max(2.0, rawLandHeight + 2.0);
 
+        // Apply Swamp Modifier: Flatten terrain banks
+        const mixture = this.riverSystem.biomeManager.getBiomeMixture(wz);
+        const getAmplitudeMultiplier = (biome: 'desert' | 'forest' | 'ice' | 'swamp') => {
+            if (biome === 'swamp') return 0.1; // Very flat
+            return 1.0;
+        };
+        const amplitudeMultiplier = getAmplitudeMultiplier(mixture.biome1) * mixture.weight1 + getAmplitudeMultiplier(mixture.biome2) * mixture.weight2;
+        rawLandHeight *= amplitudeMultiplier;
+
+        // Ensure minimum height above water is maintained (swamps are low but not underwater)
+        rawLandHeight = Math.max(0.5, rawLandHeight);
+
         return rawLandHeight;
     }
 
