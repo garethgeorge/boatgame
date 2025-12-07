@@ -8,7 +8,9 @@ import { AttackAnimalBehavior } from '../behaviors/AttackAnimalBehavior';
 import { AttackAnimal } from '../behaviors/AttackAnimal';
 
 export class BrownBear extends Entity implements AttackAnimal {
-    private action: THREE.AnimationAction | null = null;
+    private roaringAction: THREE.AnimationAction | null = null;
+    private walkingAction: THREE.AnimationAction | null = null;
+    private roarAndWalkAction: THREE.AnimationAction | null = null;
 
     private applyModel(mesh: THREE.Group, onShore: boolean) {
         const bearData = Decorations.getBrownBear();
@@ -26,16 +28,21 @@ export class BrownBear extends Entity implements AttackAnimal {
 
         if (animations.length > 0) {
             this.mixer = new THREE.AnimationMixer(model);
-            // Randomize speed between 1.8 and 2.2
-            this.mixer.timeScale = 1.8 + Math.random() * 0.4;
-            this.action = this.mixer.clipAction(animations[0]);
-            // Randomize start time
-            this.action.time = Math.random() * this.action.getClip().duration;
 
-            if (onShore) {
-                // If on shore, wait for trigger
-            } else {
-                this.action.play();
+            const roaringClip = animations.find(a => a.name === 'Roaring');
+            const walkingClip = animations.find(a => a.name === 'Walking');
+            const roarAndWalkClip = animations.find(a => a.name === 'Roar+Walk');
+
+            if (roaringClip) {
+                this.roaringAction = this.mixer.clipAction(roaringClip);
+            }
+
+            if (walkingClip) {
+                this.walkingAction = this.mixer.clipAction(walkingClip);
+            }
+
+            if (roarAndWalkClip) {
+                this.roarAndWalkAction = this.mixer.clipAction(roarAndWalkClip);
             }
         }
     }
@@ -88,6 +95,9 @@ export class BrownBear extends Entity implements AttackAnimal {
         }
 
         this.behavior = new AttackAnimalBehavior(this, onShore, -2.0);
+
+        this.roaringAction.time = Math.random() * this.roaringAction.getClip().duration;
+        this.roaringAction.play();
     }
 
     private mixer: THREE.AnimationMixer | null = null;
@@ -140,8 +150,11 @@ export class BrownBear extends Entity implements AttackAnimal {
     }
 
     didStartEnteringWater(): void {
-        if (this.action) {
-            this.action.play();
+        if (this.roaringAction && this.roarAndWalkAction) {
+            this.roarAndWalkAction.reset();
+            this.roarAndWalkAction.time = Math.random() * this.roarAndWalkAction.getClip().duration;
+            this.roarAndWalkAction.play();
+            this.roaringAction.crossFadeTo(this.roarAndWalkAction, 1.0, true);
         }
     }
 }
