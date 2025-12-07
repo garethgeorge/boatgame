@@ -3,8 +3,15 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
+import { AttackAnimalBehavior } from '../behaviors/AttackAnimalBehavior';
+import { AttackAnimal } from '../behaviors/AttackAnimal';
 
-export class PolarBear extends Entity {
+export class PolarBear extends Entity implements AttackAnimal {
+    private rearingAction: THREE.AnimationAction | null = null;
+    private walkingAction: THREE.AnimationAction | null = null;
+    private behavior: AttackAnimalBehavior;
+    private mixer: THREE.AnimationMixer | null = null;
+
     private applyModel(mesh: THREE.Group) {
         const bearData = Decorations.getPolarBear();
         if (!bearData)
@@ -21,12 +28,18 @@ export class PolarBear extends Entity {
 
         if (animations.length > 0) {
             this.mixer = new THREE.AnimationMixer(model);
-            // Randomize speed between 1.8 and 2.2
-            this.mixer.timeScale = 1.8 + Math.random() * 0.4;
-            const action = this.mixer.clipAction(animations[0]);
-            // Randomize start time
-            action.time = Math.random() * action.getClip().duration;
-            action.play();
+
+            // Find specific animations
+            const rearingClip = animations.find(a => a.name === 'Rearing');
+            const walkingClip = animations.find(a => a.name === 'Walking');
+
+            if (rearingClip) {
+                this.rearingAction = this.mixer.clipAction(rearingClip);
+            }
+
+            if (walkingClip) {
+                this.walkingAction = this.mixer.clipAction(walkingClip);
+            }
         }
     }
 
@@ -36,7 +49,8 @@ export class PolarBear extends Entity {
         physicsEngine: PhysicsEngine,
         angle: number = 0,
         height: number,
-        terrainNormal?: THREE.Vector3
+        terrainNormal?: THREE.Vector3,
+        onShore: boolean = false
     ) {
         super();
 
@@ -75,9 +89,14 @@ export class PolarBear extends Entity {
         if (terrainNormal) {
             this.normalVector = terrainNormal.clone();
         }
-    }
 
-    private mixer: THREE.AnimationMixer | null = null;
+        // Randomize rear start time
+        this.rearingAction.time = Math.random() * this.rearingAction.getClip().duration;
+        this.rearingAction.play();
+
+        // Initialize behavior with target water height -2.0 (similar to brown bear)
+        this.behavior = new AttackAnimalBehavior(this, onShore, -2.0);
+    }
 
     onHit() {
         this.shouldRemove = true;
@@ -100,7 +119,37 @@ export class PolarBear extends Entity {
             return;
         }
 
-        // Polar bears are mostly idle on shore, no aggressive AI
-        // Future Enhancement: Could add behavior like wandering, reacting to boat, etc.
+        this.behavior.update();
+    }
+
+    // AttackAnimal interface implementation
+    getPhysicsBody(): planck.Body | null {
+        if (this.physicsBodies.length > 0) {
+            return this.physicsBodies[0];
+        }
+        return null;
+    }
+
+    setLandPosition(height: number, normal: THREE.Vector3): void {
+        if (this.meshes.length > 0) {
+            this.meshes[0].position.y = height;
+        }
+        this.normalVector.copy(normal);
+    }
+
+    setWaterPosition(height: number): void {
+        if (this.meshes.length > 0) {
+            this.meshes[0].position.y = height;
+        }
+        this.normalVector.set(0, 1, 0);
+    }
+
+    didStartEnteringWater(): void {
+        if (this.rearingAction && this.walkingAction) {
+            this.walkingAction.reset();
+            this.walkingAction.time = Math.random() * this.walkingAction.getClip().duration;
+            this.walkingAction.play();
+            this.rearingAction.crossFadeTo(this.walkingAction, 1.0, true);
+        }
     }
 }

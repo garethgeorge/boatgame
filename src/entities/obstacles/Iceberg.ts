@@ -7,7 +7,7 @@ import { Decorations } from '../../world/Decorations';
 export class Iceberg extends Entity {
     private animationMixer?: THREE.AnimationMixer;
 
-    constructor(x: number, y: number, radius: number, physicsEngine: PhysicsEngine) {
+    constructor(x: number, y: number, radius: number, hasBear: boolean, physicsEngine: PhysicsEngine) {
         super();
 
         // Physics: Dynamic but heavy (drifting ice)
@@ -89,8 +89,8 @@ export class Iceberg extends Entity {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
 
-        // Add polar bear decoration with 1/3 probability
-        if (Math.random() < 0.333) {
+        // Add polar bear decoration
+        if (hasBear) {
             const polarBearData = Decorations.getPolarBear();
             if (polarBearData) {
                 const { model, animations } = polarBearData;

@@ -11,9 +11,11 @@ export class PolarBearShoreSpawner implements Spawnable {
         // Only spawn in ice biome
         if (biomeType !== 'ice') return 0;
 
-        const probability = 0.1 / chunkLength; // roughly 0.1 bears per 15m chunk
+        // Roughly 0.1 bears per 15m chunk
+        const density = 0.1 / 15;
+        const count = chunkLength * density;
 
-        return Math.random() * probability
+        return Math.floor(count + Math.random());
     }
 
     async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
@@ -36,7 +38,8 @@ export class PolarBearShoreSpawner implements Spawnable {
                     context.physicsEngine,
                     placement.rotation,
                     placement.height,
-                    placement.normal
+                    placement.normal,
+                    true // onShore
                 );
 
                 context.entityManager.add(entity, context.chunkIndex);

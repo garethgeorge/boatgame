@@ -26,7 +26,8 @@ export class IcebergSpawner implements Spawnable {
       });
 
       if (pos) {
-        const iceberg = new Iceberg(pos.x, pos.z, radius, context.physicsEngine);
+        const hasBear = Math.random() < 0.15;
+        const iceberg = new Iceberg(pos.x, pos.z, radius, hasBear, context.physicsEngine);
         context.entityManager.add(iceberg, context.chunkIndex);
       }
     }
