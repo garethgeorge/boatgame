@@ -10,9 +10,25 @@ export class AttackAnimalBehavior {
     private state: 'IDLE' | 'TURNING' | 'ATTACKING' | 'ONSHORE' | 'ENTERING_WATER' = 'IDLE';
     private targetWaterHeight: number;
 
+    // speed factor for entering water/attacking
+    private speed: number;
+    // distance to boat to start entering water
+    private enterWaterDistance: number;
+    // distance to boat to start attacking
+    private startAttackDistance: number;
+    // distance to boat to break off attacking
+    private stopAttackDistance: number;
+
     constructor(entity: AttackAnimal, startOnShore: boolean = false, targetWaterHeight: number = -1.0) {
         this.entity = entity;
         this.targetWaterHeight = targetWaterHeight;
+
+        const aggressiveness = Math.random();
+        this.speed = 1 + 3 * aggressiveness;
+        this.enterWaterDistance = 100 + 100 * aggressiveness;
+        this.startAttackDistance = 30 + 60 * aggressiveness;
+        this.stopAttackDistance = this.startAttackDistance + 20;
+
         if (startOnShore) {
             this.state = 'ONSHORE';
         }
@@ -50,7 +66,7 @@ export class AttackAnimalBehavior {
 
     private updateOnShore(dist: number, physicsBody: planck.Body) {
         // Activate when boat is within 100 units
-        if (dist < 100) {
+        if (dist < this.enterWaterDistance) {
             this.state = 'ENTERING_WATER';
             this.entity.didStartEnteringWater?.();
 
@@ -61,7 +77,7 @@ export class AttackAnimalBehavior {
 
     private updateEnteringWater(pos: planck.Vec2, physicsBody: planck.Body) {
         // Move forward in current facing direction
-        const speed = 8.0; // Walking speed
+        const speed = 8.0 * this.speed; // Walking speed
         const angle = physicsBody.getAngle() - Math.PI / 2;
         physicsBody.applyForceToCenter(planck.Vec2(Math.cos(angle), Math.sin(angle)).mul(speed * physicsBody.getMass()));
 
@@ -111,53 +127,49 @@ export class AttackAnimalBehavior {
     }
 
     private updateIdle(dist: number) {
-        if (dist < 30) {
+        if (dist < this.startAttackDistance) {
             this.state = 'TURNING';
         }
     }
 
     private updateTurning(dist: number, diff: planck.Vec2, physicsBody: planck.Body) {
-        if (dist > 50) {
+        if (dist > this.stopAttackDistance) {
             this.state = 'IDLE';
             return;
         }
 
-        if (dist < 30) {
-            const angleDiff = this.calculateAngleToTarget(diff, physicsBody.getAngle());
+        const angleDiff = this.calculateAngleToTarget(diff, physicsBody.getAngle());
 
-            // Rotate towards target
-            const rotationSpeed = 0.05; // Very slow turn
-            physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60));
+        // Rotate towards target
+        const rotationSpeed = 0.05 * this.speed; // Very slow turn
+        physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60));
 
-            // Drag to stop movement while turning
-            physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.9));
+        // Drag to stop movement while turning
+        physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.9));
 
-            // Check if facing target (within ~15 degrees = 0.26 rad)
-            if (Math.abs(angleDiff) < 0.26) {
-                this.state = 'ATTACKING';
-            }
+        // Check if facing target (within ~15 degrees = 0.26 rad)
+        if (Math.abs(angleDiff) < 0.26) {
+            this.state = 'ATTACKING';
         }
     }
 
     private updateAttacking(dist: number, diff: planck.Vec2, physicsBody: planck.Body) {
-        if (dist > 50) {
+        if (dist > this.stopAttackDistance) {
             this.state = 'IDLE';
             return;
         }
 
-        if (dist < 30) {
-            const angleDiff = this.calculateAngleToTarget(diff, physicsBody.getAngle());
+        const angleDiff = this.calculateAngleToTarget(diff, physicsBody.getAngle());
 
-            diff.normalize();
-            // Move towards target
-            const speed = 8.0; // Faster drift
-            const force = diff.mul(speed * physicsBody.getMass());
-            physicsBody.applyForceToCenter(force);
+        diff.normalize();
+        // Move towards target
+        const speed = 12.0 * this.speed; // Faster drift
+        const force = diff.mul(speed * physicsBody.getMass());
+        physicsBody.applyForceToCenter(force);
 
-            // Continue rotating to track
-            const rotationSpeed = 0.05;
-            physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60));
-        }
+        // Continue rotating to track
+        const rotationSpeed = 0.05 * this.speed;
+        physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60));
     }
 
     private calculateAngleToTarget(diff: planck.Vec2, currentAngle: number): number {
