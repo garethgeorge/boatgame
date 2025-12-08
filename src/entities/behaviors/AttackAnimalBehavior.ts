@@ -45,6 +45,14 @@ export class AttackAnimalBehavior {
         const diff = target.clone().sub(pos);
         const dist = diff.length();
 
+        // Check if behind the boat
+        // V = Forward vector for the boat (local -y)
+        const boatForward = targetBody.getWorldVector(planck.Vec2(0, -1));
+        // U = Vector from boat to animal
+        const boatToAnimal = pos.clone().sub(target);
+        // Dot positive = in front, negative = behind
+        const isBehind = planck.Vec2.dot(boatToAnimal, boatForward) < 0;
+
         switch (this.state) {
             case 'ONSHORE':
                 this.updateOnShore(dist, physicsBody);
@@ -56,10 +64,10 @@ export class AttackAnimalBehavior {
                 this.updateIdle(dist);
                 break;
             case 'TURNING':
-                this.updateTurning(dist, diff, physicsBody);
+                this.updateTurning(dist, diff, physicsBody, isBehind);
                 break;
             case 'ATTACKING':
-                this.updateAttacking(dist, diff, physicsBody);
+                this.updateAttacking(dist, diff, physicsBody, isBehind);
                 break;
         }
     }
@@ -132,7 +140,7 @@ export class AttackAnimalBehavior {
         }
     }
 
-    private updateTurning(dist: number, diff: planck.Vec2, physicsBody: planck.Body) {
+    private updateTurning(dist: number, diff: planck.Vec2, physicsBody: planck.Body, isBehind: boolean) {
         if (dist > this.stopAttackDistance) {
             this.state = 'IDLE';
             return;
@@ -148,14 +156,20 @@ export class AttackAnimalBehavior {
         physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.9));
 
         // Check if facing target (within ~15 degrees = 0.26 rad)
-        if (Math.abs(angleDiff) < 0.26) {
+        // And ensure we are not behind the boat
+        if (Math.abs(angleDiff) < 0.26 && !isBehind) {
             this.state = 'ATTACKING';
         }
     }
 
-    private updateAttacking(dist: number, diff: planck.Vec2, physicsBody: planck.Body) {
+    private updateAttacking(dist: number, diff: planck.Vec2, physicsBody: planck.Body, isBehind: boolean) {
         if (dist > this.stopAttackDistance) {
             this.state = 'IDLE';
+            return;
+        }
+
+        if (isBehind) {
+            this.state = 'TURNING';
             return;
         }
 

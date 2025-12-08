@@ -11,9 +11,16 @@ export class TerrainGeometry {
         this.riverSystem = riverSystem;
     }
 
-    // Returns height of terrain at world space position (wx, wz)
-    public calculateHeight(wx: number, wz: number): number {
 
+    public isPointInRiver(wx: number, wz: number): boolean {
+        const riverCenter = this.riverSystem.getRiverCenter(wz);
+        const riverWidth = this.riverSystem.getRiverWidth(wz);
+        const riverEdge = riverWidth / 2;
+        const distFromCenter = Math.abs(wx - riverCenter);
+        return distFromCenter < riverEdge;
+    }
+
+    private calculateRawLandHeight(wx: number, wz: number): number {
         // 1. Land Generation (Base Terrain)
         // Note that land coordinates are in world space
         // "Mountainous" Map: Low frequency noise to determine biome
@@ -40,6 +47,13 @@ export class TerrainGeometry {
         // FIX: Clamp land height to be strictly above water level to prevent inland lakes
         // We add a base height (e.g. 2.0) and clamp
         rawLandHeight = Math.max(2.0, rawLandHeight + 2.0);
+
+        return rawLandHeight;
+    }
+
+    // Returns height of terrain at world space position (wx, wz)
+    public calculateHeight(wx: number, wz: number): number {
+        const rawLandHeight = this.calculateRawLandHeight(wx, wz);
 
         // Apply Bank Taper: Force land height to 0 at the river edge
         // Smoothly ramp up over 15 units
@@ -70,12 +84,18 @@ export class TerrainGeometry {
 
     // Returns normal of terrain at world space position (wx, wz)
     public calculateNormal(wx: number, wz: number): THREE.Vector3 {
+        // (a) If in river, return upright normal
+        if (this.isPointInRiver(wx, wz)) {
+            return new THREE.Vector3(0, 1, 0);
+        }
+
+        // (b) If on land, ignore river for height values (use rawLandHeight)
         const epsilon = 0.1;
 
-        const hL = this.calculateHeight(wx - epsilon, wz);
-        const hR = this.calculateHeight(wx + epsilon, wz);
-        const hD = this.calculateHeight(wx, wz - epsilon);
-        const hU = this.calculateHeight(wx, wz + epsilon);
+        const hL = this.calculateRawLandHeight(wx - epsilon, wz);
+        const hR = this.calculateRawLandHeight(wx + epsilon, wz);
+        const hD = this.calculateRawLandHeight(wx, wz - epsilon);
+        const hU = this.calculateRawLandHeight(wx, wz + epsilon);
 
         // Normal vector: cross product of tangent vectors
         const v1 = new THREE.Vector3(2 * epsilon, hR - hL, 0);
