@@ -294,7 +294,7 @@ export class Decorations {
     };
   }
 
-  static getRock(biome: 'desert' | 'forest' | 'ice', size: number): THREE.Group {
+  static getRock(biome: 'desert' | 'forest' | 'ice' | 'swamp', size: number): THREE.Group {
     if (this.cache.rocks.length === 0) this.generateCache();
 
     const isIcy = biome === 'ice';

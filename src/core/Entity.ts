@@ -170,7 +170,7 @@ export abstract class Entity {
       }
 
       // Initial sync
-      this.syncBodyMesh(body, group);
+      this.syncBodyMesh(body, group, 1.0);
       this.debugMeshes.push(group);
     }
 

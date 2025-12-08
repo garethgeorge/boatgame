@@ -106,21 +106,9 @@ export class SkyManager {
 
         // Update Fog Density based on biome
         if (this.scene.fog instanceof THREE.Fog) {
-            // Base Fog (Desert/Forest): Far away, subtle
-            const baseNear = 100;
-            const baseFar = 800;
-
-            // Ice Fog: Close in, "not 100% opaque" (meaning maybe not fully white? or just not too dense?)
-            // User said "dramatically reduce... snow storm".
-            const iceNear = 0; // Start fog immediately
-            const iceFar = 200; // Extreme dense fog (Snow storm) - Reduced from 50
-
-            // Lerp values
-            const targetNear = THREE.MathUtils.lerp(baseNear, iceNear, biomeFogDensity);
-            const targetFar = THREE.MathUtils.lerp(baseFar, iceFar, biomeFogDensity);
-
-            this.scene.fog.near = targetNear;
-            this.scene.fog.far = targetFar;
+            const fogRange = RiverSystem.getInstance().biomeManager.getBiomeFogRange(boatZ);
+            this.scene.fog.near = fogRange.near;
+            this.scene.fog.far = fogRange.far;
         }
     }
 

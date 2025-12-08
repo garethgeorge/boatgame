@@ -12,7 +12,7 @@ export class BiomeManager {
   private readonly COLOR_DESERT = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 }; // Rich Ochre
   private readonly COLOR_FOREST = { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 }; // Rich Dark Green
   private readonly COLOR_ICE = { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 }; // White/Blue
-  private readonly COLOR_SWAMP = { r: 0x5D / 255, g: 0x53 / 255, b: 0x46 / 255 }; // Desaturated Earth Tone
+  private readonly COLOR_SWAMP = { r: 0x4d / 255, g: 0x3e / 255, b: 0x30 / 255 }; // Muddy Brown
   private readonly COLOR_SWAMP_TINT = { r: 0xB0 / 255, g: 0xA0 / 255, b: 0xD0 / 255 }; // Lavender Tint
 
   constructor() {
@@ -88,15 +88,34 @@ export class BiomeManager {
   }
 
   public getBiomeFogDensity(worldZ: number): number {
+    // Kept for screen tint intensity
     const mixture = this.getBiomeMixture(worldZ);
 
     const getDensity = (biome: BiomeType) => {
       if (biome === 'ice') return 0.9;
-      if (biome === 'swamp') return 0.6;
+      if (biome === 'swamp') return 0.8; // High density for swamp
       return 0.0;
     };
 
     return getDensity(mixture.biome1) * mixture.weight1 + getDensity(mixture.biome2) * mixture.weight2;
+  }
+
+  public getBiomeFogRange(worldZ: number): { near: number, far: number } {
+    const mixture = this.getBiomeMixture(worldZ);
+
+    const getRange = (biome: BiomeType) => {
+      if (biome === 'ice') return { near: 0, far: 400 }; // Increased from 200
+      if (biome === 'swamp') return { near: 0, far: 90 }; // Increased by 50% (was 60)
+      return { near: 100, far: 800 }; // Default (Desert/Forest)
+    };
+
+    const range1 = getRange(mixture.biome1);
+    const range2 = getRange(mixture.biome2);
+
+    return {
+      near: this.lerp(range1.near, range2.near, mixture.weight2), // weight2 is t from 1 to 2
+      far: this.lerp(range1.far, range2.far, mixture.weight2)
+    };
   }
 
   public getBiomeGroundColor(worldZ: number): { r: number, g: number, b: number } {
@@ -216,10 +235,10 @@ export class BiomeManager {
         currentTop.lerp(iceTopMod, 0.8);
         currentBot.lerp(iceBotMod, 0.8);
       } else if (biome === 'swamp') {
-        const swampTopMod = new THREE.Color(0x8877aa); // Muted Purple
-        const swampBotMod = new THREE.Color(0xaa99cc); // Lavender
-        currentTop.lerp(swampTopMod, 0.7);
-        currentBot.lerp(swampBotMod, 0.7);
+        const swampTopMod = new THREE.Color(0x776655); // Muted Brown/Purple
+        const swampBotMod = new THREE.Color(0x5D5346); // Earthen Tone (Matches Banks)
+        currentTop.lerp(swampTopMod, 0.8);
+        currentBot.lerp(swampBotMod, 0.9); // Strong influence for fog color
       }
       // Desert uses default colors (no modification)
     }

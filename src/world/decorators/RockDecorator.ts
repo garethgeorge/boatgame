@@ -16,6 +16,7 @@ export class RockDecorator extends BaseDecorator {
             if (biomeType === 'desert') threshold = 0.96;
             else if (biomeType === 'forest') threshold = 0.96;
             else if (biomeType === 'ice') threshold = 0.90;
+            else if (biomeType === 'swamp') threshold = 0.95;
 
             if (Math.random() > threshold) {
                 const rock = Decorations.getRock(biomeType, Math.random());

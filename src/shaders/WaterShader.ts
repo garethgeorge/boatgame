@@ -10,6 +10,8 @@ export const WaterShader = {
     uBoatVelocity: { value: new THREE.Vector2(0, 0) },
     uBoatDirection: { value: new THREE.Vector2(0, -1) },
     uBoatHistory: { value: new Array(8).fill(new THREE.Vector3(0, 0, 0)) },
+    uSwampFactor: { value: 0.0 },
+    uSwampColor: { value: new THREE.Color(0x2f4f2f) }, // Dark Green
   },
   vertexShader: `
     varying vec2 vUv;
@@ -33,6 +35,8 @@ export const WaterShader = {
     uniform vec2 uBoatVelocity;
     uniform vec2 uBoatDirection;
     uniform vec3 uBoatHistory[8];
+    uniform float uSwampFactor;
+    uniform vec3 uSwampColor;
 
     varying vec2 vUv;
     varying vec3 vWorldPosition;
@@ -171,7 +175,84 @@ export const WaterShader = {
       
       // Clamp wake
       wakeMix = clamp(wakeMix, 0.0, 1.0);
-      
+
+    // --- Swamp Ripple Logic ---
+    float rippleMix = 0.0;
+    if (uSwampFactor > 0.01) {
+        vec2 rippleUV = vWorldPosition.xz * 0.5; // Scale for ripples
+        float rippleTime = uTime * 2.0;
+        
+        // Grid based ripples
+        vec2 gv = fract(rippleUV) - 0.5;
+        vec2 id = floor(rippleUV);
+        
+        float d = length(gv);
+        
+        // Random start time per cell
+        float t = rippleTime + snoise(id) * 10.0;
+        
+        // Periodic ripples
+        float p = fract(t); // 0 to 1
+        
+        // Ring: sin wave expanding
+        // Only show if p is small (start of cycle)
+        // But we want random frequency.
+        
+        // Better approach: Voronoi-ish or just simple noise rings
+        // Let's use a simple interference pattern of multiple sine waves
+        float r1 = sin(length(vWorldPosition.xz - vec2(10.0, 10.0)) * 2.0 - uTime * 4.0);
+        float r2 = sin(length(vWorldPosition.xz - vec2(-20.0, 50.0)) * 3.0 - uTime * 3.0);
+        // This is too static.
+        
+        // Let's go with the "Rain" effect using noise to trigger
+        // Simplified: Just use high frequency noise that looks like disturbed water
+        // plus some circular shapes.
+        
+        // Circular Ripple Function
+        // We can't easily do many random expanding rings without a loop or complex noise.
+        // Let's stick to a "boiling" / "active" stagnant water look using noise.
+        // Or "Bug landing" = random small circles appearing.
+        
+        // Let's try a cellular noise approach for rings
+        // For each cell, pick a random center and time.
+        // If time matches, draw ring.
+        
+        vec2 cellUV = vWorldPosition.xz * 0.2; // 5 meter cells
+        vec2 cellID = floor(cellUV);
+        vec2 cellPos = fract(cellUV);
+        
+        float cellNoise = snoise(cellID); // Random value per cell
+        float cellTime = uTime + cellNoise * 100.0;
+        
+        // Randomize center within cell
+        vec2 center = vec2(0.5) + vec2(snoise(cellID + 1.0), snoise(cellID + 2.0)) * 0.3;
+        
+        float dist = length(cellPos - center);
+        
+        // Ripple lifecycle: 0 to 1
+        float life = fract(cellTime * 0.5); // 2 seconds per ripple
+        
+        // Ring radius expands from 0 to 0.5
+        float radius = life * 0.8;
+        
+        // Ring width
+        float width = 0.05;
+        
+        // Ring mask
+        float ring = smoothstep(width, 0.0, abs(dist - radius));
+        
+        // Fade out as it expands
+        ring *= (1.0 - life);
+        
+        // Only show ripples in some cells (sparse bugs)
+        if (cellNoise > 0.3) {
+             rippleMix += ring;
+        }
+        
+        // Add a second layer for density
+        // ... (Skipping for performance/simplicity, one layer might be enough or we can just rely on noise)
+    }
+
       // --- End Wake Logic ---
       
       // Toon Shading (Lighting)
@@ -186,13 +267,27 @@ export const WaterShader = {
       
       // Final Color
       vec3 baseColor = uColor * lightIntensity;
+      vec3 swampColor = uSwampColor * lightIntensity;
+      
       vec3 wakeColor = vec3(0.9, 0.9, 0.9); // Light Grey/White
       
       // Combine flow lines and wake
       // Flow lines are subtle, wake is dominant
-      float totalMix = clamp(lineMix * 0.1 + wakeMix, 0.0, 1.0);
       
-      vec3 finalColor = mix(baseColor, wakeColor, totalMix);
+      // Reduce flow line intensity in swamp (stagnant water)
+      float flowIntensity = 1.0 - uSwampFactor * 0.8; // Reduce by 80% in swamp
+      
+      float totalMix = clamp(lineMix * 0.1 * flowIntensity + wakeMix, 0.0, 1.0);
+      
+      // Mix Base and Swamp
+      vec3 waterColor = mix(baseColor, swampColor, uSwampFactor);
+      
+      // Add Ripples to Swamp (as white highlights)
+      if (uSwampFactor > 0.0) {
+          waterColor = mix(waterColor, vec3(0.8, 0.9, 0.8), rippleMix * uSwampFactor * 0.5);
+      }
+      
+      vec3 finalColor = mix(waterColor, wakeColor, totalMix);
       
       gl_FragColor = vec4(finalColor, 0.8); // Transparency
     }

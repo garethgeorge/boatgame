@@ -20,15 +20,21 @@ export class Skybox {
         };
 
         const skyMat = new THREE.ShaderMaterial({
-            uniforms: this.uniforms,
+            uniforms: THREE.UniformsUtils.merge([
+                this.uniforms,
+                THREE.UniformsLib['fog']
+            ]),
             vertexShader: `
         varying vec3 vWorldPosition;
         varying vec3 vLocalPosition;
+        #include <fog_pars_vertex>
         void main() {
           vec4 worldPosition = modelMatrix * vec4(position, 1.0);
           vWorldPosition = worldPosition.xyz;
           vLocalPosition = position;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * mvPosition;
+          #include <fog_vertex>
         }
       `,
             fragmentShader: `
@@ -38,12 +44,15 @@ export class Skybox {
         uniform float exponent;
         varying vec3 vWorldPosition;
         varying vec3 vLocalPosition;
+        #include <fog_pars_fragment>
         void main() {
           float h = normalize(vLocalPosition + vec3(0, offset, 0)).y;
           gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
+          #include <fog_fragment>
         }
       `,
-            side: THREE.BackSide
+            side: THREE.BackSide,
+            fog: true
         });
 
         return new THREE.Mesh(skyGeo, skyMat);

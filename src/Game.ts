@@ -6,6 +6,7 @@ import { EntityManager } from './core/EntityManager';
 import { TerrainManager } from './world/TerrainManager';
 import { TerrainChunk } from './world/TerrainChunk';
 import { Decorations } from './world/Decorations';
+import { RiverSystem } from './world/RiverSystem';
 import { ObstacleManager } from './managers/ObstacleManager';
 import { Boat } from './entities/Boat';
 import { Alligator } from './entities/obstacles/Alligator';
@@ -260,6 +261,15 @@ export class Game {
         if (TerrainChunk.waterMaterial) {
             TerrainChunk.waterMaterial.uniforms.uTime.value += dt;
             TerrainChunk.waterMaterial.uniforms.uSunPosition.value.copy(this.skyManager.getSunPosition());
+
+            // Update Swamp Factor
+            const boatZ = this.boat.meshes[0].position.z;
+            const mixture = RiverSystem.getInstance().biomeManager.getBiomeMixture(boatZ);
+            let swampFactor = 0.0;
+            if (mixture.biome1 === 'swamp') swampFactor += mixture.weight1;
+            if (mixture.biome2 === 'swamp') swampFactor += mixture.weight2;
+
+            TerrainChunk.waterMaterial.uniforms.uSwampFactor.value = swampFactor;
         }
     }
 
