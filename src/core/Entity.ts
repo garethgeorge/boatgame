@@ -112,7 +112,16 @@ export abstract class Entity {
 
     // Apply rotation with optional normal alignment
     if (this.normalVector) {
-      mesh.setRotationFromAxisAngle(this.normalVector.clone(), -angle);
+      //mesh.setRotationFromAxisAngle(this.normalVector.clone(), -angle);
+      const up = new THREE.Vector3(0, 1, 0); // Default Y-axis
+      const normalQuaternion = new THREE.Quaternion().setFromUnitVectors(up, this.normalVector);
+
+      // The axis for this rotation is the targetNormal itself
+      const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(this.normalVector, -angle);
+
+      // Multiply the orientation by the rotation to get the final transformation
+      // Order matters: first align, then rotate around the aligned axis.
+      mesh.quaternion.multiplyQuaternions(rotationQuaternion, normalQuaternion);
     } else {
       // Standard rotation around Y. Intentionally preserves any other rotations.
       mesh.rotation.y = -angle;
