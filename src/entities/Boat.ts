@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Entity } from '../core/Entity';
-import { InputState } from '../managers/InputManager';
+import { InputManager } from '../managers/InputManager';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 
 export class Boat extends Entity {
@@ -124,7 +124,7 @@ export class Boat extends Entity {
         mesh.receiveShadow = true;
     }
 
-    update(dt: number, input?: InputState) {
+    update(dt: number, input?: InputManager) {
         if (this.physicsBodies.length === 0 || !input) return;
         const physicsBody = this.physicsBodies[0];
 
@@ -132,7 +132,7 @@ export class Boat extends Entity {
 
         // Throttle (Sticky or Touch)
         // If touch throttle is active (non-zero), use it directly (Spring-loaded)
-        if (input.stop) {
+        if (input.isDown('stop')) {
             this.currentThrottle = 0;
             physicsBody.setLinearVelocity(planck.Vec2(0, 0));
             physicsBody.setAngularVelocity(0);
@@ -140,9 +140,9 @@ export class Boat extends Entity {
             this.currentThrottle = input.touchThrottle;
         } else {
             // Keyboard Control (Sticky)
-            if (input.forward) {
+            if (input.isDown('forward')) {
                 this.currentThrottle = Math.min(1.0, this.currentThrottle + this.THROTTLE_SPEED * dt);
-            } else if (input.backward) {
+            } else if (input.isDown('backward')) {
                 this.currentThrottle = Math.max(-0.5, this.currentThrottle - this.THROTTLE_SPEED * dt);
             }
         }
@@ -153,9 +153,9 @@ export class Boat extends Entity {
             this.currentSteering = -input.tilt * this.MAX_STEER_ANGLE_TILT;
         } else {
             // Keyboard Control (Digital)
-            if (input.left) {
+            if (input.isDown('left')) {
                 this.currentSteering = Math.min(this.MAX_STEER_ANGLE_KEYBOARD, this.currentSteering + this.STEER_SPEED * dt);
-            } else if (input.right) {
+            } else if (input.isDown('right')) {
                 this.currentSteering = Math.max(-this.MAX_STEER_ANGLE_KEYBOARD, this.currentSteering - this.STEER_SPEED * dt);
             } else {
                 // Decay steering

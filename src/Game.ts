@@ -37,7 +37,11 @@ export class Game {
 
     score: number = 0;
     fuel: number = 100;
-    prevSkipBiome: boolean = false;
+
+    // Game State
+    isPaused: boolean = false;
+    debugMode: boolean = false;
+    viewMode: 'close' | 'far' = 'close';
 
     constructor() {
         this.container = document.getElementById('game-container') as HTMLElement;
@@ -164,17 +168,31 @@ export class Game {
     update(dt: number) {
         if (!this.isPlaying) return;
 
-        const input = this.inputManager.getState();
+        // Update Input State
+        this.inputManager.update();
 
-        if (input.skipBiome && !this.prevSkipBiome) {
+        // Handle Global Toggles (Pause, Debug, ViewMode)
+        if (this.inputManager.wasPressed('paused')) {
+            this.isPaused = !this.isPaused;
+            // Prevent default behavior if needed, usually handled in InputManager to stop scrolling
+        }
+
+        if (this.inputManager.wasPressed('debug')) {
+            this.debugMode = !this.debugMode;
+        }
+
+        if (this.inputManager.wasPressed('viewMode')) {
+            this.viewMode = this.viewMode === 'close' ? 'far' : 'close';
+        }
+
+        if (this.inputManager.wasPressed('skipBiome')) {
             this.skipToNextBiome();
         }
-        this.prevSkipBiome = input.skipBiome;
 
         // Pause handling - skip all updates if paused
-        if (input.paused) return;
+        if (this.isPaused) return;
 
-        Profiler.setVisibility(input.debug);
+        Profiler.setVisibility(this.debugMode);
 
         // Update Physics
         Profiler.start('Physics');
@@ -182,17 +200,18 @@ export class Game {
         Profiler.end('Physics');
 
         // Update Entities (includes syncing physics -> graphics)
-        // We pass input to boat manually for now, or we could pass it to all entities
+        // Update Entities (includes syncing physics -> graphics)
+        // We pass input manager directly now
         Profiler.start('Entities');
-        this.boat.update(dt, input);
+        this.boat.update(dt, this.inputManager);
         this.entityManager.update(dt);
         Profiler.end('Entities');
 
         // Update Terrain
         if (this.boat.meshes.length > 0) {
             Profiler.start('Terrain');
-            this.terrainManager.setDebug(input.debug);
-            this.entityManager.setDebug(input.debug);
+            this.terrainManager.setDebug(this.debugMode);
+            this.entityManager.setDebug(this.debugMode);
             this.terrainManager.update(this.boat, dt);
             // ObstacleManager update is now handled by TerrainManager events
             Profiler.end('Terrain');
@@ -231,9 +250,11 @@ export class Game {
             // Offset: Behind (positive Z relative to boat facing -Z) and Up (positive Y)
             // If boat faces -Z, "behind" is +Z.
 
-            const viewMode = this.inputManager.keys.viewMode;
-            const offsetDistance = viewMode === 'far' ? 20 : 7;
-            const offsetHeight = viewMode === 'far' ? 15 : 3;
+            // Offset: Behind (positive Z relative to boat facing -Z) and Up (positive Y)
+            // If boat faces -Z, "behind" is +Z.
+
+            const offsetDistance = this.viewMode === 'far' ? 20 : 7;
+            const offsetHeight = this.viewMode === 'far' ? 15 : 3;
 
             // Calculate offset vector based on rotation
             // We want to be 'offsetDistance' units "behind" the boat.

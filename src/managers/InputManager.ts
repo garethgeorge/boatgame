@@ -1,41 +1,23 @@
-export interface InputState {
-    forward: boolean;
-    backward: boolean;
-    left: boolean;
-    right: boolean;
-    stop: boolean;
-    viewMode: 'close' | 'far';
-    debug: boolean;
-    paused: boolean;
-    tilt: number; // -1.0 to 1.0 (Left to Right)
-    touchThrottle: number; // -1.0 to 1.0 (Down to Up)
-    skipBiome: boolean;
-}
+export type InputAction = 'forward' | 'backward' | 'left' | 'right' | 'stop' | 'viewMode' | 'debug' | 'paused' | 'skipBiome';
 
 export class InputManager {
-    keys: InputState;
+    // State tracked directly from event listeners
+    private liveActions: Set<InputAction> = new Set();
+
+    // State snapshots for the current and previous frames
+    private currentActions: Set<InputAction> = new Set();
+    private previousActions: Set<InputAction> = new Set();
+
+    // Analog inputs (not boolean)
+    public tilt: number = 0; // -1.0 to 1.0
+    public touchThrottle: number = 0; // -1.0 to 1.0
 
     constructor() {
-        this.keys = {
-            forward: false,
-            backward: false,
-            left: false,
-            right: false,
-            stop: false,
-            viewMode: 'close',
-            debug: false,
-            paused: false,
-            tilt: 0,
-            touchThrottle: 0,
-            skipBiome: false
-        };
-
         this.init();
     }
 
     init() {
         window.addEventListener('keydown', (e) => this.onKeyDown(e));
-        window.addEventListener('keyup', (e) => this.onKeyUp(e));
         window.addEventListener('keyup', (e) => this.onKeyUp(e));
 
         // Accelerometer support
@@ -47,17 +29,31 @@ export class InputManager {
         window.addEventListener('touchend', (e) => this.onTouchEnd(e));
     }
 
+    public update() {
+        // Snapshot state for this frame
+        this.previousActions = new Set(this.currentActions);
+        this.currentActions = new Set(this.liveActions);
+    }
+
+    public isDown(action: InputAction): boolean {
+        return this.currentActions.has(action);
+    }
+
+    public wasPressed(action: InputAction): boolean {
+        return this.currentActions.has(action) && !this.previousActions.has(action);
+    }
+
+    public wasReleased(action: InputAction): boolean {
+        return !this.currentActions.has(action) && this.previousActions.has(action);
+    }
+
+    // --- Event Handlers ---
+
     private touchStartY: number | null = null;
 
     onTouchStart(e: TouchEvent) {
         if (e.touches.length > 0) {
             this.touchStartY = e.touches[0].clientY;
-            // Don't prevent default here, might interfere with UI? 
-            // Actually, we want to prevent scrolling.
-            // But maybe only if we are "grabbing" the joystick?
-            // User said "tap on screen and drag".
-            // Let's prevent default to stop scrolling.
-            // e.preventDefault(); 
         }
     }
 
@@ -71,7 +67,7 @@ export class InputManager {
             const range = 150;
             const throttle = Math.max(-1, Math.min(1, deltaY / range));
 
-            this.keys.touchThrottle = throttle;
+            this.touchThrottle = throttle;
 
             // Prevent scrolling while dragging
             if (e.cancelable) e.preventDefault();
@@ -80,7 +76,7 @@ export class InputManager {
 
     onTouchEnd(e: TouchEvent) {
         this.touchStartY = null;
-        this.keys.touchThrottle = 0; // Reset on release
+        this.touchThrottle = 0; // Reset on release
     }
 
     async requestPermission(): Promise<boolean> {
@@ -98,19 +94,6 @@ export class InputManager {
     }
 
     onDeviceOrientation(e: DeviceOrientationEvent) {
-        // Gamma is usually left/right tilt (-90 to 90)
-        // We want to map this to -1 to 1
-        // Holding phone in landscape:
-        // Beta is tilt front/back (-180 to 180)
-        // Gamma is tilt left/right (-90 to 90)
-
-        // Let's assume Landscape mode.
-        // If user holds phone in landscape, tilting left/right corresponds to Beta?
-        // Actually, it depends on orientation.
-        // Let's use a simple heuristic or just Gamma for now (Portrait) and Beta (Landscape)?
-        // Most browser games lock to landscape.
-        // In Landscape, tilting left/right (steering) is Beta.
-
         let tilt = 0;
 
         // Check orientation
@@ -118,14 +101,8 @@ export class InputManager {
 
         if (typeof orientation === 'string' && orientation.includes('landscape')) {
             // Landscape: Beta is tilt
-            // Beta range: -180 to 180.
-            // Center is 0?
-            // Tilting left (top goes down) -> Beta negative?
-            // Let's clamp to -45 to 45 degrees for full steering
             if (e.beta !== null) {
                 tilt = Math.max(-45, Math.min(45, e.beta)) / 45;
-                // Invert if needed based on testing. 
-                // Usually tilting left (left side down) is negative beta?
             }
         } else {
             // Portrait: Gamma is tilt
@@ -134,43 +111,42 @@ export class InputManager {
             }
         }
 
-        // Update state
-        this.keys.tilt = tilt;
+        this.tilt = tilt;
     }
 
     onKeyDown(e: KeyboardEvent) {
         switch (e.code) {
             case 'ArrowUp':
             case 'KeyW':
-                this.keys.forward = true;
+                this.liveActions.add('forward');
                 break;
             case 'ArrowDown':
             case 'KeyS':
-                this.keys.backward = true;
+                this.liveActions.add('backward');
                 break;
             case 'ArrowLeft':
             case 'KeyA':
-                this.keys.left = true;
+                this.liveActions.add('left');
                 break;
             case 'ArrowRight':
             case 'KeyD':
-                this.keys.right = true;
+                this.liveActions.add('right');
                 break;
             case 'KeyX':
-                this.keys.stop = true;
+                this.liveActions.add('stop');
                 break;
             case 'KeyV':
-                this.keys.viewMode = this.keys.viewMode === 'close' ? 'far' : 'close';
+                this.liveActions.add('viewMode');
                 break;
             case 'KeyZ':
-                this.keys.debug = !this.keys.debug;
+                this.liveActions.add('debug');
                 break;
             case 'Space':
-                this.keys.paused = !this.keys.paused;
+                this.liveActions.add('paused');
                 e.preventDefault(); // Prevent scrolling
                 break;
             case 'KeyB':
-                this.keys.skipBiome = true;
+                this.liveActions.add('skipBiome');
                 break;
         }
     }
@@ -179,30 +155,35 @@ export class InputManager {
         switch (e.code) {
             case 'ArrowUp':
             case 'KeyW':
-                this.keys.forward = false;
+                this.liveActions.delete('forward');
                 break;
             case 'ArrowDown':
             case 'KeyS':
-                this.keys.backward = false;
+                this.liveActions.delete('backward');
                 break;
             case 'ArrowLeft':
             case 'KeyA':
-                this.keys.left = false;
+                this.liveActions.delete('left');
                 break;
             case 'ArrowRight':
             case 'KeyD':
-                this.keys.right = false;
+                this.liveActions.delete('right');
                 break;
             case 'KeyX':
-                this.keys.stop = false;
+                this.liveActions.delete('stop');
+                break;
+            case 'KeyV':
+                this.liveActions.delete('viewMode');
+                break;
+            case 'KeyZ':
+                this.liveActions.delete('debug');
+                break;
+            case 'Space':
+                this.liveActions.delete('paused');
                 break;
             case 'KeyB':
-                this.keys.skipBiome = false;
+                this.liveActions.delete('skipBiome');
                 break;
         }
-    }
-
-    getState(): InputState {
-        return { ...this.keys };
     }
 }
