@@ -92,7 +92,7 @@ export class Monkey extends Entity implements AttackAnimal {
         }
 
         // Use -1.0 target water height (similar to Alligator)
-        this.behavior = new AttackAnimalBehavior(this, onShore, -1.0, stayOnShore);
+        this.behavior = new AttackAnimalBehavior(this, onShore, -1.25, stayOnShore);
 
         if (onShore && this.danceAction) {
             this.danceAction.play();
