@@ -37,7 +37,8 @@ export class Alligator extends Entity implements AttackAnimal {
         angle: number = 0,
         height?: number,
         terrainNormal?: THREE.Vector3,
-        onShore: boolean = false
+        onShore: boolean = false,
+        stayOnShore: boolean = false
     ) {
         super();
 
@@ -81,7 +82,7 @@ export class Alligator extends Entity implements AttackAnimal {
         else
             this.normalVector = new THREE.Vector3(0, 1, 0);
 
-        this.behavior = new AttackAnimalBehavior(this, onShore, -1.0);
+        this.behavior = new AttackAnimalBehavior(this, onShore, -1.0, stayOnShore);
     }
 
     private mixer: THREE.AnimationMixer | null = null;

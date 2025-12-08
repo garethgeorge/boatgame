@@ -19,9 +19,12 @@ export class AttackAnimalBehavior {
     // distance to boat to break off attacking
     private stopAttackDistance: number;
 
-    constructor(entity: AttackAnimal, startOnShore: boolean = false, targetWaterHeight: number = -1.0) {
+    private stayOnShore: boolean;
+
+    constructor(entity: AttackAnimal, startOnShore: boolean = false, targetWaterHeight: number = -1.0, stayOnShore: boolean = false) {
         this.entity = entity;
         this.targetWaterHeight = targetWaterHeight;
+        this.stayOnShore = stayOnShore;
 
         const aggressiveness = Math.random();
         this.speed = 1 + 3 * aggressiveness;
@@ -74,7 +77,7 @@ export class AttackAnimalBehavior {
 
     private updateOnShore(dist: number, physicsBody: planck.Body) {
         // Activate when boat is within 100 units
-        if (dist < this.enterWaterDistance) {
+        if (dist < this.enterWaterDistance && !this.stayOnShore) {
             this.state = 'ENTERING_WATER';
             this.entity.didStartEnteringWater?.();
 

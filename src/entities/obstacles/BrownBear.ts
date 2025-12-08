@@ -54,7 +54,8 @@ export class BrownBear extends Entity implements AttackAnimal {
         angle: number = 0,
         height: number,
         terrainNormal?: THREE.Vector3,
-        onShore: boolean = false
+        onShore: boolean = false,
+        stayOnShore: boolean = false
     ) {
         super();
 
@@ -94,7 +95,7 @@ export class BrownBear extends Entity implements AttackAnimal {
             this.normalVector = terrainNormal.clone();
         }
 
-        this.behavior = new AttackAnimalBehavior(this, onShore, -2.0);
+        this.behavior = new AttackAnimalBehavior(this, onShore, -2.0, stayOnShore);
 
         this.roaringAction.time = Math.random() * this.roaringAction.getClip().duration;
         this.roaringAction.play();

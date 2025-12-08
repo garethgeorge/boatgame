@@ -38,7 +38,8 @@ export class AlligatorShoreSpawner implements Spawnable {
                     placement.rotation,
                     placement.height,
                     placement.normal,
-                    true  // onShore = true
+                    true,  // onShore = true
+                    Math.random() > 0.5 // 50% chance to stay on shore
                 );
 
                 context.entityManager.add(entity, context.chunkIndex);

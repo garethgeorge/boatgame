@@ -35,7 +35,8 @@ export class Decorations {
     hippo: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
     alligator: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
     penguinKayak: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
-    brownBear: { model: THREE.Group | null, animations: THREE.AnimationClip[] }
+    brownBear: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
+    monkey: { model: THREE.Group | null, animations: THREE.AnimationClip[] }
   } = {
       trees: [],
       bushes: [],
@@ -45,7 +46,8 @@ export class Decorations {
       hippo: { model: null, animations: [] },
       alligator: { model: null, animations: [] },
       penguinKayak: { model: null, animations: [] },
-      brownBear: { model: null, animations: [] }
+      brownBear: { model: null, animations: [] },
+      monkey: { model: null, animations: [] }
     };
 
   private static loadPromise: Promise<void> | null = null;
@@ -90,13 +92,13 @@ export class Decorations {
   }
 
   static async preload(): Promise<void> {
-    if (this.cache.trees.length > 0 && this.cache.polarBear.model && this.cache.hippo.model && this.cache.alligator.model && this.cache.penguinKayak.model && this.cache.brownBear.model) return;
+    if (this.cache.trees.length > 0 && this.cache.polarBear.model && this.cache.hippo.model && this.cache.alligator.model && this.cache.penguinKayak.model && this.cache.brownBear.model && this.cache.monkey.model) return;
     if (this.loadPromise) return this.loadPromise;
 
     this.loadPromise = new Promise((resolve, reject) => {
       const loader = new GLTFLoader();
       let loadedCount = 0;
-      const totalModels = 5;
+      const totalModels = 6;
 
       const onModelLoaded = () => {
         loadedCount++;
@@ -191,6 +193,23 @@ export class Decorations {
         onModelLoaded();
       }, undefined, (error) => {
         console.error('An error occurred loading the brown bear model:', error);
+        onModelLoaded(); // Continue even if this model fails
+      });
+
+      // Load monkey model
+      loader.load('assets/monkey-model-1.glb', (gltf) => {
+        const model = gltf.scene;
+        model.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        this.cache.monkey.model = model;
+        this.cache.monkey.animations = gltf.animations || [];
+        onModelLoaded();
+      }, undefined, (error) => {
+        console.error('An error occurred loading the monkey model:', error);
         onModelLoaded(); // Continue even if this model fails
       });
     });
@@ -291,6 +310,19 @@ export class Decorations {
     return {
       model: clonedModel,
       animations: this.cache.brownBear.animations
+    };
+  }
+
+  static getMonkey(): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
+    if (!this.cache.monkey.model) {
+      console.warn('Monkey model not loaded yet');
+      return null;
+    }
+
+    const clonedModel = SkeletonUtils.clone(this.cache.monkey.model) as THREE.Group;
+    return {
+      model: clonedModel,
+      animations: this.cache.monkey.animations
     };
   }
 

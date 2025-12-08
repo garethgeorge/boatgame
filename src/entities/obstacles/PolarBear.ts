@@ -50,7 +50,8 @@ export class PolarBear extends Entity implements AttackAnimal {
         angle: number = 0,
         height: number,
         terrainNormal?: THREE.Vector3,
-        onShore: boolean = false
+        onShore: boolean = false,
+        stayOnShore: boolean = false
     ) {
         super();
 
@@ -95,7 +96,7 @@ export class PolarBear extends Entity implements AttackAnimal {
         this.rearingAction.play();
 
         // Initialize behavior with target water height -2.0 (similar to brown bear)
-        this.behavior = new AttackAnimalBehavior(this, onShore, -2.0);
+        this.behavior = new AttackAnimalBehavior(this, onShore, -2.0, stayOnShore);
     }
 
     onHit() {
