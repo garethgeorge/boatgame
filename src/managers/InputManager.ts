@@ -9,6 +9,7 @@ export interface InputState {
     paused: boolean;
     tilt: number; // -1.0 to 1.0 (Left to Right)
     touchThrottle: number; // -1.0 to 1.0 (Down to Up)
+    skipBiome: boolean;
 }
 
 export class InputManager {
@@ -25,7 +26,8 @@ export class InputManager {
             debug: false,
             paused: false,
             tilt: 0,
-            touchThrottle: 0
+            touchThrottle: 0,
+            skipBiome: false
         };
 
         this.init();
@@ -167,6 +169,9 @@ export class InputManager {
                 this.keys.paused = !this.keys.paused;
                 e.preventDefault(); // Prevent scrolling
                 break;
+            case 'KeyB':
+                this.keys.skipBiome = true;
+                break;
         }
     }
 
@@ -190,6 +195,9 @@ export class InputManager {
                 break;
             case 'KeyX':
                 this.keys.stop = false;
+                break;
+            case 'KeyB':
+                this.keys.skipBiome = false;
                 break;
         }
     }

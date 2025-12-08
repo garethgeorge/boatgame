@@ -5,8 +5,9 @@ export type BiomeType = 'desert' | 'forest' | 'ice' | 'swamp';
 
 export class BiomeManager {
   private biomeArray: Array<BiomeType>;
+  public readonly BIOME_LENGTH = 1000;
   private readonly BIOME_ARRAY_SIZE = 100;
-  private readonly BIOME_SCALE = 0.001; // Multiplier for converting worldZ to biome array index
+  private readonly BIOME_SCALE = 1.0 / this.BIOME_LENGTH; // Multiplier for converting worldZ to biome array index
   private readonly BIOME_TRANSITION_WIDTH = 0.05; // Width of biome transition zone
 
   private readonly COLOR_DESERT = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 }; // Rich Ochre

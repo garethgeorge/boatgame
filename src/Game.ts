@@ -37,6 +37,7 @@ export class Game {
 
     score: number = 0;
     fuel: number = 100;
+    prevSkipBiome: boolean = false;
 
     constructor() {
         this.container = document.getElementById('game-container') as HTMLElement;
@@ -165,6 +166,11 @@ export class Game {
 
         const input = this.inputManager.getState();
 
+        if (input.skipBiome && !this.prevSkipBiome) {
+            this.skipToNextBiome();
+        }
+        this.prevSkipBiome = input.skipBiome;
+
         // Pause handling - skip all updates if paused
         if (input.paused) return;
 
@@ -286,5 +292,35 @@ export class Game {
         Profiler.end('Render');
 
         Profiler.update();
+    }
+
+    private skipToNextBiome() {
+        if (!this.boat || this.boat.meshes.length === 0) return;
+
+        const riverSystem = RiverSystem.getInstance();
+        const BIOME_LENGTH = riverSystem.biomeManager.BIOME_LENGTH;
+
+        const currentZ = this.boat.meshes[0].position.z;
+
+        // Calculate start of next biome
+        // We are moving in -Z direction.
+        // If z = -500, next is -1000.
+        // If z = -1000, next is -2000.
+        // Use a small offset so if we are exactly on boundary, we go to next.
+        const nextZ = Math.floor(currentZ / BIOME_LENGTH - 0.01) * BIOME_LENGTH;
+
+        // Get center of river at that location
+        const nextX = riverSystem.getRiverCenter(nextZ);
+
+        // Teleport boat
+        // Move slightly past the boundary to be safe? 
+        // User asked for "position of the start of the next biome".
+        // Boundary is exact start.
+        this.boat.teleport(nextX, nextZ);
+
+        // Force terrain update?
+        // TerrainManager.update checks distance, so it should handle it.
+        // But might need to jump-start it if the jump is huge.
+        // update(boat, dt) should work fine.
     }
 }

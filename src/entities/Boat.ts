@@ -270,4 +270,26 @@ export class Boat extends Entity {
     public getThrottle(): number {
         return this.currentThrottle;
     }
+
+    public teleport(x: number, z: number) {
+        if (this.physicsBodies.length > 0) {
+            const body = this.physicsBodies[0];
+            body.setPosition(planck.Vec2(x, z));
+            body.setLinearVelocity(planck.Vec2(0, 0));
+            body.setAngularVelocity(0);
+            body.setAngle(0); // Face forward (-Z which is physics default or need adjustment?)
+            // Boat uses 270 (PI/2 * 3) or 90?
+            // "model.rotation.y = Math.PI * 0.5;" in constructor means model is rotated relative to body.
+            // Body angle 0 usually means pointing along +X or -Y?
+            // "forwardDir = physicsBody.getWorldVector(planck.Vec2(0, -1));"
+            // So -Y in physics is forward.
+            // Angle 0 -> -1y is (0, -1). Correct.
+            // So Angle 0 is fine.
+            this.currentThrottle = 0;
+            this.currentSteering = 0;
+
+            // Sync immediately to avoid visual glitch?
+            this.sync(1.0);
+        }
+    }
 }
