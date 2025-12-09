@@ -50,7 +50,27 @@ export class AttackAnimalShoreBehavior implements AnimalBehavior {
         // Activate when boat is within distance
         if (dist < this.enterWaterDistance) {
             this.state = 'ENTERING_WATER';
-            this.entity.didStartEnteringWater?.();
+
+            const moveSpeed = 8.0 * this.speed;
+
+            // Calculate distance to water
+            // We need to know which bank is closer to determine direction
+            const banks = RiverSystem.getInstance().getBankPositions(physicsBody.getPosition().y);
+            const margin = 2.0;
+
+            let distanceToWater = 0;
+            const x = physicsBody.getPosition().x;
+            if (x < banks.left) {
+                distanceToWater = banks.left - x;
+            } else {
+                distanceToWater = x - banks.right;
+            }
+            distanceToWater += margin;
+            distanceToWater = Math.max(0, distanceToWater);
+
+            const duration = distanceToWater / moveSpeed;
+
+            this.entity.didStartEnteringWater?.(duration);
 
             // Ignore terrain collision
             this.setCollisionMask(physicsBody, 0xFFFF ^ CollisionCategories.TERRAIN);

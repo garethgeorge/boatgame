@@ -151,7 +151,7 @@ export class Monkey extends Entity implements AttackAnimal {
         this.normalVector.copy(normal);
     }
 
-    didStartEnteringWater(): void {
+    didStartEnteringWater(duration: number): void {
         // Crossfade from dance to swim
         if (this.swimAction) {
             this.swimAction.reset();

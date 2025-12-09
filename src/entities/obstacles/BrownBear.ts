@@ -153,7 +153,7 @@ export class BrownBear extends Entity implements AttackAnimal {
         this.normalVector.copy(normal);
     }
 
-    didStartEnteringWater(): void {
+    didStartEnteringWater(duration: number): void {
         if (this.roaringAction && this.roarAndWalkAction) {
             this.roarAndWalkAction.reset();
             this.roarAndWalkAction.time = Math.random() * this.roarAndWalkAction.getClip().duration;

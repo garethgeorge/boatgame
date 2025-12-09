@@ -27,8 +27,8 @@ export class MooseShoreSpawner implements Spawnable {
                 context.zStart,
                 context.zEnd,
                 riverSystem,
-                2.5,
-                3.0
+                3.0,
+                7.0
             );
 
             if (placement) {
@@ -41,7 +41,8 @@ export class MooseShoreSpawner implements Spawnable {
                     placement.height,
                     placement.normal,
                     true, // onShore
-                    Math.random() > 0.5 // 50% chance to stay on shore
+                    false
+                    //Math.random() > 0.5 // 50% chance to stay on shore
                 );
 
                 context.entityManager.add(entity, context.chunkIndex);

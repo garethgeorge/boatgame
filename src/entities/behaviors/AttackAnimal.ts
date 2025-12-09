@@ -15,7 +15,8 @@ export interface AttackAnimalShore extends AnyAnimal {
     setLandPosition(height: number, normal: THREE.Vector3): void;
 
     // called when animal starts entering water e.g. to switch animations
-    didStartEnteringWater?(): void;
+    // duration: estimated time in seconds to reach water
+    didStartEnteringWater?(duration: number): void;
     didCompleteEnteringWater?(speed: number): void;
 }
 

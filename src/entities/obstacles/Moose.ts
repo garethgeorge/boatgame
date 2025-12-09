@@ -10,9 +10,18 @@ import { AnimalBehavior } from '../behaviors/AnimalBehavior';
 import { AttackAnimal } from '../behaviors/AttackAnimal';
 
 export class Moose extends Entity implements AttackAnimal {
+
     private readonly TARGET_WATER_HEIGHT = -3.0;
+
+    private haveAnimations: boolean = false;
     private walkingAction: THREE.AnimationAction | null = null;
     private idleAction: THREE.AnimationAction | null = null;
+    private jumpStartAction: THREE.AnimationAction | null = null;
+    private jumpFallAction: THREE.AnimationAction | null = null;
+    private jumpEndAction: THREE.AnimationAction | null = null;
+
+    private mixer: THREE.AnimationMixer | null = null;
+    private behavior: AnimalBehavior | null = null;
 
     private applyModel(mesh: THREE.Group, onShore: boolean) {
         const mooseData = Decorations.getMoose();
@@ -34,14 +43,30 @@ export class Moose extends Entity implements AttackAnimal {
 
             const idleClip = animations.find(a => a.name === 'idle');
             const walkingClip = animations.find(a => a.name === 'walk');
+            const jumpStartClip = animations.find(a => a.name === 'jump_start');
+            const jumpFallClip = animations.find(a => a.name === 'jump_fall');
+            const jumpEndClip = animations.find(a => a.name === 'jump_end');
 
             if (idleClip) {
                 this.idleAction = this.mixer.clipAction(idleClip);
             }
-
             if (walkingClip) {
                 this.walkingAction = this.mixer.clipAction(walkingClip);
             }
+            if (jumpStartClip) {
+                this.jumpStartAction = this.mixer.clipAction(jumpStartClip);
+            }
+            if (jumpFallClip) {
+                this.jumpFallAction = this.mixer.clipAction(jumpFallClip);
+            }
+            if (jumpEndClip) {
+                this.jumpEndAction = this.mixer.clipAction(jumpEndClip);
+            }
+            this.haveAnimations = this.idleAction !== null &&
+                this.walkingAction !== null &&
+                this.jumpStartAction !== null &&
+                this.jumpFallAction !== null &&
+                this.jumpEndAction !== null;
         }
     }
 
@@ -110,9 +135,6 @@ export class Moose extends Entity implements AttackAnimal {
         }
     }
 
-    private mixer: THREE.AnimationMixer | null = null;
-    private behavior: AnimalBehavior | null = null;
-
     onHit() {
         this.shouldRemove = true;
     }
@@ -154,8 +176,54 @@ export class Moose extends Entity implements AttackAnimal {
         this.normalVector.copy(normal);
     }
 
-    didStartEnteringWater(): void {
-        if (this.idleAction && this.walkingAction) {
+    didStartEnteringWater(duration: number): void {
+        if (!this.haveAnimations) {
+            return;
+        }
+
+        if (duration > 0.5) {
+            const startClip = this.jumpStartAction.getClip();
+            const endClip = this.jumpEndAction.getClip();
+            const fallClip = this.jumpFallAction.getClip();
+
+            const startTimeScale = 0.5;
+            const endTimeScale = 0.5;
+
+            const startDuration = startClip.duration * startTimeScale;
+            const endDuration = endClip.duration * endTimeScale;
+            const fallDuration = duration - startTimeScale - endTimeScale;
+            const fallTimeScale = fallDuration / fallClip.duration;
+
+            this.jumpStartAction.timeScale = startTimeScale;
+            this.jumpFallAction.timeScale = fallTimeScale;
+            this.jumpEndAction.timeScale = endTimeScale;
+
+            this.jumpStartAction.clampWhenFinished = true;
+            this.jumpStartAction.loop = THREE.LoopOnce;
+
+            this.jumpFallAction.loop = THREE.LoopOnce;
+            this.jumpFallAction.clampWhenFinished = true;
+
+            this.jumpEndAction.loop = THREE.LoopOnce;
+            this.jumpEndAction.clampWhenFinished = true;
+
+            // Using Mixer listener to chain
+            const onLoopFinished = (e: any) => {
+                if (e.action === this.jumpStartAction) {
+                    this.jumpStartAction?.stop();
+                    this.jumpFallAction?.play();
+                } else if (e.action === this.jumpFallAction) {
+                    this.jumpFallAction?.stop();
+                    this.jumpEndAction?.play();
+                }
+            };
+            this.mixer?.addEventListener('finished', onLoopFinished);
+
+            this.idleAction.stop();
+            this.walkingAction.stop();
+            this.jumpStartAction.play();
+
+        } else {
             this.walkingAction.reset();
             this.walkingAction.time = Math.random() * this.walkingAction.getClip().duration;
             this.walkingAction.play();
@@ -170,6 +238,25 @@ export class Moose extends Entity implements AttackAnimal {
             this.meshes[0].position.y = this.TARGET_WATER_HEIGHT;
         }
         this.normalVector.set(0, 1, 0);
+
+        // Transition to walking
+        if (this.haveAnimations) {
+            // Stop any jump actions
+            this.jumpStartAction?.stop();
+            this.jumpFallAction?.stop();
+            this.jumpEndAction?.stop();
+
+            // Play walking
+            this.walkingAction.reset();
+            this.walkingAction.time = Math.random() * this.walkingAction.getClip().duration;
+            this.walkingAction.play();
+
+            // Maybe crossfade from jump_end if it was playing? 
+            // But jump_end should have finished or be close to finishing.
+            if (this.jumpEndAction.isRunning()) {
+                this.jumpEndAction.crossFadeTo(this.walkingAction, 0.5, true);
+            }
+        }
     }
 
 }
