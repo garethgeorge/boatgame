@@ -322,7 +322,8 @@ export class TerrainChunk {
         vertexShader: WaterShader.vertexShader,
         fragmentShader: WaterShader.fragmentShader,
         transparent: true,
-        side: THREE.DoubleSide // Ensure water is visible from below if needed, though mostly top-down
+        side: THREE.DoubleSide, // Ensure water is visible from below if needed, though mostly top-down
+        fog: true
       });
     }
 

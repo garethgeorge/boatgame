@@ -1,29 +1,36 @@
 import * as THREE from 'three';
 
 export const WaterShader = {
-  uniforms: {
-    uTime: { value: 0 },
-    uColor: { value: new THREE.Color(0x4da6ff) },
-    uFlowDirection: { value: new THREE.Vector2(0, 1) }, // Flow along Z
-    uSunPosition: { value: new THREE.Vector3(50, 100, 50) },
-    uBoatPosition: { value: new THREE.Vector3(0, 0, 0) },
-    uBoatVelocity: { value: new THREE.Vector2(0, 0) },
-    uBoatDirection: { value: new THREE.Vector2(0, -1) },
-    uBoatHistory: { value: new Array(8).fill(new THREE.Vector3(0, 0, 0)) },
-    uSwampFactor: { value: 0.0 },
-    uSwampColor: { value: new THREE.Color(0x2f4f2f) }, // Dark Green
-  },
+  uniforms: THREE.UniformsUtils.merge([
+    {
+      uTime: { value: 0 },
+      uColor: { value: new THREE.Color(0x4da6ff) },
+      uFlowDirection: { value: new THREE.Vector2(0, 1) }, // Flow along Z
+      uSunPosition: { value: new THREE.Vector3(50, 100, 50) },
+      uBoatPosition: { value: new THREE.Vector3(0, 0, 0) },
+      uBoatVelocity: { value: new THREE.Vector2(0, 0) },
+      uBoatDirection: { value: new THREE.Vector2(0, -1) },
+      uBoatHistory: { value: new Array(8).fill(new THREE.Vector3(0, 0, 0)) },
+      uSwampFactor: { value: 0.0 },
+      uSwampColor: { value: new THREE.Color(0x2f4f2f) }, // Dark Green
+    },
+    THREE.UniformsLib['fog']
+  ]),
   vertexShader: `
     varying vec2 vUv;
     varying vec3 vWorldPosition;
     varying vec3 vNormal;
+    #include <fog_pars_vertex>
 
     void main() {
       vUv = uv;
       vNormal = normalize(normalMatrix * normal);
       vec4 worldPosition = modelMatrix * vec4(position, 1.0);
       vWorldPosition = worldPosition.xyz;
-      gl_Position = projectionMatrix * viewMatrix * worldPosition;
+      
+      vec4 mvPosition = viewMatrix * worldPosition;
+      gl_Position = projectionMatrix * mvPosition;
+      #include <fog_vertex>
     }
   `,
   fragmentShader: `
@@ -41,6 +48,8 @@ export const WaterShader = {
     varying vec2 vUv;
     varying vec3 vWorldPosition;
     varying vec3 vNormal;
+
+    #include <fog_pars_fragment>
 
     // Simplex 2D noise
     vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
@@ -290,6 +299,7 @@ export const WaterShader = {
       vec3 finalColor = mix(waterColor, wakeColor, totalMix);
       
       gl_FragColor = vec4(finalColor, 0.8); // Transparency
+      #include <fog_fragment>
     }
   `
 };
