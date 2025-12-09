@@ -4,7 +4,9 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 
-import { AttackAnimalBehavior } from '../behaviors/AttackAnimalBehavior';
+import { AttackAnimalShoreBehavior } from '../behaviors/AttackAnimalShoreBehavior';
+import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
+import { AnimalBehavior } from '../behaviors/AnimalBehavior';
 import { AttackAnimal } from '../behaviors/AttackAnimal';
 
 export class BrownBear extends Entity implements AttackAnimal {
@@ -95,14 +97,20 @@ export class BrownBear extends Entity implements AttackAnimal {
             this.normalVector = terrainNormal.clone();
         }
 
-        this.behavior = new AttackAnimalBehavior(this, onShore, -2.0, stayOnShore);
+        if (onShore) {
+            if (!stayOnShore) {
+                this.behavior = new AttackAnimalShoreBehavior(this, -2.0);
+            }
+        } else {
+            this.behavior = new AttackAnimalWaterBehavior(this);
+        }
 
         this.roaringAction.time = Math.random() * this.roaringAction.getClip().duration;
         this.roaringAction.play();
     }
 
     private mixer: THREE.AnimationMixer | null = null;
-    private behavior: AttackAnimalBehavior;
+    private behavior: AnimalBehavior | null = null;
 
     onHit() {
         this.shouldRemove = true;
@@ -125,7 +133,9 @@ export class BrownBear extends Entity implements AttackAnimal {
             return;
         }
 
-        this.behavior.update();
+        if (this.behavior) {
+            this.behavior.update();
+        }
     }
 
     // AttackAnimal interface implementation
@@ -143,13 +153,6 @@ export class BrownBear extends Entity implements AttackAnimal {
         this.normalVector.copy(normal);
     }
 
-    setWaterPosition(height: number): void {
-        if (this.meshes.length > 0) {
-            this.meshes[0].position.y = height;
-        }
-        this.normalVector.set(0, 1, 0);
-    }
-
     didStartEnteringWater(): void {
         if (this.roaringAction && this.roarAndWalkAction) {
             this.roarAndWalkAction.reset();
@@ -158,4 +161,14 @@ export class BrownBear extends Entity implements AttackAnimal {
             this.roaringAction.crossFadeTo(this.roarAndWalkAction, 1.0, true);
         }
     }
+
+    didCompleteEnteringWater(speed: number) {
+        this.behavior = new AttackAnimalWaterBehavior(this, speed);
+
+        if (this.meshes.length > 0) {
+            this.meshes[0].position.y = height;
+        }
+        this.normalVector.set(0, 1, 0);
+    }
+
 }

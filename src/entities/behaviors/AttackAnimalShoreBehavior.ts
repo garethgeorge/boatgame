@@ -3,38 +3,26 @@ import * as THREE from 'three';
 import { CollisionCategories } from '../../core/PhysicsEngine';
 import { RiverSystem } from '../../world/RiverSystem';
 import { Boat } from '../Boat';
-import { AttackAnimal } from './AttackAnimal';
+import { AttackAnimalShore } from './AttackAnimal';
+import { AnimalBehavior } from './AnimalBehavior';
 
-export class AttackAnimalBehavior {
-    private entity: AttackAnimal;
-    private state: 'IDLE' | 'TURNING' | 'ATTACKING' | 'ONSHORE' | 'ENTERING_WATER' = 'IDLE';
+export class AttackAnimalShoreBehavior implements AnimalBehavior {
+    private entity: AttackAnimalShore;
+    private state: 'ONSHORE' | 'ENTERING_WATER' = 'ONSHORE';
     private targetWaterHeight: number;
-
-    // speed factor for entering water/attacking
     private speed: number;
-    // distance to boat to start entering water
     private enterWaterDistance: number;
-    // distance to boat to start attacking
-    private startAttackDistance: number;
-    // distance to boat to break off attacking
-    private stopAttackDistance: number;
 
-    private stayOnShore: boolean;
-
-    constructor(entity: AttackAnimal, startOnShore: boolean = false, targetWaterHeight: number = -1.0, stayOnShore: boolean = false) {
+    constructor(
+        entity: AttackAnimalShore,
+        targetWaterHeight: number
+    ) {
         this.entity = entity;
         this.targetWaterHeight = targetWaterHeight;
-        this.stayOnShore = stayOnShore;
 
         const aggressiveness = Math.random();
         this.speed = 1 + 3 * aggressiveness;
         this.enterWaterDistance = 100 + 100 * aggressiveness;
-        this.startAttackDistance = 30 + 60 * aggressiveness;
-        this.stopAttackDistance = this.startAttackDistance + 20;
-
-        if (startOnShore) {
-            this.state = 'ONSHORE';
-        }
     }
 
     update() {
@@ -48,14 +36,6 @@ export class AttackAnimalBehavior {
         const diff = target.clone().sub(pos);
         const dist = diff.length();
 
-        // Check if behind the boat
-        // V = Forward vector for the boat (local -y)
-        const boatForward = targetBody.getWorldVector(planck.Vec2(0, -1));
-        // U = Vector from boat to animal
-        const boatToAnimal = pos.clone().sub(target);
-        // Dot positive = in front, negative = behind
-        const isBehind = planck.Vec2.dot(boatToAnimal, boatForward) < 0;
-
         switch (this.state) {
             case 'ONSHORE':
                 this.updateOnShore(dist, physicsBody);
@@ -63,21 +43,12 @@ export class AttackAnimalBehavior {
             case 'ENTERING_WATER':
                 this.updateEnteringWater(pos, physicsBody);
                 break;
-            case 'IDLE':
-                this.updateIdle(dist);
-                break;
-            case 'TURNING':
-                this.updateTurning(dist, diff, physicsBody, isBehind);
-                break;
-            case 'ATTACKING':
-                this.updateAttacking(dist, diff, physicsBody, isBehind);
-                break;
         }
     }
 
     private updateOnShore(dist: number, physicsBody: planck.Body) {
-        // Activate when boat is within 100 units
-        if (dist < this.enterWaterDistance && !this.stayOnShore) {
+        // Activate when boat is within distance
+        if (dist < this.enterWaterDistance) {
             this.state = 'ENTERING_WATER';
             this.entity.didStartEnteringWater?.();
 
@@ -129,72 +100,12 @@ export class AttackAnimalBehavior {
             this.entity.setLandPosition(height, normal);
         } else {
             // Fully in water
-            this.state = 'IDLE';
-            this.entity.setWaterPosition(targetHeight);
-
             // Restore collision with terrain
             this.setCollisionMask(physicsBody, 0xFFFF);
+
+            // Trigger completion callback
+            this.entity.didCompleteEnteringWater?.(this.speed);
         }
-    }
-
-    private updateIdle(dist: number) {
-        if (dist < this.startAttackDistance) {
-            this.state = 'TURNING';
-        }
-    }
-
-    private updateTurning(dist: number, diff: planck.Vec2, physicsBody: planck.Body, isBehind: boolean) {
-        if (dist > this.stopAttackDistance) {
-            this.state = 'IDLE';
-            return;
-        }
-
-        const angleDiff = this.calculateAngleToTarget(diff, physicsBody.getAngle());
-
-        // Rotate towards target
-        const rotationSpeed = 0.05 * this.speed; // Very slow turn
-        physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60));
-
-        // Drag to stop movement while turning
-        physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.9));
-
-        // Check if facing target (within ~15 degrees = 0.26 rad)
-        // And ensure we are not behind the boat
-        if (Math.abs(angleDiff) < 0.26 && !isBehind) {
-            this.state = 'ATTACKING';
-        }
-    }
-
-    private updateAttacking(dist: number, diff: planck.Vec2, physicsBody: planck.Body, isBehind: boolean) {
-        if (dist > this.stopAttackDistance) {
-            this.state = 'IDLE';
-            return;
-        }
-
-        if (isBehind) {
-            this.state = 'TURNING';
-            return;
-        }
-
-        const angleDiff = this.calculateAngleToTarget(diff, physicsBody.getAngle());
-
-        diff.normalize();
-        // Move towards target
-        const speed = 12.0 * this.speed; // Faster drift
-        const force = diff.mul(speed * physicsBody.getMass());
-        physicsBody.applyForceToCenter(force);
-
-        // Continue rotating to track
-        const rotationSpeed = 0.05 * this.speed;
-        physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60));
-    }
-
-    private calculateAngleToTarget(diff: planck.Vec2, currentAngle: number): number {
-        const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
-        let angleDiff = desiredAngle - currentAngle;
-        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-        return angleDiff;
     }
 
     private setCollisionMask(body: planck.Body, maskBits: number) {

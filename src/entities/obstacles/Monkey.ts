@@ -4,14 +4,16 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 
-import { AttackAnimalBehavior } from '../behaviors/AttackAnimalBehavior';
+import { AttackAnimalShoreBehavior } from '../behaviors/AttackAnimalShoreBehavior';
+import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
+import { AnimalBehavior } from '../behaviors/AnimalBehavior';
 import { AttackAnimal } from '../behaviors/AttackAnimal';
 
 export class Monkey extends Entity implements AttackAnimal {
     private danceAction: THREE.AnimationAction | null = null;
     private swimAction: THREE.AnimationAction | null = null;
     private mixer: THREE.AnimationMixer | null = null;
-    private behavior: AttackAnimalBehavior;
+    private behavior: AnimalBehavior | null = null;
 
     private applyModel(mesh: THREE.Group, onShore: boolean) {
         const monkeyData = Decorations.getMonkey();
@@ -92,7 +94,13 @@ export class Monkey extends Entity implements AttackAnimal {
         }
 
         // Use -1.0 target water height (similar to Alligator)
-        this.behavior = new AttackAnimalBehavior(this, onShore, -1.25, stayOnShore);
+        if (onShore) {
+            if (!stayOnShore) {
+                this.behavior = new AttackAnimalShoreBehavior(this, -1.25);
+            }
+        } else {
+            this.behavior = new AttackAnimalWaterBehavior(this);
+        }
 
         if (onShore && this.danceAction) {
             this.danceAction.play();
@@ -123,7 +131,9 @@ export class Monkey extends Entity implements AttackAnimal {
             return;
         }
 
-        this.behavior.update();
+        if (this.behavior) {
+            this.behavior.update();
+        }
     }
 
     // AttackAnimal interface implementation
@@ -141,13 +151,6 @@ export class Monkey extends Entity implements AttackAnimal {
         this.normalVector.copy(normal);
     }
 
-    setWaterPosition(height: number): void {
-        if (this.meshes.length > 0) {
-            this.meshes[0].position.y = height;
-        }
-        this.normalVector.set(0, 1, 0);
-    }
-
     didStartEnteringWater(): void {
         // Crossfade from dance to swim
         if (this.swimAction) {
@@ -161,4 +164,14 @@ export class Monkey extends Entity implements AttackAnimal {
             this.danceAction.crossFadeTo(this.swimAction, 1.0, true);
         }
     }
+
+    didCompleteEnteringWater(speed: number) {
+        this.behavior = new AttackAnimalWaterBehavior(this, speed);
+
+        if (this.meshes.length > 0) {
+            this.meshes[0].position.y = height;
+        }
+        this.normalVector.set(0, 1, 0);
+    }
+
 }

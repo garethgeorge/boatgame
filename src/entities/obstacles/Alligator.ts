@@ -6,7 +6,9 @@ import { Decorations } from '../../world/Decorations';
 import { RiverSystem } from '../../world/RiverSystem';
 import { Boat } from '../Boat';
 
-import { AttackAnimalBehavior } from '../behaviors/AttackAnimalBehavior';
+import { AttackAnimalShoreBehavior } from '../behaviors/AttackAnimalShoreBehavior';
+import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
+import { AnimalBehavior } from '../behaviors/AnimalBehavior';
 import { AttackAnimal } from '../behaviors/AttackAnimal';
 
 export class Alligator extends Entity implements AttackAnimal {
@@ -82,11 +84,17 @@ export class Alligator extends Entity implements AttackAnimal {
         else
             this.normalVector = new THREE.Vector3(0, 1, 0);
 
-        this.behavior = new AttackAnimalBehavior(this, onShore, -1.0, stayOnShore);
+        if (onShore) {
+            if (!stayOnShore) {
+                this.behavior = new AttackAnimalShoreBehavior(this, -1.0);
+            }
+        } else {
+            this.behavior = new AttackAnimalWaterBehavior(this);
+        }
     }
 
     private mixer: THREE.AnimationMixer | null = null;
-    private behavior: AttackAnimalBehavior;
+    private behavior: AnimalBehavior | null = null;
 
     onHit() {
         this.shouldRemove = true;
@@ -109,7 +117,9 @@ export class Alligator extends Entity implements AttackAnimal {
             return;
         }
 
-        this.behavior.update();
+        if (this.behavior) {
+            this.behavior.update();
+        }
     }
 
     // AttackAnimal interface implementation
@@ -127,10 +137,13 @@ export class Alligator extends Entity implements AttackAnimal {
         this.normalVector.copy(normal);
     }
 
-    setWaterPosition(height: number): void {
+    didCompleteEnteringWater(speed: number) {
+        this.behavior = new AttackAnimalWaterBehavior(this, speed);
+
         if (this.meshes.length > 0) {
             this.meshes[0].position.y = height;
         }
         this.normalVector.set(0, 1, 0);
     }
+
 }
