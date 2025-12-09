@@ -5,8 +5,8 @@ export class AlligatorSpawner implements Spawnable {
     id = 'croc';
 
     getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-        // No crocs in ice
-        if (biomeType === 'ice') return 0;
+        // Only spawn in desert biome
+        if (biomeType !== 'desert') return 0;
 
         // Start at 1000m
         const dist = Math.abs(context.zStart);

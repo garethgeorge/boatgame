@@ -36,6 +36,7 @@ export class Decorations {
     alligator: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
     penguinKayak: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
     brownBear: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
+    moose: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
     monkey: { model: THREE.Group | null, animations: THREE.AnimationClip[] }
   } = {
       trees: [],
@@ -47,6 +48,7 @@ export class Decorations {
       alligator: { model: null, animations: [] },
       penguinKayak: { model: null, animations: [] },
       brownBear: { model: null, animations: [] },
+      moose: { model: null, animations: [] },
       monkey: { model: null, animations: [] }
     };
 
@@ -92,13 +94,13 @@ export class Decorations {
   }
 
   static async preload(): Promise<void> {
-    if (this.cache.trees.length > 0 && this.cache.polarBear.model && this.cache.hippo.model && this.cache.alligator.model && this.cache.penguinKayak.model && this.cache.brownBear.model && this.cache.monkey.model) return;
+    if (this.cache.trees.length > 0 && this.cache.polarBear.model && this.cache.hippo.model && this.cache.alligator.model && this.cache.penguinKayak.model && this.cache.brownBear.model && this.cache.moose.model && this.cache.monkey.model) return;
     if (this.loadPromise) return this.loadPromise;
 
     this.loadPromise = new Promise((resolve, reject) => {
       const loader = new GLTFLoader();
       let loadedCount = 0;
-      const totalModels = 6;
+      const totalModels = 7;
 
       const onModelLoaded = () => {
         loadedCount++;
@@ -212,6 +214,23 @@ export class Decorations {
         console.error('An error occurred loading the monkey model:', error);
         onModelLoaded(); // Continue even if this model fails
       });
+
+      // Load moose model
+      loader.load('assets/moose-model-1.glb', (gltf) => {
+        const model = gltf.scene;
+        model.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        this.cache.moose.model = model;
+        this.cache.moose.animations = gltf.animations || [];
+        onModelLoaded();
+      }, undefined, (error) => {
+        console.error('An error occurred loading the moose model:', error);
+        onModelLoaded(); // Continue even if this model fails
+      });
     });
 
     return this.loadPromise;
@@ -310,6 +329,19 @@ export class Decorations {
     return {
       model: clonedModel,
       animations: this.cache.brownBear.animations
+    };
+  }
+
+  static getMoose(): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
+    if (!this.cache.moose.model) {
+      console.warn('Moose model not loaded yet');
+      return null;
+    }
+
+    const clonedModel = SkeletonUtils.clone(this.cache.moose.model) as THREE.Group;
+    return {
+      model: clonedModel,
+      animations: this.cache.moose.animations
     };
   }
 
