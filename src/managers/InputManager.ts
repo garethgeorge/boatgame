@@ -94,6 +94,19 @@ export class InputManager {
     }
 
     onDeviceOrientation(e: DeviceOrientationEvent) {
+        // Gamma is usually left/right tilt (-90 to 90)
+        // We want to map this to -1 to 1
+        // Holding phone in landscape:
+        // Beta is tilt front/back (-180 to 180)
+        // Gamma is tilt left/right (-90 to 90)
+
+        // Let's assume Landscape mode.
+        // If user holds phone in landscape, tilting left/right corresponds to Beta?
+        // Actually, it depends on orientation.
+        // Let's use a simple heuristic or just Gamma for now (Portrait) and Beta (Landscape)?
+        // Most browser games lock to landscape.
+        // In Landscape, tilting left/right (steering) is Beta.
+
         let tilt = 0;
 
         // Check orientation
@@ -101,8 +114,14 @@ export class InputManager {
 
         if (typeof orientation === 'string' && orientation.includes('landscape')) {
             // Landscape: Beta is tilt
+            // Beta range: -180 to 180.
+            // Center is 0?
+            // Tilting left (top goes down) -> Beta negative?
+            // Let's clamp to -45 to 45 degrees for full steering
             if (e.beta !== null) {
                 tilt = Math.max(-45, Math.min(45, e.beta)) / 45;
+                // Invert if needed based on testing. 
+                // Usually tilting left (left side down) is negative beta?
             }
         } else {
             // Portrait: Gamma is tilt
