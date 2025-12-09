@@ -26,7 +26,7 @@ export class Moose extends Entity implements AttackAnimal {
 
         // Apply model transformations
         model.position.y = 3.0;
-        model.scale.set(3.0, 3.0, 3.0);
+        model.scale.set(0.1, 0.1, 0.1);
         model.rotation.y = Math.PI;
 
         if (animations.length > 0) {
