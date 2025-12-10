@@ -148,7 +148,7 @@ export class PolarBear extends Entity implements AttackAnimal {
         this.normalVector.copy(normal);
     }
 
-    didStartEnteringWater(): void {
+    didStartEnteringWater(duration: number): void {
         if (this.rearingAction && this.walkingAction) {
             this.walkingAction.reset();
             this.walkingAction.time = Math.random() * this.walkingAction.getClip().duration;
