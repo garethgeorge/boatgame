@@ -27,6 +27,8 @@ export class Game {
     // UI Elements
     startScreen: HTMLElement;
     startBtn: HTMLElement;
+    instructionsOverlay: HTMLElement;
+    instructionsContent: HTMLElement;
     scoreElement: HTMLElement;
     thrustElement: HTMLElement;
     fuelElement: HTMLElement;
@@ -54,11 +56,14 @@ export class Game {
         this.inputManager = new InputManager();
         this.clock = new THREE.Clock();
 
-
-
         // UI
         this.startScreen = document.getElementById('start-screen') as HTMLElement;
         this.startBtn = document.getElementById('start-btn') as HTMLElement;
+        // Disable start button until initialization is complete
+        this.startBtn.style.visibility = 'hidden';
+
+        this.instructionsOverlay = document.getElementById('instructions-overlay') as HTMLElement;
+        this.instructionsContent = document.getElementById('instructions-content') as HTMLElement;
         this.scoreElement = document.getElementById('score') as HTMLElement;
         this.thrustElement = document.getElementById('thrust-display') as HTMLElement;
         this.fuelElement = document.getElementById('fuel-display') as HTMLElement;
@@ -88,7 +93,12 @@ export class Game {
         ]);
     }
 
+
     init() {
+        // Enable start button now that we are ready
+        this.startBtn.style.visibility = 'visible';
+        this.startBtn.style.opacity = '1';
+
         // Create World
         // ObstacleManager must be created before TerrainManager now
         this.obstacleManager = new ObstacleManager(this.entityManager, this.physicsEngine);
@@ -160,9 +170,50 @@ export class Game {
     }
 
     start() {
-        this.isPlaying = true;
+        if (!this.boat) return; // Guard against uninitialized start
+
         this.startScreen.style.display = 'none';
-        this.clock.start();
+
+        // need to initialize the game state
+        this.isPlaying = true;
+        this.update(1 / 60);
+
+        // Show welcome instructions immediately
+        this.showInstructions('instructions/welcome.html');
+    }
+
+    async showInstructions(url: string) {
+        this.isPaused = true;
+        this.instructionsOverlay.style.display = 'flex';
+
+        try {
+            const response = await fetch(url);
+            const html = await response.text();
+            this.instructionsContent.innerHTML = html;
+
+            // Wire up dismiss button if present in the loaded content
+            const dismissBtn = document.getElementById('dismiss-instructions-btn');
+            if (dismissBtn) {
+                dismissBtn.addEventListener('click', () => {
+                    this.dismissInstructions();
+                });
+            }
+
+        } catch (e) {
+            console.error("Failed to load instructions:", e);
+            this.dismissInstructions(); // Fallback to dismiss if load fails
+        }
+    }
+
+    dismissInstructions() {
+        this.instructionsOverlay.style.display = 'none';
+        this.instructionsContent.innerHTML = '';
+        this.isPaused = false;
+
+        if (!this.isPlaying) {
+            this.isPlaying = true;
+            this.clock.start();
+        }
     }
 
     update(dt: number) {

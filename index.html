@@ -67,6 +67,32 @@
       overflow: hidden;
     }
 
+    #instructions-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      pointer-events: auto;
+      backdrop-filter: blur(5px);
+    }
+
+    #instructions-content {
+      max-width: 600px;
+      padding: 40px;
+      /* background: rgba(0, 0, 0, 0.5); */
+      /* Let loaded content handle background if needed, or just be transparent on the overlay */
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
     #bg-video {
       position: absolute;
       top: 0;
@@ -160,7 +186,10 @@
       border: none;
       box-shadow: none;
       padding: 0;
-      transition: transform 0.1s;
+      transition: opacity 0.2s ease-in;
+      /* while game loads */
+      visibility: hidden;
+      opacity: 0;
     }
 
     #start-btn img {
@@ -198,6 +227,13 @@
     </div>
     <div id="controls-hint">W/S: Throttle | A/D: Steer</div>
   </div>
+
+  <div id="instructions-overlay">
+    <div id="instructions-content">
+      <!-- Content will be loaded here -->
+    </div>
+  </div>
+
   <div id="start-screen">
     <video autoplay muted loop playsinline webkit-playsinline id="bg-video">
       <source src="assets/background.mp4" type="video/mp4">
