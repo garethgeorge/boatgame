@@ -146,7 +146,7 @@ export class BrownBear extends Entity implements AttackAnimal {
         return null;
     }
 
-    setLandPosition(height: number, normal: THREE.Vector3): void {
+    setLandPosition(height: number, normal: THREE.Vector3, progress: number): void {
         if (this.meshes.length > 0) {
             this.meshes[0].position.y = height;
         }

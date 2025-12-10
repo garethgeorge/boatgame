@@ -169,9 +169,12 @@ export class Moose extends Entity implements AttackAnimal {
         return null;
     }
 
-    setLandPosition(height: number, normal: THREE.Vector3): void {
+    setLandPosition(height: number, normal: THREE.Vector3, progress: number): void {
         if (this.meshes.length > 0) {
-            this.meshes[0].position.y = height;
+            const t = Math.max(0, Math.min(progress, 1));
+            const curve = 4 * t * (1.0 - t);
+            const jumpHeight = 2.0 * curve;
+            this.meshes[0].position.y = height + jumpHeight;
         }
         this.normalVector.copy(normal);
     }

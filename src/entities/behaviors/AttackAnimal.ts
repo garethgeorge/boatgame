@@ -12,7 +12,8 @@ export interface AnyAnimal {
 // Behavior callbacks for animal on shore
 export interface AttackAnimalShore extends AnyAnimal {
     // set the height and normal of the animal when it is on land
-    setLandPosition(height: number, normal: THREE.Vector3): void;
+    // progress: 0 (start of entry) to 1 (fully in water)
+    setLandPosition(height: number, normal: THREE.Vector3, progress: number): void;
 
     // called when animal starts entering water e.g. to switch animations
     // duration: estimated time in seconds to reach water

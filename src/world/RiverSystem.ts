@@ -93,6 +93,42 @@ export class RiverSystem {
     };
   }
 
+  /**
+   * Calculates the distance to the water along a specific direction vector using ray marching.
+   * Returns -1 if water is not found within a reasonable distance.
+   */
+  public getDistanceToWater(startPosition: { x: number, y: number }, direction: { x: number, y: number }): number {
+    const stepSize = 1.0;
+    const maxSteps = 200; // Look ahead up to 200 units
+
+    let currentX = startPosition.x;
+    let currentY = startPosition.y;
+    let distTraveled = 0;
+
+    // Normalizing direction is expected from caller, but let's be safe if we were to be strict. 
+    // Ideally we assume direction is normalized.
+
+    for (let i = 0; i < maxSteps; i++) {
+      // Check if we are inside water at current position
+      const banks = this.getBankPositions(currentY);
+
+      // Use a small buffer to ensure we are "in" the water
+      const buffer = 0.5;
+
+      if (currentX > banks.left + buffer && currentX < banks.right - buffer) {
+        // We found water
+        return distTraveled;
+      }
+
+      // Advance
+      currentX += direction.x * stepSize;
+      currentY += direction.y * stepSize;
+      distTraveled += stepSize;
+    }
+
+    return -1;
+  }
+
   private lerp(start: number, end: number, t: number): number {
     return start * (1 - t) + end * t;
   }

@@ -13,6 +13,10 @@ export class AttackAnimalShoreBehavior implements AnimalBehavior {
     private speed: number;
     private enterWaterDistance: number;
 
+    // when entering the water we need to know where we started and how far we have traveled
+    private entryStartPosition: planck.Vec2 | null = null;
+    private totalEntryDistance: number = 0;
+
     constructor(
         entity: AttackAnimalShore,
         targetWaterHeight: number
@@ -49,39 +53,58 @@ export class AttackAnimalShoreBehavior implements AnimalBehavior {
     private updateOnShore(dist: number, physicsBody: planck.Body) {
         // Activate when boat is within distance
         if (dist < this.enterWaterDistance) {
-            this.state = 'ENTERING_WATER';
-
-            const moveSpeed = 8.0 * this.speed;
 
             // Calculate distance to water
-            // We need to know which bank is closer to determine direction
-            const banks = RiverSystem.getInstance().getBankPositions(physicsBody.getPosition().y);
+            const facingAngle = physicsBody.getAngle() - Math.PI / 2;
+            const direction = planck.Vec2(Math.cos(facingAngle), Math.sin(facingAngle));
+
+            let distanceToWater = RiverSystem.getInstance().getDistanceToWater(physicsBody.getPosition(), direction);
+
+            // No water found, stay on shore
+            if (distanceToWater < 0) {
+                return;
+            }
+
+            this.state = 'ENTERING_WATER';
+
+            // speed we move into water
+            const moveSpeed = 8.0 * this.speed;
+
+            // margin to ensure we are fully in water
             const margin = 2.0;
 
-            let distanceToWater = 0;
-            const x = physicsBody.getPosition().x;
-            if (x < banks.left) {
-                distanceToWater = banks.left - x;
-            } else {
-                distanceToWater = x - banks.right;
-            }
             distanceToWater += margin;
-            distanceToWater = Math.max(0, distanceToWater);
-
             const duration = distanceToWater / moveSpeed;
+
+            // Capture start data for progress tracking
+            this.entryStartPosition = physicsBody.getPosition().clone();
+            this.totalEntryDistance = distanceToWater;
 
             this.entity.didStartEnteringWater?.(duration);
 
             // Ignore terrain collision
             this.setCollisionMask(physicsBody, 0xFFFF ^ CollisionCategories.TERRAIN);
+
+            // Switch to kinematic for precise path control
+            physicsBody.setType(planck.Body.KINEMATIC);
+
+            // Calculate and set velocity needed to cross the distance
+            // We want to move 'distanceToWater' + 'margin' (safely into water)
+            const velocity = planck.Vec2(Math.cos(facingAngle), Math.sin(facingAngle)).mul(moveSpeed);
+            physicsBody.setLinearVelocity(velocity);
+            physicsBody.setAngularVelocity(0);
         }
     }
 
     private updateEnteringWater(pos: planck.Vec2, physicsBody: planck.Body) {
-        // Move forward in current facing direction
-        const speed = 8.0 * this.speed; // Walking speed
-        const angle = physicsBody.getAngle() - Math.PI / 2;
-        physicsBody.applyForceToCenter(planck.Vec2(Math.cos(angle), Math.sin(angle)).mul(speed * physicsBody.getMass()));
+        // Velocity is handled by kinematic body now
+
+        // Calculate progress
+        let progress = 0;
+        if (this.entryStartPosition && this.totalEntryDistance > 0) {
+            const distTraveled = pos.clone().sub(this.entryStartPosition).length();
+            progress = Math.min(1.0, distTraveled / this.totalEntryDistance);
+        }
 
         // Check if fully over water
         const banks = RiverSystem.getInstance().getBankPositions(pos.y);
@@ -102,7 +125,7 @@ export class AttackAnimalShoreBehavior implements AnimalBehavior {
             // Still on land
             const height = RiverSystem.getInstance().terrainGeometry.calculateHeight(pos.x, pos.y);
             const normal = RiverSystem.getInstance().terrainGeometry.calculateNormal(pos.x, pos.y);
-            this.entity.setLandPosition(height, normal);
+            this.entity.setLandPosition(height, normal, progress);
         } else if (distIntoWater < 0) {
             // Close to water edge don't update height/normal because it's not stable 
         } else if (distIntoWater < margin) {
@@ -117,10 +140,12 @@ export class AttackAnimalShoreBehavior implements AnimalBehavior {
             const terrainNormal = RiverSystem.getInstance().terrainGeometry.calculateNormal(pos.x, pos.y);
             const normal = terrainNormal.clone().lerp(targetNormal, t).normalize();
 
-            this.entity.setLandPosition(height, normal);
+            this.entity.setLandPosition(height, normal, progress);
         } else {
             // Fully in water
-            // Restore collision with terrain
+
+            // Restore dynamic body type and collision
+            physicsBody.setType(planck.Body.DYNAMIC);
             this.setCollisionMask(physicsBody, 0xFFFF);
 
             // Trigger completion callback
