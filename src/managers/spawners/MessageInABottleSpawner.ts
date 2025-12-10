@@ -13,8 +13,9 @@ export class MessageInABottleSpawner implements Spawnable {
     // Original code had separate probabilities.
     // Let's just do normal bottles here.
 
-    const baseDensity = 0.0026;
-    const count = chunkLength * baseDensity;
+    // Roughly 1 per 400-800m
+    const density = 1 / 400 + 1 / 400 * Math.random();
+    const count = chunkLength * density;
 
     return Math.floor(count + Math.random());
   }
