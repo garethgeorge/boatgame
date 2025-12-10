@@ -5,8 +5,11 @@ import { Entity } from '../core/Entity';
 import { InputManager } from '../managers/InputManager';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 
+import { CollectedBottles } from './CollectedBottles';
+
 export class Boat extends Entity {
     private innerMesh: THREE.Group;
+    public collectedBottles: CollectedBottles;
 
     private currentThrottle: number = 0;
     private currentSteering: number = 0;
@@ -86,6 +89,11 @@ export class Boat extends Entity {
 
         this.innerMesh = new THREE.Group();
         mesh.add(this.innerMesh);
+
+        this.collectedBottles = new CollectedBottles();
+        this.innerMesh.add(this.collectedBottles.mesh);
+        this.collectedBottles.mesh.scale.set(0.5, 0.5, 0.5);
+        this.collectedBottles.mesh.position.set(-0.9, 0.8, 1.6);
 
         const loader = new GLTFLoader();
         loader.load('assets/boat-model-1.glb', (gltf) => {

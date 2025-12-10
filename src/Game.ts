@@ -13,6 +13,8 @@ import { Alligator } from './entities/obstacles/Alligator';
 import { Hippo } from './entities/obstacles/Hippo';
 import { InputManager } from './managers/InputManager';
 import { Profiler } from './core/Profiler';
+import { Entity } from './core/Entity';
+import { MessageInABottle } from './entities/obstacles/MessageInABottle';
 
 export class Game {
     container: HTMLElement;
@@ -130,40 +132,43 @@ export class Game {
 
             if (!userDataA || !userDataB) return;
 
-            let player = null;
-            let other = null;
+            let player: Boat | null = null;
+            let entity: Entity | null = null;
+            let entityType: string | null = null;
+            let entitySubtype: string | null = null;
 
             if (userDataA.type === 'player') {
-                player = userDataA.entity;
-                other = userDataB;
+                player = userDataA.entity as Boat;
+                entity = userDataB.entity as Entity;
+                entityType = userDataB.type;
+                entitySubtype = userDataB.subtype;
             } else if (userDataB.type === 'player') {
-                player = userDataB.entity;
-                other = userDataA;
+                player = userDataB.entity as Boat;
+                entity = userDataA.entity as Entity;
+                entityType = userDataA.type;
+                entitySubtype = userDataA.subtype;
             }
 
-            if (player && other) {
-                if (other.type === 'obstacle') {
-                    if (other.subtype === 'alligator' || other.subtype === 'hippo' || other.subtype === 'buoy' || other.subtype === 'iceberg') {
-                        if (!other.entity.hasCausedPenalty) {
-                            this.score -= 100;
-                            this.boat.flashRed();
-                            other.entity.hasCausedPenalty = true;
-                        }
-                        other.entity.onHit();
-                    } else if (other.subtype !== 'pier') {
-                        other.entity.onHit();
-                        // Collision penalty?
-                        // Removed fuel penalty. Maybe slow down boat?
+            if (player && entity) {
+                if (entityType === 'obstacle') {
+                    if (entity.canCausePenalty && !entity.hasCausedPenalty) {
+                        this.score -= 100;
+                        this.boat.flashRed();
+                        this.boat.collectedBottles.removeBottle(); // Lose a bottle
+                        entity.hasCausedPenalty = true;
                     }
-                } else if (other.type === 'collectable') {
-                    other.entity.onHit();
-                    if (other.subtype === 'bottle') {
-                        // Cast to MessageInABottle to access points, default to 100 if missing
-                        const points = (other.entity as any).points || 100;
+                } else if (entityType === 'collectable') {
+                    if (entitySubtype === 'bottle') {
+                        const bottle = entity as MessageInABottle;
+                        const points = bottle.points;
+                        const color = bottle.color;
                         this.score += points;
+                        this.boat.collectedBottles.addBottle(color); // Add a bottle
                     }
                 }
             }
+
+            entity.onHit();
         });
 
         this.animate();

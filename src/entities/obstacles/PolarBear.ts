@@ -57,6 +57,9 @@ export class PolarBear extends Entity implements AttackAnimal {
     ) {
         super();
 
+        // Polar bears can cause penalties when hit
+        this.canCausePenalty = true;
+
         // Physics - dynamic body for potential future movement
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',

@@ -59,6 +59,9 @@ export class Monkey extends Entity implements AttackAnimal {
     ) {
         super();
 
+        // Monkeys can cause penalties when hit
+        this.canCausePenalty = true;
+
         // Physics - dynamic body
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',

@@ -82,6 +82,9 @@ export class Moose extends Entity implements AttackAnimal {
     ) {
         super();
 
+        // Moose can cause penalties when hit
+        this.canCausePenalty = true;
+
         // Physics - dynamic body for potential future movement
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',

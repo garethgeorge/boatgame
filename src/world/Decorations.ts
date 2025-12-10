@@ -37,7 +37,8 @@ export class Decorations {
     penguinKayak: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
     brownBear: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
     moose: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
-    monkey: { model: THREE.Group | null, animations: THREE.AnimationClip[] }
+    monkey: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
+    bottles: Map<number, THREE.Group>
   } = {
       trees: [],
       bushes: [],
@@ -49,7 +50,8 @@ export class Decorations {
       penguinKayak: { model: null, animations: [] },
       brownBear: { model: null, animations: [] },
       moose: { model: null, animations: [] },
-      monkey: { model: null, animations: [] }
+      monkey: { model: null, animations: [] },
+      bottles: new Map()
     };
 
   private static loadPromise: Promise<void> | null = null;
@@ -90,6 +92,11 @@ export class Decorations {
       const size = Math.random();
       this.cache.rocks.push({ mesh: this.createRock(size, true), size, isIcy: true });
     }
+
+    // Pre-generate bottles (Green and Blue)
+    this.cache.bottles.set(0x88FF88, this.createBottleMesh(0x88FF88));
+    this.cache.bottles.set(0x0088FF, this.createBottleMesh(0x0088FF));
+
     console.log("Decoration Cache Generated.");
   }
 
@@ -385,6 +392,14 @@ export class Decorations {
     }
 
     return rock;
+  }
+
+  static getBottleMesh(color: number): THREE.Group {
+    if (!this.cache.bottles.has(color)) {
+      // Fallback or just create and cache if it's a new color
+      this.cache.bottles.set(color, this.createBottleMesh(color));
+    }
+    return this.cache.bottles.get(color)!.clone();
   }
 
   static createTree(wetness: number, isSnowy: boolean, isLeafless: boolean): THREE.Group {
@@ -773,5 +788,42 @@ export class Decorations {
     }
 
     return group;
+  }
+
+  private static createBottleMesh(color: number = 0x88FF88): THREE.Group {
+    const mesh = new THREE.Group();
+
+    // Bottle Body
+    const bodyGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 8); // Doubled
+    const glassMat = new THREE.MeshToonMaterial({
+      color: color,
+      transparent: true,
+      opacity: 0.6
+    });
+    const body = new THREE.Mesh(bodyGeo, glassMat);
+    mesh.add(body);
+
+    // Bottle Neck
+    const neckGeo = new THREE.CylinderGeometry(0.2, 0.4, 0.6, 8); // Doubled
+    const neck = new THREE.Mesh(neckGeo, glassMat);
+    neck.position.y = 0.9;
+    mesh.add(neck);
+
+    // Cork
+    const corkGeo = new THREE.CylinderGeometry(0.24, 0.2, 0.3, 8); // Doubled
+    const corkMat = new THREE.MeshToonMaterial({ color: 0x8B4513 });
+    const cork = new THREE.Mesh(corkGeo, corkMat);
+    cork.position.y = 1.3;
+    mesh.add(cork);
+
+    // Paper Message
+    const paperGeo = new THREE.PlaneGeometry(0.3, 0.6); // Doubled
+    const paperMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide });
+    const paper = new THREE.Mesh(paperGeo, paperMat);
+    paper.rotation.y = Math.PI / 4;
+    paper.rotation.z = Math.PI / 8;
+    mesh.add(paper);
+
+    return mesh;
   }
 }

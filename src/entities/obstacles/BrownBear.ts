@@ -61,6 +61,9 @@ export class BrownBear extends Entity implements AttackAnimal {
     ) {
         super();
 
+        // Brown bears can cause penalties when hit
+        this.canCausePenalty = true;
+
         // Physics - dynamic body for potential future movement
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',

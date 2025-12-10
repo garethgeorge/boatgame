@@ -44,6 +44,9 @@ export class Alligator extends Entity implements AttackAnimal {
     ) {
         super();
 
+        // Alligators can cause penalties when hit
+        this.canCausePenalty = true;
+
         // Physics
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',

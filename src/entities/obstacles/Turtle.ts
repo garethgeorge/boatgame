@@ -10,6 +10,9 @@ export class Turtle extends Entity {
     constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
         super();
 
+        // Turtles can cause penalties when hit
+        this.canCausePenalty = true;
+
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
             position: planck.Vec2(x, y),

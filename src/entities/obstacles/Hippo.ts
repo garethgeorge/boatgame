@@ -30,6 +30,9 @@ export class Hippo extends Entity {
     constructor(x: number, y: number, physicsEngine: PhysicsEngine, angle: number = 0) {
         super();
 
+        // Hippo can cause penalties when hit
+        this.canCausePenalty = true;
+
         // Physics
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',

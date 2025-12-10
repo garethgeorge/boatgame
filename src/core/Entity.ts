@@ -2,23 +2,29 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 
 export abstract class Entity {
-  physicsBodies: planck.Body[] = [];
-  meshes: THREE.Object3D[] = [];
-  materials: THREE.Material[] = [];
-  debugMeshes: THREE.Object3D[] = [];
+  public physicsBodies: planck.Body[] = [];
+  public meshes: THREE.Object3D[] = [];
+  public materials: THREE.Material[] = [];
+  public debugMeshes: THREE.Object3D[] = [];
 
-  constructor() { }
+  public shouldRemove: boolean = false;
 
-  shouldRemove: boolean = false;
-  hasCausedPenalty: boolean = false;
+  // True for entities that can cause penalties
+  public canCausePenalty: boolean = false;
+
+  // Set to true when this entity has caused a penalty to avoid repetition
+  public hasCausedPenalty: boolean = false;
 
   // Optional normal vector for terrain alignment
   // If set, mesh will be tilted so its Y-axis aligns with this normal
   // while still following physics rotation around Y
   protected normalVector: THREE.Vector3 | null = null;
 
+  constructor() { }
+
   abstract update(dt: number): void;
 
+  // Do stuff when hit by another game object
   onHit(): void { }
 
   dispose() {
