@@ -8,12 +8,29 @@ export class InputManager {
     private currentActions: Set<InputAction> = new Set();
     private previousActions: Set<InputAction> = new Set();
 
+    // Configuration
+    private isPaused: boolean = false;
+
     // Analog inputs (not boolean)
     public tilt: number = 0; // -1.0 to 1.0
     public touchThrottle: number = 0; // -1.0 to 1.0
 
     constructor() {
         this.init();
+    }
+
+    public setOptions(options: { paused?: boolean }) {
+        if (options.paused !== undefined) {
+            this.isPaused = options.paused;
+            if (this.isPaused) {
+                // Clear inputs when paused
+                this.liveActions.clear();
+                this.currentActions.clear();
+                this.previousActions.clear();
+                this.touchThrottle = 0;
+                this.tilt = 0;
+            }
+        }
     }
 
     init() {
@@ -30,6 +47,8 @@ export class InputManager {
     }
 
     public update() {
+        if (this.isPaused) return;
+
         // Snapshot state for this frame
         this.previousActions = new Set(this.currentActions);
         this.currentActions = new Set(this.liveActions);
@@ -52,12 +71,22 @@ export class InputManager {
     private touchStartY: number | null = null;
 
     onTouchStart(e: TouchEvent) {
+        if (this.isPaused) return;
+
         if (e.touches.length > 0) {
             this.touchStartY = e.touches[0].clientY;
         }
     }
 
     onTouchMove(e: TouchEvent) {
+        // If touching instructions, allow scrolling (don't prevent default)
+        const target = e.target as HTMLElement;
+        if (target && target.closest && target.closest('#instructions-overlay')) {
+            return;
+        }
+
+        if (this.isPaused) return;
+
         if (this.touchStartY !== null && e.touches.length > 0) {
             const currentY = e.touches[0].clientY;
             const deltaY = this.touchStartY - currentY; // Up is positive delta (smaller Y)
@@ -94,6 +123,8 @@ export class InputManager {
     }
 
     onDeviceOrientation(e: DeviceOrientationEvent) {
+        if (this.isPaused) return;
+
         // Gamma is usually left/right tilt (-90 to 90)
         // We want to map this to -1 to 1
         // Holding phone in landscape:
@@ -134,6 +165,8 @@ export class InputManager {
     }
 
     onKeyDown(e: KeyboardEvent) {
+        if (this.isPaused) return;
+
         switch (e.code) {
             case 'ArrowUp':
             case 'KeyW':
@@ -171,6 +204,8 @@ export class InputManager {
     }
 
     onKeyUp(e: KeyboardEvent) {
+        if (this.isPaused) return;
+
         switch (e.code) {
             case 'ArrowUp':
             case 'KeyW':

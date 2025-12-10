@@ -6,7 +6,7 @@ export class MangroveSpawner implements Spawnable {
   id = 'mangrove';
 
   getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-    if (biomeType !== 'swamp') return 0;
+    if (true || biomeType !== 'swamp') return 0;
 
     // High frequency: Dense forest
     // Reduced to ~1/3rd as per user request (was 40)

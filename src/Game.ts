@@ -70,9 +70,16 @@ export class Game {
         this.thrustElement = document.getElementById('thrust-display') as HTMLElement;
         this.fuelElement = document.getElementById('fuel-display') as HTMLElement;
 
-        this.startBtn.addEventListener('click', async () => {
+        this.startBtn.addEventListener('click', async (e) => {
+            console.log('[DEBUG] Start button clicked');
+            // Prevent event propagation to avoid accidental clicks on subsequently loaded elements
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+
             // Request Accelerometer Permission (Mobile)
+            console.log('[DEBUG] Requesting permission...');
             await this.inputManager.requestPermission();
+            console.log('[DEBUG] Permission granted, calling start()');
             this.start();
         });
 
@@ -97,10 +104,6 @@ export class Game {
 
 
     init() {
-        // Enable start button now that we are ready
-        this.startBtn.style.visibility = 'visible';
-        this.startBtn.style.opacity = '1';
-
         // Create World
         // ObstacleManager must be created before TerrainManager now
         this.obstacleManager = new ObstacleManager(this.entityManager, this.physicsEngine);
@@ -168,15 +171,24 @@ export class Game {
                 }
             }
 
-            entity.onHit();
+            // Only call onHit if entity exists
+            if (entity) {
+                entity.onHit();
+            }
         });
+
+        // Enable start button now that we are ready
+        this.startBtn.style.visibility = 'visible';
+        this.startBtn.style.opacity = '1';
 
         this.animate();
     }
 
     start() {
+        console.log('[DEBUG] start() called');
         if (!this.boat) return; // Guard against uninitialized start
 
+        console.log('[DEBUG] Hiding start screen');
         this.startScreen.style.display = 'none';
 
         // need to initialize the game state
@@ -184,41 +196,84 @@ export class Game {
         this.update(1 / 60);
 
         // Show welcome instructions immediately
-        this.showInstructions('instructions/welcome.html');
+        console.log('[DEBUG] About to call showInstructions()');
+        this.showInstructions('/instructions/welcome.html');
+        console.log('[DEBUG] showInstructions() returned');
     }
 
-    async showInstructions(url: string) {
+    showInstructions(url: string) {
+        console.log('[DEBUG] showInstructions() called with url:', url);
+        // 1. Pause immediately synchronously
         this.isPaused = true;
+        console.log('[DEBUG] Set isPaused = true');
+        this.inputManager.setOptions({ paused: true });
+        console.log('[DEBUG] Set inputManager paused = true');
         this.instructionsOverlay.style.display = 'flex';
+        console.log('[DEBUG] Set overlay display to flex. Current display:', this.instructionsOverlay.style.display);
+
+        // 2. Load content asynchronously
+        console.log('[DEBUG] Calling loadInstructionsContent()');
+        this.loadInstructionsContent(url);
+    }
+
+    private async loadInstructionsContent(url: string) {
+        console.log(`Fetching instructions from: ${url}`);
 
         try {
             const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const html = await response.text();
             this.instructionsContent.innerHTML = html;
 
             // Wire up dismiss button if present in the loaded content
             const dismissBtn = document.getElementById('dismiss-instructions-btn');
             if (dismissBtn) {
-                dismissBtn.addEventListener('click', () => {
+                // Track when instructions were shown
+                //const instructionsShownTime = Date.now();
+                //const MIN_DISPLAY_TIME = 500; // Minimum time in ms before dismiss is allowed
+
+                dismissBtn.addEventListener('click', (e) => {
+                    // Prevent event propagation
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+
+                    // Only allow dismissal after minimum display time
+                    //const elapsedTime = Date.now() - instructionsShownTime;
+                    //if (elapsedTime >= MIN_DISPLAY_TIME) {
                     this.dismissInstructions();
+                    //} else {
+                    //    console.log(`Instructions dismissed too quickly (${elapsedTime}ms). Ignoring.`);
+                    //}
                 });
+            } else {
+                console.warn("Dismiss button not found in instructions HTML");
             }
 
         } catch (e) {
             console.error("Failed to load instructions:", e);
-            this.dismissInstructions(); // Fallback to dismiss if load fails
+            // Do not auto-dismiss on error, so we can see the overlay (empty) and the error
+            // this.dismissInstructions(); 
+            this.instructionsContent.innerHTML = `<p style="color:white">Failed to load instructions. <br> ${e}</p> <button id="error-dismiss">Dismiss</button>`;
+            const errorDismiss = document.getElementById('error-dismiss');
+            if (errorDismiss) errorDismiss.addEventListener('click', () => this.dismissInstructions());
         }
     }
 
     dismissInstructions() {
+        console.log('[DEBUG] dismissInstructions() called');
+        console.trace('[DEBUG] Stack trace for dismissInstructions');
         this.instructionsOverlay.style.display = 'none';
         this.instructionsContent.innerHTML = '';
         this.isPaused = false;
+        this.inputManager.setOptions({ paused: false });
 
         if (!this.isPlaying) {
             this.isPlaying = true;
             this.clock.start();
         }
+        console.log('[DEBUG] Instructions dismissed, game resuming');
     }
 
     update(dt: number) {

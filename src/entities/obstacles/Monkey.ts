@@ -170,10 +170,6 @@ export class Monkey extends Entity implements AttackAnimal {
 
     didCompleteEnteringWater(speed: number) {
         this.behavior = new AttackAnimalWaterBehavior(this, speed);
-
-        if (this.meshes.length > 0) {
-            this.meshes[0].position.y = height;
-        }
         this.normalVector.set(0, 1, 0);
     }
 
