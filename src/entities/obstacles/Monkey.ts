@@ -27,7 +27,7 @@ export class Monkey extends Entity implements AttackAnimal {
 
         // Apply model transformations
         // Assuming 2.0 scale (smaller than bears 3.0)
-        model.scale.set(2.0, 2.0, 2.0);
+        model.scale.set(0.025, 0.025, 0.025);
         model.rotation.y = Math.PI;
 
         if (animations.length > 0) {
@@ -73,7 +73,7 @@ export class Monkey extends Entity implements AttackAnimal {
         this.physicsBodies.push(physicsBody);
 
         physicsBody.createFixture({
-            shape: planck.Box(0.8, 0.8), // 1.6m wide, 1.6m long (Smaller than bear)
+            shape: planck.Box(1.0, 1.0), // 1.6m wide, 1.6m long (Smaller than bear)
             density: 5.0,
             friction: 0.3,
             restitution: 0.0
