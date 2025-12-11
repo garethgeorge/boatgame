@@ -197,7 +197,7 @@ export class Game {
 
         // Show welcome instructions immediately
         console.log('[DEBUG] About to call showInstructions()');
-        this.showInstructions('/assets/instructions/welcome.html');
+        this.showInstructions('assets/instructions/welcome.html');
         console.log('[DEBUG] showInstructions() returned');
     }
 
