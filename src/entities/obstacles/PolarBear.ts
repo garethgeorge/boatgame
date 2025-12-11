@@ -3,16 +3,18 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimalShoreBehavior } from '../behaviors/AttackAnimalShoreBehavior';
+import { AttackAnimalShoreIdleBehavior } from '../behaviors/AttackAnimalShoreIdleBehavior';
 import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
 import { AnimalBehavior } from '../behaviors/AnimalBehavior';
-import { AttackAnimal } from '../behaviors/AttackAnimal';
+import { AttackAnimalEnteringWater, AttackAnimalShoreIdle } from '../behaviors/AttackAnimal';
+import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnteringWaterBehavior';
 
-export class PolarBear extends Entity implements AttackAnimal {
+export class PolarBear extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle {
     private rearingAction: THREE.AnimationAction | null = null;
     private walkingAction: THREE.AnimationAction | null = null;
     private behavior: AnimalBehavior | null = null;
     private mixer: THREE.AnimationMixer | null = null;
+    private aggressiveness: number;
 
     private applyModel(mesh: THREE.Group) {
         const bearData = Decorations.getPolarBear();
@@ -56,6 +58,9 @@ export class PolarBear extends Entity implements AttackAnimal {
         stayOnShore: boolean = false
     ) {
         super();
+
+        // Calculate aggressiveness for this polar bear
+        this.aggressiveness = Math.random();
 
         // Polar bears can cause penalties when hit
         this.canCausePenalty = true;
@@ -103,10 +108,10 @@ export class PolarBear extends Entity implements AttackAnimal {
         // Initialize behavior with target water height -2.0 (similar to brown bear)
         if (onShore) {
             if (!stayOnShore) {
-                this.behavior = new AttackAnimalShoreBehavior(this, -2.0);
+                this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
             }
         } else {
-            this.behavior = new AttackAnimalWaterBehavior(this);
+            this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
         }
     }
 
@@ -144,7 +149,7 @@ export class PolarBear extends Entity implements AttackAnimal {
         return null;
     }
 
-    setLandPosition(height: number, normal: THREE.Vector3): void {
+    setLandPosition(height: number, normal: THREE.Vector3, progress: number): void {
         if (this.meshes.length > 0) {
             this.meshes[0].position.y = height;
         }
@@ -161,8 +166,25 @@ export class PolarBear extends Entity implements AttackAnimal {
     }
 
     didCompleteEnteringWater(speed: number) {
-        this.behavior = new AttackAnimalWaterBehavior(this, speed);
+        this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
         this.normalVector.set(0, 1, 0);
+    }
+
+    shouldStartEnteringWater(): boolean {
+        const targetWaterHeight = -2.0;
+
+        // Create entering water behavior
+        const behavior = new AttackAnimalEnteringWaterBehavior(
+            this,
+            targetWaterHeight,
+            this.aggressiveness
+        );
+        this.behavior = behavior;
+
+        // Use duration from behavior for animation callbacks
+        this.didStartEnteringWater(behavior.duration);
+
+        return true;
     }
 
 }

@@ -2,101 +2,78 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { CollisionCategories } from '../../core/PhysicsEngine';
 import { RiverSystem } from '../../world/RiverSystem';
-import { Boat } from '../Boat';
-import { AttackAnimalShore } from './AttackAnimal';
+import { AttackAnimalEnteringWater } from './AttackAnimal';
 import { AnimalBehavior } from './AnimalBehavior';
 
-export class AttackAnimalShoreBehavior implements AnimalBehavior {
-    private entity: AttackAnimalShore;
-    private state: 'ONSHORE' | 'ENTERING_WATER' = 'ONSHORE';
+export class AttackAnimalEnteringWaterBehavior implements AnimalBehavior {
+    private entity: AttackAnimalEnteringWater;
     private targetWaterHeight: number;
     private speed: number;
-    private enterWaterDistance: number;
 
     // when entering the water we need to know where we started and how far we have traveled
     private entryStartPosition: planck.Vec2 | null = null;
     private totalEntryDistance: number = 0;
 
+    // Public properties that animals can use for animation callbacks
+    public readonly duration: number;
+
     constructor(
-        entity: AttackAnimalShore,
-        targetWaterHeight: number
+        entity: AttackAnimalEnteringWater,
+        targetWaterHeight: number,
+        aggressiveness: number
     ) {
         this.entity = entity;
         this.targetWaterHeight = targetWaterHeight;
-
-        const aggressiveness = Math.random();
         this.speed = 1 + 3 * aggressiveness;
-        this.enterWaterDistance = 100 + 100 * aggressiveness;
+
+        const physicsBody = entity.getPhysicsBody();
+        if (!physicsBody) {
+            this.duration = 0;
+            return;
+        }
+
+        // Calculate distance to water
+        const facingAngle = physicsBody.getAngle() - Math.PI / 2;
+        const direction = planck.Vec2(Math.cos(facingAngle), Math.sin(facingAngle));
+
+        let distanceToWater = RiverSystem.getInstance().getDistanceToWater(physicsBody.getPosition(), direction);
+
+        // No water found, stay on shore
+        if (distanceToWater < 0) {
+            this.duration = 0;
+            return;
+        }
+
+        // Add margin to ensure we are fully in water
+        const margin = 2.0;
+        distanceToWater += margin;
+
+        // Initialize entry tracking
+        this.entryStartPosition = physicsBody.getPosition().clone();
+        this.totalEntryDistance = distanceToWater;
+
+        // Calculate duration for animation callbacks
+        const moveSpeed = 8.0 * this.speed;
+        this.duration = distanceToWater / moveSpeed;
+
+        // Ignore terrain collision
+        this.setCollisionMask(physicsBody, 0xFFFF ^ CollisionCategories.TERRAIN);
+
+        // Switch to kinematic for precise path control
+        physicsBody.setType(planck.Body.KINEMATIC);
+
+        // Calculate and set velocity needed to cross the distance
+        const velocity = planck.Vec2(Math.cos(facingAngle), Math.sin(facingAngle)).mul(moveSpeed);
+        physicsBody.setLinearVelocity(velocity);
+        physicsBody.setAngularVelocity(0);
     }
 
     update() {
-        const targetBody = Boat.getPlayerBody();
         const physicsBody = this.entity.getPhysicsBody();
-
-        if (!targetBody || !physicsBody) return;
+        if (!physicsBody) return;
 
         const pos = physicsBody.getPosition();
-        const target = targetBody.getPosition();
-        const diff = target.clone().sub(pos);
-        const dist = diff.length();
 
-        switch (this.state) {
-            case 'ONSHORE':
-                this.updateOnShore(dist, physicsBody);
-                break;
-            case 'ENTERING_WATER':
-                this.updateEnteringWater(pos, physicsBody);
-                break;
-        }
-    }
-
-    private updateOnShore(dist: number, physicsBody: planck.Body) {
-        // Activate when boat is within distance
-        if (dist < this.enterWaterDistance) {
-
-            // Calculate distance to water
-            const facingAngle = physicsBody.getAngle() - Math.PI / 2;
-            const direction = planck.Vec2(Math.cos(facingAngle), Math.sin(facingAngle));
-
-            let distanceToWater = RiverSystem.getInstance().getDistanceToWater(physicsBody.getPosition(), direction);
-
-            // No water found, stay on shore
-            if (distanceToWater < 0) {
-                return;
-            }
-
-            this.state = 'ENTERING_WATER';
-
-            // speed we move into water
-            const moveSpeed = 8.0 * this.speed;
-
-            // margin to ensure we are fully in water
-            const margin = 2.0;
-
-            distanceToWater += margin;
-            const duration = distanceToWater / moveSpeed;
-
-            // Capture start data for progress tracking
-            this.entryStartPosition = physicsBody.getPosition().clone();
-            this.totalEntryDistance = distanceToWater;
-
-            this.entity.didStartEnteringWater?.(duration);
-
-            // Ignore terrain collision
-            this.setCollisionMask(physicsBody, 0xFFFF ^ CollisionCategories.TERRAIN);
-
-            // Switch to kinematic for precise path control
-            physicsBody.setType(planck.Body.KINEMATIC);
-
-            // Calculate and set velocity needed to cross the distance
-            // We want to move 'distanceToWater' + 'margin' (safely into water)
-            const velocity = planck.Vec2(Math.cos(facingAngle), Math.sin(facingAngle)).mul(moveSpeed);
-            physicsBody.setLinearVelocity(velocity);
-            physicsBody.setAngularVelocity(0);
-        }
-    }
-
-    private updateEnteringWater(pos: planck.Vec2, physicsBody: planck.Body) {
         // Velocity is handled by kinematic body now
 
         // Calculate progress

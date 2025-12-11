@@ -10,16 +10,9 @@ export class AttackAnimalWaterBehavior implements AnimalBehavior {
     private startAttackDistance: number;
     private stopAttackDistance: number;
 
-    constructor(entity: AttackAnimalWater, speed?: number) {
+    constructor(entity: AttackAnimalWater, aggressiveness: number) {
         this.entity = entity;
-
-        const aggressiveness = Math.random();
-        if (speed !== undefined) {
-            this.speed = speed;
-        } else {
-            this.speed = 1 + 3 * aggressiveness;
-        }
-
+        this.speed = 1 + 3 * aggressiveness;
         this.startAttackDistance = 30 + 60 * aggressiveness;
         this.stopAttackDistance = this.startAttackDistance + 20;
     }

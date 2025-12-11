@@ -4,12 +4,13 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 
-import { AttackAnimalShoreBehavior } from '../behaviors/AttackAnimalShoreBehavior';
+import { AttackAnimalShoreIdleBehavior } from '../behaviors/AttackAnimalShoreIdleBehavior';
 import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
 import { AnimalBehavior } from '../behaviors/AnimalBehavior';
-import { AttackAnimal } from '../behaviors/AttackAnimal';
+import { AttackAnimalEnteringWater, AttackAnimalShoreIdle } from '../behaviors/AttackAnimal';
+import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnteringWaterBehavior';
 
-export class Moose extends Entity implements AttackAnimal {
+export class Moose extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle {
 
     private readonly TARGET_WATER_HEIGHT = -3.0;
 
@@ -22,6 +23,7 @@ export class Moose extends Entity implements AttackAnimal {
 
     private mixer: THREE.AnimationMixer | null = null;
     private behavior: AnimalBehavior | null = null;
+    private aggressiveness: number;
 
     private applyModel(mesh: THREE.Group, onShore: boolean) {
         const mooseData = Decorations.getMoose();
@@ -82,6 +84,9 @@ export class Moose extends Entity implements AttackAnimal {
     ) {
         super();
 
+        // Calculate aggressiveness for this moose
+        this.aggressiveness = Math.random();
+
         // Moose can cause penalties when hit
         this.canCausePenalty = true;
 
@@ -123,14 +128,14 @@ export class Moose extends Entity implements AttackAnimal {
 
         if (onShore) {
             if (!stayOnShore) {
-                this.behavior = new AttackAnimalShoreBehavior(this, this.TARGET_WATER_HEIGHT);
+                this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
             }
             if (this.idleAction) {
                 this.idleAction.time = Math.random() * this.idleAction.getClip().duration;
                 this.idleAction.play();
             }
         } else {
-            this.behavior = new AttackAnimalWaterBehavior(this);
+            this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
             if (this.walkingAction) {
                 this.walkingAction.time = Math.random() * this.walkingAction.getClip().duration;
                 this.walkingAction.play();
@@ -238,7 +243,7 @@ export class Moose extends Entity implements AttackAnimal {
     }
 
     didCompleteEnteringWater(speed: number) {
-        this.behavior = new AttackAnimalWaterBehavior(this, speed);
+        this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
 
         if (this.meshes.length > 0) {
             this.meshes[0].position.y = this.TARGET_WATER_HEIGHT;
@@ -263,6 +268,22 @@ export class Moose extends Entity implements AttackAnimal {
                 this.jumpEndAction.crossFadeTo(this.walkingAction, 0.5, true);
             }
         }
+    }
+
+    shouldStartEnteringWater(): boolean {
+
+        // Create entering water behavior
+        const behavior = new AttackAnimalEnteringWaterBehavior(
+            this,
+            this.TARGET_WATER_HEIGHT,
+            this.aggressiveness
+        );
+        this.behavior = behavior;
+
+        // Use duration from behavior for animation callbacks
+        this.didStartEnteringWater(behavior.duration);
+
+        return true;
     }
 
 }

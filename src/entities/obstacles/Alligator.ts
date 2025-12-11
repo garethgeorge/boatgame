@@ -6,12 +6,13 @@ import { Decorations } from '../../world/Decorations';
 import { RiverSystem } from '../../world/RiverSystem';
 import { Boat } from '../Boat';
 
-import { AttackAnimalShoreBehavior } from '../behaviors/AttackAnimalShoreBehavior';
+import { AttackAnimalShoreIdleBehavior } from '../behaviors/AttackAnimalShoreIdleBehavior';
 import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
 import { AnimalBehavior } from '../behaviors/AnimalBehavior';
-import { AttackAnimal } from '../behaviors/AttackAnimal';
+import { AttackAnimalEnteringWater, AttackAnimalShoreIdle } from '../behaviors/AttackAnimal';
+import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnteringWaterBehavior';
 
-export class Alligator extends Entity implements AttackAnimal {
+export class Alligator extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle {
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
         // Apply model transformations
         model.scale.set(3.0, 3.0, 3.0);
@@ -43,6 +44,9 @@ export class Alligator extends Entity implements AttackAnimal {
         stayOnShore: boolean = false
     ) {
         super();
+
+        // Calculate aggressiveness for this alligator
+        this.aggressiveness = Math.random();
 
         // Alligators can cause penalties when hit
         this.canCausePenalty = true;
@@ -89,15 +93,16 @@ export class Alligator extends Entity implements AttackAnimal {
 
         if (onShore) {
             if (!stayOnShore) {
-                this.behavior = new AttackAnimalShoreBehavior(this, -1.0);
+                this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
             }
         } else {
-            this.behavior = new AttackAnimalWaterBehavior(this);
+            this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
         }
     }
 
     private mixer: THREE.AnimationMixer | null = null;
     private behavior: AnimalBehavior | null = null;
+    private aggressiveness: number;
 
     onHit() {
         this.shouldRemove = true;
@@ -133,7 +138,7 @@ export class Alligator extends Entity implements AttackAnimal {
         return null;
     }
 
-    setLandPosition(height: number, normal: THREE.Vector3): void {
+    setLandPosition(height: number, normal: THREE.Vector3, progress: number): void {
         if (this.meshes.length > 0) {
             this.meshes[0].position.y = height;
         }
@@ -141,8 +146,21 @@ export class Alligator extends Entity implements AttackAnimal {
     }
 
     didCompleteEnteringWater(speed: number) {
-        this.behavior = new AttackAnimalWaterBehavior(this, speed);
+        this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
         this.normalVector.set(0, 1, 0);
+    }
+
+    shouldStartEnteringWater(): boolean {
+        const targetWaterHeight = -1.0;
+
+        // Create entering water behavior
+        this.behavior = new AttackAnimalEnteringWaterBehavior(
+            this,
+            targetWaterHeight,
+            this.aggressiveness
+        );
+
+        return true;
     }
 
 }

@@ -9,21 +9,23 @@ export interface AnyAnimal {
     getPhysicsBody(): planck.Body | null;
 }
 
-// Behavior callbacks for animal on shore
-export interface AttackAnimalShore extends AnyAnimal {
+// Behavior callbacks for animal in idle shore state
+export interface AttackAnimalShoreIdle extends AnyAnimal {
+    // Called when the idle behavior determines it's time to enter water
+    // Returns true if the animal started entering water, false otherwise
+    shouldStartEnteringWater(): boolean;
+}
+
+// Behavior callbacks for animal entering water
+export interface AttackAnimalEnteringWater extends AnyAnimal {
     // set the height and normal of the animal when it is on land
     // progress: 0 (start of entry) to 1 (fully in water)
     setLandPosition(height: number, normal: THREE.Vector3, progress: number): void;
 
-    // called when animal starts entering water e.g. to switch animations
-    // duration: estimated time in seconds to reach water
-    didStartEnteringWater?(duration: number): void;
     didCompleteEnteringWater?(speed: number): void;
 }
 
 // Behavior callbacks for animal in water
 export interface AttackAnimalWater extends AnyAnimal {
 }
-
-export type AttackAnimal = AttackAnimalShore & AttackAnimalWater;
 
