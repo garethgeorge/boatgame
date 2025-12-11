@@ -179,7 +179,7 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
     }
 
     shouldStartEnteringWater(): boolean {
-        const targetWaterHeight = -1.25;
+        const targetWaterHeight = -1.7;
 
         // Create entering water behavior
         const behavior = new AttackAnimalEnteringWaterBehavior(
