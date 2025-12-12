@@ -47,6 +47,9 @@ export class Game {
     debugMode: boolean = false;
     viewMode: 'close' | 'far' = 'close';
 
+    // Collision Handling
+    pendingContacts: Map<Entity, { type: string, subtype: any }> = new Map();
+
     constructor() {
         this.container = document.getElementById('game-container') as HTMLElement;
 
@@ -152,29 +155,10 @@ export class Game {
                 entitySubtype = userDataA.subtype;
             }
 
-            if (player && entity) {
-                if (entityType === 'obstacle') {
-                    if (entity.canCausePenalty && !entity.hasCausedPenalty) {
-                        this.score -= 100;
-                        this.boat.flashRed();
-                        this.boat.collectedBottles.removeBottle(); // Lose a bottle
-                        entity.hasCausedPenalty = true;
-                    }
-                } else if (entityType === 'collectable') {
-                    if (entitySubtype === 'bottle') {
-                        const bottle = entity as MessageInABottle;
-                        const points = bottle.points;
-                        const color = bottle.color;
-                        this.score += points;
-                        this.boat.collectedBottles.addBottle(color); // Add a bottle
-                    }
-                }
-            }
+            if (!player || !entity) return;
 
-            // Only call onHit if entity exists
-            if (entity) {
-                entity.onHit();
-            }
+            // Store contact for processing in next update loop
+            this.pendingContacts.set(entity, { type: entityType!, subtype: entitySubtype });
         });
 
         // Enable start button now that we are ready
@@ -278,6 +262,9 @@ export class Game {
 
     update(dt: number) {
         if (!this.isPlaying) return;
+
+        // Process deferred contacts
+        this.processContacts();
 
         // Update Input State
         this.inputManager.update();
@@ -430,7 +417,7 @@ export class Game {
         if (!this.boat || this.boat.meshes.length === 0) return;
 
         const riverSystem = RiverSystem.getInstance();
-        const BIOME_LENGTH = riverSystem.biomeManager.BIOME_LENGTH;
+        const biomeLength = riverSystem.biomeManager.BIOME_LENGTH;
 
         const currentZ = this.boat.meshes[0].position.z;
 
@@ -439,7 +426,7 @@ export class Game {
         // If z = -500, next is -1000.
         // If z = -1000, next is -2000.
         // Use a small offset so if we are exactly on boundary, we go to next.
-        const nextZ = Math.floor(currentZ / BIOME_LENGTH - 0.01) * BIOME_LENGTH;
+        const nextZ = Math.floor(currentZ / biomeLength - 0.01) * biomeLength;
 
         // Get center of river at that location
         const nextX = riverSystem.getRiverCenter(nextZ);
@@ -454,5 +441,32 @@ export class Game {
         // TerrainManager.update checks distance, so it should handle it.
         // But might need to jump-start it if the jump is huge.
         // update(boat, dt) should work fine.
+    }
+
+    private processContacts() {
+        this.pendingContacts.forEach((data, entity) => {
+            const { type, subtype } = data;
+
+            if (type === 'obstacle') {
+                if (entity.canCausePenalty && !entity.hasCausedPenalty) {
+                    this.score -= 100;
+                    this.boat.flashRed();
+                    this.boat.collectedBottles.removeBottle(); // Lose a bottle
+                    entity.hasCausedPenalty = true;
+                }
+            } else if (type === 'collectable') {
+                if (subtype === 'bottle') {
+                    const bottle = entity as MessageInABottle;
+                    const points = bottle.points;
+                    const color = bottle.color;
+                    this.score += points;
+                    this.boat.collectedBottles.addBottle(color); // Add a bottle
+                }
+            }
+
+            entity.wasHitByPlayer();
+        });
+
+        this.pendingContacts.clear();
     }
 }

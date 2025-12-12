@@ -7,6 +7,7 @@ export abstract class Entity {
   public materials: THREE.Material[] = [];
   public debugMeshes: THREE.Object3D[] = [];
 
+  // When set to true, the entity will be removed from the game and destroyed
   public shouldRemove: boolean = false;
 
   // True for entities that can cause penalties
@@ -24,8 +25,19 @@ export abstract class Entity {
 
   abstract update(dt: number): void;
 
-  // Do stuff when hit by another game object
-  onHit(): void { }
+  // Do stuff when hit by the player
+  wasHitByPlayer(): void {
+
+  }
+
+  // Helper function to destroy all physics bodies for the entity
+  destroyPhysicsBodies() {
+    for (const body of this.physicsBodies) {
+      const world = body.getWorld();
+      world.destroyBody(body);
+    }
+    this.physicsBodies = [];
+  }
 
   dispose() {
     // Dispose of all meshes

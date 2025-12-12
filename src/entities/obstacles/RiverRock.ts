@@ -98,7 +98,7 @@ export class RiverRock extends Entity {
         mesh.position.y = -(height / 2) + 0.5 + (Math.random() * 0.5);
     }
 
-    onHit() {
+    wasHitByPlayer() {
         // Solid
     }
 

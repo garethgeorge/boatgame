@@ -113,7 +113,7 @@ export class Iceberg extends Entity {
         }
     }
 
-    onHit() {
+    wasHitByPlayer() {
         // Solid
     }
 

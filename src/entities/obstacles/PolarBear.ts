@@ -8,6 +8,8 @@ import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavio
 import { AnimalBehavior } from '../behaviors/AnimalBehavior';
 import { AttackAnimalEnteringWater, AttackAnimalShoreIdle } from '../behaviors/AttackAnimal';
 import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnteringWaterBehavior';
+import { EntityAnimation } from '../animations/EntityAnimation';
+import { ObstacleHitAnimation } from '../animations/ObstacleHitAnimation';
 
 export class PolarBear extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle {
     private rearingAction: THREE.AnimationAction | null = null;
@@ -15,6 +17,7 @@ export class PolarBear extends Entity implements AttackAnimalEnteringWater, Atta
     private behavior: AnimalBehavior | null = null;
     private mixer: THREE.AnimationMixer | null = null;
     private aggressiveness: number;
+    private entityAnimation: EntityAnimation | null = null;
 
     private applyModel(mesh: THREE.Group) {
         const bearData = Decorations.getPolarBear();
@@ -115,24 +118,23 @@ export class PolarBear extends Entity implements AttackAnimalEnteringWater, Atta
         }
     }
 
-    onHit() {
-        this.shouldRemove = true;
+    wasHitByPlayer() {
+        this.destroyPhysicsBodies();
     }
 
     update(dt: number) {
         if (this.mixer) {
             this.mixer.update(dt);
         }
+        if (this.entityAnimation) {
+            this.entityAnimation.update(dt);
+        }
 
         if (this.physicsBodies.length === 0) {
             // Sinking animation when hit
-            if (this.meshes.length > 0) {
-                const mesh = this.meshes[0];
-                mesh.position.y -= dt * 2;
-                if (mesh.position.y < -2) {
-                    this.shouldRemove = true;
-                }
-            }
+            this.entityAnimation = new ObstacleHitAnimation(this.meshes, () => {
+                this.shouldRemove = true;
+            }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
             return;
         }
 

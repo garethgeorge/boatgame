@@ -54,7 +54,7 @@ export class BuoySpawner implements Spawnable {
           this.physicsBodies.push(body);
         }
         update(dt: number) { }
-        onHit() { }
+        wasHitByPlayer() { }
       }
       const anchorEntity = new AnchorEntity(anchorBody);
       context.entityManager.add(anchorEntity, context.chunkIndex);

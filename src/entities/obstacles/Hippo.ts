@@ -4,6 +4,8 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { Boat } from '../Boat';
+import { EntityAnimation } from '../animations/EntityAnimation';
+import { ObstacleHitAnimation } from '../animations/ObstacleHitAnimation';
 
 export class Hippo extends Entity {
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
@@ -64,10 +66,12 @@ export class Hippo extends Entity {
         }
     }
 
-    private mixer: THREE.AnimationMixer | null = null;
 
-    onHit() {
-        this.shouldRemove = true;
+    private mixer: THREE.AnimationMixer | null = null;
+    private entityAnimation: EntityAnimation | null = null;
+
+    wasHitByPlayer() {
+        this.destroyPhysicsBodies();
     }
 
     private state: 'IDLE' | 'PREPARING' | 'CHARGING' = 'IDLE';
@@ -78,16 +82,17 @@ export class Hippo extends Entity {
         if (this.mixer) {
             this.mixer.update(dt);
         }
+        if (this.mixer) {
+            this.mixer.update(dt);
+        }
+        if (this.entityAnimation) {
+            this.entityAnimation.update(dt);
+        }
 
         if (this.physicsBodies.length === 0) {
-            // Sinking animation
-            if (this.meshes.length > 0) {
-                const mesh = this.meshes[0];
-                mesh.position.y -= dt * 2;
-                if (mesh.position.y < -2) {
-                    this.shouldRemove = true;
-                }
-            }
+            this.entityAnimation = new ObstacleHitAnimation(this.meshes, () => {
+                this.shouldRemove = true;
+            }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
             return;
         }
 

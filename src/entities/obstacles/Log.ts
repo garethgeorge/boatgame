@@ -45,7 +45,7 @@ export class Log extends Entity {
         mesh.receiveShadow = true;
     }
 
-    onHit() {
+    wasHitByPlayer() {
         // Logs don't break, they block!
     }
 

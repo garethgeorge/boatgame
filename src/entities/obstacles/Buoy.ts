@@ -72,7 +72,7 @@ export class Buoy extends Entity {
         mesh.receiveShadow = true;
     }
 
-    onHit() {
+    wasHitByPlayer() {
         // Buoys just bounce
     }
 

@@ -2,9 +2,13 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { EntityAnimation } from '../animations/EntityAnimation';
+import { ObstacleHitAnimation } from '../animations/ObstacleHitAnimation';
 
 export class GasCan extends Entity {
 
+
+    private entityAnimation: EntityAnimation | null = null;
     private floatOffset: number = Math.random() * Math.PI * 2;
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
@@ -55,23 +59,19 @@ export class GasCan extends Entity {
         mesh.add(spout);
     }
 
-    onHit() {
-        this.shouldRemove = true;
+    wasHitByPlayer() {
+        this.destroyPhysicsBodies();
     }
 
     update(dt: number) {
+        if (this.entityAnimation) {
+            this.entityAnimation.update(dt);
+        }
+
         if (this.physicsBodies.length === 0) {
-            // Floating up animation
-            if (this.meshes.length > 0) {
-                const mesh = this.meshes[0];
-                mesh.position.y += dt * 2;
-                mesh.rotation.y += dt * 5;
-                // Fade out? Hard to do with Group materials easily without iterating
-                // Just float up high enough then remove
-                if (mesh.position.y > 5) {
-                    this.shouldRemove = true;
-                }
-            }
+            this.entityAnimation = new ObstacleHitAnimation(this.meshes, () => {
+                this.shouldRemove = true;
+            }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
             return;
         }
 

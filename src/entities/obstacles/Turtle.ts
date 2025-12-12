@@ -2,9 +2,13 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { EntityAnimation } from '../animations/EntityAnimation';
+import { ObstacleHitAnimation } from '../animations/ObstacleHitAnimation';
 
 export class Turtle extends Entity {
 
+
+    private entityAnimation: EntityAnimation | null = null;
     private turnTimer: number = 0;
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
@@ -38,19 +42,21 @@ export class Turtle extends Entity {
         mesh.scale.y = 0.5; // Flatten it
     }
 
-    onHit() {
+    wasHitByPlayer() {
         // Turtle dives (disappears)
-        this.shouldRemove = true;
+        this.destroyPhysicsBodies();
     }
 
     update(dt: number) {
+        if (this.entityAnimation) {
+            this.entityAnimation.update(dt);
+        }
         if (this.physicsBodies.length === 0) {
-            if (this.meshes.length > 0) {
-                const mesh = this.meshes[0];
-                mesh.position.y -= dt * 2;
-                if (mesh.position.y < -2) {
-                    this.shouldRemove = true;
-                }
+            this.entityAnimation = new ObstacleHitAnimation(this.meshes, () => {
+                this.shouldRemove = true;
+            }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
+            if (this.entityAnimation) {
+                this.entityAnimation.update(dt);
             }
             return;
         }
