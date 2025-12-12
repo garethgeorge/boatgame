@@ -801,12 +801,14 @@ export class Decorations {
       opacity: 0.6
     });
     const body = new THREE.Mesh(bodyGeo, glassMat);
+    body.name = 'body';
     mesh.add(body);
 
     // Bottle Neck
     const neckGeo = new THREE.CylinderGeometry(0.2, 0.4, 0.6, 8); // Doubled
     const neck = new THREE.Mesh(neckGeo, glassMat);
     neck.position.y = 0.9;
+    neck.name = 'neck';
     mesh.add(neck);
 
     // Cork
@@ -814,6 +816,7 @@ export class Decorations {
     const corkMat = new THREE.MeshToonMaterial({ color: 0x8B4513 });
     const cork = new THREE.Mesh(corkGeo, corkMat);
     cork.position.y = 1.3;
+    cork.name = 'cork';
     mesh.add(cork);
 
     // Paper Message
@@ -822,8 +825,29 @@ export class Decorations {
     const paper = new THREE.Mesh(paperGeo, paperMat);
     paper.rotation.y = Math.PI / 4;
     paper.rotation.z = Math.PI / 8;
+    paper.name = 'paper';
     mesh.add(paper);
 
     return mesh;
+  }
+
+  static getBottleFadeAnimation(): THREE.AnimationClip {
+    const duration = 1.0;
+    const times = [0, duration];
+
+    // Calculate tracks for opacity of all parts
+    const tracks: THREE.KeyframeTrack[] = [];
+
+    // Note: Body/Neck start at 0.6 opacity, but we animate multiplier or value?
+    // standard .material.opacity track sets the absolute value.
+    // So body/neck should animate 0.6 -> 0.
+    // Cork/Paper should animate 1.0 -> 0.
+
+    tracks.push(new THREE.NumberKeyframeTrack('body.material.opacity', times, [0.6, 0]));
+    tracks.push(new THREE.NumberKeyframeTrack('neck.material.opacity', times, [0.6, 0]));
+    tracks.push(new THREE.NumberKeyframeTrack('cork.material.opacity', times, [1.0, 0]));
+    tracks.push(new THREE.NumberKeyframeTrack('paper.material.opacity', times, [1.0, 0]));
+
+    return new THREE.AnimationClip('BottleHit', duration, tracks);
   }
 }

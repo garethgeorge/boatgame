@@ -34,6 +34,7 @@ export class MessageInABottle extends Entity {
     private behavior: EntityBehavior | null = null;
     public points: number;
     public color: number;
+    private mixer: THREE.AnimationMixer | null = null;
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine, color: number = 0x88FF88, points: number = 100) {
         super();
@@ -69,12 +70,56 @@ export class MessageInABottle extends Entity {
         if (this.behavior) {
             this.behavior.update(dt);
         }
+        if (this.mixer) {
+            this.mixer.update(dt);
+        }
     }
 
     wasHitByPlayer() {
         this.destroyPhysicsBodies();
+
+        // animates bottle up
         this.behavior = new ObstacleHitBehavior(this.meshes, () => {
             this.shouldRemove = true;
         }, { duration: 0.25, rotateSpeed: 25, targetHeightOffset: 5 });
+
+        // fades bottle out
+        if (this.meshes.length > 0) {
+            const mesh = this.meshes[0];
+
+            // The mesh material are shared, so we need to clone them
+            this.prepareMeshForAnimation(mesh);
+
+            // Start fade Animation
+            this.mixer = new THREE.AnimationMixer(mesh);
+            this.mixer.timeScale = 4.0;
+
+            const clip = Decorations.getBottleFadeAnimation();
+            const action = this.mixer.clipAction(clip);
+            action.setLoop(THREE.LoopOnce, 1);
+            action.clampWhenFinished = true;
+            action.play();
+        }
+    }
+
+    // Since the bottle mesh is shared, we need to clone its
+    // materials for the animation.
+    private prepareMeshForAnimation(mesh: THREE.Object3D) {
+        // Prepare materials for fading (clone and ensure transparent)
+        mesh.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
+                const newMaterials = materials.map(m => {
+                    const clone = m.clone();
+                    clone.transparent = true;
+                    return clone;
+                });
+                if (Array.isArray(child.material)) {
+                    child.material = newMaterials;
+                } else {
+                    child.material = newMaterials[0];
+                }
+            }
+        });
     }
 }
