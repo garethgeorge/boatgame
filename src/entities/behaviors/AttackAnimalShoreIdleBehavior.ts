@@ -50,8 +50,8 @@ export class AttackAnimalShoreIdleBehavior implements AnimalBehavior {
     }
 
     private perhapsShouldSwitchBehavior(dt: number) {
-        // Probability such that average time is 10 seconds
-        const probability = dt / 10.0;
+        // Probability such that average time is 5 seconds
+        const probability = dt / 5.0;
         if (Math.random() < probability) {
             this.entity.shouldSwitchIdleBehavior?.();
         }

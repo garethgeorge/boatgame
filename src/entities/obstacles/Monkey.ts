@@ -14,11 +14,14 @@ import { AnimalShoreWalkBehavior } from '../behaviors/AnimalShoreWalkBehavior';
 export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle, AttackAnimalShoreWalk {
     private readonly aggressiveness: number;
 
+    private idleAction: THREE.AnimationAction | null = null;
     private danceAction: THREE.AnimationAction | null = null;
     private swimAction: THREE.AnimationAction | null = null;
     private walkAction: THREE.AnimationAction | null = null;
+
     private mixer: THREE.AnimationMixer | null = null;
     private behavior: AnimalBehavior | null = null;
+    private currentAction: THREE.AnimationAction | null = null;
 
     private applyModel(mesh: THREE.Group, onShore: boolean) {
         const monkeyData = Decorations.getMonkey();
@@ -42,6 +45,11 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
             const danceClip = animations.find(a => a.name === 'dance');
             const swimClip = animations.find(a => a.name === 'swim');
             const walkClip = animations.find(a => a.name === 'walk');
+            const idleClip = animations.find(a => a.name === 'idle');
+
+            if (idleClip) {
+                this.idleAction = this.mixer.clipAction(idleClip);
+            }
 
             if (danceClip) {
                 this.danceAction = this.mixer.clipAction(danceClip);
@@ -115,8 +123,10 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
             this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
         }
 
-        if (!onShore) {
-            this.crossFadeAnimations(null, this.swimAction, 2.5);
+        if (onShore) {
+            this.crossFadeToAnimation(this.idleAction, 1.0);
+        } else {
+            this.crossFadeToAnimation(this.swimAction, 2.5);
         }
     }
 
@@ -162,8 +172,7 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
     }
 
     didStartEnteringWater(duration: number): void {
-        // Crossfade from dance (if playing) to swim
-        this.crossFadeAnimations(this.danceAction, this.swimAction, 2.5);
+        this.crossFadeToAnimation(this.swimAction, 2.5);
     }
 
     didCompleteEnteringWater(speed: number): void {
@@ -193,10 +202,10 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
         if (rand < 0.5) {
             this.shouldStartShoreWalk();
         } else if (this.danceAction) {
-            if (this.danceAction.isRunning()) {
-                this.crossFadeAnimations(this.danceAction, null, 1.0);
+            if (this.currentAction !== this.idleAction) {
+                this.crossFadeToAnimation(this.idleAction, 1.0);
             } else {
-                this.crossFadeAnimations(null, this.danceAction, 1.0);
+                this.crossFadeToAnimation(this.danceAction, 1.0);
             }
         }
     }
@@ -212,18 +221,16 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
             speed
         );
 
-        this.crossFadeAnimations(this.danceAction, this.walkAction, 1.0);
+        this.crossFadeToAnimation(this.walkAction, 1.0);
     }
 
     didCompleteShoreWalk(): void {
         // Return to idle behavior after completing shore walk
         this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
-        this.crossFadeAnimations(this.walkAction, null, 1.0);
+        this.crossFadeToAnimation(this.idleAction, 1.0);
     }
 
-    // Note that "to" can be null to just stop from
-    private crossFadeAnimations(from: THREE.AnimationAction,
-        to: THREE.AnimationAction,
+    private crossFadeToAnimation(to: THREE.AnimationAction,
         timeScale: number) {
 
         // set up to so it loops
@@ -236,17 +243,17 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
             }
         }
 
-        if (from && to) {
-            // from is running, fade to to
-            from.crossFadeTo(to, 1.0, true);
+        if (this.currentAction && to) {
+            this.currentAction.crossFadeTo(to, 1.0, true);
         }
-        else if (from) {
-            // nothing to fade to just stop when done
-            from.setLoop(THREE.LoopOnce, 1);
-            from.clampWhenFinished = true;
+        else if (this.currentAction) {
+            this.currentAction.setLoop(THREE.LoopOnce, 1);
+            this.currentAction.clampWhenFinished = true;
         }
         else {
             // to will just start running
         }
+
+        this.currentAction = to;
     }
 }
