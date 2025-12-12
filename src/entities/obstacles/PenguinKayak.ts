@@ -3,8 +3,8 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { EntityAnimation } from '../animations/EntityAnimation';
-import { ObstacleHitAnimation } from '../animations/ObstacleHitAnimation';
+import { EntityBehavior } from '../behaviors/EntityBehavior';
+import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 
 export class PenguinKayak extends Entity {
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
@@ -72,28 +72,21 @@ export class PenguinKayak extends Entity {
     }
 
     private mixer: THREE.AnimationMixer | null = null;
-    private entityAnimation: EntityAnimation | null = null;
+    private behavior: EntityBehavior | null = null;
 
     wasHitByPlayer() {
         this.destroyPhysicsBodies();
+        this.behavior = new ObstacleHitBehavior(this.meshes, () => {
+            this.shouldRemove = true;
+        }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
     }
 
     update(dt: number) {
         if (this.mixer) {
             this.mixer.update(dt);
         }
-        if (this.mixer) {
-            this.mixer.update(dt);
-        }
-        if (this.entityAnimation) {
-            this.entityAnimation.update(dt);
-        }
-
-        if (this.physicsBodies.length === 0) {
-            this.entityAnimation = new ObstacleHitAnimation(this.meshes, () => {
-                this.shouldRemove = true;
-            }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
-            return;
+        if (this.behavior) {
+            this.behavior.update(dt);
         }
     }
 

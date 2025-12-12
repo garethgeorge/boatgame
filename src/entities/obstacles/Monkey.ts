@@ -6,12 +6,11 @@ import { Decorations } from '../../world/Decorations';
 
 import { AttackAnimalShoreIdleBehavior } from '../behaviors/AttackAnimalShoreIdleBehavior';
 import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
-import { AnimalBehavior } from '../behaviors/AnimalBehavior';
+import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AttackAnimalEnteringWater, AttackAnimalShoreIdle, AttackAnimalShoreWalk } from '../behaviors/AttackAnimal';
 import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnteringWaterBehavior';
 import { AnimalShoreWalkBehavior } from '../behaviors/AnimalShoreWalkBehavior';
-import { EntityAnimation } from '../animations/EntityAnimation';
-import { ObstacleHitAnimation } from '../animations/ObstacleHitAnimation';
+import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 
 export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle, AttackAnimalShoreWalk {
     private readonly aggressiveness: number;
@@ -22,9 +21,8 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
     private walkAction: THREE.AnimationAction | null = null;
 
     private mixer: THREE.AnimationMixer | null = null;
-    private behavior: AnimalBehavior | null = null;
+    private behavior: EntityBehavior | null = null;
     private currentAction: THREE.AnimationAction | null = null;
-    private entityAnimation: EntityAnimation | null = null;
 
     private applyModel(mesh: THREE.Group, onShore: boolean) {
         const monkeyData = Decorations.getMonkey();
@@ -135,23 +133,15 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
 
     wasHitByPlayer() {
         this.destroyPhysicsBodies();
+        this.behavior = new ObstacleHitBehavior(this.meshes, () => {
+            this.shouldRemove = true;
+        }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
     }
 
     update(dt: number) {
         if (this.mixer) {
             this.mixer.update(dt);
         }
-        if (this.entityAnimation) {
-            this.entityAnimation.update(dt);
-        }
-
-        if (this.physicsBodies.length === 0) {
-            this.entityAnimation = new ObstacleHitAnimation(this.meshes, () => {
-                this.shouldRemove = true;
-            }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
-            return;
-        }
-
         if (this.behavior) {
             this.behavior.update(dt);
         }

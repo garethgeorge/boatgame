@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import { EntityAnimation } from './EntityAnimation';
+import { EntityBehavior } from './EntityBehavior';
 
-export interface ObstacleHitAnimationParams {
+export interface ObstacleHitBehaviorParams {
     duration?: number;
     rotateSpeed?: number;
     targetHeightOffset?: number;
 }
 
-export class ObstacleHitAnimation extends EntityAnimation {
+export class ObstacleHitBehavior implements EntityBehavior {
     private meshes: THREE.Object3D[];
     private onComplete: () => void;
     private verticalSpeed: number;
@@ -15,8 +15,7 @@ export class ObstacleHitAnimation extends EntityAnimation {
     private targetHeightOffset: number;
     private currentHeightChange: number = 0;
 
-    constructor(meshes: THREE.Object3D[], onComplete: () => void, params: ObstacleHitAnimationParams = {}) {
-        super();
+    constructor(meshes: THREE.Object3D[], onComplete: () => void, params: ObstacleHitBehaviorParams = {}) {
         this.meshes = meshes;
         this.onComplete = onComplete;
 

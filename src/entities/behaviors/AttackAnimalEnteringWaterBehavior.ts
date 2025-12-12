@@ -3,9 +3,9 @@ import * as THREE from 'three';
 import { CollisionCategories } from '../../core/PhysicsEngine';
 import { RiverSystem } from '../../world/RiverSystem';
 import { AttackAnimalEnteringWater } from './AttackAnimal';
-import { AnimalBehavior } from './AnimalBehavior';
+import { EntityBehavior } from './EntityBehavior';
 
-export class AttackAnimalEnteringWaterBehavior implements AnimalBehavior {
+export class AttackAnimalEnteringWaterBehavior implements EntityBehavior {
     private entity: AttackAnimalEnteringWater;
     private targetWaterHeight: number;
     private speed: number;

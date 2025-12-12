@@ -2,14 +2,31 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { EntityAnimation } from '../animations/EntityAnimation';
-import { ObstacleHitAnimation } from '../animations/ObstacleHitAnimation';
+import { EntityBehavior } from '../behaviors/EntityBehavior';
+import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 
 export class GasCan extends Entity {
 
+    static FloatBehavior = class implements EntityBehavior {
 
-    private entityAnimation: EntityAnimation | null = null;
-    private floatOffset: number = Math.random() * Math.PI * 2;
+        private gasCan: GasCan;
+        private floatOffset: number = Math.random() * Math.PI * 2;
+
+        constructor(gasCan: GasCan) {
+            this.gasCan = gasCan;
+        }
+        update(dt: number) {
+            // Float animation
+            this.floatOffset += dt * 2;
+            if (this.gasCan.meshes.length > 0) {
+                const mesh = this.gasCan.meshes[0];
+                mesh.position.y = Math.sin(this.floatOffset) * 0.2 + 0.5; // +0.5 base height
+                mesh.rotation.y += dt;
+            }
+        }
+    };
+
+    private behavior: EntityBehavior | null = null;
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
         super();
@@ -57,30 +74,21 @@ export class GasCan extends Entity {
         spout.position.set(0.4, 1.6, 0);
         spout.rotation.z = -Math.PI / 4;
         mesh.add(spout);
+
+        // Start floating
+        this.behavior = new GasCan.FloatBehavior(this);
     }
 
     wasHitByPlayer() {
         this.destroyPhysicsBodies();
+        this.behavior = new ObstacleHitBehavior(this.meshes, () => {
+            this.shouldRemove = true;
+        }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
     }
 
     update(dt: number) {
-        if (this.entityAnimation) {
-            this.entityAnimation.update(dt);
-        }
-
-        if (this.physicsBodies.length === 0) {
-            this.entityAnimation = new ObstacleHitAnimation(this.meshes, () => {
-                this.shouldRemove = true;
-            }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
-            return;
-        }
-
-        // Float animation
-        this.floatOffset += dt * 2;
-        if (this.meshes.length > 0) {
-            const mesh = this.meshes[0];
-            mesh.position.y = Math.sin(this.floatOffset) * 0.2 + 0.5; // +0.5 base height
-            mesh.rotation.y += dt;
+        if (this.behavior) {
+            this.behavior.update(dt);
         }
     }
 }

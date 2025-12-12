@@ -2,9 +2,9 @@ import * as planck from 'planck';
 import { RiverSystem } from '../../world/RiverSystem';
 import { Boat } from '../Boat';
 import { AttackAnimalShoreIdle } from './AttackAnimal';
-import { AnimalBehavior } from './AnimalBehavior';
+import { EntityBehavior } from './EntityBehavior';
 
-export class AttackAnimalShoreIdleBehavior implements AnimalBehavior {
+export class AttackAnimalShoreIdleBehavior implements EntityBehavior {
     private entity: AttackAnimalShoreIdle;
     private enterWaterDistance: number = 0.0;
 

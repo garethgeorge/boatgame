@@ -6,11 +6,10 @@ import { Decorations } from '../../world/Decorations';
 
 import { AttackAnimalShoreIdleBehavior } from '../behaviors/AttackAnimalShoreIdleBehavior';
 import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
-import { AnimalBehavior } from '../behaviors/AnimalBehavior';
+import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AttackAnimalEnteringWater, AttackAnimalShoreIdle } from '../behaviors/AttackAnimal';
 import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnteringWaterBehavior';
-import { EntityAnimation } from '../animations/EntityAnimation';
-import { ObstacleHitAnimation } from '../animations/ObstacleHitAnimation';
+import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 
 export class BrownBear extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle {
     private roaringAction: THREE.AnimationAction | null = null;
@@ -120,28 +119,19 @@ export class BrownBear extends Entity implements AttackAnimalEnteringWater, Atta
     }
 
     private mixer: THREE.AnimationMixer | null = null;
-    private behavior: AnimalBehavior | null = null;
-    private entityAnimation: EntityAnimation | null = null;
+    private behavior: EntityBehavior | null = null;
 
     wasHitByPlayer() {
         this.destroyPhysicsBodies();
+        this.behavior = new ObstacleHitBehavior(this.meshes, () => {
+            this.shouldRemove = true;
+        }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
     }
 
     update(dt: number) {
         if (this.mixer) {
             this.mixer.update(dt);
         }
-        if (this.entityAnimation) {
-            this.entityAnimation.update(dt);
-        }
-
-        if (this.physicsBodies.length === 0) {
-            this.entityAnimation = new ObstacleHitAnimation(this.meshes, () => {
-                this.shouldRemove = true;
-            }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
-            return;
-        }
-
         if (this.behavior) {
             this.behavior.update(dt);
         }

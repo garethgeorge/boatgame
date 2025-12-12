@@ -1,9 +1,9 @@
 import * as planck from 'planck';
 import { Boat } from '../Boat';
 import { AttackAnimalWater } from './AttackAnimal';
-import { AnimalBehavior } from './AnimalBehavior';
+import { EntityBehavior } from './EntityBehavior';
 
-export class AttackAnimalWaterBehavior implements AnimalBehavior {
+export class AttackAnimalWaterBehavior implements EntityBehavior {
     private entity: AttackAnimalWater;
     private state: 'IDLE' | 'TURNING' | 'ATTACKING' = 'IDLE';
     private speed: number;

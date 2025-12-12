@@ -2,13 +2,13 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { EntityAnimation } from '../animations/EntityAnimation';
-import { ObstacleHitAnimation } from '../animations/ObstacleHitAnimation';
+import { EntityBehavior } from '../behaviors/EntityBehavior';
+import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 
 export class Turtle extends Entity {
 
 
-    private entityAnimation: EntityAnimation | null = null;
+    private behavior: EntityBehavior | null = null;
     private turnTimer: number = 0;
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
@@ -45,20 +45,14 @@ export class Turtle extends Entity {
     wasHitByPlayer() {
         // Turtle dives (disappears)
         this.destroyPhysicsBodies();
+        this.behavior = new ObstacleHitBehavior(this.meshes, () => {
+            this.shouldRemove = true;
+        }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
     }
 
     update(dt: number) {
-        if (this.entityAnimation) {
-            this.entityAnimation.update(dt);
-        }
-        if (this.physicsBodies.length === 0) {
-            this.entityAnimation = new ObstacleHitAnimation(this.meshes, () => {
-                this.shouldRemove = true;
-            }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
-            if (this.entityAnimation) {
-                this.entityAnimation.update(dt);
-            }
-            return;
+        if (this.behavior) {
+            this.behavior.update(dt);
         }
 
         // Meander Timer
