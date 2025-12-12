@@ -1,6 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
@@ -88,7 +89,7 @@ export class MessageInABottle extends Entity {
             const mesh = this.meshes[0];
 
             // The mesh material are shared, so we need to clone them
-            this.prepareMeshForAnimation(mesh);
+            GraphicsUtils.cloneMaterials(mesh);
 
             // Start fade Animation
             this.mixer = new THREE.AnimationMixer(mesh);
@@ -102,24 +103,4 @@ export class MessageInABottle extends Entity {
         }
     }
 
-    // Since the bottle mesh is shared, we need to clone its
-    // materials for the animation.
-    private prepareMeshForAnimation(mesh: THREE.Object3D) {
-        // Prepare materials for fading (clone and ensure transparent)
-        mesh.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                const materials = Array.isArray(child.material) ? child.material : [child.material];
-                const newMaterials = materials.map(m => {
-                    const clone = m.clone();
-                    clone.transparent = true;
-                    return clone;
-                });
-                if (Array.isArray(child.material)) {
-                    child.material = newMaterials;
-                } else {
-                    child.material = newMaterials[0];
-                }
-            }
-        });
-    }
 }
