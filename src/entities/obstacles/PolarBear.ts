@@ -137,7 +137,7 @@ export class PolarBear extends Entity implements AttackAnimalEnteringWater, Atta
         }
 
         if (this.behavior) {
-            this.behavior.update();
+            this.behavior.update(dt);
         }
     }
 

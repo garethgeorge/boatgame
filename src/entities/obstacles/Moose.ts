@@ -165,7 +165,7 @@ export class Moose extends Entity implements AttackAnimalEnteringWater, AttackAn
         }
 
         if (this.behavior) {
-            this.behavior.update();
+            this.behavior.update(dt);
         }
     }
 

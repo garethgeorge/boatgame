@@ -11,9 +11,13 @@ export interface AnyAnimal {
 
 // Behavior callbacks for animal in idle shore state
 export interface AttackAnimalShoreIdle extends AnyAnimal {
+    // Called at random to give the animal a chance to switch to another
+    //  behavior e.g. from standing still to walking away or dancing
+    shouldSwitchIdleBehavior?(): void;
+
     // Called when the idle behavior determines it's time to enter water
     // Returns true if the animal started entering water, false otherwise
-    shouldStartEnteringWater(): boolean;
+    shouldStartEnteringWater?(): void;
 }
 
 // Behavior callbacks for animal entering water
@@ -23,6 +27,15 @@ export interface AttackAnimalEnteringWater extends AnyAnimal {
     setLandPosition(height: number, normal: THREE.Vector3, progress: number): void;
 
     didCompleteEnteringWater?(speed: number): void;
+}
+
+// Behavior callbacks for animal walking on shore
+export interface AttackAnimalShoreWalk extends AnyAnimal {
+    // set the height and normal of the animal when walking on shore
+    // progress: 0 to 1 when walking away, 1 to 0 when returning
+    setLandPosition(height: number, normal: THREE.Vector3, progress: number): void;
+
+    didCompleteShoreWalk?(): void;
 }
 
 // Behavior callbacks for animal in water

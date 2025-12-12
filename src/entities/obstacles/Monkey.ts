@@ -7,15 +7,18 @@ import { Decorations } from '../../world/Decorations';
 import { AttackAnimalShoreIdleBehavior } from '../behaviors/AttackAnimalShoreIdleBehavior';
 import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
 import { AnimalBehavior } from '../behaviors/AnimalBehavior';
-import { AttackAnimalEnteringWater, AttackAnimalShoreIdle } from '../behaviors/AttackAnimal';
+import { AttackAnimalEnteringWater, AttackAnimalShoreIdle, AttackAnimalShoreWalk } from '../behaviors/AttackAnimal';
 import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnteringWaterBehavior';
+import { AnimalShoreWalkBehavior } from '../behaviors/AnimalShoreWalkBehavior';
 
-export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle {
+export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle, AttackAnimalShoreWalk {
+    private readonly aggressiveness: number;
+
     private danceAction: THREE.AnimationAction | null = null;
     private swimAction: THREE.AnimationAction | null = null;
+    private walkAction: THREE.AnimationAction | null = null;
     private mixer: THREE.AnimationMixer | null = null;
     private behavior: AnimalBehavior | null = null;
-    private aggressiveness: number;
 
     private applyModel(mesh: THREE.Group, onShore: boolean) {
         const monkeyData = Decorations.getMonkey();
@@ -38,6 +41,7 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
             // "dance" on shore, "swim" in water
             const danceClip = animations.find(a => a.name === 'dance');
             const swimClip = animations.find(a => a.name === 'swim');
+            const walkClip = animations.find(a => a.name === 'walk');
 
             if (danceClip) {
                 this.danceAction = this.mixer.clipAction(danceClip);
@@ -45,6 +49,10 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
 
             if (swimClip) {
                 this.swimAction = this.mixer.clipAction(swimClip);
+            }
+
+            if (walkClip) {
+                this.walkAction = this.mixer.clipAction(walkClip);
             }
         }
     }
@@ -62,7 +70,7 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
         super();
 
         // Calculate aggressiveness for this monkey
-        this.aggressiveness = Math.random();
+        this.aggressiveness = stayOnShore ? 0.0 : Math.random();
 
         // Monkeys can cause penalties when hit
         this.canCausePenalty = true;
@@ -101,20 +109,14 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
             this.normalVector = terrainNormal.clone();
         }
 
-        // Use -1.0 target water height (similar to Alligator)
         if (onShore) {
-            if (!stayOnShore) {
-                this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
-            }
+            this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
         } else {
             this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
         }
 
-        if (onShore && this.danceAction) {
-            this.danceAction.play();
-        } else if (!onShore && this.swimAction) {
-            if (this.mixer) this.mixer.timeScale = 2.5;
-            this.swimAction.play();
+        if (!onShore) {
+            this.crossFadeAnimations(null, this.swimAction, 2.5);
         }
     }
 
@@ -140,7 +142,7 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
         }
 
         if (this.behavior) {
-            this.behavior.update();
+            this.behavior.update(dt);
         }
     }
 
@@ -160,25 +162,16 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
     }
 
     didStartEnteringWater(duration: number): void {
-        // Crossfade from dance to swim
-        if (this.swimAction) {
-            this.swimAction.reset();
-            this.swimAction.play();
-            if (this.mixer) {
-                this.mixer.timeScale = 2.5;
-            }
-        }
-        if (this.danceAction && this.swimAction) {
-            this.danceAction.crossFadeTo(this.swimAction, 1.0, true);
-        }
+        // Crossfade from dance (if playing) to swim
+        this.crossFadeAnimations(this.danceAction, this.swimAction, 2.5);
     }
 
-    didCompleteEnteringWater(speed: number) {
+    didCompleteEnteringWater(speed: number): void {
         this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
         this.normalVector.set(0, 1, 0);
     }
 
-    shouldStartEnteringWater(): boolean {
+    shouldStartEnteringWater(): void {
         const targetWaterHeight = -1.7;
 
         // Create entering water behavior
@@ -191,8 +184,69 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
 
         // Use duration from behavior for animation callbacks
         this.didStartEnteringWater(behavior.duration);
-
-        return true;
     }
 
+    shouldSwitchIdleBehavior(): void {
+        // random choice between shore walk and dance/dont
+
+        const rand = Math.random();
+        if (rand < 0.5) {
+            this.shouldStartShoreWalk();
+        } else if (this.danceAction) {
+            if (this.danceAction.isRunning()) {
+                this.crossFadeAnimations(this.danceAction, null, 1.0);
+            } else {
+                this.crossFadeAnimations(null, this.danceAction, 1.0);
+            }
+        }
+    }
+
+    private shouldStartShoreWalk(): void {
+        // Create shore walk behavior with random distance and speed
+        const walkDistance = 10 + Math.random() * 10; // 10-20 meters
+        const speed = 0.8 + Math.random() * 0.4; // 0.8-1.2x speed
+
+        this.behavior = new AnimalShoreWalkBehavior(
+            this,
+            walkDistance,
+            speed
+        );
+
+        this.crossFadeAnimations(this.danceAction, this.walkAction, 1.0);
+    }
+
+    didCompleteShoreWalk(): void {
+        // Return to idle behavior after completing shore walk
+        this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
+        this.crossFadeAnimations(this.walkAction, null, 1.0);
+    }
+
+    // Note that "to" can be null to just stop from
+    private crossFadeAnimations(from: THREE.AnimationAction,
+        to: THREE.AnimationAction,
+        timeScale: number) {
+
+        // set up to so it loops
+        if (to) {
+            to.reset();
+            to.setLoop(THREE.LoopRepeat, Infinity);
+            to.play();
+            if (this.mixer) {
+                this.mixer.timeScale = timeScale;
+            }
+        }
+
+        if (from && to) {
+            // from is running, fade to to
+            from.crossFadeTo(to, 1.0, true);
+        }
+        else if (from) {
+            // nothing to fade to just stop when done
+            from.setLoop(THREE.LoopOnce, 1);
+            from.clampWhenFinished = true;
+        }
+        else {
+            // to will just start running
+        }
+    }
 }

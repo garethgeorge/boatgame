@@ -6,21 +6,33 @@ import { AnimalBehavior } from './AnimalBehavior';
 
 export class AttackAnimalShoreIdleBehavior implements AnimalBehavior {
     private entity: AttackAnimalShoreIdle;
-    private enterWaterDistance: number;
+    private enterWaterDistance: number = 0.0;
 
     constructor(
         entity: AttackAnimalShoreIdle,
         aggressiveness: number
     ) {
         this.entity = entity;
-        this.enterWaterDistance = 100 + 100 * aggressiveness;
+        if (aggressiveness > 0.0) {
+            this.enterWaterDistance = 100 + 100 * aggressiveness;
+        }
     }
 
-    update() {
+    update(dt: number) {
+        if (this.enterWaterDistance <= 0) {
+            this.perhapsShouldSwitchBehavior(dt);
+        } else {
+            if (!this.perhapsShouldEnterWater(dt)) {
+                this.perhapsShouldSwitchBehavior(dt);
+            }
+        }
+    }
+
+    private perhapsShouldEnterWater(dt: number): boolean {
         const targetBody = Boat.getPlayerBody();
         const physicsBody = this.entity.getPhysicsBody();
 
-        if (!targetBody || !physicsBody) return;
+        if (!targetBody || !physicsBody) return false;
 
         const pos = physicsBody.getPosition();
         const target = targetBody.getPosition();
@@ -30,7 +42,18 @@ export class AttackAnimalShoreIdleBehavior implements AnimalBehavior {
         // Activate when boat is within distance
         if (dist < this.enterWaterDistance) {
             // Let the entity decide what to do (e.g., create entering water behavior)
-            this.entity.shouldStartEnteringWater();
+            this.entity.shouldStartEnteringWater?.();
+            return true;
+        }
+
+        return false;
+    }
+
+    private perhapsShouldSwitchBehavior(dt: number) {
+        // Probability such that average time is 10 seconds
+        const probability = dt / 10.0;
+        if (Math.random() < probability) {
+            this.entity.shouldSwitchIdleBehavior?.();
         }
     }
 }

@@ -7,6 +7,7 @@ export class MonkeyShoreSpawner implements Spawnable {
     id = 'monkeyshore';
 
     getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
+        return 2;
         // Only spawn in desert biome
         if (biomeType !== 'desert') return 0;
 

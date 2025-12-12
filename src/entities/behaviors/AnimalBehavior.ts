@@ -1,4 +1,4 @@
 
 export interface AnimalBehavior {
-    update(): void;
+    update(dt: number): void;
 }

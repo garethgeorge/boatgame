@@ -68,7 +68,7 @@ export class AttackAnimalEnteringWaterBehavior implements AnimalBehavior {
         physicsBody.setAngularVelocity(0);
     }
 
-    update() {
+    update(dt: number) {
         const physicsBody = this.entity.getPhysicsBody();
         if (!physicsBody) return;
 

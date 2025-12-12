@@ -17,7 +17,7 @@ export class AttackAnimalWaterBehavior implements AnimalBehavior {
         this.stopAttackDistance = this.startAttackDistance + 20;
     }
 
-    update() {
+    update(dt: number) {
         const targetBody = Boat.getPlayerBody();
         const physicsBody = this.entity.getPhysicsBody();
 
