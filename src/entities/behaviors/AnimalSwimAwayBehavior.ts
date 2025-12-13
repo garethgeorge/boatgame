@@ -50,7 +50,17 @@ export class AnimalSwimAwayBehavior implements EntityBehavior {
     }
 
     private updateFleeing(dt: number, physicsBody: planck.Body, targetBody: planck.Body, dist: number) {
-        if (dist > this.stopFleeDistance) {
+        const boatVel = targetBody.getLinearVelocity();
+        const boatToAnimal = physicsBody.getPosition().clone().sub(targetBody.getPosition());
+
+        // Stop if far away OR boat is not moving towards animal
+        // "Stop ... if the angle between the boats direction of motion and the vector from the boat to the animal is greater than 90 degrees."
+        // This corresponds to dot product < 0.
+        // Also if boat is not moving, it's not travelling towards it.
+        const isMoving = boatVel.lengthSquared() > 0.5;
+        const isMovingTowards = isMoving && planck.Vec2.dot(boatVel, boatToAnimal) > 0;
+
+        if (dist > this.stopFleeDistance || !isMovingTowards) {
             this.state = 'IDLE';
             // Slow down when stopping
             physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.9));
@@ -63,24 +73,19 @@ export class AnimalSwimAwayBehavior implements EntityBehavior {
             this.timeSinceLastAngleChange = 0;
         }
 
-        // Move in the direction of fleeAngle
-        // gameAngle 0 -> vector (0, -1)
-        // mathAngle = gameAngle - PI/2
-        // vector = (cos(mathAngle), sin(mathAngle))
-        //        = (cos(gameAngle - PI/2), sin(gameAngle - PI/2))
-        //        = (sin(gameAngle), -cos(gameAngle))
-        const direction = planck.Vec2(Math.sin(this.fleeAngle), -Math.cos(this.fleeAngle));
-
         const currentAngle = physicsBody.getAngle();
         const angleDiff = this.calculateAngleDiff(this.fleeAngle, currentAngle);
 
-        // Turn speed
-        const rotationSpeed = 0.1 * this.speed;
+        // Turn towards target
+        // rate depends on speed which depends on aggressiveness
+        const rotationSpeed = 0.05 * this.speed;
         physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60));
 
-        // Move
+        // Move forward in current facing direction
+        const forwardDir = planck.Vec2(Math.sin(currentAngle), -Math.cos(currentAngle));
+
         const speed = 12.0 * this.speed; // Flee speed
-        const force = direction.mul(speed * physicsBody.getMass());
+        const force = forwardDir.mul(speed * physicsBody.getMass());
         physicsBody.applyForceToCenter(force);
     }
 
