@@ -22,4 +22,15 @@ export class GraphicsUtils {
         });
     }
 
+    public static setMaterialOpacity(mesh: THREE.Object3D, opacity: number) {
+        mesh.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
+                materials.forEach((m: THREE.Material) => {
+                    m.opacity = opacity;
+                });
+            }
+        });
+    }
+
 }

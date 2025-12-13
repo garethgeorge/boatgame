@@ -133,6 +133,7 @@ export class Boat extends Entity {
     }
 
     update(dt: number, input?: InputManager) {
+        this.collectedBottles.update(dt);
         if (this.physicsBodies.length === 0 || !input) return;
         const physicsBody = this.physicsBodies[0];
 
