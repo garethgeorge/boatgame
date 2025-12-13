@@ -31,33 +31,48 @@ export class Decorations {
   }
 
   static getTree(wetness: number, isSnowy: boolean = false, isLeafless: boolean = false): THREE.Group {
-    return DecorationRegistry.getFactory('tree').create({ wetness, isSnowy, isLeafless }).model;
+    return DecorationRegistry.getFactory('tree').create({ wetness, isSnowy, isLeafless });
   }
 
   static getBush(wetness: number): THREE.Group {
-    return DecorationRegistry.getFactory('bush').create(wetness).model;
+    return DecorationRegistry.getFactory('bush').create(wetness);
   }
 
   static getCactus(): THREE.Group {
-    return DecorationRegistry.getFactory('cactus').create().model;
+    return DecorationRegistry.getFactory('cactus').create();
   }
 
   static getRock(biome: 'desert' | 'forest' | 'ice' | 'swamp', size: number): THREE.Group {
-    return DecorationRegistry.getFactory('rock').create({ size, biome }).model;
+    return DecorationRegistry.getFactory('rock').create({ size, biome });
   }
 
   static getBottle(color: number): THREE.Group {
-    return DecorationRegistry.getFactory('bottle').create(color).model;
+    return DecorationRegistry.getFactory('bottle').create(color);
   }
 
   static getBottleFadeAnimation(): THREE.AnimationClip {
-    return DecorationRegistry.getFactory('bottle').create().animations[0];
+    return DecorationRegistry.getFactory('bottle').createAnimation('fade');
+  }
+
+  static getBottleDropAnimation(): THREE.AnimationClip {
+    return DecorationRegistry.getFactory('bottle').createAnimation('drop');
+  }
+
+  static getBottleLeftArcAnimation(): THREE.AnimationClip {
+    return DecorationRegistry.getFactory('bottle').createAnimation('arc-left');
+  }
+
+  static getBottleRightArcAnimation(): THREE.AnimationClip {
+    return DecorationRegistry.getFactory('bottle').createAnimation('arc-right');
   }
 
   // Animal getters
   private static getAnimal(name: string): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
     try {
-      return DecorationRegistry.getFactory(name).create();
+      const factory = DecorationRegistry.getFactory(name);
+      const model = factory.create();
+      const animations = factory.getAllAnimations();
+      return { model, animations };
     } catch (e) {
       console.warn(`${name} model not loaded yet`);
       return null;

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createNoise3D } from 'simplex-noise';
-import { DecorationFactory, DecorationResult } from './DecorationFactory';
+import { DecorationFactory } from './DecorationFactory';
 
 export class RockFactory implements DecorationFactory {
     private static readonly rockMaterialDesert = new THREE.MeshToonMaterial({ color: 0xE6C288 }); // Yellow Sandstone
@@ -34,7 +34,7 @@ export class RockFactory implements DecorationFactory {
         }
     }
 
-    create(options: { size: number, biome: 'desert' | 'forest' | 'ice' | 'swamp' }): DecorationResult {
+    create(options: { size: number, biome: 'desert' | 'forest' | 'ice' | 'swamp' }): THREE.Group {
         const { size, biome } = options;
         const isIcy = biome === 'ice';
 
@@ -63,7 +63,7 @@ export class RockFactory implements DecorationFactory {
             mesh = rock;
         }
 
-        return { model: mesh, animations: [] };
+        return mesh;
     }
 
     private spawnRock(size: number, biome: string, isIcy: boolean): THREE.Group {

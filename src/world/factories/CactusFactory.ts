@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DecorationFactory, DecorationResult } from './DecorationFactory';
+import { DecorationFactory } from './DecorationFactory';
 
 export class CactusFactory implements DecorationFactory {
     private static readonly cactusMaterial = new THREE.MeshToonMaterial({ color: 0x6B8E23 }); // Olive Drab
@@ -13,14 +13,14 @@ export class CactusFactory implements DecorationFactory {
         }
     }
 
-    create(): DecorationResult {
+    create(): THREE.Group {
         let mesh: THREE.Group;
         if (this.cache.length === 0) {
             mesh = this.createCactus();
         } else {
             mesh = this.cache[Math.floor(Math.random() * this.cache.length)].clone();
         }
-        return { model: mesh, animations: [] };
+        return mesh;
     }
 
     private createCactus(): THREE.Group {

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { DecorationFactory, DecorationResult } from './DecorationFactory';
+import { DecorationFactory } from './DecorationFactory';
 
 interface GLTFModelData {
     model: THREE.Group | null;
@@ -39,16 +39,21 @@ export class GLTFModelFactory implements DecorationFactory {
         });
     }
 
-    create(): DecorationResult {
+    create(): THREE.Group {
         if (!this.cache.model) {
             console.warn(`Model ${this.path} not loaded yet`);
             throw new Error(`Model ${this.path} not loaded yet`);
         }
 
         const clonedModel = SkeletonUtils.clone(this.cache.model) as THREE.Group;
-        return {
-            model: clonedModel,
-            animations: this.cache.animations
-        };
+        return clonedModel;
+    }
+
+    createAnimation(name: string): THREE.AnimationClip {
+        return this.cache.animations.find(a => a.name === name);
+    }
+
+    getAllAnimations(): THREE.AnimationClip[] {
+        return this.cache.animations;
     }
 }

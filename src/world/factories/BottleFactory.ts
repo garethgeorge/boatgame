@@ -1,29 +1,32 @@
 import * as THREE from 'three';
-import { DecorationFactory, DecorationResult } from './DecorationFactory';
+import { DecorationFactory } from './DecorationFactory';
 
 export class BottleFactory implements DecorationFactory {
     private cache: Map<number, THREE.Group> = new Map();
-    private fadeAnimation: THREE.AnimationClip | null = null;
+    private animations: THREE.AnimationClip[] = [];
 
     async load(): Promise<void> {
         // Pre-generate bottles (Green and Blue)
         this.cache.set(0x88FF88, this.createBottleMesh(0x88FF88));
         this.cache.set(0x0088FF, this.createBottleMesh(0x0088FF));
-        this.fadeAnimation = this.createFadeAnimation();
+
+        this.animations.push(this.createFadeAnimation());
+        this.animations.push(this.createDropAnimation());
+        this.animations.push(this.createArcAnimation(-1));
+        this.animations.push(this.createArcAnimation(1));
     }
 
-    create(color: number): DecorationResult {
+    create(color: number): THREE.Group {
         if (!this.cache.has(color)) {
             this.cache.set(color, this.createBottleMesh(color));
         }
         const mesh = this.cache.get(color)!.clone();
 
-        // Ensure animation is created if load() wasn't called (generic fallback)
-        if (!this.fadeAnimation) {
-            this.fadeAnimation = this.createFadeAnimation();
-        }
+        return mesh;
+    }
 
-        return { model: mesh, animations: [this.fadeAnimation] };
+    createAnimation(name: string): THREE.AnimationClip {
+        return this.animations.find(a => a.name === name);
     }
 
     private createBottleMesh(color: number): THREE.Group {
@@ -77,6 +80,71 @@ export class BottleFactory implements DecorationFactory {
         tracks.push(new THREE.NumberKeyframeTrack('cork.material.opacity', times, [1.0, 0]));
         tracks.push(new THREE.NumberKeyframeTrack('paper.material.opacity', times, [1.0, 0]));
 
-        return new THREE.AnimationClip('BottleHit', duration, tracks);
+        return new THREE.AnimationClip('fade', duration, tracks);
+    }
+
+    /**
+     * Creates a position-independent drop animation from (0, dropHeight, 0) to (0, 0, 0)
+     */
+    private createDropAnimation(): THREE.AnimationClip {
+        const dropHeight = 5.0;
+        const duration = 0.25;
+        const times = [0, duration];
+        const values = [
+            0, dropHeight, 0,  // Start
+            0, 0, 0            // End (at origin)
+        ];
+        const positionTrack = new THREE.VectorKeyframeTrack('.position', times, values);
+        return new THREE.AnimationClip('drop', duration, [positionTrack]);
+    }
+
+    /**
+     * Creates a position-independent arc animation
+     * @param direction -1 for left, 1 for right
+     */
+    private createArcAnimation(direction: number): THREE.AnimationClip {
+        const duration = 0.8;
+        const arcHeight = 8.0;
+        const arcDistX = 4.0;
+
+        // All positions are relative to origin (0, 0, 0)
+        const startX = 0, startY = 0, startZ = 0;
+        const controlX = direction * arcDistX;
+        const controlY = arcHeight;
+        const controlZ = 0;
+        const endX = direction * arcDistX * 2.0;
+        const endY = 0;
+        const endZ = 0;
+
+        const samples = 10;
+        const times: number[] = [];
+        const posValues: number[] = [];
+        const rotValues: number[] = [];
+
+        const curve = new THREE.QuadraticBezierCurve3(
+            new THREE.Vector3(startX, startY, startZ),
+            new THREE.Vector3(controlX, controlY, controlZ),
+            new THREE.Vector3(endX, endY, endZ)
+        );
+
+        const upAxis = new THREE.Vector3(0, 1, 0);
+
+        for (let i = 0; i <= samples; i++) {
+            const t = i / samples;
+            times.push(t * duration);
+
+            const point = curve.getPoint(t);
+            posValues.push(point.x, point.y, point.z);
+
+            const tangent = curve.getTangent(t).normalize();
+            const q = new THREE.Quaternion().setFromUnitVectors(upAxis, tangent);
+            rotValues.push(q.x, q.y, q.z, q.w);
+        }
+
+        const positionTrack = new THREE.VectorKeyframeTrack('.position', times, posValues);
+        const rotationTrack = new THREE.QuaternionKeyframeTrack('.quaternion', times, rotValues);
+
+        const arcClipName = direction < 0 ? 'arc-left' : 'arc-right';
+        return new THREE.AnimationClip(arcClipName, duration, [positionTrack, rotationTrack]);
     }
 }

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DecorationFactory, DecorationResult } from './DecorationFactory';
+import { DecorationFactory } from './DecorationFactory';
 
 export class TreeFactory implements DecorationFactory {
     private static readonly treeMaterial = new THREE.MeshToonMaterial({ color: 0x8B4513 }); // Brown trunk
@@ -32,7 +32,7 @@ export class TreeFactory implements DecorationFactory {
         }
     }
 
-    create(options: { wetness: number, isSnowy?: boolean, isLeafless?: boolean }): DecorationResult {
+    create(options: { wetness: number, isSnowy?: boolean, isLeafless?: boolean }): THREE.Group {
         const { wetness, isSnowy = false, isLeafless = false } = options;
 
         let mesh: THREE.Group;
@@ -48,7 +48,7 @@ export class TreeFactory implements DecorationFactory {
             mesh = this.createTree(wetness, isSnowy, isLeafless);
         }
 
-        return { model: mesh, animations: [] };
+        return mesh;
     }
 
     private createTree(wetness: number, isSnowy: boolean, isLeafless: boolean): THREE.Group {

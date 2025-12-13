@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DecorationFactory, DecorationResult } from './DecorationFactory';
+import { DecorationFactory } from './DecorationFactory';
 
 export class BushFactory implements DecorationFactory {
     private static readonly dryBushMaterial = new THREE.MeshToonMaterial({ color: 0x8B5A2B }); // Brownish
@@ -15,7 +15,7 @@ export class BushFactory implements DecorationFactory {
         }
     }
 
-    create(wetness: number): DecorationResult {
+    create(wetness: number): THREE.Group {
         let mesh: THREE.Group;
         if (this.cache.length === 0) {
             mesh = this.createBush(wetness);
@@ -27,7 +27,7 @@ export class BushFactory implements DecorationFactory {
 
             mesh = source ? source.mesh.clone() : this.createBush(wetness);
         }
-        return { model: mesh, animations: [] };
+        return mesh;
     }
 
     private createBush(wetness: number): THREE.Group {

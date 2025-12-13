@@ -15,17 +15,31 @@ export class CollectedBottles {
 
     private mixer: THREE.AnimationMixer;
 
+    // Cached animations (position-independent)
+    private dropClip: THREE.AnimationClip;
+    private fadeClip: THREE.AnimationClip;
+    private leftArcClip: THREE.AnimationClip;
+    private rightArcClip: THREE.AnimationClip;
+
     constructor() {
         this.mesh = new THREE.Group();
         this.mixer = new THREE.AnimationMixer(this.mesh);
+
+        // Get cached animation clips from Decorations
+        this.dropClip = Decorations.getBottleDropAnimation();
+        this.fadeClip = Decorations.getBottleFadeAnimation();
+        this.leftArcClip = Decorations.getBottleLeftArcAnimation();
+        this.rightArcClip = Decorations.getBottleRightArcAnimation();
+
         this.mixer.addEventListener('finished', (e: any) => {
             const action = e.action as THREE.AnimationAction;
             const bottle = action.getRoot() as THREE.Group;
-            // If the bottle is marked for removal, clean it up when any action finishes.
+            // The bottle is inside a container. Check if container is marked for removal.
             // Since we play multiple simultaneous actions (Arc, Fade), any of them finishing
             // signals the end of the sequence.
-            if (bottle.userData.removing) {
-                this.mesh.remove(bottle);
+            const container = bottle.parent;
+            if (container && container.userData.removing) {
+                this.mesh.remove(container);
                 this.mixer.uncacheRoot(bottle);
             }
         });
@@ -66,19 +80,21 @@ export class CollectedBottles {
         // Create bottle with specified color
         const bottle = Decorations.getBottle(color);
 
+        // Scale down slightly to fit on deck nicely
+        bottle.scale.set(0.6, 0.6, 0.6);
+
+        // IMPORTANT: Wrap bottle in a container group
+        // Container is positioned at grid location
+        // Bottle animates in local space within the container
+        const container = new THREE.Group();
+
         // Grid Position
         const targetX = slot.c * this.gridConfig.spacingX;
         const targetZ = slot.r * this.gridConfig.spacingZ;
+        container.position.set(targetX, 0, targetZ);
 
-        // Scale down slightly to fit on deck nicely? 
-        // Original bottle is ~2.0 high with cork. 
-        // 0.4 radius. Grid spacing 0.6 is tight (0.8 diameter).
-        // Let's scale to 0.6 to fit better
-        bottle.scale.set(0.6, 0.6, 0.6);
-
-        // Position based on grid - Start high up for drop animation
-        const dropHeight = 5.0;
-        bottle.position.set(targetX, dropHeight, targetZ);
+        // Bottle starts at drop height in local space
+        bottle.position.set(0, 5, 0); // Drop animation will bring it to (0, 0, 0)
 
         // Prepare for animation
         GraphicsUtils.cloneMaterials(bottle);
@@ -86,18 +102,19 @@ export class CollectedBottles {
         // Hide initially (Set opacity to 0) so it doesn't show up before the delayed fade-in starts
         GraphicsUtils.setMaterialOpacity(bottle, 0);
 
-        this.mesh.add(bottle);
-        this.grid[slot.r][slot.c] = bottle;
-        this.activeBottles.push(bottle);
+        container.add(bottle);
+        this.mesh.add(container);
+        this.grid[slot.r][slot.c] = container;
+        this.activeBottles.push(container);
 
-        // --- Animations ---
+        // --- Animations (using cached clips) ---
         const startDelay = 0.25; // this matches the fade out for the collision
-        const duration = 0.25;
         const startTime = this.mixer.time + startDelay;
 
-        // 1. Fade In (Use bottle.animations[0] in reverse)
-        const bottleFade = Decorations.getBottleFadeAnimation();
-        const fadeAction = this.mixer.clipAction(bottleFade, bottle);
+        // 1. Fade In (Use cached fade animation in reverse)
+        // Apply to the actual bottle mesh, not the container
+        const fadeAction = this.mixer.clipAction(this.fadeClip, bottle);
+        const duration = 0.25;
 
         // Play backwards to fade IN (0 to Opacity)
         fadeAction.loop = THREE.LoopOnce;
@@ -107,19 +124,9 @@ export class CollectedBottles {
         fadeAction.startAt(startTime);
         fadeAction.play();
 
-        // 2. Drop Down
-        // Create a custom track for position
-        // Current position is target (y=0). Start at y=dropHeight.
-        const times = [0, duration]; // duration
-        const values = [
-            targetX, dropHeight, targetZ, // Start
-            targetX, 0, targetZ           // End
-        ];
-
-        const positionTrack = new THREE.VectorKeyframeTrack('.position', times, values);
-        const dropClip = new THREE.AnimationClip('BottleDrop', duration, [positionTrack]);
-
-        const dropAction = this.mixer.clipAction(dropClip, bottle);
+        // 2. Drop Down (using cached drop clip)
+        // Apply to the bottle, which will animate from (0, 5, 0) to (0, 0, 0) in local space
+        const dropAction = this.mixer.clipAction(this.dropClip, bottle);
         dropAction.loop = THREE.LoopOnce;
         dropAction.clampWhenFinished = true;
         dropAction.startAt(startTime);
@@ -131,20 +138,23 @@ export class CollectedBottles {
 
         // Pick random bottle to remove
         const index = Math.floor(Math.random() * this.activeBottles.length);
-        const bottleToRemove = this.activeBottles[index];
+        const container = this.activeBottles[index];
+
+        // Get the actual bottle from the container
+        const bottle = container.children[0] as THREE.Group;
 
         // Ensure we stop and uncache any actions for this bottle
-        this.mixer.uncacheRoot(bottleToRemove);
+        this.mixer.uncacheRoot(bottle);
 
-        // Mark for removal
-        bottleToRemove.userData.removing = true;
+        // Mark container for removal
+        container.userData.removing = true;
 
         // Find in grid to determine side and clear slot
         let bottleCol = 0;
         let found = false;
         for (let r = 0; r < this.gridConfig.rows; r++) {
             for (let c = 0; c < this.gridConfig.cols; c++) {
-                if (this.grid[r][c] === bottleToRemove) {
+                if (this.grid[r][c] === container) {
                     this.grid[r][c] = null;
                     bottleCol = c;
                     found = true;
@@ -156,76 +166,21 @@ export class CollectedBottles {
 
         this.activeBottles.splice(index, 1);
 
-        // --- Arc Animation Parameters ---
-        const duration = 0.8; // Slightly longer for arc
-
         // Determine Direction (-1 Left, 1 Right)
-        // Adjust threshold based on columns. 7 cols -> 0,1,2 (Left), 3 (Mid), 4,5,6 (Right)
-        // If exact middle, maybe random? or right.
         const midPoint = (this.gridConfig.cols - 1) / 2;
         const direction = bottleCol < midPoint ? -1 : 1;
 
-        // Start Point (Current)
-        const startX = bottleToRemove.position.x;
-        const startY = bottleToRemove.position.y;
-        const startZ = bottleToRemove.position.z;
-
-        // Control Point (Up and Out)
-        const arcHeight = 3.0;
-        const arcDistX = 2.0;
-        const controlX = startX + direction * arcDistX;
-        const controlY = startY + arcHeight;
-        const controlZ = startZ;
-
-        // End Point (Further Out and Down)
-        const endX = startX + direction * arcDistX * 2.0;
-        const endY = startY - 2.0; // Below deck
-        const endZ = startZ;
-
-        // Calculate Keyframes (Position and Rotation)
-        const samples = 10;
-        const times: number[] = [];
-        const posValues: number[] = [];
-        const rotValues: number[] = [];
-
-        const curve = new THREE.QuadraticBezierCurve3(
-            new THREE.Vector3(startX, startY, startZ),
-            new THREE.Vector3(controlX, controlY, controlZ),
-            new THREE.Vector3(endX, endY, endZ)
-        );
-
-        const upAxis = new THREE.Vector3(0, 1, 0);
-
-        for (let i = 0; i <= samples; i++) {
-            const t = i / samples;
-            times.push(t * duration);
-
-            // Position
-            const point = curve.getPoint(t);
-            posValues.push(point.x, point.y, point.z);
-
-            // Rotation (Tangent)
-            const tangent = curve.getTangent(t).normalize();
-
-            // Quaternion to align Y-up to Tangent
-            // setFromUnitVectors computes rotation from vFrom to vTo
-            const q = new THREE.Quaternion().setFromUnitVectors(upAxis, tangent);
-            rotValues.push(q.x, q.y, q.z, q.w);
-        }
-
-        const positionTrack = new THREE.VectorKeyframeTrack('.position', times, posValues);
-        const rotationTrack = new THREE.QuaternionKeyframeTrack('.quaternion', times, rotValues); // Use quaternion track
-
-        const arcClip = new THREE.AnimationClip('BottleArc', duration, [positionTrack, rotationTrack]);
-        const arcAction = this.mixer.clipAction(arcClip, bottleToRemove);
+        // Select the appropriate cached arc clip
+        const arcClip = direction < 0 ? this.leftArcClip : this.rightArcClip;
+        const arcAction = this.mixer.clipAction(arcClip, bottle);
 
         arcAction.loop = THREE.LoopOnce;
         arcAction.clampWhenFinished = true;
         arcAction.play();
 
         // Simultaneous Fade Out
-        const bottleFade = Decorations.getBottleFadeAnimation();
-        const fadeAction = this.mixer.clipAction(bottleFade, bottleToRemove);
+        const fadeAction = this.mixer.clipAction(this.fadeClip, bottle);
+        const duration = 0.8; // Match arc duration
         // Standard fade 1.0 -> 0 opacity. Clip duration is 1.0.
         fadeAction.timeScale = 1.0 / duration;
         fadeAction.play();
@@ -235,4 +190,3 @@ export class CollectedBottles {
         return this.activeBottles.length;
     }
 }
-
