@@ -5,7 +5,7 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
-import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
+import { AnimalSwimAwayBehavior } from '../behaviors/AnimalSwimAwayBehavior';
 import { AnyAnimal } from '../behaviors/AttackAnimal';
 
 export class PenguinKayak extends Entity implements AnyAnimal {
@@ -77,7 +77,7 @@ export class PenguinKayak extends Entity implements AnyAnimal {
             this.applyModel(penguinData.model, penguinData.animations);
         }
 
-        this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
+        this.behavior = new AnimalSwimAwayBehavior(this, this.aggressiveness);
     }
 
     getPhysicsBody(): planck.Body | null {

@@ -5,7 +5,7 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
-import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
+import { AnimalSwimAwayBehavior } from '../behaviors/AnimalSwimAwayBehavior';
 import { AnyAnimal } from '../behaviors/AttackAnimal';
 
 export class Duckling extends Entity implements AnyAnimal {
@@ -77,7 +77,7 @@ export class Duckling extends Entity implements AnyAnimal {
             this.applyModel(ducklingData.model, ducklingData.animations);
         }
 
-        this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
+        this.behavior = new AnimalSwimAwayBehavior(this, this.aggressiveness);
     }
 
     getPhysicsBody(): planck.Body | null {
@@ -88,7 +88,7 @@ export class Duckling extends Entity implements AnyAnimal {
         this.destroyPhysicsBodies();
         this.behavior = new ObstacleHitBehavior(this.meshes, () => {
             this.shouldRemove = true;
-        }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
+        }, { duration: 0.5, rotateSpeed: 25, targetHeightOffset: 5 });
     }
 
     update(dt: number) {
