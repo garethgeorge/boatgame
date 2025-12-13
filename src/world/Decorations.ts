@@ -38,6 +38,7 @@ export class Decorations {
     brownBear: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
     moose: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
     monkey: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
+    duckling: { model: THREE.Group | null, animations: THREE.AnimationClip[] },
     bottles: Map<number, THREE.Group>
   } = {
       trees: [],
@@ -51,6 +52,7 @@ export class Decorations {
       brownBear: { model: null, animations: [] },
       moose: { model: null, animations: [] },
       monkey: { model: null, animations: [] },
+      duckling: { model: null, animations: [] },
       bottles: new Map()
     };
 
@@ -101,7 +103,15 @@ export class Decorations {
   }
 
   static async preload(): Promise<void> {
-    if (this.cache.trees.length > 0 && this.cache.polarBear.model && this.cache.hippo.model && this.cache.alligator.model && this.cache.penguinKayak.model && this.cache.brownBear.model && this.cache.moose.model && this.cache.monkey.model) return;
+    if (this.cache.trees.length > 0 &&
+      this.cache.polarBear.model &&
+      this.cache.hippo.model &&
+      this.cache.alligator.model &&
+      this.cache.penguinKayak.model &&
+      this.cache.brownBear.model &&
+      this.cache.moose.model &&
+      this.cache.monkey.model &&
+      this.cache.duckling.model) return;
     if (this.loadPromise) return this.loadPromise;
 
     this.loadPromise = new Promise((resolve, reject) => {
@@ -238,6 +248,23 @@ export class Decorations {
         console.error('An error occurred loading the moose model:', error);
         onModelLoaded(); // Continue even if this model fails
       });
+
+      // Load duckling model
+      loader.load('assets/duckling-model-1.glb', (gltf) => {
+        const model = gltf.scene;
+        model.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        this.cache.duckling.model = model;
+        this.cache.duckling.animations = gltf.animations || [];
+        onModelLoaded();
+      }, undefined, (error) => {
+        console.error('An error occurred loading the duckling model:', error);
+        onModelLoaded(); // Continue even if this model fails
+      });
     });
 
     return this.loadPromise;
@@ -362,6 +389,19 @@ export class Decorations {
     return {
       model: clonedModel,
       animations: this.cache.monkey.animations
+    };
+  }
+
+  static getDuckling(): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
+    if (!this.cache.duckling.model) {
+      console.warn('Duckling model not loaded yet');
+      return null;
+    }
+
+    const clonedModel = SkeletonUtils.clone(this.cache.duckling.model) as THREE.Group;
+    return {
+      model: clonedModel,
+      animations: this.cache.duckling.animations
     };
   }
 
