@@ -64,7 +64,7 @@ export class CollectedBottles {
         const slot = emptySlots[Math.floor(Math.random() * emptySlots.length)];
 
         // Create bottle with specified color
-        const bottle = Decorations.getBottleMesh(color);
+        const bottle = Decorations.getBottle(color);
 
         // Grid Position
         const targetX = slot.c * this.gridConfig.spacingX;
@@ -95,9 +95,9 @@ export class CollectedBottles {
         const duration = 0.25;
         const startTime = this.mixer.time + startDelay;
 
-        // 1. Fade In (Use Decorations.getBottleFadeAnimation in reverse)
-        const fadeClip = Decorations.getBottleFadeAnimation();
-        const fadeAction = this.mixer.clipAction(fadeClip, bottle);
+        // 1. Fade In (Use bottle.animations[0] in reverse)
+        const bottleFade = Decorations.getBottleFadeAnimation();
+        const fadeAction = this.mixer.clipAction(bottleFade, bottle);
 
         // Play backwards to fade IN (0 to Opacity)
         fadeAction.loop = THREE.LoopOnce;
@@ -194,7 +194,6 @@ export class CollectedBottles {
             new THREE.Vector3(endX, endY, endZ)
         );
 
-        const dummyObj = new THREE.Object3D();
         const upAxis = new THREE.Vector3(0, 1, 0);
 
         for (let i = 0; i <= samples; i++) {
@@ -225,8 +224,8 @@ export class CollectedBottles {
         arcAction.play();
 
         // Simultaneous Fade Out
-        const fadeClip = Decorations.getBottleFadeAnimation();
-        const fadeAction = this.mixer.clipAction(fadeClip, bottleToRemove);
+        const bottleFade = Decorations.getBottleFadeAnimation();
+        const fadeAction = this.mixer.clipAction(bottleFade, bottleToRemove);
         // Standard fade 1.0 -> 0 opacity. Clip duration is 1.0.
         fadeAction.timeScale = 1.0 / duration;
         fadeAction.play();

@@ -56,7 +56,7 @@ export class MessageInABottle extends Entity {
         physicsBody.setUserData({ type: 'collectable', subtype: 'bottle', entity: this });
 
         // Graphics
-        const mesh = Decorations.getBottleMesh(color);
+        const mesh = Decorations.getBottle(color);
         this.meshes.push(mesh);
 
         // Tilt the whole group
@@ -86,6 +86,7 @@ export class MessageInABottle extends Entity {
 
         // fades bottle out
         if (this.meshes.length > 0) {
+            const fadeClip = Decorations.getBottleFadeAnimation();
             const mesh = this.meshes[0];
 
             // The mesh material are shared, so we need to clone them
@@ -95,8 +96,7 @@ export class MessageInABottle extends Entity {
             this.mixer = new THREE.AnimationMixer(mesh);
             this.mixer.timeScale = 4.0;
 
-            const clip = Decorations.getBottleFadeAnimation();
-            const action = this.mixer.clipAction(clip);
+            const action = this.mixer.clipAction(fadeClip);
             action.setLoop(THREE.LoopOnce, 1);
             action.clampWhenFinished = true;
             action.play();
