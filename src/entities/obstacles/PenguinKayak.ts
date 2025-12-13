@@ -5,8 +5,15 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
+import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
+import { AnyAnimal } from '../behaviors/AttackAnimal';
 
-export class PenguinKayak extends Entity {
+export class PenguinKayak extends Entity implements AnyAnimal {
+
+    private aggressiveness: number = 1.0;
+    private mixer: THREE.AnimationMixer | null = null;
+    private behavior: EntityBehavior | null = null;
+
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
         // Apply model transformations
         model.scale.set(2.0, 2.0, 2.0);
@@ -69,10 +76,13 @@ export class PenguinKayak extends Entity {
         if (penguinData) {
             this.applyModel(penguinData.model, penguinData.animations);
         }
+
+        this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
     }
 
-    private mixer: THREE.AnimationMixer | null = null;
-    private behavior: EntityBehavior | null = null;
+    getPhysicsBody(): planck.Body | null {
+        return this.physicsBodies.length > 0 ? this.physicsBodies[0] : null;
+    }
 
     wasHitByPlayer() {
         this.destroyPhysicsBodies();
@@ -90,34 +100,4 @@ export class PenguinKayak extends Entity {
         }
     }
 
-    // New method to set target
-    setTarget(target: planck.Vec2) {
-        if (this.physicsBodies.length === 0) return;
-        const physicsBody = this.physicsBodies[0];
-
-        const pos = physicsBody.getPosition();
-        const diff = target.clone().sub(pos);
-        const dist = diff.length();
-
-        if (dist < 30) { // Aggro range
-            diff.normalize();
-            // Move towards target
-            const speed = 2.0;
-            const force = diff.mul(speed * physicsBody.getMass());
-            physicsBody.applyForceToCenter(force);
-
-            // Rotate towards target
-            const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
-            const currentAngle = physicsBody.getAngle();
-
-            // Simple lerp for rotation
-            // Calculate shortest angle difference
-            let angleDiff = desiredAngle - currentAngle;
-            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-
-            const rotationSpeed = 0.1; // How quickly it turns
-            physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60));
-        }
-    }
 }
