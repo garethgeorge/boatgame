@@ -6,10 +6,14 @@ import { InputManager } from '../managers/InputManager';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 import { Decorations } from '../world/Decorations';
 import { CollectedBottles } from './CollectedBottles';
+import { MessageInABottle } from './obstacles/MessageInABottle';
 
 export class Boat extends Entity {
-    private innerMesh: THREE.Group;
     public collectedBottles: CollectedBottles;
+    public score: number = 0;
+    public fuel: number = 100;
+
+    private innerMesh: THREE.Group;
 
     private currentThrottle: number = 0;
     private currentSteering: number = 0;
@@ -252,20 +256,6 @@ export class Boat extends Entity {
         }
     }
 
-    public flashRed() {
-        this.flashTimer = 0.2; // 200ms flash
-        this.innerMesh.traverse((child) => {
-            if ((child as THREE.Mesh).isMesh) {
-                const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
-                if (mat && mat.emissive) {
-                    mat.emissive.setHex(0xFF0000);
-                    // Ensure intensity is high enough to be seen
-                    mat.emissiveIntensity = 1.0;
-                }
-            }
-        });
-    }
-
     public getThrottle(): number {
         return this.currentThrottle;
     }
@@ -291,4 +281,38 @@ export class Boat extends Entity {
             this.sync(1.0);
         }
     }
+
+    public didHitObstacle(entity: Entity, type: string, subtype: string) {
+        if (type === 'obstacle') {
+            if (entity.canCausePenalty && !entity.hasCausedPenalty) {
+                this.score -= 100;
+                this.flashRed();
+                this.collectedBottles.removeBottle(); // Lose a bottle
+                entity.hasCausedPenalty = true;
+            }
+        } else if (type === 'collectable') {
+            if (subtype === 'bottle') {
+                const bottle = entity as MessageInABottle;
+                const points = bottle.points;
+                const color = bottle.color;
+                this.score += points;
+                this.collectedBottles.addBottle(color); // Add a bottle
+            }
+        }
+    }
+
+    private flashRed() {
+        this.flashTimer = 0.2; // 200ms flash
+        this.innerMesh.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+                const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+                if (mat && mat.emissive) {
+                    mat.emissive.setHex(0xFF0000);
+                    // Ensure intensity is high enough to be seen
+                    mat.emissiveIntensity = 1.0;
+                }
+            }
+        });
+    }
+
 }

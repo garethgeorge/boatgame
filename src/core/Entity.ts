@@ -1,6 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { ResourceDisposer } from './ResourceDisposer';
+import { Boat } from '../entities/Boat';
 
 export abstract class Entity {
   public physicsBodies: planck.Body[] = [];
@@ -27,7 +28,7 @@ export abstract class Entity {
   abstract update(dt: number): void;
 
   // Do stuff when hit by the player
-  wasHitByPlayer(): void {
+  wasHitByPlayer(boat: Boat): void {
 
   }
 

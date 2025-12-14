@@ -39,9 +39,6 @@ export class Game {
     terrainManager!: TerrainManager;
     obstacleManager!: ObstacleManager;
 
-    score: number = 0;
-    fuel: number = 100;
-
     // Game State
     isPaused: boolean = false;
     debugMode: boolean = false;
@@ -319,7 +316,7 @@ export class Game {
         // No fuel anymore
 
         // Update UI
-        this.scoreElement.innerText = `Score: ${this.score} `;
+        this.scoreElement.innerText = `Score: ${this.boat.score} `;
 
         // Update Thrust Display
         if (this.boat) {
@@ -447,25 +444,8 @@ export class Game {
     private processContacts() {
         this.pendingContacts.forEach((data, entity) => {
             const { type, subtype } = data;
-
-            if (type === 'obstacle') {
-                if (entity.canCausePenalty && !entity.hasCausedPenalty) {
-                    this.score -= 100;
-                    this.boat.flashRed();
-                    this.boat.collectedBottles.removeBottle(); // Lose a bottle
-                    entity.hasCausedPenalty = true;
-                }
-            } else if (type === 'collectable') {
-                if (subtype === 'bottle') {
-                    const bottle = entity as MessageInABottle;
-                    const points = bottle.points;
-                    const color = bottle.color;
-                    this.score += points;
-                    this.boat.collectedBottles.addBottle(color); // Add a bottle
-                }
-            }
-
-            entity.wasHitByPlayer();
+            entity.wasHitByPlayer(this.boat);
+            this.boat.didHitObstacle(entity, type, subtype);
         });
 
         this.pendingContacts.clear();
