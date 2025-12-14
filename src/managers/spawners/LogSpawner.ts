@@ -17,8 +17,6 @@ export class LogSpawner implements Spawnable {
     // No logs in Ice biome
     if (biomeType === 'ice') return 0;
 
-    return 2;
-
     const baseDensity = 0.003; // Slightly higher than 0.0026
     const count = chunkLength * baseDensity;
 
