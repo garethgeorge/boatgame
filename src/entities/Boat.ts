@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Entity } from '../core/Entity';
 import { InputManager } from '../managers/InputManager';
 import { PhysicsEngine } from '../core/PhysicsEngine';
-
+import { Decorations } from '../world/Decorations';
 import { CollectedBottles } from './CollectedBottles';
 
 export class Boat extends Entity {
@@ -95,9 +95,8 @@ export class Boat extends Entity {
         this.collectedBottles.mesh.scale.set(0.5, 0.5, 0.5);
         this.collectedBottles.mesh.position.set(-0.9, 0.8, 1.6);
 
-        const loader = new GLTFLoader();
-        loader.load('assets/boat-model-1.glb', (gltf) => {
-            const model = gltf.scene;
+        const model = Decorations.getBoat();
+        if (model) {
 
             // Adjust scale and rotation to match physics body
             // Physics body is approx 2.4 wide x 6.0 long
@@ -116,17 +115,8 @@ export class Boat extends Entity {
             const height = box.max.y - box.min.y;
             model.position.y = height * 0.375;
 
-            model.traverse((child) => {
-                if ((child as THREE.Mesh).isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
-            });
-
             this.innerMesh.add(model);
-        }, undefined, (error) => {
-            console.error('An error occurred loading the boat model:', error);
-        });
+        }
 
         mesh.castShadow = true;
         mesh.receiveShadow = true;

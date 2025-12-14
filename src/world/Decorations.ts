@@ -13,7 +13,7 @@ DecorationRegistry.register('bush', new BushFactory());
 DecorationRegistry.register('cactus', new CactusFactory());
 DecorationRegistry.register('rock', new RockFactory());
 DecorationRegistry.register('bottle', new BottleFactory());
-
+DecorationRegistry.register('boat', new GLTFModelFactory('assets/boat-model-1.glb'));
 DecorationRegistry.register('polarBear', new GLTFModelFactory('assets/polar-bear-model-1.glb'));
 DecorationRegistry.register('hippo', new GLTFModelFactory('assets/hippo-model-1.glb'));
 DecorationRegistry.register('alligator', new GLTFModelFactory('assets/alligator-model-1.glb'));
@@ -28,6 +28,10 @@ export class Decorations {
 
   static async preload(): Promise<void> {
     await DecorationRegistry.loadAll();
+  }
+
+  static getBoat() {
+    return DecorationRegistry.getFactory('boat').create();
   }
 
   static getTree(wetness: number, isSnowy: boolean = false, isLeafless: boolean = false): THREE.Group {
@@ -67,7 +71,7 @@ export class Decorations {
   }
 
   // Animal getters
-  private static getAnimal(name: string): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
+  private static getModelAndAnimations(name: string): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
     try {
       const factory = DecorationRegistry.getFactory(name);
       const model = factory.create();
@@ -79,12 +83,12 @@ export class Decorations {
     }
   }
 
-  static getPolarBear() { return this.getAnimal('polarBear'); }
-  static getHippo() { return this.getAnimal('hippo'); }
-  static getAlligator() { return this.getAnimal('alligator'); }
-  static getPenguinKayak() { return this.getAnimal('penguinKayak'); }
-  static getBrownBear() { return this.getAnimal('brownBear'); }
-  static getMoose() { return this.getAnimal('moose'); }
-  static getMonkey() { return this.getAnimal('monkey'); }
-  static getDuckling() { return this.getAnimal('duckling'); }
+  static getPolarBear() { return this.getModelAndAnimations('polarBear'); }
+  static getHippo() { return this.getModelAndAnimations('hippo'); }
+  static getAlligator() { return this.getModelAndAnimations('alligator'); }
+  static getPenguinKayak() { return this.getModelAndAnimations('penguinKayak'); }
+  static getBrownBear() { return this.getModelAndAnimations('brownBear'); }
+  static getMoose() { return this.getModelAndAnimations('moose'); }
+  static getMonkey() { return this.getModelAndAnimations('monkey'); }
+  static getDuckling() { return this.getModelAndAnimations('duckling'); }
 }

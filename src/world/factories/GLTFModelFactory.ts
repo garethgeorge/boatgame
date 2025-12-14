@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { DecorationFactory } from './DecorationFactory';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 interface GLTFModelData {
     model: THREE.Group | null;
@@ -23,12 +24,7 @@ export class GLTFModelFactory implements DecorationFactory {
             const loader = new GLTFLoader();
             loader.load(this.path, (gltf) => {
                 const model = gltf.scene;
-                model.traverse((child) => {
-                    if ((child as THREE.Mesh).isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
-                });
+                GraphicsUtils.toonify(model);
                 this.cache.model = model;
                 this.cache.animations = gltf.animations || [];
                 resolve();
