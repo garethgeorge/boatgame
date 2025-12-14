@@ -17,7 +17,7 @@ export class Pier extends Entity {
 
         // Load and create deck material with texture
         const textureLoader = new THREE.TextureLoader();
-        const deckTexture = textureLoader.load('/assets/deck-plank-texture.png');
+        const deckTexture = textureLoader.load('assets/deck-plank-texture.png');
         deckTexture.wrapS = THREE.RepeatWrapping;
         deckTexture.wrapT = THREE.RepeatWrapping;
         deckTexture.repeat.set(4, 1);
@@ -35,7 +35,7 @@ export class Pier extends Entity {
 
         // Load and create pile material with texture
         const textureLoader = new THREE.TextureLoader();
-        const pileTexture = textureLoader.load('/assets/wood-piling-texture.png');
+        const pileTexture = textureLoader.load('assets/wood-piling-texture.png');
         pileTexture.wrapS = THREE.RepeatWrapping;
         pileTexture.wrapT = THREE.RepeatWrapping;
         pileTexture.repeat.set(0.25, 0.25);

@@ -13,7 +13,7 @@ export class Log extends Entity {
 
         // Load and create deck material with texture
         const textureLoader = new THREE.TextureLoader();
-        const deckTexture = textureLoader.load('/assets/redwood-bark-texture.png');
+        const deckTexture = textureLoader.load('assets/redwood-bark-texture.png');
         deckTexture.wrapS = THREE.RepeatWrapping;
         deckTexture.wrapT = THREE.RepeatWrapping;
         deckTexture.repeat.set(4, 8);
@@ -31,7 +31,7 @@ export class Log extends Entity {
 
         // Load and create end material with texture
         const textureLoader = new THREE.TextureLoader();
-        const endTexture = textureLoader.load('/assets/redwood-ends-texture.png');
+        const endTexture = textureLoader.load('assets/redwood-ends-texture.png');
         // No wrapping needed for the ends, texture should fit the circular cap
         endTexture.wrapS = THREE.ClampToEdgeWrapping;
         endTexture.wrapT = THREE.ClampToEdgeWrapping;
