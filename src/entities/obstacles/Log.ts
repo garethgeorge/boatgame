@@ -5,6 +5,48 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 
 export class Log extends Entity {
 
+    private static barkMaterial: THREE.MeshToonMaterial | null = null;
+    private static endMaterial: THREE.MeshToonMaterial | null = null;
+
+    private static getBarkMaterial(): THREE.MeshToonMaterial {
+        if (Log.barkMaterial) return Log.barkMaterial;
+
+        // Load and create deck material with texture
+        const textureLoader = new THREE.TextureLoader();
+        const deckTexture = textureLoader.load('/assets/redwood-bark-texture.png');
+        deckTexture.wrapS = THREE.RepeatWrapping;
+        deckTexture.wrapT = THREE.RepeatWrapping;
+        deckTexture.repeat.set(4, 8);
+
+        const deckMaterial = new THREE.MeshToonMaterial({ map: deckTexture });
+        deckMaterial.color.set(0xa87660);
+
+        Log.barkMaterial = deckMaterial;
+
+        return Log.barkMaterial;
+    }
+
+    private static getEndMaterial(): THREE.MeshToonMaterial {
+        if (Log.endMaterial) return Log.endMaterial;
+
+        // Load and create end material with texture
+        const textureLoader = new THREE.TextureLoader();
+        const endTexture = textureLoader.load('/assets/redwood-ends-texture.png');
+        // No wrapping needed for the ends, texture should fit the circular cap
+        endTexture.wrapS = THREE.ClampToEdgeWrapping;
+        endTexture.wrapT = THREE.ClampToEdgeWrapping;
+
+        // Center the texture on the circular ends
+        endTexture.center.set(0.5, 0.5);
+
+        const endMaterial = new THREE.MeshToonMaterial({ map: endTexture });
+        endMaterial.color.set(0xe7c55e);
+
+        Log.endMaterial = endMaterial;
+
+        return Log.endMaterial;
+    }
+
 
     constructor(x: number, y: number, length: number, physicsEngine: PhysicsEngine) {
         super();
@@ -36,10 +78,17 @@ export class Log extends Entity {
         // We want it along X-axis to match Physics Box(length, thickness).
         // Rotate around Z axis by 90 deg.
         const geo = new THREE.CylinderGeometry(0.6, 0.6, length, 12);
-        const mat = new THREE.MeshToonMaterial({ color: 0x5C4033 }); // Darker Brown
+
+        // Create material array: [side, top cap, bottom cap]
+        const materials = [
+            Log.getBarkMaterial(),  // Side of cylinder
+            Log.getEndMaterial(),    // Top cap
+            Log.getEndMaterial()     // Bottom cap
+        ];
+
         this.disposer.add(geo);
-        this.disposer.add(mat);
-        const mesh = new THREE.Mesh(geo, mat);
+
+        const mesh = new THREE.Mesh(geo, materials);
         this.meshes.push(mesh);
 
         mesh.rotation.z = Math.PI / 2;
