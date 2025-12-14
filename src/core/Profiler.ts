@@ -1,5 +1,10 @@
 export class Profiler {
+  // time based metrics
   private static metrics: Map<string, { min: number, max: number, avg: number, current: number, samples: number, sum: number }> = new Map();
+
+  // value based metrics
+  private static info: Map<string, { min: number, max: number, avg: number, current: number, samples: number, sum: number }> = new Map();
+
   private static startTimes: Map<string, number> = new Map();
   private static overlay: HTMLElement | null = null;
   private static frameCount: number = 0;
@@ -27,6 +32,20 @@ export class Profiler {
     if (this.overlay) {
       this.overlay.style.display = visible ? 'block' : 'none';
     }
+  }
+
+  static addInfo(label: string, value: number) {
+    if (!this.info.has(label)) {
+      this.info.set(label, { min: value, max: value, avg: value, current: value, samples: 1, sum: value });
+    }
+
+    const metric = this.info.get(label)!;
+    metric.current = value;
+    metric.min = Math.min(metric.min, value);
+    metric.max = Math.max(metric.max, value);
+    metric.sum += value;
+    metric.samples++;
+    metric.avg = metric.sum / metric.samples;
   }
 
   static start(label: string) {
@@ -78,6 +97,10 @@ export class Profiler {
     let html = '<strong>Profiler</strong><br>';
     for (const [label, metric] of this.metrics) {
       html += `${label}: ${metric.avg.toFixed(2)}ms (Max: ${metric.max === -Infinity ? 0 : metric.max.toFixed(2)})<br>`;
+    }
+    html += '<br>';
+    for (const [label, metric] of this.info) {
+      html += `${label}: ${metric.current} (Max: ${metric.max === -Infinity ? 0 : metric.max})<br>`;
     }
     this.overlay.innerHTML = html;
   }

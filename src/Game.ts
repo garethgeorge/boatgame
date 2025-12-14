@@ -409,6 +409,7 @@ export class Game {
         Profiler.start('Render');
         this.graphicsEngine.render(dt);
         Profiler.end('Render');
+        this.graphicsEngine.updateDebugInfo();
 
         Profiler.update();
     }

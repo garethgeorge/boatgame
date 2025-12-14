@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { TerrainChunk } from '../world/TerrainChunk';
+import { Profiler } from './Profiler';
 
 export class GraphicsEngine {
   scene: THREE.Scene;
@@ -52,5 +53,13 @@ export class GraphicsEngine {
 
   remove(object: THREE.Object3D) {
     this.scene.remove(object);
+  }
+
+  updateDebugInfo() {
+    const stats = this.renderer.info;
+    Profiler.addInfo('Geometries', stats.memory.geometries);
+    Profiler.addInfo('Textures', stats.memory.textures);
+    Profiler.addInfo('DrawCalls', stats.render.calls);
+    Profiler.addInfo('Triangles', stats.render.triangles);
   }
 }
