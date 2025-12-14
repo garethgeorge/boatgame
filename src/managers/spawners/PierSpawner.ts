@@ -58,7 +58,10 @@ export class PierSpawner implements Spawnable {
       // Let's register the tip area so boats don't spawn right on it.
       context.placementHelper.registerPlacement(centerPos.x, centerPos.y, pierLength / 2);
 
-      const pier = new Pier(centerPos.x, centerPos.y, pierLength, angle, context.physicsEngine);
+      // Randomly decide if this pier should have a depot
+      const hasDepot = Math.random() > 0.5;
+
+      const pier = new Pier(centerPos.x, centerPos.y, pierLength, angle, context.physicsEngine, hasDepot);
       context.entityManager.add(pier, context.chunkIndex);
     }
   }

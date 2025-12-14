@@ -22,6 +22,7 @@ DecorationRegistry.register('brownBear', new GLTFModelFactory('assets/brown-bear
 DecorationRegistry.register('monkey', new GLTFModelFactory('assets/monkey-model-1.glb'));
 DecorationRegistry.register('moose', new GLTFModelFactory('assets/moose-model-1.glb'));
 DecorationRegistry.register('duckling', new GLTFModelFactory('assets/duckling-model-1.glb'));
+DecorationRegistry.register('depot', new GLTFModelFactory('assets/depot-model-1.glb'));
 
 
 export class Decorations {
@@ -68,6 +69,10 @@ export class Decorations {
 
   static getBottleRightArcAnimation(): THREE.AnimationClip {
     return DecorationRegistry.getFactory('bottle').createAnimation('arc-right');
+  }
+
+  static getDepot(): THREE.Group {
+    return DecorationRegistry.getFactory('depot').create();
   }
 
   // Animal getters

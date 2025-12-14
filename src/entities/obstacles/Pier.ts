@@ -2,12 +2,16 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { Decorations } from '../../world/Decorations';
 
 export class Pier extends Entity {
 
+    public static readonly MIN_LENGTH_WITH_DEPOT = 10;
 
-    constructor(x: number, y: number, length: number, angle: number, physicsEngine: PhysicsEngine) {
+    constructor(x: number, y: number, length: number, angle: number, physicsEngine: PhysicsEngine, hasDepot: boolean = false) {
         super();
+
+        const width = hasDepot ? 6 : 2;
 
         // Static body
         const physicsBody = physicsEngine.world.createBody({
@@ -22,7 +26,7 @@ export class Pier extends Entity {
         // shape: Box(halfWidth, halfHeight)
         // We want length to be the long dimension.
         physicsBody.createFixture({
-            shape: planck.Box(length / 2, 1.0),
+            shape: planck.Box(length / 2, width / 2),
             friction: 0.5
         });
 
@@ -33,7 +37,7 @@ export class Pier extends Entity {
         this.meshes.push(mesh);
 
         // Deck
-        const deckGeo = new THREE.BoxGeometry(length, 0.5, 2.0); // Thinner deck
+        const deckGeo = new THREE.BoxGeometry(length, 0.5, width); // Thinner deck
         const deckMat = new THREE.MeshToonMaterial({ color: 0xA0522D }); // Sienna
         const deck = new THREE.Mesh(deckGeo, deckMat);
         deck.position.y = 1.5; // Raised up
@@ -51,12 +55,21 @@ export class Pier extends Entity {
 
             // Two piles per row (front and back)
             const pile1 = new THREE.Mesh(pileGeo, pileMat);
-            pile1.position.set(xPos, 0, -0.8);
+            pile1.position.set(xPos, 0, -width / 2);
             mesh.add(pile1);
 
             const pile2 = new THREE.Mesh(pileGeo, pileMat);
-            pile2.position.set(xPos, 0, 0.8);
+            pile2.position.set(xPos, 0, width / 2);
             mesh.add(pile2);
+        }
+
+        // Add depot if requested
+        if (hasDepot) {
+            const depot = Decorations.getDepot();
+            depot.rotation.y = -Math.PI / 2;
+            // Position at the start of the pier (shore end) at -length/2
+            depot.position.set(-length / 2 + 3, 1.5, 0);
+            mesh.add(depot);
         }
 
         // Apply initial rotation to mesh to match physics
