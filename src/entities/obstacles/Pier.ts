@@ -8,10 +8,52 @@ export class Pier extends Entity {
 
     public static readonly MIN_LENGTH_WITH_DEPOT = 10;
 
+    // Cached materials and geometry
+    private static deckMaterial: THREE.MeshToonMaterial | null = null;
+    private static pileMesh: THREE.Mesh | null = null;
+
+    private static getDeckMaterial(): THREE.MeshToonMaterial {
+        if (Pier.deckMaterial) return Pier.deckMaterial;
+
+        // Load and create deck material with texture
+        const textureLoader = new THREE.TextureLoader();
+        const deckTexture = textureLoader.load('/assets/deck-plank-texture.png');
+        deckTexture.wrapS = THREE.RepeatWrapping;
+        deckTexture.wrapT = THREE.RepeatWrapping;
+        deckTexture.repeat.set(4, 1);
+
+        const deckMaterial = new THREE.MeshToonMaterial({ map: deckTexture });
+        deckMaterial.color.set(0xd48e43);
+
+        Pier.deckMaterial = deckMaterial;
+
+        return Pier.deckMaterial
+    }
+
+    private static getPileMesh(): THREE.Mesh {
+        if (Pier.pileMesh) return Pier.pileMesh;
+
+        // Load and create pile material with texture
+        const textureLoader = new THREE.TextureLoader();
+        const pileTexture = textureLoader.load('/assets/wood-piling-texture.png');
+        pileTexture.wrapS = THREE.RepeatWrapping;
+        pileTexture.wrapT = THREE.RepeatWrapping;
+        pileTexture.repeat.set(0.25, 0.25);
+
+        const pileMaterial = new THREE.MeshToonMaterial({ map: pileTexture });
+        pileMaterial.color.set(0x8B4513);
+
+        // Create pile geometry and mesh
+        const pileGeometry = new THREE.CylinderGeometry(0.2, 0.2, 4.0, 8);
+        Pier.pileMesh = new THREE.Mesh(pileGeometry, pileMaterial);
+
+        return Pier.pileMesh;
+    }
+
     constructor(x: number, y: number, length: number, angle: number, physicsEngine: PhysicsEngine, hasDepot: boolean = false) {
         super();
 
-        const width = hasDepot ? 6 : 2;
+        const width = hasDepot ? 6 : 4;
 
         // Static body
         const physicsBody = physicsEngine.world.createBody({
@@ -36,21 +78,14 @@ export class Pier extends Entity {
         const mesh = new THREE.Group();
         this.meshes.push(mesh);
 
-        // Deck
-        const deckGeo = new THREE.BoxGeometry(length, 0.5, width); // Thinner deck
+        // Deck (geometry is unique per pier due to varying length/width)
+        const deckGeo = new THREE.BoxGeometry(length, 0.5, width);
         this.disposer.add(deckGeo);
-        const deckMat = new THREE.MeshToonMaterial({ color: 0xA0522D }); // Sienna
-        this.disposer.add(deckMat);
-        const deck = new THREE.Mesh(deckGeo, deckMat);
+        const deck = new THREE.Mesh(deckGeo, Pier.getDeckMaterial());
         deck.position.y = 1.5; // Raised up
         mesh.add(deck);
 
-        // Piles (Supports)
-        const pileGeo = new THREE.CylinderGeometry(0.2, 0.2, 4.0, 8);
-        this.disposer.add(pileGeo);
-        const pileMat = new THREE.MeshToonMaterial({ color: 0x8B4513 }); // Darker wood
-        this.disposer.add(pileMat);
-
+        // Piles (Supports) - use cloned instances of the cached pile mesh
         const numPiles = Math.floor(length / 3);
         for (let i = 0; i <= numPiles; i++) {
             // Calculate x position relative to center
@@ -58,11 +93,11 @@ export class Pier extends Entity {
             const xPos = -length / 2 + (length / numPiles) * i;
 
             // Two piles per row (front and back)
-            const pile1 = new THREE.Mesh(pileGeo, pileMat);
+            const pile1 = Pier.getPileMesh().clone();
             pile1.position.set(xPos, 0, -width / 2);
             mesh.add(pile1);
 
-            const pile2 = new THREE.Mesh(pileGeo, pileMat);
+            const pile2 = Pier.getPileMesh().clone();
             pile2.position.set(xPos, 0, width / 2);
             mesh.add(pile2);
         }
