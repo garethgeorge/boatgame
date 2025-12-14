@@ -1,13 +1,14 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
+import { ResourceDisposer } from './ResourceDisposer';
 
 export abstract class Entity {
   public physicsBodies: planck.Body[] = [];
   public meshes: THREE.Object3D[] = [];
-  public materials: THREE.Material[] = [];
   public debugMeshes: THREE.Object3D[] = [];
 
-  // When set to true, the entity will be removed from the game and destroyed
+  protected disposer: ResourceDisposer = new ResourceDisposer();
+
   public shouldRemove: boolean = false;
 
   // True for entities that can cause penalties
@@ -40,40 +41,13 @@ export abstract class Entity {
   }
 
   dispose() {
-    // Dispose of all meshes
-    for (const mesh of this.meshes) {
-      this.disposeObject3D(mesh);
-    }
+    this.disposer.dispose();
     this.meshes = [];
-
-    // Dispose of all debug meshes
-    for (const mesh of this.debugMeshes) {
-      this.disposeObject3D(mesh);
-    }
     this.debugMeshes = [];
-
-    // Dispose of tracked materials
-    for (const material of this.materials) {
-      material.dispose();
-    }
-    this.materials = [];
-  }
-
-  private disposeObject3D(object: THREE.Object3D) {
-    object.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        if (child.geometry) {
-          child.geometry.dispose();
-        }
-        if (child.material) {
-          if (Array.isArray(child.material)) {
-            child.material.forEach((m: THREE.Material) => m.dispose());
-          } else {
-            (child.material as THREE.Material).dispose();
-          }
-        }
-      }
-    });
+    this.physicsBodies = [];
+    // Physics bodies are managed by PhysicsEngine interaction usually, 
+    // but if we own them we should destroy them.
+    // Entity manager destroys bodies.
   }
 
   // Interpolation state
@@ -159,7 +133,7 @@ export abstract class Entity {
 
         let mesh: THREE.Mesh | null = null;
         const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
-        this.materials.push(material); // Track for disposal
+        this.disposer.add(material);
 
         if (type === 'circle') {
           const circle = shape as planck.Circle;
@@ -167,6 +141,7 @@ export abstract class Entity {
           const center = circle.getCenter();
 
           const geometry = new THREE.CylinderGeometry(radius, radius, 1, 16);
+          this.disposer.add(geometry);
           mesh = new THREE.Mesh(geometry, material);
           mesh.position.set(center.x, 0, center.y); // Local offset
 
@@ -183,10 +158,10 @@ export abstract class Entity {
           }
 
           const geometry = new THREE.BufferGeometry().setFromPoints(points);
+          this.disposer.add(geometry);
           const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xff0000 }));
-          // Lines don't have geometry in the same way for disposal, but BufferGeometry is disposable.
-          // We should probably track this geometry too?
-          // For now, let's just add the line.
+          this.disposer.add(line.material as THREE.Material);
+
           group.add(line);
           continue;
         }

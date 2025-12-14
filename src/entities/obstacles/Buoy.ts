@@ -41,28 +41,35 @@ export class Buoy extends Entity {
 
         const matRed = new THREE.MeshToonMaterial({ color: 0xFF0000 });
         const matWhite = new THREE.MeshToonMaterial({ color: 0xFFFFFF });
+        this.disposer.add(matRed);
+        this.disposer.add(matWhite);
 
         // Bottom Red
         const bottomGeo = new THREE.CylinderGeometry(radius, radius * 0.8, height * 0.4, segments);
+        this.disposer.add(bottomGeo);
         const bottom = new THREE.Mesh(bottomGeo, matRed);
         bottom.position.y = -height * 0.2;
         mesh.add(bottom);
 
         // Middle White
         const midGeo = new THREE.CylinderGeometry(radius, radius, height * 0.3, segments);
+        this.disposer.add(midGeo);
         const mid = new THREE.Mesh(midGeo, matWhite);
         mid.position.y = height * 0.15;
         mesh.add(mid);
 
         // Top Red
         const topGeo = new THREE.CylinderGeometry(radius * 0.6, radius, height * 0.3, segments);
+        this.disposer.add(topGeo);
         const top = new THREE.Mesh(topGeo, matRed);
         top.position.y = height * 0.45;
         mesh.add(top);
 
         // Light/Sensor on top
         const lightGeo = new THREE.SphereGeometry(0.2, 8, 8);
+        this.disposer.add(lightGeo);
         const lightMat = new THREE.MeshToonMaterial({ color: 0xFFFF00, emissive: 0x444400 });
+        this.disposer.add(lightMat);
         const light = new THREE.Mesh(lightGeo, lightMat);
         light.position.y = height * 0.7;
         mesh.add(light);

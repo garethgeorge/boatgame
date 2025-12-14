@@ -60,6 +60,7 @@ export class Iceberg extends Entity {
         };
 
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        this.disposer.add(geometry);
 
         // Center the geometry
         geometry.center();
@@ -70,8 +71,10 @@ export class Iceberg extends Entity {
             opacity: 0.9,
             side: THREE.DoubleSide
         });
+        this.disposer.add(material);
         // @ts-ignore
-        material.flatShading = true;
+        material.flatShading = true; // Works in runtime
+        material.needsUpdate = true;
 
         const mesh = new THREE.Group(); // Parent group handles Y-rotation (yaw) from physics
         this.meshes.push(mesh);

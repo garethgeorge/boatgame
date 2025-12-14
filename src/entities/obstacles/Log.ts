@@ -37,6 +37,8 @@ export class Log extends Entity {
         // Rotate around Z axis by 90 deg.
         const geo = new THREE.CylinderGeometry(0.6, 0.6, length, 12);
         const mat = new THREE.MeshToonMaterial({ color: 0x5C4033 }); // Darker Brown
+        this.disposer.add(geo);
+        this.disposer.add(mat);
         const mesh = new THREE.Mesh(geo, mat);
         this.meshes.push(mesh);
 

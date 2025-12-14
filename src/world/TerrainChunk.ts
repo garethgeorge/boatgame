@@ -6,6 +6,7 @@ import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUti
 import { Profiler } from '../core/Profiler';
 import { WaterShader } from '../shaders/WaterShader';
 import { TerrainDecorator, DecorationContext } from './decorators/TerrainDecorator';
+import { ResourceDisposer } from '../core/ResourceDisposer';
 
 export class TerrainChunk {
 
@@ -16,6 +17,8 @@ export class TerrainChunk {
   waterMesh: THREE.Mesh;
   decorations: THREE.Group;
   zOffset: number;
+
+  private disposer: ResourceDisposer = new ResourceDisposer();
 
   // Config
   public static readonly CHUNK_SIZE = 62.5; // Size of chunk in Z (Reduced to 62.5 for incremental generation)
@@ -222,6 +225,11 @@ export class TerrainChunk {
       side: THREE.DoubleSide
     });
 
+    // Register with disposer
+    this.disposer.add(geometry);
+    this.disposer.add(material);
+    this.disposer.add(gradientMap);
+
     const mesh = new THREE.Mesh(geometry, material);
     // Vertices are already in world coordinates, no mesh offset needed
     mesh.position.set(0, 0, 0);
@@ -241,10 +249,19 @@ export class TerrainChunk {
     for (const [material, geometries] of geometriesByMaterial) {
       if (geometries.length === 0) continue;
       const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries);
+      this.disposer.add(mergedGeometry); // Register merged geo
+
       const mesh = new THREE.Mesh(mergedGeometry, material);
+      // Material is shared from decorators, so we DON'T dispose it here
+
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       group.add(mesh);
+
+      // Dispose of the source geometries (clones) now that they are merged
+      for (const geometry of geometries) {
+        geometry.dispose();
+      }
     }
   }
 
@@ -253,36 +270,16 @@ export class TerrainChunk {
     this.graphicsEngine.remove(this.waterMesh);
     this.graphicsEngine.remove(this.decorations);
 
-    this.mesh.geometry.dispose();
-    (this.mesh.material as THREE.Material).dispose();
-    this.mesh.geometry.dispose();
-    if (Array.isArray(this.mesh.material)) {
-      this.mesh.material.forEach(m => m.dispose());
-    } else {
-      this.mesh.material.dispose();
-    }
+    // Disposer handles geometry, materials, and textures for main mesh and water mesh
+    this.disposer.dispose();
 
-    this.waterMesh.geometry.dispose();
-    // Do NOT dispose shared water material
-    // if (Array.isArray(this.waterMesh.material)) {
-    //   this.waterMesh.material.forEach(m => m.dispose());
-    // } else {
-    //   this.waterMesh.material.dispose();
-    // }
+    // Decorations disposal:
+    // mergeAndAddGeometries registered the merged geometries.
+    // Materials were shared (static), so we do NOT dispose them.
+    // However, if we added them to disposer in generateDecorations, we would have trouble.
+    // Checks: We did NOT add shared materials to disposer in mergeAndAddGeometries. Correct.
 
-    this.graphicsEngine.remove(this.decorations);
-    // Dispose children materials/geometries if needed
-    // Since we reuse static materials in Decorations, we might not want to dispose them?
-    // Actually Decorations uses static materials, so we shouldn't dispose them here.
-    // Just remove from scene and clear children.
-
-    // BUT, the geometries are merged and unique to this chunk! We MUST dispose them.
-    this.decorations.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.geometry.dispose();
-        // Material is shared, do not dispose.
-      }
-    });
+    // Clear the group logic
     this.decorations.clear();
 
     // Stop animations
@@ -326,6 +323,10 @@ export class TerrainChunk {
         fog: true
       });
     }
+
+    // Register geometry (unique per chunk)
+    this.disposer.add(geometry);
+    // DO NOT register waterMaterial (static shared)
 
     const mesh = new THREE.Mesh(geometry, TerrainChunk.waterMaterial);
     // Vertices are already in world coordinates, no mesh offset needed

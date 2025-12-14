@@ -45,6 +45,7 @@ export class RiverRock extends Entity {
         const seedY = Math.random() * 100;
         const seedZ = Math.random() * 100;
 
+
         for (let i = 0; i < posAttribute.count; i++) {
             vertex.fromBufferAttribute(posAttribute, i);
             normal.fromBufferAttribute(normalAttribute, i);
@@ -56,28 +57,23 @@ export class RiverRock extends Entity {
             // Displace along normal
             vertex.add(normal.clone().multiplyScalar(displacement));
 
-            // Extend bottom vertices deep down
-            // Cylinder is centered at 0, so bottom is at -height/2
-            if (vertex.y < -height * 0.45) {
-                vertex.y -= 8.0; // Extend deep into river bed
-                // Widen base further
-                vertex.x *= 1.2;
-                vertex.z *= 1.2;
-            }
+            // No longer extending bottom vertices deep down for Icosahedron,
+            // as it's not a vertical cylinder.
+            // The original logic for cylinder base extension is removed.
 
             posAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
         }
 
         geometry.computeVertexNormals();
 
-        const material = new THREE.MeshToonMaterial({
-            color: 0x696969, // Dim Grey
-        });
-        // @ts-ignore
-        material.flatShading = true;
+        const material = new THREE.MeshToonMaterial({ color: 0x808080 });
+        this.disposer.add(material);
 
         const mesh = new THREE.Mesh(geometry, material);
         this.meshes.push(mesh);
+        // @ts-ignore
+        material.flatShading = true; // Works in runtime, types might be strict
+        material.needsUpdate = true;
 
         mesh.castShadow = true;
         mesh.receiveShadow = true;

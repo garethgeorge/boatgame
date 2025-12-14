@@ -38,14 +38,18 @@ export class Pier extends Entity {
 
         // Deck
         const deckGeo = new THREE.BoxGeometry(length, 0.5, width); // Thinner deck
+        this.disposer.add(deckGeo);
         const deckMat = new THREE.MeshToonMaterial({ color: 0xA0522D }); // Sienna
+        this.disposer.add(deckMat);
         const deck = new THREE.Mesh(deckGeo, deckMat);
         deck.position.y = 1.5; // Raised up
         mesh.add(deck);
 
         // Piles (Supports)
         const pileGeo = new THREE.CylinderGeometry(0.2, 0.2, 4.0, 8);
+        this.disposer.add(pileGeo);
         const pileMat = new THREE.MeshToonMaterial({ color: 0x8B4513 }); // Darker wood
+        this.disposer.add(pileMat);
 
         const numPiles = Math.floor(length / 3);
         for (let i = 0; i <= numPiles; i++) {
