@@ -11,6 +11,7 @@
   "devDependencies": {
     "@types/matter-js": "^0.20.2",
     "@types/three": "^0.181.0",
+    "@vitejs/plugin-basic-ssl": "^2.1.0",
     "typescript": "^5.9.3",
     "vite": "^7.2.4"
   },

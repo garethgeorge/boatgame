@@ -28,10 +28,19 @@ export class Boat extends Entity {
     private readonly THROTTLE_SPEED = 1.0;
     private readonly STEER_SPEED = 10.0;
 
+    // At max thrust this is the approx speed reached
+    private readonly APPROX_MAX_SPEED = 20.0;
+
+    // For the "fin" effect where the propeller acts like a rudder
+    // as a hack increase grip at low speed to get better maneuverability
+    private readonly FIN_GRIP_FAST = 20.0;
+    private readonly FIN_GRIP_SLOW = 2000.0;
+
     // Drag Constants
     private readonly DRAG_FORWARD = 4.0; // Low resistance forward 
     private readonly DRAG_SIDEWAYS = 8.0; // High resistance sideways (Keel) 
-    private readonly DRAG_ANGULAR = 8.0; // Resistance to rotation 
+    private readonly DRAG_ANGULAR = 2.0; // Resistance to rotation 
+    private readonly DRAG_ANGULAR_SPEED_FACTOR = 1.0; // Resistance gets higher with speed
 
     private static instance: Boat | null = null;
 
@@ -170,50 +179,13 @@ export class Boat extends Entity {
             }
         }
 
-        // --- Physics Implementation ---
+        this.applyPhysicsForces(physicsBody);
+
+        // --- Visuals Implementation ---
 
         const velocity = physicsBody.getLinearVelocity();
-        const angularVelocity = physicsBody.getAngularVelocity();
-
-        // Get local vectors
         const forwardDir = physicsBody.getWorldVector(planck.Vec2(0, -1));
-        const rightDir = physicsBody.getWorldVector(planck.Vec2(1, 0));
-
-        // 1. Differential Drag
-        // Project velocity onto local axes
         const forwardSpeed = planck.Vec2.dot(velocity, forwardDir);
-        const lateralSpeed = planck.Vec2.dot(velocity, rightDir);
-
-        // Forward Drag (Quadratic) - Air/Water resistance
-        // F = -c * v * |v|
-        const forwardDragForce = forwardDir.clone().mul(-this.DRAG_FORWARD * forwardSpeed * Math.abs(forwardSpeed));
-        physicsBody.applyForceToCenter(forwardDragForce);
-
-        // Lateral Drag (Linear/Quadratic) - Keel resistance
-        // Much higher than forward drag to prevent sliding
-        const lateralDragForce = rightDir.clone().mul(-this.DRAG_SIDEWAYS * lateralSpeed * physicsBody.getMass());
-        physicsBody.applyForceToCenter(lateralDragForce);
-
-        // Angular Drag - Resistance to spinning
-        physicsBody.setAngularDamping(this.DRAG_ANGULAR);
-
-
-        // 2. Outboard Motor Thrust
-        // Applied at the stern (back of the boat)
-        // Local position: (0, 4.0) roughly (closer to center of mass for better control)
-        const motorPosLocal = planck.Vec2(0, 4.0);
-        const motorPosWorld = physicsBody.getWorldPoint(motorPosLocal);
-
-        // Thrust Vector
-        const thrustAngle = this.currentSteering;
-        const thrustDirLocal = planck.Vec2(Math.sin(thrustAngle), -Math.cos(thrustAngle));
-        const thrustDirWorld = physicsBody.getWorldVector(thrustDirLocal);
-
-        // Apply Thrust
-        if (Math.abs(this.currentThrottle) > 0.01) {
-            const thrustForce = thrustDirWorld.mul(this.currentThrottle * this.MAX_THRUST);
-            physicsBody.applyForce(thrustForce, motorPosWorld);
-        }
 
         // Sync Mesh Visuals (Tilt/Roll)
         // Base Entity.sync() handles position/rotation for the first body/mesh pair.
@@ -279,6 +251,74 @@ export class Boat extends Entity {
 
             // Sync immediately to avoid visual glitch?
             this.sync(1.0);
+        }
+    }
+
+    private applyPhysicsForces(physicsBody: planck.Body) {
+        const velocity = physicsBody.getLinearVelocity();
+        const angularVelocity = physicsBody.getAngularVelocity();
+
+        // Get local vectors
+        const forwardDir = physicsBody.getWorldVector(planck.Vec2(0, -1));
+        const rightDir = physicsBody.getWorldVector(planck.Vec2(1, 0));
+
+        // 1. Differential Drag
+        // Project velocity onto local axes
+        const forwardSpeed = planck.Vec2.dot(velocity, forwardDir);
+        const lateralSpeed = planck.Vec2.dot(velocity, rightDir);
+        const linearSpeed = velocity.length();
+
+        // Forward Drag (Quadratic) - Air/Water resistance
+        // F = -c * v * |v|
+        const forwardDragForce = forwardDir.clone().mul(-this.DRAG_FORWARD * forwardSpeed * Math.abs(forwardSpeed));
+        physicsBody.applyForceToCenter(forwardDragForce);
+
+        // Lateral Drag (Linear/Quadratic) - Keel resistance
+        // Much higher than forward drag to prevent sliding
+        const lateralDragForce = rightDir.clone().mul(-this.DRAG_SIDEWAYS * lateralSpeed * physicsBody.getMass());
+        physicsBody.applyForceToCenter(lateralDragForce);
+
+        // Angular Drag - Resistance to spinning
+        const angularDrag = this.DRAG_ANGULAR + this.DRAG_ANGULAR_SPEED_FACTOR * linearSpeed;
+        physicsBody.setAngularDamping(angularDrag);
+
+        // 2. Calculate Motor Details
+        // Applied at the stern (back of the boat)
+        // Local position: (0, 4.0) roughly (closer to center of mass for better control)
+        const motorPosLocal = planck.Vec2(0, 4.0);
+        const motorPosWorld = physicsBody.getWorldPoint(motorPosLocal);
+
+        // Thrust Vector (Motor Direction)
+        const thrustAngle = this.currentSteering;
+        const thrustDirLocal = planck.Vec2(Math.sin(thrustAngle), -Math.cos(thrustAngle));
+        const thrustDirWorld = physicsBody.getWorldVector(thrustDirLocal);
+
+        // 3. Fin / Rudder Force (Steerage)
+        // Uses the same motor position and orientation
+        const finLiftFactor = THREE.MathUtils.smoothstep(linearSpeed, 0.0, this.APPROX_MAX_SPEED);
+        const finLiftCoefficient = THREE.MathUtils.lerp(this.FIN_GRIP_SLOW, this.FIN_GRIP_FAST, finLiftFactor);
+
+        // Velocity of water relative to the stern
+        const sternVelocity = physicsBody.getLinearVelocityFromLocalPoint(motorPosLocal);
+
+        // 'Right' vector relative to the motor's current orientation
+        // Normal is (-u.y, u.x)
+        const motorRightNormalLocal = planck.Vec2(-thrustDirLocal.y, thrustDirLocal.x);
+        const motorRightNormalWorld = physicsBody.getWorldVector(motorRightNormalLocal);
+
+        // Project stern velocity onto the motor's sideways direction
+        const lateralSpeedAtMotor = planck.Vec2.dot(sternVelocity, motorRightNormalWorld);
+
+        // Apply Lift force opposite to that lateral speed
+        const finForceMagnitude = -finLiftCoefficient * lateralSpeedAtMotor;
+        const finImpulse = motorRightNormalWorld.mul(finForceMagnitude);
+
+        physicsBody.applyForce(finImpulse, motorPosWorld);
+
+        // 4. Outboard Motor Thrust
+        if (Math.abs(this.currentThrottle) > 0.01) {
+            const thrustForce = thrustDirWorld.mul(this.currentThrottle * this.MAX_THRUST);
+            physicsBody.applyForce(thrustForce, motorPosWorld);
         }
     }
 
