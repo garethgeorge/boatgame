@@ -53,9 +53,6 @@ export class Boat extends Entity {
         super();
         Boat.instance = this;
 
-        const width = 2.4;
-        const height = 6.0;
-
         // Create dynamic body
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
@@ -66,25 +63,22 @@ export class Boat extends Entity {
         });
         this.physicsBodies.push(physicsBody);
 
-        // Main Hull Fixture
-        physicsBody.createFixture({
-            shape: planck.Box(width / 2, (height - width) / 2),
-            density: 20.0, // High density for stability
-            friction: 0.1,
-            restitution: 0.1
-        });
+        // Custom Polygon Shape matching the boat image
+        // Physics coordinates: Forward is -Y, Right is +X.
+        // Boat is approx 2.4m wide, 6.0m long.
+        // Vertices must be in Counter-Clockwise (CCW) order
+        const vertices = [
+            planck.Vec2(0, -3.0),   // Bow (Front)
+            planck.Vec2(1.2, -0.5), // Front Right Shoulder
+            planck.Vec2(1.2, 2.5),  // Back Right Side
+            planck.Vec2(0.9, 3.0),  // Stern Right (Back)
+            planck.Vec2(-0.9, 3.0), // Stern Left (Back)
+            planck.Vec2(-1.2, 2.5), // Back Left Side
+            planck.Vec2(-1.2, -0.5) // Front Left Shoulder
+        ];
 
-        // Bow
         physicsBody.createFixture({
-            shape: planck.Circle(planck.Vec2(0, -(height - width) / 2), width / 2),
-            density: 20.0,
-            friction: 0.1,
-            restitution: 0.1
-        });
-
-        // Stern
-        physicsBody.createFixture({
-            shape: planck.Circle(planck.Vec2(0, (height - width) / 2), width / 2),
+            shape: planck.Polygon(vertices),
             density: 20.0,
             friction: 0.1,
             restitution: 0.1
