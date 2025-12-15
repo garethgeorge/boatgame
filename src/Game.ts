@@ -15,6 +15,7 @@ import { InputManager } from './managers/InputManager';
 import { Profiler } from './core/Profiler';
 import { Entity } from './core/Entity';
 import { MessageInABottle } from './entities/obstacles/MessageInABottle';
+import { Fixture } from 'planck';
 
 export class Game {
     container: HTMLElement;
@@ -128,6 +129,11 @@ export class Game {
         this.physicsEngine.world.on('begin-contact', (contact) => {
             const fixtureA = contact.getFixtureA();
             const fixtureB = contact.getFixtureB();
+
+            // Ignore sensor contacts for collision handling
+            if ((fixtureA.getUserData() as any)?.type === 'sensor' ||
+                (fixtureB.getUserData() as any)?.type === 'sensor') return;
+
             const bodyA = fixtureA.getBody();
             const bodyB = fixtureB.getBody();
             const userDataA = bodyA.getUserData() as any;
@@ -136,21 +142,19 @@ export class Game {
             if (!userDataA || !userDataB) return;
 
             let player: Boat | null = null;
-            let entity: Entity | null = null;
-            let entityType: string | null = null;
-            let entitySubtype: string | null = null;
+            let entityData = null;
 
             if (userDataA.type === 'player') {
                 player = userDataA.entity as Boat;
-                entity = userDataB.entity as Entity;
-                entityType = userDataB.type;
-                entitySubtype = userDataB.subtype;
+                entityData = userDataB;
             } else if (userDataB.type === 'player') {
                 player = userDataB.entity as Boat;
-                entity = userDataA.entity as Entity;
-                entityType = userDataA.type;
-                entitySubtype = userDataA.subtype;
+                entityData = userDataA;
             }
+
+            const entity = userDataB.entity as Entity;
+            const entityType = userDataB.type;
+            const entitySubtype = userDataB.subtype;
 
             if (!player || !entity) return;
 
@@ -442,6 +446,8 @@ export class Game {
     }
 
     private processContacts() {
+
+        // Process the pending contact events
         this.pendingContacts.forEach((data, entity) => {
             const { type, subtype } = data;
             entity.wasHitByPlayer(this.boat);
@@ -449,5 +455,48 @@ export class Game {
         });
 
         this.pendingContacts.clear();
+
+        // Process sensor contacts
+        for (let c = this.physicsEngine.world.getContactList(); c; c = c.getNext()) {
+            if (!c.isTouching()) continue;
+
+            const fixtureA = c.getFixtureA();
+            const fixtureB = c.getFixtureB();
+
+            let sensor: Fixture | null = null;
+            let other: Fixture | null = null;
+
+            // Check UserData for sensor tag
+            const dataA = fixtureA.getUserData() as any;
+            const dataB = fixtureB.getUserData() as any;
+
+            if (dataA?.type === 'sensor') {
+                sensor = fixtureA;
+                other = fixtureB;
+            } else if (dataB?.type === 'sensor') {
+                sensor = fixtureB;
+                other = fixtureA;
+            }
+
+            if (!sensor || !other) continue;
+
+            // Check if interaction involves player
+            const otherBody = other.getBody();
+            const otherData = otherBody.getUserData() as any;
+            if (otherData?.type !== 'player') continue;
+
+            // Get sensor owner entity
+            const sensorBody = sensor.getBody();
+            const sensorOwnerData = sensorBody.getUserData() as any;
+
+            if (sensorOwnerData && sensorOwnerData.entity) {
+                this.boat.isInContactWithSensor(
+                    sensorOwnerData.entity,
+                    sensorOwnerData.type,
+                    sensorOwnerData.subtype,
+                    sensor
+                );
+            }
+        }
     }
 }

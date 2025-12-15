@@ -28,6 +28,8 @@ export class PierSpawner implements Spawnable {
       // Piers need to be attached to the bank
       // Logic from original ObstacleManager
 
+      const minDepotPierLength = 13.0;
+
       // We need to pick a Z first
       const worldZ = context.zStart + Math.random() * (context.zEnd - context.zStart);
 
@@ -39,7 +41,18 @@ export class PierSpawner implements Spawnable {
       // Calculate Pier Geometry
       const bankX = center + (isLeft ? -width / 2 : width / 2);
       const maxPierLength = width * 0.6;
-      const pierLength = Math.min(10 + Math.random() * 10, maxPierLength);
+
+      // Randomly decide if this pier should have a depot
+      const hasDepot = maxPierLength > minDepotPierLength && Math.random() > 0.5;
+      const minPierLength = hasDepot ? minDepotPierLength : 10.0;
+      const pierLength = Math.min(minPierLength + Math.random() * 10, maxPierLength);
+
+      // Depots have a dock
+      let dockSide: 'left' | 'right' | null = null;
+      if (hasDepot) {
+        dockSide = Math.random() > 0.5 ? 'left' : 'right';
+      }
+
 
       // Calculate Angle
       let N = planck.Vec2(1.0, -slope);
@@ -58,10 +71,7 @@ export class PierSpawner implements Spawnable {
       // Let's register the tip area so boats don't spawn right on it.
       context.placementHelper.registerPlacement(centerPos.x, centerPos.y, pierLength / 2);
 
-      // Randomly decide if this pier should have a depot
-      const hasDepot = Math.random() > 0.5;
-
-      const pier = new Pier(centerPos.x, centerPos.y, pierLength, angle, context.physicsEngine, hasDepot);
+      const pier = new Pier(centerPos.x, centerPos.y, pierLength, angle, context.physicsEngine, hasDepot, dockSide);
       context.entityManager.add(pier, context.chunkIndex);
     }
   }

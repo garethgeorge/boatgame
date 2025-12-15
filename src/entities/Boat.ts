@@ -335,6 +335,11 @@ export class Boat extends Entity {
         }
     }
 
+    public isInContactWithSensor(entity: Entity, type: string, subtype: string, sensor: planck.Fixture) {
+        //const sensorData = sensor.getUserData() as any;
+        //console.log("Contact!", type, subtype, sensorData.type);
+    }
+
     private flashRed() {
         this.flashTimer = 0.2; // 200ms flash
         this.innerMesh.traverse((child) => {

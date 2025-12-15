@@ -12,6 +12,7 @@ export class CollectedBottles {
     };
     private grid: (THREE.Group | null)[][];
     private activeBottles: THREE.Group[] = [];
+    private cleanupQueue: THREE.Object3D[] = [];
 
     private mixer: THREE.AnimationMixer;
 
@@ -39,8 +40,8 @@ export class CollectedBottles {
             // signals the end of the sequence.
             const container = bottle.parent;
             if (container && container.userData.removing) {
-                this.mesh.remove(container);
-                this.mixer.uncacheRoot(bottle);
+                // Defer cleanup to avoid modifying the mixer while it's updating
+                this.cleanupQueue.push(bottle);
             }
         });
 
@@ -58,7 +59,23 @@ export class CollectedBottles {
     }
 
     update(dt: number) {
+        this.processCleanup();
         this.mixer.update(dt);
+    }
+
+    private processCleanup() {
+        while (this.cleanupQueue.length > 0) {
+            const bottle = this.cleanupQueue.pop();
+            if (bottle) {
+                // Remove visual representation
+                const container = bottle.parent;
+                if (container) {
+                    this.mesh.remove(container);
+                }
+                // Uncache animation
+                this.mixer.uncacheRoot(bottle);
+            }
+        }
     }
 
     addBottle(color: number) {

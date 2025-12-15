@@ -10,6 +10,7 @@ export abstract class Entity {
 
   protected disposer: ResourceDisposer = new ResourceDisposer();
 
+  // Set to true to have the entity deleted
   public shouldRemove: boolean = false;
 
   // True for entities that can cause penalties
