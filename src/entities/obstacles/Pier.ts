@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
+import { CollectedBottles } from '../CollectedBottles';
 
 export class Pier extends Entity {
 
@@ -11,6 +12,8 @@ export class Pier extends Entity {
     // Cached materials and geometry
     private static deckMaterial: THREE.MeshToonMaterial | null = null;
     private static pileMesh: THREE.Mesh | null = null;
+
+    private collectedBottles: CollectedBottles | null = null;
 
     private static getDeckMaterial(): THREE.MeshToonMaterial {
         if (Pier.deckMaterial) return Pier.deckMaterial;
@@ -86,6 +89,14 @@ export class Pier extends Entity {
             // Position at the start of the pier (shore end) at -length/2
             depot.position.set(-length / 2 + 3, 1.5, 0);
             mesh.add(depot);
+
+            // Add CollectedBottles
+            const collectedBottles = new CollectedBottles();
+            // Center the collection roughly
+            collectedBottles.mesh.position.set(-length / 2 + 8, 2.1, 2.0);
+            collectedBottles.mesh.rotation.y = Math.PI / 2;
+            mesh.add(collectedBottles.mesh);
+            this.collectedBottles = collectedBottles;
         }
 
         // Apply initial rotation

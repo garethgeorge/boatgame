@@ -78,7 +78,7 @@ export class CollectedBottles {
         }
     }
 
-    addBottle(color: number) {
+    addBottle(color: number, animated: boolean) {
         // Find empty slots
         const emptySlots: { r: number, c: number }[] = [];
         for (let r = 0; r < this.gridConfig.rows; r++) {
@@ -94,8 +94,9 @@ export class CollectedBottles {
         // Pick random slot
         const slot = emptySlots[Math.floor(Math.random() * emptySlots.length)];
 
-        // Create bottle with specified color
+        // Create bottle with specified color, clone so it can be animated
         const bottle = Decorations.getBottle(color);
+        GraphicsUtils.cloneMaterials(bottle);
 
         // Scale down slightly to fit on deck nicely
         bottle.scale.set(0.6, 0.6, 0.6);
@@ -110,19 +111,22 @@ export class CollectedBottles {
         const targetZ = slot.r * this.gridConfig.spacingZ;
         container.position.set(targetX, 0, targetZ);
 
-        // Bottle starts at drop height in local space
-        bottle.position.set(0, 5, 0); // Drop animation will bring it to (0, 0, 0)
-
-        // Prepare for animation
-        GraphicsUtils.cloneMaterials(bottle);
-
-        // Hide initially (Set opacity to 0) so it doesn't show up before the delayed fade-in starts
-        GraphicsUtils.setMaterialOpacity(bottle, 0);
-
         container.add(bottle);
         this.mesh.add(container);
         this.grid[slot.r][slot.c] = container;
         this.activeBottles.push(container);
+
+        if (animated) {
+            this.playFadeAndDropAnimation(bottle);
+        }
+    }
+
+    private playFadeAndDropAnimation(bottle: THREE.Group) {
+        // Bottle starts at drop height in local space
+        bottle.position.set(0, 5, 0); // Drop animation will bring it to (0, 0, 0)
+
+        // Hide initially (Set opacity to 0) so it doesn't show up before the delayed fade-in starts
+        GraphicsUtils.setMaterialOpacity(bottle, 0);
 
         // --- Animations (using cached clips) ---
         const startDelay = 0.25; // this matches the fade out for the collision
@@ -150,7 +154,8 @@ export class CollectedBottles {
         dropAction.play();
     }
 
-    removeBottle() {
+    removeBottle(animated: boolean) {
+
         if (this.activeBottles.length === 0) return;
 
         // Pick random bottle to remove
@@ -183,9 +188,16 @@ export class CollectedBottles {
 
         this.activeBottles.splice(index, 1);
 
+        if (animated) {
+            this.playFadeAndArcOut(bottle);
+        }
+
+    }
+
+    private playFadeAndArcOut(bottle: THREE.Group, fromColumn: number) {
         // Determine Direction (-1 Left, 1 Right)
         const midPoint = (this.gridConfig.cols - 1) / 2;
-        const direction = bottleCol < midPoint ? -1 : 1;
+        const direction = fromColumn < midPoint ? -1 : 1;
 
         // Select the appropriate cached arc clip
         const arcClip = direction < 0 ? this.leftArcClip : this.rightArcClip;
