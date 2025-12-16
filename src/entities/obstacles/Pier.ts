@@ -13,7 +13,7 @@ export class Pier extends Entity {
     private static deckMaterial: THREE.MeshToonMaterial | null = null;
     private static pileMesh: THREE.Mesh | null = null;
 
-    private collectedBottles: CollectedBottles | null = null;
+    public collectedBottles: CollectedBottles | null = null;
 
     private static getDeckMaterial(): THREE.MeshToonMaterial {
         if (Pier.deckMaterial) return Pier.deckMaterial;
@@ -214,6 +214,6 @@ export class Pier extends Entity {
     }
 
     update(dt: number) {
-        // Static
+        this.collectedBottles?.update(dt);
     }
 }

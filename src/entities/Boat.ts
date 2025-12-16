@@ -7,6 +7,7 @@ import { PhysicsEngine } from '../core/PhysicsEngine';
 import { Decorations } from '../world/Decorations';
 import { CollectedBottles } from './CollectedBottles';
 import { MessageInABottle } from './obstacles/MessageInABottle';
+import { Pier } from "./obstacles/Pier";
 
 export class Boat extends Entity {
     public collectedBottles: CollectedBottles;
@@ -20,6 +21,10 @@ export class Boat extends Entity {
     private smoothedSpeed: number = 0;
 
     private flashTimer: number = 0;
+
+    // For transfer of bottles to depot
+    private lastTransferTime: number = 0;
+    private readonly TRANSFER_INTERVAL: number = 1.0; // Seconds
 
     // Physics Constants
     private readonly MAX_THRUST = 4000.0;
@@ -319,9 +324,8 @@ export class Boat extends Entity {
     public didHitObstacle(entity: Entity, type: string, subtype: string) {
         if (type === 'obstacle') {
             if (entity.canCausePenalty && !entity.hasCausedPenalty) {
-                this.score -= 100;
                 this.flashRed();
-                this.collectedBottles.removeBottle(); // Lose a bottle
+                this.collectedBottles.removeBottle(true); // Lose a bottle
                 entity.hasCausedPenalty = true;
             }
         } else if (type === 'collectable') {
@@ -329,15 +333,33 @@ export class Boat extends Entity {
                 const bottle = entity as MessageInABottle;
                 const points = bottle.points;
                 const color = bottle.color;
-                this.score += points;
-                this.collectedBottles.addBottle(color); // Add a bottle
+                // delay accounts for the time of the bottle entity animation
+                this.collectedBottles.addBottle(color, true, 0.25); // Add a bottle
             }
         }
     }
 
     public isInContactWithSensor(entity: Entity, type: string, subtype: string, sensor: planck.Fixture) {
-        //const sensorData = sensor.getUserData() as any;
-        //console.log("Contact!", type, subtype, sensorData.type);
+
+        if (this.collectedBottles.count == 0) return;
+
+        if (entity instanceof Pier) {
+            const pier = entity as Pier;
+            // Check if pier has a depot (and thus a collectedBottles instance)
+            if (pier.collectedBottles) {
+                const now = Date.now() / 1000;
+                const timeSinceLastTransfer = now - this.lastTransferTime;
+                if (timeSinceLastTransfer > 10 * this.TRANSFER_INTERVAL) {
+                    // Must have just arrived. Wait for first transfer.
+                    this.lastTransferTime = now;
+                } else if (timeSinceLastTransfer > this.TRANSFER_INTERVAL) {
+                    // Transfer from Boat to Pier
+                    this.collectedBottles.transfer(pier.collectedBottles, true);
+                    this.score += 100; // Bonus points for offloading
+                    this.lastTransferTime = now;
+                }
+            }
+        }
     }
 
     private flashRed() {

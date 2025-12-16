@@ -78,7 +78,11 @@ export class CollectedBottles {
         }
     }
 
-    addBottle(color: number, animated: boolean) {
+    get count(): number {
+        return this.activeBottles.length;
+    }
+
+    addBottle(color: number, animated: boolean, delay: number = 0.0) {
         // Find empty slots
         const emptySlots: { r: number, c: number }[] = [];
         for (let r = 0; r < this.gridConfig.rows; r++) {
@@ -113,54 +117,23 @@ export class CollectedBottles {
 
         container.add(bottle);
         this.mesh.add(container);
+        container.userData.color = color;
         this.grid[slot.r][slot.c] = container;
         this.activeBottles.push(container);
 
         if (animated) {
-            this.playFadeAndDropAnimation(bottle);
+            this.playFadeAndDropAnimation(bottle, delay);
         }
     }
 
-    private playFadeAndDropAnimation(bottle: THREE.Group) {
-        // Bottle starts at drop height in local space
-        bottle.position.set(0, 5, 0); // Drop animation will bring it to (0, 0, 0)
+    removeBottle(animated: boolean): number | null {
 
-        // Hide initially (Set opacity to 0) so it doesn't show up before the delayed fade-in starts
-        GraphicsUtils.setMaterialOpacity(bottle, 0);
-
-        // --- Animations (using cached clips) ---
-        const startDelay = 0.25; // this matches the fade out for the collision
-        const startTime = this.mixer.time + startDelay;
-
-        // 1. Fade In (Use cached fade animation in reverse)
-        // Apply to the actual bottle mesh, not the container
-        const fadeAction = this.mixer.clipAction(this.fadeClip, bottle);
-        const duration = 0.25;
-
-        // Play backwards to fade IN (0 to Opacity)
-        fadeAction.loop = THREE.LoopOnce;
-        fadeAction.clampWhenFinished = true;
-        fadeAction.timeScale = -1.0 / duration;
-        fadeAction.time = fadeAction.getClip().duration; // Start at end
-        fadeAction.startAt(startTime);
-        fadeAction.play();
-
-        // 2. Drop Down (using cached drop clip)
-        // Apply to the bottle, which will animate from (0, 5, 0) to (0, 0, 0) in local space
-        const dropAction = this.mixer.clipAction(this.dropClip, bottle);
-        dropAction.loop = THREE.LoopOnce;
-        dropAction.clampWhenFinished = true;
-        dropAction.startAt(startTime);
-        dropAction.play();
-    }
-
-    removeBottle(animated: boolean) {
-
-        if (this.activeBottles.length === 0) return;
+        if (this.activeBottles.length === 0) return null;
 
         // Pick random bottle to remove
         const index = Math.floor(Math.random() * this.activeBottles.length);
         const container = this.activeBottles[index];
+        const color = container.userData.color;
 
         // Get the actual bottle from the container
         const bottle = container.children[0] as THREE.Group;
@@ -189,9 +162,52 @@ export class CollectedBottles {
         this.activeBottles.splice(index, 1);
 
         if (animated) {
-            this.playFadeAndArcOut(bottle);
+            this.playFadeAndArcOut(bottle, bottleCol);
+        } else {
+            this.cleanupQueue.push(bottle);
         }
 
+        return color;
+    }
+
+    transfer(target: CollectedBottles, animated: boolean = true) {
+        if (this.activeBottles.length === 0) return;
+
+        // Pick random bottle to remove
+        const index = Math.floor(Math.random() * this.activeBottles.length);
+        const container = this.activeBottles[index];
+        const color = container.userData.color;
+
+        // Get the actual bottle from the container
+        const bottle = container.children[0] as THREE.Group;
+
+        // Ensure we stop and uncache any actions for this bottle
+        this.mixer.uncacheRoot(bottle);
+        container.userData.removing = true;
+
+        // Find in grid to determine side and clear slot
+        let found = false;
+        for (let r = 0; r < this.gridConfig.rows; r++) {
+            for (let c = 0; c < this.gridConfig.cols; c++) {
+                if (this.grid[r][c] === container) {
+                    this.grid[r][c] = null;
+                    found = true;
+                    break;
+                }
+            }
+            if (found) break;
+        }
+
+        this.activeBottles.splice(index, 1);
+
+        if (animated) {
+            this.playRiseAndFadeOut(bottle);
+            // Give it a head start so it looks like it travels
+            target.addBottle(color, true, 0.1);
+        } else {
+            this.cleanupQueue.push(bottle);
+            target.addBottle(color, false);
+        }
     }
 
     private playFadeAndArcOut(bottle: THREE.Group, fromColumn: number) {
@@ -215,7 +231,55 @@ export class CollectedBottles {
         fadeAction.play();
     }
 
-    get count(): number {
-        return this.activeBottles.length;
+    private playFadeAndDropAnimation(bottle: THREE.Group, delay: number = 0.0) {
+        // Bottle starts at drop height in local space
+        bottle.position.set(0, 5, 0); // Drop animation will bring it to (0, 0, 0)
+
+        // Hide initially (Set opacity to 0) so it doesn't show up before the delayed fade-in starts
+        GraphicsUtils.setMaterialOpacity(bottle, 0);
+
+        // --- Animations (using cached clips) ---
+        const startDelay = delay;
+        const startTime = this.mixer.time + startDelay;
+
+        // 1. Fade In (Use cached fade animation in reverse)
+        // Apply to the actual bottle mesh, not the container
+        const fadeAction = this.mixer.clipAction(this.fadeClip, bottle);
+        const duration = 0.25;
+
+        // Play backwards to fade IN (0 to Opacity)
+        fadeAction.loop = THREE.LoopOnce;
+        fadeAction.clampWhenFinished = true;
+        fadeAction.timeScale = -1.0 / duration;
+        fadeAction.time = fadeAction.getClip().duration; // Start at end
+        fadeAction.startAt(startTime);
+        fadeAction.play();
+
+        // 2. Drop Down (using cached drop clip)
+        // Apply to the bottle, which will animate from (0, 5, 0) to (0, 0, 0) in local space
+        const dropAction = this.mixer.clipAction(this.dropClip, bottle);
+        dropAction.loop = THREE.LoopOnce;
+        dropAction.clampWhenFinished = true;
+        dropAction.startAt(startTime);
+        dropAction.play();
+    }
+
+    private playRiseAndFadeOut(bottle: THREE.Group) {
+        const clipDuration = this.dropClip.duration;
+
+        // Rise (Drop Reversed)
+        const riseAction = this.mixer.clipAction(this.dropClip, bottle);
+        riseAction.loop = THREE.LoopOnce;
+        riseAction.clampWhenFinished = true;
+        riseAction.timeScale = -1.0;
+        riseAction.time = clipDuration;
+        riseAction.play();
+
+        // Fade Out
+        const fadeAction = this.mixer.clipAction(this.fadeClip, bottle);
+        fadeAction.loop = THREE.LoopOnce;
+        fadeAction.clampWhenFinished = true;
+        fadeAction.timeScale = 1.0 / 0.5; // Fast fade out 
+        fadeAction.play();
     }
 }
