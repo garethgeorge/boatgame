@@ -1,5 +1,5 @@
-import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
-import { Log } from '../obstacles/Log';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { Log } from '../../entities/obstacles/Log';
 
 export class LogSpawner implements Spawnable {
   id = 'log';

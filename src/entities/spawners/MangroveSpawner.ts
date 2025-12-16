@@ -1,5 +1,5 @@
-import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
-import { Mangrove } from '../obstacles/Mangrove';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { Mangrove } from '../../entities/obstacles/Mangrove';
 import { RiverSystem } from '../../world/RiverSystem';
 
 export class MangroveSpawner implements Spawnable {

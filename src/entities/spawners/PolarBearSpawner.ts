@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
-import { PolarBear } from '../obstacles/PolarBear';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { PolarBear } from '../../entities/obstacles/PolarBear';
 import { RiverSystem } from '../../world/RiverSystem';
-import { PlacementHelper } from '../../managers/PlacementHelper';
+import { PlacementHelper } from '../PlacementHelper';
 
 export class PolarBearSpawner implements Spawnable {
     id = 'polarbear';

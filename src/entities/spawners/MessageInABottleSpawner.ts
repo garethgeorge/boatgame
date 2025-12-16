@@ -1,5 +1,5 @@
-import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
-import { MessageInABottle } from '../obstacles/MessageInABottle';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { MessageInABottle } from '../../entities/obstacles/MessageInABottle';
 import { RiverSystem } from '../../world/RiverSystem';
 
 export class MessageInABottleSpawner implements Spawnable {

@@ -1,5 +1,5 @@
-import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
-import { Duckling } from '../obstacles/Duckling';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { Duckling } from '../../entities/obstacles/Duckling';
 
 export class DucklingSpawner implements Spawnable {
     id = 'duckling';

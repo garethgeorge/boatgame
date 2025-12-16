@@ -1,5 +1,5 @@
-import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
-import { TRex } from '../obstacles/TRex';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { TRex } from '../../entities/obstacles/TRex';
 import { RiverSystem } from '../../world/RiverSystem';
 
 export class TRexSpawner implements Spawnable {

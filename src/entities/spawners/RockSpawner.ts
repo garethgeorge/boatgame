@@ -1,5 +1,5 @@
-import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
-import { RiverRock } from '../obstacles/RiverRock';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { RiverRock } from '../../entities/obstacles/RiverRock';
 
 export class RockSpawner implements Spawnable {
   id = 'rock';

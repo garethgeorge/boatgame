@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
-import { Monkey } from '../obstacles/Monkey';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { Monkey } from '../../entities/obstacles/Monkey';
 import { RiverSystem } from '../../world/RiverSystem';
 
 export class MonkeySpawner implements Spawnable {

@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
-import { Moose } from '../obstacles/Moose';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { Moose } from '../../entities/obstacles/Moose';
 import { RiverSystem } from '../../world/RiverSystem';
-import { PlacementHelper } from '../../managers/PlacementHelper';
+import { PlacementHelper } from '../PlacementHelper';
 
 export class MooseSpawner implements Spawnable {
     id = 'moose';

@@ -1,5 +1,5 @@
-import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
-import { Alligator } from '../obstacles/Alligator';
+import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { Alligator } from '../../entities/obstacles/Alligator';
 import { RiverSystem } from '../../world/RiverSystem';
 
 export class AlligatorSpawner implements Spawnable {
