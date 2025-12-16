@@ -13,6 +13,7 @@ import { TreeDecorator } from './decorators/TreeDecorator';
 import { RockDecorator } from './decorators/RockDecorator';
 import { CactusDecorator } from './decorators/CactusDecorator';
 import { CycadDecorator } from './decorators/CycadDecorator';
+import { TreeFernDecorator } from './decorators/TreeFernDecorator';
 
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
@@ -42,6 +43,7 @@ export class TerrainManager {
     this.decorators.push(new RockDecorator());
     this.decorators.push(new CactusDecorator());
     this.decorators.push(new CycadDecorator());
+    this.decorators.push(new TreeFernDecorator());
   }
 
   public getDecorators(): TerrainDecorator[] {
