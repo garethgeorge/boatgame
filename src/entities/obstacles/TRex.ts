@@ -13,6 +13,7 @@ import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 
 export class TRex extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle {
     private animations: THREE.AnimationClip[] = [];
+    private readonly TARGET_WATER_HEIGHT = -3.0;
 
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
         // Apply model transformations
@@ -94,7 +95,7 @@ export class TRex extends Entity implements AttackAnimalEnteringWater, AttackAni
         if (height !== undefined)
             mesh.position.y = height;
         else
-            mesh.position.y = -2.5;
+            mesh.position.y = this.TARGET_WATER_HEIGHT;
 
         // Set terrain alignment
         if (terrainNormal)
@@ -103,10 +104,9 @@ export class TRex extends Entity implements AttackAnimalEnteringWater, AttackAni
             this.normalVector = new THREE.Vector3(0, 1, 0);
 
         if (onShore) {
-            if (!stayOnShore) {
+            if (!stayOnShore)
                 this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
-                this.playAnimation('standing');
-            }
+            this.playAnimation('standing');
         } else {
             this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
             this.playAnimation('walking');
@@ -155,12 +155,11 @@ export class TRex extends Entity implements AttackAnimalEnteringWater, AttackAni
     }
 
     shouldStartEnteringWater(): boolean {
-        const targetWaterHeight = -1.0;
 
         // Create entering water behavior
         this.behavior = new AttackAnimalEnteringWaterBehavior(
             this,
-            targetWaterHeight,
+            this.TARGET_WATER_HEIGHT,
             this.aggressiveness
         );
 

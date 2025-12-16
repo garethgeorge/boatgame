@@ -18,11 +18,11 @@ import { AlligatorSpawner } from './spawners/AlligatorSpawner';
 import { HippoSpawner } from './spawners/HippoSpawner';
 import { MessageInABottleSpawner } from './spawners/MessageInABottleSpawner';
 import { PenguinKayakSpawner } from './spawners/PenguinKayakSpawner';
-import { PolarBearShoreSpawner } from './spawners/PolarBearShoreSpawner';
-import { BrownBearShoreSpawner } from './spawners/BrownBearShoreSpawner';
+import { PolarBearSpawner } from './spawners/PolarBearSpawner';
+import { BrownBearSpawner } from './spawners/BrownBearSpawner';
 import { MangroveSpawner } from './spawners/MangroveSpawner';
-import { MonkeyShoreSpawner } from './spawners/MonkeyShoreSpawner';
-import { MooseShoreSpawner } from './spawners/MooseShoreSpawner';
+import { MonkeySpawner } from './spawners/MonkeySpawner';
+import { MooseSpawner } from './spawners/MooseSpawner';
 import { DucklingSpawner } from './spawners/DucklingSpawner';
 import { TRexSpawner } from './spawners/TRexSpawner';
 
@@ -48,11 +48,11 @@ export class ObstacleManager {
     this.register(new HippoSpawner());
     this.register(new MessageInABottleSpawner());
     this.register(new PenguinKayakSpawner());
-    this.register(new PolarBearShoreSpawner());
-    this.register(new BrownBearShoreSpawner());
+    this.register(new PolarBearSpawner());
+    this.register(new BrownBearSpawner());
     this.register(new MangroveSpawner());
-    this.register(new MonkeyShoreSpawner());
-    this.register(new MooseShoreSpawner());
+    this.register(new MonkeySpawner());
+    this.register(new MooseSpawner());
     this.register(new DucklingSpawner());
     this.register(new TRexSpawner());
   }

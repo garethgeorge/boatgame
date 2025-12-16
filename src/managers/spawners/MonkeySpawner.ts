@@ -1,21 +1,19 @@
 import * as THREE from 'three';
 import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
-import { PolarBear } from '../../entities/obstacles/PolarBear';
+import { Monkey } from '../../entities/obstacles/Monkey';
 import { RiverSystem } from '../../world/RiverSystem';
-import { PlacementHelper } from '../PlacementHelper';
 
-export class PolarBearShoreSpawner implements Spawnable {
-    id = 'polarbear';
+export class MonkeySpawner implements Spawnable {
+    id = 'monkeyshore';
 
     getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-        // Only spawn in ice biome
-        if (biomeType !== 'ice') return 0;
+        // Only spawn in desert biome
+        if (biomeType !== 'desert') return 0;
 
-        // Roughly 0.1 bears per 15m chunk
-        const density = 0.1 / 15;
-        const count = chunkLength * density;
+        const probability = 0.1 / chunkLength; // roughly same as alligator
 
-        return Math.floor(count + Math.random());
+        return Math.random() * probability * chunkLength; // wait, AlligatorSpawner had `Math.random() * probability` which is tiny if probability is small. 
+        // Let's re-read AlligatorShoreSpawner carefully.
     }
 
     async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
@@ -26,20 +24,21 @@ export class PolarBearShoreSpawner implements Spawnable {
                 context.zStart,
                 context.zEnd,
                 riverSystem,
-                2.5,
-                3.0
+                2.0, // smaller clearance for monkey
+                2.0
             );
 
             if (placement) {
-                // Create the polar bear entity with terrain-based positioning
-                const entity = new PolarBear(
+                // Create the monkey entity with terrain-based positioning
+                // Pass onShore=true to enable ONSHORE state
+                const entity = new Monkey(
                     placement.worldX,
                     placement.worldZ,
                     context.physicsEngine,
                     placement.rotation,
                     placement.height,
                     placement.normal,
-                    true, // onShore
+                    true,  // onShore = true
                     Math.random() > 0.5 // 50% chance to stay on shore
                 );
 

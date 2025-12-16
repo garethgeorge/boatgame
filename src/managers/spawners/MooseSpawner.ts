@@ -4,7 +4,7 @@ import { Moose } from '../../entities/obstacles/Moose';
 import { RiverSystem } from '../../world/RiverSystem';
 import { PlacementHelper } from '../PlacementHelper';
 
-export class MooseShoreSpawner implements Spawnable {
+export class MooseSpawner implements Spawnable {
     id = 'moose';
 
     getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {

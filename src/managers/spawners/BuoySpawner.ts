@@ -9,7 +9,7 @@ export class BuoySpawner implements Spawnable {
 
   getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
     // No buoys in ice
-    if (biomeType === 'ice') return 0;
+    if (biomeType === 'ice' || biomeType === 'jurassic') return 0;
 
     // Start at 500m
     const dist = Math.abs(context.zStart);
