@@ -18,17 +18,31 @@ export class BiomeManager {
   private readonly COLOR_JURASSIC = { r: 0x2E / 255, g: 0x4B / 255, b: 0x2E / 255 }; // Prehistoric Green
 
   constructor() {
-    // Create array of randomly assigned biomes
     this.biomeArray = [];
     const biomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic'];
-    const randomBiome = Math.floor(Math.random() * biomeTypes.length);
-    this.biomeArray.push(biomeTypes[randomBiome]);
+
     while (this.biomeArray.length < this.BIOME_ARRAY_SIZE) {
-      const previousBiome = this.biomeArray[this.biomeArray.length - 1];
-      const randomBiome = Math.floor(Math.random() * biomeTypes.length);
-      if (biomeTypes[randomBiome] != previousBiome) {
-        this.biomeArray.push(biomeTypes[randomBiome]);
+      // Create a shuffled list of biome types
+      const shuffled = [...biomeTypes];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
+
+      // Ensure the first biome in the list is not the same as the last one currently in the array
+      if (this.biomeArray.length > 0) {
+        const lastBiome = this.biomeArray[this.biomeArray.length - 1];
+        if (shuffled[0] === lastBiome) {
+          // Swap the first element with the last element of the shuffled array
+          // Since all elements in biomeTypes are unique, the last element is guaranteed to be different
+          const temp = shuffled[0];
+          shuffled[0] = shuffled[shuffled.length - 1];
+          shuffled[shuffled.length - 1] = temp;
+        }
+      }
+
+      // Append the list to the array
+      this.biomeArray.push(...shuffled);
     }
   }
 
