@@ -59,13 +59,16 @@ export class CycadFactory implements DecorationFactory {
 
         // Fronds
         // Cycads have a rosette of pinnate leaves (fronds)
-        const frondCount = 8 + Math.floor(Math.random() * 6);
+        const frondCount = 10 + Math.floor(Math.random() * 6);
 
         for (let i = 0; i < frondCount; i++) {
             // We'll mimic a frond shape using a flattened scale on a cylinder/cone
             // Cyclinder is created at origin and with center along y axis
             // Top radius will be the width at the tip, bottom is the width at the frond start
             const frondGeo = new THREE.CylinderGeometry(0.01, 0.2, crownRadius, 4);
+            // Translate geometry so the base is at the origin (0,0,0)
+            frondGeo.translate(0, crownRadius / 2, 0);
+
             const frond = new THREE.Mesh(frondGeo, CycadFactory.frondMaterial);
 
             // Flatten to resemble a leaf blade 
