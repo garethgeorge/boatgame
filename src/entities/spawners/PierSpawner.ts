@@ -1,6 +1,6 @@
 import * as planck from 'planck';
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
-import { Pier } from '../../entities/obstacles/Pier';
+import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
+import { Pier } from '../obstacles/Pier';
 import { RiverSystem } from '../../world/RiverSystem';
 
 export class PierSpawner implements Spawnable {

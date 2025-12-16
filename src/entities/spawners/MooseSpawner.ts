@@ -1,19 +1,22 @@
 import * as THREE from 'three';
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
-import { Monkey } from '../../entities/obstacles/Monkey';
+import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
+import { Moose } from '../obstacles/Moose';
 import { RiverSystem } from '../../world/RiverSystem';
+import { PlacementHelper } from '../../managers/PlacementHelper';
 
-export class MonkeySpawner implements Spawnable {
-    id = 'monkeyshore';
+export class MooseSpawner implements Spawnable {
+    id = 'moose';
 
     getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-        // Only spawn in desert biome
-        if (biomeType !== 'desert') return 0;
+        // Only spawn in forest biome
+        // We will spawn Moose alongside Brown Bears in the forest
+        if (biomeType !== 'forest') return 0;
 
-        const probability = 0.1 / chunkLength; // roughly same as alligator
+        // Same density as brown bears: Roughly 0.1 per 15m chunk
+        const density = 0.1 / 15;
+        const count = chunkLength * density;
 
-        return Math.random() * probability * chunkLength; // wait, AlligatorSpawner had `Math.random() * probability` which is tiny if probability is small. 
-        // Let's re-read AlligatorShoreSpawner carefully.
+        return Math.floor(count + Math.random());
     }
 
     async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
@@ -24,22 +27,22 @@ export class MonkeySpawner implements Spawnable {
                 context.zStart,
                 context.zEnd,
                 riverSystem,
-                2.0, // smaller clearance for monkey
-                2.0
+                3.0,
+                7.0
             );
 
             if (placement) {
-                // Create the monkey entity with terrain-based positioning
-                // Pass onShore=true to enable ONSHORE state
-                const entity = new Monkey(
+                // Create the moose entity with terrain-based positioning
+                const entity = new Moose(
                     placement.worldX,
                     placement.worldZ,
                     context.physicsEngine,
                     placement.rotation,
                     placement.height,
                     placement.normal,
-                    true,  // onShore = true
-                    Math.random() > 0.5 // 50% chance to stay on shore
+                    true, // onShore
+                    false
+                    //Math.random() > 0.5 // 50% chance to stay on shore
                 );
 
                 context.entityManager.add(entity, context.chunkIndex);

@@ -1,13 +1,15 @@
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
-import { Duckling } from '../../entities/obstacles/Duckling';
+import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
+import { PenguinKayak } from '../obstacles/PenguinKayak';
 
-export class DucklingSpawner implements Spawnable {
-    id = 'duckling';
+export class PenguinKayakSpawner implements Spawnable {
+    id = 'penguinKayak';
 
     getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-        // Only in Forest biome
-        if (biomeType !== 'forest') return 0;
+        // Only in Ice biome
+        if (biomeType !== 'ice') return 0;
 
+        // Iceberg is 0.02 per meter.
+        // PenguinKayak should be 1/2 of that -> 0.01 per meter.
         const baseDensity = 0.01;
         const count = chunkLength * baseDensity;
 
@@ -25,7 +27,7 @@ export class DucklingSpawner implements Spawnable {
 
             if (pos) {
                 const angle = Math.random() * Math.PI * 2;
-                const entity = new Duckling(pos.x, pos.z, context.physicsEngine, angle);
+                const entity = new PenguinKayak(pos.x, pos.z, context.physicsEngine, angle);
                 context.entityManager.add(entity, context.chunkIndex);
             }
         }

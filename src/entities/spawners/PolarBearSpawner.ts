@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
-import { BrownBear } from '../../entities/obstacles/BrownBear';
+import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
+import { PolarBear } from '../obstacles/PolarBear';
 import { RiverSystem } from '../../world/RiverSystem';
-import { PlacementHelper } from '../PlacementHelper';
+import { PlacementHelper } from '../../managers/PlacementHelper';
 
-export class BrownBearSpawner implements Spawnable {
-    id = 'brownbear';
+export class PolarBearSpawner implements Spawnable {
+    id = 'polarbear';
 
     getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-        // Only spawn in forest biome
-        if (biomeType !== 'forest') return 0;
+        // Only spawn in ice biome
+        if (biomeType !== 'ice') return 0;
 
         // Roughly 0.1 bears per 15m chunk
         const density = 0.1 / 15;
@@ -31,8 +31,8 @@ export class BrownBearSpawner implements Spawnable {
             );
 
             if (placement) {
-                // Create the brown bear entity with terrain-based positioning
-                const entity = new BrownBear(
+                // Create the polar bear entity with terrain-based positioning
+                const entity = new PolarBear(
                     placement.worldX,
                     placement.worldZ,
                     context.physicsEngine,

@@ -9,22 +9,22 @@ import { Spawnable, SpawnContext } from './Spawnable';
 import { PlacementHelper } from './PlacementHelper';
 
 // Spawners
-import { LogSpawner } from './spawners/LogSpawner';
-import { RockSpawner } from './spawners/RockSpawner';
-import { IcebergSpawner } from './spawners/IcebergSpawner';
-import { PierSpawner } from './spawners/PierSpawner';
-import { BuoySpawner } from './spawners/BuoySpawner';
-import { AlligatorSpawner } from './spawners/AlligatorSpawner';
-import { HippoSpawner } from './spawners/HippoSpawner';
-import { MessageInABottleSpawner } from './spawners/MessageInABottleSpawner';
-import { PenguinKayakSpawner } from './spawners/PenguinKayakSpawner';
-import { PolarBearSpawner } from './spawners/PolarBearSpawner';
-import { BrownBearSpawner } from './spawners/BrownBearSpawner';
-import { MangroveSpawner } from './spawners/MangroveSpawner';
-import { MonkeySpawner } from './spawners/MonkeySpawner';
-import { MooseSpawner } from './spawners/MooseSpawner';
-import { DucklingSpawner } from './spawners/DucklingSpawner';
-import { TRexSpawner } from './spawners/TRexSpawner';
+import { LogSpawner } from '../entities/spawners/LogSpawner';
+import { RockSpawner } from '../entities/spawners/RockSpawner';
+import { IcebergSpawner } from '../entities/spawners/IcebergSpawner';
+import { PierSpawner } from '../entities/spawners/PierSpawner';
+import { BuoySpawner } from '../entities/spawners/BuoySpawner';
+import { AlligatorSpawner } from '../entities/spawners/AlligatorSpawner';
+import { HippoSpawner } from '../entities/spawners/HippoSpawner';
+import { MessageInABottleSpawner } from '../entities/spawners/MessageInABottleSpawner';
+import { PenguinKayakSpawner } from '../entities/spawners/PenguinKayakSpawner';
+import { PolarBearSpawner } from '../entities/spawners/PolarBearSpawner';
+import { BrownBearSpawner } from '../entities/spawners/BrownBearSpawner';
+import { MangroveSpawner } from '../entities/spawners/MangroveSpawner';
+import { MonkeySpawner } from '../entities/spawners/MonkeySpawner';
+import { MooseSpawner } from '../entities/spawners/MooseSpawner';
+import { DucklingSpawner } from '../entities/spawners/DucklingSpawner';
+import { TRexSpawner } from '../entities/spawners/TRexSpawner';
 
 export class ObstacleManager {
   private riverSystem: RiverSystem;

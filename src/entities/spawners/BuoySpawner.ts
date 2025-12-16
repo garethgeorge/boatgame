@@ -1,6 +1,6 @@
 import * as planck from 'planck';
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
-import { Buoy } from '../../entities/obstacles/Buoy';
+import { Spawnable, SpawnContext, BiomeType } from '../../managers/Spawnable';
+import { Buoy } from '../obstacles/Buoy';
 import { Entity } from '../../core/Entity';
 import { RiverSystem } from '../../world/RiverSystem';
 
