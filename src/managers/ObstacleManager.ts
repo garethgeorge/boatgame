@@ -18,7 +18,6 @@ import { AlligatorSpawner } from './spawners/AlligatorSpawner';
 import { HippoSpawner } from './spawners/HippoSpawner';
 import { MessageInABottleSpawner } from './spawners/MessageInABottleSpawner';
 import { PenguinKayakSpawner } from './spawners/PenguinKayakSpawner';
-import { AlligatorShoreSpawner } from './spawners/AlligatorShoreSpawner';
 import { PolarBearShoreSpawner } from './spawners/PolarBearShoreSpawner';
 import { BrownBearShoreSpawner } from './spawners/BrownBearShoreSpawner';
 import { MangroveSpawner } from './spawners/MangroveSpawner';
@@ -50,7 +49,6 @@ export class ObstacleManager {
     this.register(new MessageInABottleSpawner());
     this.register(new PenguinKayakSpawner());
     this.register(new PolarBearShoreSpawner());
-    this.register(new AlligatorShoreSpawner());
     this.register(new BrownBearShoreSpawner());
     this.register(new MangroveSpawner());
     this.register(new MonkeyShoreSpawner());

@@ -1,5 +1,6 @@
 import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
 import { Alligator } from '../../entities/obstacles/Alligator';
+import { RiverSystem } from '../../world/RiverSystem';
 
 export class AlligatorSpawner implements Spawnable {
     id = 'croc';
@@ -25,26 +26,56 @@ export class AlligatorSpawner implements Spawnable {
     }
 
     async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
+        const riverSystem = RiverSystem.getInstance();
+
         for (let i = 0; i < count; i++) {
-            // Cluster logic: 1 or 2
-            const clusterSize = Math.random() > 0.5 ? 2 : 1;
+            // 30% chance to spawn on shore
+            const isShore = Math.random() < 0.3;
 
-            // Find a center for the cluster
-            const centerPos = context.placementHelper.tryPlace(context.zStart, context.zEnd, 5.0, {
-                minDistFromBank: 3.0
-            });
+            if (isShore) {
+                // Shore Spawning Logic
+                const placement = context.placementHelper.findShorePlacement(
+                    context.zStart,
+                    context.zEnd,
+                    riverSystem,
+                    3.0,
+                    3.0
+                );
 
-            if (centerPos) {
-                for (let j = 0; j < clusterSize; j++) {
-                    const offsetX = (Math.random() - 0.5) * 5;
-                    const offsetZ = (Math.random() - 0.5) * 5;
-
-                    const x = centerPos.x + offsetX;
-                    const z = centerPos.z + offsetZ;
-
-                    const angle = Math.random() * Math.PI * 2;
-                    const entity = new Alligator(x, z, context.physicsEngine, angle);
+                if (placement) {
+                    const entity = new Alligator(
+                        placement.worldX,
+                        placement.worldZ,
+                        context.physicsEngine,
+                        placement.rotation,
+                        placement.height,
+                        placement.normal,
+                        true,  // onShore = true
+                        Math.random() > 0.5 // 50% chance to stay on shore
+                    );
                     context.entityManager.add(entity, context.chunkIndex);
+                }
+            } else {
+                // Water Spawning Logic (Cluster)
+                const clusterSize = Math.random() > 0.5 ? 2 : 1;
+
+                // Find a center for the cluster
+                const centerPos = context.placementHelper.tryPlace(context.zStart, context.zEnd, 5.0, {
+                    minDistFromBank: 3.0
+                });
+
+                if (centerPos) {
+                    for (let j = 0; j < clusterSize; j++) {
+                        const offsetX = (Math.random() - 0.5) * 5;
+                        const offsetZ = (Math.random() - 0.5) * 5;
+
+                        const x = centerPos.x + offsetX;
+                        const z = centerPos.z + offsetZ;
+
+                        const angle = Math.random() * Math.PI * 2;
+                        const entity = new Alligator(x, z, context.physicsEngine, angle);
+                        context.entityManager.add(entity, context.chunkIndex);
+                    }
                 }
             }
         }
