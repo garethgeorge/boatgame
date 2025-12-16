@@ -23,6 +23,11 @@ export class TreeDecorator extends BaseDecorator {
                     const tree = Decorations.getTree(Math.random(), !isLeafless, isLeafless);
                     this.positionAndCollectGeometry(tree, position, context);
                 }
+            } else if (biomeType === 'jurassic') {
+                if (Math.random() > 0.8) {
+                    const tree = Decorations.getTree(Math.random(), false, false);
+                    this.positionAndCollectGeometry(tree, position, context);
+                }
             }
         }
     }

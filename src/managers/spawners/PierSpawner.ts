@@ -8,7 +8,7 @@ export class PierSpawner implements Spawnable {
 
   getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
     // No piers in ice
-    if (biomeType === 'ice') return 0;
+    if (biomeType === 'ice' || biomeType === 'jurassic') return 0;
 
     // Start after 200m
     const dist = Math.abs(context.zStart);

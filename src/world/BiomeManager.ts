@@ -1,7 +1,7 @@
 import { smoothstep } from 'three/src/math/MathUtils';
 import * as THREE from 'three';
 
-export type BiomeType = 'desert' | 'forest' | 'ice' | 'swamp';
+export type BiomeType = 'desert' | 'forest' | 'ice' | 'swamp' | 'jurassic';
 
 export class BiomeManager {
   private biomeArray: Array<BiomeType>;
@@ -15,11 +15,12 @@ export class BiomeManager {
   private readonly COLOR_ICE = { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 }; // White/Blue
   private readonly COLOR_SWAMP = { r: 0x4d / 255, g: 0x3e / 255, b: 0x30 / 255 }; // Muddy Brown
   private readonly COLOR_SWAMP_TINT = { r: 0xB0 / 255, g: 0xA0 / 255, b: 0xD0 / 255 }; // Lavender Tint
+  private readonly COLOR_JURASSIC = { r: 0x2E / 255, g: 0x4B / 255, b: 0x2E / 255 }; // Prehistoric Green
 
   constructor() {
     // Create array of randomly assigned biomes
     this.biomeArray = [];
-    const biomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp'];
+    const biomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic'];
     const randomBiome = Math.floor(Math.random() * biomeTypes.length);
     this.biomeArray.push(biomeTypes[randomBiome]);
     while (this.biomeArray.length < this.BIOME_ARRAY_SIZE) {
@@ -95,6 +96,7 @@ export class BiomeManager {
     const getDensity = (biome: BiomeType) => {
       if (biome === 'ice') return 0.9;
       if (biome === 'swamp') return 0.8; // High density for swamp
+      if (biome === 'jurassic') return 0.3; // Slight humidity
       return 0.0;
     };
 
@@ -107,6 +109,7 @@ export class BiomeManager {
     const getRange = (biome: BiomeType) => {
       if (biome === 'ice') return { near: 0, far: 400 }; // Increased from 200
       if (biome === 'swamp') return { near: 0, far: 90 }; // Increased by 50% (was 60)
+      if (biome === 'jurassic') return { near: 50, far: 600 }; // Humid atmosphere
       return { near: 100, far: 800 }; // Default (Desert/Forest)
     };
 
@@ -158,6 +161,7 @@ export class BiomeManager {
       case 'forest': return this.COLOR_FOREST;
       case 'ice': return this.COLOR_ICE;
       case 'swamp': return this.COLOR_SWAMP;
+      case 'jurassic': return this.COLOR_JURASSIC;
     }
   }
 
@@ -240,6 +244,11 @@ export class BiomeManager {
         const swampBotMod = new THREE.Color(0x5D5346); // Earthen Tone (Matches Banks)
         currentTop.lerp(swampTopMod, 0.8);
         currentBot.lerp(swampBotMod, 0.9); // Strong influence for fog color
+      } else if (biome === 'jurassic') {
+        const jurassicTopMod = new THREE.Color(0xaaffaa); // Very Green
+        const jurassicBotMod = new THREE.Color(0xccffcc); // Pale Green Horizon
+        currentTop.lerp(jurassicTopMod, 0.4);
+        currentBot.lerp(jurassicBotMod, 0.4);
       }
       // Desert uses default colors (no modification)
     }
@@ -251,3 +260,4 @@ export class BiomeManager {
     return start * (1 - t) + end * t;
   }
 }
+

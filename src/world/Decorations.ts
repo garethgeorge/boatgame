@@ -23,6 +23,7 @@ DecorationRegistry.register('monkey', new GLTFModelFactory('assets/monkey-model-
 DecorationRegistry.register('moose', new GLTFModelFactory('assets/moose-model-1.glb'));
 DecorationRegistry.register('duckling', new GLTFModelFactory('assets/duckling-model-1.glb'));
 DecorationRegistry.register('depot', new GLTFModelFactory('assets/depot-model-1.glb'));
+DecorationRegistry.register('trex', new GLTFModelFactory('assets/t-rex-model-1.glb'));
 
 
 export class Decorations {
@@ -96,4 +97,5 @@ export class Decorations {
   static getMoose() { return this.getModelAndAnimations('moose'); }
   static getMonkey() { return this.getModelAndAnimations('monkey'); }
   static getDuckling() { return this.getModelAndAnimations('duckling'); }
+  static getTRex() { return this.getModelAndAnimations('trex'); }
 }

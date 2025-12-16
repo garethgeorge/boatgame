@@ -25,6 +25,7 @@ import { MangroveSpawner } from './spawners/MangroveSpawner';
 import { MonkeyShoreSpawner } from './spawners/MonkeyShoreSpawner';
 import { MooseShoreSpawner } from './spawners/MooseShoreSpawner';
 import { DucklingSpawner } from './spawners/DucklingSpawner';
+import { TRexSpawner } from './spawners/TRexSpawner';
 
 export class ObstacleManager {
   private riverSystem: RiverSystem;
@@ -55,6 +56,7 @@ export class ObstacleManager {
     this.register(new MonkeyShoreSpawner());
     this.register(new MooseShoreSpawner());
     this.register(new DucklingSpawner());
+    this.register(new TRexSpawner());
   }
 
   private register(spawner: Spawnable) {
