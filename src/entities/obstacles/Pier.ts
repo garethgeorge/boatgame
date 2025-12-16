@@ -12,6 +12,7 @@ export class Pier extends Entity {
     // Cached materials and geometry
     private static deckMaterial: THREE.MeshToonMaterial | null = null;
     private static pileMesh: THREE.Mesh | null = null;
+    private static signMaterials: THREE.Material[] | null = null;
 
     public collectedBottles: CollectedBottles | null = null;
 
@@ -51,6 +52,48 @@ export class Pier extends Entity {
         Pier.pileMesh = new THREE.Mesh(pileGeometry, pileMaterial);
 
         return Pier.pileMesh;
+    }
+
+    private static getSignMaterials(): THREE.Material[] {
+        if (Pier.signMaterials) return Pier.signMaterials;
+
+        const textureLoader = new THREE.TextureLoader();
+
+        // Load the same image effectively twice (or clone the texture if we successfully waited for load, 
+        // but loading separate instances is safer for async without management)
+        // Actually, cloning the Texture object after load is better, but these are async.
+        // Let's just request it twice, browser cache handles the network part.
+        const signFrontTexture = textureLoader.load('assets/dock-sign.png');
+        const signBackTexture = textureLoader.load('assets/dock-sign.png');
+
+        // Top Half for Front
+        signFrontTexture.repeat.set(1, 0.5);
+        signFrontTexture.offset.set(0, 0.5);
+
+        // Bottom Half for Back
+        signBackTexture.repeat.set(1, 0.5);
+        signBackTexture.offset.set(0, 0);
+
+        const frontMat = new THREE.MeshToonMaterial({
+            map: signFrontTexture,
+            transparent: true,
+        });
+
+        const backMat = new THREE.MeshToonMaterial({
+            map: signBackTexture,
+            transparent: true,
+        });
+
+        const sideMat = new THREE.MeshToonMaterial({
+            transparent: true,
+            opacity: 0
+        });
+
+        // BoxGeometry material index order: x+, x-, y+, y-, z+, z-
+        // We want Front to be z+ (index 4) and Back to be z- (index 5)
+        Pier.signMaterials = [sideMat, sideMat, sideMat, sideMat, frontMat, backMat];
+
+        return Pier.signMaterials;
     }
 
     private static readonly DOCK_LENGTH: number = 4.0;
@@ -161,6 +204,22 @@ export class Pier extends Entity {
             isSensor: true
         });
         sensorFixture.setUserData({ type: 'sensor' });
+
+        // Add Dock Sign
+        const signGeo = new THREE.BoxGeometry(3.0, 3.0, 0.1);
+        this.disposer.add(signGeo);
+        // Cast as any because Three.js types can be picky about material arrays vs single material
+        const signMesh = new THREE.Mesh(signGeo, Pier.getSignMaterials() as any);
+        // Position at center of dock segment (X), on top of deck (Y=1.5), at center of deck solid part (Z)
+        // Adjust Y to be standing on deck. Center of plane is at Y=1.5 relative to position
+        signMesh.position.set(middleCenterX, 1.5 + 1.5, middleCenterY);
+
+        // Rotate to face outward perpendicular to the pier length axis
+        if (dockSide === 'right') {
+            signMesh.rotation.y = Math.PI;
+        }
+
+        mesh.add(signMesh);
 
         // 3. End Cap
         const endLen = tipX - dockEndX;
