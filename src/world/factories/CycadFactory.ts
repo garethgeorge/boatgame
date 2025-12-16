@@ -62,13 +62,6 @@ export class CycadFactory implements DecorationFactory {
         const frondCount = 8 + Math.floor(Math.random() * 6);
 
         for (let i = 0; i < frondCount; i++) {
-            const frondPivot = new THREE.Group();
-            frondPivot.position.set(0, crownY, 0);
-
-            // Distribute evenly around the trunk
-            const angleY = (i / frondCount) * Math.PI * 2 + (Math.random() * 0.1);
-            frondPivot.rotation.y = angleY;
-
             // We'll mimic a frond shape using a flattened scale on a cylinder/cone
             // Cyclinder is created at origin and with center along y axis
             // Top radius will be the width at the tip, bottom is the width at the frond start
@@ -78,10 +71,18 @@ export class CycadFactory implements DecorationFactory {
             // Flatten to resemble a leaf blade 
             frond.scale.set(1.0, 1.0, 0.025);
 
-            // Arching: Rotate X to make it sticking out
+            // Rotate around x to make it stick out
             // Random variation in "perkiness"
             const archAngle = Math.PI / 4 + Math.random() * 0.4;
             frond.rotation.x = archAngle;
+
+            // Pivot group now positions the frond vertically and around y axis
+            const frondPivot = new THREE.Group();
+            frondPivot.position.set(0, crownY, 0);
+
+            // Distribute evenly around the trunk
+            const angleY = (i / frondCount) * Math.PI * 2 + (Math.random() * 0.1);
+            frondPivot.rotation.y = angleY;
 
             frondPivot.add(frond);
             group.add(frondPivot);
