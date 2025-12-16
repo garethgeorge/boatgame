@@ -6,6 +6,7 @@ import { CactusFactory } from './factories/CactusFactory';
 import { RockFactory } from './factories/RockFactory';
 import { BottleFactory } from './factories/BottleFactory';
 import { GLTFModelFactory } from './factories/GLTFModelFactory';
+import { CycadFactory } from './factories/CycadFactory';
 
 // Register factories
 DecorationRegistry.register('tree', new TreeFactory());
@@ -13,6 +14,7 @@ DecorationRegistry.register('bush', new BushFactory());
 DecorationRegistry.register('cactus', new CactusFactory());
 DecorationRegistry.register('rock', new RockFactory());
 DecorationRegistry.register('bottle', new BottleFactory());
+DecorationRegistry.register('cycad', new CycadFactory());
 DecorationRegistry.register('boat', new GLTFModelFactory('assets/boat-model-1.glb'));
 DecorationRegistry.register('polarBear', new GLTFModelFactory('assets/polar-bear-model-1.glb'));
 DecorationRegistry.register('hippo', new GLTFModelFactory('assets/hippo-model-1.glb'));
@@ -46,6 +48,10 @@ export class Decorations {
 
   static getCactus(): THREE.Group {
     return DecorationRegistry.getFactory('cactus').create();
+  }
+
+  static getCycad(): THREE.Group {
+    return DecorationRegistry.getFactory('cycad').create();
   }
 
   static getRock(biome: 'desert' | 'forest' | 'ice' | 'swamp', size: number): THREE.Group {

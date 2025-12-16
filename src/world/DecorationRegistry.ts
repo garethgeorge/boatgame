@@ -1,4 +1,4 @@
-import { DecorationFactory, DecorationResult } from './factories/DecorationFactory';
+import { DecorationFactory } from './factories/DecorationFactory';
 
 export class DecorationRegistry {
     private static factories = new Map<string, DecorationFactory>();
