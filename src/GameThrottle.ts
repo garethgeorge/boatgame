@@ -34,8 +34,7 @@ export class GameThrottle {
         // Throttle 1.0 (Full Forward) -> Top 0%
         // Throttle -1.0 (Full Reverse) -> Top 100%
         const ratio = (1.0 - throttleValue) / 2.0;
-        const topPercent = Math.max(0, Math.min(100, ratio * 100));
-        this.thumb.style.top = `${topPercent}%`;
+        this.thumb.style.top = `calc(20px + (100% - 40px) * ${ratio})`;
     }
 
     private setupControls() {
@@ -143,7 +142,12 @@ export class GameThrottle {
         // Calculate relative Y within the container
         // Top of container is 0, bottom is rect.height
         const relativeY = clientY - rect.top;
-        const ratio = Math.max(0, Math.min(1, relativeY / rect.height));
+
+        // Apply Padding logic (20px)
+        const PADDING = 20;
+        const availableHeight = rect.height - (PADDING * 2);
+        const adjustedY = relativeY - PADDING;
+        const ratio = Math.max(0, Math.min(1, adjustedY / availableHeight));
 
         // Map ratio (0 to 1) to Throttle (1 to -1)
         // 0 -> 1.0
