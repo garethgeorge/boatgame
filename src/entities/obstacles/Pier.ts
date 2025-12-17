@@ -59,12 +59,9 @@ export class Pier extends Entity {
 
         const textureLoader = new THREE.TextureLoader();
 
-        // Load the same image effectively twice (or clone the texture if we successfully waited for load, 
-        // but loading separate instances is safer for async without management)
-        // Actually, cloning the Texture object after load is better, but these are async.
-        // Let's just request it twice, browser cache handles the network part.
+        // Load the texture once and clone it for the back
         const signFrontTexture = textureLoader.load('assets/dock-sign.png');
-        const signBackTexture = textureLoader.load('assets/dock-sign.png');
+        const signBackTexture = signFrontTexture.clone();
 
         // Top Half for Front
         signFrontTexture.repeat.set(1, 0.5);
@@ -206,13 +203,13 @@ export class Pier extends Entity {
         sensorFixture.setUserData({ type: 'sensor' });
 
         // Add Dock Sign
-        const signGeo = new THREE.BoxGeometry(3.0, 3.0, 0.1);
+        const signGeo = new THREE.BoxGeometry(4.0, 4.0, 0.1);
         this.disposer.add(signGeo);
         // Cast as any because Three.js types can be picky about material arrays vs single material
         const signMesh = new THREE.Mesh(signGeo, Pier.getSignMaterials() as any);
         // Position at center of dock segment (X), on top of deck (Y=1.5), at center of deck solid part (Z)
         // Adjust Y to be standing on deck. Center of plane is at Y=1.5 relative to position
-        signMesh.position.set(middleCenterX, 1.5 + 1.5, middleCenterY);
+        signMesh.position.set(middleCenterX, 1.5 + 2.0, middleCenterY);
 
         // Rotate to face outward perpendicular to the pier length axis
         if (dockSide === 'right') {

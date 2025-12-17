@@ -10,7 +10,6 @@ export class PierSpawner implements Spawnable {
     // No piers in ice
     if (biomeType === 'ice' || biomeType === 'jurassic') return 0;
 
-    return 2;
     // Start after 200m
     const dist = Math.abs(context.zStart);
     if (dist < 200) return 0;
@@ -44,7 +43,7 @@ export class PierSpawner implements Spawnable {
       const maxPierLength = width * 0.6;
 
       // Randomly decide if this pier should have a depot
-      const hasDepot = maxPierLength > minDepotPierLength && true;// Math.random() > 0.5;
+      const hasDepot = maxPierLength > minDepotPierLength && Math.random() > 0.5;
       const minPierLength = hasDepot ? minDepotPierLength : 10.0;
       const pierLength = Math.min(minPierLength + Math.random() * 10, maxPierLength);
 
