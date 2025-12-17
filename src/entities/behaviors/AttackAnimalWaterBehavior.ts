@@ -38,24 +38,32 @@ export class AttackAnimalWaterBehavior implements EntityBehavior {
 
         switch (this.state) {
             case 'IDLE':
-                this.updateIdle(dist);
+                this.updateIdle(dt, dist);
                 break;
             case 'TURNING':
-                this.updateTurning(dist, diff, physicsBody, isBehind);
+                this.updateTurning(dt, dist, diff, physicsBody, isBehind);
                 break;
             case 'ATTACKING':
-                this.updateAttacking(dist, diff, physicsBody, isBehind);
+                this.updateAttacking(dt, dist, diff, physicsBody, isBehind);
                 break;
         }
     }
 
-    private updateIdle(dist: number) {
+    private updateIdle(dt: number, dist: number) {
+        if (this.entity.waterAttackUpdateIdle) {
+            this.entity.waterAttackUpdateIdle(dt);
+        }
+
         if (dist < this.startAttackDistance) {
             this.state = 'TURNING';
         }
     }
 
-    private updateTurning(dist: number, diff: planck.Vec2, physicsBody: planck.Body, isBehind: boolean) {
+    private updateTurning(dt: number, dist: number, diff: planck.Vec2, physicsBody: planck.Body, isBehind: boolean) {
+        if (this.entity.waterAttackUpdatePreparing) {
+            this.entity.waterAttackUpdatePreparing(dt);
+        }
+
         if (dist > this.stopAttackDistance) {
             this.state = 'IDLE';
             return;
@@ -77,7 +85,11 @@ export class AttackAnimalWaterBehavior implements EntityBehavior {
         }
     }
 
-    private updateAttacking(dist: number, diff: planck.Vec2, physicsBody: planck.Body, isBehind: boolean) {
+    private updateAttacking(dt: number, dist: number, diff: planck.Vec2, physicsBody: planck.Body, isBehind: boolean) {
+        if (this.entity.waterAttackUpdateAttacking) {
+            this.entity.waterAttackUpdateAttacking(dt);
+        }
+
         if (dist > this.stopAttackDistance) {
             this.state = 'IDLE';
             return;

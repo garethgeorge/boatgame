@@ -36,5 +36,8 @@ export interface AttackAnimalShoreWalk extends AnyAnimal {
 
 // Behavior callbacks for animal in water
 export interface AttackAnimalWater extends AnyAnimal {
+    waterAttackUpdateIdle?(dt: number): void;
+    waterAttackUpdatePreparing?(dt: number): void;
+    waterAttackUpdateAttacking?(dt: number): void;
 }
 
