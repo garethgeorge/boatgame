@@ -95,10 +95,9 @@ export class Pier extends Entity {
 
     private static readonly DOCK_LENGTH: number = 4.0;
     private static readonly DOCK_DEPTH: number = 3.0;
-    private static readonly DOCK_END_CAP_LENGTH: number = 2.0;
-    public static readonly MIN_LENGTH_FOR_DOCK: number = this.DOCK_LENGTH + this.DOCK_END_CAP_LENGTH + 2.0;
+    public static readonly MIN_LENGTH_FOR_DOCK: number = this.DOCK_LENGTH + 2.0;
 
-    constructor(x: number, y: number, length: number, angle: number, physicsEngine: PhysicsEngine, hasDepot: boolean = false, dockSide: 'left' | 'right' | null = null) {
+    constructor(x: number, y: number, length: number, angle: number, physicsEngine: PhysicsEngine, hasDepot: boolean = false) {
         super();
 
         const width = hasDepot ? 6 : 4;
@@ -116,8 +115,8 @@ export class Pier extends Entity {
         this.physicsBodies.push(physicsBody);
         physicsBody.setUserData({ type: 'obstacle', subtype: 'pier', entity: this });
 
-        if (dockSide && length > Pier.MIN_LENGTH_FOR_DOCK) {
-            this.buildDockedPier(length, width, dockSide, physicsBody, mesh);
+        if (hasDepot && length > Pier.MIN_LENGTH_FOR_DOCK) {
+            this.buildDockedPier(length, width, physicsBody, mesh);
         } else {
             this.buildStandardPier(length, width, physicsBody, mesh);
         }
@@ -171,62 +170,85 @@ export class Pier extends Entity {
         }
     }
 
-    private buildDockedPier(length: number, width: number, dockSide: 'left' | 'right', physicsBody: planck.Body, mesh: THREE.Group) {
-        // Construct pier in 3 parts: Base, Middle (dock), End
+    private buildDockedPier(length: number, width: number, physicsBody: planck.Body, mesh: THREE.Group) {
+        // Construct pier in 3 parts: Base, Head Base (Crossbar), and Head Arms (sides of notch)
+        // Pier extends along X axis.
+        // Tip is at +length/2.
+
+        //               +---+----+
+        // +-------------+.  |.   |
+        // |             |.  +----+
+        // |             |.  |SS
+        // |             |.  +----+
+        // +-------------+   |.   |
+        //               +---+----+
+
+        const DOCK_LENGTH = Pier.DOCK_LENGTH; // 4.0
+        const SENSOR_LENGTH = DOCK_LENGTH / 2.0;
+        const HEAD_BACK_THICKNESS = 2.5;
+        const ARM_WIDTH = 1.5;
+        const NOTCH_WIDTH = Math.max(width - ARM_WIDTH, Pier.DOCK_DEPTH);
+        const HEAD_WIDTH = NOTCH_WIDTH + ARM_WIDTH * 2.0;
+
         const tipX = length / 2;
         const startX = -length / 2;
 
-        const dockEndX = tipX - Pier.DOCK_END_CAP_LENGTH;
-        const dockStartX = dockEndX - Pier.DOCK_LENGTH;
+        // Calculate segment boundaries
+        // The Head (Arms + Crossbar) occupies the end of the pier
+        const armsEndX = tipX;
+        const armsStartX = armsEndX - DOCK_LENGTH;
+        const crossbarStartX = armsStartX - HEAD_BACK_THICKNESS;
 
-        // 1. Base Segment
-        const baseLen = dockStartX - startX;
-        const baseCenterX = startX + baseLen / 2;
-        this.addSegment(baseCenterX, baseLen, 0, width, physicsBody, mesh);
+        // 1. Base Segment (from startX to crossbarStartX)
+        const baseLen = crossbarStartX - startX;
+        if (baseLen > 0) {
+            const baseCenterX = startX + baseLen / 2;
+            this.addSegment(baseCenterX, baseLen, 0, width, physicsBody, mesh);
+            this.addPilesForSegment(baseCenterX, baseLen, 0, width, length, mesh);
+        }
 
-        // 2. Middle Segment (With dock)
-        const sideSign = (dockSide === 'left') ? 1 : -1;
-        const middleWidth = Math.max(1.0, width - Pier.DOCK_DEPTH);
-        const middleCenterY = -sideSign * (Pier.DOCK_DEPTH / 2);
-        const middleCenterX = dockStartX + Pier.DOCK_LENGTH / 2;
+        // 2. Head Crossbar (The "bottom" of the U shape)
+        const crossbarCenterX = crossbarStartX + HEAD_BACK_THICKNESS / 2;
+        this.addSegment(crossbarCenterX, HEAD_BACK_THICKNESS, 0, HEAD_WIDTH, physicsBody, mesh);
 
-        this.addSegment(middleCenterX, Pier.DOCK_LENGTH, middleCenterY, middleWidth, physicsBody, mesh);
+        // 3. Head Arms (The sides of the U shape)
+        const armsCenterX = armsStartX + DOCK_LENGTH / 2;
 
-        // Add Sensor for Dock Notch
-        // Positioned opposite to the solid middle segment
-        const sensorCenterY = sideSign * ((width - Pier.DOCK_DEPTH) / 2);
-        const sensorShape = planck.Box(Pier.DOCK_LENGTH / 2, Pier.DOCK_DEPTH / 2, planck.Vec2(middleCenterX, sensorCenterY));
+        // Left Arm (+Z)
+        const leftArmZ = (NOTCH_WIDTH + ARM_WIDTH) / 2;
+        this.addSegment(armsCenterX, DOCK_LENGTH, leftArmZ, ARM_WIDTH, physicsBody, mesh);
+
+        // Right Arm (-Z)
+        const rightArmZ = -(NOTCH_WIDTH + ARM_WIDTH) / 2;
+        this.addSegment(armsCenterX, DOCK_LENGTH, rightArmZ, ARM_WIDTH, physicsBody, mesh);
+
+        // 4. Sensor (In the notch)
+        const sensorCenterX = armsStartX + SENSOR_LENGTH / 2;
+        const sensorShape = planck.Box(SENSOR_LENGTH / 2, NOTCH_WIDTH / 2, planck.Vec2(sensorCenterX, 0));
         const sensorFixture = physicsBody.createFixture({
             shape: sensorShape,
             isSensor: true
         });
         sensorFixture.setUserData({ type: 'sensor' });
 
-        // Add Dock Sign
+        // 5. Dock Sign
         const signGeo = new THREE.BoxGeometry(4.0, 4.0, 0.1);
         this.disposer.add(signGeo);
-        // Cast as any because Three.js types can be picky about material arrays vs single material
         const signMesh = new THREE.Mesh(signGeo, Pier.getSignMaterials() as any);
-        // Position at center of dock segment (X), on top of deck (Y=1.5), at center of deck solid part (Z)
-        // Adjust Y to be standing on deck. Center of plane is at Y=1.5 relative to position
-        signMesh.position.set(middleCenterX, 1.5 + 2.0, middleCenterY);
 
-        // Rotate to face outward perpendicular to the pier length axis
-        if (dockSide === 'right') {
-            signMesh.rotation.y = Math.PI;
-        }
+        // Position on the Crossbar, facing the notch (+X)
+        // Y = 1.5 (deck) + 2.0 (half sign height)
+        signMesh.position.set(crossbarCenterX, 1.5 + 2.0, 0);
+        signMesh.rotation.y = Math.PI / 2;
 
         mesh.add(signMesh);
 
-        // 3. End Cap
-        const endLen = tipX - dockEndX;
-        const endCenterX = dockEndX + endLen / 2;
-        this.addSegment(endCenterX, endLen, 0, width, physicsBody, mesh);
-
-        // Add Piles
-        this.addPilesForSegment(baseCenterX, baseLen, 0, width, length, mesh);
-        this.addPilesForSegment(middleCenterX, Pier.DOCK_LENGTH, middleCenterY, middleWidth, length, mesh);
-        this.addPilesForSegment(endCenterX, endLen, 0, width, length, mesh);
+        // Add Piles for Head
+        // Piles for Crossbar
+        this.addPilesForSegment(crossbarCenterX, HEAD_BACK_THICKNESS, 0, HEAD_WIDTH, length, mesh);
+        // Piles for Arms
+        this.addPilesForSegment(armsCenterX, DOCK_LENGTH, leftArmZ, ARM_WIDTH, length, mesh);
+        this.addPilesForSegment(armsCenterX, DOCK_LENGTH, rightArmZ, ARM_WIDTH, length, mesh);
     }
 
     private addSegment(centerX: number, segmentLength: number, centerY: number, segmentWidth: number, physicsBody: planck.Body, mesh: THREE.Group) {
@@ -252,8 +274,6 @@ export class Pier extends Entity {
             // Local x within segment
             const xRel = -len / 2 + (len / numPiles) * i;
             const pileX = centerX + xRel;
-
-            if (Math.abs(pileX) > totalLength / 2 - 0.2) continue; // Skip if too close to very edge
 
             // Add two piles at +/- width/2 relative to the segments centerY
             const y1 = centerY - width / 2 + 0.2; // Indent slightly

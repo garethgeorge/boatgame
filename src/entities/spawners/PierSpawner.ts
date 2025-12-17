@@ -47,13 +47,6 @@ export class PierSpawner implements Spawnable {
       const minPierLength = hasDepot ? minDepotPierLength : 10.0;
       const pierLength = Math.min(minPierLength + Math.random() * 10, maxPierLength);
 
-      // Depots have a dock
-      let dockSide: 'left' | 'right' | null = null;
-      if (hasDepot) {
-        dockSide = Math.random() > 0.5 ? 'left' : 'right';
-      }
-
-
       // Calculate Angle
       let N = planck.Vec2(1.0, -slope);
       N.normalize();
@@ -71,7 +64,7 @@ export class PierSpawner implements Spawnable {
       // Let's register the tip area so boats don't spawn right on it.
       context.placementHelper.registerPlacement(centerPos.x, centerPos.y, pierLength / 2);
 
-      const pier = new Pier(centerPos.x, centerPos.y, pierLength, angle, context.physicsEngine, hasDepot, dockSide);
+      const pier = new Pier(centerPos.x, centerPos.y, pierLength, angle, context.physicsEngine, hasDepot);
       context.entityManager.add(pier, context.chunkIndex);
     }
   }

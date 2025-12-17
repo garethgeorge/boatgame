@@ -351,7 +351,7 @@ export class Boat extends Entity {
                 const timeSinceLastTransfer = now - this.lastTransferTime;
                 if (timeSinceLastTransfer > 10 * this.TRANSFER_INTERVAL) {
                     // Must have just arrived. Wait for first transfer.
-                    this.lastTransferTime = now;
+                    this.lastTransferTime = now + 1.0;
                 } else if (timeSinceLastTransfer > this.TRANSFER_INTERVAL) {
                     // Transfer from Boat to Pier
                     this.collectedBottles.transfer(pier.collectedBottles, true);
