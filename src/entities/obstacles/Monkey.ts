@@ -171,7 +171,7 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
         this.normalVector.set(0, 1, 0);
     }
 
-    shouldStartEnteringWater(): void {
+    shouldStartEnteringWater(): boolean {
         const targetWaterHeight = -1.7;
 
         // Create entering water behavior
@@ -184,9 +184,11 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
 
         // Use duration from behavior for animation callbacks
         this.didStartEnteringWater(behavior.duration);
+
+        return true;
     }
 
-    shouldSwitchIdleBehavior(): void {
+    perhapsSwitchIdleBehavior(): void {
         // random choice between shore walk and dance/dont
 
         const rand = Math.random();

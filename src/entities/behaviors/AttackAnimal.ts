@@ -13,11 +13,11 @@ export interface AnyAnimal {
 export interface AttackAnimalShoreIdle extends AnyAnimal {
     // Called at random to give the animal a chance to switch to another
     //  behavior e.g. from standing still to walking away or dancing
-    shouldSwitchIdleBehavior?(): void;
+    perhapsSwitchIdleBehavior?(): void;
 
     // Called when the idle behavior determines it's time to enter water
     // Returns true if the animal started entering water, false otherwise
-    shouldStartEnteringWater?(): void;
+    shouldStartEnteringWater?(): boolean;
 }
 
 // Behavior callbacks for animal entering water
