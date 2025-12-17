@@ -126,7 +126,7 @@ export class AttackAnimalEnteringWaterBehavior implements EntityBehavior {
             this.setCollisionMask(physicsBody, 0xFFFF);
 
             // Trigger completion callback
-            this.entity.didCompleteEnteringWater?.(this.speed);
+            this.entity.enteringWaterDidComplete?.(this.speed);
         }
     }
 

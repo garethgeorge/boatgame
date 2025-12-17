@@ -165,7 +165,7 @@ export class AnimalShoreWalkBehavior implements EntityBehavior {
             // All done - restore to initial state
             this.state = 'finished';
             physicsBody.setType(planck.Body.DYNAMIC);
-            this.entity.didCompleteShoreWalk?.();
+            this.entity.shoreWalkDidComplete?.();
         }
     }
 

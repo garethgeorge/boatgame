@@ -148,13 +148,13 @@ export class TRex extends Entity implements AttackAnimalEnteringWater, AttackAni
         this.normalVector.copy(normal);
     }
 
-    didCompleteEnteringWater(speed: number) {
+    enteringWaterDidComplete(speed: number) {
         this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
         this.normalVector.set(0, 1, 0);
         // Animation should stay walking
     }
 
-    shouldStartEnteringWater(): boolean {
+    shoreIdleMaybeStartEnteringWater(): boolean {
 
         // Create entering water behavior
         this.behavior = new AttackAnimalEnteringWaterBehavior(

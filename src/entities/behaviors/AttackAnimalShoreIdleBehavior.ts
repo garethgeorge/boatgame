@@ -42,7 +42,7 @@ export class AttackAnimalShoreIdleBehavior implements EntityBehavior {
         // Activate when boat is within distance
         if (dist < this.enterWaterDistance) {
             // Let the entity decide what to do (e.g., create entering water behavior)
-            return this.entity.shouldStartEnteringWater?.();
+            return this.entity.shoreIdleMaybeStartEnteringWater?.();
         }
 
         return false;
@@ -52,7 +52,7 @@ export class AttackAnimalShoreIdleBehavior implements EntityBehavior {
         // Probability such that average time is 5 seconds
         const probability = dt / 5.0;
         if (Math.random() < probability) {
-            this.entity.perhapsSwitchIdleBehavior?.();
+            this.entity.shoreIdleMaybeSwitchBehavior?.();
         }
     }
 }

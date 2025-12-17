@@ -166,12 +166,12 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
         this.crossFadeToAnimation(this.swimAction, 2.5);
     }
 
-    didCompleteEnteringWater(speed: number): void {
+    enteringWaterDidComplete(speed: number): void {
         this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
         this.normalVector.set(0, 1, 0);
     }
 
-    shouldStartEnteringWater(): boolean {
+    shoreIdleMaybeStartEnteringWater(): boolean {
         const targetWaterHeight = -1.7;
 
         // Create entering water behavior
@@ -188,7 +188,7 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
         return true;
     }
 
-    perhapsSwitchIdleBehavior(): void {
+    shoreIdleMaybeSwitchBehavior(): void {
         // random choice between shore walk and dance/dont
 
         const rand = Math.random();
@@ -217,7 +217,7 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
         this.crossFadeToAnimation(this.walkAction, 1.0);
     }
 
-    didCompleteShoreWalk(): void {
+    shoreWalkDidComplete(): void {
         // Return to idle behavior after completing shore walk
         this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
         this.crossFadeToAnimation(this.idleAction, 1.0);

@@ -233,7 +233,7 @@ export class Moose extends Entity implements AttackAnimalEnteringWater, AttackAn
         }
     }
 
-    didCompleteEnteringWater(speed: number) {
+    enteringWaterDidComplete(speed: number) {
         this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
 
         if (this.meshes.length > 0) {
@@ -261,7 +261,7 @@ export class Moose extends Entity implements AttackAnimalEnteringWater, AttackAn
         }
     }
 
-    shouldStartEnteringWater(): boolean {
+    shoreIdleMaybeStartEnteringWater(): boolean {
 
         // Create entering water behavior
         const behavior = new AttackAnimalEnteringWaterBehavior(

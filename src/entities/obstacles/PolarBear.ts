@@ -156,12 +156,12 @@ export class PolarBear extends Entity implements AttackAnimalEnteringWater, Atta
         }
     }
 
-    didCompleteEnteringWater(speed: number) {
+    enteringWaterDidComplete(speed: number) {
         this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
         this.normalVector.set(0, 1, 0);
     }
 
-    shouldStartEnteringWater(): boolean {
+    shoreIdleMaybeStartEnteringWater(): boolean {
         const targetWaterHeight = -2.0;
 
         // Create entering water behavior
