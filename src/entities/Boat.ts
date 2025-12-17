@@ -147,8 +147,6 @@ export class Boat extends Entity {
             this.currentThrottle = 0;
             physicsBody.setLinearVelocity(planck.Vec2(0, 0));
             physicsBody.setAngularVelocity(0);
-        } else if (Math.abs(input.touchThrottle) > 0.05) {
-            this.currentThrottle = input.touchThrottle;
         } else {
             // Keyboard Control (Sticky)
             if (input.isDown('forward')) {
@@ -229,6 +227,10 @@ export class Boat extends Entity {
 
     public getThrottle(): number {
         return this.currentThrottle;
+    }
+
+    public setThrottle(value: number) {
+        this.currentThrottle = Math.max(-1.0, Math.min(1.0, value));
     }
 
     public teleport(x: number, z: number) {

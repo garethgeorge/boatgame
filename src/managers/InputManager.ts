@@ -13,7 +13,7 @@ export class InputManager {
 
     // Analog inputs (not boolean)
     public tilt: number = 0; // -1.0 to 1.0
-    public touchThrottle: number = 0; // -1.0 to 1.0
+
 
     constructor() {
         this.init();
@@ -27,7 +27,7 @@ export class InputManager {
                 this.liveActions.clear();
                 this.currentActions.clear();
                 this.previousActions.clear();
-                this.touchThrottle = 0;
+                this.previousActions.clear();
                 this.tilt = 0;
             }
         }
@@ -39,11 +39,6 @@ export class InputManager {
 
         // Accelerometer support
         window.addEventListener('deviceorientation', (e) => this.onDeviceOrientation(e));
-
-        // Touch support for throttle
-        window.addEventListener('touchstart', (e) => this.onTouchStart(e), { passive: false });
-        window.addEventListener('touchmove', (e) => this.onTouchMove(e), { passive: false });
-        window.addEventListener('touchend', (e) => this.onTouchEnd(e));
     }
 
     public update() {
@@ -64,48 +59,6 @@ export class InputManager {
 
     public wasReleased(action: InputAction): boolean {
         return !this.currentActions.has(action) && this.previousActions.has(action);
-    }
-
-    // --- Event Handlers ---
-
-    private touchStartY: number | null = null;
-
-    onTouchStart(e: TouchEvent) {
-        if (this.isPaused) return;
-
-        if (e.touches.length > 0) {
-            this.touchStartY = e.touches[0].clientY;
-        }
-    }
-
-    onTouchMove(e: TouchEvent) {
-        // If touching instructions, allow scrolling (don't prevent default)
-        const target = e.target as HTMLElement;
-        if (target && target.closest && target.closest('#instructions-overlay')) {
-            return;
-        }
-
-        if (this.isPaused) return;
-
-        if (this.touchStartY !== null && e.touches.length > 0) {
-            const currentY = e.touches[0].clientY;
-            const deltaY = this.touchStartY - currentY; // Up is positive delta (smaller Y)
-
-            // Map delta to throttle
-            // Let's say 150px drag = full throttle
-            const range = 150;
-            const throttle = Math.max(-1, Math.min(1, deltaY / range));
-
-            this.touchThrottle = throttle;
-
-            // Prevent scrolling while dragging
-            if (e.cancelable) e.preventDefault();
-        }
-    }
-
-    onTouchEnd(e: TouchEvent) {
-        this.touchStartY = null;
-        this.touchThrottle = 0; // Reset on release
     }
 
     async requestPermission(): Promise<boolean> {

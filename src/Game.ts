@@ -11,6 +11,7 @@ import { ObstacleManager } from './managers/ObstacleManager';
 import { Boat } from './entities/Boat';
 import { Alligator } from './entities/obstacles/Alligator';
 import { Hippo } from './entities/obstacles/Hippo';
+import { GameThrottle } from './GameThrottle';
 import { InputManager } from './managers/InputManager';
 import { Profiler } from './core/Profiler';
 import { Entity } from './core/Entity';
@@ -33,7 +34,7 @@ export class Game {
     instructionsOverlay: HTMLElement;
     instructionsContent: HTMLElement;
     scoreElement: HTMLElement;
-    thrustElement: HTMLElement;
+    gameThrottle: GameThrottle;
     fuelElement: HTMLElement;
 
     boat!: Boat;
@@ -68,7 +69,17 @@ export class Game {
         this.instructionsOverlay = document.getElementById('instructions-overlay') as HTMLElement;
         this.instructionsContent = document.getElementById('instructions-content') as HTMLElement;
         this.scoreElement = document.getElementById('score') as HTMLElement;
-        this.thrustElement = document.getElementById('thrust-display') as HTMLElement;
+
+        this.scoreElement = document.getElementById('score') as HTMLElement;
+
+        this.gameThrottle = new GameThrottle(
+            'throttle-container',
+            'throttle-thumb',
+            (val) => { if (this.boat) this.boat.setThrottle(val); },
+            () => this.boat ? this.boat.getThrottle() : 0,
+            () => this.isPaused
+        );
+
         this.fuelElement = document.getElementById('fuel-display') as HTMLElement;
 
         this.startBtn.addEventListener('click', async (e) => {
@@ -324,14 +335,7 @@ export class Game {
 
         // Update Thrust Display
         if (this.boat) {
-            const throttle = this.boat.getThrottle();
-            const percentage = Math.round(throttle * 100);
-            this.thrustElement.innerText = `Thrust: ${percentage}% `;
-
-            // Color code
-            if (percentage > 0) this.thrustElement.style.color = 'white';
-            else if (percentage < 0) this.thrustElement.style.color = '#ffaaaa'; // Reddish for reverse
-            else this.thrustElement.style.color = '#aaaaaa'; // Grey for neutral
+            this.gameThrottle.updateVisuals(this.boat.getThrottle());
         }
 
         // Camera Follow
@@ -500,3 +504,4 @@ export class Game {
         }
     }
 }
+
