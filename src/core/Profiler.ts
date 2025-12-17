@@ -1,3 +1,6 @@
+// @ts-ignore
+import Stats from 'stats.js';
+
 export class Profiler {
   // time based metrics
   private static metrics: Map<string, { min: number, max: number, avg: number, current: number, samples: number, sum: number }> = new Map();
@@ -10,8 +13,12 @@ export class Profiler {
   private static frameCount: number = 0;
   private static lastUpdate: number = 0;
 
+  // stats.js
+  private static stats: any = null;
+
   private static initOverlay() {
     if (this.overlay) return;
+
     this.overlay = document.createElement('div');
     this.overlay.style.position = 'absolute';
     this.overlay.style.top = '10px';
@@ -25,12 +32,25 @@ export class Profiler {
     this.overlay.style.zIndex = '1000';
     document.body.appendChild(this.overlay);
     this.overlay.style.display = 'none'; // Hidden by default
+
+    // Initialize stats.js
+    this.stats = new Stats();
+    this.stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+    this.stats.dom.style.position = 'absolute';
+    this.stats.dom.style.top = '0px';
+    this.stats.dom.style.left = '0px';
+    this.stats.dom.style.display = 'none'; // Hidden by default
+
+    document.body.appendChild(this.stats.dom);
   }
 
   static setVisibility(visible: boolean) {
     this.initOverlay();
     if (this.overlay) {
       this.overlay.style.display = visible ? 'block' : 'none';
+    }
+    if (this.stats) {
+      this.stats.dom.style.display = visible ? 'block' : 'none';
     }
   }
 
@@ -46,6 +66,17 @@ export class Profiler {
     metric.sum += value;
     metric.samples++;
     metric.avg = metric.sum / metric.samples;
+  }
+
+  static beginFrame() {
+    if (this.stats)
+      this.stats.begin();
+  }
+
+  static endFrame() {
+    if (this.stats)
+      this.stats.end();
+    this.update();
   }
 
   static start(label: string) {
@@ -70,8 +101,9 @@ export class Profiler {
     metric.samples++;
   }
 
-  static update() {
+  private static update() {
     this.initOverlay();
+
     this.frameCount++;
     const now = performance.now();
 

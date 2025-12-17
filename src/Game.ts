@@ -404,6 +404,8 @@ export class Game {
     }
 
     animate() {
+        Profiler.beginFrame();
+
         requestAnimationFrame(() => this.animate());
 
         const dt = this.clock.getDelta();
@@ -416,7 +418,7 @@ export class Game {
         Profiler.end('Render');
         this.graphicsEngine.updateDebugInfo();
 
-        Profiler.update();
+        Profiler.endFrame();
     }
 
     private skipToNextBiome() {
