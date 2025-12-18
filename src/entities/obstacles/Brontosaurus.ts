@@ -13,7 +13,7 @@ import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
 
-export class Triceratops extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle {
+export class Brontosaurus extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle {
 
     private readonly TARGET_WATER_HEIGHT: number = -1.5;
 
@@ -22,7 +22,7 @@ export class Triceratops extends Entity implements AttackAnimalEnteringWater, At
     private aggressiveness: number;
 
     private applyModel(mesh: THREE.Group, onShore: boolean) {
-        const modelData = Decorations.getTriceratops();
+        const modelData = Decorations.getBrontosaurus();
         if (!modelData)
             return;
 
@@ -32,7 +32,7 @@ export class Triceratops extends Entity implements AttackAnimalEnteringWater, At
         mesh.add(model);
 
         // Apply model transformations - assuming similar scale to polar bear
-        model.scale.set(3.0, 3.0, 3.0);
+        model.scale.set(8.0, 8.0, 8.0);
         model.rotation.y = Math.PI;
 
         this.player = new AnimationPlayer(model, animations);
@@ -73,7 +73,7 @@ export class Triceratops extends Entity implements AttackAnimalEnteringWater, At
             restitution: 0.0
         });
 
-        physicsBody.setUserData({ type: 'obstacle', subtype: 'triceratops', entity: this });
+        physicsBody.setUserData({ type: 'obstacle', subtype: 'brontosaurus', entity: this });
 
         // Graphics - simple single mesh
         // Entity.syncBodyMesh() will handle position and rotation with normal

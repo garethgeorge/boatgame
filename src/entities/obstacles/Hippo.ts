@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
+import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { Boat } from '../Boat';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
@@ -11,7 +12,7 @@ import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavio
 
 export class Hippo extends Entity implements AttackAnimalWater {
 
-    private mixer: THREE.AnimationMixer | null = null;
+    private player: AnimationPlayer | null = null;
     private behavior: EntityBehavior | null = null;
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine, angle: number = 0) {
@@ -107,14 +108,10 @@ export class Hippo extends Entity implements AttackAnimalWater {
             this.meshes[0].add(model);
         }
 
+        this.player = new AnimationPlayer(model, animations);
+        // Randomize speed between 1.8 and 2.2
         if (animations.length > 0) {
-            this.mixer = new THREE.AnimationMixer(model);
-            // Randomize speed between 1.8 and 2.2
-            this.mixer.timeScale = 1.8 + Math.random() * 0.4;
-            const action = this.mixer.clipAction(animations[0]);
-            // Randomize start time
-            action.time = Math.random() * action.getClip().duration;
-            action.play();
+            this.player.play({ name: animations[0].name, timeScale: 2.0, randomizeLength: 0.2, startTime: -1 });
         }
     }
 
@@ -126,8 +123,8 @@ export class Hippo extends Entity implements AttackAnimalWater {
     }
 
     update(dt: number) {
-        if (this.mixer) {
-            this.mixer.update(dt);
+        if (this.player) {
+            this.player.update(dt);
         }
         if (this.behavior) {
             this.behavior.update(dt);

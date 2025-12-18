@@ -1,7 +1,8 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
-import { PhysicsEngine, CollisionCategories } from '../../core/PhysicsEngine';
+import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { Decorations } from '../../world/Decorations';
 import { RiverSystem } from '../../world/RiverSystem';
 import { Boat } from '../Boat';
@@ -23,15 +24,7 @@ export class Alligator extends Entity implements AttackAnimalEnteringWater, Atta
             this.meshes[0].add(model);
         }
 
-        if (animations.length > 0) {
-            this.mixer = new THREE.AnimationMixer(model);
-            // Randomize speed between 1.8 and 2.2
-            this.mixer.timeScale = 1.8 + Math.random() * 0.4;
-            const action = this.mixer.clipAction(animations[0]);
-            // Randomize start time
-            action.time = Math.random() * action.getClip().duration;
-            action.play();
-        }
+        this.player = new AnimationPlayer(model, animations);
     }
 
     constructor(
@@ -98,10 +91,11 @@ export class Alligator extends Entity implements AttackAnimalEnteringWater, Atta
             }
         } else {
             this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
+            this.player.play({ name: 'walking', timeScale: 2.0, randomizeLength: 0.2, startTime: -1 });
         }
     }
 
-    private mixer: THREE.AnimationMixer | null = null;
+    private player: AnimationPlayer | null = null;
     private behavior: EntityBehavior | null = null;
     private aggressiveness: number;
 
@@ -113,8 +107,8 @@ export class Alligator extends Entity implements AttackAnimalEnteringWater, Atta
     }
 
     update(dt: number) {
-        if (this.mixer) {
-            this.mixer.update(dt);
+        if (this.player) {
+            this.player.update(dt);
         }
         if (this.behavior) {
             this.behavior.update(dt);
@@ -150,6 +144,8 @@ export class Alligator extends Entity implements AttackAnimalEnteringWater, Atta
             targetWaterHeight,
             this.aggressiveness
         );
+
+        this.player.play({ name: 'walking', timeScale: 2.0, randomizeLength: 0.2, startTime: -1 });
 
         return true;
     }

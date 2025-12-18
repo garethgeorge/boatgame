@@ -4,6 +4,7 @@ import { Entity } from '../../core/Entity';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
+import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 
@@ -35,7 +36,7 @@ export class MessageInABottle extends Entity {
     private behavior: EntityBehavior | null = null;
     public points: number;
     public color: number;
-    private mixer: THREE.AnimationMixer | null = null;
+    private player: AnimationPlayer | null = null;
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine, color: number = 0x88FF88, points: number = 100) {
         super();
@@ -71,8 +72,8 @@ export class MessageInABottle extends Entity {
         if (this.behavior) {
             this.behavior.update(dt);
         }
-        if (this.mixer) {
-            this.mixer.update(dt);
+        if (this.player) {
+            this.player.update(dt);
         }
     }
 
@@ -93,13 +94,8 @@ export class MessageInABottle extends Entity {
             GraphicsUtils.cloneMaterials(mesh);
 
             // Start fade Animation
-            this.mixer = new THREE.AnimationMixer(mesh);
-            this.mixer.timeScale = 4.0;
-
-            const action = this.mixer.clipAction(fadeClip);
-            action.setLoop(THREE.LoopOnce, 1);
-            action.clampWhenFinished = true;
-            action.play();
+            this.player = new AnimationPlayer(mesh as any as THREE.Group, [fadeClip]);
+            this.player.playOnce(fadeClip.name, { timeScale: 4.0 });
         }
     }
 

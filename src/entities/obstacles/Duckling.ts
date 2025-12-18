@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
+import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { AnimalSwimAwayBehavior } from '../behaviors/AnimalSwimAwayBehavior';
@@ -11,7 +12,7 @@ import { AnyAnimal } from '../behaviors/AttackAnimal';
 export class Duckling extends Entity implements AnyAnimal {
 
     private aggressiveness: number = 1.0;
-    private mixer: THREE.AnimationMixer | null = null;
+    private player: AnimationPlayer | null = null;
     private behavior: EntityBehavior | null = null;
 
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
@@ -24,21 +25,9 @@ export class Duckling extends Entity implements AnyAnimal {
             this.meshes[0].add(model);
         }
 
-        if (animations.length > 0) {
-            this.mixer = new THREE.AnimationMixer(model);
-            // Randomize speed between 1.8 and 2.2
-            this.mixer.timeScale = 1.8 + Math.random() * 0.4;
-
-            // Randomize start time based on the first animation's duration
-            // Assuming all animations have the same duration as per requirement
-            const startTime = Math.random() * animations[0].duration;
-
-            animations.forEach(clip => {
-                const action = this.mixer!.clipAction(clip);
-                action.time = startTime;
-                action.play();
-            });
-        }
+        this.player = new AnimationPlayer(model, animations);
+        // Randomize speed between 1.8 and 2.2
+        const timeScale = 1.8 + Math.random() * 0.4;
     }
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine, angle: number = 0) {
@@ -78,6 +67,7 @@ export class Duckling extends Entity implements AnyAnimal {
         }
 
         this.behavior = new AnimalSwimAwayBehavior(this, this.aggressiveness);
+        this.player.play({ name: 'bob', timeScale: 2.0, randomizeLength: 0.2, startTime: -1.0 });
     }
 
     getPhysicsBody(): planck.Body | null {
@@ -92,8 +82,8 @@ export class Duckling extends Entity implements AnyAnimal {
     }
 
     update(dt: number) {
-        if (this.mixer) {
-            this.mixer.update(dt);
+        if (this.player) {
+            this.player.update(dt);
         }
         if (this.behavior) {
             this.behavior.update(dt);

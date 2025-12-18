@@ -26,6 +26,7 @@ import { MooseSpawner } from '../entities/spawners/MooseSpawner';
 import { DucklingSpawner } from '../entities/spawners/DucklingSpawner';
 import { TRexSpawner } from '../entities/spawners/TRexSpawner';
 import { TriceratopsSpawner } from '../entities/spawners/TriceratopsSpawner';
+import { BrontosaurusSpawner } from '../entities/spawners/BrontosaurusSpawner';
 
 export class ObstacleManager {
   private riverSystem: RiverSystem;
@@ -57,6 +58,7 @@ export class ObstacleManager {
     this.register(new DucklingSpawner());
     this.register(new TRexSpawner());
     this.register(new TriceratopsSpawner);
+    this.register(new BrontosaurusSpawner);
   }
 
   private register(spawner: Spawnable) {

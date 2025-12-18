@@ -96,9 +96,9 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
         }
 
         if (onShore) {
-            this.player.play('idle', { timeScale: 1.0 });
+            this.player.play({ name: 'idle', timeScale: 1.0 });
         } else {
-            this.player.play('swim', { timeScale: 2.5 });
+            this.player.play({ name: 'swim', timeScale: 2.5 });
         }
     }
 
@@ -134,7 +134,7 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
     }
 
     didStartEnteringWater(duration: number): void {
-        this.player.play('swim', { timeScale: 2.5 });
+        this.player.play({ name: 'swim', timeScale: 2.5 });
     }
 
     enteringWaterDidComplete(speed: number): void {
@@ -166,7 +166,7 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
         if (rand < 0.5) {
             this.shouldStartShoreWalk();
         } else {
-            this.player.play('dance', { timeScale: 1.0 });
+            this.player.play({ name: 'dance', timeScale: 1.0 });
         }
     }
 
@@ -181,12 +181,12 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
             speed
         );
 
-        this.player.play('walk', { timeScale: 1.0 });
+        this.player.play({ name: 'walk', timeScale: 1.0 });
     }
 
     shoreWalkDidComplete(): void {
         // Return to idle behavior after completing shore walk
         this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
-        this.player.play('idle', { timeScale: 1.0 });
+        this.player.play({ name: 'idle', timeScale: 1.0 });
     }
 }

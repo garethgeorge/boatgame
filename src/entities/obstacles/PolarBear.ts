@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
+import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { AttackAnimalShoreIdleBehavior } from '../behaviors/AttackAnimalShoreIdleBehavior';
 import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
@@ -11,10 +12,8 @@ import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnte
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 
 export class PolarBear extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle {
-    private rearingAction: THREE.AnimationAction | null = null;
-    private walkingAction: THREE.AnimationAction | null = null;
+    private player: AnimationPlayer | null = null;
     private behavior: EntityBehavior | null = null;
-    private mixer: THREE.AnimationMixer | null = null;
     private aggressiveness: number;
 
     private applyModel(mesh: THREE.Group) {
@@ -31,21 +30,7 @@ export class PolarBear extends Entity implements AttackAnimalEnteringWater, Atta
         model.scale.set(3.0, 3.0, 3.0);
         model.rotation.y = Math.PI;
 
-        if (animations.length > 0) {
-            this.mixer = new THREE.AnimationMixer(model);
-
-            // Find specific animations
-            const rearingClip = animations.find(a => a.name === 'Rearing');
-            const walkingClip = animations.find(a => a.name === 'Walking');
-
-            if (rearingClip) {
-                this.rearingAction = this.mixer.clipAction(rearingClip);
-            }
-
-            if (walkingClip) {
-                this.walkingAction = this.mixer.clipAction(walkingClip);
-            }
-        }
+        this.player = new AnimationPlayer(model, animations);
     }
 
     constructor(
@@ -102,9 +87,9 @@ export class PolarBear extends Entity implements AttackAnimalEnteringWater, Atta
             this.normalVector = terrainNormal.clone();
         }
 
-        // Randomize rear start time
-        this.rearingAction.time = Math.random() * this.rearingAction.getClip().duration;
-        this.rearingAction.play();
+        if (this.player) {
+            this.player.play({ name: 'Rearing', startTime: -1 });
+        }
 
         // Initialize behavior with target water height -2.0 (similar to brown bear)
         if (onShore) {
@@ -124,8 +109,8 @@ export class PolarBear extends Entity implements AttackAnimalEnteringWater, Atta
     }
 
     update(dt: number) {
-        if (this.mixer) {
-            this.mixer.update(dt);
+        if (this.player) {
+            this.player.update(dt);
         }
         if (this.behavior) {
             this.behavior.update(dt);
@@ -148,11 +133,8 @@ export class PolarBear extends Entity implements AttackAnimalEnteringWater, Atta
     }
 
     didStartEnteringWater(duration: number): void {
-        if (this.rearingAction && this.walkingAction) {
-            this.walkingAction.reset();
-            this.walkingAction.time = Math.random() * this.walkingAction.getClip().duration;
-            this.walkingAction.play();
-            this.rearingAction.crossFadeTo(this.walkingAction, 1.0, true);
+        if (this.player) {
+            this.player.play({ name: 'Walking', startTime: -1 });
         }
     }
 

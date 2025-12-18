@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
+import { AnimationPlayer } from '../../core/AnimationPlayer';
 
 import { AttackAnimalShoreIdleBehavior } from '../behaviors/AttackAnimalShoreIdleBehavior';
 import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
@@ -12,7 +13,7 @@ import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnte
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 
 export class TRex extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle {
-    private animations: THREE.AnimationClip[] = [];
+    private player: AnimationPlayer | null = null;
     private readonly TARGET_WATER_HEIGHT = -3.0;
 
     private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
@@ -20,29 +21,11 @@ export class TRex extends Entity implements AttackAnimalEnteringWater, AttackAni
         model.scale.set(6.0, 6.0, 6.0);
         model.rotation.y = Math.PI;
 
-        this.animations = animations;
-
         if (this.meshes.length > 0) {
             this.meshes[0].add(model);
         }
 
-        if (animations.length > 0) {
-            this.mixer = new THREE.AnimationMixer(model);
-            // Randomize speed 
-            this.mixer.timeScale = 1.0 + Math.random() * 0.2;
-        }
-    }
-
-    private playAnimation(name: string) {
-        if (!this.mixer) return;
-
-        const clip = this.animations.find(a => a.name === name);
-        if (clip) {
-            this.mixer.stopAllAction();
-            const action = this.mixer.clipAction(clip);
-            action.time = Math.random() * action.getClip().duration;
-            action.play();
-        }
+        this.player = new AnimationPlayer(model, animations);
     }
 
     constructor(
@@ -106,14 +89,13 @@ export class TRex extends Entity implements AttackAnimalEnteringWater, AttackAni
         if (onShore) {
             if (!stayOnShore)
                 this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
-            this.playAnimation('standing');
+            this.player.play({ name: 'standing', timeScale: 1.0, randomizeLength: 0.2, startTime: -1 });
         } else {
             this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
-            this.playAnimation('walking');
+            this.player.play({ name: 'walking', timeScale: 1.0, randomizeLength: 0.2, startTime: -1 });
         }
     }
 
-    private mixer: THREE.AnimationMixer | null = null;
     private behavior: EntityBehavior | null = null;
     private aggressiveness: number;
 
@@ -125,8 +107,8 @@ export class TRex extends Entity implements AttackAnimalEnteringWater, AttackAni
     }
 
     update(dt: number) {
-        if (this.mixer) {
-            this.mixer.update(dt);
+        if (this.player) {
+            this.player.update(dt);
         }
         if (this.behavior) {
             this.behavior.update(dt);
@@ -163,7 +145,7 @@ export class TRex extends Entity implements AttackAnimalEnteringWater, AttackAni
             this.aggressiveness
         );
 
-        this.playAnimation('walking');
+        this.player.play({ name: 'walking', timeScale: 1.0, randomizeLength: 0.2, startTime: -1 });
 
         return true;
     }

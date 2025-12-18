@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
+import { AnimationPlayer } from '../../core/AnimationPlayer';
 
 import { AttackAnimalShoreIdleBehavior } from '../behaviors/AttackAnimalShoreIdleBehavior';
 import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
@@ -12,9 +13,7 @@ import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnte
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 
 export class BrownBear extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle {
-    private roaringAction: THREE.AnimationAction | null = null;
-    private walkingAction: THREE.AnimationAction | null = null;
-    private roarAndWalkAction: THREE.AnimationAction | null = null;
+    private player: AnimationPlayer | null = null;
     private aggressiveness: number;
 
     private applyModel(mesh: THREE.Group, onShore: boolean) {
@@ -31,25 +30,7 @@ export class BrownBear extends Entity implements AttackAnimalEnteringWater, Atta
         model.scale.set(3.0, 3.0, 3.0);
         model.rotation.y = Math.PI;
 
-        if (animations.length > 0) {
-            this.mixer = new THREE.AnimationMixer(model);
-
-            const roaringClip = animations.find(a => a.name === 'Roaring');
-            const walkingClip = animations.find(a => a.name === 'Walking');
-            const roarAndWalkClip = animations.find(a => a.name === 'Roar+Walk');
-
-            if (roaringClip) {
-                this.roaringAction = this.mixer.clipAction(roaringClip);
-            }
-
-            if (walkingClip) {
-                this.walkingAction = this.mixer.clipAction(walkingClip);
-            }
-
-            if (roarAndWalkClip) {
-                this.roarAndWalkAction = this.mixer.clipAction(roarAndWalkClip);
-            }
-        }
+        this.player = new AnimationPlayer(model, animations);
     }
 
     constructor(
@@ -114,11 +95,11 @@ export class BrownBear extends Entity implements AttackAnimalEnteringWater, Atta
             this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
         }
 
-        this.roaringAction.time = Math.random() * this.roaringAction.getClip().duration;
-        this.roaringAction.play();
+        if (this.player) {
+            this.player.play({ name: 'Roaring', startTime: -1 });
+        }
     }
 
-    private mixer: THREE.AnimationMixer | null = null;
     private behavior: EntityBehavior | null = null;
 
     wasHitByPlayer() {
@@ -129,8 +110,8 @@ export class BrownBear extends Entity implements AttackAnimalEnteringWater, Atta
     }
 
     update(dt: number) {
-        if (this.mixer) {
-            this.mixer.update(dt);
+        if (this.player) {
+            this.player.update(dt);
         }
         if (this.behavior) {
             this.behavior.update(dt);
@@ -153,11 +134,8 @@ export class BrownBear extends Entity implements AttackAnimalEnteringWater, Atta
     }
 
     didStartEnteringWater(duration: number): void {
-        if (this.roaringAction && this.roarAndWalkAction) {
-            this.roarAndWalkAction.reset();
-            this.roarAndWalkAction.time = Math.random() * this.roarAndWalkAction.getClip().duration;
-            this.roarAndWalkAction.play();
-            this.roaringAction.crossFadeTo(this.roarAndWalkAction, 1.0, true);
+        if (this.player) {
+            this.player.play({ name: 'Roar+Walk', startTime: -1 });
         }
     }
 
