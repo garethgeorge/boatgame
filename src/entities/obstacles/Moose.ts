@@ -76,7 +76,7 @@ export class Moose extends AttackAnimal {
         super.enteringWaterDidComplete(speed);
 
         if (this.meshes.length > 0) {
-            this.meshes[0].position.y = this.MOOSE_TARGET_WATER_HEIGHT;
+            this.meshes[0].position.y = this.heightInWater;
         }
         this.normalVector.set(0, 1, 0);
     }
