@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import { RiverSystem } from '../../world/RiverSystem';
 import { Boat } from '../Boat';
-import { AttackAnimalShoreIdle } from './AttackAnimal';
+import { AttackAnimalShoreIdle } from './AttackAnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
 
 export class AttackAnimalShoreIdleBehavior implements EntityBehavior {

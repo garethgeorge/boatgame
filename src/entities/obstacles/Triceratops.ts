@@ -7,7 +7,7 @@ import { Decorations } from '../../world/Decorations';
 import { AttackAnimalShoreIdleBehavior } from '../behaviors/AttackAnimalShoreIdleBehavior';
 import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
-import { AttackAnimalEnteringWater, AttackAnimalShoreIdle } from '../behaviors/AttackAnimal';
+import { AttackAnimalEnteringWater, AttackAnimalShoreIdle } from '../behaviors/AttackAnimalBehavior';
 import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnteringWaterBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { GraphicsUtils } from '../../core/GraphicsUtils';

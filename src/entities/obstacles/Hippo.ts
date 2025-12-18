@@ -7,7 +7,7 @@ import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { Boat } from '../Boat';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
-import { AttackAnimalWater } from '../behaviors/AttackAnimal';
+import { AttackAnimalWater } from '../behaviors/AttackAnimalBehavior';
 import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
 
 export class Hippo extends Entity implements AttackAnimalWater {

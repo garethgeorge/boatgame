@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import { Boat } from '../Boat';
-import { AttackAnimalWater } from './AttackAnimal';
+import { AttackAnimalWater } from './AttackAnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
 
 export class AnimalSwimAwayBehavior implements EntityBehavior {

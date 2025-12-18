@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { CollisionCategories } from '../../core/PhysicsEngine';
 import { RiverSystem } from '../../world/RiverSystem';
-import { AttackAnimalEnteringWater } from './AttackAnimal';
+import { AttackAnimalEnteringWater } from './AttackAnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
 
 export class AttackAnimalEnteringWaterBehavior implements EntityBehavior {

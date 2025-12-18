@@ -7,9 +7,9 @@ import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { AnimalSwimAwayBehavior } from '../behaviors/AnimalSwimAwayBehavior';
-import { AnyAnimal } from '../behaviors/AttackAnimal';
+import { AnyAttackAnimal } from '../behaviors/AttackAnimalBehavior';
 
-export class Duckling extends Entity implements AnyAnimal {
+export class Duckling extends Entity implements AnyAttackAnimal {
 
     private aggressiveness: number = 1.0;
     private player: AnimationPlayer | null = null;
