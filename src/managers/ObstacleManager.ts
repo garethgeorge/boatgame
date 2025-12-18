@@ -5,7 +5,7 @@ import { RiverSystem } from '../world/RiverSystem';
 import { Profiler } from '../core/Profiler';
 import { TerrainChunk } from '../world/TerrainChunk';
 import { Entity } from '../core/Entity';
-import { Spawnable, SpawnContext } from './Spawnable';
+import { Spawnable, SpawnContext } from '../entities/Spawnable';
 import { PlacementHelper } from './PlacementHelper';
 
 // Spawners
@@ -25,6 +25,7 @@ import { MonkeySpawner } from '../entities/spawners/MonkeySpawner';
 import { MooseSpawner } from '../entities/spawners/MooseSpawner';
 import { DucklingSpawner } from '../entities/spawners/DucklingSpawner';
 import { TRexSpawner } from '../entities/spawners/TRexSpawner';
+import { TriceratopsSpawner } from '../entities/spawners/TriceratopsSpawner';
 
 export class ObstacleManager {
   private riverSystem: RiverSystem;
@@ -55,6 +56,7 @@ export class ObstacleManager {
     this.register(new MooseSpawner());
     this.register(new DucklingSpawner());
     this.register(new TRexSpawner());
+    this.register(new TriceratopsSpawner);
   }
 
   private register(spawner: Spawnable) {

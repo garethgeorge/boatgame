@@ -1,6 +1,5 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { AnimationPlayer } from '../../core/AnimationPlayer'
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
@@ -8,30 +7,32 @@ import { Decorations } from '../../world/Decorations';
 import { AttackAnimalShoreIdleBehavior } from '../behaviors/AttackAnimalShoreIdleBehavior';
 import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
-import { AttackAnimalEnteringWater, AttackAnimalShoreIdle, AttackAnimalShoreWalk } from '../behaviors/AttackAnimal';
+import { AttackAnimalEnteringWater, AttackAnimalShoreIdle } from '../behaviors/AttackAnimal';
 import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnteringWaterBehavior';
-import { AnimalShoreWalkBehavior } from '../behaviors/AnimalShoreWalkBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
+import { AnimationPlayer } from '../../core/AnimationPlayer';
 
-export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle, AttackAnimalShoreWalk {
-    private readonly aggressiveness: number;
-    private player: AnimationPlayer = null;
+export class Triceratops extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle {
+
+    private readonly TARGET_WATER_HEIGHT: number = -1.5;
+
     private behavior: EntityBehavior | null = null;
+    private player: AnimationPlayer;
+    private aggressiveness: number;
 
     private applyModel(mesh: THREE.Group, onShore: boolean) {
-        const monkeyData = Decorations.getMonkey();
-        if (!monkeyData)
+        const modelData = Decorations.getTriceratops();
+        if (!modelData)
             return;
 
-        const model = monkeyData.model;
-        const animations = monkeyData.animations;
+        const model = modelData.model;
+        const animations = modelData.animations;
 
         mesh.add(model);
 
-        // Apply model transformations
-        // Assuming 2.0 scale (smaller than bears 3.0)
-        model.scale.set(0.025, 0.025, 0.025);
+        // Apply model transformations - assuming similar scale to polar bear
+        model.scale.set(3.0, 3.0, 3.0);
         model.rotation.y = Math.PI;
 
         this.player = new AnimationPlayer(model, animations);
@@ -42,20 +43,20 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
         worldZ: number,
         physicsEngine: PhysicsEngine,
         angle: number = 0,
-        height: number,
+        height?: number,
         terrainNormal?: THREE.Vector3,
         onShore: boolean = false,
         stayOnShore: boolean = false
     ) {
         super();
 
-        // Calculate aggressiveness for this monkey
-        this.aggressiveness = stayOnShore ? 0.0 : Math.random();
+        // Calculate aggressiveness for this brown bear
+        this.aggressiveness = Math.random();
 
-        // Monkeys can cause penalties when hit
+        // Brown bears can cause penalties when hit
         this.canCausePenalty = true;
 
-        // Physics - dynamic body
+        // Physics - dynamic body for potential future movement
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
             position: planck.Vec2(worldX, worldZ),
@@ -66,39 +67,41 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
         this.physicsBodies.push(physicsBody);
 
         physicsBody.createFixture({
-            shape: planck.Box(1.0, 1.0), // 1.6m wide, 1.6m long (Smaller than bear)
+            shape: planck.Box(1.5, 2.5), // 3m wide, 5m long
             density: 5.0,
             friction: 0.3,
             restitution: 0.0
         });
 
-        physicsBody.setUserData({ type: 'obstacle', subtype: 'monkey', entity: this });
+        physicsBody.setUserData({ type: 'obstacle', subtype: 'triceratops', entity: this });
 
-        // Graphics
+        // Graphics - simple single mesh
+        // Entity.syncBodyMesh() will handle position and rotation with normal
         const mesh = new THREE.Group();
         this.meshes.push(mesh);
 
-        // Apply the monkey model
+        // Apply the dino model
         this.applyModel(mesh, onShore);
 
         // Set height offset (Y position)
-        mesh.position.y = height;
+        if (height !== undefined)
+            mesh.position.y = height;
+        else
+            mesh.position.y = this.TARGET_WATER_HEIGHT;
 
-        // Set terrain normal
+        // Set terrain normal for Entity.syncBodyMesh() to use
         if (terrainNormal) {
             this.normalVector = terrainNormal.clone();
         }
 
         if (onShore) {
-            this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
+            if (!stayOnShore) {
+                this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
+            }
+            this.player.play('standing', { timeScale: 0.5, startTime: -1 });
         } else {
             this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
-        }
-
-        if (onShore) {
-            this.player.play('idle', { timeScale: 1.0 });
-        } else {
-            this.player.play('swim', { timeScale: 2.5 });
+            this.player.play('walking', { timeScale: 0.5, startTime: -1 });
         }
     }
 
@@ -134,21 +137,20 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
     }
 
     didStartEnteringWater(duration: number): void {
-        this.player.play('swim', { timeScale: 2.5 });
+        this.player.play('walking', { timeScale: 0.5 });
     }
 
-    enteringWaterDidComplete(speed: number): void {
+    enteringWaterDidComplete(speed: number) {
         this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
         this.normalVector.set(0, 1, 0);
     }
 
     shoreIdleMaybeStartEnteringWater(): boolean {
-        const targetWaterHeight = -1.7;
 
         // Create entering water behavior
         const behavior = new AttackAnimalEnteringWaterBehavior(
             this,
-            targetWaterHeight,
+            this.TARGET_WATER_HEIGHT,
             this.aggressiveness
         );
         this.behavior = behavior;
@@ -159,34 +161,4 @@ export class Monkey extends Entity implements AttackAnimalEnteringWater, AttackA
         return true;
     }
 
-    shoreIdleMaybeSwitchBehavior(): void {
-        // random choice between shore walk and dance/dont
-
-        const rand = Math.random();
-        if (rand < 0.5) {
-            this.shouldStartShoreWalk();
-        } else {
-            this.player.play('dance', { timeScale: 1.0 });
-        }
-    }
-
-    private shouldStartShoreWalk(): void {
-        // Create shore walk behavior with random distance and speed
-        const walkDistance = 10 + Math.random() * 10; // 10-20 meters
-        const speed = 0.8 + Math.random() * 0.4; // 0.8-1.2x speed
-
-        this.behavior = new AnimalShoreWalkBehavior(
-            this,
-            walkDistance,
-            speed
-        );
-
-        this.player.play('walk', { timeScale: 1.0 });
-    }
-
-    shoreWalkDidComplete(): void {
-        // Return to idle behavior after completing shore walk
-        this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
-        this.player.play('idle', { timeScale: 1.0 });
-    }
 }
