@@ -9,10 +9,9 @@ import { AnimalShoreWalkBehavior } from '../behaviors/AnimalShoreWalkBehavior';
 import { AttackAnimalShoreWalk } from '../behaviors/AttackAnimalBehavior';
 
 export class Monkey extends AttackAnimal implements AttackAnimalShoreWalk {
-    protected readonly TARGET_WATER_HEIGHT = -1.7;
 
-    protected getTargetWaterHeight(): number {
-        return this.TARGET_WATER_HEIGHT;
+    protected get heightInWater(): number {
+        return -1.7;
     }
 
     constructor(

@@ -6,7 +6,7 @@ import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 
 export class BrownBear extends AttackAnimal {
 
-    protected getTargetWaterHeight(): number {
+    protected get heightInWater(): number {
         return -2.0;
     }
 

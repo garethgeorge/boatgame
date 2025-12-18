@@ -6,7 +6,7 @@ import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 
 export class TRex extends AttackAnimal {
 
-    protected getTargetWaterHeight(): number {
+    protected get heightInWater(): number {
         return -3.0;
     }
 

@@ -6,7 +6,7 @@ import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 
 export class Triceratops extends AttackAnimal {
 
-    protected getTargetWaterHeight(): number {
+    protected get heightInWater(): number {
         return -1.5;
     }
 

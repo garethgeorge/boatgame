@@ -5,7 +5,7 @@ import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 
 export class Hippo extends AttackAnimal {
 
-    protected getTargetWaterHeight(): number {
+    protected get heightInWater(): number {
         return -0.5;
     }
 

@@ -92,12 +92,8 @@ export abstract class AttackAnimal extends Entity implements AttackAnimalEnterin
 
         if (height !== undefined) {
             mesh.position.y = height;
-        } else {
-            if (onShore) {
-
-            } else {
-                mesh.position.y = this.getTargetWaterHeight();
-            }
+        } else if (!onShore) {
+            mesh.position.y = this.heightInWater;
         }
 
         if (terrainNormal)
@@ -126,7 +122,7 @@ export abstract class AttackAnimal extends Entity implements AttackAnimalEnterin
     protected abstract getModelData(): { model: THREE.Group, animations: THREE.AnimationClip[] } | null;
 
     // The height for the model when in water
-    protected abstract getTargetWaterHeight(): number;
+    protected abstract get heightInWater(): number;
 
     // e.g. derived class can scale and rotate model to desired size and facing
     protected abstract setupModel(model: THREE.Group): void;
@@ -190,7 +186,7 @@ export abstract class AttackAnimal extends Entity implements AttackAnimalEnterin
     shoreIdleMaybeStartEnteringWater(): boolean {
         const behavior = new AttackAnimalEnteringWaterBehavior(
             this,
-            this.getTargetWaterHeight(),
+            this.heightInWater,
             this.aggressiveness
         );
         this.behavior = behavior;
