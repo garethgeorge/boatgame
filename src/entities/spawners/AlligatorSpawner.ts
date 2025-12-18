@@ -43,16 +43,15 @@ export class AlligatorSpawner implements Spawnable {
                 );
 
                 if (placement) {
-                    const entity = new Alligator(
-                        placement.worldX,
-                        placement.worldZ,
-                        context.physicsEngine,
-                        placement.rotation,
-                        placement.height,
-                        placement.normal,
-                        true,  // onShore = true
-                        Math.random() > 0.5 // 50% chance to stay on shore
-                    );
+                    const entity = new Alligator(context.physicsEngine, {
+                        x: placement.worldX,
+                        y: placement.worldZ,
+                        angle: placement.rotation,
+                        height: placement.height,
+                        terrainNormal: placement.normal,
+                        onShore: true,
+                        stayOnShore: Math.random() > 0.5
+                    });
                     context.entityManager.add(entity, context.chunkIndex);
                 }
             } else {
@@ -73,7 +72,11 @@ export class AlligatorSpawner implements Spawnable {
                         const z = centerPos.z + offsetZ;
 
                         const angle = Math.random() * Math.PI * 2;
-                        const entity = new Alligator(x, z, context.physicsEngine, angle);
+                        const entity = new Alligator(context.physicsEngine, {
+                            x,
+                            y: z,
+                            angle
+                        });
                         context.entityManager.add(entity, context.chunkIndex);
                     }
                 }

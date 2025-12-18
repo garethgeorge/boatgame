@@ -34,16 +34,15 @@ export class BrontosaurusSpawner implements Spawnable {
                 );
 
                 if (placement) {
-                    const entity = new Brontosaurus(
-                        placement.worldX,
-                        placement.worldZ,
-                        context.physicsEngine,
-                        placement.rotation,
-                        placement.height,
-                        placement.normal,
-                        true,  // onShore = true
-                        Math.random() > 0.5 // 50% chance to stay on shore
-                    );
+                    const entity = new Brontosaurus(context.physicsEngine, {
+                        x: placement.worldX,
+                        y: placement.worldZ,
+                        angle: placement.rotation,
+                        height: placement.height,
+                        terrainNormal: placement.normal,
+                        onShore: true,
+                        stayOnShore: Math.random() > 0.5
+                    });
                     context.entityManager.add(entity, context.chunkIndex);
                 }
             } else {
@@ -54,11 +53,11 @@ export class BrontosaurusSpawner implements Spawnable {
 
                 if (centerPos) {
                     const angle = Math.random() * Math.PI * 2;
-                    const entity = new Brontosaurus(
-                        centerPos.x,
-                        centerPos.z,
-                        context.physicsEngine,
-                        angle);
+                    const entity = new Brontosaurus(context.physicsEngine, {
+                        x: centerPos.x,
+                        y: centerPos.z,
+                        angle
+                    });
                     context.entityManager.add(entity, context.chunkIndex);
                 }
             }

@@ -32,16 +32,15 @@ export class PolarBearSpawner implements Spawnable {
 
             if (placement) {
                 // Create the polar bear entity with terrain-based positioning
-                const entity = new PolarBear(
-                    placement.worldX,
-                    placement.worldZ,
-                    context.physicsEngine,
-                    placement.rotation,
-                    placement.height,
-                    placement.normal,
-                    true, // onShore
-                    Math.random() > 0.5 // 50% chance to stay on shore
-                );
+                const entity = new PolarBear(context.physicsEngine, {
+                    x: placement.worldX,
+                    y: placement.worldZ,
+                    angle: placement.rotation,
+                    height: placement.height,
+                    terrainNormal: placement.normal,
+                    onShore: true,
+                    stayOnShore: Math.random() > 0.5
+                });
 
                 context.entityManager.add(entity, context.chunkIndex);
             }

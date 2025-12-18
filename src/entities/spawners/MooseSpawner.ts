@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
 import { Moose } from '../../entities/obstacles/Moose';
 import { RiverSystem } from '../../world/RiverSystem';
-import { PlacementHelper } from '../PlacementHelper';
 
 export class MooseSpawner implements Spawnable {
     id = 'moose';
@@ -33,17 +32,15 @@ export class MooseSpawner implements Spawnable {
 
             if (placement) {
                 // Create the moose entity with terrain-based positioning
-                const entity = new Moose(
-                    placement.worldX,
-                    placement.worldZ,
-                    context.physicsEngine,
-                    placement.rotation,
-                    placement.height,
-                    placement.normal,
-                    true, // onShore
-                    false
-                    //Math.random() > 0.5 // 50% chance to stay on shore
-                );
+                const entity = new Moose(context.physicsEngine, {
+                    x: placement.worldX,
+                    y: placement.worldZ,
+                    angle: placement.rotation,
+                    height: placement.height,
+                    terrainNormal: placement.normal,
+                    onShore: true,
+                    stayOnShore: false
+                });
 
                 context.entityManager.add(entity, context.chunkIndex);
             }
