@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
 import { BrownBear } from '../../entities/obstacles/BrownBear';
 import { RiverSystem } from '../../world/RiverSystem';
-import { PlacementHelper } from '../PlacementHelper';
 
 export class BrownBearSpawner implements Spawnable {
     id = 'brownbear';

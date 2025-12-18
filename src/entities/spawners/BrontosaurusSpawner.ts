@@ -56,6 +56,7 @@ export class BrontosaurusSpawner implements Spawnable {
                     const entity = new Brontosaurus(context.physicsEngine, {
                         x: centerPos.x,
                         y: centerPos.z,
+                        height: Brontosaurus.HEIGHT_IN_WATER,
                         angle
                     });
                     context.entityManager.add(entity, context.chunkIndex);

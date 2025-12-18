@@ -6,8 +6,10 @@ import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 
 export class BrownBear extends AttackAnimal {
 
+    public static readonly HEIGHT_IN_WATER: number = -2.0;
+
     protected get heightInWater(): number {
-        return -2.0;
+        return BrownBear.HEIGHT_IN_WATER;
     }
 
     constructor(

@@ -56,6 +56,7 @@ export class TRexSpawner implements Spawnable {
                     const entity = new TRex(context.physicsEngine, {
                         x: centerPos.x,
                         y: centerPos.z,
+                        height: TRex.HEIGHT_IN_WATER,
                         angle
                     });
                     context.entityManager.add(entity, context.chunkIndex);

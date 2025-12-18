@@ -13,8 +13,8 @@ import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 export interface AttackAnimalOptions {
     x: number;
     y: number;
+    height: number;
     angle?: number;
-    height?: number;
     terrainNormal?: THREE.Vector3;
     onShore?: boolean;
     stayOnShore?: boolean;
@@ -46,8 +46,8 @@ export abstract class AttackAnimal extends Entity implements AttackAnimalEnterin
         const {
             x,
             y,
-            angle = 0,
             height,
+            angle = 0,
             terrainNormal,
             onShore = false,
             stayOnShore = false
@@ -90,11 +90,7 @@ export abstract class AttackAnimal extends Entity implements AttackAnimalEnterin
             this.applyModelBase(mesh, modelData.model, modelData.animations);
         }
 
-        if (height !== undefined) {
-            mesh.position.y = height;
-        } else if (!onShore) {
-            mesh.position.y = this.heightInWater;
-        }
+        mesh.position.y = height;
 
         if (terrainNormal)
             this.normalVector = terrainNormal.clone();

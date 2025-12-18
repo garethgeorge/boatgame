@@ -56,6 +56,7 @@ export class TriceratopsSpawner implements Spawnable {
                     const entity = new Triceratops(context.physicsEngine, {
                         x: centerPos.x,
                         y: centerPos.z,
+                        height: Triceratops.HEIGHT_IN_WATER,
                         angle
                     });
                     context.entityManager.add(entity, context.chunkIndex);

@@ -10,8 +10,10 @@ import { AttackAnimalShoreWalk } from '../behaviors/AttackAnimalBehavior';
 
 export class Monkey extends AttackAnimal implements AttackAnimalShoreWalk {
 
+    public static readonly HEIGHT_IN_WATER: number = -1.7;
+
     protected get heightInWater(): number {
-        return -1.7;
+        return Monkey.HEIGHT_IN_WATER;
     }
 
     constructor(

@@ -6,8 +6,10 @@ import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavio
 
 export class Moose extends AttackAnimal {
 
+    public static readonly HEIGHT_IN_WATER: number = -3.0;
+
     protected get heightInWater(): number {
-        return -3.0;
+        return Moose.HEIGHT_IN_WATER;
     }
 
     constructor(

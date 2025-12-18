@@ -6,8 +6,10 @@ import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 
 export class Brontosaurus extends AttackAnimal {
 
+    public static readonly HEIGHT_IN_WATER: number = -1.5;
+
     protected get heightInWater(): number {
-        return -1.5;
+        return Brontosaurus.HEIGHT_IN_WATER;
     }
 
     constructor(

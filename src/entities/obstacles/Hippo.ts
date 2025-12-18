@@ -5,12 +5,16 @@ import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 
 export class Hippo extends AttackAnimal {
 
+    public static readonly HEIGHT_IN_WATER: number = -0.5;
+
     protected get heightInWater(): number {
-        return -0.5;
+        return Hippo.HEIGHT_IN_WATER;
     }
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine, angle: number = 0) {
-        super(physicsEngine, 'hippo', { x, y, angle, onShore: false }, {
+        super(physicsEngine, 'hippo', {
+            x, y, angle, height: Hippo.HEIGHT_IN_WATER, onShore: false
+        }, {
             halfWidth: 1.5,
             halfLength: 3.0,
             density: 5.0,

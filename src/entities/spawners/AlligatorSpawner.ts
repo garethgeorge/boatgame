@@ -75,6 +75,7 @@ export class AlligatorSpawner implements Spawnable {
                         const entity = new Alligator(context.physicsEngine, {
                             x,
                             y: z,
+                            height: Alligator.HEIGHT_IN_WATER,
                             angle
                         });
                         context.entityManager.add(entity, context.chunkIndex);

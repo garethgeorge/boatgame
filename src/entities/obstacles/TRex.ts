@@ -6,8 +6,10 @@ import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 
 export class TRex extends AttackAnimal {
 
+    public static readonly HEIGHT_IN_WATER: number = -3.0;
+
     protected get heightInWater(): number {
-        return -3.0;
+        return TRex.HEIGHT_IN_WATER;
     }
 
     constructor(
