@@ -1,5 +1,6 @@
 import { SimplexNoise } from './SimplexNoise';
 import { BiomeManager } from './BiomeManager';
+import { BiomeType } from './biomes/BiomeType';
 import { TerrainGeometry } from './TerrainGeometry';
 
 export class RiverSystem {
@@ -64,7 +65,7 @@ export class RiverSystem {
 
     // Apply Swamp Modifier: Widen river significantly
     const mixture = this.biomeManager.getBiomeMixture(worldZ);
-    const getWidthMultiplier = (biome: 'desert' | 'forest' | 'ice' | 'swamp') => {
+    const getWidthMultiplier = (biome: BiomeType) => {
       if (biome === 'swamp') return 5.0;
       if (biome === 'ice') return 4.0; // Ice biome also has wider rivers deep in
       return 1.0;

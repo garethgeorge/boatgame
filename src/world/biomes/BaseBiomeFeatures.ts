@@ -1,5 +1,6 @@
 import { BiomeFeatures } from './BiomeFeatures';
-import { BiomeType, SpawnContext } from '../../entities/Spawnable';
+import { SpawnContext } from '../../entities/Spawnable';
+import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/TerrainDecorator';
 import { BiomeDecorationHelper } from './BiomeDecorationHelper';
 import { Decorations } from '../Decorations';

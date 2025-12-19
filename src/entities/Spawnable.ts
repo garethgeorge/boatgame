@@ -11,8 +11,6 @@ export interface SpawnContext {
   zEnd: number;
 }
 
-export type BiomeType = 'desert' | 'forest' | 'ice' | 'swamp' | 'jurassic';
-
 export interface Spawnable {
   id: string;
 

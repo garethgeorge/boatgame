@@ -1,5 +1,6 @@
 import { DecorationContext } from '../decorators/TerrainDecorator';
-import { SpawnContext, BiomeType } from '../../entities/Spawnable';
+import { SpawnContext } from '../../entities/Spawnable';
+import { BiomeType } from './BiomeType';
 
 export interface BiomeFeatures {
     id: BiomeType;

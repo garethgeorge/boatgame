@@ -1,0 +1,16 @@
+import { BaseBiomeFeatures } from './BaseBiomeFeatures';
+import { SpawnContext } from '../../entities/Spawnable';
+import { BiomeType } from './BiomeType';
+import { DecorationContext } from '../decorators/TerrainDecorator';
+
+export class TestBiomeFeatures extends BaseBiomeFeatures {
+    id: BiomeType = 'test';
+
+    async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
+        // No decorations for test biome
+    }
+
+    async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
+        // No entities for test biome
+    }
+}

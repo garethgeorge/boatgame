@@ -19,4 +19,5 @@ export abstract class BaseSpawner implements Spawnable {
         return Math.floor(count + Math.random());
     }
 
+    abstract spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void>;
 }

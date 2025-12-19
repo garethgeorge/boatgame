@@ -6,12 +6,14 @@ import { ForestBiomeFeatures } from './biomes/ForestBiomeFeatures';
 import { IceBiomeFeatures } from './biomes/IceBiomeFeatures';
 import { SwampBiomeFeatures } from './biomes/SwampBiomeFeatures';
 import { JurassicBiomeFeatures } from './biomes/JurassicBiomeFeatures';
-
-export type BiomeType = 'desert' | 'forest' | 'ice' | 'swamp' | 'jurassic';
+import { TestBiomeFeatures } from './biomes/TestBiomeFeatures';
+import { BiomeType } from './biomes/BiomeType';
 
 export class BiomeManager {
-  private biomeArray: Array<BiomeType>;
+  public static DEBUG_BIOME = false;
+
   public readonly BIOME_LENGTH = 1000;
+  private biomeArray: Array<BiomeType>;
   private readonly BIOME_ARRAY_SIZE = 100;
   private readonly BIOME_SCALE = 1.0 / this.BIOME_LENGTH; // Multiplier for converting worldZ to biome array index
   private readonly BIOME_TRANSITION_WIDTH = 0.05; // Width of biome transition zone
@@ -23,6 +25,7 @@ export class BiomeManager {
   private readonly COLOR_SWAMP = { r: 0x4d / 255, g: 0x3e / 255, b: 0x30 / 255 }; // Muddy Brown
   private readonly COLOR_SWAMP_TINT = { r: 0xB0 / 255, g: 0xA0 / 255, b: 0xD0 / 255 }; // Lavender Tint
   private readonly COLOR_JURASSIC = { r: 0x2E / 255, g: 0x4B / 255, b: 0x2E / 255 }; // Prehistoric Green
+  private readonly COLOR_TEST = { r: 0x88 / 255, g: 0x88 / 255, b: 0x88 / 255 }; // Neutral Grey
 
   constructor() {
     this.biomeArray = [];
@@ -34,6 +37,12 @@ export class BiomeManager {
     this.features.set('ice', new IceBiomeFeatures());
     this.features.set('swamp', new SwampBiomeFeatures());
     this.features.set('jurassic', new JurassicBiomeFeatures());
+    this.features.set('test', new TestBiomeFeatures());
+
+    if (BiomeManager.DEBUG_BIOME) {
+      this.biomeArray = new Array(this.BIOME_ARRAY_SIZE).fill('test');
+      return;
+    }
 
     while (this.biomeArray.length < this.BIOME_ARRAY_SIZE) {
       // Create a shuffled list of biome types
@@ -213,6 +222,7 @@ export class BiomeManager {
       case 'ice': return this.COLOR_ICE;
       case 'swamp': return this.COLOR_SWAMP;
       case 'jurassic': return this.COLOR_JURASSIC;
+      case 'test': return this.COLOR_TEST;
     }
   }
 
