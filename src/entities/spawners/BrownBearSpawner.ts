@@ -1,42 +1,26 @@
-import * as THREE from 'three';
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { Entity } from '../../core/Entity';
 import { BrownBear } from '../../entities/obstacles/BrownBear';
-import { RiverSystem } from '../../world/RiverSystem';
+import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
+import { AttackAnimalSpawner } from './AttackAnimalSpawner';
+import { ShorePlacementOptions } from '../../managers/PlacementHelper';
 
-export class BrownBearSpawner implements Spawnable {
+export class BrownBearSpawner extends AttackAnimalSpawner {
     id = 'brownbear';
 
-    getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
-        const chunkLength = zEnd - zStart;
-        const density = 0.1 / 15;
-        const count = chunkLength * density;
-        return Math.floor(count + Math.random());
+    protected getDensity(difficulty: number, zStart: number): number {
+        return 0.1 / 15;
     }
 
-    async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
-        const riverSystem = RiverSystem.getInstance();
+    protected get shoreProbability(): number {
+        return 1.0;
+    }
 
-        for (let i = 0; i < count; i++) {
-            const placement = context.placementHelper.findShorePlacement(
-                zStart,
-                zEnd,
-                riverSystem,
-                2.5,
-                3.0
-            );
+    protected get shorePlacement(): ShorePlacementOptions {
+        return { minDistFromBank: 2.5, maxDistFromBank: 3.0 };
+    }
 
-            if (placement) {
-                const entity = new BrownBear(context.physicsEngine, {
-                    x: placement.worldX,
-                    y: placement.worldZ,
-                    angle: placement.rotation,
-                    height: placement.height,
-                    terrainNormal: placement.normal,
-                    onShore: true,
-                    stayOnShore: Math.random() > 0.5
-                });
-                context.entityManager.add(entity, context.chunkIndex);
-            }
-        }
+    protected spawnEntity(physicsEngine: PhysicsEngine, options: AttackAnimalOptions): Entity {
+        return new BrownBear(physicsEngine, options);
     }
 }

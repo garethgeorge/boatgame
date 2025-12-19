@@ -1,14 +1,12 @@
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { BaseSpawner } from './BaseSpawner';
+import { SpawnContext } from '../Spawnable';
 import { Duckling } from '../../entities/obstacles/Duckling';
 
-export class DucklingSpawner implements Spawnable {
+export class DucklingSpawner extends BaseSpawner {
     id = 'duckling';
 
-    getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
-        const chunkLength = zEnd - zStart;
-        const baseDensity = 0.01;
-        const count = chunkLength * baseDensity;
-        return Math.floor(count + Math.random());
+    protected getDensity(difficulty: number, zStart: number): number {
+        return 0.01;
     }
 
     async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {

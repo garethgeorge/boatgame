@@ -1,14 +1,12 @@
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { BaseSpawner } from './BaseSpawner';
+import { SpawnContext } from '../Spawnable';
 import { PenguinKayak } from '../../entities/obstacles/PenguinKayak';
 
-export class PenguinKayakSpawner implements Spawnable {
+export class PenguinKayakSpawner extends BaseSpawner {
     id = 'penguinKayak';
 
-    getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
-        const chunkLength = zEnd - zStart;
-        const baseDensity = 0.01;
-        const count = chunkLength * baseDensity;
-        return Math.floor(count + Math.random());
+    protected getDensity(difficulty: number, zStart: number): number {
+        return 0.01;
     }
 
     async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {

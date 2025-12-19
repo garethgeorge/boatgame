@@ -1,13 +1,13 @@
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { BaseSpawner } from './BaseSpawner';
+import { SpawnContext } from '../Spawnable';
 import { Mangrove } from '../../entities/obstacles/Mangrove';
 import { RiverSystem } from '../../world/RiverSystem';
 
-export class MangroveSpawner implements Spawnable {
+export class MangroveSpawner extends BaseSpawner {
   id = 'mangrove';
 
-  getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
-    const chunkLength = zEnd - zStart;
-    return Math.floor(chunkLength * (14 / 62.5)); // Approx 14 per 62.5m chunk
+  protected getDensity(difficulty: number, zStart: number): number {
+    return 14 / 62.5; // Approx 14 per 62.5m chunk
   }
 
   async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {

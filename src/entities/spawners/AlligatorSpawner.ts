@@ -1,80 +1,44 @@
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { Entity } from '../../core/Entity';
 import { Alligator } from '../../entities/obstacles/Alligator';
-import { RiverSystem } from '../../world/RiverSystem';
+import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
+import { AttackAnimalSpawner } from './AttackAnimalSpawner';
+import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 
-export class AlligatorSpawner implements Spawnable {
+export class AlligatorSpawner extends AttackAnimalSpawner {
     id = 'croc';
 
-    getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
-        const chunkLength = zEnd - zStart;
-        // Start at 1000m
+    protected getDensity(difficulty: number, zStart: number): number {
         const dist = Math.abs(zStart);
         if (dist < 1000) return 0;
 
         const ramp = Math.max(0, (difficulty - 0.13) / 0.87);
-        const baseDensity = 0.00265 * ramp;
-
-        const count = chunkLength * baseDensity;
-        return Math.floor(count + Math.random());
+        return 0.00265 * ramp;
     }
 
-    async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
-        const riverSystem = RiverSystem.getInstance();
+    protected get shoreProbability(): number {
+        return 0.3;
+    }
 
-        for (let i = 0; i < count; i++) {
-            // 30% chance to spawn on shore
-            const isShore = Math.random() < 0.3;
+    protected get entityRadius(): number {
+        return 5.0;
+    }
 
-            if (isShore) {
-                // Shore Spawning Logic
-                const placement = context.placementHelper.findShorePlacement(
-                    zStart,
-                    zEnd,
-                    riverSystem,
-                    3.0,
-                    3.0
-                );
+    protected get clusterPlacement(): { probability: number, size: number, distance: number } {
+        return { probability: 0.5, size: 2, distance: 5.0 };
+    }
 
-                if (placement) {
-                    const entity = new Alligator(context.physicsEngine, {
-                        x: placement.worldX,
-                        y: placement.worldZ,
-                        angle: placement.rotation,
-                        height: placement.height,
-                        terrainNormal: placement.normal,
-                        onShore: true,
-                        stayOnShore: Math.random() > 0.5
-                    });
-                    context.entityManager.add(entity, context.chunkIndex);
-                }
-            } else {
-                // Water Spawning Logic (Cluster)
-                const clusterSize = Math.random() > 0.5 ? 2 : 1;
+    protected get heightInWater(): number {
+        return Alligator.HEIGHT_IN_WATER;
+    }
 
-                // Find a center for the cluster
-                const centerPos = context.placementHelper.tryPlace(zStart, zEnd, 5.0, {
-                    minDistFromBank: 3.0
-                });
+    protected get waterPlacement(): RiverPlacementOptions {
+        return {
+            minDistFromBank: 3.0
+        };
+    }
 
-                if (centerPos) {
-                    for (let j = 0; j < clusterSize; j++) {
-                        const offsetX = (Math.random() - 0.5) * 5;
-                        const offsetZ = (Math.random() - 0.5) * 5;
-
-                        const x = centerPos.x + offsetX;
-                        const z = centerPos.z + offsetZ;
-
-                        const angle = Math.random() * Math.PI * 2;
-                        const entity = new Alligator(context.physicsEngine, {
-                            x,
-                            y: z,
-                            height: Alligator.HEIGHT_IN_WATER,
-                            angle
-                        });
-                        context.entityManager.add(entity, context.chunkIndex);
-                    }
-                }
-            }
-        }
+    protected spawnEntity(physicsEngine: PhysicsEngine, options: AttackAnimalOptions): Entity {
+        return new Alligator(physicsEngine, options);
     }
 }

@@ -1,63 +1,37 @@
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { AttackAnimalSpawner } from './AttackAnimalSpawner';
+import { SpawnContext } from '../Spawnable';
 import { Triceratops } from '../obstacles/Triceratops';
 import { RiverSystem } from '../../world/RiverSystem';
+import { RiverPlacementOptions, ShorePlacementOptions } from '../../managers/PlacementHelper';
+import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
+import { Entity } from '../../core/Entity';
 
-export class TriceratopsSpawner implements Spawnable {
+export class TriceratopsSpawner extends AttackAnimalSpawner {
     id = 'triceratops';
 
-    getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
-        const chunkLength = zEnd - zStart;
-        const density = 0.1 / 15;
-        const count = chunkLength * density;
-        return Math.floor(count + Math.random());
+    protected getDensity(difficulty: number, zStart: number): number {
+        return 0.1 / 15;
     }
 
-    async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
-        const riverSystem = RiverSystem.getInstance();
+    protected get shoreProbability(): number {
+        return 0.6;
+    }
+    protected get entityRadius(): number {
+        return 5.0;
+    }
+    protected get heightInWater(): number {
+        return Triceratops.HEIGHT_IN_WATER;
+    }
+    protected get shorePlacement(): ShorePlacementOptions {
+        return { minDistFromBank: 3.0, maxDistFromBank: 6.0 };
+    }
+    protected get waterPlacement(): RiverPlacementOptions {
+        return { minDistFromBank: 3.0 };
+    }
 
-        for (let i = 0; i < count; i++) {
-            // 60% chance to spawn on shore
-            const isShore = Math.random() < 0.6;
-
-            if (isShore) {
-                // Shore Spawning Logic
-                const placement = context.placementHelper.findShorePlacement(
-                    zStart,
-                    zEnd,
-                    riverSystem,
-                    3.0,
-                    3.0
-                );
-
-                if (placement) {
-                    const entity = new Triceratops(context.physicsEngine, {
-                        x: placement.worldX,
-                        y: placement.worldZ,
-                        angle: placement.rotation,
-                        height: placement.height,
-                        terrainNormal: placement.normal,
-                        onShore: true,
-                        stayOnShore: Math.random() > 0.5
-                    });
-                    context.entityManager.add(entity, context.chunkIndex);
-                }
-            } else {
-                // Find a center for the cluster
-                const centerPos = context.placementHelper.tryPlace(zStart, zEnd, 5.0, {
-                    minDistFromBank: 3.0
-                });
-
-                if (centerPos) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const entity = new Triceratops(context.physicsEngine, {
-                        x: centerPos.x,
-                        y: centerPos.z,
-                        height: Triceratops.HEIGHT_IN_WATER,
-                        angle
-                    });
-                    context.entityManager.add(entity, context.chunkIndex);
-                }
-            }
-        }
+    protected spawnEntity(physicsEngine: PhysicsEngine,
+        options: AttackAnimalOptions): Entity {
+        return new Triceratops(physicsEngine, options);
     }
 }

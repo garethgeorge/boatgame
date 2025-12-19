@@ -1,45 +1,26 @@
-import * as THREE from 'three';
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { Entity } from '../../core/Entity';
 import { Monkey } from '../../entities/obstacles/Monkey';
-import { RiverSystem } from '../../world/RiverSystem';
+import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
+import { AttackAnimalSpawner } from './AttackAnimalSpawner';
+import { ShorePlacementOptions } from '../../managers/PlacementHelper';
 
-export class MonkeySpawner implements Spawnable {
+export class MonkeySpawner extends AttackAnimalSpawner {
     id = 'monkeyshore';
 
-    getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
-        const chunkLength = zEnd - zStart;
-        const density = 0.1 / 15;
-        const count = chunkLength * density;
-        return Math.floor(count + Math.random());
+    protected getDensity(difficulty: number, zStart: number): number {
+        return 0.1 / 15;
     }
 
-    async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
-        const riverSystem = RiverSystem.getInstance();
+    protected get shoreProbability(): number {
+        return 1.0;
+    }
 
-        for (let i = 0; i < count; i++) {
-            const placement = context.placementHelper.findShorePlacement(
-                zStart,
-                zEnd,
-                riverSystem,
-                2.0,
-                2.0
-            );
+    protected get shorePlacement(): ShorePlacementOptions {
+        return { minDistFromBank: 2.0, maxDistFromBank: 2.0 };
+    }
 
-            if (placement) {
-                // Create the monkey entity with terrain-based positioning
-                // Pass onShore=true to enable ONSHORE state
-                const entity = new Monkey(context.physicsEngine, {
-                    x: placement.worldX,
-                    y: placement.worldZ,
-                    angle: placement.rotation,
-                    height: placement.height,
-                    terrainNormal: placement.normal,
-                    onShore: true,
-                    stayOnShore: Math.random() > 0.5
-                });
-
-                context.entityManager.add(entity, context.chunkIndex);
-            }
-        }
+    protected spawnEntity(physicsEngine: PhysicsEngine, options: AttackAnimalOptions): Entity {
+        return new Monkey(physicsEngine, options);
     }
 }

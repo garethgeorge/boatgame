@@ -1,14 +1,12 @@
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { BaseSpawner } from './BaseSpawner';
+import { SpawnContext } from '../Spawnable';
 import { RiverRock } from '../../entities/obstacles/RiverRock';
 
-export class RockSpawner implements Spawnable {
+export class RockSpawner extends BaseSpawner {
   id = 'rock';
 
-  getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
-    const chunkLength = zEnd - zStart;
-    const baseDensity = 0.003;
-    const count = chunkLength * baseDensity;
-    return Math.floor(count + Math.random());
+  protected getDensity(difficulty: number, zStart: number): number {
+    return 0.003;
   }
 
   async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {

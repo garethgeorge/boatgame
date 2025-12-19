@@ -1,15 +1,13 @@
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { BaseSpawner } from './BaseSpawner';
+import { SpawnContext } from '../Spawnable';
 import { MessageInABottle } from '../../entities/obstacles/MessageInABottle';
 import { RiverSystem } from '../../world/RiverSystem';
 
-export class MessageInABottleSpawner implements Spawnable {
+export class MessageInABottleSpawner extends BaseSpawner {
   id = 'bottle';
 
-  getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
-    const chunkLength = zEnd - zStart;
-    const density = 1 / 400 + 1 / 400 * Math.random();
-    const count = chunkLength * density;
-    return Math.floor(count + Math.random());
+  protected getDensity(difficulty: number, zStart: number): number {
+    return 1 / 400 + 1 / 400 * Math.random();
   }
 
   async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {

@@ -1,63 +1,36 @@
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { Entity } from '../../core/Entity';
 import { Brontosaurus } from '../obstacles/Brontosaurus';
-import { RiverSystem } from '../../world/RiverSystem';
+import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
+import { AttackAnimalSpawner } from './AttackAnimalSpawner';
+import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 
-export class BrontosaurusSpawner implements Spawnable {
+export class BrontosaurusSpawner extends AttackAnimalSpawner {
     id = 'brontosaurus';
 
-    getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
-        const chunkLength = zEnd - zStart;
-        const density = 0.1 / 15;
-        const count = chunkLength * density;
-        return Math.floor(count + Math.random());
+    protected getDensity(difficulty: number, zStart: number): number {
+        return 0.1 / 15;
     }
 
-    async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
-        const riverSystem = RiverSystem.getInstance();
+    protected get shoreProbability(): number {
+        return 0.6;
+    }
 
-        for (let i = 0; i < count; i++) {
-            // 60% chance to spawn on shore
-            const isShore = Math.random() < 0.6;
+    protected get entityRadius(): number {
+        return 5.0;
+    }
 
-            if (isShore) {
-                // Shore Spawning Logic
-                const placement = context.placementHelper.findShorePlacement(
-                    zStart,
-                    zEnd,
-                    riverSystem,
-                    3.0,
-                    3.0
-                );
+    protected get heightInWater(): number {
+        return Brontosaurus.HEIGHT_IN_WATER;
+    }
 
-                if (placement) {
-                    const entity = new Brontosaurus(context.physicsEngine, {
-                        x: placement.worldX,
-                        y: placement.worldZ,
-                        angle: placement.rotation,
-                        height: placement.height,
-                        terrainNormal: placement.normal,
-                        onShore: true,
-                        stayOnShore: Math.random() > 0.5
-                    });
-                    context.entityManager.add(entity, context.chunkIndex);
-                }
-            } else {
-                // Find a center for the cluster
-                const centerPos = context.placementHelper.tryPlace(zStart, zEnd, 5.0, {
-                    minDistFromBank: 3.0
-                });
+    protected get waterPlacement(): RiverPlacementOptions {
+        return {
+            minDistFromBank: 3.0
+        };
+    }
 
-                if (centerPos) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const entity = new Brontosaurus(context.physicsEngine, {
-                        x: centerPos.x,
-                        y: centerPos.z,
-                        height: Brontosaurus.HEIGHT_IN_WATER,
-                        angle
-                    });
-                    context.entityManager.add(entity, context.chunkIndex);
-                }
-            }
-        }
+    protected spawnEntity(physicsEngine: PhysicsEngine, options: AttackAnimalOptions): Entity {
+        return new Brontosaurus(physicsEngine, options);
     }
 }

@@ -1,14 +1,12 @@
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { BaseSpawner } from './BaseSpawner';
+import { SpawnContext } from '../Spawnable';
 import { Iceberg } from '../../entities/obstacles/Iceberg';
 
-export class IcebergSpawner implements Spawnable {
+export class IcebergSpawner extends BaseSpawner {
   id = 'iceberg';
 
-  getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
-    const chunkLength = zEnd - zStart;
-    const baseDensity = 0.02;
-    const count = chunkLength * baseDensity;
-    return Math.floor(count + Math.random());
+  protected getDensity(difficulty: number, zStart: number): number {
+    return 0.02;
   }
 
   async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {

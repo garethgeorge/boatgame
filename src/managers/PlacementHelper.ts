@@ -2,12 +2,18 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../world/RiverSystem';
 
-export interface PlacementOptions {
+export interface RiverPlacementOptions {
   minDistFromOthers?: number;
   avoidCenter?: boolean;
   bias?: 'left' | 'right' | 'center' | 'none';
   biasStrength?: number; // 0 to 1
   minDistFromBank?: number;
+}
+
+export interface ShorePlacementOptions {
+  minDistFromBank: number;
+  maxDistFromBank: number;
+  maxSlopeDegrees?: number;
 }
 
 interface PlacedObject {
@@ -31,7 +37,7 @@ export class PlacementHelper {
     zMin: number,
     zMax: number,
     radius: number,
-    options: PlacementOptions = {}
+    options: RiverPlacementOptions = {}
   ): { x: number, z: number } | null {
     const maxAttempts = 20;
     const minDistFromBank = options.minDistFromBank || 2.0;
@@ -108,10 +114,9 @@ export class PlacementHelper {
     zStart: number,
     zEnd: number,
     riverSystem: RiverSystem,
-    minDistFromBank: number,
-    variableDistFromBank: number,
-    maxSlopeDegrees: number = 20
+    options: ShorePlacementOptions
   ): ShorePlacement | null {
+    const { minDistFromBank, maxDistFromBank, maxSlopeDegrees = 20 } = options;
 
     const maxAttempts = 20;
 
@@ -122,7 +127,7 @@ export class PlacementHelper {
       const riverWidth = riverSystem.getRiverWidth(worldZ);
       const riverCenter = riverSystem.getRiverCenter(worldZ);
       const isLeftBank = Math.random() > 0.5;
-      const distFromBank = minDistFromBank + Math.random() * variableDistFromBank;
+      const distFromBank = minDistFromBank + (maxDistFromBank - minDistFromBank) * Math.random();
       const localX = (isLeftBank ? -1 : 1) * (riverWidth / 2 + distFromBank);
       const worldX = localX + riverCenter;
       const height = riverSystem.terrainGeometry.calculateHeight(worldX, worldZ);

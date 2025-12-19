@@ -1,24 +1,19 @@
 import * as planck from 'planck';
-import { Spawnable, SpawnContext, BiomeType } from '../Spawnable';
+import { BaseSpawner } from './BaseSpawner';
+import { SpawnContext } from '../Spawnable';
 import { Buoy } from '../../entities/obstacles/Buoy';
 import { Entity } from '../../core/Entity';
 import { RiverSystem } from '../../world/RiverSystem';
 
-export class BuoySpawner implements Spawnable {
+export class BuoySpawner extends BaseSpawner {
   id = 'buoy';
 
-  getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
-    const chunkLength = zEnd - zStart;
-    // Start at 500m
+  protected getDensity(difficulty: number, zStart: number): number {
     const dist = Math.abs(zStart);
     if (dist < 500) return 0;
 
-    // Ramp: 0% -> 8% (0.08 per 15m)
     const ramp = Math.max(0, (difficulty - 0.06) / 0.94);
-    const baseDensity = 0.0053 * ramp;
-
-    const count = chunkLength * baseDensity;
-    return Math.floor(count + Math.random());
+    return 0.0053 * ramp;
   }
 
   async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
