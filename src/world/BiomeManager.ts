@@ -19,13 +19,6 @@ export class BiomeManager {
   private readonly BIOME_TRANSITION_WIDTH = 0.05; // Width of biome transition zone
   private features: Map<BiomeType, BiomeFeatures> = new Map();
 
-  private readonly COLOR_DESERT = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 }; // Rich Ochre
-  private readonly COLOR_FOREST = { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 }; // Rich Dark Green
-  private readonly COLOR_ICE = { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 }; // White/Blue
-  private readonly COLOR_SWAMP = { r: 0x4d / 255, g: 0x3e / 255, b: 0x30 / 255 }; // Muddy Brown
-  private readonly COLOR_SWAMP_TINT = { r: 0xB0 / 255, g: 0xA0 / 255, b: 0xD0 / 255 }; // Lavender Tint
-  private readonly COLOR_JURASSIC = { r: 0x2E / 255, g: 0x4B / 255, b: 0x2E / 255 }; // Prehistoric Green
-  private readonly COLOR_TEST = { r: 0x88 / 255, g: 0x88 / 255, b: 0x88 / 255 }; // Neutral Grey
 
   constructor() {
     this.biomeArray = [];
@@ -150,31 +143,16 @@ export class BiomeManager {
   }
 
   public getBiomeFogDensity(worldZ: number): number {
-    // Kept for screen tint intensity
     const mixture = this.getBiomeMixture(worldZ);
-
-    const getDensity = (biome: BiomeType) => {
-      if (biome === 'ice') return 0.9;
-      if (biome === 'swamp') return 0.8; // High density for swamp
-      if (biome === 'jurassic') return 0.3; // Slight humidity
-      return 0.0;
-    };
-
-    return getDensity(mixture.biome1) * mixture.weight1 + getDensity(mixture.biome2) * mixture.weight2;
+    const d1 = this.getFeatures(mixture.biome1).getFogDensity();
+    const d2 = this.getFeatures(mixture.biome2).getFogDensity();
+    return d1 * mixture.weight1 + d2 * mixture.weight2;
   }
 
   public getBiomeFogRange(worldZ: number): { near: number, far: number } {
     const mixture = this.getBiomeMixture(worldZ);
-
-    const getRange = (biome: BiomeType) => {
-      if (biome === 'ice') return { near: 0, far: 400 }; // Increased from 200
-      if (biome === 'swamp') return { near: 0, far: 90 }; // Increased by 50% (was 60)
-      if (biome === 'jurassic') return { near: 50, far: 600 }; // Humid atmosphere
-      return { near: 100, far: 800 }; // Default (Desert/Forest)
-    };
-
-    const range1 = getRange(mixture.biome1);
-    const range2 = getRange(mixture.biome2);
+    const range1 = this.getFeatures(mixture.biome1).getFogRange();
+    const range2 = this.getFeatures(mixture.biome2).getFogRange();
 
     return {
       near: this.lerp(range1.near, range2.near, mixture.weight2), // weight2 is t from 1 to 2
@@ -185,11 +163,9 @@ export class BiomeManager {
   public getBiomeGroundColor(worldZ: number): { r: number, g: number, b: number } {
     const mixture = this.getBiomeMixture(worldZ);
 
-    // Get colors for both biomes
-    const color1 = this.getBiomeColor(mixture.biome1);
-    const color2 = this.getBiomeColor(mixture.biome2);
+    const color1 = this.getFeatures(mixture.biome1).getGroundColor();
+    const color2 = this.getFeatures(mixture.biome2).getGroundColor();
 
-    // Blend the colors based on weights
     return {
       r: color1.r * mixture.weight1 + color2.r * mixture.weight2,
       g: color1.g * mixture.weight1 + color2.g * mixture.weight2,
@@ -200,13 +176,8 @@ export class BiomeManager {
   public getBiomeScreenTint(worldZ: number): { r: number, g: number, b: number } {
     const mixture = this.getBiomeMixture(worldZ);
 
-    const getTint = (biome: BiomeType) => {
-      if (biome === 'swamp') return this.COLOR_SWAMP_TINT;
-      return this.getBiomeColor(biome); // Default to ground color for other biomes
-    };
-
-    const color1 = getTint(mixture.biome1);
-    const color2 = getTint(mixture.biome2);
+    const color1 = this.getFeatures(mixture.biome1).getScreenTint();
+    const color2 = this.getFeatures(mixture.biome2).getScreenTint();
 
     return {
       r: color1.r * mixture.weight1 + color2.r * mixture.weight2,
@@ -215,23 +186,12 @@ export class BiomeManager {
     };
   }
 
-  private getBiomeColor(biome: BiomeType): { r: number, g: number, b: number } {
-    switch (biome) {
-      case 'desert': return this.COLOR_DESERT;
-      case 'forest': return this.COLOR_FOREST;
-      case 'ice': return this.COLOR_ICE;
-      case 'swamp': return this.COLOR_SWAMP;
-      case 'jurassic': return this.COLOR_JURASSIC;
-      case 'test': return this.COLOR_TEST;
-    }
-  }
-
   public getBiomeSkyGradient(worldZ: number, dayness: number): { top: THREE.Color, bottom: THREE.Color } {
     const mixture = this.getBiomeMixture(worldZ);
 
     // Get sky gradient for each biome
-    const sky1 = this.getBiomeSkyColors(mixture.biome1, dayness);
-    const sky2 = this.getBiomeSkyColors(mixture.biome2, dayness);
+    const sky1 = this.getFeatures(mixture.biome1).getSkyColors(dayness);
+    const sky2 = this.getFeatures(mixture.biome2).getSkyColors(dayness);
 
     // Blend the two sky gradients based on mixture weights
     const top = sky1.top.clone().multiplyScalar(mixture.weight1).add(sky2.top.clone().multiplyScalar(mixture.weight2));
@@ -240,85 +200,34 @@ export class BiomeManager {
     return { top, bottom };
   }
 
-  private getBiomeSkyColors(biome: BiomeType, dayness: number): { top: THREE.Color, bottom: THREE.Color } {
-    // Sky Color Interpolation
-    // Pastel Sunset Vibe
-    // Day (Sunset): Lavender to Peach
-    // Night: Deep Slate Blue to Dark Purple
+  public getAmplitudeMultiplier(wz: number): number {
+    const mixture = this.getBiomeMixture(wz);
+    const amplitude1 = this.getFeatures(mixture.biome1).getAmplitudeMultiplier();
+    const amplitude2 = this.getFeatures(mixture.biome2).getAmplitudeMultiplier();
 
-    const dayTop = new THREE.Color(0xA69AC2); // Pastel Lavender
-    const dayBot = new THREE.Color(0xFFCBA4); // Pastel Peach
-    const nightTop = new THREE.Color(0x1A1A3A); // Dark Slate Blue
-    const nightBot = new THREE.Color(0x2D2D44); // Muted Dark Purple
-    const sunsetTop = new THREE.Color(0x967BB6); // Muted Purple
-    const sunsetBot = new THREE.Color(0xFF9966); // Soft Orange
+    const amplitudeMultiplier = amplitude1 * mixture.weight1 + amplitude2 * mixture.weight2;
+    return amplitudeMultiplier;
+  }
 
-    let currentTop: THREE.Color;
-    let currentBot: THREE.Color;
+  public getRiverWidthMultiplier(worldZ: number): number {
+    // Apply Swamp Modifier: Widen river significantly
+    const mixture = this.getBiomeMixture(worldZ);
+    const width1 = this.getFeatures(mixture.biome1).getRiverWidthMultiplier();
+    const width2 = this.getFeatures(mixture.biome2).getRiverWidthMultiplier();
 
-    // Transition threshold (approx 20 degrees / 200 radius = 0.1)
-    const transitionThreshold = 0.1;
+    const widthMultiplier = width1 * mixture.weight1 + width2 * mixture.weight2;
+    return widthMultiplier;
+  }
 
-    if (dayness > 0) {
-      // Day
-      if (dayness < transitionThreshold) {
-        // Sunrise / Sunset transition
-        const t = dayness / transitionThreshold;
-        currentTop = sunsetTop.clone().lerp(dayTop, t);
-        currentBot = sunsetBot.clone().lerp(dayBot, t);
-      } else {
-        currentTop = dayTop.clone();
-        currentBot = dayBot.clone();
-      }
-    } else {
-      // Night
-      if (dayness > -transitionThreshold) {
-        // Twilight
-        const t = -dayness / transitionThreshold;
-        currentTop = sunsetTop.clone().lerp(nightTop, t);
-        currentBot = sunsetBot.clone().lerp(nightBot, t);
-      } else {
-        currentTop = nightTop.clone();
-        currentBot = nightBot.clone();
-      }
-    }
-
-    // Apply Biome Modifier to Sky Colors
-    // Forest: Cooler, Crisper Blue
-    // Desert: Warmer, Duster (Default)
-    // Ice: Cooler, whiter
-    // Swamp: Lavender/Purple tint
-
-    if (dayness > 0) {
-      if (biome === 'forest') {
-        const forestTopMod = new THREE.Color(0x4488ff); // Crisp Blue
-        const forestBotMod = new THREE.Color(0xcceeff); // White/Blue Horizon
-        currentTop.lerp(forestTopMod, 0.6);
-        currentBot.lerp(forestBotMod, 0.6);
-      } else if (biome === 'ice') {
-        const iceTopMod = new THREE.Color(0xddeeff); // Pale Ice Blue
-        const iceBotMod = new THREE.Color(0xffffff); // White
-        currentTop.lerp(iceTopMod, 0.8);
-        currentBot.lerp(iceBotMod, 0.8);
-      } else if (biome === 'swamp') {
-        const swampTopMod = new THREE.Color(0x776655); // Muted Brown/Purple
-        const swampBotMod = new THREE.Color(0x5D5346); // Earthen Tone (Matches Banks)
-        currentTop.lerp(swampTopMod, 0.8);
-        currentBot.lerp(swampBotMod, 0.9); // Strong influence for fog color
-      } else if (biome === 'jurassic') {
-        const jurassicTopMod = new THREE.Color(0xaaffaa); // Very Green
-        const jurassicBotMod = new THREE.Color(0xccffcc); // Pale Green Horizon
-        currentTop.lerp(jurassicTopMod, 0.4);
-        currentBot.lerp(jurassicBotMod, 0.4);
-      }
-      // Desert uses default colors (no modification)
-    }
-
-    return { top: currentTop, bottom: currentBot };
+  public getRiverMaterialSwampFactor(worldZ: number): number {
+    const mixture = this.getBiomeMixture(worldZ);
+    let swampFactor = 0.0;
+    if (mixture.biome1 === 'swamp') swampFactor += mixture.weight1;
+    if (mixture.biome2 === 'swamp') swampFactor += mixture.weight2;
+    return swampFactor;
   }
 
   private lerp(start: number, end: number, t: number): number {
     return start * (1 - t) + end * t;
   }
 }
-

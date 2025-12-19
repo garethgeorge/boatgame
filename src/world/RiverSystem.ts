@@ -62,16 +62,7 @@ export class RiverSystem {
 
     // Interpolate between Min and Max based on biome
     let baseWidth = this.lerp(this.MIN_WIDTH, this.MAX_WIDTH, biomeNoise);
-
-    // Apply Swamp Modifier: Widen river significantly
-    const mixture = this.biomeManager.getBiomeMixture(worldZ);
-    const getWidthMultiplier = (biome: BiomeType) => {
-      if (biome === 'swamp') return 5.0;
-      if (biome === 'ice') return 4.0; // Ice biome also has wider rivers deep in
-      return 1.0;
-    };
-
-    const widthMultiplier = getWidthMultiplier(mixture.biome1) * mixture.weight1 + getWidthMultiplier(mixture.biome2) * mixture.weight2;
+    const widthMultiplier = this.biomeManager.getRiverWidthMultiplier(worldZ);
 
     // For ice biome, we previously had logic to widen it "deeper" into the biome.
     // The simple multiplier above is a good approximation, but let's refine if needed.

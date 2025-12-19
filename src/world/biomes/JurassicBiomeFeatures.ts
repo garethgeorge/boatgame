@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
@@ -13,6 +14,29 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     private trexSpawner = new TRexSpawner();
     private triceratopsSpawner = new TriceratopsSpawner();
     private brontoSpawner = new BrontosaurusSpawner();
+
+    getGroundColor(): { r: number, g: number, b: number } {
+        return { r: 0x2E / 255, g: 0x4B / 255, b: 0x2E / 255 };
+    }
+
+    getFogDensity(): number {
+        return 0.3;
+    }
+
+    getFogRange(): { near: number, far: number } {
+        return { near: 50, far: 600 };
+    }
+
+    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
+        const colors = super.getSkyColors(dayness);
+        if (dayness > 0) {
+            const jurassicTopMod = new THREE.Color(0xaaffaa); // Very Green
+            const jurassicBotMod = new THREE.Color(0xccffcc); // Pale Green Horizon
+            colors.top.lerp(jurassicTopMod, 0.4);
+            colors.bottom.lerp(jurassicBotMod, 0.4);
+        }
+        return colors;
+    }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         const length = zEnd - zStart;

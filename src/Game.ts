@@ -394,11 +394,7 @@ export class Game {
 
             // Update Swamp Factor
             const boatZ = this.boat.meshes[0].position.z;
-            const mixture = RiverSystem.getInstance().biomeManager.getBiomeMixture(boatZ);
-            let swampFactor = 0.0;
-            if (mixture.biome1 === 'swamp') swampFactor += mixture.weight1;
-            if (mixture.biome2 === 'swamp') swampFactor += mixture.weight2;
-
+            const swampFactor = RiverSystem.getInstance().biomeManager.getRiverMaterialSwampFactor(boatZ);
             TerrainChunk.waterMaterial.uniforms.uSwampFactor.value = swampFactor;
         }
     }

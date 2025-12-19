@@ -12,12 +12,10 @@ export class TreeFernDecorator extends BaseDecorator {
 
             const biomeType = context.riverSystem.biomeManager.getBiomeType(position.worldZ);
 
-            if (biomeType === 'jurassic') {
-                // Mix with cycads, maybe slightly more rare?
-                if (Math.random() > 0.8) {
-                    const fern = Decorations.getTreeFern();
-                    this.positionAndCollectGeometry(fern, position, context);
-                }
+            // Mix with cycads, maybe slightly more rare?
+            if (Math.random() > 0.8) {
+                const fern = Decorations.getTreeFern();
+                this.positionAndCollectGeometry(fern, position, context);
             }
         }
     }

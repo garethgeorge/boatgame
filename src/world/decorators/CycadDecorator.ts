@@ -12,11 +12,9 @@ export class CycadDecorator extends BaseDecorator {
 
             const biomeType = context.riverSystem.biomeManager.getBiomeType(position.worldZ);
 
-            if (biomeType === 'jurassic') {
-                if (Math.random() > 0.8) {
-                    const tree = Decorations.getCycad();
-                    this.positionAndCollectGeometry(tree, position, context);
-                }
+            if (Math.random() > 0.8) {
+                const tree = Decorations.getCycad();
+                this.positionAndCollectGeometry(tree, position, context);
             }
         }
     }

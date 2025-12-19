@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
@@ -9,6 +10,41 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
 
     private mangroveSpawner = new MangroveSpawner();
+
+    getGroundColor(): { r: number, g: number, b: number } {
+        return { r: 0x4d / 255, g: 0x3e / 255, b: 0x30 / 255 };
+    }
+
+    getScreenTint(): { r: number, g: number, b: number } {
+        return { r: 0xB0 / 255, g: 0xA0 / 255, b: 0xD0 / 255 };
+    }
+
+    getFogDensity(): number {
+        return 0.8;
+    }
+
+    getFogRange(): { near: number, far: number } {
+        return { near: 0, far: 90 };
+    }
+
+    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
+        const colors = super.getSkyColors(dayness);
+        if (dayness > 0) {
+            const swampTopMod = new THREE.Color(0x776655); // Muted Brown/Purple
+            const swampBotMod = new THREE.Color(0x5D5346); // Earthen Tone (Matches Banks)
+            colors.top.lerp(swampTopMod, 0.8);
+            colors.bottom.lerp(swampBotMod, 0.9); // Strong influence for fog color
+        }
+        return colors;
+    }
+
+    getAmplitudeMultiplier(): number {
+        return 0.1;
+    }
+
+    getRiverWidthMultiplier(): number {
+        return 5.0;
+    }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         const length = zEnd - zStart;

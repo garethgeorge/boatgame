@@ -6,6 +6,10 @@ import { DecorationContext } from '../decorators/TerrainDecorator';
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
 
+    getGroundColor(): { r: number, g: number, b: number } {
+        return { r: 0x88 / 255, g: 0x88 / 255, b: 0x88 / 255 };
+    }
+
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         // No decorations for test biome
     }

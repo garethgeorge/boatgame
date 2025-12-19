@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
@@ -13,6 +14,33 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
     private icebergSpawner = new IcebergSpawner();
     private polarBearSpawner = new PolarBearSpawner();
     private penguinKayakSpawner = new PenguinKayakSpawner();
+
+    getGroundColor(): { r: number, g: number, b: number } {
+        return { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 };
+    }
+
+    getFogDensity(): number {
+        return 0.9;
+    }
+
+    getFogRange(): { near: number, far: number } {
+        return { near: 0, far: 400 };
+    }
+
+    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
+        const colors = super.getSkyColors(dayness);
+        if (dayness > 0) {
+            const iceTopMod = new THREE.Color(0xddeeff); // Pale Ice Blue
+            const iceBotMod = new THREE.Color(0xffffff); // White
+            colors.top.lerp(iceTopMod, 0.8);
+            colors.bottom.lerp(iceBotMod, 0.8);
+        }
+        return colors;
+    }
+
+    getRiverWidthMultiplier(): number {
+        return 4.0;
+    }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         const length = zEnd - zStart;

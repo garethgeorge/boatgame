@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
@@ -13,6 +14,21 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     private bearSpawner = new BrownBearSpawner();
     private mooseSpawner = new MooseSpawner();
     private ducklingSpawner = new DucklingSpawner();
+
+    getGroundColor(): { r: number, g: number, b: number } {
+        return { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 };
+    }
+
+    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
+        const colors = super.getSkyColors(dayness);
+        if (dayness > 0) {
+            const forestTopMod = new THREE.Color(0x4488ff); // Crisp Blue
+            const forestBotMod = new THREE.Color(0xcceeff); // White/Blue Horizon
+            colors.top.lerp(forestTopMod, 0.6);
+            colors.bottom.lerp(forestBotMod, 0.6);
+        }
+        return colors;
+    }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         const length = zEnd - zStart;

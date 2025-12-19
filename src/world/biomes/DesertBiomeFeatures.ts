@@ -14,6 +14,10 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     private hippoSpawner = new HippoSpawner();
     private monkeySpawner = new MonkeySpawner();
 
+    getGroundColor(): { r: number, g: number, b: number } {
+        return { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 };
+    }
+
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         const length = zEnd - zStart;
         const count = Math.floor(length * 16);
