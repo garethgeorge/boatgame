@@ -5,27 +5,20 @@ import { RiverSystem } from '../../world/RiverSystem';
 export class AlligatorSpawner implements Spawnable {
     id = 'croc';
 
-    getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-        // Only spawn in desert biome
-        if (biomeType !== 'desert') return 0;
-
+    getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
+        const chunkLength = zEnd - zStart;
         // Start at 1000m
-        const dist = Math.abs(context.zStart);
+        const dist = Math.abs(zStart);
         if (dist < 1000) return 0;
 
-        // Ramp: 0% -> 8% (0.08 per 15m)
-        // 0.08 per 15m = 0.0053 per meter
-        // We split the density between crocs and hippos, so use half: 0.00265
-        // Ramp factor: (difficulty - 0.13) / (1 - 0.13)
         const ramp = Math.max(0, (difficulty - 0.13) / 0.87);
         const baseDensity = 0.00265 * ramp;
 
         const count = chunkLength * baseDensity;
-
         return Math.floor(count + Math.random());
     }
 
-    async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
+    async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
         const riverSystem = RiverSystem.getInstance();
 
         for (let i = 0; i < count; i++) {
@@ -35,8 +28,8 @@ export class AlligatorSpawner implements Spawnable {
             if (isShore) {
                 // Shore Spawning Logic
                 const placement = context.placementHelper.findShorePlacement(
-                    context.zStart,
-                    context.zEnd,
+                    zStart,
+                    zEnd,
                     riverSystem,
                     3.0,
                     3.0
@@ -59,7 +52,7 @@ export class AlligatorSpawner implements Spawnable {
                 const clusterSize = Math.random() > 0.5 ? 2 : 1;
 
                 // Find a center for the cluster
-                const centerPos = context.placementHelper.tryPlace(context.zStart, context.zEnd, 5.0, {
+                const centerPos = context.placementHelper.tryPlace(zStart, zEnd, 5.0, {
                     minDistFromBank: 3.0
                 });
 

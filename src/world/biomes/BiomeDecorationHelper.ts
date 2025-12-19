@@ -1,12 +1,9 @@
 import * as THREE from 'three';
-import { TerrainDecorator, DecorationContext } from './TerrainDecorator';
+import { DecorationContext } from '../decorators/TerrainDecorator';
 import { TerrainChunk } from '../TerrainChunk';
 
-export abstract class BaseDecorator implements TerrainDecorator {
-    abstract decorate(context: DecorationContext): Promise<void>;
-
-    // Generate a random world position within a specific Z range
-    protected generateRandomPositionInRange(context: DecorationContext, zStart: number, zEnd: number): { worldX: number; worldZ: number; height: number } {
+export class BiomeDecorationHelper {
+    public generateRandomPositionInRange(context: DecorationContext, zStart: number, zEnd: number): { worldX: number; worldZ: number; height: number } {
         const dz = Math.random() * (zEnd - zStart);
         const wz = zStart + dz;
         const u = Math.random() * 2 - 1;
@@ -18,12 +15,7 @@ export abstract class BaseDecorator implements TerrainDecorator {
         return { worldX: wx, worldZ: wz, height };
     }
 
-    // Generate a random world position within the entire chunk
-    protected generateRandomPosition(context: DecorationContext): { worldX: number; worldZ: number; height: number } {
-        return this.generateRandomPositionInRange(context, context.zOffset, context.zOffset + TerrainChunk.CHUNK_SIZE);
-    }
-
-    protected isValidDecorationPosition(
+    public isValidDecorationPosition(
         context: DecorationContext,
         position: { worldX: number; worldZ: number; height: number }
     ): boolean {
@@ -51,7 +43,7 @@ export abstract class BaseDecorator implements TerrainDecorator {
         return true;
     }
 
-    protected positionAndCollectGeometry(
+    public positionAndCollectGeometry(
         object: THREE.Object3D,
         position: { worldX: number; height: number; worldZ: number },
         context: DecorationContext

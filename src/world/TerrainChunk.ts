@@ -32,11 +32,10 @@ export class TerrainChunk {
 
   public static async createAsync(
     zOffset: number,
-    graphicsEngine: GraphicsEngine,
-    decorators: TerrainDecorator[]):
+    graphicsEngine: GraphicsEngine):
     Promise<TerrainChunk> {
     const chunk = new TerrainChunk(zOffset, graphicsEngine);
-    await chunk.initAsync(decorators);
+    await chunk.initAsync();
     return chunk;
   }
 
@@ -63,14 +62,14 @@ export class TerrainChunk {
     }
   }
 
-  private async initAsync(decorators: TerrainDecorator[]) {
+  private async initAsync() {
     this.mesh = await this.generateMesh();
     await this.yieldToMain();
 
     this.waterMesh = this.generateWater(); // Fast enough to be sync? Or make async too?
     // Water is simple plane, sync is fine.
 
-    this.decorations = await this.generateDecorations(decorators);
+    this.decorations = await this.generateDecorations();
 
     this.graphicsEngine.add(this.mesh);
     this.graphicsEngine.add(this.waterMesh);
@@ -79,7 +78,7 @@ export class TerrainChunk {
 
   // ... (yieldToMain, generateMesh)
 
-  private async generateDecorations(decorators: TerrainDecorator[]): Promise<THREE.Group> {
+  private async generateDecorations(): Promise<THREE.Group> {
     const geometryGroup = new THREE.Group();
     const geometriesByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
 
@@ -93,8 +92,11 @@ export class TerrainChunk {
     };
 
     Profiler.start('GenDecoBatch');
-    for (const decorator of decorators) {
-      await decorator.decorate(context);
+    const segments = this.riverSystem.biomeManager.getFeatureSegments(this.zOffset, this.zOffset + TerrainChunk.CHUNK_SIZE);
+
+    for (const segment of segments) {
+      const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
+      await features.decorate(context, segment.zStart, segment.zEnd);
       await this.yieldToMain();
     }
     Profiler.end('GenDecoBatch');

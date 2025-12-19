@@ -5,6 +5,7 @@ import { DecorationFactory } from './DecorationFactory';
 export class RockFactory implements DecorationFactory {
     private static readonly rockMaterialDesert = new THREE.MeshToonMaterial({ color: 0xE6C288 }); // Yellow Sandstone
     private static readonly rockMaterialForest = new THREE.MeshToonMaterial({ color: 0x888888 }); // Grey
+    private static readonly rockMaterialSwamp = new THREE.MeshToonMaterial({ color: 0x4D3E30 }); // Muddy Brown
     private static readonly iceRockMaterial = new THREE.MeshToonMaterial({ color: 0xE0F6FF }); // Ice Blue
 
     private static rockNoise3D = createNoise3D();
@@ -14,6 +15,8 @@ export class RockFactory implements DecorationFactory {
         (this.rockMaterialDesert as any).needsUpdate = true;
         (this.rockMaterialForest as any).flatShading = true;
         (this.rockMaterialForest as any).needsUpdate = true;
+        (this.rockMaterialSwamp as any).flatShading = true;
+        (this.rockMaterialSwamp as any).needsUpdate = true;
         (this.iceRockMaterial as any).flatShading = true;
         (this.iceRockMaterial as any).needsUpdate = true;
     }
@@ -34,7 +37,7 @@ export class RockFactory implements DecorationFactory {
         }
     }
 
-    create(options: { size: number, biome: 'desert' | 'forest' | 'ice' | 'swamp' }): THREE.Group {
+    create(options: { size: number, biome: string }): THREE.Group {
         const { size, biome } = options;
         const isIcy = biome === 'ice';
 
@@ -53,7 +56,7 @@ export class RockFactory implements DecorationFactory {
 
             // Apply material based on biome if not icy
             if (!isIcy) {
-                const material = biome === 'desert' ? RockFactory.rockMaterialDesert : RockFactory.rockMaterialForest;
+                const material = this.getMaterialForBiome(biome);
                 rock.traverse((child) => {
                     if (child instanceof THREE.Mesh) {
                         child.material = material;
@@ -66,10 +69,16 @@ export class RockFactory implements DecorationFactory {
         return mesh;
     }
 
+    private getMaterialForBiome(biome: string): THREE.Material {
+        if (biome === 'desert') return RockFactory.rockMaterialDesert;
+        if (biome === 'swamp') return RockFactory.rockMaterialSwamp;
+        return RockFactory.rockMaterialForest; // Default for forest, jurassic
+    }
+
     private spawnRock(size: number, biome: string, isIcy: boolean): THREE.Group {
         const rock = this.createRock(size, isIcy);
         if (!isIcy) {
-            const material = biome === 'desert' ? RockFactory.rockMaterialDesert : RockFactory.rockMaterialForest;
+            const material = this.getMaterialForBiome(biome);
             rock.traverse((child) => {
                 if (child instanceof THREE.Mesh) {
                     child.material = material;

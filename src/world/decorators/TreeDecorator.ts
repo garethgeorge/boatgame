@@ -4,13 +4,18 @@ import { Decorations } from '../Decorations';
 
 export class TreeDecorator extends BaseDecorator {
     async decorate(context: DecorationContext): Promise<void> {
-        const count = 1000;
+        return this.decorateInRange(context, context.zOffset, context.zOffset + 62.5); // CHUNK_SIZE
+    }
+
+    async decorateInRange(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
+        const length = zEnd - zStart;
+        const count = Math.floor(length * 16); // Approx 1000 per 62.5m chunk
+
+        const biomeType = context.riverSystem.biomeManager.getBiomeType((zStart + zEnd) / 2);
 
         for (let i = 0; i < count; i++) {
-            const position = this.generateRandomPosition(context);
+            const position = this.generateRandomPositionInRange(context, zStart, zEnd);
             if (!this.isValidDecorationPosition(context, position)) continue;
-
-            const biomeType = context.riverSystem.biomeManager.getBiomeType(position.worldZ);
 
             if (biomeType === 'forest') {
                 if (Math.random() > 0.8) {

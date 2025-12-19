@@ -5,32 +5,22 @@ import { RiverSystem } from '../../world/RiverSystem';
 export class MessageInABottleSpawner implements Spawnable {
   id = 'bottle';
 
-  getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-    // 0.04 per 15m = 0.0026 per meter (Normal)
-    // 0.005 per 15m = 0.00033 per meter (Bonus)
-    // Combined? Or separate bonus spawner?
-    // Let's handle both here or separate.
-    // Original code had separate probabilities.
-    // Let's just do normal bottles here.
-
-    // Roughly 1 per 400-800m
+  getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
+    const chunkLength = zEnd - zStart;
     const density = 1 / 400 + 1 / 400 * Math.random();
     const count = chunkLength * density;
-
     return Math.floor(count + Math.random());
   }
 
-  async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
-    // Check for Bonus Arc (Rare event per chunk?)
-    // Original: 0.005 probability per step.
-    // Let's say 10% chance per chunk to have a bonus arc?
+  async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
+    // Check for Bonus Arc (Rare event per chunk segment?)
     if (Math.random() < 0.1) {
-      this.spawnBonusArc(context);
+      this.spawnBonusArc(context, zStart, zEnd);
     }
 
     // Normal Bottles
     for (let i = 0; i < count; i++) {
-      const pos = context.placementHelper.tryPlace(context.zStart, context.zEnd, 1.0, {
+      const pos = context.placementHelper.tryPlace(zStart, zEnd, 1.0, {
         minDistFromBank: 1.0
       });
 
@@ -41,9 +31,9 @@ export class MessageInABottleSpawner implements Spawnable {
     }
   }
 
-  private spawnBonusArc(context: SpawnContext) {
+  private spawnBonusArc(context: SpawnContext, zStart: number, zEnd: number) {
     const riverSystem = RiverSystem.getInstance();
-    const worldZ = context.zStart + Math.random() * (context.zEnd - context.zStart - 60); // Ensure space for arc
+    const worldZ = zStart + Math.random() * (zEnd - zStart - 60); // Ensure space for arc
 
     const count = 8;
     const arcLength = 60;

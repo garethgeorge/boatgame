@@ -6,31 +6,26 @@ import { RiverSystem } from '../../world/RiverSystem';
 export class BrownBearSpawner implements Spawnable {
     id = 'brownbear';
 
-    getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-        // Only spawn in forest biome
-        if (biomeType !== 'forest') return 0;
-
-        // Roughly 0.1 bears per 15m chunk
+    getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
+        const chunkLength = zEnd - zStart;
         const density = 0.1 / 15;
         const count = chunkLength * density;
-
         return Math.floor(count + Math.random());
     }
 
-    async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
+    async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
         const riverSystem = RiverSystem.getInstance();
 
         for (let i = 0; i < count; i++) {
             const placement = context.placementHelper.findShorePlacement(
-                context.zStart,
-                context.zEnd,
+                zStart,
+                zEnd,
                 riverSystem,
                 2.5,
                 3.0
             );
 
             if (placement) {
-                // Create the brown bear entity with terrain-based positioning
                 const entity = new BrownBear(context.physicsEngine, {
                     x: placement.worldX,
                     y: placement.worldZ,
@@ -40,7 +35,6 @@ export class BrownBearSpawner implements Spawnable {
                     onShore: true,
                     stayOnShore: Math.random() > 0.5
                 });
-
                 context.entityManager.add(entity, context.chunkIndex);
             }
         }

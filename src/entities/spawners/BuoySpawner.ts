@@ -7,31 +7,25 @@ import { RiverSystem } from '../../world/RiverSystem';
 export class BuoySpawner implements Spawnable {
   id = 'buoy';
 
-  getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-    // No buoys in ice
-    if (biomeType === 'ice' || biomeType === 'jurassic') return 0;
-
+  getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
+    const chunkLength = zEnd - zStart;
     // Start at 500m
-    const dist = Math.abs(context.zStart);
+    const dist = Math.abs(zStart);
     if (dist < 500) return 0;
 
     // Ramp: 0% -> 8% (0.08 per 15m)
-    // 0.08 per 15m = 0.0053 per meter
-    // Ramp factor: (difficulty - 0.06) / (1 - 0.06)
     const ramp = Math.max(0, (difficulty - 0.06) / 0.94);
     const baseDensity = 0.0053 * ramp;
 
     const count = chunkLength * baseDensity;
-
     return Math.floor(count + Math.random());
   }
 
-  async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
+  async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
     const riverSystem = RiverSystem.getInstance();
 
     for (let i = 0; i < count; i++) {
-      // Chained Buoys logic
-      const wz = context.zStart + Math.random() * (context.zEnd - context.zStart);
+      const wz = zStart + Math.random() * (zEnd - zStart);
 
       const isLeft = Math.random() > 0.5;
       const riverWidth = riverSystem.getRiverWidth(wz);

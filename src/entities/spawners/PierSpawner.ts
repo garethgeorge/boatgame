@@ -6,32 +6,26 @@ import { RiverSystem } from '../../world/RiverSystem';
 export class PierSpawner implements Spawnable {
   id = 'pier';
 
-  getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-    // No piers in ice
-    if (biomeType === 'ice' || biomeType === 'jurassic') return 0;
-
+  getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
+    const chunkLength = zEnd - zStart;
     // Start after 200m
-    const dist = Math.abs(context.zStart);
+    const dist = Math.abs(zStart);
     if (dist < 200) return 0;
 
     // 0.04 per 15m = 0.0026 per meter
     const baseDensity = 0.0026;
     const count = chunkLength * baseDensity;
-
     return Math.floor(count + Math.random());
   }
 
-  async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
+  async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
     const riverSystem = RiverSystem.getInstance();
 
     for (let i = 0; i < count; i++) {
-      // Piers need to be attached to the bank
-      // Logic from original ObstacleManager
-
       const minDepotPierLength = 13.0;
 
       // We need to pick a Z first
-      const worldZ = context.zStart + Math.random() * (context.zEnd - context.zStart);
+      const worldZ = zStart + Math.random() * (zEnd - zStart);
 
       const isLeft = Math.random() > 0.5;
       const width = riverSystem.getRiverWidth(worldZ);

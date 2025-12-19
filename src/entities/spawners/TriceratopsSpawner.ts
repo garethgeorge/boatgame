@@ -5,18 +5,14 @@ import { RiverSystem } from '../../world/RiverSystem';
 export class TriceratopsSpawner implements Spawnable {
     id = 'triceratops';
 
-    getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-        // Only spawn in jurassic biome
-        if (biomeType !== 'jurassic') return 0;
-
-        // Roughly 0.1 dinos per 15m chunk
+    getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
+        const chunkLength = zEnd - zStart;
         const density = 0.1 / 15;
         const count = chunkLength * density;
-
         return Math.floor(count + Math.random());
     }
 
-    async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
+    async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
         const riverSystem = RiverSystem.getInstance();
 
         for (let i = 0; i < count; i++) {
@@ -26,8 +22,8 @@ export class TriceratopsSpawner implements Spawnable {
             if (isShore) {
                 // Shore Spawning Logic
                 const placement = context.placementHelper.findShorePlacement(
-                    context.zStart,
-                    context.zEnd,
+                    zStart,
+                    zEnd,
                     riverSystem,
                     3.0,
                     3.0
@@ -47,7 +43,7 @@ export class TriceratopsSpawner implements Spawnable {
                 }
             } else {
                 // Find a center for the cluster
-                const centerPos = context.placementHelper.tryPlace(context.zStart, context.zEnd, 5.0, {
+                const centerPos = context.placementHelper.tryPlace(zStart, zEnd, 5.0, {
                     minDistFromBank: 3.0
                 });
 

@@ -3,30 +3,10 @@ import { EntityManager } from '../core/EntityManager';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 import { RiverSystem } from '../world/RiverSystem';
 import { Profiler } from '../core/Profiler';
-import { TerrainChunk } from '../world/TerrainChunk';
-import { Entity } from '../core/Entity';
 import { Spawnable, SpawnContext } from '../entities/Spawnable';
 import { PlacementHelper } from './PlacementHelper';
 
-// Spawners
-import { LogSpawner } from '../entities/spawners/LogSpawner';
-import { RockSpawner } from '../entities/spawners/RockSpawner';
-import { IcebergSpawner } from '../entities/spawners/IcebergSpawner';
-import { PierSpawner } from '../entities/spawners/PierSpawner';
-import { BuoySpawner } from '../entities/spawners/BuoySpawner';
-import { AlligatorSpawner } from '../entities/spawners/AlligatorSpawner';
-import { HippoSpawner } from '../entities/spawners/HippoSpawner';
-import { MessageInABottleSpawner } from '../entities/spawners/MessageInABottleSpawner';
-import { PenguinKayakSpawner } from '../entities/spawners/PenguinKayakSpawner';
-import { PolarBearSpawner } from '../entities/spawners/PolarBearSpawner';
-import { BrownBearSpawner } from '../entities/spawners/BrownBearSpawner';
-import { MangroveSpawner } from '../entities/spawners/MangroveSpawner';
-import { MonkeySpawner } from '../entities/spawners/MonkeySpawner';
-import { MooseSpawner } from '../entities/spawners/MooseSpawner';
-import { DucklingSpawner } from '../entities/spawners/DucklingSpawner';
-import { TRexSpawner } from '../entities/spawners/TRexSpawner';
-import { TriceratopsSpawner } from '../entities/spawners/TriceratopsSpawner';
-import { BrontosaurusSpawner } from '../entities/spawners/BrontosaurusSpawner';
+// Spawners logic moved to BiomeFeatures
 
 export class ObstacleManager {
   private riverSystem: RiverSystem;
@@ -37,32 +17,6 @@ export class ObstacleManager {
     private physicsEngine: PhysicsEngine
   ) {
     this.riverSystem = RiverSystem.getInstance();
-    this.registerSpawners();
-  }
-
-  private registerSpawners() {
-    this.register(new LogSpawner());
-    this.register(new RockSpawner());
-    this.register(new IcebergSpawner());
-    this.register(new PierSpawner());
-    this.register(new BuoySpawner());
-    this.register(new AlligatorSpawner());
-    this.register(new HippoSpawner());
-    this.register(new MessageInABottleSpawner());
-    this.register(new PenguinKayakSpawner());
-    this.register(new PolarBearSpawner());
-    this.register(new BrownBearSpawner());
-    this.register(new MangroveSpawner());
-    this.register(new MonkeySpawner());
-    this.register(new MooseSpawner());
-    this.register(new DucklingSpawner());
-    this.register(new TRexSpawner());
-    this.register(new TriceratopsSpawner);
-    this.register(new BrontosaurusSpawner);
-  }
-
-  private register(spawner: Spawnable) {
-    this.registry.set(spawner.id, spawner);
   }
 
   // Called by TerrainManager when a new chunk is created
@@ -93,15 +47,11 @@ export class ObstacleManager {
     const distance = Math.abs(centerZ);
     const difficulty = Math.min(distance / 7500, 1.0);
 
-    // Iterate Spawners
-    for (const spawner of this.registry.values()) {
-      const count = spawner.getSpawnCount(context, biomeType, difficulty, chunkLength);
-      if (count > 0) {
-        await spawner.spawn(context, count, biomeType);
-      }
+    const segments = this.riverSystem.biomeManager.getFeatureSegments(zStart, zEnd);
 
-      // Yield to main thread occasionally if needed?
-      // Spawners are async, so we can await.
+    for (const segment of segments) {
+      const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
+      await features.spawn(context, difficulty, segment.zStart, segment.zEnd);
     }
 
     Profiler.end('SpawnObstacles');

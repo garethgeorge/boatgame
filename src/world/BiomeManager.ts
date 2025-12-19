@@ -1,5 +1,11 @@
 import { smoothstep } from 'three/src/math/MathUtils';
 import * as THREE from 'three';
+import { BiomeFeatures } from './biomes/BiomeFeatures';
+import { DesertBiomeFeatures } from './biomes/DesertBiomeFeatures';
+import { ForestBiomeFeatures } from './biomes/ForestBiomeFeatures';
+import { IceBiomeFeatures } from './biomes/IceBiomeFeatures';
+import { SwampBiomeFeatures } from './biomes/SwampBiomeFeatures';
+import { JurassicBiomeFeatures } from './biomes/JurassicBiomeFeatures';
 
 export type BiomeType = 'desert' | 'forest' | 'ice' | 'swamp' | 'jurassic';
 
@@ -9,6 +15,7 @@ export class BiomeManager {
   private readonly BIOME_ARRAY_SIZE = 100;
   private readonly BIOME_SCALE = 1.0 / this.BIOME_LENGTH; // Multiplier for converting worldZ to biome array index
   private readonly BIOME_TRANSITION_WIDTH = 0.05; // Width of biome transition zone
+  private features: Map<BiomeType, BiomeFeatures> = new Map();
 
   private readonly COLOR_DESERT = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 }; // Rich Ochre
   private readonly COLOR_FOREST = { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 }; // Rich Dark Green
@@ -20,6 +27,13 @@ export class BiomeManager {
   constructor() {
     this.biomeArray = [];
     const biomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic'];
+
+    // Initialize features
+    this.features.set('desert', new DesertBiomeFeatures());
+    this.features.set('forest', new ForestBiomeFeatures());
+    this.features.set('ice', new IceBiomeFeatures());
+    this.features.set('swamp', new SwampBiomeFeatures());
+    this.features.set('jurassic', new JurassicBiomeFeatures());
 
     while (this.biomeArray.length < this.BIOME_ARRAY_SIZE) {
       // Create a shuffled list of biome types
@@ -51,6 +65,29 @@ export class BiomeManager {
     // Use modulo to wrap around for both positive and negative values
     const index = ((Math.floor(worldZ * this.BIOME_SCALE) % this.BIOME_ARRAY_SIZE) + this.BIOME_ARRAY_SIZE) % this.BIOME_ARRAY_SIZE;
     return this.biomeArray[index];
+  }
+
+  public getFeatureSegments(zStart: number, zEnd: number): Array<{ biome: BiomeType, zStart: number, zEnd: number }> {
+    const segments: Array<{ biome: BiomeType, zStart: number, zEnd: number }> = [];
+    let currentZ = zStart;
+
+    while (currentZ < zEnd) {
+      const biomeType = this.getBiomeType(currentZ);
+      // Find the next boundary after currentZ
+      // A boundary exists every BIOME_LENGTH meters.
+      const boundaryIndex = Math.floor(currentZ / this.BIOME_LENGTH);
+      const nextBoundary = (boundaryIndex + 1) * this.BIOME_LENGTH;
+
+      const segmentEnd = Math.min(zEnd, nextBoundary);
+      segments.push({ biome: biomeType, zStart: currentZ, zEnd: segmentEnd });
+      currentZ = segmentEnd;
+    }
+
+    return segments;
+  }
+
+  public getFeatures(biome: BiomeType): BiomeFeatures {
+    return this.features.get(biome)!;
   }
 
   public getBiomeMixture(worldZ: number): {

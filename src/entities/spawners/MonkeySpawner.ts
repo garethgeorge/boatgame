@@ -6,25 +6,22 @@ import { RiverSystem } from '../../world/RiverSystem';
 export class MonkeySpawner implements Spawnable {
     id = 'monkeyshore';
 
-    getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-        // Only spawn in desert biome
-        if (biomeType !== 'desert') return 0;
-
-        const probability = 0.1 / chunkLength; // roughly same as alligator
-
-        return Math.random() * probability * chunkLength; // wait, AlligatorSpawner had `Math.random() * probability` which is tiny if probability is small. 
-        // Let's re-read AlligatorShoreSpawner carefully.
+    getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
+        const chunkLength = zEnd - zStart;
+        const density = 0.1 / 15;
+        const count = chunkLength * density;
+        return Math.floor(count + Math.random());
     }
 
-    async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
+    async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
         const riverSystem = RiverSystem.getInstance();
 
         for (let i = 0; i < count; i++) {
             const placement = context.placementHelper.findShorePlacement(
-                context.zStart,
-                context.zEnd,
+                zStart,
+                zEnd,
                 riverSystem,
-                2.0, // smaller clearance for monkey
+                2.0,
                 2.0
             );
 

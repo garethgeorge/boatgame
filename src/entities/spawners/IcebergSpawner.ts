@@ -4,24 +4,18 @@ import { Iceberg } from '../../entities/obstacles/Iceberg';
 export class IcebergSpawner implements Spawnable {
   id = 'iceberg';
 
-  getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-    // Only in Ice biome
-    if (biomeType !== 'ice') return 0;
-
-    // High chance in ice (0.30 per 15m in original)
-    // 0.30 per 15m = 0.02 per meter.
+  getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
+    const chunkLength = zEnd - zStart;
     const baseDensity = 0.02;
     const count = chunkLength * baseDensity;
-
     return Math.floor(count + Math.random());
   }
 
-  async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
+  async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
     for (let i = 0; i < count; i++) {
       const radius = 2.0 + Math.random() * 3.0; // Large
 
-      // Random placement across width
-      const pos = context.placementHelper.tryPlace(context.zStart, context.zEnd, radius, {
+      const pos = context.placementHelper.tryPlace(zStart, zEnd, radius, {
         minDistFromBank: 1.0
       });
 

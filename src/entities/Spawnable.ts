@@ -17,19 +17,20 @@ export interface Spawnable {
   id: string;
 
   /**
-   * Determine how many of this obstacle to spawn in the given chunk range.
+   * Determine how many of this obstacle to spawn in the given range.
    * @param context Context providing chunk info
-   * @param biomeType Biome type at the center of the chunk
    * @param difficulty Normalized difficulty (0.0 to 1.0)
-   * @param chunkLength Length of the chunk in meters
+   * @param zStart World Z start of range
+   * @param zEnd World Z end of range
    */
-  getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number;
+  getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number;
 
   /**
-   * Attempt to spawn the determined number of obstacles.
+   * Attempt to spawn the determined number of obstacles in the given range.
    * @param context Context providing systems and placement helper
    * @param count Number of obstacles to attempt to spawn
-   * @param biomeType Biome type
+   * @param zStart World Z start of range
+   * @param zEnd World Z end of range
    */
-  spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void>;
+  spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void>;
 }

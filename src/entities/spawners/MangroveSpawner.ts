@@ -5,19 +5,16 @@ import { RiverSystem } from '../../world/RiverSystem';
 export class MangroveSpawner implements Spawnable {
   id = 'mangrove';
 
-  getSpawnCount(context: SpawnContext, biomeType: BiomeType, difficulty: number, chunkLength: number): number {
-    if (biomeType !== 'swamp') return 0;
-
-    // High frequency: Dense forest
-    // Reduced to ~1/3rd as per user request (was 40)
-    return 14;
+  getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
+    const chunkLength = zEnd - zStart;
+    return Math.floor(chunkLength * (14 / 62.5)); // Approx 14 per 62.5m chunk
   }
 
-  async spawn(context: SpawnContext, count: number, biomeType: BiomeType): Promise<void> {
+  async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
     const riverSystem = RiverSystem.getInstance();
 
     for (let i = 0; i < count; i++) {
-      const z = context.zStart + Math.random() * (context.zEnd - context.zStart);
+      const z = zStart + Math.random() * (zEnd - zStart);
 
       // Get river width and center at this Z
       const riverWidth = riverSystem.getRiverWidth(z);

@@ -62,7 +62,7 @@ export class Decorations {
     return DecorationRegistry.getFactory('treeFern').create();
   }
 
-  static getRock(biome: 'desert' | 'forest' | 'ice' | 'swamp', size: number): THREE.Group {
+  static getRock(biome: string, size: number): THREE.Group {
     return DecorationRegistry.getFactory('rock').create({ size, biome });
   }
 
