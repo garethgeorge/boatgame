@@ -38,6 +38,10 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         return colors;
     }
 
+    getRiverWidthMultiplier(): number {
+        return 1.7;
+    }
+
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         const length = zEnd - zStart;
         const count = Math.floor(length * 20); // Denser
