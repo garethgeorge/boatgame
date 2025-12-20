@@ -6,6 +6,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { SobelShader } from '../shaders/SobelShader';
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass'
 
 export class GraphicsEngine {
   scene: THREE.Scene;
@@ -15,6 +16,7 @@ export class GraphicsEngine {
   composer: EffectComposer;
   sobelPass: ShaderPass;
   fxaaPass: ShaderPass;
+  outputPass: OutputPass;
 
 
   constructor(container: HTMLElement) {
@@ -37,8 +39,6 @@ export class GraphicsEngine {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap at 2x for performance
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
-
-
     container.appendChild(this.renderer.domElement);
 
     // Post-processing setup
@@ -49,8 +49,6 @@ export class GraphicsEngine {
     this.sobelPass = new ShaderPass(SobelShader);
     this.sobelPass.uniforms['resolution'].value.x = window.innerWidth * window.devicePixelRatio;
     this.sobelPass.uniforms['resolution'].value.y = window.innerHeight * window.devicePixelRatio;
-    this.sobelPass.uniforms['resolution'].value.x = window.innerWidth * window.devicePixelRatio;
-    this.sobelPass.uniforms['resolution'].value.y = window.innerHeight * window.devicePixelRatio;
     this.composer.addPass(this.sobelPass);
 
     this.fxaaPass = new ShaderPass(FXAAShader);
@@ -58,6 +56,8 @@ export class GraphicsEngine {
     this.fxaaPass.uniforms['resolution'].value.y = 1 / (window.innerHeight * window.devicePixelRatio);
     this.composer.addPass(this.fxaaPass);
 
+    this.outputPass = new OutputPass();
+    this.composer.addPass(this.outputPass);
 
     window.addEventListener('resize', () => this.onWindowResize(), false);
   }
@@ -73,7 +73,6 @@ export class GraphicsEngine {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.composer.setSize(window.innerWidth, window.innerHeight);
-    this.sobelPass.uniforms['resolution'].value.x = window.innerWidth * window.devicePixelRatio;
     this.sobelPass.uniforms['resolution'].value.x = window.innerWidth * window.devicePixelRatio;
     this.sobelPass.uniforms['resolution'].value.y = window.innerHeight * window.devicePixelRatio;
     this.fxaaPass.uniforms['resolution'].value.x = 1 / (window.innerWidth * window.devicePixelRatio);
