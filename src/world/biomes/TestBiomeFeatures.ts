@@ -15,6 +15,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        // No entities for test biome
+        //const count = (zEnd - zStart) * 0.01;
+        //await this.rockSpawner.spawn(context, count, zStart, zEnd);
     }
 }

@@ -8,10 +8,12 @@ export class Profiler {
   // value based metrics
   private static info: Map<string, { min: number, max: number, avg: number, current: number, samples: number, sum: number }> = new Map();
 
-  private static startTimes: Map<string, number> = new Map();
+  private static startTimes: Map<string, { start: number, duration: number }> = new Map();
+
   private static overlay: HTMLElement | null = null;
   private static frameCount: number = 0;
   private static lastUpdate: number = 0;
+  private static lastReset: number = 0;
 
   // stats.js
   private static stats: any = null;
@@ -80,25 +82,42 @@ export class Profiler {
   }
 
   static start(label: string) {
-    this.startTimes.set(label, performance.now());
+    this.startTimes.set(label, { start: performance.now(), duration: 0 });
+  }
+
+  static pause(label: string) {
+    const entry = this.startTimes.get(label);
+    if (entry === undefined) return;
+
+    entry.duration += performance.now() - entry.start;
+  }
+
+  static resume(label: string) {
+    const entry = this.startTimes.get(label);
+    if (entry === undefined) return;
+
+    entry.start = performance.now();
   }
 
   static end(label: string) {
-    const startTime = this.startTimes.get(label);
-    if (startTime === undefined) return;
+    const entry = this.startTimes.get(label);
+    if (entry === undefined) return;
 
-    const duration = performance.now() - startTime;
+    entry.duration += performance.now() - entry.start;
 
     if (!this.metrics.has(label)) {
       this.metrics.set(label, { min: Infinity, max: -Infinity, avg: 0, current: 0, samples: 0, sum: 0 });
     }
 
     const metric = this.metrics.get(label)!;
-    metric.current = duration;
-    metric.min = Math.min(metric.min, duration);
-    metric.max = Math.max(metric.max, duration);
-    metric.sum += duration;
-    metric.samples++;
+    if (metric) {
+      metric.current = entry.duration;
+      metric.min = Math.min(metric.min, entry.duration);
+      metric.max = Math.max(metric.max, entry.duration);
+      metric.sum += entry.duration;
+      metric.samples++;
+      metric.avg = metric.sum / metric.samples;
+    }
   }
 
   private static update() {
@@ -112,14 +131,13 @@ export class Profiler {
       this.updateDisplay();
       this.lastUpdate = now;
 
-      // Reset stats periodically? Or keep running avg?
-      // Let's reset min/max every update to show recent spikes
-      for (const metric of this.metrics.values()) {
-        metric.avg = metric.sum / metric.samples;
-        metric.sum = 0;
-        metric.samples = 0;
-        metric.min = Infinity;
-        metric.max = -Infinity;
+      if (now - this.lastReset > 5000) {
+        for (const metric of this.metrics.values()) {
+          metric.avg = metric.current;
+          metric.sum = metric.current;
+          metric.samples = 1;
+        }
+        this.lastReset = now;
       }
     }
   }

@@ -97,7 +97,9 @@ export class TerrainChunk {
     for (const segment of segments) {
       const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
       await features.decorate(context, segment.zStart, segment.zEnd);
+      Profiler.pause('GenDecoBatch');
       await this.yieldToMain();
+      Profiler.resume('GenDecoBatch');
     }
     Profiler.end('GenDecoBatch');
 
@@ -138,9 +140,9 @@ export class TerrainChunk {
     for (let iz = 0; iz <= resZ; iz++) {
       // Yield every few rows to keep frame rate smooth
       if (iz % 5 === 0) {
-        Profiler.end('GenMeshBatch');
+        Profiler.pause('GenMeshBatch');
         await this.yieldToMain();
-        Profiler.start('GenMeshBatch');
+        Profiler.resume('GenMeshBatch');
       }
 
       // tz is parametric [0,1] from chunk near to far
