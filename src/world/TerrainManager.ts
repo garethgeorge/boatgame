@@ -108,6 +108,7 @@ export class TerrainManager {
 
           // Spawn obstacles for this chunk
           this.obstacleManager.spawnObstaclesForChunk(index, zOffset, zOffset + TerrainChunk.CHUNK_SIZE);
+          console.log(`[TerrainManager] Created chunk ${index}`);
         });
       }
     }
@@ -115,6 +116,7 @@ export class TerrainManager {
     // Remove old chunks
     for (const [index, chunk] of this.chunks) {
       if (Math.abs(index - currentChunkIndex) > renderDistance) {
+        console.log(`[TerrainManager] Disposing chunk ${index}`);
         chunk.dispose();
         this.chunks.delete(index);
 

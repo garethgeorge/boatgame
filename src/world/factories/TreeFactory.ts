@@ -12,6 +12,9 @@ export class TreeFactory implements DecorationFactory {
     } = { trees: [] };
 
     async load(): Promise<void> {
+        // Clear existing cache to prevent unlimited growth if load() is called multiple times
+        this.cache.trees = [];
+
         // Pre-generate trees
         console.log("Generating Tree Cache...");
 

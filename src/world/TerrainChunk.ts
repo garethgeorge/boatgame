@@ -284,6 +284,19 @@ export class TerrainChunk {
     // Checks: We did NOT add shared materials to disposer in mergeAndAddGeometries. Correct.
 
     // Clear the group logic
+    // Explicitly dispose of any children in decorations group to be safe
+    this.decorations.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(m => m.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      }
+    });
     this.decorations.clear();
 
     // Stop animations

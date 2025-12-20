@@ -181,7 +181,7 @@ export class Game {
     }
 
     start() {
-        console.log('[DEBUG] start() called');
+        console.log('[DEBUG] start() called. Game Instance ID:', Math.random());
         if (!this.boat) return; // Guard against uninitialized start
 
         console.log('[DEBUG] Hiding start screen');

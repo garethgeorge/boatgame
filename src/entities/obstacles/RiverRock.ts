@@ -67,6 +67,7 @@ export class RiverRock extends Entity {
         geometry.computeVertexNormals();
 
         const material = new THREE.MeshToonMaterial({ color: 0x808080 });
+        this.disposer.add(geometry);
         this.disposer.add(material);
 
         const mesh = new THREE.Mesh(geometry, material);

@@ -3,6 +3,7 @@ import * as planck from 'planck';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations'; // Re-using materials if possible, or define new ones
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 export class Mangrove extends Entity {
   private static cache: THREE.Group[] = [];
@@ -240,7 +241,63 @@ export class Mangrove extends Entity {
       group.add(leaf);
     }
 
-    return group;
+    // Merge geometries to reduce draw calls and geometry count
+    // 1. Wood Geometry (Roots, Trunk, Branches)
+    const woodGeometries: THREE.BufferGeometry[] = [];
+
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.material === this.trunkMaterial) {
+        child.updateMatrixWorld();
+        const geo = child.geometry.clone();
+        geo.applyMatrix4(child.matrixWorld);
+        woodGeometries.push(geo);
+      }
+    });
+
+    // 2. Leaf Geometry
+    const leafGeometries: THREE.BufferGeometry[] = [];
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.material === this.leafMaterial) {
+        child.updateMatrixWorld();
+        const geo = child.geometry.clone();
+        geo.applyMatrix4(child.matrixWorld);
+        leafGeometries.push(geo);
+      }
+    });
+
+    // Create a new compact group
+    const finalGroup = new THREE.Group();
+
+    if (woodGeometries.length > 0) {
+      const mergedWood = BufferGeometryUtils.mergeGeometries(woodGeometries);
+      const woodMesh = new THREE.Mesh(mergedWood, this.trunkMaterial);
+      woodMesh.castShadow = true;
+      woodMesh.receiveShadow = true;
+      finalGroup.add(woodMesh);
+
+      // Dispose of temporary geometries
+      woodGeometries.forEach(g => g.dispose());
+    }
+
+    if (leafGeometries.length > 0) {
+      const mergedLeaves = BufferGeometryUtils.mergeGeometries(leafGeometries);
+      const leafMesh = new THREE.Mesh(mergedLeaves, this.leafMaterial);
+      leafMesh.castShadow = true;
+      leafMesh.receiveShadow = true;
+      finalGroup.add(leafMesh);
+
+      // Dispose of temporary geometries
+      leafGeometries.forEach(g => g.dispose());
+    }
+
+    // Dispose of the original loose group and its children's geometries
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose();
+      }
+    });
+
+    return finalGroup;
   }
 
   private static createLeafDisk(): THREE.Mesh {
