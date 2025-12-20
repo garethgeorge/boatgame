@@ -10,27 +10,24 @@ export class MangroveSpawner extends BaseSpawner {
     return 14 / 62.5; // Approx 14 per 62.5m chunk
   }
 
-  async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
+  async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
     const riverSystem = RiverSystem.getInstance();
 
-    for (let i = 0; i < count; i++) {
-      const z = zStart + Math.random() * (zEnd - zStart);
+    // Get river width and center at this Z
+    const riverWidth = riverSystem.getRiverWidth(z);
+    const riverCenter = riverSystem.getRiverCenter(z);
 
-      // Get river width and center at this Z
-      const riverWidth = riverSystem.getRiverWidth(z);
-      const riverCenter = riverSystem.getRiverCenter(z);
+    // Spawn across full width + 10m overlap on each side
+    const spawnWidth = riverWidth + 20; // width + 10 + 10
+    const x = riverCenter + (Math.random() - 0.5) * spawnWidth;
 
-      // Spawn across full width + 10m overlap on each side
-      const spawnWidth = riverWidth + 20; // width + 10 + 10
-      const x = riverCenter + (Math.random() - 0.5) * spawnWidth;
+    // Keep a small clear channel in the middle for navigation
+    // Check distance from center
+    if (Math.abs(x - riverCenter) < 6) return false;
 
-      // Keep a small clear channel in the middle for navigation
-      // Check distance from center
-      if (Math.abs(x - riverCenter) < 6) continue;
-
-      const mangrove = new Mangrove(x, z, context.physicsEngine);
-      context.entityManager.add(mangrove);
-    }
+    const mangrove = new Mangrove(x, z, context.physicsEngine);
+    context.entityManager.add(mangrove);
+    return true;
   }
 }
 

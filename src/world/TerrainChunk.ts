@@ -5,7 +5,7 @@ import { Decorations } from './Decorations';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Profiler } from '../core/Profiler';
 import { WaterShader } from '../shaders/WaterShader';
-import { TerrainDecorator, DecorationContext } from './decorators/TerrainDecorator';
+import { DecorationContext } from './decorators/TerrainDecorator';
 import { ResourceDisposer } from '../core/ResourceDisposer';
 
 export class TerrainChunk {
@@ -82,19 +82,24 @@ export class TerrainChunk {
     const geometryGroup = new THREE.Group();
     const geometriesByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
 
+    const segments = this.riverSystem.biomeManager.getFeatureSegments(this.zOffset, this.zOffset + TerrainChunk.CHUNK_SIZE);
+
     const context: DecorationContext = {
       chunk: this,
       riverSystem: this.riverSystem,
       geometriesByMaterial: geometriesByMaterial,
       geometryGroup: geometryGroup,
       animationMixers: this.mixers,
-      zOffset: this.zOffset
+      zOffset: this.zOffset,
+      biomeZStart: 0,
+      biomeZEnd: 0
     };
 
     Profiler.start('GenDecoBatch');
-    const segments = this.riverSystem.biomeManager.getFeatureSegments(this.zOffset, this.zOffset + TerrainChunk.CHUNK_SIZE);
 
     for (const segment of segments) {
+      context.biomeZStart = segment.biomeZStart;
+      context.biomeZEnd = segment.biomeZEnd;
       const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
       await features.decorate(context, segment.zStart, segment.zEnd);
       Profiler.pause('GenDecoBatch');

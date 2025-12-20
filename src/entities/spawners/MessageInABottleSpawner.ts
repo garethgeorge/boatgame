@@ -15,18 +15,20 @@ export class MessageInABottleSpawner extends BaseSpawner {
     if (Math.random() < 0.1) {
       this.spawnBonusArc(context, zStart, zEnd);
     }
+    await super.spawn(context, count, zStart, zEnd);
+  }
 
-    // Normal Bottles
-    for (let i = 0; i < count; i++) {
-      const pos = context.placementHelper.tryPlace(zStart, zEnd, 1.0, {
-        minDistFromBank: 1.0
-      });
+  async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
+    const pos = context.placementHelper.tryPlace(z, z, 1.0, {
+      minDistFromBank: 1.0
+    });
 
-      if (pos) {
-        const bottle = new MessageInABottle(pos.x, pos.z, context.physicsEngine);
-        context.entityManager.add(bottle, context.chunkIndex);
-      }
+    if (pos) {
+      const bottle = new MessageInABottle(pos.x, pos.z, context.physicsEngine);
+      context.entityManager.add(bottle, context.chunkIndex);
+      return true;
     }
+    return false;
   }
 
   private spawnBonusArc(context: SpawnContext, zStart: number, zEnd: number) {

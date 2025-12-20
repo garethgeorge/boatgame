@@ -9,6 +9,8 @@ export interface SpawnContext {
   chunkIndex: number;
   zStart: number;
   zEnd: number;
+  biomeZStart: number;
+  biomeZEnd: number;
 }
 
 export interface Spawnable {

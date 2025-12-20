@@ -69,8 +69,8 @@ export class BiomeManager {
     return this.biomeArray[index];
   }
 
-  public getFeatureSegments(zStart: number, zEnd: number): Array<{ biome: BiomeType, zStart: number, zEnd: number }> {
-    const segments: Array<{ biome: BiomeType, zStart: number, zEnd: number }> = [];
+  public getFeatureSegments(zStart: number, zEnd: number): Array<{ biome: BiomeType, zStart: number, zEnd: number, biomeZStart: number, biomeZEnd: number }> {
+    const segments: Array<{ biome: BiomeType, zStart: number, zEnd: number, biomeZStart: number, biomeZEnd: number }> = [];
     let currentZ = zStart;
 
     while (currentZ < zEnd) {
@@ -78,10 +78,14 @@ export class BiomeManager {
       // Find the next boundary after currentZ
       // A boundary exists every BIOME_LENGTH meters.
       const boundaryIndex = Math.floor(currentZ / this.BIOME_LENGTH);
-      const nextBoundary = (boundaryIndex + 1) * this.BIOME_LENGTH;
+      const minZ = boundaryIndex * this.BIOME_LENGTH;
+      const maxZ = (boundaryIndex + 1) * this.BIOME_LENGTH;
 
-      const segmentEnd = Math.min(zEnd, nextBoundary);
-      segments.push({ biome: biomeType, zStart: currentZ, zEnd: segmentEnd });
+      const biomeZStart = minZ >= 0 ? minZ : maxZ;
+      const biomeZEnd = minZ >= 0 ? maxZ : minZ;
+
+      const segmentEnd = Math.min(zEnd, maxZ);
+      segments.push({ biome: biomeType, zStart: currentZ, zEnd: segmentEnd, biomeZStart, biomeZEnd });
       currentZ = segmentEnd;
     }
 

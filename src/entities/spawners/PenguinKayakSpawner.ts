@@ -9,19 +9,19 @@ export class PenguinKayakSpawner extends BaseSpawner {
         return 0.01;
     }
 
-    async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
-        for (let i = 0; i < count; i++) {
-            const radius = 1.5; // Approximate size for placement
+    async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
+        const radius = 1.5; // Approximate size for placement
 
-            const pos = context.placementHelper.tryPlace(zStart, zEnd, radius, {
-                minDistFromBank: 1.0
-            });
+        const pos = context.placementHelper.tryPlace(z, z, radius, {
+            minDistFromBank: 1.0
+        });
 
-            if (pos) {
-                const angle = Math.random() * Math.PI * 2;
-                const entity = new PenguinKayak(pos.x, pos.z, context.physicsEngine, angle);
-                context.entityManager.add(entity, context.chunkIndex);
-            }
+        if (pos) {
+            const angle = Math.random() * Math.PI * 2;
+            const entity = new PenguinKayak(pos.x, pos.z, context.physicsEngine, angle);
+            context.entityManager.add(entity, context.chunkIndex);
+            return true;
         }
+        return false;
     }
 }

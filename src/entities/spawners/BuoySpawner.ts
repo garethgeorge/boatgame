@@ -16,58 +16,57 @@ export class BuoySpawner extends BaseSpawner {
     return 0.0053 * ramp;
   }
 
-  async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
+  async spawnAt(context: SpawnContext, wz: number): Promise<boolean> {
     const riverSystem = RiverSystem.getInstance();
 
-    for (let i = 0; i < count; i++) {
-      const wz = zStart + Math.random() * (zEnd - zStart);
+    const isLeft = Math.random() > 0.5;
+    const riverWidth = riverSystem.getRiverWidth(wz);
+    const riverCenter = riverSystem.getRiverCenter(wz);
+    const bankX = riverCenter + (isLeft ? -riverWidth / 2 : riverWidth / 2);
+    const direction = isLeft ? 1 : -1;
+    const chainLength = (0.3 + Math.random() * 0.2) * riverWidth; // 30-50% width
+    const spacing = 4.0;
+    const buoyCount = Math.floor(chainLength / spacing);
 
-      const isLeft = Math.random() > 0.5;
-      const riverWidth = riverSystem.getRiverWidth(wz);
-      const riverCenter = riverSystem.getRiverCenter(wz);
-      const bankX = riverCenter + (isLeft ? -riverWidth / 2 : riverWidth / 2);
-      const direction = isLeft ? 1 : -1;
-      const chainLength = (0.3 + Math.random() * 0.2) * riverWidth; // 30-50% width
-      const spacing = 4.0;
-      const buoyCount = Math.floor(chainLength / spacing);
+    if (buoyCount <= 0) return false;
 
-      const anchorBody = context.physicsEngine.world.createBody({
-        type: 'static',
-        position: planck.Vec2(bankX, wz)
-      });
+    const anchorBody = context.physicsEngine.world.createBody({
+      type: 'static',
+      position: planck.Vec2(bankX, wz)
+    });
 
-      // Anchor Entity (Hidden)
-      class AnchorEntity extends Entity {
-        constructor(body: planck.Body) {
-          super();
-          this.physicsBodies.push(body);
-        }
-        update(dt: number) { }
-        wasHitByPlayer() { }
+    // Anchor Entity (Hidden)
+    class AnchorEntity extends Entity {
+      constructor(body: planck.Body) {
+        super();
+        this.physicsBodies.push(body);
       }
-      const anchorEntity = new AnchorEntity(anchorBody);
-      context.entityManager.add(anchorEntity, context.chunkIndex);
-
-      let prevBody = anchorBody;
-      for (let j = 1; j <= buoyCount; j++) {
-        const dist = j * spacing;
-        const bx = bankX + direction * dist;
-        const jitterZ = (Math.random() - 0.5) * 1.0;
-
-        // Register placement
-        context.placementHelper.registerPlacement(bx, wz + jitterZ, 1.0);
-
-        const buoy = new Buoy(bx, wz + jitterZ, context.physicsEngine);
-        context.entityManager.add(buoy, context.chunkIndex);
-
-        const joint = planck.DistanceJoint({
-          frequencyHz: 2.0,
-          dampingRatio: 0.5,
-          collideConnected: false
-        }, prevBody, buoy.physicsBodies[0], prevBody.getPosition(), buoy.physicsBodies[0].getPosition());
-        context.physicsEngine.world.createJoint(joint);
-        prevBody = buoy.physicsBodies[0];
-      }
+      update(dt: number) { }
+      wasHitByPlayer() { }
     }
+    const anchorEntity = new AnchorEntity(anchorBody);
+    context.entityManager.add(anchorEntity, context.chunkIndex);
+
+    let prevBody = anchorBody;
+    for (let j = 1; j <= buoyCount; j++) {
+      const dist = j * spacing;
+      const bx = bankX + direction * dist;
+      const jitterZ = (Math.random() - 0.5) * 1.0;
+
+      // Register placement
+      context.placementHelper.registerPlacement(bx, wz + jitterZ, 1.0);
+
+      const buoy = new Buoy(bx, wz + jitterZ, context.physicsEngine);
+      context.entityManager.add(buoy, context.chunkIndex);
+
+      const joint = planck.DistanceJoint({
+        frequencyHz: 2.0,
+        dampingRatio: 0.5,
+        collideConnected: false
+      }, prevBody, buoy.physicsBodies[0], prevBody.getPosition(), buoy.physicsBodies[0].getPosition());
+      context.physicsEngine.world.createJoint(joint);
+      prevBody = buoy.physicsBodies[0];
+    }
+    return true;
   }
 }

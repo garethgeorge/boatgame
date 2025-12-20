@@ -17,6 +17,10 @@ export interface DecorationContext {
     animationMixers: THREE.AnimationMixer[];
     // The z offset of the chunk
     zOffset: number;
+    // The start Z of the current biome
+    biomeZStart: number;
+    // The end Z of the current biome
+    biomeZEnd: number;
 }
 
 export interface TerrainDecorator {

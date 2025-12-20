@@ -30,26 +30,27 @@ export class ObstacleManager {
     const placementHelper = new PlacementHelper();
     const chunkLength = zEnd - zStart;
 
+    const segments = this.riverSystem.biomeManager.getFeatureSegments(zStart, zEnd);
+
     const context: SpawnContext = {
       entityManager: this.entityManager,
       physicsEngine: this.physicsEngine,
       placementHelper: placementHelper,
       chunkIndex: chunkIndex,
       zStart: zStart,
-      zEnd: zEnd
+      zEnd: zEnd,
+      biomeZStart: 0,
+      biomeZEnd: 0
     };
 
-    // Calculate Biome Type (at center of chunk)
-    const centerZ = (zStart + zEnd) / 2;
-    const biomeType = this.riverSystem.biomeManager.getBiomeType(centerZ);
-
     // Calculate Difficulty
+    const centerZ = (zStart + zEnd) / 2;
     const distance = Math.abs(centerZ);
     const difficulty = Math.min(distance / 7500, 1.0);
 
-    const segments = this.riverSystem.biomeManager.getFeatureSegments(zStart, zEnd);
-
     for (const segment of segments) {
+      context.biomeZStart = segment.biomeZStart;
+      context.biomeZEnd = segment.biomeZEnd;
       const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
       await features.spawn(context, difficulty, segment.zStart, segment.zEnd);
     }

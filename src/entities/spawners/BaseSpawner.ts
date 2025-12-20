@@ -1,9 +1,4 @@
 import { Spawnable, SpawnContext } from '../Spawnable';
-import { RiverSystem } from '../../world/RiverSystem';
-import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
-import { Entity } from '../../core/Entity';
-import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 
 export abstract class BaseSpawner implements Spawnable {
     abstract id: string;
@@ -19,5 +14,12 @@ export abstract class BaseSpawner implements Spawnable {
         return Math.floor(count + Math.random());
     }
 
-    abstract spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void>;
+    async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
+        for (let i = 0; i < count; i++) {
+            const z = zStart + Math.random() * (zEnd - zStart);
+            await this.spawnAt(context, z);
+        }
+    }
+
+    abstract spawnAt(context: SpawnContext, z: number): Promise<boolean>;
 }

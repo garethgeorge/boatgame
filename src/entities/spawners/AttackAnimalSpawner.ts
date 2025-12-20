@@ -36,64 +36,61 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
     protected abstract spawnEntity(physicsEngine: PhysicsEngine,
         options: AttackAnimalOptions): Entity;
 
-    async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
+    async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
         const riverSystem = RiverSystem.getInstance();
+        const isShore = Math.random() < this.shoreProbability;
 
-        for (let i = 0; i < count; i++) {
-            // shoreProbability chance to spawn on shore
-            const isShore = Math.random() < this.shoreProbability;
+        if (isShore) {
+            const placement = context.placementHelper.findShorePlacement(
+                z, z, riverSystem, this.shorePlacement
+            );
 
-            if (isShore) {
-                // Shore Spawning Logic
-                const placement = context.placementHelper.findShorePlacement(
-                    zStart, zEnd, riverSystem, this.shorePlacement
-                );
+            if (placement) {
+                const entity = this.spawnEntity(context.physicsEngine, {
+                    x: placement.worldX,
+                    y: placement.worldZ,
+                    angle: placement.rotation,
+                    height: placement.height,
+                    terrainNormal: placement.normal,
+                    onShore: true,
+                    stayOnShore: Math.random() > 0.5
+                });
+                if (entity) {
+                    context.entityManager.add(entity, context.chunkIndex);
+                    return true;
+                }
+            }
+        } else {
+            const cluster = this.clusterPlacement;
+            const clusterSize = Math.random() < cluster.probability ? cluster.size : 1;
 
-                if (placement) {
+            const centerPos = context.placementHelper.tryPlace(
+                z, z, this.entityRadius, this.waterPlacement
+            );
+
+            if (centerPos) {
+                for (let j = 0; j < clusterSize; j++) {
+                    let x = centerPos.x;
+                    let cz = centerPos.z;
+
+                    if (clusterSize > 1) {
+                        x += (Math.random() - 0.5) * cluster.distance;
+                        cz += (Math.random() - 0.5) * cluster.distance;
+                    }
+
+                    const angle = Math.random() * Math.PI * 2;
                     const entity = this.spawnEntity(context.physicsEngine, {
-                        x: placement.worldX,
-                        y: placement.worldZ,
-                        angle: placement.rotation,
-                        height: placement.height,
-                        terrainNormal: placement.normal,
-                        onShore: true,
-                        stayOnShore: Math.random() > 0.5
+                        x,
+                        y: cz,
+                        height: this.heightInWater,
+                        angle
                     });
                     if (entity)
                         context.entityManager.add(entity, context.chunkIndex);
                 }
-            } else {
-                // Water Spawning Logic (Cluster)
-                const cluster = this.clusterPlacement;
-                const clusterSize = Math.random() < cluster.probability ? cluster.size : 1;
-
-                // Find a center for the cluster
-                const centerPos = context.placementHelper.tryPlace(
-                    zStart, zEnd, this.entityRadius, this.waterPlacement);
-
-                if (centerPos) {
-                    for (let j = 0; j < clusterSize; j++) {
-                        let x = centerPos.x;
-                        let z = centerPos.z;
-
-                        if (clusterSize > 1) {
-                            x += (Math.random() - 0.5) * cluster.distance;
-                            z += (Math.random() - 0.5) * cluster.distance;
-                        }
-
-                        const angle = Math.random() * Math.PI * 2;
-                        const entity = this.spawnEntity(context.physicsEngine, {
-                            x,
-                            y: z,
-                            height: this.heightInWater,
-                            angle
-                        });
-                        if (entity)
-                            context.entityManager.add(entity, context.chunkIndex);
-                    }
-                }
+                return true;
             }
         }
+        return false;
     }
-
 }

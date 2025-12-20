@@ -9,17 +9,17 @@ export class LogSpawner extends BaseSpawner {
     return 0.003;
   }
 
-  async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
-    for (let i = 0; i < count; i++) {
-      const length = 10 + Math.random() * 10;
-      const pos = context.placementHelper.tryPlace(zStart, zEnd, 3.0, {
-        minDistFromBank: 2.0
-      });
+  async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
+    const length = 10 + Math.random() * 10;
+    const pos = context.placementHelper.tryPlace(z, z, 3.0, {
+      minDistFromBank: 2.0
+    });
 
-      if (pos) {
-        const log = new Log(pos.x, pos.z, length, context.physicsEngine);
-        context.entityManager.add(log, context.chunkIndex);
-      }
+    if (pos) {
+      const log = new Log(pos.x, pos.z, length, context.physicsEngine);
+      context.entityManager.add(log, context.chunkIndex);
+      return true;
     }
+    return false;
   }
 }

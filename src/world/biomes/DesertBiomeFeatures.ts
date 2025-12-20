@@ -6,6 +6,7 @@ import { Decorations } from '../Decorations';
 import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
 import { HippoSpawner } from '../../entities/spawners/HippoSpawner';
 import { MonkeySpawner } from '../../entities/spawners/MonkeySpawner';
+import { BaseSpawner } from '../../entities/spawners/BaseSpawner';
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';
@@ -38,16 +39,64 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
+        const length = zEnd - zStart;
+        const density = 0.05; // 1 entity every 20m
+        const count = Math.floor(length * density);
 
-        await this.spawnObstacle(this.logSpawner, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(this.rockSpawner, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(this.buoySpawner, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(this.bottleSpawner, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(this.pierSpawner, context, difficulty, zStart, zEnd);
+        if (count <= 0) return;
 
-        // Crocs and Hippos
-        await this.spawnObstacle(this.alligatorSpawner, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(this.hippoSpawner, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(this.monkeySpawner, context, difficulty, zStart, zEnd);
+        const subIntervalLength = length / count;
+
+        // Special case for pier: near the end of the biome
+        const pierZ = context.biomeZStart + 0.9 * (context.biomeZEnd - context.biomeZStart);
+
+        // If our current entity's sub-interval contains the pierZ, spawn it.
+        if (zStart < pierZ && pierZ <= zEnd) {
+            await this.pierSpawner.spawnAt(context, pierZ, true);
+        }
+
+        for (let i = 0; i < count; i++) {
+            const z = zStart + i * subIntervalLength + Math.random() * subIntervalLength;
+            // Parametric distance: 0 at biome entrance, 1 at exit
+            const t = Math.min(0.999, Math.max(0, (z - context.biomeZStart) / (context.biomeZEnd - context.biomeZStart)));
+
+            const spawnPool: { spawner: BaseSpawner, probability: number }[] = [];
+
+            // Interval mapping
+            if (t < 0.15) {
+                spawnPool.push({ spawner: this.logSpawner, probability: 0.2 });
+                spawnPool.push({ spawner: this.rockSpawner, probability: 0.1 });
+                spawnPool.push({ spawner: this.bottleSpawner, probability: 0.3 });
+            } else if (t < 0.8) {
+                spawnPool.push({ spawner: this.logSpawner, probability: 0.05 });
+                spawnPool.push({ spawner: this.rockSpawner, probability: 0.1 });
+                spawnPool.push({ spawner: this.bottleSpawner, probability: 0.3 });
+                spawnPool.push({ spawner: this.alligatorSpawner, probability: 0.2 });
+                spawnPool.push({ spawner: this.hippoSpawner, probability: 0.1 });
+                spawnPool.push({ spawner: this.monkeySpawner, probability: 0.1 });
+            } else {
+                spawnPool.push({ spawner: this.logSpawner, probability: 0.2 });
+                spawnPool.push({ spawner: this.rockSpawner, probability: 0.1 });
+            }
+
+            // Randomly choose from pool OR nothing (1 in 4 chance of nothing?)
+            // The prompt says "choose between a nothing, a log or a rock", etc.
+            // This suggests "nothing" is one of the options.
+            if (spawnPool.length > 0) {
+                let spawner = undefined;
+                const r = Math.random();
+                let sum = 0.0;
+                for (const entry of spawnPool) {
+                    sum += entry.probability;
+                    if (r < sum) {
+                        spawner = entry.spawner;
+                        break;
+                    }
+                }
+                if (spawner !== undefined) {
+                    await spawner.spawnAt(context, z);
+                }
+            }
+        }
     }
 }

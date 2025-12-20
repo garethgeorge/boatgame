@@ -13,48 +13,41 @@ export class PierSpawner extends BaseSpawner {
     return 0.0026;
   }
 
-  async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
+  async spawnAt(context: SpawnContext, worldZ: number, forceDepot?: boolean): Promise<boolean> {
     const riverSystem = RiverSystem.getInstance();
+    const minDepotPierLength = 13.0;
 
-    for (let i = 0; i < count; i++) {
-      const minDepotPierLength = 13.0;
+    const isLeft = Math.random() > 0.5;
+    const width = riverSystem.getRiverWidth(worldZ);
+    const center = riverSystem.getRiverCenter(worldZ);
+    const slope = riverSystem.getRiverDerivative(worldZ);
 
-      // We need to pick a Z first
-      const worldZ = zStart + Math.random() * (zEnd - zStart);
+    // Calculate Pier Geometry
+    const bankX = center + (isLeft ? -width / 2 : width / 2);
+    const maxPierLength = width * 0.6;
 
-      const isLeft = Math.random() > 0.5;
-      const width = riverSystem.getRiverWidth(worldZ);
-      const center = riverSystem.getRiverCenter(worldZ);
-      const slope = riverSystem.getRiverDerivative(worldZ);
+    // Randomly decide if this pier should have a depot
+    const hasDepot = forceDepot ?? (maxPierLength > minDepotPierLength && Math.random() > 0.5);
+    const minPierLength = hasDepot ? minDepotPierLength : 10.0;
+    const pierLength = Math.min(minPierLength + Math.random() * 10, maxPierLength);
 
-      // Calculate Pier Geometry
-      const bankX = center + (isLeft ? -width / 2 : width / 2);
-      const maxPierLength = width * 0.6;
+    if (pierLength < minPierLength && forceDepot) return false;
 
-      // Randomly decide if this pier should have a depot
-      const hasDepot = maxPierLength > minDepotPierLength && Math.random() > 0.5;
-      const minPierLength = hasDepot ? minDepotPierLength : 10.0;
-      const pierLength = Math.min(minPierLength + Math.random() * 10, maxPierLength);
+    // Calculate Angle
+    let N = planck.Vec2(1.0, -slope);
+    N.normalize();
+    if (isLeft) { if (N.x < 0) N.mul(-1); }
+    else { if (N.x > 0) N.mul(-1); }
+    const angle = Math.atan2(N.y, N.x);
 
-      // Calculate Angle
-      let N = planck.Vec2(1.0, -slope);
-      N.normalize();
-      if (isLeft) { if (N.x < 0) N.mul(-1); }
-      else { if (N.x > 0) N.mul(-1); }
-      const angle = Math.atan2(N.y, N.x);
+    const startPos = planck.Vec2(bankX, worldZ);
+    const centerPos = startPos.clone().add(N.clone().mul(pierLength / 2));
 
-      const startPos = planck.Vec2(bankX, worldZ);
-      const centerPos = startPos.clone().add(N.clone().mul(pierLength / 2));
+    // Register with placement helper to avoid collisions
+    context.placementHelper.registerPlacement(centerPos.x, centerPos.y, pierLength / 2);
 
-      // Register with placement helper to avoid collisions
-      // Approximate pier as a circle or just register the center?
-      // Pier is a rectangle. Let's register a few circles along it?
-      // Or just one big circle at the tip?
-      // Let's register the tip area so boats don't spawn right on it.
-      context.placementHelper.registerPlacement(centerPos.x, centerPos.y, pierLength / 2);
-
-      const pier = new Pier(centerPos.x, centerPos.y, pierLength, angle, context.physicsEngine, hasDepot);
-      context.entityManager.add(pier, context.chunkIndex);
-    }
+    const pier = new Pier(centerPos.x, centerPos.y, pierLength, angle, context.physicsEngine, hasDepot);
+    context.entityManager.add(pier, context.chunkIndex);
+    return true;
   }
 }
