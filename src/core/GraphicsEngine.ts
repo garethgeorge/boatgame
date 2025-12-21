@@ -1,98 +1,123 @@
-import * as THREE from 'three';
-import { TerrainChunk } from '../world/TerrainChunk';
+import {
+  Engine,
+  Scene,
+  Vector3,
+  Color4,
+  UniversalCamera,
+  WebGPUEngine,
+  TransformNode,
+  AbstractMesh,
+  SceneLoader,
+  Effect,
+  PostProcess,
+  DefaultRenderingPipeline,
+  ImageProcessingConfiguration,
+  ShadowGenerator
+} from '@babylonjs/core';
+import '@babylonjs/loaders'; // Enable GLTF loader
 import { Profiler } from './Profiler';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { SobelShader } from '../shaders/SobelShader';
-import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
 
 export class GraphicsEngine {
-  scene: THREE.Scene;
-  camera: THREE.PerspectiveCamera;
+  engine: Engine | WebGPUEngine;
+  scene!: Scene;
+  camera!: UniversalCamera;
 
-  renderer: THREE.WebGLRenderer;
-  composer: EffectComposer;
-  sobelPass: ShaderPass;
-  fxaaPass: ShaderPass;
-
+  shadowGenerator: ShadowGenerator | null = null;
+  private pipeline: DefaultRenderingPipeline | null = null;
 
   constructor(container: HTMLElement) {
-    this.scene = new THREE.Scene();
+    const canvas = document.createElement('canvas');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.id = 'gameCanvas';
+    container.appendChild(canvas);
 
-    this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    this.camera.position.set(0, 10, -10);
-    this.camera.lookAt(0, 0, 0);
-
-    // Enhanced renderer settings
-    this.renderer = new THREE.WebGLRenderer({
+    this.engine = new WebGPUEngine(canvas, {
+      powerPreference: 'high-performance',
       antialias: true,
-      powerPreference: 'high-performance'
+      stencil: true
     });
-    this.renderer.shadowMap.enabled = false; // Shadows disabled per user request
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.0;
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap at 2x for performance
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-
-
-
-    container.appendChild(this.renderer.domElement);
-
-    // Post-processing setup
-    this.composer = new EffectComposer(this.renderer);
-    const renderPass = new RenderPass(this.scene, this.camera);
-    this.composer.addPass(renderPass);
-
-    this.sobelPass = new ShaderPass(SobelShader);
-    this.sobelPass.uniforms['resolution'].value.x = window.innerWidth * window.devicePixelRatio;
-    this.sobelPass.uniforms['resolution'].value.y = window.innerHeight * window.devicePixelRatio;
-    this.sobelPass.uniforms['resolution'].value.x = window.innerWidth * window.devicePixelRatio;
-    this.sobelPass.uniforms['resolution'].value.y = window.innerHeight * window.devicePixelRatio;
-    this.composer.addPass(this.sobelPass);
-
-    this.fxaaPass = new ShaderPass(FXAAShader);
-    this.fxaaPass.uniforms['resolution'].value.x = 1 / (window.innerWidth * window.devicePixelRatio);
-    this.fxaaPass.uniforms['resolution'].value.y = 1 / (window.innerHeight * window.devicePixelRatio);
-    this.composer.addPass(this.fxaaPass);
-
 
     window.addEventListener('resize', () => this.onWindowResize(), false);
   }
 
+  async init() {
+    await (this.engine as WebGPUEngine).initAsync();
 
+    this.engine.setHardwareScalingLevel(1.0 / window.devicePixelRatio);
+
+    this.scene = new Scene(this.engine);
+    this.scene.useRightHandedSystem = true;
+    this.scene.clearColor = new Color4(0.5, 0.8, 1, 1);
+
+    // Camera
+    this.camera = new UniversalCamera("camera", new Vector3(0, 10, -10), this.scene);
+    this.camera.setTarget(Vector3.Zero());
+    this.camera.fov = 60 * (Math.PI / 180);
+    this.camera.minZ = 0.1;
+    this.camera.maxZ = 1000;
+
+    // Rendering Pipeline (Tone Mapping, FXAA, Bloom, etc.)
+    this.pipeline = new DefaultRenderingPipeline(
+      "defaultPipeline", // The name of the pipeline
+      true, // Sharpen Enabled? (False usually) - Setting true for HDR support implies passing true? No, second arg is 'hdr'.
+      this.scene,
+      [this.camera]
+    );
+
+    // FXAA
+    this.pipeline.fxaaEnabled = true;
+
+    // Tone Mapping (ACES Filmic equivalent)
+    this.pipeline.imageProcessingEnabled = true;
+    this.pipeline.imageProcessing.toneMappingEnabled = true;
+    this.pipeline.imageProcessing.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
+    this.pipeline.imageProcessing.exposure = 1.0;
+
+    // MSAA (Multisample Anti-Aliasing) - 4x
+    this.pipeline.samples = 4;
+
+    // Sobel Post Process (Custom)
+    Effect.ShadersStore["sobelPixelShader"] = SobelShader.fragmentSource;
+    const sobel = new PostProcess("sobel", "sobel", ["resolution"], null, 1.0, this.camera);
+    sobel.onApply = (effect) => {
+      effect.setFloat2("resolution", this.engine.getRenderWidth(), this.engine.getRenderHeight());
+    };
+  }
 
   render(dt: number) {
-    this.composer.render();
+    this.scene.render();
   }
 
   onWindowResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.composer.setSize(window.innerWidth, window.innerHeight);
-    this.sobelPass.uniforms['resolution'].value.x = window.innerWidth * window.devicePixelRatio;
-    this.sobelPass.uniforms['resolution'].value.x = window.innerWidth * window.devicePixelRatio;
-    this.sobelPass.uniforms['resolution'].value.y = window.innerHeight * window.devicePixelRatio;
-    this.fxaaPass.uniforms['resolution'].value.x = 1 / (window.innerWidth * window.devicePixelRatio);
-    this.fxaaPass.uniforms['resolution'].value.y = 1 / (window.innerHeight * window.devicePixelRatio);
+    if (this.engine) {
+      this.engine.resize();
+    }
   }
 
-  add(object: THREE.Object3D) {
-    this.scene.add(object);
+  add(object: TransformNode | AbstractMesh) {
+    object.setEnabled(true);
   }
 
-  remove(object: THREE.Object3D) {
-    this.scene.remove(object);
+  remove(object: TransformNode | AbstractMesh) {
+    object.setEnabled(false);
   }
 
   updateDebugInfo() {
-    const stats = this.renderer.info;
-    Profiler.addInfo('Geometries', stats.memory.geometries);
-    Profiler.addInfo('Textures', stats.memory.textures);
-    Profiler.addInfo('DrawCalls', stats.render.calls);
-    Profiler.addInfo('Triangles', stats.render.triangles);
+    if (!this.scene) return;
+
+    // Core Engine Stats
+    // Bubbling up interesting capabilities or active usage
+    // Accessing instrumentation if available, or just standard counters
+    // NOTE: Instrumentation requires enabling in Scene options or specifically adding it.
+
+    // For now, let's just grab what we can easily.
+    // Profiler.addInfo('FPS', this.engine.getFps().toFixed(0));
+    // Profiler.addInfo('Draw Calls', this.scene.getEngine().getDrawCallsPerfCounter?.()?.current || 0);
+
+    // If we want detailed stats we likely need "SceneInstrumentation"
+    // But sticking to the requested 'updateDebugInfo' stub completion:
+    // We'll leave it prepared for the Profiler when that is migrated/linked.
   }
 }

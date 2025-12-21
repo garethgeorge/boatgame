@@ -1,11 +1,9 @@
-import * as planck from 'planck';
-import * as THREE from 'three';
+import { TransformNode, Vector3, AnimationGroup } from "@babylonjs/core";
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 
 export class Brontosaurus extends AttackAnimal {
-
     public static readonly HEIGHT_IN_WATER: number = -1.5;
 
     protected get heightInWater(): number {
@@ -30,9 +28,10 @@ export class Brontosaurus extends AttackAnimal {
         return Decorations.getBrontosaurus();
     }
 
-    protected setupModel(model: THREE.Group): void {
-        model.scale.set(8.0, 8.0, 8.0);
+    protected setupModel(model: TransformNode, animations: AnimationGroup[]): void {
+        model.scaling.set(8.0, 8.0, 8.0);
         model.rotation.y = Math.PI;
+        if (animations.length > 0) animations[0].start(true, 0.5);
     }
 
     protected getAnimationTimeScale(): number {

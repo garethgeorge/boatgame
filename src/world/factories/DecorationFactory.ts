@@ -1,15 +1,15 @@
-import * as THREE from 'three';
+import { TransformNode, AnimationGroup } from '@babylonjs/core';
 
 export interface DecorationFactory {
     // pre-load
     load(): Promise<void>;
 
     // create mesh
-    create(options?: any): THREE.Group;
+    create(options?: any): TransformNode;
 
     // create animation
-    createAnimation?(name: string, options?: any): THREE.AnimationClip;
+    createAnimation?(name: string, options?: any): AnimationGroup;
 
     // get all animations
-    getAllAnimations?(): THREE.AnimationClip[];
+    getAllAnimations?(): AnimationGroup[];
 }

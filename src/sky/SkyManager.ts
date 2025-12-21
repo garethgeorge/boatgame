@@ -1,70 +1,81 @@
-import * as THREE from 'three';
-import { Skybox } from './Skybox';
-import { Sun } from './Sun';
-import { Moon } from './Moon';
-import { ScreenOverlay } from './ScreenOverlay';
+import { Scene, Vector3, Color3, HemisphericLight, DirectionalLight, MeshBuilder, ShaderMaterial, Effect, Color4 } from '@babylonjs/core';
 import { Boat } from '../entities/Boat';
 import { RiverSystem } from '../world/RiverSystem';
 
+Effect.ShadersStore["gradientVertexShader"] = `
+    precision highp float;
+    attribute vec3 position;
+    attribute vec2 uv;
+    uniform mat4 worldViewProjection;
+    varying vec2 vUV;
+    void main() {
+        vUV = uv;
+        gl_Position = worldViewProjection * vec4(position, 1.0);
+    }
+`;
+
+Effect.ShadersStore["gradientFragmentShader"] = `
+    precision highp float;
+    varying vec2 vUV;
+    uniform vec3 topColor;
+    uniform vec3 bottomColor;
+    void main() {
+        gl_FragColor = vec4(mix(bottomColor, topColor, vUV.y), 1.0);
+    }
+`;
+
 export class SkyManager {
-    private scene: THREE.Scene;
+    private scene: Scene;
+    private sunLight: DirectionalLight;
+    private ambientLight: HemisphericLight;
+    private skySphere: any; // Mesh
+    private skyMaterial: ShaderMaterial;
 
+    private sunPosition: Vector3 = new Vector3(0, 50, 0);
 
-    // Components
-    private skybox: Skybox;
-    private screenOverlay: ScreenOverlay;
-    private sun: Sun;
-    private moon: Moon;
+    private readonly cycleDuration: number = 15 * 60; // 15 minutes
+    private cycleTime: number = 75; // Start at morning
 
-    // Lighting
-    private hemiLight: THREE.HemisphereLight;
-    private ambientLight: THREE.AmbientLight;
-
-    // Day/Night Cycle Config
-    private readonly cycleDuration: number = 15 * 60; // 15 minutes in seconds
-    // Start at High Morning (Angle 30 degrees)
-    // 30/360 * 15*60 = 1/12 * 900 = 75 seconds.
-    private cycleTime: number = 75;
-
-    constructor(scene: THREE.Scene, container: HTMLElement, rendererDomElement: HTMLCanvasElement) {
+    constructor(scene: Scene, container: HTMLElement, canvas: HTMLCanvasElement) {
         this.scene = scene;
 
-        // Create gradient skybox
-        this.skybox = new Skybox(this.scene);
+        // Lights
+        this.ambientLight = new HemisphericLight("ambient", new Vector3(0, 1, 0), scene);
+        this.ambientLight.intensity = 0.8;
 
-        // Create screen tint overlay
-        this.screenOverlay = new ScreenOverlay(container, rendererDomElement);
+        this.sunLight = new DirectionalLight("sun", new Vector3(-1, -1, -1), scene);
+        this.sunLight.intensity = 1.0;
 
-        // Create Sun
-        this.sun = new Sun(this.scene);
+        // Shadows are set up in GraphicsEngine if ShadowGenerator is there, 
+        // but we need to ensure the light is capable.
+        this.sunLight.shadowMinZ = 1;
+        this.sunLight.shadowMaxZ = 100;
 
-        // Create Moon
-        this.moon = new Moon(this.scene, this.sun.light);
+        // Sky Sphere with Gradient Shader
+        this.skySphere = MeshBuilder.CreateSphere("sky", { diameter: 900, segments: 16 }, scene);
+        this.skySphere.infiniteDistance = true; // Stay with camera
 
-        // Enhanced lighting setup
-        this.setupLighting();
+        this.skyMaterial = new ShaderMaterial("skyGradient", scene, {
+            vertex: "gradient",
+            fragment: "gradient",
+        }, {
+            attributes: ["position", "uv"],
+            uniforms: ["worldViewProjection", "topColor", "bottomColor"]
+        });
 
-        // Fog setup
-        this.scene.fog = new THREE.Fog(0xffffff, 100, 1000);
+        this.skyMaterial.backFaceCulling = false;
+        this.skySphere.material = this.skyMaterial;
+
+        // Initial fog
+        this.scene.fogMode = Scene.FOGMODE_LINEAR;
     }
 
-    private setupLighting() {
-        // Hemisphere light for natural ambient lighting
-        this.hemiLight = new THREE.HemisphereLight(0xffffff, 0x888888, 0.8);
-        this.hemiLight.position.set(0, 50, 0);
-        this.scene.add(this.hemiLight);
-
-        // Ambient light for base visibility
-        this.ambientLight = new THREE.AmbientLight(0x404040, 0.2); // Soft white light
-        this.scene.add(this.ambientLight);
+    public getSunPosition(): Vector3 {
+        return this.sunPosition;
     }
 
-    public getSunPosition(): THREE.Vector3 {
-        return this.sun.light.position;
-    }
-
-    public update(dt: number, cameraPosition: THREE.Vector3, boat: Boat) {
-
+    public update(dt: number, cameraPosition: Vector3, boat: Boat) {
+        if (!boat.meshes.length) return;
         const boatZ = boat.meshes[0].position.z;
 
         // Update Day/Night Cycle
@@ -73,64 +84,62 @@ export class SkyManager {
             this.cycleTime -= this.cycleDuration;
         }
 
-        const time = this.cycleTime / this.cycleDuration; // 0 to 1
-        const angle = time * Math.PI * 2; // 0 to 2PI
+        const timeRatio = this.cycleTime / this.cycleDuration;
+        const angle = timeRatio * Math.PI * 2;
 
-        // Update Sun and Moon
-        this.sun.update(angle, cameraPosition);
-        this.moon.update(angle, cameraPosition);
+        // Sun Position (Simple circular orbit)
+        const radius = 100;
+        this.sunPosition.set(
+            Math.cos(angle) * radius,
+            Math.sin(angle) * radius,
+            0 // Relative Z? Should probably rotate around X axis for day/night
+        );
 
-        // Determine Day/Night Phase
+        // Actually sun rises East set West usually, or rotates around World Center.
+        // Let's match previous logic:
+        // x = cos(time) * radius
+        // y = max(20, sin(time)*radius) -> This was clamped high before?
+        // Let's use standard orbit:
+        this.sunPosition.x = Math.cos(angle) * radius;
+        this.sunPosition.y = Math.sin(angle) * radius;
+        this.sunPosition.z = boatZ; // Move with boat
+
+        this.sunLight.position.copyFrom(this.sunPosition.add(new Vector3(0, 0, 20))); // Slight offset
+        this.sunLight.setDirectionToTarget(new Vector3(0, 0, boatZ));
+
+        // Dayness: -1 to 1 (sin of angle)
         const dayness = Math.sin(angle);
-        this.updateHemiLight(dayness);
-        this.updateSkyAndFog(boatZ, dayness, cameraPosition);
-    }
 
-    private updateSkyAndFog(boatZ: number, dayness: number, cameraPosition: THREE.Vector3) {
+        // Get Biome Colors
+        const biomeManager = RiverSystem.getInstance().biomeManager;
+        const skyColors = biomeManager.getBiomeSkyGradient(boatZ, dayness);
+        const fogInfo = biomeManager.getBiomeFogRange(boatZ); // near, far
+        // Fog Color usually matches sky bottom
 
-        const biomeSkyGradient = RiverSystem.getInstance().biomeManager.getBiomeSkyGradient(boatZ, dayness);
-        const biomeGroundColor = RiverSystem.getInstance().biomeManager.getBiomeGroundColor(boatZ);
-        const biomeFogDensity = RiverSystem.getInstance().biomeManager.getBiomeFogDensity(boatZ);
-        const biomeScreenTint = RiverSystem.getInstance().biomeManager.getBiomeScreenTint(boatZ);
+        // Update Sky Material
+        this.skyMaterial.setColor3("topColor", skyColors.top);
+        this.skyMaterial.setColor3("bottomColor", skyColors.bottom);
 
-        // Screen overlay
-        this.screenOverlay.update(biomeScreenTint, biomeFogDensity * 0.75);
+        // Update Fog
+        this.scene.fogStart = fogInfo.near;
+        this.scene.fogEnd = fogInfo.far;
+        this.scene.fogColor = new Color3(skyColors.bottom.r, skyColors.bottom.g, skyColors.bottom.b);
 
-        // Sky gradient
-        this.skybox.update(cameraPosition, biomeSkyGradient.top, biomeSkyGradient.bottom);
+        // Update Lights
+        // Intensity based on dayness (0 at night, 1 at day)
+        // Clamp dayness for intensity 0..1
+        const sunIntensity = Math.max(0, dayness);
+        this.sunLight.intensity = sunIntensity;
 
-        // Update Fog Color to match horizon (bottom color)
-        if (this.scene.fog) {
-            this.scene.fog.color.copy(biomeSkyGradient.bottom);
-        }
+        // Ambient Light
+        // Night should be blueish/dark, Day white/bright
+        // Biome manager might provide this, or we lerp manually
 
-        // Update Fog Density based on biome
-        if (this.scene.fog instanceof THREE.Fog) {
-            const fogRange = RiverSystem.getInstance().biomeManager.getBiomeFogRange(boatZ);
-            this.scene.fog.near = fogRange.near;
-            this.scene.fog.far = fogRange.far;
-        }
-    }
+        const dayColor = new Color3(1, 1, 1);
+        const nightColor = new Color3(0.1, 0.1, 0.3);
+        const ambientColor = Color3.Lerp(nightColor, dayColor, (dayness + 1) / 2);
 
-    private updateHemiLight(dayness: number) {
-        // Hemisphere Light (Ambient)
-        // Should never drop below 0.8
-        // Day: 1.2, Night: 1.2 (at peak)
-        // dayness ranges from -1 (Night) to 1 (Day)
-
-        const intensity = 0.8 + 0.4 * Math.abs(dayness);
-        this.hemiLight.intensity = intensity;
-
-        // Hemisphere Light Colors
-        const daySkyColor = new THREE.Color(0xffffff);
-        const dayGroundColor = new THREE.Color(0xaaaaaa);
-        const nightSkyColor = new THREE.Color(0x6666aa); // Very bright night blue
-        const nightGroundColor = new THREE.Color(0x444466); // Very bright night ground
-
-        // Interpolate based on dayness (-1 to 1) mapped to 0 to 1
-        const t = (dayness + 1) / 2;
-
-        this.hemiLight.color.lerpColors(nightSkyColor, daySkyColor, t);
-        this.hemiLight.groundColor.lerpColors(nightGroundColor, dayGroundColor, t);
+        this.ambientLight.diffuse = ambientColor;
+        this.ambientLight.groundColor = new Color3(0.1, 0.1, 0.1); // Ground always dark
     }
 }

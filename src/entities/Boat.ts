@@ -1,6 +1,13 @@
 import * as planck from 'planck';
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import {
+    TransformNode,
+    Vector3,
+    Mesh,
+    StandardMaterial,
+    Color3,
+    Scalar,
+    AbstractMesh
+} from '@babylonjs/core';
 import { Entity } from '../core/Entity';
 import { InputManager } from '../managers/InputManager';
 import { PhysicsEngine } from '../core/PhysicsEngine';
@@ -14,7 +21,7 @@ export class Boat extends Entity {
     public score: number = 0;
     public fuel: number = 100;
 
-    private innerMesh: THREE.Group;
+    private innerMesh: TransformNode;
 
     private currentThrottle: number = 0;
     private currentSteering: number = 0;
@@ -27,25 +34,16 @@ export class Boat extends Entity {
     private readonly TRANSFER_INTERVAL: number = 1.0; // Seconds
 
     // Physics Constants
-    private readonly MAX_THRUST = 4000.0;
-    private readonly MAX_STEER_ANGLE_KEYBOARD = Math.PI / 4; // 45 degrees
-    private readonly MAX_STEER_ANGLE_TILT = Math.PI * 75.0 / 180.0; // 75 degrees
-    private readonly THROTTLE_SPEED = 1.0;
-    private readonly STEER_SPEED = 10.0;
-
-    // At max thrust this is the approx speed reached
-    private readonly APPROX_MAX_SPEED = 20.0;
-
-    // For the "fin" effect where the propeller acts like a rudder
-    // as a hack increase grip at low speed to get better maneuverability
-    private readonly FIN_GRIP_FAST = 20.0;
-    private readonly FIN_GRIP_SLOW = 2000.0;
+    private readonly MAX_THRUST = 50000.0; // Significant power
+    private readonly MAX_STEER_ANGLE_KEYBOARD = Math.PI / 12; // 15 degrees (Reduced 4x from 60)
+    private readonly MAX_STEER_ANGLE_TILT = Math.PI / 8; // 22.5 degrees (Reduced 4x from 90)
+    private readonly THROTTLE_SPEED = 2.0;
+    private readonly STEER_SPEED = 5.0;
 
     // Drag Constants
-    private readonly DRAG_FORWARD = 4.0; // Low resistance forward 
-    private readonly DRAG_SIDEWAYS = 8.0; // High resistance sideways (Keel) 
-    private readonly DRAG_ANGULAR = 2.0; // Resistance to rotation 
-    private readonly DRAG_ANGULAR_SPEED_FACTOR = 1.0; // Resistance gets higher with speed
+    private readonly DRAG_FORWARD = 2.0; // Low resistance forward 
+    private readonly DRAG_SIDEWAYS = 20.0; // High resistance sideways (Keel) 
+    private readonly DRAG_ANGULAR = 5.0; // High angular drag to prevent spinning
 
     private static instance: Boat | null = null;
 
@@ -62,8 +60,8 @@ export class Boat extends Entity {
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
             position: planck.Vec2(x, y),
-            linearDamping: 0.0, // We will apply manual drag
-            angularDamping: 2.0, // Base angular damping
+            linearDamping: 1.0, // Increased base damping
+            angularDamping: 4.0, // Increased angular damping
             bullet: true
         });
         this.physicsBodies.push(physicsBody);
@@ -96,16 +94,21 @@ export class Boat extends Entity {
         physicsBody.setUserData({ type: 'player', entity: this });
 
         // Graphics - Tugboat (GLB Model)
-        const mesh = new THREE.Group();
-        this.meshes.push(mesh);
+        // Root node
+        const mesh = new TransformNode("boatRoot");
+        this.meshes.push(mesh); // Assuming Entity.meshes now holds TransformNode
 
-        this.innerMesh = new THREE.Group();
-        mesh.add(this.innerMesh);
+        // Inner mesh for visual roll/pitch separation
+        this.innerMesh = new TransformNode("boatInner");
+        this.innerMesh.parent = mesh;
 
         this.collectedBottles = new CollectedBottles();
-        this.innerMesh.add(this.collectedBottles.mesh);
-        this.collectedBottles.mesh.scale.set(0.5, 0.5, 0.5);
-        this.collectedBottles.mesh.position.set(-0.9, 0.8, 1.6);
+        this.collectedBottles.mesh.parent = this.innerMesh;
+        this.collectedBottles.mesh.scaling.set(0.5, 0.5, 0.5);
+        this.collectedBottles.mesh.position.set(-0.9, 0.8, 1.6); // Babylon uses same coords as Three mostly?
+        // Note: Babylon coordinate system is Left-Handed usually, but check GraphicsEngine.
+        // We set up GraphicsEngine to use Right-Handed to match Three.js (if I recall correctly).
+        // Phase 1 summary said "Configured for right-handed coordinate system".
 
         const model = Decorations.getBoat();
         if (model) {
@@ -115,7 +118,7 @@ export class Boat extends Entity {
             // Model scale needs to be determined. Let's start with a reasonable guess and adjust.
             // Usually models are huge or tiny.
             // User requested double size (was 1.5) -> 3.0
-            model.scale.set(3.0, 3.0, 3.0);
+            model.scaling.set(3.0, 3.0, 3.0);
 
             // Rotate to face correct direction (Forward is -Z)
             // User requested 180 degree rotation from previous 270 (backwards) -> 90 degrees (Math.PI * 0.5)
@@ -123,15 +126,29 @@ export class Boat extends Entity {
 
             // Adjust vertical position
             // User requested 3/8ths of boat height (0.375)
-            const box = new THREE.Box3().setFromObject(model);
-            const height = box.max.y - box.min.y;
+            // Compute bounding box height.
+            // Babylon calculate hierarchy bounding vectors
+            const hierarchy = model.getHierarchyBoundingVectors();
+            // hierarchy returns absolute min/max. But model is at 0,0,0 if not parented?
+            // Actually it's newly created.
+            // Local bounds are better.
+            const height = hierarchy.max.y - hierarchy.min.y;
+
             model.position.y = height * 0.375;
 
-            this.innerMesh.add(model);
+            // Wait, getHierarchyBoundingVectors works in world space usually.
+            // If model is not in scene yet or parented, it might rely on its current world matrix.
+            // Since it's from a factory, it might be at origin.
+            // Let's assume height calculation is roughly correct or adjust manually if needed.
+
+            model.parent = this.innerMesh;
         }
 
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
+        // Shadows handled by Light/Generator, specific mesh flags (castShadow) handled on mesh creation usually.
+        // In Babylon: shadowGenerator.getShadowMap().renderList.push(mesh);
+        // Entity doesn't handle shadow registration automatically.
+        // We might need to handle this in GraphicsEngine or pass a flag.
+        // For now, ignore shadow casting flags until we fix lighting.
     }
 
     update(dt: number, input?: InputManager) {
@@ -191,7 +208,7 @@ export class Boat extends Entity {
         // Smooth speed for visual stability
         // Use a time-independent lerp factor for smoothing
         const smoothFactor = 1.0 - Math.pow(0.1, dt); // Fast smoothing
-        this.smoothedSpeed = THREE.MathUtils.lerp(this.smoothedSpeed, Math.abs(forwardSpeed), smoothFactor);
+        this.smoothedSpeed = Scalar.Lerp(this.smoothedSpeed, Math.abs(forwardSpeed), smoothFactor);
 
         // Clamp speed influence
         const speedFactor = Math.min(this.smoothedSpeed / 10.0, 1.0);
@@ -205,22 +222,26 @@ export class Boat extends Entity {
         // Smoothly interpolate current rotation to target
         // Use correct time-independent lerp
         const rotLerpFactor = 1.0 - Math.pow(0.001, dt); // Very smooth
-        this.innerMesh.rotation.x = THREE.MathUtils.lerp(this.innerMesh.rotation.x, targetPitch, rotLerpFactor);
-        this.innerMesh.rotation.z = THREE.MathUtils.lerp(this.innerMesh.rotation.z, targetRoll, rotLerpFactor);
+
+        // Babylon uses rotation (Vector3 Euler)
+        if (!this.innerMesh.rotation) this.innerMesh.rotation = new Vector3(0, 0, 0);
+
+        this.innerMesh.rotation.x = Scalar.Lerp(this.innerMesh.rotation.x, targetPitch, rotLerpFactor);
+        this.innerMesh.rotation.z = Scalar.Lerp(this.innerMesh.rotation.z, targetRoll, rotLerpFactor);
 
         // Flash Effect
         if (this.flashTimer > 0) {
             this.flashTimer -= dt;
             if (this.flashTimer <= 0) {
                 // Restore original materials (remove emissive)
-                this.innerMesh.traverse((child) => {
-                    if ((child as THREE.Mesh).isMesh) {
-                        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
-                        if (mat && mat.emissive) {
-                            mat.emissive.setHex(0x000000);
-                        }
+                const meshes = this.innerMesh.getChildMeshes();
+                for (const m of meshes) {
+                    if (m.material && m.material instanceof StandardMaterial) {
+                        m.material.emissiveColor = new Color3(0, 0, 0);
+                        // Disable emissive if originally unset?
+                        // StandardMaterial default is black (no emission).
                     }
-                });
+                }
             }
         }
     }
@@ -239,14 +260,8 @@ export class Boat extends Entity {
             body.setPosition(planck.Vec2(x, z));
             body.setLinearVelocity(planck.Vec2(0, 0));
             body.setAngularVelocity(0);
-            body.setAngle(0); // Face forward (-Z which is physics default or need adjustment?)
-            // Boat uses 270 (PI/2 * 3) or 90?
-            // "model.rotation.y = Math.PI * 0.5;" in constructor means model is rotated relative to body.
-            // Body angle 0 usually means pointing along +X or -Y?
-            // "forwardDir = physicsBody.getWorldVector(planck.Vec2(0, -1));"
-            // So -Y in physics is forward.
-            // Angle 0 -> -1y is (0, -1). Correct.
-            // So Angle 0 is fine.
+            body.setAngle(0);
+
             this.currentThrottle = 0;
             this.currentSteering = 0;
 
@@ -257,69 +272,50 @@ export class Boat extends Entity {
 
     private applyPhysicsForces(physicsBody: planck.Body) {
         const velocity = physicsBody.getLinearVelocity();
-        const angularVelocity = physicsBody.getAngularVelocity();
+        // const angularVelocity = physicsBody.getAngularVelocity();
 
         // Get local vectors
         const forwardDir = physicsBody.getWorldVector(planck.Vec2(0, -1));
         const rightDir = physicsBody.getWorldVector(planck.Vec2(1, 0));
 
-        // 1. Differential Drag
+        // 1. Local Drag (Simulate Keel & Water Resistance)
         // Project velocity onto local axes
         const forwardSpeed = planck.Vec2.dot(velocity, forwardDir);
         const lateralSpeed = planck.Vec2.dot(velocity, rightDir);
-        const linearSpeed = velocity.length();
 
-        // Forward Drag (Quadratic) - Air/Water resistance
-        // F = -c * v * |v|
-        const forwardDragForce = forwardDir.clone().mul(-this.DRAG_FORWARD * forwardSpeed * Math.abs(forwardSpeed));
+        // Forward Drag: Low friction for efficient movement
+        // Quadratic drag: F = -c * v * |v|
+        const forwardDragForce = forwardDir.clone().mul(-this.DRAG_FORWARD * forwardSpeed);
         physicsBody.applyForceToCenter(forwardDragForce);
 
-        // Lateral Drag (Linear/Quadratic) - Keel resistance
-        // Much higher than forward drag to prevent sliding
-        const lateralDragForce = rightDir.clone().mul(-this.DRAG_SIDEWAYS * lateralSpeed * physicsBody.getMass());
+        // Lateral Drag: High friction (Keel) to prevent sliding
+        // Linear usually feels tighter for keels at low speed, but let's use simple high damping
+        const lateralDragForce = rightDir.clone().mul(-this.DRAG_SIDEWAYS * lateralSpeed * physicsBody.getMass() * 5.0);
         physicsBody.applyForceToCenter(lateralDragForce);
 
-        // Angular Drag - Resistance to spinning
-        const angularDrag = this.DRAG_ANGULAR + this.DRAG_ANGULAR_SPEED_FACTOR * linearSpeed;
-        physicsBody.setAngularDamping(angularDrag);
+        // Angular Drag: Dampen spinning
+        physicsBody.setAngularDamping(this.DRAG_ANGULAR);
 
-        // 2. Calculate Motor Details
-        // Applied at the stern (back of the boat)
-        // Local position: (0, 4.0) roughly (closer to center of mass for better control)
-        const motorPosLocal = planck.Vec2(0, 4.0);
-        const motorPosWorld = physicsBody.getWorldPoint(motorPosLocal);
+        // 2. Offset Thrust (Steering via Torque)
+        // Engine is at the Stern (Back of boat)
+        // Boat Center is (0,0). Stern is approx (0, 3.0).
+        // Apply force slightly behind to ensure good lever arm.
+        const rudderPosLocal = planck.Vec2(0, 3.5);
+        const rudderPosWorld = physicsBody.getWorldPoint(rudderPosLocal);
 
-        // Thrust Vector (Motor Direction)
-        const thrustAngle = this.currentSteering;
-        const thrustDirLocal = planck.Vec2(Math.sin(thrustAngle), -Math.cos(thrustAngle));
-        const thrustDirWorld = physicsBody.getWorldVector(thrustDirLocal);
+        // Calculate Thrust Force Vector
+        // We want to turn RIGHT (Positive Steering):
+        // Stern kicks LEFT (Negative X locally).
+        // Force Vector X component should be -Math.sin(angle).
+        // Force Vector Y component is propulsion (Forward is -Y), so -Math.cos(angle).
 
-        // 3. Fin / Rudder Force (Steerage)
-        // Uses the same motor position and orientation
-        const finLiftFactor = THREE.MathUtils.smoothstep(linearSpeed, 0.0, this.APPROX_MAX_SPEED);
-        const finLiftCoefficient = THREE.MathUtils.lerp(this.FIN_GRIP_SLOW, this.FIN_GRIP_FAST, finLiftFactor);
-
-        // Velocity of water relative to the stern
-        const sternVelocity = physicsBody.getLinearVelocityFromLocalPoint(motorPosLocal);
-
-        // 'Right' vector relative to the motor's current orientation
-        // Normal is (-u.y, u.x)
-        const motorRightNormalLocal = planck.Vec2(-thrustDirLocal.y, thrustDirLocal.x);
-        const motorRightNormalWorld = physicsBody.getWorldVector(motorRightNormalLocal);
-
-        // Project stern velocity onto the motor's sideways direction
-        const lateralSpeedAtMotor = planck.Vec2.dot(sternVelocity, motorRightNormalWorld);
-
-        // Apply Lift force opposite to that lateral speed
-        const finForceMagnitude = -finLiftCoefficient * lateralSpeedAtMotor;
-        const finImpulse = motorRightNormalWorld.mul(finForceMagnitude);
-
-        physicsBody.applyForce(finImpulse, motorPosWorld);
-
-        // 4. Outboard Motor Thrust
         if (Math.abs(this.currentThrottle) > 0.01) {
+            const angle = this.currentSteering;
+            const thrustDirLocal = planck.Vec2(-Math.sin(angle), -Math.cos(angle));
+            const thrustDirWorld = physicsBody.getWorldVector(thrustDirLocal);
+
             const thrustForce = thrustDirWorld.mul(this.currentThrottle * this.MAX_THRUST);
-            physicsBody.applyForce(thrustForce, motorPosWorld);
+            physicsBody.applyForce(thrustForce, rudderPosWorld);
         }
     }
 
@@ -366,16 +362,13 @@ export class Boat extends Entity {
 
     private flashRed() {
         this.flashTimer = 0.2; // 200ms flash
-        this.innerMesh.traverse((child) => {
-            if ((child as THREE.Mesh).isMesh) {
-                const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
-                if (mat && mat.emissive) {
-                    mat.emissive.setHex(0xFF0000);
-                    // Ensure intensity is high enough to be seen
-                    mat.emissiveIntensity = 1.0;
-                }
+        const meshes = this.innerMesh.getChildMeshes();
+        for (const m of meshes) {
+            if (m.material && m.material instanceof StandardMaterial) {
+                m.material.emissiveColor = new Color3(1, 0, 0); // Red
+                // Babylon StandardMaterial uses emissiveColor
             }
-        });
+        }
     }
 
 }

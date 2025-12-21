@@ -1,13 +1,12 @@
 import * as planck from 'planck';
-import * as THREE from 'three';
+import { TransformNode, MeshBuilder, StandardMaterial, Color3 } from '@babylonjs/core';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 
 export class GasCan extends Entity {
 
-    static FloatBehavior = class implements EntityBehavior {
+    static FloatBehavior = class {
 
         private gasCan: GasCan;
         private floatOffset: number = Math.random() * Math.PI * 2;
@@ -26,7 +25,7 @@ export class GasCan extends Entity {
         }
     };
 
-    private behavior: EntityBehavior | null = null;
+    private behavior: any | null = null;
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
         super();
@@ -45,35 +44,33 @@ export class GasCan extends Entity {
         physicsBody.setUserData({ type: 'collectable', subtype: 'gas', entity: this });
 
         // Graphics
-        const mesh = new THREE.Group();
+        const mesh = new TransformNode("gasCan");
         this.meshes.push(mesh);
 
         // Main Body
-        const geo = new THREE.BoxGeometry(1.2, 1.6, 0.8); // Doubled
-        const mat = new THREE.MeshToonMaterial({ color: 0xFF0000 }); // Red
-        const can = new THREE.Mesh(geo, mat);
+        const can = MeshBuilder.CreateBox("canBody", { width: 1.2, height: 1.6, depth: 0.8 });
+        const mat = new StandardMaterial("canMat");
+        mat.diffuseColor = Color3.Red();
+        can.material = mat;
         can.position.y = 0.8;
-        mesh.add(can);
+        can.parent = mesh;
 
         // Handle
-        const handleGeo = new THREE.TorusGeometry(0.3, 0.1, 8, 16); // Doubled
-        const handleMat = new THREE.MeshToonMaterial({ color: 0xFF0000 });
-        const handle = new THREE.Mesh(handleGeo, handleMat);
+        const handle = MeshBuilder.CreateTorus("handle", { diameter: 0.6, thickness: 0.1, tessellation: 16 });
+        handle.material = mat; // Reuse red
         handle.position.y = 1.8;
-        // Fix rotation: was Math.PI / 2 (90 deg), user says off by 90.
-        // Torus default is flat on XY plane.
-        // If we want it upright like a suitcase handle?
-        // Let's try 0 or PI.
-        handle.rotation.y = 0;
-        mesh.add(handle);
+        handle.rotation.x = Math.PI / 2; // Flat on top? No, upright. Default Torus is flat on XZ. Rotate X 90 to stand up in XY or ZY? 
+        // Suitcase handle usually upright.
+        handle.parent = mesh;
 
         // Spout
-        const spoutGeo = new THREE.CylinderGeometry(0.1, 0.16, 0.6, 8); // Doubled
-        const spoutMat = new THREE.MeshToonMaterial({ color: 0xFFD700 }); // Yellow
-        const spout = new THREE.Mesh(spoutGeo, spoutMat);
+        const spout = MeshBuilder.CreateCylinder("spout", { diameterTop: 0.1, diameterBottom: 0.16, height: 0.6 });
+        const spoutMat = new StandardMaterial("spoutMat");
+        spoutMat.diffuseColor = Color3.Yellow();
+        spout.material = spoutMat;
         spout.position.set(0.4, 1.6, 0);
         spout.rotation.z = -Math.PI / 4;
-        mesh.add(spout);
+        spout.parent = mesh;
 
         // Start floating
         this.behavior = new GasCan.FloatBehavior(this);

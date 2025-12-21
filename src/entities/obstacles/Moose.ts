@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { TransformNode, Vector3 } from "@babylonjs/core";
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
@@ -30,9 +30,9 @@ export class Moose extends AttackAnimal {
         return Decorations.getMoose();
     }
 
-    protected setupModel(model: THREE.Group): void {
+    protected setupModel(model: TransformNode): void {
         model.position.y = 3.0;
-        model.scale.set(0.1, 0.1, 0.1);
+        model.scaling.set(0.1, 0.1, 0.1);
         model.rotation.y = Math.PI;
     }
 
@@ -44,21 +44,22 @@ export class Moose extends AttackAnimal {
         return 'walk';
     }
 
-    setLandPosition(height: number, normal: THREE.Vector3, progress: number): void {
+    setLandPosition(height: number, normal: Vector3, progress: number): void {
         if (this.meshes.length > 0) {
             const t = Math.max(0, Math.min(progress, 1));
             const curve = 4 * t * (1.0 - t);
             const jumpHeight = 2.0 * curve;
             this.meshes[0].position.y = height + jumpHeight;
         }
-        this.normalVector.copy(normal);
+        this.normalVector.copyFrom(normal);
     }
 
     protected playWalkingAnimation(duration: number): void {
-        if (!this.player) {
+        if (true) { // Stubbed: !this.player
             return;
         }
 
+        /*
         if (duration > 0.5) {
             const startTimeScale = 0.5;
             const endTimeScale = 0.5;
@@ -72,6 +73,7 @@ export class Moose extends AttackAnimal {
         } else {
             this.player.play({ name: 'walk', startTime: -1 });
         }
+        */
     }
 
     enteringWaterDidComplete(speed: number) {

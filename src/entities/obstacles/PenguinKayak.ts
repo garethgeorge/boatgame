@@ -1,31 +1,30 @@
 import * as planck from 'planck';
-import * as THREE from 'three';
+import { TransformNode, AnimationGroup } from '@babylonjs/core';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AnimationPlayer } from '../../core/AnimationPlayer';
-import { EntityBehavior } from '../behaviors/EntityBehavior';
+// import { AnimationPlayer } from '../../core/AnimationPlayer';
+// import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
-import { AnimalSwimAwayBehavior } from '../behaviors/AnimalSwimAwayBehavior';
-import { AnyAttackAnimal } from '../behaviors/AttackAnimalBehavior';
+// import { AnimalSwimAwayBehavior } from '../behaviors/AnimalSwimAwayBehavior';
+// import { AnyAttackAnimal } from '../behaviors/AttackAnimalBehavior';
 
-export class PenguinKayak extends Entity implements AnyAttackAnimal {
+export class PenguinKayak extends Entity {
 
     private aggressiveness: number = 1.0;
-    private player: AnimationPlayer | null = null;
-    private behavior: EntityBehavior | null = null;
+    private behavior: any | null = null;
 
-    private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
+    private applyModel(model: TransformNode, animations: AnimationGroup[]) {
         // Apply model transformations
-        model.scale.set(2.0, 2.0, 2.0);
+        model.scaling.set(2.0, 2.0, 2.0);
         model.rotation.y = Math.PI / 2.0;
         model.position.y = -0.4;
 
         if (this.meshes.length > 0) {
-            this.meshes[0].add(model);
+            model.parent = this.meshes[0];
         }
 
-        this.player = new AnimationPlayer(model, animations);
+        // this.player = new AnimationPlayer(model, animations); // Stub
     }
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine, angle: number = 0) {
@@ -54,7 +53,7 @@ export class PenguinKayak extends Entity implements AnyAttackAnimal {
         physicsBody.setUserData({ type: 'obstacle', subtype: 'penguinKayak', entity: this });
 
         // Graphics
-        const mesh = new THREE.Group();
+        const mesh = new TransformNode("penguinKayak");
         this.meshes.push(mesh);
 
         mesh.position.y = 0.5; // Raised by ~15% of model height
@@ -64,8 +63,8 @@ export class PenguinKayak extends Entity implements AnyAttackAnimal {
             this.applyModel(penguinData.model, penguinData.animations);
         }
 
-        this.behavior = new AnimalSwimAwayBehavior(this, this.aggressiveness);
-        this.player.play({ name: 'paddling', timeScale: 2.0, randomizeLength: 0.2, startTime: -1 });
+        // this.behavior = new AnimalSwimAwayBehavior(this, this.aggressiveness);
+        // this.player.play({ name: 'paddling', timeScale: 2.0, randomizeLength: 0.2, startTime: -1 });
     }
 
     getPhysicsBody(): planck.Body | null {
@@ -80,9 +79,9 @@ export class PenguinKayak extends Entity implements AnyAttackAnimal {
     }
 
     update(dt: number) {
-        if (this.player) {
-            this.player.update(dt);
-        }
+        // if (this.player) {
+        //     this.player.update(dt);
+        // }
         if (this.behavior) {
             this.behavior.update(dt);
         }

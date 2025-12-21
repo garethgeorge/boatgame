@@ -1,31 +1,60 @@
-import * as THREE from 'three';
+import {
+    TransformNode,
+    MeshBuilder,
+    StandardMaterial,
+    Color3,
+    Mesh,
+    Vector3,
+    Quaternion
+} from '@babylonjs/core';
 import { DecorationFactory } from './DecorationFactory';
 
 export class CycadFactory implements DecorationFactory {
-    private static readonly trunkMaterial = new THREE.MeshToonMaterial({ color: 0x5C4033 }); // Darker brown
-    private static readonly frondMaterial = new THREE.MeshToonMaterial({ color: 0x2E8B57 }); // Sea Green / Dark Green
-    private static readonly coneMaterial = new THREE.MeshToonMaterial({ color: 0xCD853F }); // Peru (brownish orange)
+    private static trunkMaterial: StandardMaterial;
+    private static frondMaterial: StandardMaterial;
+    private static coneMaterial: StandardMaterial;
 
-    // Cache stores arrays of pre-generated cycads
     private cache: {
-        cycads: { mesh: THREE.Group }[];
+        cycads: { mesh: TransformNode }[];
     } = { cycads: [] };
 
     async load(): Promise<void> {
-        // Pre-generate cycads
-        console.log("Generating Cycad Cache...");
+        this.cache.cycads = [];
+        import('@babylonjs/core').then(core => {
+            if (!CycadFactory.trunkMaterial) {
+                CycadFactory.trunkMaterial = new core.StandardMaterial("cycadTrunk");
+                CycadFactory.trunkMaterial.diffuseColor = core.Color3.FromHexString("#5C4033");
+                CycadFactory.trunkMaterial.specularColor = core.Color3.Black();
 
-        for (let i = 0; i < 20; i++) {
-            this.cache.cycads.push({ mesh: this.createCycad() });
-        }
+                CycadFactory.frondMaterial = new core.StandardMaterial("cycadFrond");
+                CycadFactory.frondMaterial.diffuseColor = core.Color3.FromHexString("#2E8B57");
+                CycadFactory.frondMaterial.specularColor = core.Color3.Black();
+                CycadFactory.frondMaterial.backFaceCulling = false;
+
+                CycadFactory.coneMaterial = new core.StandardMaterial("cycadCone");
+                CycadFactory.coneMaterial.diffuseColor = core.Color3.FromHexString("#CD853F");
+                CycadFactory.coneMaterial.specularColor = core.Color3.Black();
+            }
+
+            console.log("Generating Cycad Cache...");
+            for (let i = 0; i < 20; i++) {
+                const mesh = this.createCycad();
+                mesh.setEnabled(false);
+                this.cache.cycads.push({ mesh });
+            }
+        });
     }
 
-    create(): THREE.Group {
-        let mesh: THREE.Group;
+    create(options?: any): TransformNode {
+        // Fallback
+        if (!CycadFactory.trunkMaterial) return new TransformNode("cycad_placeholder");
+
+        let mesh: TransformNode;
 
         if (this.cache.cycads.length > 0) {
             const source = this.cache.cycads[Math.floor(Math.random() * this.cache.cycads.length)];
-            mesh = source.mesh.clone();
+            mesh = source.mesh.instantiateHierarchy() as TransformNode;
+            mesh.setEnabled(true);
         } else {
             mesh = this.createCycad();
         }
@@ -33,8 +62,8 @@ export class CycadFactory implements DecorationFactory {
         return mesh;
     }
 
-    private createCycad(): THREE.Group {
-        const group = new THREE.Group();
+    private createCycad(): TransformNode {
+        const root = new TransformNode("cycad_root");
 
         // Cycad parameters
         // Mostly a few meters, some tall
@@ -48,11 +77,15 @@ export class CycadFactory implements DecorationFactory {
         const crownRadius = (3.0 + Math.random() * 5.0) * trunkRadius * 1.414;
 
         // Trunk
-        // Rough, scarred look - maybe just a cylinder for now
-        const trunkGeo = new THREE.CylinderGeometry(trunkRadius * 0.7, trunkRadius, trunkHeight, 5);
-        const trunk = new THREE.Mesh(trunkGeo, CycadFactory.trunkMaterial);
-        trunk.position.y = trunkHeight / 2 - 0.1;  // to bury it in the ground
-        group.add(trunk);
+        const trunk = MeshBuilder.CreateCylinder("trunk", {
+            height: trunkHeight,
+            diameterTop: trunkRadius,
+            diameterBottom: trunkRadius * 0.7, // Original was cylinder with slightly different top/bottom? code said cylinder.
+            tessellation: 5
+        });
+        trunk.material = CycadFactory.trunkMaterial;
+        trunk.position.y = trunkHeight / 2 - 0.1;
+        trunk.parent = root;
 
         // Crown location
         const crownY = trunkHeight - 0.1;
@@ -62,45 +95,61 @@ export class CycadFactory implements DecorationFactory {
         const frondCount = 10 + Math.floor(Math.random() * 6);
 
         for (let i = 0; i < frondCount; i++) {
-            // We'll mimic a frond shape using a flattened scale on a cylinder/cone
-            // Cyclinder is created at origin and with center along y axis
-            // Top radius will be the width at the tip, bottom is the width at the frond start
-            const frondGeo = new THREE.CylinderGeometry(0.01, 0.2, crownRadius, 4);
-            // Translate geometry so the base is at the origin (0,0,0)
-            frondGeo.translate(0, crownRadius / 2, 0);
+            // Frond Mesh (Flattened cylinder/cone)
+            // Original: CylinderGeometry(0.01, 0.2, crownRadius, 4) translated (0, crownRadius/2, 0)
 
-            const frond = new THREE.Mesh(frondGeo, CycadFactory.frondMaterial);
+            // Babylon CreateCylinder
+            const frond = MeshBuilder.CreateCylinder("frond", {
+                height: crownRadius,
+                diameterTop: 0.01,
+                diameterBottom: 0.2,
+                tessellation: 4
+            });
+            // Original logic: translated (0, crownRadius/2, 0).
+            // Babylon cylinder pivot is center.
+            // Moving it so base is at origin?
+            // If base radius is 0.2 and top is 0.01.
+            // Base is at -height/2.
+            // We want base at 0.
+            frond.locallyTranslate(new Vector3(0, crownRadius / 2, 0));
 
-            // Flatten to resemble a leaf blade 
-            frond.scale.set(1.0, 1.0, 0.025);
+            frond.material = CycadFactory.frondMaterial;
+
+            // Flatten
+            frond.scaling.set(1.0, 1.0, 0.025);
 
             // Rotate around x to make it stick out
-            // Random variation in "perkiness"
             const archAngle = Math.PI / 4 + Math.random() * 0.4;
             frond.rotation.x = archAngle;
 
-            // Pivot group now positions the frond vertically and around y axis
-            const frondPivot = new THREE.Group();
+            // Pivot group
+            const frondPivot = new TransformNode("frond_pivot");
             frondPivot.position.set(0, crownY, 0);
 
             // Distribute evenly around the trunk
             const angleY = (i / frondCount) * Math.PI * 2 + (Math.random() * 0.1);
             frondPivot.rotation.y = angleY;
+            frondPivot.parent = root;
 
-            frondPivot.add(frond);
-            group.add(frondPivot);
+            frond.parent = frondPivot;
         }
 
-        // Central Cone (reproductive structure, common in cycads)
+        // Central Cone
         if (Math.random() > 0.4) {
             const coneRadius = trunkRadius * 0.7;
             const coneHeight = coneRadius * 6.0;
-            const coneGeo = new THREE.ConeGeometry(coneRadius, coneHeight, 6);
-            const cone = new THREE.Mesh(coneGeo, CycadFactory.coneMaterial);
+
+            const cone = MeshBuilder.CreateCylinder("cone", {
+                height: coneHeight,
+                diameterTop: 0,
+                diameterBottom: coneRadius,
+                tessellation: 6
+            });
+            cone.material = CycadFactory.coneMaterial;
             cone.position.y = crownY + coneHeight / 2;
-            group.add(cone);
+            cone.parent = root;
         }
 
-        return group;
+        return root;
     }
 }

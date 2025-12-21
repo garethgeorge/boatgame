@@ -11,6 +11,7 @@ export class CactusDecorator extends BaseDecorator {
             if (!this.isValidDecorationPosition(context, position)) continue;
 
             const biomeType = context.riverSystem.biomeManager.getBiomeType(position.worldZ);
+            if (biomeType !== 'desert') continue;
 
             if (Math.random() > 0.8) {
                 const cactus = Decorations.getCactus();

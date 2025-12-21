@@ -1,3 +1,4 @@
+import { Vector3 } from '@babylonjs/core';
 import { Spawnable, SpawnContext } from '../Spawnable';
 import { RiverSystem } from '../../world/RiverSystem';
 import { PhysicsEngine } from '../../core/PhysicsEngine';

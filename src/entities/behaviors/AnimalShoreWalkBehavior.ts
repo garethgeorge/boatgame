@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import * as THREE from 'three';
+// import * as THREE from 'three';
 import { CollisionCategories } from '../../core/PhysicsEngine';
 import { RiverSystem } from '../../world/RiverSystem';
 import { AttackAnimalShoreWalk } from './AttackAnimalBehavior';
@@ -113,7 +113,7 @@ export class AnimalShoreWalkBehavior implements EntityBehavior {
             // Update terrain position
             const height = RiverSystem.getInstance().terrainGeometry.calculateHeight(currentPos.x, currentPos.y);
             const normal = RiverSystem.getInstance().terrainGeometry.calculateNormal(currentPos.x, currentPos.y);
-            this.entity.setLandPosition(height, normal, 0);
+            this.entity.setLandPosition?.(height, normal, 0);
             return;
         }
 
@@ -142,7 +142,7 @@ export class AnimalShoreWalkBehavior implements EntityBehavior {
             // Update terrain position
             const height = RiverSystem.getInstance().terrainGeometry.calculateHeight(constrainedX, currentZ);
             const normal = RiverSystem.getInstance().terrainGeometry.calculateNormal(constrainedX, currentZ);
-            this.entity.setLandPosition(height, normal, 0);
+            this.entity.setLandPosition?.(height, normal, 0);
             return;
         }
 

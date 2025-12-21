@@ -1,57 +1,50 @@
 export const SobelShader = {
-  uniforms: {
-    'tDiffuse': { value: null },
-    'resolution': { value: new Float32Array([800, 600]) }
-  },
+  name: "sobel",
+  fragmentSource: `
+    precision highp float;
 
-  vertexShader: `
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-    }
-  `,
-
-  fragmentShader: `
-    uniform sampler2D tDiffuse;
+    uniform sampler2D textureSampler;
     uniform vec2 resolution;
-    varying vec2 vUv;
 
-    void main() {
-      float x = 1.0 / resolution.x;
-      float y = 1.0 / resolution.y;
+    varying vec2 vUV;
 
-      vec4 horizEdge = vec4( 0.0 );
-      horizEdge -= texture2D( tDiffuse, vec2( vUv.x - x, vUv.y - y ) ) * 1.0;
-      horizEdge -= texture2D( tDiffuse, vec2( vUv.x - x, vUv.y     ) ) * 2.0;
-      horizEdge -= texture2D( tDiffuse, vec2( vUv.x - x, vUv.y + y ) ) * 1.0;
-      horizEdge += texture2D( tDiffuse, vec2( vUv.x + x, vUv.y - y ) ) * 1.0;
-      horizEdge += texture2D( tDiffuse, vec2( vUv.x + x, vUv.y     ) ) * 2.0;
-      horizEdge += texture2D( tDiffuse, vec2( vUv.x + x, vUv.y + y ) ) * 1.0;
+    void main(void) {
+        vec2 texel = vec2(1.0 / resolution.x, 1.0 / resolution.y);
 
-      vec4 vertEdge = vec4( 0.0 );
-      vertEdge -= texture2D( tDiffuse, vec2( vUv.x - x, vUv.y - y ) ) * 1.0;
-      vertEdge -= texture2D( tDiffuse, vec2( vUv.x    , vUv.y - y ) ) * 2.0;
-      vertEdge -= texture2D( tDiffuse, vec2( vUv.x + x, vUv.y - y ) ) * 1.0;
-      vertEdge += texture2D( tDiffuse, vec2( vUv.x - x, vUv.y + y ) ) * 1.0;
-      vertEdge += texture2D( tDiffuse, vec2( vUv.x    , vUv.y + y ) ) * 2.0;
-      vertEdge += texture2D( tDiffuse, vec2( vUv.x + x, vUv.y + y ) ) * 1.0;
+        // Kernel (Sobel)
+        // Gx
+        // -1  0  1
+        // -2  0  2
+        // -1  0  1
+        
+        // Gy
+        // -1 -2 -1
+        //  0  0  0
+        //  1  2  1
 
-      vec3 edge = sqrt((horizEdge.rgb * horizEdge.rgb) + (vertEdge.rgb * vertEdge.rgb));
-      float edgeVal = length(edge);
-
-      // Light cell-shading aesthetic: mix original color with edge darkness
-      vec4 color = texture2D( tDiffuse, vUv );
-      
-      // Thresholding for "cell shaded" look - if edge is strong, darken it
-      // "Fairly light" means we probably don't want pitch black lines everywhere
-      // or we accept the gradient but keep it subtle.
-      
-      float intensity = 0.3; // Reduced from 0.5
-      // Clamp the edge contribution to avoid pitch black lines
-      vec3 finalEdge = min(edge.rgb * intensity, vec3(0.3)); 
-      
-      gl_FragColor = vec4( color.rgb - finalEdge, color.a );
-    }
-  `
+        float t00 = dot(texture2D(textureSampler, vUV + texel * vec2(-1, -1)).rgb, vec3(0.299, 0.587, 0.114));
+        float t10 = dot(texture2D(textureSampler, vUV + texel * vec2( 0, -1)).rgb, vec3(0.299, 0.587, 0.114));
+        float t20 = dot(texture2D(textureSampler, vUV + texel * vec2( 1, -1)).rgb, vec3(0.299, 0.587, 0.114));
+        
+        float t01 = dot(texture2D(textureSampler, vUV + texel * vec2(-1,  0)).rgb, vec3(0.299, 0.587, 0.114));
+        float t21 = dot(texture2D(textureSampler, vUV + texel * vec2( 1,  0)).rgb, vec3(0.299, 0.587, 0.114));
+        
+        float t02 = dot(texture2D(textureSampler, vUV + texel * vec2(-1,  1)).rgb, vec3(0.299, 0.587, 0.114));
+        float t12 = dot(texture2D(textureSampler, vUV + texel * vec2( 0,  1)).rgb, vec3(0.299, 0.587, 0.114));
+        float t22 = dot(texture2D(textureSampler, vUV + texel * vec2( 1,  1)).rgb, vec3(0.299, 0.587, 0.114));
+        
+        float gx = t00 * -1.0 + t20 * 1.0 + t01 * -2.0 + t21 * 2.0 + t02 * -1.0 + t22 * 1.0;
+        float gy = t00 * -1.0 + t10 * -2.0 + t20 * -1.0 + t02 * 1.0 + t12 * 2.0 + t22 * 1.0;
+        
+        float dist = sqrt(gx * gx + gy * gy);
+        
+        vec4 baseColor = texture2D(textureSampler, vUV);
+        
+        // Threshold for outline
+        // float alpha = step(0.1, dist);
+         float alpha = smoothstep(0.4, 0.8, dist);
+         
+        // Darken edges subtly
+        gl_FragColor = vec4(mix(baseColor.rgb, baseColor.rgb * 0.5, alpha), 1.0);
+    }`
 };

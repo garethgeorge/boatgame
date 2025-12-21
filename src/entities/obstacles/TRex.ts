@@ -1,11 +1,9 @@
-import * as planck from 'planck';
-import * as THREE from 'three';
+import { TransformNode, Vector3, AnimationGroup } from "@babylonjs/core";
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 
 export class TRex extends AttackAnimal {
-
     public static readonly HEIGHT_IN_WATER: number = -3.0;
 
     protected get heightInWater(): number {
@@ -28,8 +26,9 @@ export class TRex extends AttackAnimal {
         return Decorations.getTRex();
     }
 
-    protected setupModel(model: THREE.Group): void {
-        model.scale.set(6.0, 6.0, 6.0);
+    protected setupModel(model: TransformNode, animations: AnimationGroup[]): void {
+        model.scaling.set(6.0, 6.0, 6.0);
         model.rotation.y = Math.PI;
+        if (animations.length > 0) animations[0].start(true, 1.0);
     }
 }

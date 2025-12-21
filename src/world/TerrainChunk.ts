@@ -1,34 +1,45 @@
-import * as THREE from 'three';
+import {
+  Mesh,
+  Vector3,
+  VertexData,
+  StandardMaterial,
+  Color3,
+  Texture,
+  RawTexture,
+  Constants,
+  Scene,
+  AbstractMesh,
+  TransformNode,
+  AnimationGroup
+} from '@babylonjs/core';
 import { GraphicsEngine } from '../core/GraphicsEngine';
 import { RiverSystem } from './RiverSystem';
-import { Decorations } from './Decorations';
-import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+// import { Decorations } from './Decorations'; // TODO: Migrate Decorations
+// import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js'; // Babylon has MergeMeshes
 import { Profiler } from '../core/Profiler';
-import { WaterShader } from '../shaders/WaterShader';
-import { TerrainDecorator, DecorationContext } from './decorators/TerrainDecorator';
-import { ResourceDisposer } from '../core/ResourceDisposer';
+import { WaterMaterial } from '../materials/WaterMaterial';
+// import { TerrainDecorator, DecorationContext } from './decorators/TerrainDecorator'; 
+// import { ResourceDisposer } from '../core/ResourceDisposer'; // Not needed for Babylon
 
 export class TerrainChunk {
 
   // Materials
-  static waterMaterial: THREE.ShaderMaterial | null = null;
+  static waterMaterial: WaterMaterial | null = null;
 
-  mesh: THREE.Mesh;
-  waterMesh: THREE.Mesh;
-  decorations: THREE.Group;
+  mesh: Mesh;
+  waterMesh: Mesh;
+  decorations: TransformNode;
   zOffset: number;
 
-  private disposer: ResourceDisposer = new ResourceDisposer();
-
   // Config
-  public static readonly CHUNK_SIZE = 62.5; // Size of chunk in Z (Reduced to 62.5 for incremental generation)
-  public static readonly CHUNK_WIDTH = 400; // Width of world in X
-  public static readonly RESOLUTION_X = 160; // Vertices along X
-  public static readonly RESOLUTION_Z = 25; // Vertices along Z (Reduced to 25)
+  public static readonly CHUNK_SIZE = 62.5;
+  public static readonly CHUNK_WIDTH = 400;
+  public static readonly RESOLUTION_X = 160;
+  public static readonly RESOLUTION_Z = 25;
 
   private riverSystem: RiverSystem;
   private graphicsEngine: GraphicsEngine;
-  private mixers: THREE.AnimationMixer[] = [];
+  // private mixers: THREE.AnimationMixer[] = []; // Babylon uses AnimationGroups
 
   public static async createAsync(
     zOffset: number,
@@ -47,85 +58,44 @@ export class TerrainChunk {
     this.graphicsEngine = graphicsEngine;
     this.riverSystem = RiverSystem.getInstance();
 
-    // Mesh generation is now async, handled in initAsync
-    // We initialize properties to null/empty first or rely on ! assertion if we are careful
-    // But typescript expects them to be initialized.
-    // Let's make them definite assignment assertion or initialize with empty.
-    this.mesh = new THREE.Mesh();
-    this.waterMesh = new THREE.Mesh();
-    this.decorations = new THREE.Group();
+    this.mesh = new Mesh("terrain_chunk_" + zOffset, graphicsEngine.scene);
+    this.waterMesh = new Mesh("water_chunk_" + zOffset, graphicsEngine.scene);
+    this.decorations = new TransformNode("decorations_chunk_" + zOffset, graphicsEngine.scene);
+    this.decorations.parent = this.mesh;
   }
 
   public update(dt: number) {
-    for (const mixer of this.mixers) {
-      mixer.update(dt);
-    }
+    // Babylon handles animations automatically via scene
   }
 
   private async initAsync() {
     this.mesh = await this.generateMesh();
     await this.yieldToMain();
 
-    this.waterMesh = this.generateWater(); // Fast enough to be sync? Or make async too?
-    // Water is simple plane, sync is fine.
+    this.waterMesh = this.generateWater();
 
     this.decorations = await this.generateDecorations();
 
-    this.graphicsEngine.add(this.mesh);
-    this.graphicsEngine.add(this.waterMesh);
-    this.graphicsEngine.add(this.decorations);
-  }
-
-  // ... (yieldToMain, generateMesh)
-
-  private async generateDecorations(): Promise<THREE.Group> {
-    const geometryGroup = new THREE.Group();
-    const geometriesByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
-
-    const context: DecorationContext = {
-      chunk: this,
-      riverSystem: this.riverSystem,
-      geometriesByMaterial: geometriesByMaterial,
-      geometryGroup: geometryGroup,
-      animationMixers: this.mixers,
-      zOffset: this.zOffset
-    };
-
-    Profiler.start('GenDecoBatch');
-    const segments = this.riverSystem.biomeManager.getFeatureSegments(this.zOffset, this.zOffset + TerrainChunk.CHUNK_SIZE);
-
-    for (const segment of segments) {
-      const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
-      await features.decorate(context, segment.zStart, segment.zEnd);
-      Profiler.pause('GenDecoBatch');
-      await this.yieldToMain();
-      Profiler.resume('GenDecoBatch');
-    }
-    Profiler.end('GenDecoBatch');
-
-    // Merge geometries and create meshes
-    this.mergeAndAddGeometries(geometriesByMaterial, geometryGroup);
-
-    return geometryGroup;
+    // Setting parent to ensure hierarchy if needed, but they are already in scene
   }
 
   private yieldToMain(): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, 0));
   }
 
-  private async generateMesh(): Promise<THREE.Mesh> {
+  private async generateMesh(): Promise<Mesh> {
     const chunkSize = TerrainChunk.CHUNK_SIZE;
     const chunkWidth = TerrainChunk.CHUNK_WIDTH;
     const resX = TerrainChunk.RESOLUTION_X;
     const resZ = TerrainChunk.RESOLUTION_Z;
 
     const numVertices = (resX + 1) * (resZ + 1);
-    const numIndices = resX * resZ * 6;
 
-    const positions = new Float32Array(numVertices * 3);
-    const colors = new Float32Array(numVertices * 3);
-    const uvs = new Float32Array(numVertices * 2);
-    const indices = new Uint32Array(numIndices);
+    // Babylon vertex data buffers
+    const positions: number[] = [];
+    const colors: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
 
     // Maps [-1,1] to [-width/2,width/2] with closer spacing near 0
     const getDistributedX = (u: number, width: number): number => {
@@ -164,29 +134,25 @@ export class TerrainChunk {
         const wx = dx + riverCenter;
         const height = this.riverSystem.terrainGeometry.calculateHeight(wx, wz);
 
-        const index = iz * (resX + 1) + ix;
-        positions[index * 3] = wx;
-        positions[index * 3 + 1] = height;
-        positions[index * 3 + 2] = wz;
+        positions.push(wx, height, wz);
 
         // Colors
         // Purely biome based, maybe slight noise variation but mostly solid
         // Lerp between Desert and Forest based on biomeFactor
         const color = this.riverSystem.biomeManager.getBiomeGroundColor(wz);
-        colors[index * 3] = color.r;
-        colors[index * 3 + 1] = color.g;
-        colors[index * 3 + 2] = color.b;
+
+        // Babylon uses 0-1 float colors usually, ThreeJS Color is 0-1 floats internally too?
+        // ThreeJS Color components are 0-1.
+        colors.push(color.r, color.g, color.b, 1.0); // Add Alpha
 
         // u = [0, 1] from chunk edge to edge
         // v = [0, 1] from chunk near to far
-        uvs[index * 2] = (wx / chunkWidth) + 0.5;
-        uvs[index * 2 + 1] = tz;
+        uvs.push((wx / chunkWidth) + 0.5, tz);
       }
     }
     Profiler.end('GenMeshBatch');
 
     // Generate triangle indices
-    let i = 0;
     for (let iz = 0; iz < resZ; iz++) {
       for (let ix = 0; ix < resX; ix++) {
         const a = iz * (resX + 1) + ix;
@@ -194,163 +160,197 @@ export class TerrainChunk {
         const c = (iz + 1) * (resX + 1) + (ix + 1);
         const d = iz * (resX + 1) + (ix + 1);
 
-        indices[i++] = a;
-        indices[i++] = b;
-        indices[i++] = d;
-        indices[i++] = b;
-        indices[i++] = c;
-        indices[i++] = d;
+        // Babylon standard material side orientation might differ.
+        // Assuming Standard, CCW winding? 
+        // ThreeJS default is CCW front face. Babylon is also CCW by default if sideOrientation is not set.
+
+        indices.push(a, d, b);
+        indices.push(b, d, c);
       }
     }
 
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    const vertexData = new VertexData();
+    vertexData.positions = positions;
+    vertexData.indices = indices;
+    vertexData.colors = colors;
+    vertexData.uvs = uvs;
 
-    geometry.computeVertexNormals();
+    // Compute Normals
+    const normals: number[] = [];
+    VertexData.ComputeNormals(positions, indices, normals);
+    vertexData.normals = normals;
+
+    const mesh = new Mesh("terrain_" + this.zOffset, this.graphicsEngine.scene);
+    vertexData.applyToMesh(mesh);
 
     // Create custom gradient for toon shading
-    // Brightened shadows
-    const gradientColors = new Uint8Array([
-      100, 100, 100, 255, // Shadow (was 50)
-      180, 180, 180, 255, // Mid (was 100)
-      255, 255, 255, 255  // Highlight
-    ]);
-    const gradientMap = new THREE.DataTexture(gradientColors, 3, 1, THREE.RGBAFormat);
-    gradientMap.needsUpdate = true;
-    gradientMap.minFilter = THREE.NearestFilter;
-    gradientMap.magFilter = THREE.NearestFilter;
+    // Babylonjs CellMaterial or StandardMaterial with simplified lighting
+    const material = new StandardMaterial("terrain_mat_" + this.zOffset, this.graphicsEngine.scene);
 
-    const material = new THREE.MeshToonMaterial({
-      vertexColors: true,
-      gradientMap: gradientMap,
-      side: THREE.DoubleSide
-    });
+    // Toon shading in StandardMaterial?
+    // We can use 2-3 lights or just diffuse color with minimal specular.
+    // Or we can use a custom shader later.
+    // For compatibility with "MeshToonMaterial gradientMap", allow's approximate.
+    material.specularColor = Color3.Black(); // No specular highlight
+    material.emissiveColor = new Color3(0, 0, 0);
 
-    // Register with disposer
-    this.disposer.add(geometry);
-    this.disposer.add(material);
-    this.disposer.add(gradientMap);
+    // To mimic toon shading more accurately we might need a custom shader or NME.
+    // But for now, just vertex colors.
+    // Important: StandardMaterial vertex colors usage
+    // material.diffuseColor; // handled by vertex colors if useVertexColors = true?
+    // Babylon vertex colors are multiplied with diffuseColor.
 
-    const mesh = new THREE.Mesh(geometry, material);
-    // Vertices are already in world coordinates, no mesh offset needed
-    mesh.position.set(0, 0, 0);
+    // To enable vertex colors:
+    mesh.useVertexColors = true;
 
-    mesh.castShadow = false;
-    mesh.receiveShadow = false;
+    // Gradient map logic from ThreeJS is harder to do in StandardMaterial without custom shader.
+    // It creates the stepped look. 
+    // We can assume smooth lighting for now or use NodeMaterial later.
+
+    // mesh.receiveShadows = true; // Shadows later
+
+    // const gradientMap = new THREE.DataTexture... - This is specific to MeshToonMaterial.
+    // Babylon doesn't have a direct "Toon" toggle on StandardMaterial.
+
+    mesh.material = material;
 
     return mesh;
-  }
-
-
-
-  private mergeAndAddGeometries(
-    geometriesByMaterial: Map<THREE.Material, THREE.BufferGeometry[]>,
-    group: THREE.Group
-  ): void {
-    for (const [material, geometries] of geometriesByMaterial) {
-      if (geometries.length === 0) continue;
-      const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries);
-      this.disposer.add(mergedGeometry); // Register merged geo
-
-      const mesh = new THREE.Mesh(mergedGeometry, material);
-      // Material is shared from decorators, so we DON'T dispose it here
-
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      group.add(mesh);
-
-      // Dispose of the source geometries (clones) now that they are merged
-      for (const geometry of geometries) {
-        geometry.dispose();
-      }
-    }
   }
 
   dispose() {
-    this.graphicsEngine.remove(this.mesh);
-    this.graphicsEngine.remove(this.waterMesh);
-    this.graphicsEngine.remove(this.decorations);
-
-    // Disposer handles geometry, materials, and textures for main mesh and water mesh
-    this.disposer.dispose();
-
-    // Decorations disposal:
-    // mergeAndAddGeometries registered the merged geometries.
-    // Materials were shared (static), so we do NOT dispose them.
-    // However, if we added them to disposer in generateDecorations, we would have trouble.
-    // Checks: We did NOT add shared materials to disposer in mergeAndAddGeometries. Correct.
-
-    // Clear the group logic
-    // Explicitly dispose of any children in decorations group to be safe
-    this.decorations.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        if (child.geometry) child.geometry.dispose();
-        if (child.material) {
-          if (Array.isArray(child.material)) {
-            child.material.forEach(m => m.dispose());
-          } else {
-            child.material.dispose();
-          }
-        }
-      }
-    });
-    this.decorations.clear();
-
-    // Stop animations
-    this.mixers.forEach(mixer => mixer.stopAllAction());
-    this.mixers = [];
+    this.mesh.dispose();
+    this.waterMesh.dispose();
+    this.decorations.dispose();
+    // Material disposal is automatic if unique, but WaterMaterial is static shared.
+    // Static materials should NOT be disposed.
   }
 
-  private generateWater(): THREE.Mesh {
-    const geometry = new THREE.PlaneGeometry(
-      TerrainChunk.CHUNK_WIDTH,
-      TerrainChunk.CHUNK_SIZE,
-      TerrainChunk.RESOLUTION_X - 1,
-      TerrainChunk.RESOLUTION_Z - 1
-    );
-    geometry.rotateX(-Math.PI / 2);
+  private async generateDecorations(): Promise<TransformNode> {
+    const root = new TransformNode("decorations_chunk_" + this.zOffset, this.graphicsEngine.scene);
 
-    // Shift Z to be 0 to CHUNK_SIZE (PlaneGeometry is centered)
-    geometry.translate(0, 0, TerrainChunk.CHUNK_SIZE / 2);
+    // Use dynamic imports to avoid circular dependencies with decorators (which import TerrainChunk)
+    const [
+      { TreeDecorator },
+      { RockDecorator },
+      { CactusDecorator },
+      { CycadDecorator },
+      { TreeFernDecorator }
+    ] = await Promise.all([
+      import('./decorators/TreeDecorator'),
+      import('./decorators/RockDecorator'),
+      import('./decorators/CactusDecorator'),
+      import('./decorators/CycadDecorator'),
+      import('./decorators/TreeFernDecorator')
+    ]);
 
-    const positions = geometry.attributes.position;
+    const decorators = [
+      new TreeDecorator(),
+      new RockDecorator(),
+      new CactusDecorator(),
+      new CycadDecorator(),
+      new TreeFernDecorator()
+    ];
 
-    for (let i = 0; i < positions.count; i++) {
-      const localX = positions.getX(i);
-      const localZ = positions.getZ(i);
-      const worldZ = this.zOffset + localZ;
+    const context = {
+      chunk: this,
+      riverSystem: this.riverSystem,
+      root: root,
+      zOffset: this.zOffset
+    };
 
-      const riverCenter = this.riverSystem.getRiverCenter(worldZ);
-      // Convert to world coordinates for both X and Z
-      positions.setX(i, localX + riverCenter);
-      positions.setZ(i, worldZ);
+    for (const decorator of decorators) {
+      await decorator.decorate(context);
     }
-    geometry.computeVertexNormals();
+
+    return root;
+  }
+
+  private generateWater(): Mesh {
+    const geometryWidth = TerrainChunk.CHUNK_WIDTH;
+    const geometryHeight = TerrainChunk.CHUNK_SIZE;
+    const subdivisionsX = TerrainChunk.RESOLUTION_X - 1;
+    const subdivisionsZ = TerrainChunk.RESOLUTION_Z - 1;
+
+    // Create Plane Logic manually because we need custom position data modification or use UpdateVertices
+    // Babylon CreateGround is easier, aligned on XZ plane.
+    // Width (X), Height (Z).
+
+    const waterMesh = Mesh.CreateGround("water_" + this.zOffset,
+      geometryWidth,
+      geometryHeight,
+      Math.min(subdivisionsX, subdivisionsZ), // subdivisions logic different in Babylon (it's square usually?)
+      this.graphicsEngine.scene,
+      true // Updatable
+    );
+    // CreateGround subdivision is integer count for both sides? No, it's 'subdivisions'.
+    // If we want different X/Z resolution we might need CreateGroundFromHeightMap or Custom.
+    // Let's stick to Custom to match exact vertex structure of ThreeJS implementation to ensure 1:1 match
+
+    const vertexData = VertexData.CreateGround({
+      width: geometryWidth,
+      height: geometryHeight,
+      subdivisionsX: subdivisionsX,
+      subdivisionsY: subdivisionsZ // Y is Z in CreateGround params usually
+    });
+
+    const positions = vertexData.positions!;
+    // positions are Float32Array or number[]
+    // They are centered around 0,0,0.
+
+    // We need to shift Z to be 0 to CHUNK_SIZE?
+    // Plane in Babylon is centered.
+    // Z is -height/2 to +height/2.
+    // We want 0 to height?
+    // The previous implementation: geometry.translate(0, 0, TerrainChunk.CHUNK_SIZE / 2);
+    // So current Z range is [-size/2, size/2] -> [0, size].
+
+    for (let i = 0; i < positions.length; i += 3) {
+      // x, y, z
+      // Babylon Ground is flat on XZ plane, y=0.
+      let localX = positions[i];
+      let localZ = positions[i + 2];
+
+      // Shift Z
+      localZ += TerrainChunk.CHUNK_SIZE / 2;
+      positions[i + 2] = localZ;
+
+      const worldZ = this.zOffset + localZ;
+      const riverCenter = this.riverSystem.getRiverCenter(worldZ);
+
+      positions[i] = localX + riverCenter;
+
+      // Y is 0
+    }
+
+    vertexData.applyToMesh(waterMesh);
 
     if (!TerrainChunk.waterMaterial) {
-      TerrainChunk.waterMaterial = new THREE.ShaderMaterial({
-        uniforms: THREE.UniformsUtils.clone(WaterShader.uniforms),
-        vertexShader: WaterShader.vertexShader,
-        fragmentShader: WaterShader.fragmentShader,
-        transparent: true,
-        side: THREE.DoubleSide, // Ensure water is visible from below if needed, though mostly top-down
-        fog: true
-      });
+      TerrainChunk.waterMaterial = new WaterMaterial("waterMat", this.graphicsEngine.scene);
     }
 
-    // Register geometry (unique per chunk)
-    this.disposer.add(geometry);
-    // DO NOT register waterMaterial (static shared)
+    waterMesh.material = TerrainChunk.waterMaterial;
+    // Position mesh at 0,0,0 because vertices are in world space (except Z is local to chunk offset? No wait)
 
-    const mesh = new THREE.Mesh(geometry, TerrainChunk.waterMaterial);
-    // Vertices are already in world coordinates, no mesh offset needed
-    mesh.position.set(0, 0, 0);
+    // "positions[i + 2] = localZ" -> this is 0 to 62.5.
+    // "worldZ = this.zOffset + localZ" -> actual world Z.
+    // Wait, in previous implementation:
+    // "positions.setZ(i, worldZ);" -> previous implemented set Absolute World Z in the buffer.
+    // "mesh.position.set(0, 0, 0);"
 
-    return mesh;
+    // My loop above:
+    // positions[i+2] = localZ.
+    // This leaves the mesh LOCAL coordinates.
+    // We should set it to worldZ if we want to place mesh at 0,0,0.
+
+    for (let i = 0; i < positions.length; i += 3) {
+      positions[i + 2] += this.zOffset;
+    }
+    // Now positions are World Coordinates.
+
+    vertexData.applyToMesh(waterMesh);
+
+    waterMesh.position.set(0, 0, 0);
+
+    return waterMesh;
   }
-
-
 }

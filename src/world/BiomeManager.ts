@@ -1,5 +1,4 @@
-import { smoothstep } from 'three/src/math/MathUtils';
-import * as THREE from 'three';
+import { Color3, Scalar } from '@babylonjs/core';
 import { BiomeFeatures } from './biomes/BiomeFeatures';
 import { DesertBiomeFeatures } from './biomes/DesertBiomeFeatures';
 import { ForestBiomeFeatures } from './biomes/ForestBiomeFeatures';
@@ -120,7 +119,7 @@ export class BiomeManager {
       index1 = currentIndex;
       index2 = currentIndex - 1;
       // As fraction goes from 0 to transitionWidth, weight1 goes from 0.5 to 1.0
-      weight1 = this.lerp(0.5, 1.0, fraction / transitionWidth);
+      weight1 = Scalar.Lerp(0.5, 1.0, fraction / transitionWidth);
       weight2 = 1.0 - weight1;
     } else if (fraction > 1.0 - transitionWidth) {
       // Transitioning FROM current biome TO next biome
@@ -128,7 +127,7 @@ export class BiomeManager {
       index2 = currentIndex + 1;
       // As fraction goes from (1-transitionWidth) to 1.0, weight1 goes from 1.0 to 0.5
       const transitionFraction = (fraction - (1.0 - transitionWidth)) / transitionWidth;
-      weight1 = this.lerp(1.0, 0.5, transitionFraction);
+      weight1 = Scalar.Lerp(1.0, 0.5, transitionFraction);
       weight2 = 1.0 - weight1;
     }
 
@@ -155,8 +154,8 @@ export class BiomeManager {
     const range2 = this.getFeatures(mixture.biome2).getFogRange();
 
     return {
-      near: this.lerp(range1.near, range2.near, mixture.weight2), // weight2 is t from 1 to 2
-      far: this.lerp(range1.far, range2.far, mixture.weight2)
+      near: Scalar.Lerp(range1.near, range2.near, mixture.weight2), // weight2 is t from 1 to 2
+      far: Scalar.Lerp(range1.far, range2.far, mixture.weight2)
     };
   }
 
@@ -186,7 +185,7 @@ export class BiomeManager {
     };
   }
 
-  public getBiomeSkyGradient(worldZ: number, dayness: number): { top: THREE.Color, bottom: THREE.Color } {
+  public getBiomeSkyGradient(worldZ: number, dayness: number): { top: Color3, bottom: Color3 } {
     const mixture = this.getBiomeMixture(worldZ);
 
     // Get sky gradient for each biome
@@ -194,8 +193,8 @@ export class BiomeManager {
     const sky2 = this.getFeatures(mixture.biome2).getSkyColors(dayness);
 
     // Blend the two sky gradients based on mixture weights
-    const top = sky1.top.clone().multiplyScalar(mixture.weight1).add(sky2.top.clone().multiplyScalar(mixture.weight2));
-    const bottom = sky1.bottom.clone().multiplyScalar(mixture.weight1).add(sky2.bottom.clone().multiplyScalar(mixture.weight2));
+    const top = sky1.top.scale(mixture.weight1).add(sky2.top.scale(mixture.weight2));
+    const bottom = sky1.bottom.scale(mixture.weight1).add(sky2.bottom.scale(mixture.weight2));
 
     return { top, bottom };
   }
@@ -225,6 +224,10 @@ export class BiomeManager {
     if (mixture.biome1 === 'swamp') swampFactor += mixture.weight1;
     if (mixture.biome2 === 'swamp') swampFactor += mixture.weight2;
     return swampFactor;
+  }
+
+  public getNextBiomeStart(worldZ: number): number {
+    return (Math.floor(worldZ / this.BIOME_LENGTH) + 1) * this.BIOME_LENGTH;
   }
 
   private lerp(start: number, end: number, t: number): number {

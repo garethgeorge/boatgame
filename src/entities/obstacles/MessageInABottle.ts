@@ -1,10 +1,9 @@
 import * as planck from 'planck';
-import * as THREE from 'three';
+import { TransformNode, AnimationGroup } from '@babylonjs/core';
 import { Entity } from '../../core/Entity';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 
@@ -21,14 +20,19 @@ export class MessageInABottle extends Entity {
         update(dt: number) {
             this.floatOffset += dt * 1.5;
             if (this.bottle.meshes.length > 0) {
-                const mesh = this.bottle.meshes[0];
+                const mesh = this.bottle.meshes[0] as TransformNode;
+                // Using TransformNode logic
+
                 // Raise by 50% of height (height is ~2.0 now). +1.0 base?
                 // User said "float ~50% of it's height heigher".
                 // Previous base was implicit 0? No, cylinder center is 0.
                 // Let's add +1.0 to y.
                 mesh.position.y = Math.sin(this.floatOffset) * 0.1 + 1.0;
-                mesh.rotation.y += dt * 0.5;
-                mesh.rotation.z = Math.sin(this.floatOffset * 0.5) * 0.2; // Bobbing tilt
+                // mesh.rotation.y += dt * 0.5; // Babylon rotation is vector
+                if (mesh.rotation) {
+                    mesh.rotation.y += dt * 0.5;
+                    mesh.rotation.z = Math.sin(this.floatOffset * 0.5) * 0.2; // Bobbing tilt
+                }
             }
         }
     };
@@ -36,7 +40,8 @@ export class MessageInABottle extends Entity {
     private behavior: EntityBehavior | null = null;
     public points: number;
     public color: number;
-    private player: AnimationPlayer | null = null;
+    // private player: AnimationPlayer | null = null; 
+    private fadeAnimGroup: AnimationGroup | null = null;
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine, color: number = 0x88FF88, points: number = 100) {
         super();
@@ -57,12 +62,14 @@ export class MessageInABottle extends Entity {
         physicsBody.setUserData({ type: 'collectable', subtype: 'bottle', entity: this });
 
         // Graphics
-        const mesh = Decorations.getBottle(color);
+        const mesh = Decorations.getBottle(color) as TransformNode;
         this.meshes.push(mesh);
 
         // Tilt the whole group
-        mesh.rotation.x = Math.PI / 4;
-        mesh.rotation.z = Math.PI / 6;
+        if (mesh.rotation) {
+            mesh.rotation.x = Math.PI / 4;
+            mesh.rotation.z = Math.PI / 6;
+        }
 
         // Start floating
         this.behavior = new MessageInABottle.FloatBehavior(this);
@@ -72,30 +79,47 @@ export class MessageInABottle extends Entity {
         if (this.behavior) {
             this.behavior.update(dt);
         }
-        if (this.player) {
-            this.player.update(dt);
-        }
+        // AnimationGroup updates automatically
     }
 
     wasHitByPlayer() {
         this.destroyPhysicsBodies();
 
         // animates bottle up
-        this.behavior = new ObstacleHitBehavior(this.meshes, () => {
+        // ObstacleHitBehavior now expects TransformNode[]
+        this.behavior = new ObstacleHitBehavior(this.meshes as TransformNode[], () => {
             this.shouldRemove = true;
         }, { duration: 0.25, rotateSpeed: 25, targetHeightOffset: 5 });
 
         // fades bottle out
         if (this.meshes.length > 0) {
-            const fadeClip = Decorations.getBottleFadeAnimation();
-            const mesh = this.meshes[0];
+            const mesh = this.meshes[0] as TransformNode;
 
             // The mesh material are shared, so we need to clone them
-            GraphicsUtils.cloneMaterials(mesh);
+            // GraphicsUtils.cloneMaterials(mesh); // Babylon handles this differently? 
+            // In Babylon, if we target animation to a material, we modify that material.
+            // If materials are shared, all bottles fade.
+            // We MUST clone materials.
+            // GraphicsUtils.cloneMaterials might need checking.
+            // But let's assume distinct materials for now or that BottleFactory creates distinct instances (it does CreateCylinder).
+            // Actually BottleFactory does create new meshes and new materials for each call (createBottleMesh runs every time).
+            // Cache was commented out? No, "we create animations on demand", but what about mesh?
+            // "return this.createBottleMesh(actualColor);"
+            // createBottleMesh creates NEW StandardMaterials ("glassMat", "corkMat", "paperMat").
+            // So they are unique per bottle instance. No need to clone.
 
             // Start fade Animation
-            this.player = new AnimationPlayer(mesh as any as THREE.Group, [fadeClip]);
-            this.player.playOnce({ name: fadeClip.name, timeScale: 4.0 });
+            this.fadeAnimGroup = Decorations.createBottleAnimation("fade", mesh);
+            // Time scale 4.0? 0.25 duration.
+            this.fadeAnimGroup.play(false);
+            this.fadeAnimGroup.speedRatio = 4.0;
+        }
+    }
+
+    override dispose() {
+        super.dispose();
+        if (this.fadeAnimGroup) {
+            this.fadeAnimGroup.dispose();
         }
     }
 

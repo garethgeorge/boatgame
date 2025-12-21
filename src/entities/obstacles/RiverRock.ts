@@ -1,13 +1,17 @@
 import * as planck from 'planck';
-import * as THREE from 'three';
+import { MeshBuilder, StandardMaterial, Color3, Engine, VertexBuffer } from '@babylonjs/core';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { SimplexNoise } from '../../world/SimplexNoise';
 
 export class RiverRock extends Entity {
-
+    private static rockMaterial: StandardMaterial | null = null;
 
     constructor(x: number, y: number, radius: number, physicsEngine: PhysicsEngine) {
         super();
+
+        const scene = Engine.LastCreatedScene;
+        if (!scene) return;
 
         // Physics: Static
         const physicsBody = physicsEngine.world.createBody({
@@ -26,73 +30,61 @@ export class RiverRock extends Entity {
 
         physicsBody.setUserData({ type: 'obstacle', subtype: 'rock', entity: this });
 
-        // Graphics: Vertical Rocky Outcrop
-        // Cylinder base
-        const height = radius * 3.0;
-        const geometry = new THREE.CylinderGeometry(radius * 0.3, radius * 1.0, height, 8, 5);
-        const posAttribute = geometry.attributes.position;
-        const normalAttribute = geometry.attributes.normal;
-        const vertex = new THREE.Vector3();
-        const normal = new THREE.Vector3();
+        // Graphics
+        const height = radius * 4.0;
+        const mesh = MeshBuilder.CreateCylinder("rock", {
+            diameterTop: radius * 1.5,
+            diameterBottom: radius * 2.5,
+            height: height,
+            tessellation: 12,
+            subdivisions: 4
+        }, scene);
 
-        // Deterministic Noise Function (Smoother)
-        const noise = (x: number, y: number, z: number) => {
-            return Math.sin(x * 1.0) * Math.cos(y * 0.8) * Math.sin(z * 1.0);
-        };
+        // Noise Displacement
+        const noise = new SimplexNoise(Math.random() * 100);
+        const positions = mesh.getVerticesData(VertexBuffer.PositionKind)!;
+        const normals = mesh.getVerticesData(VertexBuffer.NormalKind)!;
 
-        // Seed for this specific rock
-        const seedX = Math.random() * 100;
-        const seedY = Math.random() * 100;
-        const seedZ = Math.random() * 100;
+        for (let i = 0; i < positions.length; i += 3) {
+            const px = positions[i];
+            const py = positions[i + 1];
+            const pz = positions[i + 2];
 
+            const nx = normals[i];
+            const ny = normals[i + 1];
+            const nz = normals[i + 2];
 
-        for (let i = 0; i < posAttribute.count; i++) {
-            vertex.fromBufferAttribute(posAttribute, i);
-            normal.fromBufferAttribute(normalAttribute, i);
-
-            // Apply Noise (Reduced amplitude)
-            const n = noise(vertex.x + seedX, vertex.y + seedY, vertex.z + seedZ);
-            const displacement = n * radius * 0.2;
-
-            // Displace along normal
-            vertex.add(normal.clone().multiplyScalar(displacement));
-
-            // No longer extending bottom vertices deep down for Icosahedron,
-            // as it's not a vertical cylinder.
-            // The original logic for cylinder base extension is removed.
-
-            posAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
+            const d = noise.noise3D(px * 0.5, py * 0.2, pz * 0.5) * radius * 0.5;
+            positions[i] += nx * d;
+            positions[i + 1] += ny * d * 0.2; // Less vertical displacement
+            positions[i + 2] += nz * d;
         }
+        mesh.setVerticesData(VertexBuffer.PositionKind, positions);
 
-        geometry.computeVertexNormals();
+        // Recompute normals for better lighting on displaced mesh
+        const vertexData = mesh.getVerticesData(VertexBuffer.PositionKind);
+        const indices = mesh.getIndices();
+        const newNormals: number[] = [];
+        // Babylon compute normals helper? 
+        // VertexData.ComputeNormals(positions, indices, newNormals);
+        // mesh.setVerticesData(VertexBuffer.NormalKind, newNormals);
 
-        const material = new THREE.MeshToonMaterial({ color: 0x808080 });
-        this.disposer.add(geometry);
-        this.disposer.add(material);
+        if (!RiverRock.rockMaterial) {
+            RiverRock.rockMaterial = new StandardMaterial("rockMat", scene);
+            RiverRock.rockMaterial.diffuseColor = Color3.FromHexString("#808080");
+            RiverRock.rockMaterial.specularColor = Color3.Black();
+        }
+        mesh.material = RiverRock.rockMaterial;
 
-        const mesh = new THREE.Mesh(geometry, material);
         this.meshes.push(mesh);
-        // @ts-ignore
-        material.flatShading = true; // Works in runtime, types might be strict
-        material.needsUpdate = true;
 
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-
-        // Random rotation (Y-axis only to keep it vertical)
+        // Random rotation
         mesh.rotation.y = Math.random() * Math.PI * 2;
 
-        // Position: Move up so it sits nicely
-        // Center of cylinder is at 0. Height is `height`.
-        // We want top to be visible.
-        // Water is at 0.
-        // If we place mesh at y=0, center is at 0. Top is at height/2. Bottom is at -height/2 (minus extension).
-        // This is perfect.
-        // Lower it so only the top sticks out
-        // Height is 3r. Top is at 1.5r.
-        // We want top to be at ~0.5m above water.
-        // So shift down by 1.5r - 0.5.
-        mesh.position.y = -(height / 2) + 0.5 + (Math.random() * 0.5);
+        // Sits mostly under water
+        mesh.position.y = -(height / 2) + 1.0 + (Math.random() * 1.0);
+
+        this.sync();
     }
 
     wasHitByPlayer() {

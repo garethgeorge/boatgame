@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import * as THREE from 'three';
+import { Vector3, Scalar } from '@babylonjs/core';
 import { RiverSystem } from '../world/RiverSystem';
 
 export interface RiverPlacementOptions {
@@ -134,8 +134,15 @@ export class PlacementHelper {
 
       // Check slope
       const normal = riverSystem.terrainGeometry.calculateNormal(worldX, worldZ);
-      const up = new THREE.Vector3(0, 1, 0);
-      if (normal.angleTo(up) > THREE.MathUtils.degToRad(maxSlopeDegrees)) {
+      const up = new Vector3(0, 1, 0);
+
+      // Angle calculation
+      // Dot product = |a||b|cos(theta). |up|=1. |normal| should be 1.
+      const dot = Vector3.Dot(normal, up);
+      // Clamp dot to -1..1
+      const angle = Math.acos(Math.max(-1, Math.min(1, dot)));
+
+      if (angle > maxSlopeDegrees * (Math.PI / 180)) {
         continue;
       }
 
@@ -166,5 +173,5 @@ export interface ShorePlacement {
   worldZ: number;
   height: number;
   rotation: number;
-  normal: THREE.Vector3;
+  normal: Vector3;
 }

@@ -1,113 +1,105 @@
+import { TransformNode, MeshBuilder, StandardMaterial, Color3, Engine, Mesh } from '@babylonjs/core';
 import * as planck from 'planck';
-import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 
 export class Buoy extends Entity {
-
     private bobTimer: number = Math.random() * 100;
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
         super();
 
+        const scene = Engine.LastCreatedScene;
+        if (!scene) return;
+
         // Physics: Dynamic but high damping to stay mostly in place
-        // Spherical collision box
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
             position: planck.Vec2(x, y),
-            linearDamping: 1.0, // Reduced from 5.0 to allow pushing
+            linearDamping: 1.0,
             angularDamping: 2.0
         });
         this.physicsBodies.push(physicsBody);
 
         physicsBody.createFixture({
-            shape: planck.Circle(0.5), // 1m diameter
-            density: 5.0, // 5x increase from 1.0
+            shape: planck.Circle(0.5),
+            density: 5.0,
             friction: 0.3,
-            restitution: 0.5 // Bouncy
+            restitution: 0.5
         });
 
         physicsBody.setUserData({ type: 'obstacle', subtype: 'buoy', entity: this });
 
-        // Graphics
-        const mesh = new THREE.Group();
-        this.meshes.push(mesh);
+        // Graphics Root
+        const root = new TransformNode("buoy_root", scene);
+        this.meshes.push(root);
 
-        // Buoy Base (Cylinder)
-        // Red/White stripes
-        const radius = 0.5;
-        const height = 1.2;
-        const segments = 16;
+        const meshesToMergeWood: Mesh[] = [];
 
-        const matRed = new THREE.MeshToonMaterial({ color: 0xFF0000 });
-        const matWhite = new THREE.MeshToonMaterial({ color: 0xFFFFFF });
-        this.disposer.add(matRed);
-        this.disposer.add(matWhite);
-
+        // 1. Striped Base
         // Bottom Red
-        const bottomGeo = new THREE.CylinderGeometry(radius, radius * 0.8, height * 0.4, segments);
-        this.disposer.add(bottomGeo);
-        const bottom = new THREE.Mesh(bottomGeo, matRed);
-        bottom.position.y = -height * 0.2;
-        mesh.add(bottom);
+        const bottom = MeshBuilder.CreateCylinder("bottom", { diameter: 1.0, height: 0.6, tessellation: 12 }, scene);
+        bottom.position.y = 0.3;
+        const matRed = new StandardMaterial("buoyRed", scene);
+        matRed.diffuseColor = Color3.Red();
+        matRed.specularColor = Color3.Black();
+        bottom.material = matRed;
+        bottom.parent = root;
 
         // Middle White
-        const midGeo = new THREE.CylinderGeometry(radius, radius, height * 0.3, segments);
-        this.disposer.add(midGeo);
-        const mid = new THREE.Mesh(midGeo, matWhite);
-        mid.position.y = height * 0.15;
-        mesh.add(mid);
+        const middle = MeshBuilder.CreateCylinder("middle", { diameter: 1.0, height: 0.4, tessellation: 12 }, scene);
+        middle.position.y = 0.8;
+        const matWhite = new StandardMaterial("buoyWhite", scene);
+        matWhite.diffuseColor = Color3.White();
+        matWhite.specularColor = Color3.Black();
+        middle.material = matWhite;
+        middle.parent = root;
 
         // Top Red
-        const topGeo = new THREE.CylinderGeometry(radius * 0.6, radius, height * 0.3, segments);
-        this.disposer.add(topGeo);
-        const top = new THREE.Mesh(topGeo, matRed);
-        top.position.y = height * 0.45;
-        mesh.add(top);
+        const top = MeshBuilder.CreateCylinder("top", { diameter: 1.0, height: 0.2, tessellation: 12 }, scene);
+        top.position.y = 1.1;
+        top.material = matRed;
+        top.parent = root;
 
-        // Light/Sensor on top
-        const lightGeo = new THREE.SphereGeometry(0.2, 8, 8);
-        this.disposer.add(lightGeo);
-        const lightMat = new THREE.MeshToonMaterial({ color: 0xFFFF00, emissive: 0x444400 });
-        this.disposer.add(lightMat);
-        const light = new THREE.Mesh(lightGeo, lightMat);
-        light.position.y = height * 0.7;
-        mesh.add(light);
+        // 2. Sensor Top (Black)
+        const frame = MeshBuilder.CreateCylinder("frame", { diameterTop: 0.2, diameterBottom: 0.4, height: 0.8, tessellation: 6 }, scene);
+        frame.position.y = 1.5;
+        const matBlack = new StandardMaterial("buoyBlack", scene);
+        matBlack.diffuseColor = new Color3(0.1, 0.1, 0.1);
+        matBlack.specularColor = Color3.Black();
+        frame.material = matBlack;
+        frame.parent = root;
 
-        mesh.position.y = 0;
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
+        // 3. Light (Cylindrical glass + emissive dot)
+        const lightGlass = MeshBuilder.CreateCylinder("light", { diameter: 0.3, height: 0.2, tessellation: 12 }, scene);
+        lightGlass.position.y = 1.9;
+        const matGlass = new StandardMaterial("buoyGlass", scene);
+        matGlass.diffuseColor = new Color3(1, 1, 0.8);
+        matGlass.emissiveColor = new Color3(1, 1, 0.5);
+        lightGlass.material = matGlass;
+        lightGlass.parent = root;
+
+        this.sync();
     }
 
-    wasHitByPlayer() {
-        // Buoys just bounce
-    }
+    wasHitByPlayer() { }
 
     update(dt: number) {
         if (this.physicsBodies.length === 0) return;
 
-        // Bobbing animation
+        // Sync physics position (top-down)
+        this.sync();
+
+        // Bobbing animation (visual only, relative to water level)
         this.bobTimer += dt * 2.0;
-        const bobOffset = Math.sin(this.bobTimer) * 0.1;
+        const bobOffset = Math.sin(this.bobTimer) * 0.15;
+        const tiltIntensity = 0.1;
+        const tiltX = Math.sin(this.bobTimer * 0.8) * tiltIntensity;
+        const tiltZ = Math.cos(this.bobTimer * 0.7) * tiltIntensity;
 
-        // Apply bob to mesh Y (relative to physics body which is at 0)
-        // Entity.sync() overwrites position, so we need to add offset to the mesh *child* or adjust sync?
-        // Entity.sync() sets this.mesh.position.
-        // If we want visual bobbing independent of physics, we should put the buoy parts in a child group and animate that.
-        // Let's restructure mesh in constructor? 
-        // Actually, Entity.sync() sets this.mesh.position.y = 0 (or whatever we set).
-        // Wait, Entity.sync() usually sets x/z from physics and y from... where?
-        // Let's check Entity.ts or just assume we can modify Y after sync?
-        // If sync happens before update, we can override Y here.
-        // If sync happens after, our change is overwritten.
-        // Usually update is called, then physics step, then sync.
-        // So we might need a child container.
-
-        // Let's just iterate children and offset them? No, that accumulates.
-        // Let's just assume we can set Y here and it sticks if sync doesn't touch Y.
-        // Most Entity syncs only touch X/Z for 2D physics.
-        // Let's verify Entity.ts later if needed. For now, let's try setting mesh.position.y.
-
-        this.meshes[0].position.y = bobOffset;
+        const mesh = this.meshes[0];
+        mesh.position.y = bobOffset;
+        mesh.rotation.x = tiltX;
+        mesh.rotation.z = tiltZ;
     }
 }

@@ -1,11 +1,9 @@
-import * as planck from 'planck';
-import * as THREE from 'three';
+import { TransformNode, Vector3, AnimationGroup } from "@babylonjs/core";
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 
 export class PolarBear extends AttackAnimal {
-
     public static readonly HEIGHT_IN_WATER: number = -2.0;
 
     protected get heightInWater(): number {
@@ -30,9 +28,11 @@ export class PolarBear extends AttackAnimal {
         return Decorations.getPolarBear();
     }
 
-    protected setupModel(model: THREE.Group): void {
-        model.scale.set(3.0, 3.0, 3.0);
+    protected setupModel(model: TransformNode, animations: AnimationGroup[]): void {
+        model.scaling.set(3.0, 3.0, 3.0);
         model.rotation.y = Math.PI;
+        const idle = animations.find(a => a.name.includes('Rearing') || a.name.includes('Idle'));
+        if (idle) idle.start(true, 1.0);
     }
 
     protected getIdleAnimationName(): string {

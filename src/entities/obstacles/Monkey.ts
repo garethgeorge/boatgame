@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { TransformNode, Vector3 } from "@babylonjs/core";
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
@@ -34,8 +34,8 @@ export class Monkey extends AttackAnimal implements AttackAnimalShoreWalk {
         return Decorations.getMonkey();
     }
 
-    protected setupModel(model: THREE.Group): void {
-        model.scale.set(0.025, 0.025, 0.025);
+    protected setupModel(model: TransformNode): void {
+        model.scaling.set(0.025, 0.025, 0.025);
         model.rotation.y = Math.PI;
     }
 
@@ -56,7 +56,7 @@ export class Monkey extends AttackAnimal implements AttackAnimalShoreWalk {
     }
 
     protected playSwimmingAnimation(): void {
-        this.player?.play({ name: this.getSwimmingAnimationName(), timeScale: 2.5, randomizeLength: 0.2, startTime: -1 });
+        // this.player?.play({ name: this.getSwimmingAnimationName(), timeScale: 2.5, randomizeLength: 0.2, startTime: -1 });
     }
 
 
@@ -66,7 +66,7 @@ export class Monkey extends AttackAnimal implements AttackAnimalShoreWalk {
         if (rand < 0.5) {
             this.shouldStartShoreWalk();
         } else {
-            this.player?.play({ name: 'dance', timeScale: 1.0 });
+            // this.player?.play({ name: 'dance', timeScale: 1.0 });
         }
     }
 
@@ -81,12 +81,12 @@ export class Monkey extends AttackAnimal implements AttackAnimalShoreWalk {
             speed
         );
 
-        this.player?.play({ name: 'walk', timeScale: 1.0 });
+        // this.player?.play({ name: 'walk', timeScale: 1.0 });
     }
 
     shoreWalkDidComplete(): void {
         // Return to idle behavior after completing shore walk
         this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
-        this.player?.play({ name: 'idle', timeScale: 1.0 });
+        // this.player?.play({ name: 'idle', timeScale: 1.0 });
     }
 }

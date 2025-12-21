@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { Vector3 } from '@babylonjs/core';
 import { SimplexNoise } from './SimplexNoise';
 import { RiverSystem } from './RiverSystem';
 
@@ -117,7 +117,7 @@ export class TerrainGeometry {
     }
 
     // Returns normal of terrain at world space position (wx, wz)
-    public calculateNormal(wx: number, wz: number): THREE.Vector3 {
+    public calculateNormal(wx: number, wz: number): Vector3 {
         // for reference...
         // z points into the distance
         // x points to the right
@@ -127,7 +127,7 @@ export class TerrainGeometry {
 
         // (a) If in river, return upright normal
         if (distFromBank < 0) {
-            return new THREE.Vector3(0, 1, 0);
+            return new Vector3(0, 1, 0);
         }
 
         // (b) If on land, ignore river for height values (use rawLandHeight)
@@ -139,10 +139,15 @@ export class TerrainGeometry {
         const hU = this.calculateRawLandHeight(wx, wz + epsilon, distFromBank + dy * epsilon);
 
         // Normal vector: cross product of tangent vectors
-        const v1 = new THREE.Vector3(2 * epsilon, hR - hL, 0);
-        const v2 = new THREE.Vector3(0, hU - hD, 2 * epsilon);
+        // Babylon uses Left Handed system by default but we set scene to Right Handed. 
+        // Cross product direction matters.
+        // v1 (X-axis tangent): (2*epsilon, hR-hL, 0)
+        // v2 (Z-axis tangent): (0, hU-hD, 2*epsilon)
+        const v1 = new Vector3(2 * epsilon, hR - hL, 0);
+        const v2 = new Vector3(0, hU - hD, 2 * epsilon);
 
-        const normal = new THREE.Vector3().crossVectors(v2, v1).normalize();
+        // In ThreeJS (Right Handed), Cross(v2, v1) gives Up mostly.
+        const normal = Vector3.Cross(v2, v1).normalize();
         return normal;
     }
 

@@ -1,47 +1,73 @@
-import * as THREE from 'three';
+import {
+    TransformNode,
+    MeshBuilder,
+    StandardMaterial,
+    Color3,
+    Mesh,
+    Vector3,
+    VertexBuffer
+} from '@babylonjs/core';
 import { createNoise3D } from 'simplex-noise';
 import { DecorationFactory } from './DecorationFactory';
 
 export class RockFactory implements DecorationFactory {
-    private static readonly rockMaterialDesert = new THREE.MeshToonMaterial({ color: 0xE6C288 }); // Yellow Sandstone
-    private static readonly rockMaterialForest = new THREE.MeshToonMaterial({ color: 0x888888 }); // Grey
-    private static readonly rockMaterialSwamp = new THREE.MeshToonMaterial({ color: 0x4D3E30 }); // Muddy Brown
-    private static readonly iceRockMaterial = new THREE.MeshToonMaterial({ color: 0xE0F6FF }); // Ice Blue
+    private static rockMaterialDesert: StandardMaterial;
+    private static rockMaterialForest: StandardMaterial;
+    private static rockMaterialSwamp: StandardMaterial; // Muddy Brown
+    private static iceRockMaterial: StandardMaterial; // Ice Blue
 
     private static rockNoise3D = createNoise3D();
 
-    static {
-        (this.rockMaterialDesert as any).flatShading = true;
-        (this.rockMaterialDesert as any).needsUpdate = true;
-        (this.rockMaterialForest as any).flatShading = true;
-        (this.rockMaterialForest as any).needsUpdate = true;
-        (this.rockMaterialSwamp as any).flatShading = true;
-        (this.rockMaterialSwamp as any).needsUpdate = true;
-        (this.iceRockMaterial as any).flatShading = true;
-        (this.iceRockMaterial as any).needsUpdate = true;
-    }
-
-    private cache: { mesh: THREE.Group, size: number, isIcy: boolean }[] = [];
+    private cache: { mesh: TransformNode, size: number, isIcy: boolean }[] = [];
 
     async load(): Promise<void> {
-        console.log("Generating Rock Cache...");
-        // Generate Rocks
-        for (let i = 0; i < 30; i++) {
-            const size = Math.random();
-            this.cache.push({ mesh: this.createRock(size, false), size, isIcy: false });
-        }
-        // Generate Icy Rocks
-        for (let i = 0; i < 20; i++) {
-            const size = Math.random();
-            this.cache.push({ mesh: this.createRock(size, true), size, isIcy: true });
-        }
+        // Initialize materials
+        import('@babylonjs/core').then(core => {
+            if (!RockFactory.rockMaterialDesert) {
+                RockFactory.rockMaterialDesert = new core.StandardMaterial("rockDesert");
+                RockFactory.rockMaterialDesert.diffuseColor = core.Color3.FromHexString("#E6C288");
+                RockFactory.rockMaterialDesert.specularColor = core.Color3.Black();
+
+                RockFactory.rockMaterialForest = new core.StandardMaterial("rockForest");
+                RockFactory.rockMaterialForest.diffuseColor = core.Color3.FromHexString("#888888");
+                RockFactory.rockMaterialForest.specularColor = core.Color3.Black();
+
+                RockFactory.rockMaterialSwamp = new core.StandardMaterial("rockSwamp");
+                RockFactory.rockMaterialSwamp.diffuseColor = core.Color3.FromHexString("#4D3E30");
+                RockFactory.rockMaterialSwamp.specularColor = core.Color3.Black();
+
+                RockFactory.iceRockMaterial = new core.StandardMaterial("rockIce");
+                RockFactory.iceRockMaterial.diffuseColor = core.Color3.FromHexString("#E0F6FF");
+                RockFactory.iceRockMaterial.specularColor = core.Color3.Black();
+            }
+
+            console.log("Generating Rock Cache...");
+            this.cache = [];
+            // Generate Rocks
+            for (let i = 0; i < 30; i++) {
+                const size = Math.random();
+                const mesh = this.createRock(size, false);
+                mesh.setEnabled(false);
+                this.cache.push({ mesh, size, isIcy: false });
+            }
+            // Generate Icy Rocks
+            for (let i = 0; i < 20; i++) {
+                const size = Math.random();
+                const mesh = this.createRock(size, true);
+                mesh.setEnabled(false);
+                this.cache.push({ mesh, size, isIcy: true });
+            }
+        });
     }
 
-    create(options: { size: number, biome: string }): THREE.Group {
+    create(options: { size: number, biome: 'desert' | 'forest' | 'ice' | 'swamp' }): TransformNode {
+        // Fallback for sync create before load
+        if (!RockFactory.rockMaterialForest) return new TransformNode("rock_placeholder");
+
         const { size, biome } = options;
         const isIcy = biome === 'ice';
 
-        let mesh: THREE.Group;
+        let mesh: TransformNode;
 
         if (this.cache.length === 0) {
             mesh = this.spawnRock(size, biome, isIcy);
@@ -51,92 +77,101 @@ export class RockFactory implements DecorationFactory {
                 ? candidates[Math.floor(Math.random() * candidates.length)]
                 : this.cache.find(r => r.isIcy === isIcy) || this.cache[0];
 
-            const cachedMesh = source ? source.mesh : this.createRock(size, isIcy);
-            const rock = cachedMesh.clone();
-
-            // Apply material based on biome if not icy
-            if (!isIcy) {
-                const material = this.getMaterialForBiome(biome);
-                rock.traverse((child) => {
-                    if (child instanceof THREE.Mesh) {
-                        child.material = material;
-                    }
-                });
+            if (source && source.mesh) {
+                const rock = source.mesh.instantiateHierarchy() as TransformNode;
+                rock.setEnabled(true);
+                // Apply material based on biome if not icy
+                if (!isIcy) {
+                    const material = this.getMaterialForBiome(biome);
+                    rock.getChildMeshes().forEach(m => m.material = material);
+                }
+                mesh = rock;
+            } else {
+                mesh = this.spawnRock(size, biome, isIcy);
             }
-            mesh = rock;
         }
 
         return mesh;
     }
 
-    private getMaterialForBiome(biome: string): THREE.Material {
+    private getMaterialForBiome(biome: string): StandardMaterial {
         if (biome === 'desert') return RockFactory.rockMaterialDesert;
         if (biome === 'swamp') return RockFactory.rockMaterialSwamp;
-        return RockFactory.rockMaterialForest; // Default for forest, jurassic
+        return RockFactory.rockMaterialForest;
     }
 
-    private spawnRock(size: number, biome: string, isIcy: boolean): THREE.Group {
+    private spawnRock(size: number, biome: string, isIcy: boolean): TransformNode {
         const rock = this.createRock(size, isIcy);
         if (!isIcy) {
             const material = this.getMaterialForBiome(biome);
-            rock.traverse((child) => {
-                if (child instanceof THREE.Mesh) {
-                    child.material = material;
-                }
-            });
+            rock.getChildMeshes().forEach(m => m.material = material);
         }
         return rock;
     }
 
-    private createRock(size: number, isIcy: boolean): THREE.Group {
-        const group = new THREE.Group();
+    private createRock(size: number, isIcy: boolean): TransformNode {
+        const root = new TransformNode("rock_root");
+        root.metadata = { mergeable: true };
 
         // Size: 0 (Small rock) to 1 (Large boulder)
         // Scale factor: 0.5 to 2.5
         const baseScale = 0.5 + size * 2.0;
 
-        const detail = size > 0.5 ? 1 : 0;
-        const geo = new THREE.IcosahedronGeometry(baseScale, detail);
+        const subdivisions = size > 0.5 ? 1 : 1; // Babylon lowpoly needs >0? 
+        // 1 in Babylon is 1 subdivision. 0 is base Icosahedron (12 vertices).
 
-        const posAttribute = geo.attributes.position;
-        const vertex = new THREE.Vector3();
+        const mesh = MeshBuilder.CreateIcoSphere("rock", {
+            radius: baseScale,
+            subdivisions: subdivisions,
+            flat: true
+        });
 
-        // Noise parameters
-        const noiseScale = 0.5; // How frequent the noise is
-        const noiseStrength = baseScale * 0.4; // How much to displace
+        // Vertex Displacement
+        const positions = mesh.getVerticesData(VertexBuffer.PositionKind);
+        if (positions) {
+            const noiseScale = 0.5;
+            const noiseStrength = baseScale * 0.4;
+            const seedOffset = Math.random() * 100;
 
-        // Seed offset for variety
-        const seedOffset = Math.random() * 100;
+            for (let i = 0; i < positions.length; i += 3) {
+                const x = positions[i];
+                const y = positions[i + 1];
+                const z = positions[i + 2];
 
-        for (let i = 0; i < posAttribute.count; i++) {
-            vertex.fromBufferAttribute(posAttribute, i);
+                const n = RockFactory.rockNoise3D(
+                    x * noiseScale + seedOffset,
+                    y * noiseScale + seedOffset,
+                    z * noiseScale + seedOffset
+                );
 
-            // 3D Noise
-            const n = RockFactory.rockNoise3D(
-                vertex.x * noiseScale + seedOffset,
-                vertex.y * noiseScale + seedOffset,
-                vertex.z * noiseScale + seedOffset
-            );
+                const displacement = n * noiseStrength;
 
-            const displacement = n * noiseStrength;
+                // Direction
+                const v = new Vector3(x, y, z).normalize();
+                v.scaleInPlace(displacement);
 
-            const dir = vertex.clone().normalize();
-            vertex.add(dir.multiplyScalar(displacement));
-
-            posAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
+                positions[i] += v.x;
+                positions[i + 1] += v.y;
+                positions[i + 2] += v.z;
+            }
+            mesh.updateVerticesData(VertexBuffer.PositionKind, positions);
+            // Recompute normals (handled by flat shading usually, but update helps)
+            // But if flat, we need to convert to flat shaded mesh logic?
+            // Babylon's "flat" option in CreateIcoSphere makes it use independent faces.
+            // But getting vertices data might be messy if vertices are duplicated.
+            // CreateIcoSphere with flat: true creates separate vertices.
+            // That's fine, we iterate all of them.
         }
 
-        geo.computeVertexNormals();
-
-        // Non-uniform scaling for variety (flattened, stretched)
-        geo.scale(
+        // Non-uniform scaling
+        mesh.scaling.set(
             1.0 + (Math.random() - 0.5) * 0.4,
-            0.6 + (Math.random() - 0.5) * 0.4, // Generally flatter
+            0.6 + (Math.random() - 0.5) * 0.4,
             1.0 + (Math.random() - 0.5) * 0.4
         );
 
-        // Default material (will be swapped)
-        const mesh = new THREE.Mesh(geo, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest);
+        mesh.material = isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest;
+        mesh.position.y = baseScale * 0.2;
 
         // Random rotation
         mesh.rotation.set(
@@ -145,35 +180,43 @@ export class RockFactory implements DecorationFactory {
             Math.random() * Math.PI
         );
 
-        mesh.position.y = baseScale * 0.2;
-
-        group.add(mesh);
+        mesh.parent = root;
 
         // Add a second smaller rock sometimes (Cluster)
         if (size > 0.4 && Math.random() > 0.6) {
             const size2 = size * 0.5;
             const scale2 = baseScale * 0.5;
-            const geo2 = new THREE.IcosahedronGeometry(scale2, 0);
 
-            const posAttribute2 = geo2.attributes.position;
-            const vertex2 = new THREE.Vector3();
-            const seedOffset2 = Math.random() * 100;
+            const mesh2 = MeshBuilder.CreateIcoSphere("rock2", {
+                radius: scale2,
+                subdivisions: 0,
+                flat: true
+            });
 
-            for (let i = 0; i < posAttribute2.count; i++) {
-                vertex2.fromBufferAttribute(posAttribute2, i);
-                const n = RockFactory.rockNoise3D(
-                    vertex2.x * noiseScale + seedOffset2,
-                    vertex2.y * noiseScale + seedOffset2,
-                    vertex2.z * noiseScale + seedOffset2
-                );
-                const dir = vertex2.clone().normalize();
-                vertex2.add(dir.multiplyScalar(n * scale2 * 0.4));
-                posAttribute2.setXYZ(i, vertex2.x, vertex2.y, vertex2.z);
+            // Vertex Displacement 2
+            const positions2 = mesh2.getVerticesData(VertexBuffer.PositionKind);
+            if (positions2) {
+                const seedOffset2 = Math.random() * 100;
+                const noiseScale = 0.5; // Redefine for local scope
+                for (let i = 0; i < positions2.length; i += 3) {
+                    const x = positions2[i];
+                    const y = positions2[i + 1];
+                    const z = positions2[i + 2];
+                    const n = RockFactory.rockNoise3D(
+                        x * noiseScale + seedOffset2,
+                        y * noiseScale + seedOffset2,
+                        z * noiseScale + seedOffset2
+                    );
+                    const v = new Vector3(x, y, z).normalize().scale(n * scale2 * 0.4);
+                    positions2[i] += v.x;
+                    positions2[i + 1] += v.y;
+                    positions2[i + 2] += v.z;
+                }
+                mesh2.updateVerticesData(VertexBuffer.PositionKind, positions2);
             }
-            geo2.computeVertexNormals();
-            geo2.scale(1, 0.7, 1);
 
-            const mesh2 = new THREE.Mesh(geo2, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest);
+            mesh2.scaling.set(1, 0.7, 1);
+            mesh2.material = isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest;
 
             const offsetDir = Math.random() * Math.PI * 2;
             const offsetDist = baseScale * 0.9;
@@ -181,9 +224,20 @@ export class RockFactory implements DecorationFactory {
             mesh2.position.set(Math.cos(offsetDir) * offsetDist, scale2 * 0.2, Math.sin(offsetDir) * offsetDist);
             mesh2.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
 
-            group.add(mesh2);
+            mesh2.parent = root;
         }
 
-        return group;
+        // Optimization: Merge meshes
+        const meshes = root.getChildMeshes();
+        const merged = Mesh.MergeMeshes(meshes as Mesh[], true, true, undefined, false, true);
+
+        if (merged) {
+            merged.name = "rock_merged";
+            merged.metadata = { mergeable: true };
+            root.dispose();
+            return merged;
+        }
+
+        return root;
     }
 }

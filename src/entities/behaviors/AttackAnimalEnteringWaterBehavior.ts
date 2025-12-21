@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import * as THREE from 'three';
+import { Vector3, Scalar } from '@babylonjs/core';
 import { CollisionCategories } from '../../core/PhysicsEngine';
 import { RiverSystem } from '../../world/RiverSystem';
 import { AttackAnimalEnteringWater } from './AttackAnimalBehavior';
@@ -94,7 +94,7 @@ export class AttackAnimalEnteringWaterBehavior implements EntityBehavior {
 
         // Target (water) values
         const targetHeight = this.targetWaterHeight;
-        const targetNormal = new THREE.Vector3(0, 1, 0);
+        const targetNormal = new Vector3(0, 1, 0);
 
         const epsilon = 0.1;
 
@@ -102,7 +102,7 @@ export class AttackAnimalEnteringWaterBehavior implements EntityBehavior {
             // Still on land
             const height = RiverSystem.getInstance().terrainGeometry.calculateHeight(pos.x, pos.y);
             const normal = RiverSystem.getInstance().terrainGeometry.calculateNormal(pos.x, pos.y);
-            this.entity.setLandPosition(height, normal, progress);
+            this.entity.setLandPosition?.(height, normal, progress);
         } else if (distIntoWater < 0) {
             // Close to water edge don't update height/normal because it's not stable 
         } else if (distIntoWater < margin) {
@@ -110,14 +110,16 @@ export class AttackAnimalEnteringWaterBehavior implements EntityBehavior {
             const t = distIntoWater / margin;
 
             // Interpolate height
+            // const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(pos.x, pos.y);
             const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(pos.x, pos.y);
-            const height = THREE.MathUtils.lerp(terrainHeight, targetHeight, t);
+            // const height = THREE.MathUtils.lerp(terrainHeight, targetHeight, t);
+            const height = Scalar.Lerp(terrainHeight, targetHeight, t);
 
             // Interpolate normal
             const terrainNormal = RiverSystem.getInstance().terrainGeometry.calculateNormal(pos.x, pos.y);
-            const normal = terrainNormal.clone().lerp(targetNormal, t).normalize();
+            const normal = Vector3.Lerp(terrainNormal, targetNormal, t).normalize();
 
-            this.entity.setLandPosition(height, normal, progress);
+            this.entity.setLandPosition?.(height, normal, progress);
         } else {
             // Fully in water
 

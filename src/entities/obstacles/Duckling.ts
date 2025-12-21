@@ -1,34 +1,35 @@
 import * as planck from 'planck';
-import * as THREE from 'three';
+import { TransformNode, MeshBuilder, StandardMaterial, Color3, AnimationGroup } from "@babylonjs/core";
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
-import { EntityBehavior } from '../behaviors/EntityBehavior';
+// import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { AnimalSwimAwayBehavior } from '../behaviors/AnimalSwimAwayBehavior';
 import { AnyAttackAnimal } from '../behaviors/AttackAnimalBehavior';
 
 export class Duckling extends Entity implements AnyAttackAnimal {
+    public static readonly HEIGHT_IN_WATER: number = 0.0;
 
     private aggressiveness: number = 1.0;
-    private player: AnimationPlayer | null = null;
-    private behavior: EntityBehavior | null = null;
+    private behavior: any | null = null;
+    private player: AnimationPlayer = new AnimationPlayer();
 
-    private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
-        // Apply model transformations
-        model.scale.set(1.0, 1.0, 1.0);
-        model.rotation.y = Math.PI;
-        model.position.y = -1.25;
+    // private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
+    //     // Apply model transformations
+    //     model.scaling.set(1.0, 1.0, 1.0);
+    //     model.rotation.y = Math.PI;
+    //     model.position.y = -1.25;
 
-        if (this.meshes.length > 0) {
-            this.meshes[0].add(model);
-        }
+    //     if (this.meshes.length > 0) {
+    //         this.meshes[0].add(model);
+    //     }
 
-        this.player = new AnimationPlayer(model, animations);
-        // Randomize speed between 1.8 and 2.2
-        const timeScale = 1.8 + Math.random() * 0.4;
-    }
+    //     this.player = new AnimationPlayer(model, animations);
+    //     // Randomize speed between 1.8 and 2.2
+    //     const timeScale = 1.8 + Math.random() * 0.4;
+    // }
 
     constructor(x: number, y: number, physicsEngine: PhysicsEngine, angle: number = 0) {
         super();
@@ -56,10 +57,16 @@ export class Duckling extends Entity implements AnyAttackAnimal {
         physicsBody.setUserData({ type: 'obstacle', subtype: 'duckling', entity: this });
 
         // Graphics
-        const mesh = new THREE.Group();
+        const mesh = new TransformNode("duckling");
         this.meshes.push(mesh);
 
-        mesh.position.y = 0.5; // Raised by ~15% of model height
+        // Placeholder graphics (these lines were part of the original constructor,
+        // but the new applyModel will handle the actual model)
+        const duck = MeshBuilder.CreateSphere("duckBody", { diameter: 1.5 });
+        const mat = new StandardMaterial("duckMat");
+        mat.diffuseColor = Color3.Yellow();
+        duck.material = mat;
+        duck.parent = mesh; // Parent placeholder to the root mesh
 
         const ducklingData = Decorations.getDuckling();
         if (ducklingData) {
@@ -68,6 +75,25 @@ export class Duckling extends Entity implements AnyAttackAnimal {
 
         this.behavior = new AnimalSwimAwayBehavior(this, this.aggressiveness);
         this.player.play({ name: 'bob', timeScale: 2.0, randomizeLength: 0.2, startTime: -1.0 });
+    }
+
+    private applyModel(model: TransformNode, animations: AnimationGroup[]) {
+        // Apply model transformations
+        model.scaling.set(1.0, 1.0, 1.0);
+        model.rotation.y = Math.PI;
+        model.position.y = -1.25;
+
+        // The first mesh in this.meshes is the root TransformNode created in the constructor.
+        // We parent the loaded model to this root TransformNode.
+        if (this.meshes.length > 0) {
+            model.parent = this.meshes[0];
+        } else {
+            // If for some reason the root mesh wasn't created, add the model directly
+            this.meshes.push(model);
+        }
+
+        // Setup Animation Player
+        this.player.setAnimations(animations);
     }
 
     getPhysicsBody(): planck.Body | null {
@@ -82,9 +108,6 @@ export class Duckling extends Entity implements AnyAttackAnimal {
     }
 
     update(dt: number) {
-        if (this.player) {
-            this.player.update(dt);
-        }
         if (this.behavior) {
             this.behavior.update(dt);
         }

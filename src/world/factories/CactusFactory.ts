@@ -1,42 +1,74 @@
-import * as THREE from 'three';
+import {
+    TransformNode,
+    MeshBuilder,
+    StandardMaterial,
+    Color3,
+    Mesh,
+    Vector3,
+    Quaternion,
+    Curve3
+} from '@babylonjs/core';
 import { DecorationFactory } from './DecorationFactory';
 
 export class CactusFactory implements DecorationFactory {
-    private static readonly cactusMaterial = new THREE.MeshToonMaterial({ color: 0x6B8E23 }); // Olive Drab
+    private static cactusMaterial: StandardMaterial;
 
-    private cache: THREE.Group[] = [];
+    private cache: TransformNode[] = [];
 
     async load(): Promise<void> {
-        console.log("Generating Cactus Cache...");
-        for (let i = 0; i < 20; i++) {
-            this.cache.push(this.createCactus());
-        }
+        this.cache = [];
+        import('@babylonjs/core').then(core => {
+            if (!CactusFactory.cactusMaterial) {
+                CactusFactory.cactusMaterial = new core.StandardMaterial("cactusMat");
+                CactusFactory.cactusMaterial.diffuseColor = core.Color3.FromHexString("#6B8E23"); // Olive Drab
+                CactusFactory.cactusMaterial.specularColor = core.Color3.Black();
+            }
+
+            console.log("Generating Cactus Cache...");
+            for (let i = 0; i < 20; i++) {
+                const mesh = this.createCactus();
+                mesh.setEnabled(false);
+                this.cache.push(mesh);
+            }
+        });
     }
 
-    create(): THREE.Group {
-        let mesh: THREE.Group;
+    create(options?: any): TransformNode {
+        // Fallback
+        if (!CactusFactory.cactusMaterial) return new TransformNode("cactus_placeholder");
+
+        let mesh: TransformNode;
         if (this.cache.length === 0) {
             mesh = this.createCactus();
         } else {
-            mesh = this.cache[Math.floor(Math.random() * this.cache.length)].clone();
+            const source = this.cache[Math.floor(Math.random() * this.cache.length)];
+            if (source) {
+                mesh = source.instantiateHierarchy() as TransformNode;
+                mesh.setEnabled(true);
+            } else {
+                mesh = this.createCactus();
+            }
         }
         return mesh;
     }
 
-    private createCactus(): THREE.Group {
-        const group = new THREE.Group();
+    private createCactus(): TransformNode {
+        const root = new TransformNode("cactus_root");
 
         // Saguaro Parameters (2x Scale)
         const height = 3.0 + Math.random() * 3.0; // 3m to 6m
         const trunkRadius = 0.25 + Math.random() * 0.15; // Thicker trunk
 
-        // Trunk
-        const trunkGeo = new THREE.CapsuleGeometry(trunkRadius, height - trunkRadius * 2, 8, 16);
-        const trunk = new THREE.Mesh(trunkGeo, CactusFactory.cactusMaterial);
+        // Trunk - Capsule
+        const trunk = MeshBuilder.CreateCapsule("trunk", {
+            radius: trunkRadius,
+            height: height,
+            subdivisions: 4,
+            tessellation: 8
+        });
+        trunk.material = CactusFactory.cactusMaterial;
         trunk.position.y = height / 2;
-        trunk.castShadow = true;
-        trunk.receiveShadow = true;
-        group.add(trunk);
+        trunk.parent = root;
 
         // Arms
         const armCount = Math.floor(Math.random() * 4); // 0 to 3 arms
@@ -52,40 +84,45 @@ export class CactusFactory implements DecorationFactory {
 
             // Create Curve
             // Start at trunk surface
-            const startPoint = new THREE.Vector3(Math.cos(angle) * trunkRadius * 0.8, startHeight, Math.sin(angle) * trunkRadius * 0.8);
+            const startPoint = new Vector3(Math.cos(angle) * trunkRadius * 0.8, startHeight, Math.sin(angle) * trunkRadius * 0.8);
 
             // Control point: Outwards and slightly up
-            const controlPoint = new THREE.Vector3(
+            const controlPoint = new Vector3(
                 Math.cos(angle) * (trunkRadius + armOutwardDist),
                 startHeight,
                 Math.sin(angle) * (trunkRadius + armOutwardDist)
             );
 
             // End point: Upwards
-            const endPoint = new THREE.Vector3(
+            const endPoint = new Vector3(
                 Math.cos(angle) * (trunkRadius + armOutwardDist),
                 startHeight + armLengthVertical,
                 Math.sin(angle) * (trunkRadius + armOutwardDist)
             );
 
-            const curve = new THREE.QuadraticBezierCurve3(startPoint, controlPoint, endPoint);
+            // Babylon QuadraticBezier
+            const curve = Curve3.CreateQuadraticBezier(startPoint, controlPoint, endPoint, 8);
 
             // Tube Geometry
-            const tubeGeo = new THREE.TubeGeometry(curve, 8, armRadius, 8, false);
-            const arm = new THREE.Mesh(tubeGeo, CactusFactory.cactusMaterial);
-            arm.castShadow = true;
-            arm.receiveShadow = true;
-            group.add(arm);
+            const arm = MeshBuilder.CreateTube("arm", {
+                path: curve.getPoints(),
+                radius: armRadius,
+                tessellation: 8,
+                cap: Mesh.NO_CAP // We will add a sphere cap
+            });
+            arm.material = CactusFactory.cactusMaterial;
+            arm.parent = root;
 
             // Cap the top of the arm
-            const capGeo = new THREE.SphereGeometry(armRadius, 8, 8);
-            const cap = new THREE.Mesh(capGeo, CactusFactory.cactusMaterial);
-            cap.position.copy(endPoint);
-            cap.castShadow = true;
-            cap.receiveShadow = true;
-            group.add(cap);
+            const cap = MeshBuilder.CreateSphere("armCap", {
+                diameter: armRadius * 2,
+                segments: 8
+            });
+            cap.material = CactusFactory.cactusMaterial;
+            cap.position = endPoint;
+            cap.parent = root;
         }
 
-        return group;
+        return root;
     }
 }

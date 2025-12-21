@@ -1,49 +1,29 @@
-import * as THREE from 'three';
+import {
+    TransformNode,
+    AnimationGroup,
+    Vector3,
+    Mesh
+} from '@babylonjs/core';
 import { Decorations } from '../world/Decorations';
 import { GraphicsUtils } from '../core/GraphicsUtils';
 
 export class CollectedBottles {
-    public mesh: THREE.Group;
+    public mesh: TransformNode;
     private gridConfig = {
         rows: 3,
         cols: 7,
         spacingX: 0.6,
         spacingZ: 0.6
     };
-    private grid: (THREE.Group | null)[][];
-    private activeBottles: THREE.Group[] = [];
-    private cleanupQueue: THREE.Object3D[] = [];
+    private grid: (TransformNode | null)[][];
+    private activeBottles: TransformNode[] = [];
+    // Cleanup in Babylon is usually handled by disposal or auto-GC if references drop, 
+    // but explicit disposal is better for meshes.
 
-    private mixer: THREE.AnimationMixer;
-
-    // Cached animations (position-independent)
-    private dropClip: THREE.AnimationClip;
-    private fadeClip: THREE.AnimationClip;
-    private leftArcClip: THREE.AnimationClip;
-    private rightArcClip: THREE.AnimationClip;
+    // We don't need a mixer. AnimationGroups are independent.
 
     constructor() {
-        this.mesh = new THREE.Group();
-        this.mixer = new THREE.AnimationMixer(this.mesh);
-
-        // Get cached animation clips from Decorations
-        this.dropClip = Decorations.getBottleDropAnimation();
-        this.fadeClip = Decorations.getBottleFadeAnimation();
-        this.leftArcClip = Decorations.getBottleLeftArcAnimation();
-        this.rightArcClip = Decorations.getBottleRightArcAnimation();
-
-        this.mixer.addEventListener('finished', (e: any) => {
-            const action = e.action as THREE.AnimationAction;
-            const bottle = action.getRoot() as THREE.Group;
-            // The bottle is inside a container. Check if container is marked for removal.
-            // Since we play multiple simultaneous actions (Arc, Fade), any of them finishing
-            // signals the end of the sequence.
-            const container = bottle.parent;
-            if (container && container.userData.removing) {
-                // Defer cleanup to avoid modifying the mixer while it's updating
-                this.cleanupQueue.push(bottle);
-            }
-        });
+        this.mesh = new TransformNode("collectedBottlesRoot");
 
         // Initialize grid
         this.grid = Array(this.gridConfig.rows).fill(null).map(() => Array(this.gridConfig.cols).fill(null));
@@ -59,23 +39,8 @@ export class CollectedBottles {
     }
 
     update(dt: number) {
-        this.processCleanup();
-        this.mixer.update(dt);
-    }
-
-    private processCleanup() {
-        while (this.cleanupQueue.length > 0) {
-            const bottle = this.cleanupQueue.pop();
-            if (bottle) {
-                // Remove visual representation
-                const container = bottle.parent;
-                if (container) {
-                    this.mesh.remove(container);
-                }
-                // Uncache animation
-                this.mixer.uncacheRoot(bottle);
-            }
-        }
+        // Babylon animations update automatically.
+        // Unless we need custom logic per frame.
     }
 
     get count(): number {
@@ -98,30 +63,62 @@ export class CollectedBottles {
         // Pick random slot
         const slot = emptySlots[Math.floor(Math.random() * emptySlots.length)];
 
-        // Create bottle with specified color, clone so it can be animated
-        const bottle = Decorations.getBottle(color);
-        GraphicsUtils.cloneMaterials(bottle);
+        // Create bottle with specified color
+        const bottle = Decorations.getBottle(color) as TransformNode;
 
         // Scale down slightly to fit on deck nicely
-        bottle.scale.set(0.6, 0.6, 0.6);
+        bottle.scaling.set(0.6, 0.6, 0.6);
 
-        // IMPORTANT: Wrap bottle in a container group
+        // IMPORTANT: Wrap bottle in a container group (TransformNode)
         // Container is positioned at grid location
         // Bottle animates in local space within the container
-        const container = new THREE.Group();
+        const container = new TransformNode("bottleContainer");
+        // Using metadata instead of userData
+        container.metadata = { color: color };
 
         // Grid Position
         const targetX = slot.c * this.gridConfig.spacingX;
         const targetZ = slot.r * this.gridConfig.spacingZ;
         container.position.set(targetX, 0, targetZ);
 
-        container.add(bottle);
-        this.mesh.add(container);
-        container.userData.color = color;
+        bottle.parent = container;
+        container.parent = this.mesh;
+
         this.grid[slot.r][slot.c] = container;
         this.activeBottles.push(container);
 
         if (animated) {
+            // We need to create animations targeting *this specific bottle*
+            // Decorations.getBottle*Animation() methods need to be updated to take target.
+            // Or we call factory directly if Decorations exposes it?
+            // "Decorations.getBottleFadeAnimation" isn't migrated yet in Decorations.ts.
+            // We need to access BottleFactory via Decorations.
+            // But checking Decorations.ts, I commented out getBottleFadeAnimation etc?
+            // Ah, I commented them out because they returned THREE.AnimationClip.
+            // I need to use the factories or re-implement helpers in Decorations.
+
+            // Assuming Decorations.getFactory('bottle') is available.
+            // Or add static helpers back to Decorations.ts.
+            // For now, let's assume we can access factory logic or Decorations has helpers.
+            // I'll assume we update Decorations.ts to expose these helpers again.
+
+            // Quick fix: access factory via registry if public, or add methods to Decorations.
+            // To be clean, I should add the methods to Decorations.ts.
+            // But for now, let's assume methods exist:
+            // Decorations.playBottleDrop(bottle, delay) -> handles creation and playing?
+
+            // Let's implement logic here using factory.
+            // We can't easily access factory instance from here without import.
+            // Let's assume Decorations exposes `getBottleFactory()` or `createBottleAnimation(name, target)`.
+            // Actually, `Decorations.getFactory('bottle')` (if I expose Registry or make public).
+            // `Decorations.ts` has `getBottle`. 
+
+            // Let's update Decorations.ts to expose animation creation first?
+            // Or better: `Decorations.createBottleAnimation(name, target)`.
+
+            // I'll assume `Decorations.createBottleAnimation(name, target)` exists.
+            // I'll update Decorations.ts next.
+
             this.playFadeAndDropAnimation(bottle, delay);
         }
     }
@@ -133,16 +130,13 @@ export class CollectedBottles {
         // Pick random bottle to remove
         const index = Math.floor(Math.random() * this.activeBottles.length);
         const container = this.activeBottles[index];
-        const color = container.userData.color;
+        const color = container.metadata.color;
 
         // Get the actual bottle from the container
-        const bottle = container.children[0] as THREE.Group;
-
-        // Ensure we stop and uncache any actions for this bottle
-        this.mixer.uncacheRoot(bottle);
+        const bottle = container.getChildren()[0] as TransformNode;
 
         // Mark container for removal
-        container.userData.removing = true;
+        container.metadata.removing = true;
 
         // Find in grid to determine side and clear slot
         let bottleCol = 0;
@@ -162,9 +156,9 @@ export class CollectedBottles {
         this.activeBottles.splice(index, 1);
 
         if (animated) {
-            this.playFadeAndArcOut(bottle, bottleCol);
+            this.playFadeAndArcOut(bottle, bottleCol, container);
         } else {
-            this.cleanupQueue.push(bottle);
+            container.dispose();
         }
 
         return color;
@@ -176,14 +170,12 @@ export class CollectedBottles {
         // Pick random bottle to remove
         const index = Math.floor(Math.random() * this.activeBottles.length);
         const container = this.activeBottles[index];
-        const color = container.userData.color;
+        const color = container.metadata.color;
 
         // Get the actual bottle from the container
-        const bottle = container.children[0] as THREE.Group;
+        const bottle = container.getChildren()[0] as TransformNode;
 
-        // Ensure we stop and uncache any actions for this bottle
-        this.mixer.uncacheRoot(bottle);
-        container.userData.removing = true;
+        container.metadata.removing = true;
 
         // Find in grid to determine side and clear slot
         let found = false;
@@ -201,85 +193,87 @@ export class CollectedBottles {
         this.activeBottles.splice(index, 1);
 
         if (animated) {
-            this.playRiseAndFadeOut(bottle);
+            this.playRiseAndFadeOut(bottle, container);
             // Give it a head start so it looks like it travels
             target.addBottle(color, true, 0.1);
         } else {
-            this.cleanupQueue.push(bottle);
+            container.dispose();
             target.addBottle(color, false);
         }
     }
 
-    private playFadeAndArcOut(bottle: THREE.Group, fromColumn: number) {
+    private playFadeAndArcOut(bottle: TransformNode, fromColumn: number, container: TransformNode) {
         // Determine Direction (-1 Left, 1 Right)
         const midPoint = (this.gridConfig.cols - 1) / 2;
         const direction = fromColumn < midPoint ? -1 : 1;
 
-        // Select the appropriate cached arc clip
-        const arcClip = direction < 0 ? this.leftArcClip : this.rightArcClip;
-        const arcAction = this.mixer.clipAction(arcClip, bottle);
+        const animName = direction < 0 ? 'arc-left' : 'arc-right';
+        const animGroup = Decorations.createBottleAnimation(animName, bottle);
+        const fadeGroup = Decorations.createBottleAnimation('fade', bottle);
 
-        arcAction.loop = THREE.LoopOnce;
-        arcAction.clampWhenFinished = true;
-        arcAction.play();
+        // Arc
+        animGroup.onAnimationEndObservable.add(() => {
+            animGroup.dispose();
+            fadeGroup.dispose();
+            container.dispose();
+        });
 
-        // Simultaneous Fade Out
-        const fadeAction = this.mixer.clipAction(this.fadeClip, bottle);
-        const duration = 0.8; // Match arc duration
-        // Standard fade 1.0 -> 0 opacity. Clip duration is 1.0.
-        fadeAction.timeScale = 1.0 / duration;
-        fadeAction.play();
+        animGroup.play(false);
+
+        // Fade Out (1.0 -> 0)
+        // fadeGroup is 0.6->0.
+        // We might want to fade from current alpha?
+        // Default fade is fine.
+        fadeGroup.play(false);
     }
 
-    private playFadeAndDropAnimation(bottle: THREE.Group, delay: number = 0.0) {
-        // Bottle starts at drop height in local space
-        bottle.position.set(0, 5, 0); // Drop animation will bring it to (0, 0, 0)
+    private playFadeAndDropAnimation(bottle: TransformNode, delay: number = 0.0) {
+        // Bottle starts at drop height in local space?
+        // Animation sets keys.
 
-        // Hide initially (Set opacity to 0) so it doesn't show up before the delayed fade-in starts
-        GraphicsUtils.setMaterialOpacity(bottle, 0);
+        // Hide initially? Babylon AnimationGroup doesn't easily support "hide until delay".
+        // Use setTimeout for delay.
 
-        // --- Animations (using cached clips) ---
-        const startDelay = delay;
-        const startTime = this.mixer.time + startDelay;
+        bottle.setEnabled(false);
 
-        // 1. Fade In (Use cached fade animation in reverse)
-        // Apply to the actual bottle mesh, not the container
-        const fadeAction = this.mixer.clipAction(this.fadeClip, bottle);
-        const duration = 0.25;
+        setTimeout(() => {
+            if (bottle.isDisposed()) return;
+            bottle.setEnabled(true);
 
-        // Play backwards to fade IN (0 to Opacity)
-        fadeAction.loop = THREE.LoopOnce;
-        fadeAction.clampWhenFinished = true;
-        fadeAction.timeScale = -1.0 / duration;
-        fadeAction.time = fadeAction.getClip().duration; // Start at end
-        fadeAction.startAt(startTime);
-        fadeAction.play();
+            const dropGroup = Decorations.createBottleAnimation('drop', bottle);
+            const fadeGroup = Decorations.createBottleAnimation('fade', bottle); // 0.6->0
 
-        // 2. Drop Down (using cached drop clip)
-        // Apply to the bottle, which will animate from (0, 5, 0) to (0, 0, 0) in local space
-        const dropAction = this.mixer.clipAction(this.dropClip, bottle);
-        dropAction.loop = THREE.LoopOnce;
-        dropAction.clampWhenFinished = true;
-        dropAction.startAt(startTime);
-        dropAction.play();
+            // We want Fade In (0->0.6).
+            // Play in reverse? speedRatio = -1.
+            // Start at end.
+
+            fadeGroup.start(false, -1.0, fadeGroup.to, fadeGroup.from);
+
+            dropGroup.play(false);
+
+            dropGroup.onAnimationEndObservable.add(() => {
+                dropGroup.dispose();
+                fadeGroup.dispose();
+            });
+
+        }, delay * 1000);
     }
 
-    private playRiseAndFadeOut(bottle: THREE.Group) {
-        const clipDuration = this.dropClip.duration;
+    private playRiseAndFadeOut(bottle: TransformNode, container: TransformNode) {
 
         // Rise (Drop Reversed)
-        const riseAction = this.mixer.clipAction(this.dropClip, bottle);
-        riseAction.loop = THREE.LoopOnce;
-        riseAction.clampWhenFinished = true;
-        riseAction.timeScale = -1.0;
-        riseAction.time = clipDuration;
-        riseAction.play();
+        const riseGroup = Decorations.createBottleAnimation('drop', bottle);
+        // Play reverse
+        riseGroup.start(false, -1.0, riseGroup.to, riseGroup.from);
 
         // Fade Out
-        const fadeAction = this.mixer.clipAction(this.fadeClip, bottle);
-        fadeAction.loop = THREE.LoopOnce;
-        fadeAction.clampWhenFinished = true;
-        fadeAction.timeScale = 1.0 / 0.5; // Fast fade out 
-        fadeAction.play();
+        const fadeGroup = Decorations.createBottleAnimation('fade', bottle);
+        fadeGroup.play(false);
+
+        riseGroup.onAnimationEndObservable.add(() => {
+            riseGroup.dispose();
+            fadeGroup.dispose();
+            container.dispose();
+        });
     }
 }

@@ -1,44 +1,78 @@
-import * as THREE from 'three';
+import {
+    TransformNode,
+    MeshBuilder,
+    StandardMaterial,
+    Color3,
+    Mesh,
+    Vector3,
+    Quaternion
+} from '@babylonjs/core';
 import { DecorationFactory } from './DecorationFactory';
 
 export class TreeFactory implements DecorationFactory {
-    private static readonly treeMaterial = new THREE.MeshToonMaterial({ color: 0x8B4513 }); // Brown trunk
-    private static readonly leafMaterial = new THREE.MeshToonMaterial({ color: 0x228B22 }); // Forest Green
-    private static readonly snowyLeafMaterial = new THREE.MeshToonMaterial({ color: 0xFFFFFF }); // White
+    // Original colors: Brown trunk, Forest Green leaves, White snow
+    private static treeMaterial: StandardMaterial;
+    private static leafMaterial: StandardMaterial;
+    private static snowyLeafMaterial: StandardMaterial;
 
-    // Cache stores arrays of pre-generated trees
     private cache: {
-        trees: { mesh: THREE.Group, wetness: number, isSnowy: boolean, isLeafless: boolean }[];
+        trees: { mesh: TransformNode, wetness: number, isSnowy: boolean, isLeafless: boolean }[];
     } = { trees: [] };
 
     async load(): Promise<void> {
-        // Clear existing cache to prevent unlimited growth if load() is called multiple times
+        // Clear existing cache
         this.cache.trees = [];
 
-        // Pre-generate trees
-        console.log("Generating Tree Cache...");
+        import('@babylonjs/core').then(core => {
+            if (!TreeFactory.treeMaterial) {
+                TreeFactory.treeMaterial = new core.StandardMaterial("treeTrunkMat");
+                TreeFactory.treeMaterial.diffuseColor = core.Color3.FromHexString("#8B4513");
+                TreeFactory.treeMaterial.specularColor = core.Color3.Black(); // Toon-ish
 
-        // Generate Standard Trees
-        for (let i = 0; i < 50; i++) {
-            const wetness = Math.random();
-            this.cache.trees.push({ mesh: this.createTree(wetness, false, false), wetness, isSnowy: false, isLeafless: false });
-        }
-        // Generate Snowy Trees
-        for (let i = 0; i < 30; i++) {
-            const wetness = Math.random();
-            this.cache.trees.push({ mesh: this.createTree(wetness, true, false), wetness, isSnowy: true, isLeafless: false });
-        }
-        // Generate Leafless Trees (for Ice Biome)
-        for (let i = 0; i < 20; i++) {
-            const wetness = Math.random();
-            this.cache.trees.push({ mesh: this.createTree(wetness, false, true), wetness, isSnowy: false, isLeafless: true });
-        }
+                TreeFactory.leafMaterial = new core.StandardMaterial("treeLeafMat");
+                TreeFactory.leafMaterial.diffuseColor = core.Color3.FromHexString("#228B22");
+                TreeFactory.leafMaterial.specularColor = core.Color3.Black();
+
+                TreeFactory.snowyLeafMaterial = new core.StandardMaterial("treeSnowMat");
+                TreeFactory.snowyLeafMaterial.diffuseColor = core.Color3.FromHexString("#FFFFFF");
+                TreeFactory.snowyLeafMaterial.specularColor = core.Color3.Black();
+            }
+
+            console.log("Generating Tree Cache...");
+
+            // Generate Standard Trees
+            for (let i = 0; i < 50; i++) {
+                const wetness = Math.random();
+                const mesh = this.createTree(wetness, false, false);
+                mesh.setEnabled(false);
+                this.cache.trees.push({ mesh, wetness, isSnowy: false, isLeafless: false });
+            }
+            // Generate Snowy Trees
+            for (let i = 0; i < 30; i++) {
+                const wetness = Math.random();
+                const mesh = this.createTree(wetness, true, false);
+                mesh.setEnabled(false);
+                this.cache.trees.push({ mesh, wetness, isSnowy: true, isLeafless: false });
+            }
+            // Generate Leafless Trees (for Ice Biome)
+            for (let i = 0; i < 20; i++) {
+                const wetness = Math.random();
+                const mesh = this.createTree(wetness, false, true);
+                mesh.setEnabled(false);
+                this.cache.trees.push({ mesh, wetness, isSnowy: false, isLeafless: true });
+            }
+        });
     }
 
-    create(options: { wetness: number, isSnowy?: boolean, isLeafless?: boolean }): THREE.Group {
+    create(options: { wetness: number, isSnowy?: boolean, isLeafless?: boolean }): TransformNode {
+        // Fallback if materials not initialized (synchronous call before load)
+        if (!TreeFactory.treeMaterial) {
+            return new TransformNode("tree_placeholder");
+        }
+
         const { wetness, isSnowy = false, isLeafless = false } = options;
 
-        let mesh: THREE.Group;
+        let mesh: TransformNode;
 
         if (this.cache.trees.length > 0) {
             const candidates = this.cache.trees.filter(t => t.isSnowy === isSnowy && t.isLeafless === isLeafless && Math.abs(t.wetness - wetness) < 0.3);
@@ -46,7 +80,30 @@ export class TreeFactory implements DecorationFactory {
                 ? candidates[Math.floor(Math.random() * candidates.length)]
                 : this.cache.trees.find(t => t.isSnowy === isSnowy && t.isLeafless === isLeafless) || this.cache.trees[0];
 
-            mesh = source ? source.mesh.clone() : this.createTree(wetness, isSnowy, isLeafless);
+            if (source && source.mesh) {
+                // In Babylon, cloning a TransformNode hierarchy is done via instantiateHierarchy usually or clone
+                // Mesh.clone clones geometry reference. TransformNode.clone clones structure.
+                // I need to see RockFactory first to replace correctly.
+                // Let's assume standard structure.
+                // I'll skip RockFactory for this specific tool call and do it after reading if needed,
+                // but I'll assume I can find it later.
+                // I will just do TreeFactory now.
+                // Note: cloning a root TransformNode mimics the hierarchy.
+                // But meshes need to be cloned too. TransformNode.clone defaults to not cloning children?
+                // Actually instanced meshes are efficient but for now let's clone.
+                // Use instantiateHierarchy
+                mesh = source.mesh.instantiateHierarchy() as TransformNode;
+                mesh.setEnabled(true);
+                // "tree_clone" name logic below...
+                // Important: instantiateHierarchy returns a new root but shares materials/geometry.
+                // It's correct for this.
+                // Wait, source.mesh is a TransformNode acting as group.
+                mesh.name = "tree_clone";
+                mesh.scaling = source.mesh.scaling.clone(); // instantiateHierarchy doesn't copy current transform?
+                // Actually it clones properties.
+            } else {
+                mesh = this.createTree(wetness, isSnowy, isLeafless);
+            }
         } else {
             mesh = this.createTree(wetness, isSnowy, isLeafless);
         }
@@ -54,8 +111,9 @@ export class TreeFactory implements DecorationFactory {
         return mesh;
     }
 
-    private createTree(wetness: number, isSnowy: boolean, isLeafless: boolean): THREE.Group {
-        const group = new THREE.Group();
+    private createTree(wetness: number, isSnowy: boolean, isLeafless: boolean): TransformNode {
+        const root = new TransformNode("tree_root");
+        root.metadata = { mergeable: true };
 
         // Tree parameters based on wetness
         // Taller trees: 4-8m
@@ -63,10 +121,15 @@ export class TreeFactory implements DecorationFactory {
         const trunkThickness = 0.4 + wetness * 0.3;
 
         // Trunk
-        const trunkGeo = new THREE.CylinderGeometry(trunkThickness * 0.6, trunkThickness, height, 6);
-        const trunk = new THREE.Mesh(trunkGeo, TreeFactory.treeMaterial);
+        const trunk = MeshBuilder.CreateCylinder("trunk", {
+            height: height,
+            diameterTop: trunkThickness * 0.6,
+            diameterBottom: trunkThickness,
+            tessellation: 6
+        });
+        trunk.material = TreeFactory.treeMaterial;
         trunk.position.y = height / 2;
-        group.add(trunk);
+        trunk.parent = root;
 
         // Branches & Leaves
         const branchCount = 4 + Math.floor(Math.random() * 3);
@@ -78,23 +141,34 @@ export class TreeFactory implements DecorationFactory {
             const branchLen = 1.5 + Math.random() * 1.5;
             const branchThick = trunkThickness * 0.5;
 
-            const branchGeo = new THREE.CylinderGeometry(branchThick * 0.5, branchThick, branchLen, 4);
-            const branch = new THREE.Mesh(branchGeo, TreeFactory.treeMaterial);
+            // Babylon Cylinder aligns Y axis.
+            const branch = MeshBuilder.CreateCylinder("branch", {
+                height: branchLen,
+                diameterTop: branchThick * 0.5,
+                diameterBottom: branchThick,
+                tessellation: 4
+            });
+            branch.material = TreeFactory.treeMaterial;
 
-            // Position on trunk
+            // Parent first to handle local transforms
+            // Actually we want to attach to trunk logic visually
+            // In three.js: group.add(branch).
+            // Position relative to group origin (base of tree).
+            branch.parent = root;
             branch.position.set(0, y, 0);
 
             // Rotation
             const angleY = Math.random() * Math.PI * 2;
             const angleX = Math.PI / 3 + (Math.random() - 0.5) * 0.5; // Angled up/out
 
+            // Rotation in Babylon (Euler)
             branch.rotation.y = angleY;
-            branch.rotation.z = angleX;
+            branch.rotation.z = angleX; // Z axis tilt? 
 
             // Shift branch so it starts at trunk surface
-            branch.translateY(branchLen / 2);
-
-            group.add(branch);
+            // branch.translate(Axis.Y, branchLen / 2, Space.LOCAL);
+            // Babylon TransformNode has translate
+            branch.locallyTranslate(new Vector3(0, branchLen / 2, 0));
 
             // Sub-branches
             const subBranchCount = 1 + Math.floor(Math.random() * 2);
@@ -102,10 +176,20 @@ export class TreeFactory implements DecorationFactory {
                 const subLen = branchLen * (0.6 + Math.random() * 0.4);
                 const subThick = branchThick * 0.7;
 
-                const subGeo = new THREE.CylinderGeometry(subThick * 0.5, subThick, subLen, 4);
-                const subBranch = new THREE.Mesh(subGeo, TreeFactory.treeMaterial);
+                const subBranch = MeshBuilder.CreateCylinder("subBranch", {
+                    height: subLen,
+                    diameterTop: subThick * 0.5,
+                    diameterBottom: subThick,
+                    tessellation: 4
+                });
+                subBranch.material = TreeFactory.treeMaterial;
+
+                // Parent to branch
+                subBranch.parent = branch;
 
                 // Position along parent branch
+                // Parent branch length is branchLen. Y is along branch.
+                // 0 is Center.
                 const posAlong = (0.6 + Math.random() * 0.4) * branchLen;
                 subBranch.position.set(0, posAlong - branchLen / 2, 0);
 
@@ -113,40 +197,64 @@ export class TreeFactory implements DecorationFactory {
                 subBranch.rotation.z = Math.PI / 4 * (Math.random() > 0.5 ? 1 : -1);
                 subBranch.rotation.x = (Math.random() - 0.5) * 1.5;
 
-                subBranch.translateY(subLen / 2);
-
-                branch.add(subBranch);
+                subBranch.locallyTranslate(new Vector3(0, subLen / 2, 0));
 
                 // Leaf Cluster at end of sub-branch
                 if (!isLeafless) {
                     const leafSize = 1.0 + wetness * 0.5;
-                    const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
-                    const leafMesh = new THREE.Mesh(leafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial);
+                    const leafMesh = MeshBuilder.CreateIcoSphere("leaf", {
+                        radius: leafSize,
+                        subdivisions: 1, // 0 in Three is very low poly. 1 in Babylon is "low"
+                        flat: true
+                    });
+
+                    leafMesh.material = isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial;
+                    leafMesh.parent = subBranch;
                     leafMesh.position.set(0, subLen / 2, 0);
-                    subBranch.add(leafMesh);
                 }
             }
 
             // Leaf Cluster at end of main branch
             if (!isLeafless) {
                 const leafSize = 1.2 + wetness * 0.6;
-                const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
-                const leafMesh = new THREE.Mesh(leafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial);
-
+                const leafMesh = MeshBuilder.CreateIcoSphere("leafMain", {
+                    radius: leafSize,
+                    subdivisions: 1,
+                    flat: true
+                });
+                leafMesh.material = isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial;
+                leafMesh.parent = branch;
                 leafMesh.position.set(0, branchLen / 2, 0);
-                branch.add(leafMesh);
             }
         }
 
         // Top Leaf Cluster
         if (!isLeafless) {
             const topLeafSize = 1.5 + wetness * 0.8;
-            const topLeafGeo = new THREE.IcosahedronGeometry(topLeafSize, 0);
-            const topLeaf = new THREE.Mesh(topLeafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial);
+            const topLeaf = MeshBuilder.CreateIcoSphere("leafTop", {
+                radius: topLeafSize,
+                subdivisions: 1,
+                flat: true
+            });
+            topLeaf.material = isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial;
+            topLeaf.parent = root;
             topLeaf.position.y = height;
-            group.add(topLeaf);
         }
 
-        return group;
+        // Optimization: Merge all meshes into one
+        const meshes = root.getChildMeshes();
+        const merged = Mesh.MergeMeshes(meshes as Mesh[], true, true, undefined, false, true);
+
+        if (merged) {
+            merged.name = "tree_merged";
+            merged.metadata = { mergeable: true };
+
+            // Clean up the container node
+            root.dispose();
+
+            return merged;
+        }
+
+        return root;
     }
 }

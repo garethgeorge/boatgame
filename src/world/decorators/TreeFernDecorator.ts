@@ -11,6 +11,7 @@ export class TreeFernDecorator extends BaseDecorator {
             if (!this.isValidDecorationPosition(context, position)) continue;
 
             const biomeType = context.riverSystem.biomeManager.getBiomeType(position.worldZ);
+            if (biomeType !== 'jurassic') continue;
 
             // Mix with cycads, maybe slightly more rare?
             if (Math.random() > 0.8) {

@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { TransformNode, Vector3 } from '@babylonjs/core';
 import { TerrainDecorator, DecorationContext } from './TerrainDecorator';
 import { TerrainChunk } from '../TerrainChunk';
 
@@ -52,26 +52,12 @@ export abstract class BaseDecorator implements TerrainDecorator {
     }
 
     protected positionAndCollectGeometry(
-        object: THREE.Object3D,
+        object: TransformNode,
         position: { worldX: number; height: number; worldZ: number },
         context: DecorationContext
     ): void {
         object.position.set(position.worldX, position.height, position.worldZ);
         object.rotation.y = Math.random() * Math.PI * 2;
-        object.updateMatrixWorld(true);
-
-        // Collect geometries for merging
-        object.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                const geometry = child.geometry.clone();
-                geometry.applyMatrix4(child.matrixWorld);
-
-                const material = child.material as THREE.Material;
-                if (!context.geometriesByMaterial.has(material)) {
-                    context.geometriesByMaterial.set(material, []);
-                }
-                context.geometriesByMaterial.get(material)!.push(geometry);
-            }
-        });
+        object.parent = context.root;
     }
 }

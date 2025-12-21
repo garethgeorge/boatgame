@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { TransformNode, AnimationGroup } from '@babylonjs/core';
 import { DecorationRegistry } from './DecorationRegistry';
 import { TreeFactory } from './factories/TreeFactory';
 import { BushFactory } from './factories/BushFactory';
@@ -38,38 +38,47 @@ export class Decorations {
     await DecorationRegistry.loadAll();
   }
 
-  static getBoat() {
+  static getBoat(): TransformNode {
     return DecorationRegistry.getFactory('boat').create();
   }
 
-  static getTree(wetness: number, isSnowy: boolean = false, isLeafless: boolean = false): THREE.Group {
+  static getBottle(color: number): TransformNode {
+    return DecorationRegistry.getFactory('bottle').create({ color });
+  }
+
+  static createBottleAnimation(name: string, target: TransformNode): AnimationGroup {
+    const factory = DecorationRegistry.getFactory('bottle');
+    if (factory.createAnimation) {
+      return factory.createAnimation(name, { target });
+    }
+    throw new Error("Bottle factory missing createAnimation");
+  }
+
+  static getTree(wetness: number, isSnowy: boolean = false, isLeafless: boolean = false): TransformNode {
     return DecorationRegistry.getFactory('tree').create({ wetness, isSnowy, isLeafless });
   }
 
-  static getBush(wetness: number): THREE.Group {
+  static getBush(wetness: number): TransformNode {
     return DecorationRegistry.getFactory('bush').create(wetness);
   }
 
-  static getCactus(): THREE.Group {
+  static getCactus(): TransformNode {
     return DecorationRegistry.getFactory('cactus').create();
   }
 
-  static getCycad(): THREE.Group {
+  static getCycad(): TransformNode {
     return DecorationRegistry.getFactory('cycad').create();
   }
 
-  static getTreeFern(): THREE.Group {
+  static getTreeFern(): TransformNode {
     return DecorationRegistry.getFactory('treeFern').create();
   }
 
-  static getRock(biome: string, size: number): THREE.Group {
+  static getRock(biome: string, size: number): TransformNode {
     return DecorationRegistry.getFactory('rock').create({ size, biome });
   }
 
-  static getBottle(color: number): THREE.Group {
-    return DecorationRegistry.getFactory('bottle').create(color);
-  }
-
+  /*
   static getBottleFadeAnimation(): THREE.AnimationClip {
     return DecorationRegistry.getFactory('bottle').createAnimation('fade');
   }
@@ -85,17 +94,18 @@ export class Decorations {
   static getBottleRightArcAnimation(): THREE.AnimationClip {
     return DecorationRegistry.getFactory('bottle').createAnimation('arc-right');
   }
+  */
 
-  static getDepot(): THREE.Group {
+  static getDepot(): TransformNode {
     return DecorationRegistry.getFactory('depot').create();
   }
 
   // Animal getters
-  private static getModelAndAnimations(name: string): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
+  private static getModelAndAnimations(name: string): { model: TransformNode, animations: AnimationGroup[] } | null {
     try {
       const factory = DecorationRegistry.getFactory(name);
       const model = factory.create();
-      const animations = factory.getAllAnimations();
+      const animations = factory.getAllAnimations ? factory.getAllAnimations() : [];
       return { model, animations };
     } catch (e) {
       console.warn(`${name} model not loaded yet`);

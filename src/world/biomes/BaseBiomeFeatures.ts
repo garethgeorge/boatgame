@@ -1,10 +1,10 @@
-import * as THREE from 'three';
+import { Color3, Scalar } from '@babylonjs/core';
 import { BiomeFeatures } from './BiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/TerrainDecorator';
 import { BiomeDecorationHelper } from './BiomeDecorationHelper';
-import { Decorations } from '../Decorations';
+// import { Decorations } from '../Decorations';
 import { LogSpawner } from '../../entities/spawners/LogSpawner';
 import { RockSpawner } from '../../entities/spawners/RockSpawner';
 import { BuoySpawner } from '../../entities/spawners/BuoySpawner';
@@ -45,24 +45,24 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         return this.getGroundColor();
     }
 
-    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
-        const dayTop = new THREE.Color(0xA69AC2); // Pastel Lavender
-        const dayBot = new THREE.Color(0xFFCBA4); // Pastel Peach
-        const nightTop = new THREE.Color(0x1A1A3A); // Dark Slate Blue
-        const nightBot = new THREE.Color(0x2D2D44); // Muted Dark Purple
-        const sunsetTop = new THREE.Color(0x967BB6); // Muted Purple
-        const sunsetBot = new THREE.Color(0xFF9966); // Soft Orange
+    getSkyColors(dayness: number): { top: Color3, bottom: Color3 } {
+        const dayTop = Color3.FromHexString("#A69AC2"); // Pastel Lavender
+        const dayBot = Color3.FromHexString("#FFCBA4"); // Pastel Peach
+        const nightTop = Color3.FromHexString("#1A1A3A"); // Dark Slate Blue
+        const nightBot = Color3.FromHexString("#2D2D44"); // Muted Dark Purple
+        const sunsetTop = Color3.FromHexString("#967BB6"); // Muted Purple
+        const sunsetBot = Color3.FromHexString("#FF9966"); // Soft Orange
 
-        let currentTop: THREE.Color;
-        let currentBot: THREE.Color;
+        let currentTop: Color3;
+        let currentBot: Color3;
 
         const transitionThreshold = 0.1;
 
         if (dayness > 0) {
             if (dayness < transitionThreshold) {
                 const t = dayness / transitionThreshold;
-                currentTop = sunsetTop.clone().lerp(dayTop, t);
-                currentBot = sunsetBot.clone().lerp(dayBot, t);
+                currentTop = Color3.Lerp(sunsetTop, dayTop, t);
+                currentBot = Color3.Lerp(sunsetBot, dayBot, t);
             } else {
                 currentTop = dayTop.clone();
                 currentBot = dayBot.clone();
@@ -70,8 +70,8 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         } else {
             if (dayness > -transitionThreshold) {
                 const t = -dayness / transitionThreshold;
-                currentTop = sunsetTop.clone().lerp(nightTop, t);
-                currentBot = sunsetBot.clone().lerp(nightBot, t);
+                currentTop = Color3.Lerp(sunsetTop, nightTop, t);
+                currentBot = Color3.Lerp(sunsetBot, nightBot, t);
             } else {
                 currentTop = nightTop.clone();
                 currentBot = nightBot.clone();

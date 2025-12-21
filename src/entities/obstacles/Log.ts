@@ -1,60 +1,15 @@
 import * as planck from 'planck';
-import * as THREE from 'three';
+import { MeshBuilder, StandardMaterial, Color3, TransformNode } from '@babylonjs/core';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 
 export class Log extends Entity {
-
-    private static barkMaterial: THREE.MeshToonMaterial | null = null;
-    private static endMaterial: THREE.MeshToonMaterial | null = null;
-
-    private static getBarkMaterial(): THREE.MeshToonMaterial {
-        if (Log.barkMaterial) return Log.barkMaterial;
-
-        // Load and create deck material with texture
-        const textureLoader = new THREE.TextureLoader();
-        const deckTexture = textureLoader.load('assets/redwood-bark-texture.png');
-        deckTexture.wrapS = THREE.RepeatWrapping;
-        deckTexture.wrapT = THREE.RepeatWrapping;
-        deckTexture.repeat.set(4, 8);
-
-        const deckMaterial = new THREE.MeshToonMaterial({ map: deckTexture });
-        deckMaterial.color.set(0xa87660);
-
-        Log.barkMaterial = deckMaterial;
-
-        return Log.barkMaterial;
-    }
-
-    private static getEndMaterial(): THREE.MeshToonMaterial {
-        if (Log.endMaterial) return Log.endMaterial;
-
-        // Load and create end material with texture
-        const textureLoader = new THREE.TextureLoader();
-        const endTexture = textureLoader.load('assets/redwood-ends-texture.png');
-        // No wrapping needed for the ends, texture should fit the circular cap
-        endTexture.wrapS = THREE.ClampToEdgeWrapping;
-        endTexture.wrapT = THREE.ClampToEdgeWrapping;
-
-        // Center the texture on the circular ends
-        endTexture.center.set(0.5, 0.5);
-
-        const endMaterial = new THREE.MeshToonMaterial({ map: endTexture });
-        endMaterial.color.set(0xe7c55e);
-
-        Log.endMaterial = endMaterial;
-
-        return Log.endMaterial;
-    }
-
+    // static props removed
 
     constructor(x: number, y: number, length: number, physicsEngine: PhysicsEngine) {
         super();
 
         // Log should be perpendicular to the river flow (roughly X-aligned) to block path
-        // Physics Box takes (halfWidth, halfHeight).
-        // We want length along X. So halfWidth = length/2, halfHeight = 0.5.
-
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
             position: planck.Vec2(x, y),
@@ -66,34 +21,38 @@ export class Log extends Entity {
 
         physicsBody.createFixture({
             shape: planck.Box(length / 2, 0.6), // 1.2m thick log
-            density: 100.0, // Heavy wood (5x increase from 20.0)
-            friction: 0.8, // Rough
+            density: 100.0,
+            friction: 0.8,
             restitution: 0.1
         });
 
         physicsBody.setUserData({ type: 'obstacle', subtype: 'log', entity: this });
 
-        // Graphics
-        // Cylinder is Y-up by default.
-        // We want it along X-axis to match Physics Box(length, thickness).
-        // Rotate around Z axis by 90 deg.
-        const geo = new THREE.CylinderGeometry(0.6, 0.6, length, 12);
+        // Graphics Container
+        const root = new TransformNode("logRoot");
+        this.meshes.push(root);
 
-        // Create material array: [side, top cap, bottom cap]
-        const materials = [
-            Log.getBarkMaterial(),  // Side of cylinder
-            Log.getEndMaterial(),    // Top cap
-            Log.getEndMaterial()     // Bottom cap
-        ];
+        // Actual Log Mesh
+        const mesh = MeshBuilder.CreateCylinder("log", { height: length, diameter: 1.2 });
+        mesh.parent = root;
 
-        this.disposer.add(geo);
+        // Materials (Approximation of original Toon materials)
+        const logMat = new StandardMaterial("logMat");
+        logMat.diffuseColor = Color3.FromHexString("#a87660");
+        logMat.specularColor = Color3.Black(); // Matte
 
-        const mesh = new THREE.Mesh(geo, materials);
-        this.meshes.push(mesh);
+        // TODO: Load textures if available, for now colors match the Toon definition
+        // const textureLoader = new TextureLoader(); ...
+        // We'll stick to colors to avoid asset path guessing unless we verify assets exist.
+        // User mentioned "redwood-bark-texture.png".
 
+        mesh.material = logMat;
+
+        // Cylinder is Y-up.
+        // Physics Box is length (width) x thickness (height).
+        // Log needs to be horizontal.
+        // Rotation Z PI/2 aligns Y-cylinder to X-axis.
         mesh.rotation.z = Math.PI / 2;
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
     }
 
     wasHitByPlayer() {

@@ -1,133 +1,80 @@
-import * as THREE from 'three';
+import { AnimationGroup, Scene } from '@babylonjs/core';
 
-export interface AnimationParameters {
-    name: string;
-
-    // -1 => randomize the start time
-    startTime?: number;
-
-    // use one of these to specify length, random parameter specifies
-    // a +/- factor for random length adjustment
-    timeScale?: number;
-    duration?: number;
-    randomizeLength?: number;
+export interface PlayOptions {
+  name: string;
+  speedRatio?: number; // Babylon uses speedRatio instead of timeScale
+  timeScale?: number; // Compat
+  loop?: boolean;
+  startTime?: number; // Offset?
+  randomizeLength?: number; // To offset start time randomly
 }
 
 export class AnimationPlayer {
+  private animations: Map<string, AnimationGroup> = new Map();
+  private currentAnimation: AnimationGroup | null = null;
 
-    public readonly mixer: THREE.AnimationMixer;
-    private readonly actions: Map<string, THREE.AnimationAction> = new Map();
-    private currentAction: THREE.AnimationAction | null = null;
-    private sequence: AnimationParameters[] | null = null;
-    private sequenceIndex: number = 0;
+  constructor() { }
 
-    constructor(group: THREE.Group, animations: THREE.AnimationClip[]) {
-        this.mixer = new THREE.AnimationMixer(group);
-        for (const clip of animations) {
-            const action = this.mixer.clipAction(clip);
-            this.actions.set(clip.name, action);
-        }
+  setAnimations(animations: AnimationGroup[]) {
+    this.animations.clear();
+    for (const anim of animations) {
+      this.animations.set(anim.name, anim);
+      anim.stop(); // Ensure stopped initially
+    }
+  }
 
-        this.mixer.addEventListener('finished', () => {
-            if (this.sequence) {
-                this.playNextInSequence();
-            }
-        });
+  play(options: PlayOptions) {
+    if (!options.name) return;
+    const group = this.animations.get(options.name);
+
+    // If not found, try finding by partial name matching logic if needed, 
+    // but for now strict match.
+    if (!group) {
+      // console.warn("Animation not found:", options.name);
+      return;
     }
 
-    public stopAll() {
-        this.mixer.stopAllAction();
-        this.currentAction = null;
-        this.sequence = null;
+    if (this.currentAnimation && this.currentAnimation !== group) {
+      this.currentAnimation.stop();
     }
 
-    public playSequence(sequence: AnimationParameters[]) {
-        this.stopAll();
-        this.sequence = sequence;
-        this.sequenceIndex = 0;
-        this.playNextInSequence();
+    this.currentAnimation = group;
+
+    const speed = options.speedRatio ?? options.timeScale ?? 1.0;
+
+    // Randomize start time?
+    // Babylon AnimationGroups play from 0 to duration.
+    // options.randomizeLength might mean "Start at a random offset".
+    // options.startTime might mean "start at X"..
+
+    let startFrame = 0;
+    let endFrame = group.to;
+
+    if (options.randomizeLength) {
+      // If loop is true, we can just start at a random frame.
+      const duration = group.to - group.from;
+      startFrame = Math.random() * duration;
     }
 
-    public playOnce(options: AnimationParameters, isPlayingSequenceStep: boolean = false) {
-        this.sequence = null;
-        this.playAction(options, THREE.LoopOnce, 1);
+    // If startTime is negative (as in -1.0 in Duckling), maybe it means offset?
+
+    group.start(true, speed, group.from, group.to, false);
+
+    // If we want to offset the animation (e.g. valid for loops), we can goToFrame
+    if (startFrame > 0) {
+      group.goToFrame(startFrame);
     }
+  }
 
-    public play(options: AnimationParameters) {
-        this.sequence = null;
-        this.playAction(options, THREE.LoopRepeat, Infinity);
+  stop() {
+    if (this.currentAnimation) {
+      this.currentAnimation.stop();
+      this.currentAnimation = null;
     }
+  }
 
-    public getDuration(name: string): number {
-        const action = this.actions.get(name);
-        if (action) {
-            return action.getClip().duration;
-        }
-        return 0;
-    }
-
-    public getAction(name: string): THREE.AnimationAction | undefined {
-        return this.actions.get(name);
-    }
-
-    public update(dt: number) {
-        this.mixer.update(dt);
-    }
-
-    private playNextInSequence() {
-        if (!this.sequence || this.sequenceIndex >= this.sequence.length) {
-            this.sequence = null;
-            return;
-        }
-
-        const step = this.sequence[this.sequenceIndex];
-        this.sequenceIndex++;
-
-        this.playAction(step, THREE.LoopOnce, 1);
-    }
-
-    private playAction(options: AnimationParameters,
-        mode: THREE.AnimationActionLoopStyles,
-        repetitions: number): boolean {
-
-        let { name, startTime = 0.0, timeScale = 1.0, duration = undefined, randomizeLength = undefined } = options;
-        const action = this.actions.get(name);
-        if (!action) {
-            return false;
-        }
-
-        if (startTime < 0) {
-            action.time = Math.random() * action.getClip().duration;
-        } else {
-            action.time = startTime;
-        }
-
-        if (duration !== undefined) {
-            timeScale = action.getClip().duration / duration;
-        }
-
-        if (randomizeLength !== undefined) {
-            timeScale = timeScale + 2.0 * (Math.random() - 0.5) * randomizeLength;
-        }
-
-        if (this.currentAction === action &&
-            action.isRunning &&
-            action.loop === mode &&
-            action.timeScale === timeScale) {
-            return;
-        }
-
-        action.reset();
-        action.setLoop(mode, repetitions);
-        action.clampWhenFinished = true;
-        action.timeScale = timeScale;
-        action.play();
-
-        if (this.currentAction && this.currentAction !== action) {
-            this.currentAction.crossFadeTo(action, 1.0, true);
-        }
-
-        this.currentAction = action;
-    }
-
+  update(dt: number) {
+    // Babylon handles animation updates automatically via Scene.
+    // This method might be legacy or for manual control.
+  }
 }

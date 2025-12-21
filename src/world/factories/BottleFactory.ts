@@ -1,150 +1,225 @@
-import * as THREE from 'three';
+import {
+    MeshBuilder,
+    StandardMaterial,
+    Color3,
+    TransformNode,
+    Mesh,
+    Animation,
+    AnimationGroup,
+    Vector3,
+    Quaternion,
+    Curve3
+} from '@babylonjs/core';
 import { DecorationFactory } from './DecorationFactory';
 
 export class BottleFactory implements DecorationFactory {
-    private cache: Map<number, THREE.Group> = new Map();
-    private animations: THREE.AnimationClip[] = [];
+    private cache: Map<number, TransformNode> = new Map();
+    // In Babylon, animations are usually created per instance or targeted.
+    // We can store templates (Animation objects) and clone them? 
+    // Or just recreate them since they are lightweight config.
+    // Storing AnimationGroups without targets is not really a thing, they are collections of targeted animations.
+    // We will create animations on demand for the target.
 
     async load(): Promise<void> {
-        // Pre-generate bottles (Green and Blue)
-        this.cache.set(0x88FF88, this.createBottleMesh(0x88FF88));
-        this.cache.set(0x0088FF, this.createBottleMesh(0x0088FF));
-
-        this.animations.push(this.createFadeAnimation());
-        this.animations.push(this.createDropAnimation());
-        this.animations.push(this.createArcAnimation(-1));
-        this.animations.push(this.createArcAnimation(1));
+        // Pre-generation not strictly needed for procedural meshes, but we can cache templates.
+        // We'll lazy load in create().
     }
 
-    create(color: number): THREE.Group {
-        if (!this.cache.has(color)) {
-            this.cache.set(color, this.createBottleMesh(color));
+    create(color: number | { color: number }): TransformNode {
+        // Handle input format
+        const actualColor = (typeof color === 'object') ? (color as any).color : color;
+
+        // We don't cache instances, we cache templates (maybe). 
+        // Babylon meshes are cloned.
+        // But for procedural, just building it is fine.
+        return this.createBottleMesh(actualColor);
+    }
+
+    createAnimation(name: string, options?: any): AnimationGroup {
+        const target = options?.target as TransformNode;
+        if (!target) {
+            throw new Error("Animation requires a target mesh in options");
         }
-        const mesh = this.cache.get(color)!.clone();
 
-        return mesh;
+        switch (name) {
+            case 'fade':
+                return this.createFadeAnimation(target);
+            case 'drop':
+                return this.createDropAnimation(target);
+            case 'arc-left':
+                return this.createArcAnimation(target, -1);
+            case 'arc-right':
+                return this.createArcAnimation(target, 1);
+            default:
+                throw new Error(`Unknown animation ${name}`);
+        }
     }
 
-    createAnimation(name: string): THREE.AnimationClip {
-        return this.animations.find(a => a.name === name);
-    }
+    private createBottleMesh(colorHex: number): TransformNode {
+        const root = new TransformNode("bottleRoot");
 
-    private createBottleMesh(color: number): THREE.Group {
-        const mesh = new THREE.Group();
+        // Convert hex to Color3
+        const r = ((colorHex >> 16) & 255) / 255;
+        const g = ((colorHex >> 8) & 255) / 255;
+        const b = (colorHex & 255) / 255;
+        const color = new Color3(r, g, b);
+
+        // Glass Material
+        const glassMat = new StandardMaterial("glassMat");
+        glassMat.diffuseColor = color;
+        glassMat.alpha = 0.6;
+        glassMat.transparencyMode = 2; // ALPHA_BLEND
 
         // Bottle Body
-        const bodyGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 8);
-        const glassMat = new THREE.MeshToonMaterial({
-            color: color,
-            transparent: true,
-            opacity: 0.6
-        });
-        const body = new THREE.Mesh(bodyGeo, glassMat);
-        body.name = 'body';
-        mesh.add(body);
+        const body = MeshBuilder.CreateCylinder("body", { height: 1.2, diameter: 0.8 }, undefined);
+        body.material = glassMat;
+        body.parent = root;
 
         // Bottle Neck
-        const neckGeo = new THREE.CylinderGeometry(0.2, 0.4, 0.6, 8);
-        const neck = new THREE.Mesh(neckGeo, glassMat);
+        const neck = MeshBuilder.CreateCylinder("neck", { height: 0.6, diameterBottom: 0.8, diameterTop: 0.4 }, undefined);
         neck.position.y = 0.9;
-        neck.name = 'neck';
-        mesh.add(neck);
+        neck.material = glassMat;
+        neck.parent = root;
 
         // Cork
-        const corkGeo = new THREE.CylinderGeometry(0.24, 0.2, 0.3, 8);
-        const corkMat = new THREE.MeshToonMaterial({ color: 0x8B4513 });
-        const cork = new THREE.Mesh(corkGeo, corkMat);
-        cork.position.y = 1.3;
-        cork.name = 'cork';
-        mesh.add(cork);
+        const corkMat = new StandardMaterial("corkMat");
+        corkMat.diffuseColor = new Color3(0.55, 0.27, 0.07); // SaddleBrown
+
+        const cork = MeshBuilder.CreateCylinder("cork", { height: 0.3, diameterBottom: 0.4, diameterTop: 0.48 }, undefined);
+        cork.position.y = 1.35; // 0.9 + 0.3 + 0.15 for half height? 1.2/2 + 0.6/2?
+        // Body y=0 (center). Height 1.2. Top is 0.6.
+        // Neck y=0.9 via ThreeJS code.
+        // Cork y=1.3 via ThreeJS code.
+        cork.material = corkMat;
+        cork.parent = root;
 
         // Paper Message
-        const paperGeo = new THREE.PlaneGeometry(0.3, 0.6);
-        const paperMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide });
-        const paper = new THREE.Mesh(paperGeo, paperMat);
+        const paperMat = new StandardMaterial("paperMat");
+        paperMat.diffuseColor = new Color3(1, 1, 1);
+        paperMat.backFaceCulling = false;
+
+        const paper = MeshBuilder.CreatePlane("paper", { width: 0.3, height: 0.6 }, undefined);
         paper.rotation.y = Math.PI / 4;
         paper.rotation.z = Math.PI / 8;
-        paper.name = 'paper';
-        mesh.add(paper);
+        // Check local position
+        paper.parent = root;
+        paper.material = paperMat;
 
-        return mesh;
+        return root;
     }
 
-    private createFadeAnimation(): THREE.AnimationClip {
-        const duration = 1.0;
-        const times = [0, duration];
-        const tracks: THREE.KeyframeTrack[] = [];
+    private createFadeAnimation(target: TransformNode): AnimationGroup {
+        const group = new AnimationGroup("fade");
 
-        tracks.push(new THREE.NumberKeyframeTrack('body.material.opacity', times, [0.6, 0]));
-        tracks.push(new THREE.NumberKeyframeTrack('neck.material.opacity', times, [0.6, 0]));
-        tracks.push(new THREE.NumberKeyframeTrack('cork.material.opacity', times, [1.0, 0]));
-        tracks.push(new THREE.NumberKeyframeTrack('paper.material.opacity', times, [1.0, 0]));
+        // Target all meshes under root
+        const meshes = target.getChildMeshes();
 
-        return new THREE.AnimationClip('fade', duration, tracks);
-    }
+        const fadeAnim = new Animation(
+            "fadeAnim",
+            "material.alpha",
+            60,
+            Animation.ANIMATIONTYPE_FLOAT,
+            Animation.ANIMATIONLOOPMODE_CONSTANT
+        );
 
-    /**
-     * Creates a position-independent drop animation from (0, dropHeight, 0) to (0, 0, 0)
-     */
-    private createDropAnimation(): THREE.AnimationClip {
-        const dropHeight = 5.0;
-        const duration = 0.25;
-        const times = [0, duration];
-        const values = [
-            0, dropHeight, 0,  // Start
-            0, 0, 0            // End (at origin)
+        const keys = [
+            { frame: 0, value: 0.6 },
+            { frame: 60, value: 0 }
         ];
-        const positionTrack = new THREE.VectorKeyframeTrack('.position', times, values);
-        return new THREE.AnimationClip('drop', duration, [positionTrack]);
+        fadeAnim.setKeys(keys);
+
+        // Apply to everything for simplicity, though cork/paper might need different start values.
+        // Original code: cork 1.0->0, glass 0.6->0.
+        // Reuse same anim? No, different start values.
+
+        for (const mesh of meshes) {
+            const mat = mesh.material as StandardMaterial;
+            if (mat) {
+                const anim = fadeAnim.clone();
+                const startAlpha = mat.name.includes("glass") ? 0.6 : 1.0;
+                anim.setKeys([
+                    { frame: 0, value: startAlpha },
+                    { frame: 60, value: 0 }
+                ]);
+                group.addTargetedAnimation(anim, mat);
+            }
+        }
+
+        return group;
     }
 
-    /**
-     * Creates a position-independent arc animation
-     * @param direction -1 for left, 1 for right
-     */
-    private createArcAnimation(direction: number): THREE.AnimationClip {
-        const duration = 0.8;
+    private createDropAnimation(target: TransformNode): AnimationGroup {
+        const group = new AnimationGroup("drop");
+
+        const anim = new Animation(
+            "dropAnim",
+            "position.y",
+            60,
+            Animation.ANIMATIONTYPE_FLOAT,
+            Animation.ANIMATIONLOOPMODE_CONSTANT
+        );
+
+        // 0.25s duration -> 15 frames at 60fps
+        const keys = [
+            { frame: 0, value: 5.0 },
+            { frame: 15, value: 0.0 }
+        ];
+        anim.setKeys(keys);
+
+        group.addTargetedAnimation(anim, target);
+        return group;
+    }
+
+    private createArcAnimation(target: TransformNode, direction: number): AnimationGroup {
+        const group = new AnimationGroup(direction < 0 ? "arc-left" : "arc-right");
+
+        const duration = 0.8; // 48 frames
+        const frameCount = 48;
+
         const arcHeight = 8.0;
         const arcDistX = 4.0;
 
-        // All positions are relative to origin (0, 0, 0)
-        const startX = 0, startY = 0, startZ = 0;
-        const controlX = direction * arcDistX;
-        const controlY = arcHeight;
-        const controlZ = 0;
-        const endX = direction * arcDistX * 2.0;
-        const endY = 0;
-        const endZ = 0;
-
-        const samples = 10;
-        const times: number[] = [];
-        const posValues: number[] = [];
-        const rotValues: number[] = [];
-
-        const curve = new THREE.QuadraticBezierCurve3(
-            new THREE.Vector3(startX, startY, startZ),
-            new THREE.Vector3(controlX, controlY, controlZ),
-            new THREE.Vector3(endX, endY, endZ)
+        const curve = Curve3.CreateQuadraticBezier(
+            new Vector3(0, 0, 0),
+            new Vector3(direction * arcDistX, arcHeight, 0),
+            new Vector3(direction * arcDistX * 2.0, 0, 0),
+            10 // steps
         );
 
-        const upAxis = new THREE.Vector3(0, 1, 0);
+        const points = curve.getPoints();
+        const posKeys: any[] = [];
+        const rotKeys: any[] = [];
+        const upAxis = new Vector3(0, 1, 0);
 
-        for (let i = 0; i <= samples; i++) {
-            const t = i / samples;
-            times.push(t * duration);
+        for (let i = 0; i < points.length; i++) {
+            const t = i / (points.length - 1); // 0 to 1
+            const frame = t * frameCount;
 
-            const point = curve.getPoint(t);
-            posValues.push(point.x, point.y, point.z);
+            // Position
+            posKeys.push({ frame: frame, value: points[i] });
 
-            const tangent = curve.getTangent(t).normalize();
-            const q = new THREE.Quaternion().setFromUnitVectors(upAxis, tangent);
-            rotValues.push(q.x, q.y, q.z, q.w);
+            // Rotation
+            if (i < points.length - 1) {
+                const tangent = points[i + 1].subtract(points[i]).normalize();
+                const q = Quaternion.FromUnitVectorsToRef(upAxis, tangent, new Quaternion());
+                rotKeys.push({ frame: frame, value: q });
+            } else {
+                // Last frame rotation same as previous?
+                rotKeys.push({ frame: frame, value: rotKeys[rotKeys.length - 1].value });
+            }
         }
 
-        const positionTrack = new THREE.VectorKeyframeTrack('.position', times, posValues);
-        const rotationTrack = new THREE.QuaternionKeyframeTrack('.quaternion', times, rotValues);
+        const posAnim = new Animation("posAnim", "position", 60, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT);
+        posAnim.setKeys(posKeys);
 
-        const arcClipName = direction < 0 ? 'arc-left' : 'arc-right';
-        return new THREE.AnimationClip(arcClipName, duration, [positionTrack, rotationTrack]);
+        const rotAnim = new Animation("rotAnim", "rotationQuaternion", 60, Animation.ANIMATIONTYPE_QUATERNION, Animation.ANIMATIONLOOPMODE_CONSTANT);
+        rotAnim.setKeys(rotKeys);
+
+        group.addTargetedAnimation(posAnim, target);
+        // Ensure target has rotationQuaternion
+        if (!target.rotationQuaternion) target.rotationQuaternion = Quaternion.Identity();
+        group.addTargetedAnimation(rotAnim, target);
+
+        return group;
     }
 }

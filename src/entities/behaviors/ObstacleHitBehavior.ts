@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { TransformNode } from '@babylonjs/core';
 import { EntityBehavior } from './EntityBehavior';
 
 export interface ObstacleHitBehaviorParams {
@@ -8,14 +8,14 @@ export interface ObstacleHitBehaviorParams {
 }
 
 export class ObstacleHitBehavior implements EntityBehavior {
-    private meshes: THREE.Object3D[];
+    private meshes: TransformNode[];
     private onComplete: () => void;
     private verticalSpeed: number;
     private rotateSpeed: number;
     private targetHeightOffset: number;
     private currentHeightChange: number = 0;
 
-    constructor(meshes: THREE.Object3D[], onComplete: () => void, params: ObstacleHitBehaviorParams = {}) {
+    constructor(meshes: TransformNode[], onComplete: () => void, params: ObstacleHitBehaviorParams = {}) {
         this.meshes = meshes;
         this.onComplete = onComplete;
 
@@ -39,7 +39,9 @@ export class ObstacleHitBehavior implements EntityBehavior {
 
         for (const mesh of this.meshes) {
             mesh.position.y += dy;
-            mesh.rotation.y += drot;
+            if (mesh.rotation) {
+                mesh.rotation.y += drot;
+            }
         }
 
         if (this.verticalSpeed > 0) {

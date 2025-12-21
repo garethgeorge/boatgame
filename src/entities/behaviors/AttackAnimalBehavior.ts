@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import * as THREE from 'three';
+import { Vector3 } from '@babylonjs/core';
 
 // Any animal must implement this interface to get behavior
 export interface AnyAttackAnimal {
@@ -10,7 +10,7 @@ export interface AnyAttackAnimal {
 
     // set the height and normal of the animal when it is on land
     // progress: 0 (start of entry) to 1 (fully in water)
-    setLandPosition?(height: number, normal: THREE.Vector3, progress: number): void;
+    setLandPosition?(height: number, normal: Vector3, progress: number): void;
 }
 
 // Behavior callbacks for animal in idle shore state

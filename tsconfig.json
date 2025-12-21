@@ -17,7 +17,8 @@
     "noUnusedLocals": false,
     "noImplicitAny": false,
     "noImplicitThis": true,
-    "strictNullChecks": false
+    "strictNullChecks": false,
+    "skipLibCheck": true
   },
   "include": [
     "src"

@@ -1,14 +1,25 @@
 import * as planck from 'planck';
-import * as THREE from 'three';
-import { ResourceDisposer } from './ResourceDisposer';
-import { Boat } from '../entities/Boat';
+import {
+  TransformNode,
+  Vector3,
+  Quaternion,
+  MeshBuilder,
+  StandardMaterial,
+  Color3,
+  Mesh,
+  Engine
+} from '@babylonjs/core';
+
+// Stub for backward compatibility
+class DummyDisposer {
+  add(obj: any) { }
+}
 
 export abstract class Entity {
+  public disposer = new DummyDisposer();
   public physicsBodies: planck.Body[] = [];
-  public meshes: THREE.Object3D[] = [];
-  public debugMeshes: THREE.Object3D[] = [];
-
-  protected disposer: ResourceDisposer = new ResourceDisposer();
+  public meshes: TransformNode[] = [];
+  public debugMeshes: TransformNode[] = [];
 
   // Set to true to have the entity deleted
   public shouldRemove: boolean = false;
@@ -22,14 +33,14 @@ export abstract class Entity {
   // Optional normal vector for terrain alignment
   // If set, mesh will be tilted so its Y-axis aligns with this normal
   // while still following physics rotation around Y
-  protected normalVector: THREE.Vector3 | null = null;
+  protected normalVector: Vector3 | null = null;
 
   constructor() { }
 
   abstract update(dt: number): void;
 
   // Do stuff when hit by the player
-  wasHitByPlayer(boat: Boat): void {
+  wasHitByPlayer(boat: any): void {
 
   }
 
@@ -43,13 +54,14 @@ export abstract class Entity {
   }
 
   dispose() {
-    this.disposer.dispose();
+    // Babylon.js handles resources recursively when disposing a node.
+    this.meshes.forEach(m => m.dispose());
     this.meshes = [];
+
+    this.debugMeshes.forEach(m => m.dispose());
     this.debugMeshes = [];
+
     this.physicsBodies = [];
-    // Physics bodies are managed by PhysicsEngine interaction usually, 
-    // but if we own them we should destroy them.
-    // Entity manager destroys bodies.
   }
 
   // Interpolation state
@@ -73,15 +85,13 @@ export abstract class Entity {
       this.syncBodyMesh(body, mesh, alpha);
     }
 
-    // Sync debug meshes - assuming 1:1 mapping if they exist, or just rebuild them?
-    // Actually, ensureDebugMeshes creates a group for each body usually?
-    // Let's iterate if counts match
+    // Sync debug meshes
     for (let i = 0; i < Math.min(this.physicsBodies.length, this.debugMeshes.length); i++) {
       this.syncBodyMesh(this.physicsBodies[i], this.debugMeshes[i], alpha);
     }
   }
 
-  protected syncBodyMesh(body: planck.Body, mesh: THREE.Object3D, alpha: number) {
+  protected syncBodyMesh(body: planck.Body, mesh: TransformNode, alpha: number) {
     const currPos = body.getPosition();
     const currAngle = body.getAngle();
 
@@ -97,7 +107,7 @@ export abstract class Entity {
       const y = prevPos.y * (1 - alpha) + currPos.y * alpha;
       pos = planck.Vec2(x, y);
 
-      // Interpolate angle (handle wrap-around if necessary, but Planck angles are continuous)
+      // Interpolate angle
       angle = prevAngle * (1 - alpha) + currAngle * alpha;
     }
 
@@ -106,70 +116,88 @@ export abstract class Entity {
 
     // Apply rotation with optional normal alignment
     if (this.normalVector) {
-      //mesh.setRotationFromAxisAngle(this.normalVector.clone(), -angle);
-      const up = new THREE.Vector3(0, 1, 0); // Default Y-axis
-      const normalQuaternion = new THREE.Quaternion().setFromUnitVectors(up, this.normalVector);
+      const up = Vector3.Up();
+      const axis = Vector3.Cross(up, this.normalVector);
+      const dot = Vector3.Dot(up, this.normalVector);
 
-      // The axis for this rotation is the targetNormal itself
-      const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(this.normalVector, -angle);
+      let normalQuaternion = Quaternion.Identity();
+      if (dot < -0.999999) {
+        normalQuaternion = Quaternion.FromEulerAngles(Math.PI, 0, 0);
+      } else if (dot > 0.999999) {
+        normalQuaternion = Quaternion.Identity();
+      } else {
+        const angleRel = Math.acos(dot);
+        normalQuaternion = Quaternion.RotationAxis(axis.normalize(), angleRel);
+      }
 
-      // Multiply the orientation by the rotation to get the final transformation
-      // Order matters: first align, then rotate around the aligned axis.
-      mesh.quaternion.multiplyQuaternions(rotationQuaternion, normalQuaternion);
+      // Rotate around the normal vector (physics angle)
+      const rotationQuaternion = Quaternion.RotationAxis(this.normalVector, -angle);
+
+      // Order in Babylon: q1.multiply(q2) results in q1 * q2.
+      // Standard: first apply q2, then q1.
+      // We want to apply tilt (normalQuaternion) then spin (rotationQuaternion).
+      if (!mesh.rotationQuaternion) mesh.rotationQuaternion = Quaternion.Identity();
+      rotationQuaternion.multiplyToRef(normalQuaternion, mesh.rotationQuaternion);
+
     } else {
-      // Standard rotation around Y. Intentionally preserves any other rotations.
+      // Standard rotation around Y
+      mesh.rotationQuaternion = null; // Ensure euler is used or reset quat
+      mesh.rotation.x = 0;
+      mesh.rotation.z = 0;
       mesh.rotation.y = -angle;
     }
   }
 
-  ensureDebugMeshes(): THREE.Object3D[] {
+  ensureDebugMeshes(): TransformNode[] {
     if (this.debugMeshes.length > 0) return this.debugMeshes;
     if (this.physicsBodies.length === 0) return [];
 
+    const scene = Engine.LastCreatedScene;
+    if (!scene) return [];
+
+    const mat = new StandardMaterial("debugMat", scene);
+    mat.diffuseColor = new Color3(1, 0, 0);
+    mat.wireframe = true;
+    mat.disableLighting = true; // Make it look like a debug line
+
     for (const body of this.physicsBodies) {
-      const group = new THREE.Group();
+      const group = new TransformNode("debugGroup", scene);
 
       for (let fixture = body.getFixtureList(); fixture; fixture = fixture.getNext()) {
         const shape = fixture.getShape();
         const type = shape.getType();
 
-        let mesh: THREE.Mesh | null = null;
-        const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
-        this.disposer.add(material);
+        let debugMesh: Mesh | null = null;
 
         if (type === 'circle') {
           const circle = shape as planck.Circle;
           const radius = circle.getRadius();
           const center = circle.getCenter();
 
-          const geometry = new THREE.CylinderGeometry(radius, radius, 1, 16);
-          this.disposer.add(geometry);
-          mesh = new THREE.Mesh(geometry, material);
-          mesh.position.set(center.x, 0, center.y); // Local offset
+          debugMesh = MeshBuilder.CreateCylinder("circle", { diameter: radius * 2, height: 1 }, scene);
+          debugMesh.material = mat;
+          debugMesh.position.set(center.x, 0, center.y);
 
         } else if (type === 'polygon') {
           const poly = shape as planck.Polygon;
           const vertices = (poly as any).m_vertices;
 
-          const points: THREE.Vector3[] = [];
+          const points: Vector3[] = [];
           for (const v of vertices) {
-            points.push(new THREE.Vector3(v.x, 0, v.y));
+            points.push(new Vector3(v.x, 0, v.y));
           }
           if (points.length > 0) {
             points.push(points[0].clone());
           }
 
-          const geometry = new THREE.BufferGeometry().setFromPoints(points);
-          this.disposer.add(geometry);
-          const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xff0000 }));
-          this.disposer.add(line.material as THREE.Material);
-
-          group.add(line);
-          continue;
+          const lines = MeshBuilder.CreateLines("poly", { points: points }, scene);
+          lines.color = new Color3(1, 0, 0);
+          // lines.parent = group; // Handled below
+          debugMesh = lines as any;
         }
 
-        if (mesh) {
-          group.add(mesh);
+        if (debugMesh) {
+          debugMesh.parent = group;
         }
       }
 
@@ -181,4 +209,3 @@ export abstract class Entity {
     return this.debugMeshes;
   }
 }
-

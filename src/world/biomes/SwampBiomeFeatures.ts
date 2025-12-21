@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { Color3 } from '@babylonjs/core';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
@@ -27,13 +27,13 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         return { near: 0, far: 90 };
     }
 
-    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
+    getSkyColors(dayness: number): { top: Color3, bottom: Color3 } {
         const colors = super.getSkyColors(dayness);
         if (dayness > 0) {
-            const swampTopMod = new THREE.Color(0x776655); // Muted Brown/Purple
-            const swampBotMod = new THREE.Color(0x5D5346); // Earthen Tone (Matches Banks)
-            colors.top.lerp(swampTopMod, 0.8);
-            colors.bottom.lerp(swampBotMod, 0.9); // Strong influence for fog color
+            const swampTopMod = Color3.FromHexString("#776655"); // Muted Brown/Purple
+            const swampBotMod = Color3.FromHexString("#5D5346"); // Earthen Tone (Matches Banks)
+            colors.top = Color3.Lerp(colors.top, swampTopMod, 0.8);
+            colors.bottom = Color3.Lerp(colors.bottom, swampBotMod, 0.9); // Strong influence for fog color
         }
         return colors;
     }

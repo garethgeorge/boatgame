@@ -1,24 +1,21 @@
-import * as THREE from 'three';
-import * as planck from 'planck';
-
 import { PhysicsEngine, CollisionCategories } from '../core/PhysicsEngine';
 import { GraphicsEngine } from '../core/GraphicsEngine';
 import { TerrainChunk } from './TerrainChunk';
 import { RiverSystem } from './RiverSystem';
 import { ObstacleManager } from '../managers/ObstacleManager';
-
 import { Boat } from '../entities/Boat';
+
+import { Mesh, Vector3, Color3, StandardMaterial, VertexData, TransformNode, Vector2, MeshBuilder } from '@babylonjs/core';
+import * as planck from 'planck';
 
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
   private loadingChunks: Set<number> = new Set();
-  private collisionBodies: planck.Body[] = [];
-  private collisionMeshes: THREE.Mesh[] = [];
 
   private riverSystem: RiverSystem;
 
   private readonly collisionRadius = 150; // Radius around boat to generate collision
-  private readonly collisionStep = 5; // Step size for collision segments
+  private readonly collisionStep = 2.5; // Step size for collision segments (Matches TerrainChunk resolution)
 
   constructor(
     private physicsEngine: PhysicsEngine,
@@ -28,23 +25,26 @@ export class TerrainManager {
     this.riverSystem = RiverSystem.getInstance();
   }
 
-  private boatHistory: THREE.Vector3[] = [];
+  private boatHistory: Vector3[] = [];
 
-  update(boat: Boat, dt: number) {
+  update(boat: any, dt: number) {
     // Update all chunks (e.g. for animations)
     for (const chunk of this.chunks.values()) {
       chunk.update(dt);
     }
 
-    const boatZ = boat.meshes[0].position.z;
-    const currentPos = boat.meshes[0].position.clone();
+    if (!boat.meshes || boat.meshes.length === 0) return;
+
+    const boatMesh = boat.meshes[0];
+    const boatZ = boatMesh.position.z;
+    const currentPos = boatMesh.position.clone();
 
     // Update History
     if (this.boatHistory.length === 0) {
       this.boatHistory.push(currentPos);
     } else {
       const lastPos = this.boatHistory[0];
-      const dist = currentPos.distanceTo(lastPos);
+      const dist = Vector3.Distance(currentPos, lastPos);
       if (dist > 2.0) { // Only record if moved enough
         this.boatHistory.unshift(currentPos);
         if (this.boatHistory.length > 8) {
@@ -55,40 +55,45 @@ export class TerrainManager {
 
     // Update Water Shader Uniforms
     if (TerrainChunk.waterMaterial) {
-      TerrainChunk.waterMaterial.uniforms.uBoatPosition.value.copy(boat.meshes[0].position);
+      TerrainChunk.waterMaterial.setVector3("uBoatPosition", boatMesh.position);
 
       // Velocity needs to be calculated or retrieved from physics body
-      // Boat has getVelocity() or we can use physics body directly
-      if (boat.physicsBodies.length > 0) {
+      if (boat.physicsBodies && boat.physicsBodies.length > 0) {
         const vel = boat.physicsBodies[0].getLinearVelocity();
-        TerrainChunk.waterMaterial.uniforms.uBoatVelocity.value.set(vel.x, vel.y); // Physics Y is World Z
+        // Physics Y is World Z
+        TerrainChunk.waterMaterial.setVector2("uBoatVelocity", new Vector2(vel.x, vel.y));
+      }
 
-        // Direction from rotation
-        const rot = boat.meshes[0].rotation.y;
-        // Boat faces -Z at rotation 0?
-        // Rotation Y: 0 = -Z, PI/2 = -X, PI = +Z, -PI/2 = +X
-        // Direction vector: (-sin(rot), -cos(rot))
-        TerrainChunk.waterMaterial.uniforms.uBoatDirection.value.set(-Math.sin(rot), -Math.cos(rot));
+      // Direction from rotation
+      if (boatMesh.rotationQuaternion) {
+        // Compute forward from quaternion
+        const forward = new Vector3(0, 0, 1);
+        forward.rotateByQuaternionToRef(boatMesh.rotationQuaternion, forward);
+        // Project to 2D
+        TerrainChunk.waterMaterial.setVector2("uBoatDirection", new Vector2(forward.x, forward.z));
+      } else {
+        // Euler rotation
+        const rot = boatMesh.rotation.y;
+        // Rotation Y: 0 = -Z (Forward in 3D?) -> in 2D shader, we might need consistent mapping.
+        // Let's stick to the previous logic: -sin, -cos
+        TerrainChunk.waterMaterial.setVector2("uBoatDirection", new Vector2(-Math.sin(rot), -Math.cos(rot)));
       }
 
       // Update History Uniform
+      const flatHistory: number[] = [];
       for (let i = 0; i < 8; i++) {
         if (i < this.boatHistory.length) {
-          TerrainChunk.waterMaterial.uniforms.uBoatHistory.value[i].copy(this.boatHistory[i]);
+          flatHistory.push(this.boatHistory[i].x, this.boatHistory[i].y, this.boatHistory[i].z);
         } else {
-          // Fill remaining with last known or zero?
-          // Zero might be interpreted as valid position (0,0,0).
-          // Let's use the last valid position or zero if empty.
-          // Or just leave it, shader checks for length(histPos) < 0.1
-          // But (0,0,0) is valid world pos.
-          // Let's copy the oldest point to fill.
           if (this.boatHistory.length > 0) {
-            TerrainChunk.waterMaterial.uniforms.uBoatHistory.value[i].copy(this.boatHistory[this.boatHistory.length - 1]);
+            const last = this.boatHistory[this.boatHistory.length - 1];
+            flatHistory.push(last.x, last.y, last.z);
           } else {
-            TerrainChunk.waterMaterial.uniforms.uBoatHistory.value[i].set(0, 0, 0);
+            flatHistory.push(0, 0, 0);
           }
         }
       }
+      TerrainChunk.waterMaterial.setArray3("uBoatHistory", flatHistory);
     }
 
     // 1. Manage Visual Chunks
@@ -108,7 +113,7 @@ export class TerrainManager {
 
           // Spawn obstacles for this chunk
           this.obstacleManager.spawnObstaclesForChunk(index, zOffset, zOffset + TerrainChunk.CHUNK_SIZE);
-          console.log(`[TerrainManager] Created chunk ${index}`);
+          // console.log(`[TerrainManager] Created chunk ${index}`);
         });
       }
     }
@@ -116,7 +121,7 @@ export class TerrainManager {
     // Remove old chunks
     for (const [index, chunk] of this.chunks) {
       if (Math.abs(index - currentChunkIndex) > renderDistance) {
-        console.log(`[TerrainManager] Disposing chunk ${index}`);
+        // console.log(`[TerrainManager] Disposing chunk ${index}`);
         chunk.dispose();
         this.chunks.delete(index);
 
@@ -131,12 +136,16 @@ export class TerrainManager {
 
   private debug: boolean = false;
 
+  private collisionCache: Map<number, { bodies: planck.Body[], meshes: Mesh[] }> = new Map();
+
   setDebug(enabled: boolean) {
     if (this.debug === enabled) return;
     this.debug = enabled;
-    this.collisionMeshes.forEach(mesh => {
-      mesh.visible = this.debug;
-    });
+    for (const segment of this.collisionCache.values()) {
+      segment.meshes.forEach(mesh => {
+        mesh.isVisible = this.debug;
+      });
+    }
   }
 
   private updateCollision(boatZ: number) {
@@ -144,37 +153,31 @@ export class TerrainManager {
     const startZ = Math.floor((boatZ - this.collisionRadius) / this.collisionStep) * this.collisionStep;
     const endZ = Math.ceil((boatZ + this.collisionRadius) / this.collisionStep) * this.collisionStep;
 
-    // Clear old collision bodies
-    this.collisionBodies.forEach(b => this.physicsEngine.world.destroyBody(b));
-    this.collisionBodies = [];
-
-    // Clear debug meshes
-    this.collisionMeshes.forEach(m => {
-      this.graphicsEngine.remove(m);
-      m.geometry.dispose();
-      if (Array.isArray(m.material)) {
-        m.material.forEach(mat => mat.dispose());
-      } else {
-        m.material.dispose();
-      }
-    });
-    this.collisionMeshes = [];
-
-    // Generate new segments
+    const neededKeys = new Set<number>();
     for (let z = startZ; z < endZ; z += this.collisionStep) {
-      const segment = this.createCollisionSegment(z, z + this.collisionStep);
-      this.collisionBodies.push(...segment.bodies);
-      this.collisionMeshes.push(...segment.meshes);
-      segment.meshes.forEach(m => {
-        m.visible = this.debug; // Set initial visibility
-        this.graphicsEngine.add(m);
-      });
+      neededKeys.add(z);
+      if (!this.collisionCache.has(z)) {
+        const segment = this.createCollisionSegment(z, z + this.collisionStep);
+        segment.meshes.forEach(m => {
+          m.isVisible = this.debug;
+        });
+        this.collisionCache.set(z, segment);
+      }
+    }
+
+    // Cleanup segments that are out of range
+    for (const [z, segment] of this.collisionCache) {
+      if (!neededKeys.has(z)) {
+        segment.bodies.forEach(b => this.physicsEngine.world.destroyBody(b));
+        segment.meshes.forEach(m => m.dispose());
+        this.collisionCache.delete(z);
+      }
     }
   }
 
-  private createCollisionSegment(zStart: number, zEnd: number): { bodies: planck.Body[], meshes: THREE.Mesh[] } {
+  private createCollisionSegment(zStart: number, zEnd: number): { bodies: planck.Body[], meshes: Mesh[] } {
     const bodies: planck.Body[] = [];
-    const meshes: THREE.Mesh[] = [];
+    const meshes: Mesh[] = [];
 
     // Calculate positions including ghost vertices
     const zPrev = zStart - this.collisionStep;
@@ -236,7 +239,7 @@ export class TerrainManager {
     return { bodies, meshes };
   }
 
-  private createDebugLine(p1: planck.Vec2, p2: planck.Vec2): THREE.Mesh {
+  private createDebugLine(p1: planck.Vec2, p2: planck.Vec2): Mesh {
     const dx = p2.x - p1.x;
     const dy = p2.y - p1.y;
     const length = Math.sqrt(dx * dx + dy * dy);
@@ -244,13 +247,27 @@ export class TerrainManager {
     const midX = (p1.x + p2.x) / 2;
     const midY = (p1.y + p2.y) / 2;
 
-    const geometry = new THREE.BoxGeometry(length, 5, 0.5);
-    const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = MeshBuilder.CreateBox("debug_collision", {
+      width: length,
+      height: 5,
+      depth: 0.5
+    }, this.graphicsEngine.scene);
 
+    // Create red wireframe material
+    const material = new StandardMaterial("debug_mat", this.graphicsEngine.scene);
+    material.diffuseColor = Color3.Red();
+    material.wireframe = true;
+    mesh.material = material;
+
+    // Physics 2D Y is World Z in game logic
     mesh.position.set(midX, 2.5, midY);
+
+    // Rotation: Planck Y is up? 
+    // Wait, in previous ThreeJS: mesh.rotation.y = -angle;
+    // Babylon Y rotation is also vertical axis.
+    // Angles should be similar if coordinate system matches.
+
     mesh.rotation.y = -angle;
-    mesh.visible = this.debug; // Ensure created mesh respects debug state
 
     return mesh;
   }

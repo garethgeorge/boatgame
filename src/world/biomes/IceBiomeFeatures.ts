@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { Color3 } from '@babylonjs/core';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
@@ -27,13 +27,13 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         return { near: 0, far: 400 };
     }
 
-    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
+    getSkyColors(dayness: number): { top: Color3, bottom: Color3 } {
         const colors = super.getSkyColors(dayness);
         if (dayness > 0) {
-            const iceTopMod = new THREE.Color(0xddeeff); // Pale Ice Blue
-            const iceBotMod = new THREE.Color(0xffffff); // White
-            colors.top.lerp(iceTopMod, 0.8);
-            colors.bottom.lerp(iceBotMod, 0.8);
+            const iceTopMod = Color3.FromHexString("#ddeeff"); // Pale Ice Blue
+            const iceBotMod = Color3.FromHexString("#ffffff"); // White
+            colors.top = Color3.Lerp(colors.top, iceTopMod, 0.8);
+            colors.bottom = Color3.Lerp(colors.bottom, iceBotMod, 0.8);
         }
         return colors;
     }
