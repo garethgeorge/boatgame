@@ -121,6 +121,18 @@ export class CactusFactory implements DecorationFactory {
             cap.material = CactusFactory.cactusMaterial;
             cap.position = endPoint;
             cap.parent = root;
+            cap.parent = root;
+        }
+
+        // Optimization: Merge meshes
+        const meshes = root.getChildMeshes();
+        const merged = Mesh.MergeMeshes(meshes as Mesh[], true, true, undefined, false, true);
+
+        if (merged) {
+            merged.name = "cactus_merged";
+            merged.metadata = { mergeable: true };
+            root.dispose();
+            return merged;
         }
 
         return root;

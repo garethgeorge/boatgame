@@ -148,6 +148,18 @@ export class CycadFactory implements DecorationFactory {
             cone.material = CycadFactory.coneMaterial;
             cone.position.y = crownY + coneHeight / 2;
             cone.parent = root;
+            cone.parent = root;
+        }
+
+        // Optimization: Merge meshes
+        const meshes = root.getChildMeshes();
+        const merged = Mesh.MergeMeshes(meshes as Mesh[], true, true, undefined, false, true);
+
+        if (merged) {
+            merged.name = "cycad_merged";
+            merged.metadata = { mergeable: true };
+            root.dispose();
+            return merged;
         }
 
         return root;
