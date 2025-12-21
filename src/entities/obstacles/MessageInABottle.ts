@@ -88,6 +88,9 @@ export class MessageInABottle extends Entity {
         // fades bottle out
         if (this.meshes.length > 0) {
             const fadeClip = Decorations.getBottleFadeAnimation();
+            if (!fadeClip)
+                return;
+
             const mesh = this.meshes[0];
 
             // The mesh material are shared, so we need to clone them
