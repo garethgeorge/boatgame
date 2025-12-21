@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { DecorationFactory } from './DecorationFactory';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class TreeFernFactory implements DecorationFactory {
     private static readonly trunkMaterial = new THREE.MeshToonMaterial({ color: 0x3d2817 }); // Dark fibrous brown
@@ -10,9 +11,19 @@ export class TreeFernFactory implements DecorationFactory {
     } = { ferns: [] };
 
     async load(): Promise<void> {
+        // Retain static materials
+        GraphicsUtils.tracker.retain(TreeFernFactory.trunkMaterial);
+        GraphicsUtils.tracker.retain(TreeFernFactory.frondMaterial);
+
+        // Clear existing cache and release old meshes
+        this.cache.ferns.forEach(f => GraphicsUtils.tracker.release(f.mesh));
+        this.cache.ferns = [];
+
         console.log("Generating Tree Fern Cache...");
         for (let i = 0; i < 20; i++) {
-            this.cache.ferns.push({ mesh: this.createTreeFern() });
+            const mesh = this.createTreeFern();
+            GraphicsUtils.tracker.retain(mesh);
+            this.cache.ferns.push({ mesh });
         }
     }
 

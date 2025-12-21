@@ -52,11 +52,11 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
 
         for (let i = 0; i < count; i++) {
             if (Math.random() > 0.5) continue;
-            const position = this.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-            if (!this.decoHelper.isValidDecorationPosition(context, position)) continue;
+            const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
+            if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
 
             const rock = Decorations.getRock(this.id, Math.random());
-            this.decoHelper.positionAndCollectGeometry(rock, position, context);
+            context.decoHelper.positionAndCollectGeometry(rock, position, context);
         }
     }
 

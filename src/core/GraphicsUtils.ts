@@ -1,6 +1,8 @@
 import * as THREE from 'three';
+import { GraphicsTracker } from './GraphicsTracker';
 
 export class GraphicsUtils {
+    public static readonly tracker = new GraphicsTracker();
 
     // Replace all materials with toon material
     public static toonify(model: THREE.Group) {
@@ -21,6 +23,7 @@ export class GraphicsUtils {
                     gradientMap: this.getToonGradientMap(),
                     toneMapped: false,
                 });
+                this.tracker.register(toonMaterial);
 
                 child.material = toonMaterial;
             }
@@ -36,6 +39,7 @@ export class GraphicsUtils {
                 const newMaterials = materials.map(m => {
                     const clone = m.clone();
                     clone.transparent = true;
+                    this.tracker.register(clone);
                     return clone;
                 });
                 if (Array.isArray(child.material)) {
@@ -61,8 +65,10 @@ export class GraphicsUtils {
     private static toonGradientMap: THREE.Texture = null;
 
     private static getToonGradientMap(): THREE.Texture {
-        if (!this.toonGradientMap)
+        if (!this.toonGradientMap) {
             this.toonGradientMap = this.createToonGradientMap();
+            this.tracker.retain(this.toonGradientMap);
+        }
         return this.toonGradientMap;
     }
 

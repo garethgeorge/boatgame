@@ -16,6 +16,10 @@ export class DecorationRegistry {
     }
 
     static async loadAll(): Promise<void> {
-        await Promise.all(Array.from(this.factories.values()).map(f => f.load()));
+        if (false) {
+            await Promise.all(Array.from(this.factories.values()).map(f => f.load()));
+        } else {
+            await this.factories.get('boat').load();
+        }
     }
 }

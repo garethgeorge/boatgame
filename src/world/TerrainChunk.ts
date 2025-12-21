@@ -1,12 +1,11 @@
 import * as THREE from 'three';
 import { GraphicsEngine } from '../core/GraphicsEngine';
 import { RiverSystem } from './RiverSystem';
-import { Decorations } from './Decorations';
-import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Profiler } from '../core/Profiler';
 import { WaterShader } from '../shaders/WaterShader';
 import { DecorationContext } from './decorators/TerrainDecorator';
-import { ResourceDisposer } from '../core/ResourceDisposer';
+import { GraphicsUtils } from '../core/GraphicsUtils';
+import { BiomeDecorationHelper } from './biomes/BiomeDecorationHelper';
 
 export class TerrainChunk {
 
@@ -17,8 +16,6 @@ export class TerrainChunk {
   waterMesh: THREE.Mesh;
   decorations: THREE.Group;
   zOffset: number;
-
-  private disposer: ResourceDisposer = new ResourceDisposer();
 
   // Config
   public static readonly CHUNK_SIZE = 62.5; // Size of chunk in Z (Reduced to 62.5 for incremental generation)
@@ -63,17 +60,24 @@ export class TerrainChunk {
   }
 
   private async initAsync() {
-    this.mesh = await this.generateMesh();
-    await this.yieldToMain();
+    GraphicsUtils.tracker.pauseGC();
+    console.log('Chunk initAsync');
+    try {
+      this.mesh = await this.generateMesh();
+      await this.yieldToMain();
 
-    this.waterMesh = this.generateWater(); // Fast enough to be sync? Or make async too?
-    // Water is simple plane, sync is fine.
+      this.waterMesh = this.generateWater(); // Fast enough to be sync? Or make async too?
+      // Water is simple plane, sync is fine.
 
-    this.decorations = await this.generateDecorations();
+      this.decorations = await this.generateDecorations();
 
-    this.graphicsEngine.add(this.mesh);
-    this.graphicsEngine.add(this.waterMesh);
-    this.graphicsEngine.add(this.decorations);
+      this.graphicsEngine.add(this.mesh);
+      this.graphicsEngine.add(this.waterMesh);
+      this.graphicsEngine.add(this.decorations);
+    } finally {
+      GraphicsUtils.tracker.resumeGC();
+      console.log('Chunk initAsync done');
+    }
   }
 
   // ... (yieldToMain, generateMesh)
@@ -92,7 +96,8 @@ export class TerrainChunk {
       animationMixers: this.mixers,
       zOffset: this.zOffset,
       biomeZStart: 0,
-      biomeZEnd: 0
+      biomeZEnd: 0,
+      decoHelper: new BiomeDecorationHelper()
     };
 
     Profiler.start('GenDecoBatch');
@@ -109,7 +114,7 @@ export class TerrainChunk {
     Profiler.end('GenDecoBatch');
 
     // Merge geometries and create meshes
-    this.mergeAndAddGeometries(geometriesByMaterial, geometryGroup);
+    context.decoHelper.mergeAndAddGeometries(geometriesByMaterial, geometryGroup);
 
     return geometryGroup;
   }
@@ -209,6 +214,7 @@ export class TerrainChunk {
     }
 
     const geometry = new THREE.BufferGeometry();
+    geometry.name = 'TerrainChunk - terrain';
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
@@ -224,20 +230,17 @@ export class TerrainChunk {
       255, 255, 255, 255  // Highlight
     ]);
     const gradientMap = new THREE.DataTexture(gradientColors, 3, 1, THREE.RGBAFormat);
+    gradientMap.name = 'TerrainChunk - terrain';
     gradientMap.needsUpdate = true;
     gradientMap.minFilter = THREE.NearestFilter;
     gradientMap.magFilter = THREE.NearestFilter;
 
     const material = new THREE.MeshToonMaterial({
+      name: 'TerrainChunk - terrain',
       vertexColors: true,
       gradientMap: gradientMap,
       side: THREE.DoubleSide
     });
-
-    // Register with disposer
-    this.disposer.add(geometry);
-    this.disposer.add(material);
-    this.disposer.add(gradientMap);
 
     const mesh = new THREE.Mesh(geometry, material);
     // Vertices are already in world coordinates, no mesh offset needed
@@ -249,60 +252,10 @@ export class TerrainChunk {
     return mesh;
   }
 
-
-
-  private mergeAndAddGeometries(
-    geometriesByMaterial: Map<THREE.Material, THREE.BufferGeometry[]>,
-    group: THREE.Group
-  ): void {
-    for (const [material, geometries] of geometriesByMaterial) {
-      if (geometries.length === 0) continue;
-      const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries);
-      this.disposer.add(mergedGeometry); // Register merged geo
-
-      const mesh = new THREE.Mesh(mergedGeometry, material);
-      // Material is shared from decorators, so we DON'T dispose it here
-
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      group.add(mesh);
-
-      // Dispose of the source geometries (clones) now that they are merged
-      for (const geometry of geometries) {
-        geometry.dispose();
-      }
-    }
-  }
-
   dispose() {
     this.graphicsEngine.remove(this.mesh);
     this.graphicsEngine.remove(this.waterMesh);
     this.graphicsEngine.remove(this.decorations);
-
-    // Disposer handles geometry, materials, and textures for main mesh and water mesh
-    this.disposer.dispose();
-
-    // Decorations disposal:
-    // mergeAndAddGeometries registered the merged geometries.
-    // Materials were shared (static), so we do NOT dispose them.
-    // However, if we added them to disposer in generateDecorations, we would have trouble.
-    // Checks: We did NOT add shared materials to disposer in mergeAndAddGeometries. Correct.
-
-    // Clear the group logic
-    // Explicitly dispose of any children in decorations group to be safe
-    this.decorations.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        if (child.geometry) child.geometry.dispose();
-        if (child.material) {
-          if (Array.isArray(child.material)) {
-            child.material.forEach(m => m.dispose());
-          } else {
-            child.material.dispose();
-          }
-        }
-      }
-    });
-    this.decorations.clear();
 
     // Stop animations
     this.mixers.forEach(mixer => mixer.stopAllAction());
@@ -316,6 +269,7 @@ export class TerrainChunk {
       TerrainChunk.RESOLUTION_X - 1,
       TerrainChunk.RESOLUTION_Z - 1
     );
+    geometry.name = 'TerrainChunk - water';
     geometry.rotateX(-Math.PI / 2);
 
     // Shift Z to be 0 to CHUNK_SIZE (PlaneGeometry is centered)
@@ -344,11 +298,8 @@ export class TerrainChunk {
         side: THREE.DoubleSide, // Ensure water is visible from below if needed, though mostly top-down
         fog: true
       });
+      GraphicsUtils.tracker.retain(TerrainChunk.waterMaterial);
     }
-
-    // Register geometry (unique per chunk)
-    this.disposer.add(geometry);
-    // DO NOT register waterMaterial (static shared)
 
     const mesh = new THREE.Mesh(geometry, TerrainChunk.waterMaterial);
     // Vertices are already in world coordinates, no mesh offset needed

@@ -1,4 +1,4 @@
-export type InputAction = 'forward' | 'backward' | 'left' | 'right' | 'stop' | 'viewMode' | 'debug' | 'paused' | 'skipBiome';
+export type InputAction = 'forward' | 'backward' | 'left' | 'right' | 'stop' | 'viewMode' | 'debug' | 'debugProfiler' | 'paused' | 'skipBiome';
 
 export class InputManager {
     // State tracked directly from event listeners
@@ -144,7 +144,11 @@ export class InputManager {
                 this.liveActions.add('viewMode');
                 break;
             case 'KeyZ':
-                this.liveActions.add('debug');
+                if (e.shiftKey) {
+                    this.liveActions.add('debugProfiler');
+                } else {
+                    this.liveActions.add('debug');
+                }
                 break;
             case 'Space':
                 this.liveActions.add('paused');
@@ -184,6 +188,7 @@ export class InputManager {
                 break;
             case 'KeyZ':
                 this.liveActions.delete('debug');
+                this.liveActions.delete('debugProfiler');
                 break;
             case 'Space':
                 this.liveActions.delete('paused');

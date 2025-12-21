@@ -44,6 +44,7 @@ export class Game {
     // Game State
     isPaused: boolean = false;
     debugMode: boolean = false;
+    profilerVisible: boolean = false;
     viewMode: 'close' | 'far' = 'close';
 
     // Collision Handling
@@ -284,11 +285,29 @@ export class Game {
         // Handle Global Toggles (Pause, Debug, ViewMode)
         if (this.inputManager.wasPressed('paused')) {
             this.isPaused = !this.isPaused;
-            // Prevent default behavior if needed, usually handled in InputManager to stop scrolling
         }
 
         if (this.inputManager.wasPressed('debug')) {
-            this.debugMode = !this.debugMode;
+            if (this.debugMode) {
+                this.debugMode = false;
+                this.profilerVisible = false;
+            } else {
+                this.debugMode = true;
+                this.profilerVisible = true;
+            }
+            this.terrainManager.setDebug(this.debugMode);
+            this.entityManager.setDebug(this.debugMode);
+        }
+
+        if (this.inputManager.wasPressed('debugProfiler')) {
+            if (this.profilerVisible && !this.debugMode) {
+                this.profilerVisible = false;
+            } else {
+                this.profilerVisible = true;
+                this.debugMode = false;
+            }
+            this.terrainManager.setDebug(this.debugMode);
+            this.entityManager.setDebug(this.debugMode);
         }
 
         if (this.inputManager.wasPressed('viewMode')) {
@@ -299,10 +318,10 @@ export class Game {
             this.skipToNextBiome();
         }
 
+        Profiler.setVisibility(this.profilerVisible);
+
         // Pause handling - skip all updates if paused
         if (this.isPaused) return;
-
-        Profiler.setVisibility(this.debugMode);
 
         // Update Physics
         Profiler.start('Physics');
@@ -320,8 +339,6 @@ export class Game {
         // Update Terrain
         if (this.boat.meshes.length > 0) {
             Profiler.start('Terrain');
-            this.terrainManager.setDebug(this.debugMode);
-            this.entityManager.setDebug(this.debugMode);
             this.terrainManager.update(this.boat, dt);
             // ObstacleManager update is now handled by TerrainManager events
             Profiler.end('Terrain');

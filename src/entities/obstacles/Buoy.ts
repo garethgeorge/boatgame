@@ -2,6 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class Buoy extends Entity {
 
@@ -41,35 +42,35 @@ export class Buoy extends Entity {
 
         const matRed = new THREE.MeshToonMaterial({ color: 0xFF0000 });
         const matWhite = new THREE.MeshToonMaterial({ color: 0xFFFFFF });
-        this.disposer.add(matRed);
-        this.disposer.add(matWhite);
+        GraphicsUtils.tracker.register(matRed);
+        GraphicsUtils.tracker.register(matWhite);
 
         // Bottom Red
         const bottomGeo = new THREE.CylinderGeometry(radius, radius * 0.8, height * 0.4, segments);
-        this.disposer.add(bottomGeo);
+        GraphicsUtils.tracker.register(bottomGeo);
         const bottom = new THREE.Mesh(bottomGeo, matRed);
         bottom.position.y = -height * 0.2;
         mesh.add(bottom);
 
         // Middle White
         const midGeo = new THREE.CylinderGeometry(radius, radius, height * 0.3, segments);
-        this.disposer.add(midGeo);
+        GraphicsUtils.tracker.register(midGeo);
         const mid = new THREE.Mesh(midGeo, matWhite);
         mid.position.y = height * 0.15;
         mesh.add(mid);
 
         // Top Red
         const topGeo = new THREE.CylinderGeometry(radius * 0.6, radius, height * 0.3, segments);
-        this.disposer.add(topGeo);
+        GraphicsUtils.tracker.register(topGeo);
         const top = new THREE.Mesh(topGeo, matRed);
         top.position.y = height * 0.45;
         mesh.add(top);
 
         // Light/Sensor on top
         const lightGeo = new THREE.SphereGeometry(0.2, 8, 8);
-        this.disposer.add(lightGeo);
+        GraphicsUtils.tracker.register(lightGeo);
         const lightMat = new THREE.MeshToonMaterial({ color: 0xFFFF00, emissive: 0x444400 });
-        this.disposer.add(lightMat);
+        GraphicsUtils.tracker.register(lightMat);
         const light = new THREE.Mesh(lightGeo, lightMat);
         light.position.y = height * 0.7;
         mesh.add(light);

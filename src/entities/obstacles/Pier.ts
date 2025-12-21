@@ -4,6 +4,7 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { CollectedBottles } from '../CollectedBottles';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class Pier extends Entity {
 
@@ -152,7 +153,7 @@ export class Pier extends Entity {
 
         // Deck
         const deckGeo = new THREE.BoxGeometry(length, 0.5, width);
-        this.disposer.add(deckGeo);
+        GraphicsUtils.tracker.register(deckGeo);
         const deck = new THREE.Mesh(deckGeo, Pier.getDeckMaterial());
         deck.position.y = 1.5; // Raised up
         mesh.add(deck);
@@ -233,7 +234,7 @@ export class Pier extends Entity {
 
         // 5. Dock Sign
         const signGeo = new THREE.BoxGeometry(4.0, 4.0, 0.1);
-        this.disposer.add(signGeo);
+        GraphicsUtils.tracker.register(signGeo);
         const signMesh = new THREE.Mesh(signGeo, Pier.getSignMaterials() as any);
 
         // Position on the Crossbar, facing the notch (+X)
@@ -260,7 +261,7 @@ export class Pier extends Entity {
 
         // Visual Mesh
         const segmentGeo = new THREE.BoxGeometry(segmentLength, 0.5, segmentWidth);
-        this.disposer.add(segmentGeo);
+        GraphicsUtils.tracker.register(segmentGeo);
         const segmentMesh = new THREE.Mesh(segmentGeo, Pier.getDeckMaterial());
 
         // Position visual

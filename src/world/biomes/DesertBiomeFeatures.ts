@@ -24,16 +24,16 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         const count = Math.floor(length * 16);
 
         for (let i = 0; i < count; i++) {
-            const position = this.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-            if (!this.decoHelper.isValidDecorationPosition(context, position)) continue;
+            const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
+            if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
 
             const rand = Math.random();
             if (rand > 0.95) {
                 const cactus = Decorations.getCactus();
-                this.decoHelper.positionAndCollectGeometry(cactus, position, context);
+                context.decoHelper.positionAndCollectGeometry(cactus, position, context);
             } else if (rand > 0.90) {
                 const rock = Decorations.getRock(this.id, Math.random());
-                this.decoHelper.positionAndCollectGeometry(rock, position, context);
+                context.decoHelper.positionAndCollectGeometry(rock, position, context);
             }
         }
     }

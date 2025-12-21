@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { DecorationFactory } from './DecorationFactory';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class CycadFactory implements DecorationFactory {
     private static readonly trunkMaterial = new THREE.MeshToonMaterial({ color: 0x5C4033 }); // Darker brown
@@ -12,11 +13,22 @@ export class CycadFactory implements DecorationFactory {
     } = { cycads: [] };
 
     async load(): Promise<void> {
+        // Retain static materials
+        GraphicsUtils.tracker.retain(CycadFactory.trunkMaterial);
+        GraphicsUtils.tracker.retain(CycadFactory.frondMaterial);
+        GraphicsUtils.tracker.retain(CycadFactory.coneMaterial);
+
+        // Clear existing cache and release old meshes
+        this.cache.cycads.forEach(c => GraphicsUtils.tracker.release(c.mesh));
+        this.cache.cycads = [];
+
         // Pre-generate cycads
         console.log("Generating Cycad Cache...");
 
         for (let i = 0; i < 20; i++) {
-            this.cache.cycads.push({ mesh: this.createCycad() });
+            const mesh = this.createCycad();
+            GraphicsUtils.tracker.retain(mesh);
+            this.cache.cycads.push({ mesh });
         }
     }
 

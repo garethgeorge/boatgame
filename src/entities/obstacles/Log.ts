@@ -2,6 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class Log extends Entity {
 
@@ -19,9 +20,11 @@ export class Log extends Entity {
         deckTexture.repeat.set(4, 8);
 
         const deckMaterial = new THREE.MeshToonMaterial({ map: deckTexture });
+        deckMaterial.name = 'Log bark';
         deckMaterial.color.set(0xa87660);
 
         Log.barkMaterial = deckMaterial;
+        GraphicsUtils.tracker.retain(deckMaterial);
 
         return Log.barkMaterial;
     }
@@ -40,9 +43,11 @@ export class Log extends Entity {
         endTexture.center.set(0.5, 0.5);
 
         const endMaterial = new THREE.MeshToonMaterial({ map: endTexture });
+        endMaterial.name = 'Log end';
         endMaterial.color.set(0xe7c55e);
 
         Log.endMaterial = endMaterial;
+        GraphicsUtils.tracker.retain(endMaterial);
 
         return Log.endMaterial;
     }
@@ -78,6 +83,8 @@ export class Log extends Entity {
         // We want it along X-axis to match Physics Box(length, thickness).
         // Rotate around Z axis by 90 deg.
         const geo = new THREE.CylinderGeometry(0.6, 0.6, length, 12);
+        geo.name = 'Log';
+        GraphicsUtils.tracker.register(geo);
 
         // Create material array: [side, top cap, bottom cap]
         const materials = [
@@ -85,8 +92,6 @@ export class Log extends Entity {
             Log.getEndMaterial(),    // Top cap
             Log.getEndMaterial()     // Bottom cap
         ];
-
-        this.disposer.add(geo);
 
         const mesh = new THREE.Mesh(geo, materials);
         this.meshes.push(mesh);

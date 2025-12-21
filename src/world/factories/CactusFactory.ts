@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { DecorationFactory } from './DecorationFactory';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class CactusFactory implements DecorationFactory {
     private static readonly cactusMaterial = new THREE.MeshToonMaterial({ color: 0x6B8E23 }); // Olive Drab
@@ -7,9 +8,18 @@ export class CactusFactory implements DecorationFactory {
     private cache: THREE.Group[] = [];
 
     async load(): Promise<void> {
+        // Retain static materials
+        GraphicsUtils.tracker.retain(CactusFactory.cactusMaterial);
+
+        // Clear existing cache and release old meshes
+        this.cache.forEach(m => GraphicsUtils.tracker.release(m));
+        this.cache = [];
+
         console.log("Generating Cactus Cache...");
         for (let i = 0; i < 20; i++) {
-            this.cache.push(this.createCactus());
+            const mesh = this.createCactus();
+            GraphicsUtils.tracker.retain(mesh);
+            this.cache.push(mesh);
         }
     }
 

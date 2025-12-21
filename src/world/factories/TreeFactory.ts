@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { DecorationFactory } from './DecorationFactory';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class TreeFactory implements DecorationFactory {
     private static readonly treeMaterial = new THREE.MeshToonMaterial({ color: 0x8B4513 }); // Brown trunk
@@ -12,7 +13,13 @@ export class TreeFactory implements DecorationFactory {
     } = { trees: [] };
 
     async load(): Promise<void> {
-        // Clear existing cache to prevent unlimited growth if load() is called multiple times
+        // Retain static materials
+        GraphicsUtils.tracker.retain(TreeFactory.treeMaterial);
+        GraphicsUtils.tracker.retain(TreeFactory.leafMaterial);
+        GraphicsUtils.tracker.retain(TreeFactory.snowyLeafMaterial);
+
+        // Clear existing cache and release old meshes
+        this.cache.trees.forEach(t => GraphicsUtils.tracker.release(t.mesh));
         this.cache.trees = [];
 
         // Pre-generate trees
@@ -21,17 +28,23 @@ export class TreeFactory implements DecorationFactory {
         // Generate Standard Trees
         for (let i = 0; i < 50; i++) {
             const wetness = Math.random();
-            this.cache.trees.push({ mesh: this.createTree(wetness, false, false), wetness, isSnowy: false, isLeafless: false });
+            const mesh = this.createTree(wetness, false, false);
+            GraphicsUtils.tracker.retain(mesh);
+            this.cache.trees.push({ mesh, wetness, isSnowy: false, isLeafless: false });
         }
         // Generate Snowy Trees
         for (let i = 0; i < 30; i++) {
             const wetness = Math.random();
-            this.cache.trees.push({ mesh: this.createTree(wetness, true, false), wetness, isSnowy: true, isLeafless: false });
+            const mesh = this.createTree(wetness, true, false);
+            GraphicsUtils.tracker.retain(mesh);
+            this.cache.trees.push({ mesh, wetness, isSnowy: true, isLeafless: false });
         }
         // Generate Leafless Trees (for Ice Biome)
         for (let i = 0; i < 20; i++) {
             const wetness = Math.random();
-            this.cache.trees.push({ mesh: this.createTree(wetness, false, true), wetness, isSnowy: false, isLeafless: true });
+            const mesh = this.createTree(wetness, false, true);
+            GraphicsUtils.tracker.retain(mesh);
+            this.cache.trees.push({ mesh, wetness, isSnowy: false, isLeafless: true });
         }
     }
 

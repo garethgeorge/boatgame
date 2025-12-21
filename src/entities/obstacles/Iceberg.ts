@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class Iceberg extends Entity {
     private animationMixer?: THREE.AnimationMixer;
@@ -60,7 +61,7 @@ export class Iceberg extends Entity {
         };
 
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-        this.disposer.add(geometry);
+        GraphicsUtils.tracker.register(geometry);
 
         // Center the geometry
         geometry.center();
@@ -71,7 +72,7 @@ export class Iceberg extends Entity {
             opacity: 0.9,
             side: THREE.DoubleSide
         });
-        this.disposer.add(material);
+        GraphicsUtils.tracker.register(material);
         // @ts-ignore
         material.flatShading = true; // Works in runtime
         material.needsUpdate = true;

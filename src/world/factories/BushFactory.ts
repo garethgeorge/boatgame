@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { DecorationFactory } from './DecorationFactory';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class BushFactory implements DecorationFactory {
     private static readonly dryBushMaterial = new THREE.MeshToonMaterial({ color: 0x8B5A2B }); // Brownish
@@ -8,10 +9,20 @@ export class BushFactory implements DecorationFactory {
     private cache: { mesh: THREE.Group, wetness: number }[] = [];
 
     async load(): Promise<void> {
+        // Retain static materials
+        GraphicsUtils.tracker.retain(BushFactory.dryBushMaterial);
+        GraphicsUtils.tracker.retain(BushFactory.greenBushMaterial);
+
+        // Clear existing cache and release old meshes
+        this.cache.forEach(b => GraphicsUtils.tracker.release(b.mesh));
+        this.cache = [];
+
         console.log("Generating Bush Cache...");
         for (let i = 0; i < 50; i++) {
             const wetness = Math.random();
-            this.cache.push({ mesh: this.createBush(wetness), wetness });
+            const mesh = this.createBush(wetness);
+            GraphicsUtils.tracker.retain(mesh);
+            this.cache.push({ mesh, wetness });
         }
     }
 

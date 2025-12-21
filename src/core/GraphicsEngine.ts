@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GraphicsUtils } from './GraphicsUtils';
 import { TerrainChunk } from '../world/TerrainChunk';
 import { Profiler } from './Profiler';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
@@ -17,6 +18,8 @@ export class GraphicsEngine {
   sobelPass: ShaderPass;
   fxaaPass: ShaderPass;
   outputPass: OutputPass;
+  private gcTimer: number = 0;
+  private GC_INTERVAL: number = 2.0; // Run GC every 2 seconds
 
 
   constructor(container: HTMLElement) {
@@ -66,6 +69,13 @@ export class GraphicsEngine {
 
   render(dt: number) {
     this.composer.render();
+
+    // Periodically run garbage collection
+    this.gcTimer += dt;
+    if (this.gcTimer > this.GC_INTERVAL) {
+      this.gcTimer %= this.GC_INTERVAL;
+      GraphicsUtils.tracker.update(this.scene);
+    }
   }
 
   onWindowResize() {
@@ -80,6 +90,8 @@ export class GraphicsEngine {
   }
 
   add(object: THREE.Object3D) {
+    //console.trace('Add scene object');
+    GraphicsUtils.tracker.register(object);
     this.scene.add(object);
   }
 

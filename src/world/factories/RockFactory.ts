@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createNoise3D } from 'simplex-noise';
 import { DecorationFactory } from './DecorationFactory';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class RockFactory implements DecorationFactory {
     private static readonly rockMaterialDesert = new THREE.MeshToonMaterial({ color: 0xE6C288 }); // Yellow Sandstone
@@ -24,16 +25,30 @@ export class RockFactory implements DecorationFactory {
     private cache: { mesh: THREE.Group, size: number, isIcy: boolean }[] = [];
 
     async load(): Promise<void> {
+        // Retain static materials
+        GraphicsUtils.tracker.retain(RockFactory.rockMaterialDesert);
+        GraphicsUtils.tracker.retain(RockFactory.rockMaterialForest);
+        GraphicsUtils.tracker.retain(RockFactory.rockMaterialSwamp);
+        GraphicsUtils.tracker.retain(RockFactory.iceRockMaterial);
+
+        // Clear existing cache and release old meshes
+        this.cache.forEach(r => GraphicsUtils.tracker.release(r.mesh));
+        this.cache = [];
+
         console.log("Generating Rock Cache...");
         // Generate Rocks
         for (let i = 0; i < 30; i++) {
             const size = Math.random();
-            this.cache.push({ mesh: this.createRock(size, false), size, isIcy: false });
+            const mesh = this.createRock(size, false);
+            GraphicsUtils.tracker.retain(mesh);
+            this.cache.push({ mesh, size, isIcy: false });
         }
         // Generate Icy Rocks
         for (let i = 0; i < 20; i++) {
             const size = Math.random();
-            this.cache.push({ mesh: this.createRock(size, true), size, isIcy: true });
+            const mesh = this.createRock(size, true);
+            GraphicsUtils.tracker.retain(mesh);
+            this.cache.push({ mesh, size, isIcy: true });
         }
     }
 
