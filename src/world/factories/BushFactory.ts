@@ -3,8 +3,8 @@ import { DecorationFactory } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class BushFactory implements DecorationFactory {
-    private static readonly dryBushMaterial = new THREE.MeshToonMaterial({ color: 0x8B5A2B }); // Brownish
-    private static readonly greenBushMaterial = new THREE.MeshToonMaterial({ color: 0x32CD32 }); // Lime Green
+    private static readonly dryBushMaterial = new THREE.MeshToonMaterial({ color: 0x8B5A2B, name: 'Bush - Dry Material' }); // Brownish
+    private static readonly greenBushMaterial = new THREE.MeshToonMaterial({ color: 0x32CD32, name: 'Bush - Green Material' }); // Lime Green
 
     private cache: { mesh: THREE.Group, wetness: number }[] = [];
 
@@ -66,6 +66,7 @@ export class BushFactory implements DecorationFactory {
                 for (let k = 0; k < segments; k++) {
                     const segWidth = width * (1 - k / segments);
                     const segGeo = new THREE.PlaneGeometry(segWidth, segmentLen);
+                    segGeo.name = 'Bush - Fern Frond Segment Geometry';
                     segGeo.translate(0, segmentLen / 2, 0);
 
                     const seg = new THREE.Mesh(segGeo, BushFactory.greenBushMaterial);
@@ -92,6 +93,7 @@ export class BushFactory implements DecorationFactory {
                 const mid = start.clone().add(end).multiplyScalar(0.5);
 
                 const geo = new THREE.CylinderGeometry(thick * 0.7, thick, len, 4);
+                geo.name = 'Bush - Dead Branch Geometry';
                 const mesh = new THREE.Mesh(geo, material);
                 mesh.position.copy(mid);
                 mesh.lookAt(end);

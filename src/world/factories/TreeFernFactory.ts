@@ -3,8 +3,8 @@ import { DecorationFactory } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class TreeFernFactory implements DecorationFactory {
-    private static readonly trunkMaterial = new THREE.MeshToonMaterial({ color: 0x3d2817 }); // Dark fibrous brown
-    private static readonly frondMaterial = new THREE.MeshToonMaterial({ color: 0x4a7023 }); // Fern Green
+    private static readonly trunkMaterial = new THREE.MeshToonMaterial({ color: 0x3d2817, name: 'TreeFern - Trunk Material' }); // Dark fibrous brown
+    private static readonly frondMaterial = new THREE.MeshToonMaterial({ color: 0x4a7023, name: 'TreeFern - Frond Material' }); // Fern Green
 
     private cache: {
         ferns: { mesh: THREE.Group }[];
@@ -48,6 +48,7 @@ export class TreeFernFactory implements DecorationFactory {
 
         // Trunk
         const trunkGeo = new THREE.CylinderGeometry(trunkRadius * 0.8, trunkRadius, trunkHeight, 6);
+        trunkGeo.name = 'TreeFern - Trunk Geometry';
         const trunk = new THREE.Mesh(trunkGeo, TreeFernFactory.trunkMaterial);
         trunk.position.y = trunkHeight / 2 - 0.1;
         group.add(trunk);
@@ -60,6 +61,7 @@ export class TreeFernFactory implements DecorationFactory {
             // Leaf is a box shape we can sculpt
             // note that applying droop also moves the box to start at y=0
             const frondGeo = new THREE.BoxGeometry(1.0, crownRadius, 0.1, 1, 4, 1);
+            frondGeo.name = 'TreeFern - Frond Geometry';
             this.applyFrondDroop(frondGeo);
             const frond = new THREE.Mesh(frondGeo, TreeFernFactory.frondMaterial);
 

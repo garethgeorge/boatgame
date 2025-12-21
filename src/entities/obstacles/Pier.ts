@@ -28,6 +28,7 @@ export class Pier extends Entity {
         deckTexture.repeat.set(4, 1);
 
         const deckMaterial = new THREE.MeshToonMaterial({ map: deckTexture });
+        deckMaterial.name = 'Pier - Deck Material';
         deckMaterial.color.set(0xd48e43);
 
         Pier.deckMaterial = deckMaterial;
@@ -45,11 +46,12 @@ export class Pier extends Entity {
         pileTexture.wrapT = THREE.RepeatWrapping;
         pileTexture.repeat.set(0.25, 0.25);
 
-        const pileMaterial = new THREE.MeshToonMaterial({ map: pileTexture });
+        const pileMaterial = new THREE.MeshToonMaterial({ map: pileTexture, name: 'Pier - Pile Material' });
         pileMaterial.color.set(0x8B4513);
 
         // Create pile geometry and mesh
         const pileGeometry = new THREE.CylinderGeometry(0.2, 0.2, 4.0, 8);
+        pileGeometry.name = 'Pier - Pile Geometry';
         Pier.pileMesh = new THREE.Mesh(pileGeometry, pileMaterial);
 
         return Pier.pileMesh;
@@ -73,16 +75,19 @@ export class Pier extends Entity {
         signBackTexture.offset.set(0, 0);
 
         const frontMat = new THREE.MeshToonMaterial({
+            name: 'Pier - Sign Front Material',
             map: signFrontTexture,
             transparent: true,
         });
 
         const backMat = new THREE.MeshToonMaterial({
+            name: 'Pier - Sign Back Material',
             map: signBackTexture,
             transparent: true,
         });
 
         const sideMat = new THREE.MeshToonMaterial({
+            name: 'Pier - Sign Side Material',
             transparent: true,
             opacity: 0
         });
@@ -153,6 +158,7 @@ export class Pier extends Entity {
 
         // Deck
         const deckGeo = new THREE.BoxGeometry(length, 0.5, width);
+        deckGeo.name = 'Pier - Standard Deck Geometry';
         GraphicsUtils.tracker.register(deckGeo);
         const deck = new THREE.Mesh(deckGeo, Pier.getDeckMaterial());
         deck.position.y = 1.5; // Raised up
@@ -234,6 +240,7 @@ export class Pier extends Entity {
 
         // 5. Dock Sign
         const signGeo = new THREE.BoxGeometry(4.0, 4.0, 0.1);
+        signGeo.name = 'Pier - Sign Geometry';
         GraphicsUtils.tracker.register(signGeo);
         const signMesh = new THREE.Mesh(signGeo, Pier.getSignMaterials() as any);
 
@@ -261,6 +268,7 @@ export class Pier extends Entity {
 
         // Visual Mesh
         const segmentGeo = new THREE.BoxGeometry(segmentLength, 0.5, segmentWidth);
+        segmentGeo.name = 'Pier - Dock Segment Geometry';
         GraphicsUtils.tracker.register(segmentGeo);
         const segmentMesh = new THREE.Mesh(segmentGeo, Pier.getDeckMaterial());
 

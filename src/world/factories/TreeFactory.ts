@@ -3,9 +3,9 @@ import { DecorationFactory } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class TreeFactory implements DecorationFactory {
-    private static readonly treeMaterial = new THREE.MeshToonMaterial({ color: 0x8B4513 }); // Brown trunk
-    private static readonly leafMaterial = new THREE.MeshToonMaterial({ color: 0x228B22 }); // Forest Green
-    private static readonly snowyLeafMaterial = new THREE.MeshToonMaterial({ color: 0xFFFFFF }); // White
+    private static readonly treeMaterial = new THREE.MeshToonMaterial({ color: 0x8B4513, name: 'Tree - Trunk Material' }); // Brown trunk
+    private static readonly leafMaterial = new THREE.MeshToonMaterial({ color: 0x228B22, name: 'Tree - Leaf Material' }); // Forest Green
+    private static readonly snowyLeafMaterial = new THREE.MeshToonMaterial({ color: 0xFFFFFF, name: 'Tree - Snowy Leaf Material' }); // White
 
     // Cache stores arrays of pre-generated trees
     private cache: {
@@ -77,6 +77,7 @@ export class TreeFactory implements DecorationFactory {
 
         // Trunk
         const trunkGeo = new THREE.CylinderGeometry(trunkThickness * 0.6, trunkThickness, height, 6);
+        trunkGeo.name = 'Tree - Trunk Geometry';
         const trunk = new THREE.Mesh(trunkGeo, TreeFactory.treeMaterial);
         trunk.position.y = height / 2;
         group.add(trunk);
@@ -92,6 +93,7 @@ export class TreeFactory implements DecorationFactory {
             const branchThick = trunkThickness * 0.5;
 
             const branchGeo = new THREE.CylinderGeometry(branchThick * 0.5, branchThick, branchLen, 4);
+            branchGeo.name = 'Tree - Branch Geometry';
             const branch = new THREE.Mesh(branchGeo, TreeFactory.treeMaterial);
 
             // Position on trunk
@@ -116,6 +118,7 @@ export class TreeFactory implements DecorationFactory {
                 const subThick = branchThick * 0.7;
 
                 const subGeo = new THREE.CylinderGeometry(subThick * 0.5, subThick, subLen, 4);
+                subGeo.name = 'Tree - Sub-branch Geometry';
                 const subBranch = new THREE.Mesh(subGeo, TreeFactory.treeMaterial);
 
                 // Position along parent branch
@@ -134,6 +137,7 @@ export class TreeFactory implements DecorationFactory {
                 if (!isLeafless) {
                     const leafSize = 1.0 + wetness * 0.5;
                     const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
+                    leafGeo.name = 'Tree - Sub-branch Leaf Geometry';
                     const leafMesh = new THREE.Mesh(leafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial);
                     leafMesh.position.set(0, subLen / 2, 0);
                     subBranch.add(leafMesh);
@@ -144,6 +148,7 @@ export class TreeFactory implements DecorationFactory {
             if (!isLeafless) {
                 const leafSize = 1.2 + wetness * 0.6;
                 const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
+                leafGeo.name = 'Tree - Branch Leaf Geometry';
                 const leafMesh = new THREE.Mesh(leafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial);
 
                 leafMesh.position.set(0, branchLen / 2, 0);
@@ -155,6 +160,7 @@ export class TreeFactory implements DecorationFactory {
         if (!isLeafless) {
             const topLeafSize = 1.5 + wetness * 0.8;
             const topLeafGeo = new THREE.IcosahedronGeometry(topLeafSize, 0);
+            topLeafGeo.name = 'Tree - Top Leaf Geometry';
             const topLeaf = new THREE.Mesh(topLeafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial);
             topLeaf.position.y = height;
             group.add(topLeaf);

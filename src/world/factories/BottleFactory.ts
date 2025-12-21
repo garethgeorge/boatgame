@@ -21,9 +21,6 @@ export class BottleFactory implements DecorationFactory {
         this.animations.push(this.createDropAnimation());
         this.animations.push(this.createArcAnimation(-1));
         this.animations.push(this.createArcAnimation(1));
-
-        // Retain animations too
-        this.animations.forEach(a => GraphicsUtils.tracker.retain(a));
     }
 
     create(color: number): THREE.Group {
@@ -49,6 +46,7 @@ export class BottleFactory implements DecorationFactory {
         bodyGeo.name = 'Bottle Body';
 
         const glassMat = new THREE.MeshToonMaterial({
+            name: 'Bottle - Glass Material',
             color: color,
             transparent: true,
             opacity: 0.6
@@ -72,7 +70,7 @@ export class BottleFactory implements DecorationFactory {
         const corkGeo = new THREE.CylinderGeometry(0.24, 0.2, 0.3, 8);
         corkGeo.name = 'Bottle Cork';
 
-        const corkMat = new THREE.MeshToonMaterial({ color: 0x8B4513 });
+        const corkMat = new THREE.MeshToonMaterial({ color: 0x8B4513, name: 'Bottle - Cork Material' });
         corkMat.name = 'Bottle Cork';
 
         const cork = new THREE.Mesh(corkGeo, corkMat);
@@ -84,7 +82,7 @@ export class BottleFactory implements DecorationFactory {
         const paperGeo = new THREE.PlaneGeometry(0.3, 0.6);
         paperGeo.name = 'Bottle Paper';
 
-        const paperMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide });
+        const paperMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide, name: 'Bottle - Paper Material' });
         paperMat.name = 'Bottle Paper';
 
         const paper = new THREE.Mesh(paperGeo, paperMat);

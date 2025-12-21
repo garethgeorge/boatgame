@@ -19,6 +19,7 @@ export class GraphicsUtils {
 
                 // Create new MeshToonMaterial with the original texture
                 const toonMaterial = new THREE.MeshToonMaterial({
+                    name: `Toon Material: ${originalMaterial.name || 'unnamed'}`,
                     map: colorTexture,
                     gradientMap: this.getToonGradientMap(),
                     toneMapped: false,
@@ -38,6 +39,7 @@ export class GraphicsUtils {
                 const materials = Array.isArray(child.material) ? child.material : [child.material];
                 const newMaterials = materials.map(m => {
                     const clone = m.clone();
+                    clone.name = `${m.name || 'unnamed'} (cloned)`;
                     clone.transparent = true;
                     this.tracker.register(clone);
                     return clone;
@@ -101,6 +103,7 @@ export class GraphicsUtils {
             height,
             THREE.RGBAFormat
         );
+        texture.name = 'Toon Gradient Map';
 
         // Important: The texture needs to be updated after creation if data is modified later, 
         // but for static data defined at creation, this is good practice.

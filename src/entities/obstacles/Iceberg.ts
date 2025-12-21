@@ -61,12 +61,14 @@ export class Iceberg extends Entity {
         };
 
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        geometry.name = 'Iceberg - Geometry';
         GraphicsUtils.tracker.register(geometry);
 
         // Center the geometry
         geometry.center();
 
         const material = new THREE.MeshToonMaterial({
+            name: 'Iceberg - Material',
             color: 0xE0F6FF, // Ice Blue
             transparent: true,
             opacity: 0.9,

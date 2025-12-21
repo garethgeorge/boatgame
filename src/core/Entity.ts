@@ -132,6 +132,7 @@ export abstract class Entity {
 
         let mesh: THREE.Mesh | null = null;
         const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+        material.name = `Debug - Physics Material`;
         GraphicsUtils.tracker.register(material);
 
         if (type === 'circle') {
@@ -140,6 +141,7 @@ export abstract class Entity {
           const center = circle.getCenter();
 
           const geometry = new THREE.CylinderGeometry(radius, radius, 1, 16);
+          geometry.name = `Debug - Physics Circle`;
           GraphicsUtils.tracker.register(geometry);
           mesh = new THREE.Mesh(geometry, material);
           mesh.position.set(center.x, 0, center.y); // Local offset
@@ -157,8 +159,11 @@ export abstract class Entity {
           }
 
           const geometry = new THREE.BufferGeometry().setFromPoints(points);
+          geometry.name = `Debug - Physics Polygon`;
           GraphicsUtils.tracker.register(geometry);
-          const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xff0000 }));
+          const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+          lineMaterial.name = `Debug - Physics Line Material`;
+          const line = new THREE.Line(geometry, lineMaterial);
           GraphicsUtils.tracker.register(line.material as THREE.Material);
 
           group.add(line);

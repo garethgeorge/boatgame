@@ -3,9 +3,9 @@ import { DecorationFactory } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class CycadFactory implements DecorationFactory {
-    private static readonly trunkMaterial = new THREE.MeshToonMaterial({ color: 0x5C4033 }); // Darker brown
-    private static readonly frondMaterial = new THREE.MeshToonMaterial({ color: 0x2E8B57 }); // Sea Green / Dark Green
-    private static readonly coneMaterial = new THREE.MeshToonMaterial({ color: 0xCD853F }); // Peru (brownish orange)
+    private static readonly trunkMaterial = new THREE.MeshToonMaterial({ color: 0x5C4033, name: 'Cycad - Trunk Material' }); // Darker brown
+    private static readonly frondMaterial = new THREE.MeshToonMaterial({ color: 0x2E8B57, name: 'Cycad - Frond Material' }); // Sea Green / Dark Green
+    private static readonly coneMaterial = new THREE.MeshToonMaterial({ color: 0xCD853F, name: 'Cycad - Cone Material' }); // Peru (brownish orange)
 
     // Cache stores arrays of pre-generated cycads
     private cache: {
@@ -62,6 +62,7 @@ export class CycadFactory implements DecorationFactory {
         // Trunk
         // Rough, scarred look - maybe just a cylinder for now
         const trunkGeo = new THREE.CylinderGeometry(trunkRadius * 0.7, trunkRadius, trunkHeight, 5);
+        trunkGeo.name = 'Cycad - Trunk Geometry';
         const trunk = new THREE.Mesh(trunkGeo, CycadFactory.trunkMaterial);
         trunk.position.y = trunkHeight / 2 - 0.1;  // to bury it in the ground
         group.add(trunk);
@@ -78,6 +79,7 @@ export class CycadFactory implements DecorationFactory {
             // Cyclinder is created at origin and with center along y axis
             // Top radius will be the width at the tip, bottom is the width at the frond start
             const frondGeo = new THREE.CylinderGeometry(0.01, 0.2, crownRadius, 4);
+            frondGeo.name = 'Cycad - Frond Geometry';
             // Translate geometry so the base is at the origin (0,0,0)
             frondGeo.translate(0, crownRadius / 2, 0);
 
@@ -108,6 +110,7 @@ export class CycadFactory implements DecorationFactory {
             const coneRadius = trunkRadius * 0.7;
             const coneHeight = coneRadius * 6.0;
             const coneGeo = new THREE.ConeGeometry(coneRadius, coneHeight, 6);
+            coneGeo.name = 'Cycad - Cone Geometry';
             const cone = new THREE.Mesh(coneGeo, CycadFactory.coneMaterial);
             cone.position.y = crownY + coneHeight / 2;
             group.add(cone);

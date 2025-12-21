@@ -10,8 +10,9 @@ export class Mangrove extends Entity {
   private static readonly CACHE_SIZE = 100;
 
   // Materials
-  private static trunkMaterial = new THREE.MeshToonMaterial({ color: 0x5D5346 }); // Darker swamp wood
+  private static trunkMaterial = new THREE.MeshToonMaterial({ color: 0x5D5346, name: 'Mangrove - Trunk Material' }); // Darker swamp wood
   private static leafMaterial = new THREE.MeshToonMaterial({
+    name: 'Mangrove - Leaf Material',
     color: 0xffffff, // White base for vertex colors
     vertexColors: true
   });
@@ -124,6 +125,7 @@ export class Mangrove extends Entity {
 
       // Thicker roots
       const tubeGeo = new THREE.TubeGeometry(curve, 8, 0.3 + Math.random() * 0.2, 5, false);
+      tubeGeo.name = 'Mangrove - Root Geometry';
       const root = new THREE.Mesh(tubeGeo, this.trunkMaterial);
       root.castShadow = true;
       root.receiveShadow = true;
@@ -160,6 +162,7 @@ export class Mangrove extends Entity {
     // Let's stick to constant radius 1.2 (average of previous 0.9 and 1.5).
 
     const trunkGeo = new THREE.TubeGeometry(trunkCurve, 8, 1.2, 7, false);
+    trunkGeo.name = 'Mangrove - Trunk Geometry';
     const trunk = new THREE.Mesh(trunkGeo, this.trunkMaterial);
     trunk.castShadow = true;
     trunk.receiveShadow = true;
@@ -176,6 +179,7 @@ export class Mangrove extends Entity {
       const len = (2.0 + Math.random() * 1.5) * 4.5;
 
       const branchGeo = new THREE.CylinderGeometry(0.3, 0.6, len, 5);
+      branchGeo.name = 'Mangrove - Branch Geometry';
       const branch = new THREE.Mesh(branchGeo, this.trunkMaterial);
 
       // Branch position/rotation in Group space
@@ -305,6 +309,7 @@ export class Mangrove extends Entity {
     const radius = 2.0 + Math.random() * 1.5;
     const segments = 7; // Low poly, odd number for irregularity
     const geo = new THREE.CylinderGeometry(radius, radius, 0.1, segments);
+    geo.name = 'Mangrove - Leaf Disk Geometry';
 
     // Modulate vertices to make it irregular
     const posAttribute = geo.attributes.position;

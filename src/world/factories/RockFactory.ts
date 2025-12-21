@@ -4,10 +4,10 @@ import { DecorationFactory } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class RockFactory implements DecorationFactory {
-    private static readonly rockMaterialDesert = new THREE.MeshToonMaterial({ color: 0xE6C288 }); // Yellow Sandstone
-    private static readonly rockMaterialForest = new THREE.MeshToonMaterial({ color: 0x888888 }); // Grey
-    private static readonly rockMaterialSwamp = new THREE.MeshToonMaterial({ color: 0x4D3E30 }); // Muddy Brown
-    private static readonly iceRockMaterial = new THREE.MeshToonMaterial({ color: 0xE0F6FF }); // Ice Blue
+    private static readonly rockMaterialDesert = new THREE.MeshToonMaterial({ color: 0xE6C288, name: 'Rock - Desert Material' }); // Yellow Sandstone
+    private static readonly rockMaterialForest = new THREE.MeshToonMaterial({ color: 0x888888, name: 'Rock - Forest Material' }); // Grey
+    private static readonly rockMaterialSwamp = new THREE.MeshToonMaterial({ color: 0x4D3E30, name: 'Rock - Swamp Material' }); // Muddy Brown
+    private static readonly iceRockMaterial = new THREE.MeshToonMaterial({ color: 0xE0F6FF, name: 'Rock - Ice Material' }); // Ice Blue
 
     private static rockNoise3D = createNoise3D();
 
@@ -112,6 +112,7 @@ export class RockFactory implements DecorationFactory {
 
         const detail = size > 0.5 ? 1 : 0;
         const geo = new THREE.IcosahedronGeometry(baseScale, detail);
+        geo.name = 'Rock - Geometry';
 
         const posAttribute = geo.attributes.position;
         const vertex = new THREE.Vector3();
@@ -169,6 +170,7 @@ export class RockFactory implements DecorationFactory {
             const size2 = size * 0.5;
             const scale2 = baseScale * 0.5;
             const geo2 = new THREE.IcosahedronGeometry(scale2, 0);
+            geo2.name = 'Rock - Cluster Geometry';
 
             const posAttribute2 = geo2.attributes.position;
             const vertex2 = new THREE.Vector3();

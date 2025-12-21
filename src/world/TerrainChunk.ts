@@ -296,7 +296,8 @@ export class TerrainChunk {
         fragmentShader: WaterShader.fragmentShader,
         transparent: true,
         side: THREE.DoubleSide, // Ensure water is visible from below if needed, though mostly top-down
-        fog: true
+        fog: true,
+        name: 'TerrainChunk - waterMaterial'
       });
       GraphicsUtils.tracker.retain(TerrainChunk.waterMaterial);
     }
