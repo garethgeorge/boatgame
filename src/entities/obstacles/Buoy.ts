@@ -82,6 +82,8 @@ export class Buoy extends Entity {
         mesh.position.y = 0;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
+
+        GraphicsUtils.tracker.register(mesh);
     }
 
     wasHitByPlayer() {

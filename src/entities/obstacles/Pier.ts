@@ -23,12 +23,14 @@ export class Pier extends Entity {
         // Load and create deck material with texture
         const textureLoader = new THREE.TextureLoader();
         const deckTexture = textureLoader.load('assets/deck-plank-texture.png');
+        GraphicsUtils.tracker.register(deckTexture);
         deckTexture.wrapS = THREE.RepeatWrapping;
         deckTexture.wrapT = THREE.RepeatWrapping;
         deckTexture.repeat.set(4, 1);
 
         const deckMaterial = new THREE.MeshToonMaterial({ map: deckTexture });
         deckMaterial.name = 'Pier - Deck Material';
+        GraphicsUtils.tracker.register(deckMaterial);
         deckMaterial.color.set(0xd48e43);
 
         Pier.deckMaterial = deckMaterial;
@@ -42,16 +44,19 @@ export class Pier extends Entity {
         // Load and create pile material with texture
         const textureLoader = new THREE.TextureLoader();
         const pileTexture = textureLoader.load('assets/wood-piling-texture.png');
+        GraphicsUtils.tracker.register(pileTexture);
         pileTexture.wrapS = THREE.RepeatWrapping;
         pileTexture.wrapT = THREE.RepeatWrapping;
         pileTexture.repeat.set(0.25, 0.25);
 
         const pileMaterial = new THREE.MeshToonMaterial({ map: pileTexture, name: 'Pier - Pile Material' });
+        GraphicsUtils.tracker.register(pileMaterial);
         pileMaterial.color.set(0x8B4513);
 
         // Create pile geometry and mesh
         const pileGeometry = new THREE.CylinderGeometry(0.2, 0.2, 4.0, 8);
         pileGeometry.name = 'Pier - Pile Geometry';
+        GraphicsUtils.tracker.register(pileGeometry);
         Pier.pileMesh = new THREE.Mesh(pileGeometry, pileMaterial);
 
         return Pier.pileMesh;
@@ -64,7 +69,9 @@ export class Pier extends Entity {
 
         // Load the texture once and clone it for the back
         const signFrontTexture = textureLoader.load('assets/dock-sign.png');
+        GraphicsUtils.tracker.register(signFrontTexture);
         const signBackTexture = signFrontTexture.clone();
+        GraphicsUtils.tracker.register(signBackTexture);
 
         // Top Half for Front
         signFrontTexture.repeat.set(1, 0.5);
@@ -79,18 +86,21 @@ export class Pier extends Entity {
             map: signFrontTexture,
             transparent: true,
         });
+        GraphicsUtils.tracker.register(frontMat);
 
         const backMat = new THREE.MeshToonMaterial({
             name: 'Pier - Sign Back Material',
             map: signBackTexture,
             transparent: true,
         });
+        GraphicsUtils.tracker.register(backMat);
 
         const sideMat = new THREE.MeshToonMaterial({
             name: 'Pier - Sign Side Material',
             transparent: true,
             opacity: 0
         });
+        GraphicsUtils.tracker.register(sideMat);
 
         // BoxGeometry material index order: x+, x-, y+, y-, z+, z-
         // We want Front to be z+ (index 4) and Back to be z- (index 5)
@@ -147,6 +157,8 @@ export class Pier extends Entity {
         // Apply initial rotation
         mesh.rotation.y = -angle;
         mesh.position.set(x, 0, y);
+
+        GraphicsUtils.tracker.register(mesh);
     }
 
     private buildStandardPier(length: number, width: number, physicsBody: planck.Body, mesh: THREE.Group) {

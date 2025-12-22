@@ -99,6 +99,7 @@ export class CactusFactory implements DecorationFactory {
             group.add(cap);
         }
 
+        GraphicsUtils.tracker.register(group);
         return group;
     }
 }

@@ -97,6 +97,8 @@ export class RiverRock extends Entity {
         // We want top to be at ~0.5m above water.
         // So shift down by 1.5r - 0.5.
         mesh.position.y = -(height / 2) + 0.5 + (Math.random() * 0.5);
+
+        GraphicsUtils.tracker.register(mesh);
     }
 
     wasHitByPlayer() {

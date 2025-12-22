@@ -166,6 +166,7 @@ export class TreeFactory implements DecorationFactory {
             group.add(topLeaf);
         }
 
+        GraphicsUtils.tracker.register(group);
         return group;
     }
 }

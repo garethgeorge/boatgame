@@ -243,6 +243,7 @@ export class TerrainChunk {
     });
 
     const mesh = new THREE.Mesh(geometry, material);
+    GraphicsUtils.tracker.register(mesh);
     // Vertices are already in world coordinates, no mesh offset needed
     mesh.position.set(0, 0, 0);
 
@@ -303,6 +304,7 @@ export class TerrainChunk {
     }
 
     const mesh = new THREE.Mesh(geometry, TerrainChunk.waterMaterial);
+    GraphicsUtils.tracker.register(mesh);
     // Vertices are already in world coordinates, no mesh offset needed
     mesh.position.set(0, 0, 0);
 

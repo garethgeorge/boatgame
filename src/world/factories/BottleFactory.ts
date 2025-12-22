@@ -21,6 +21,9 @@ export class BottleFactory implements DecorationFactory {
         this.animations.push(this.createDropAnimation());
         this.animations.push(this.createArcAnimation(-1));
         this.animations.push(this.createArcAnimation(1));
+
+        // Retain animations too - AnimationClips don't have GPU resources and don't need tracking in GraphicsTracker
+        // this.animations.forEach(a => GraphicsUtils.tracker.retain(a));
     }
 
     create(color: number): THREE.Group {
@@ -91,6 +94,7 @@ export class BottleFactory implements DecorationFactory {
         paper.name = 'paper';
         mesh.add(paper);
 
+        GraphicsUtils.tracker.register(mesh);
         return mesh;
     }
 

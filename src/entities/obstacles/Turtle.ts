@@ -4,6 +4,7 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class Turtle extends Entity {
 
@@ -38,6 +39,7 @@ export class Turtle extends Entity {
         geo.name = 'Turtle - Shell Geometry';
         const mat = new THREE.MeshToonMaterial({ color: 0x006400, name: 'Turtle - Shell Material' }); // Dark Green
         const mesh = new THREE.Mesh(geo, mat);
+        GraphicsUtils.tracker.register(mesh);
         this.meshes.push(mesh);
 
         mesh.scale.y = 0.5; // Flatten it

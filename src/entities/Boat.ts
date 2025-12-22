@@ -8,6 +8,7 @@ import { Decorations } from '../world/Decorations';
 import { CollectedBottles } from './CollectedBottles';
 import { MessageInABottle } from './obstacles/MessageInABottle';
 import { Pier } from "./obstacles/Pier";
+import { GraphicsUtils } from '../core/GraphicsUtils';
 
 export class Boat extends Entity {
     public collectedBottles: CollectedBottles;
@@ -132,6 +133,8 @@ export class Boat extends Entity {
 
         mesh.castShadow = true;
         mesh.receiveShadow = true;
+
+        GraphicsUtils.tracker.register(mesh);
     }
 
     update(dt: number, input?: InputManager) {

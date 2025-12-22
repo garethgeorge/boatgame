@@ -116,6 +116,7 @@ export class CycadFactory implements DecorationFactory {
             group.add(cone);
         }
 
+        GraphicsUtils.tracker.register(group);
         return group;
     }
 }

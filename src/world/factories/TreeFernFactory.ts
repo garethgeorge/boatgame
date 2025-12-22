@@ -81,6 +81,7 @@ export class TreeFernFactory implements DecorationFactory {
             group.add(frondPivot);
         }
 
+        GraphicsUtils.tracker.register(group);
         return group;
     }
 

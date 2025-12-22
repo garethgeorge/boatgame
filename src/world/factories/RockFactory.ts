@@ -201,6 +201,7 @@ export class RockFactory implements DecorationFactory {
             group.add(mesh2);
         }
 
+        GraphicsUtils.tracker.register(group);
         return group;
     }
 }

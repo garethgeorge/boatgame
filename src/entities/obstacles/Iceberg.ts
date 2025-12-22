@@ -117,6 +117,8 @@ export class Iceberg extends Entity {
                 }
             }
         }
+
+        GraphicsUtils.tracker.register(mesh);
     }
 
     wasHitByPlayer() {

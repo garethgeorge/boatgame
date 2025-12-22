@@ -8,6 +8,7 @@ import { RiverSystem } from './RiverSystem';
 import { ObstacleManager } from '../managers/ObstacleManager';
 
 import { Boat } from '../entities/Boat';
+import { GraphicsUtils } from '../core/GraphicsUtils';
 
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
@@ -259,6 +260,7 @@ export class TerrainManager {
     material.name = 'TerrainManager - debug line';
 
     const mesh = new THREE.Mesh(geometry, material);
+    GraphicsUtils.tracker.register(mesh);
 
     mesh.position.set(midX, 2.5, midY);
     mesh.rotation.y = -angle;

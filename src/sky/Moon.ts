@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GraphicsUtils } from '../core/GraphicsUtils';
 
 export class Moon {
     public mesh: THREE.Sprite;
@@ -9,8 +10,11 @@ export class Moon {
         const textureLoader = new THREE.TextureLoader();
         const moonTexture = textureLoader.load('assets/moon.png');
         moonTexture.name = 'Moon Texture';
+        GraphicsUtils.tracker.register(moonTexture);
         const moonMat = new THREE.SpriteMaterial({ map: moonTexture, color: 0xaadaff, name: 'Moon Material' });
+        GraphicsUtils.tracker.register(moonMat);
         this.mesh = new THREE.Sprite(moonMat);
+        GraphicsUtils.tracker.register(this.mesh);
         this.mesh.scale.set(35, 35, 1); // Adjust scale to match previous size
         scene.add(this.mesh);
 

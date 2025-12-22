@@ -134,6 +134,7 @@ export class BushFactory implements DecorationFactory {
             }
         }
 
+        GraphicsUtils.tracker.register(group);
         return group;
     }
 }

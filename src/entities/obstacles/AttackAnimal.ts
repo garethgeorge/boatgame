@@ -9,6 +9,7 @@ import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AttackAnimalEnteringWater, AttackAnimalShoreIdle, AttackAnimalWater } from '../behaviors/AttackAnimalBehavior';
 import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnteringWaterBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export interface AttackAnimalOptions {
     x: number;
@@ -106,6 +107,8 @@ export abstract class AttackAnimal extends Entity implements AttackAnimalEnterin
             this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
             this.playSwimmingAnimation();
         }
+
+        GraphicsUtils.tracker.register(mesh);
     }
 
     private applyModelBase(mesh: THREE.Group, model: THREE.Group, animations: THREE.AnimationClip[]) {

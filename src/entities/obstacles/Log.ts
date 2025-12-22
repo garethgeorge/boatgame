@@ -99,6 +99,8 @@ export class Log extends Entity {
         mesh.rotation.z = Math.PI / 2;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
+
+        GraphicsUtils.tracker.register(mesh);
     }
 
     wasHitByPlayer() {

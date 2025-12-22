@@ -4,6 +4,7 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class GasCan extends Entity {
 
@@ -77,6 +78,8 @@ export class GasCan extends Entity {
         spout.position.set(0.4, 1.6, 0);
         spout.rotation.z = -Math.PI / 4;
         mesh.add(spout);
+
+        GraphicsUtils.tracker.register(mesh);
 
         // Start floating
         this.behavior = new GasCan.FloatBehavior(this);

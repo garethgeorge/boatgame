@@ -4,6 +4,7 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations'; // Re-using materials if possible, or define new ones
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class Mangrove extends Entity {
   private static cache: THREE.Group[] = [];
@@ -63,6 +64,10 @@ export class Mangrove extends Entity {
 
   private static generateCache() {
     console.log("Generating Mangrove Cache...");
+    // Register static materials
+    GraphicsUtils.tracker.register(this.trunkMaterial);
+    GraphicsUtils.tracker.register(this.leafMaterial);
+
     for (let i = 0; i < this.CACHE_SIZE; i++) {
       this.cache.push(this.createMangrove());
     }
@@ -253,6 +258,7 @@ export class Mangrove extends Entity {
       if (child instanceof THREE.Mesh && child.material === this.trunkMaterial) {
         child.updateMatrixWorld();
         const geo = child.geometry.clone();
+        GraphicsUtils.tracker.register(geo);
         geo.applyMatrix4(child.matrixWorld);
         woodGeometries.push(geo);
       }
@@ -264,6 +270,7 @@ export class Mangrove extends Entity {
       if (child instanceof THREE.Mesh && child.material === this.leafMaterial) {
         child.updateMatrixWorld();
         const geo = child.geometry.clone();
+        GraphicsUtils.tracker.register(geo);
         geo.applyMatrix4(child.matrixWorld);
         leafGeometries.push(geo);
       }
@@ -301,6 +308,7 @@ export class Mangrove extends Entity {
       }
     });
 
+    GraphicsUtils.tracker.register(finalGroup);
     return finalGroup;
   }
 
@@ -348,6 +356,7 @@ export class Mangrove extends Entity {
     geo.computeVertexNormals();
 
     const mesh = new THREE.Mesh(geo, this.leafMaterial);
+    GraphicsUtils.tracker.register(mesh);
 
     // Strictly horizontal rotation with random yaw
     mesh.rotation.y = Math.random() * Math.PI * 2;

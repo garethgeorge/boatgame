@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { TerrainDecorator, DecorationContext } from './TerrainDecorator';
 import { TerrainChunk } from '../TerrainChunk';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export abstract class BaseDecorator implements TerrainDecorator {
     abstract decorate(context: DecorationContext): Promise<void>;
@@ -64,6 +65,7 @@ export abstract class BaseDecorator implements TerrainDecorator {
         object.traverse((child) => {
             if (child instanceof THREE.Mesh) {
                 const geometry = child.geometry.clone();
+                GraphicsUtils.tracker.register(geometry);
                 geometry.applyMatrix4(child.matrixWorld);
 
                 const material = child.material as THREE.Material;
