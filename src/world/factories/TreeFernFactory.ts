@@ -12,17 +12,16 @@ export class TreeFernFactory implements DecorationFactory {
 
     async load(): Promise<void> {
         // Retain static materials
-        GraphicsUtils.tracker.retain(TreeFernFactory.trunkMaterial);
-        GraphicsUtils.tracker.retain(TreeFernFactory.frondMaterial);
+        GraphicsUtils.registerObject(TreeFernFactory.trunkMaterial);
+        GraphicsUtils.registerObject(TreeFernFactory.frondMaterial);
 
         // Clear existing cache and release old meshes
-        this.cache.ferns.forEach(f => GraphicsUtils.tracker.release(f.mesh));
+        this.cache.ferns.forEach(f => GraphicsUtils.disposeObject(f.mesh));
         this.cache.ferns = [];
 
         console.log("Generating Tree Fern Cache...");
         for (let i = 0; i < 20; i++) {
             const mesh = this.createTreeFern();
-            GraphicsUtils.tracker.retain(mesh);
             this.cache.ferns.push({ mesh });
         }
     }
@@ -31,7 +30,7 @@ export class TreeFernFactory implements DecorationFactory {
         let mesh: THREE.Group;
         if (this.cache.ferns.length > 0) {
             const source = this.cache.ferns[Math.floor(Math.random() * this.cache.ferns.length)];
-            mesh = source.mesh.clone();
+            mesh = GraphicsUtils.cloneObject(source.mesh);
         } else {
             mesh = this.createTreeFern();
         }
@@ -49,7 +48,7 @@ export class TreeFernFactory implements DecorationFactory {
         // Trunk
         const trunkGeo = new THREE.CylinderGeometry(trunkRadius * 0.8, trunkRadius, trunkHeight, 6);
         trunkGeo.name = 'TreeFern - Trunk Geometry';
-        const trunk = new THREE.Mesh(trunkGeo, TreeFernFactory.trunkMaterial);
+        const trunk = GraphicsUtils.createMesh(trunkGeo, TreeFernFactory.trunkMaterial);
         trunk.position.y = trunkHeight / 2 - 0.1;
         group.add(trunk);
 
@@ -63,7 +62,7 @@ export class TreeFernFactory implements DecorationFactory {
             const frondGeo = new THREE.BoxGeometry(1.0, crownRadius, 0.1, 1, 4, 1);
             frondGeo.name = 'TreeFern - Frond Geometry';
             this.applyFrondDroop(frondGeo);
-            const frond = new THREE.Mesh(frondGeo, TreeFernFactory.frondMaterial);
+            const frond = GraphicsUtils.createMesh(frondGeo, TreeFernFactory.frondMaterial);
 
             // arch out angle is pi/2 +/- pi/6
             const archAngle = -Math.PI / 2 + (Math.random() * 0.5) * Math.PI / 3;
@@ -81,7 +80,6 @@ export class TreeFernFactory implements DecorationFactory {
             group.add(frondPivot);
         }
 
-        GraphicsUtils.tracker.register(group);
         return group;
     }
 

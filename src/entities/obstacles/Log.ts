@@ -24,7 +24,7 @@ export class Log extends Entity {
         deckMaterial.color.set(0xa87660);
 
         Log.barkMaterial = deckMaterial;
-        GraphicsUtils.tracker.retain(deckMaterial);
+        GraphicsUtils.registerObject(deckMaterial);
 
         return Log.barkMaterial;
     }
@@ -47,7 +47,7 @@ export class Log extends Entity {
         endMaterial.color.set(0xe7c55e);
 
         Log.endMaterial = endMaterial;
-        GraphicsUtils.tracker.retain(endMaterial);
+        GraphicsUtils.registerObject(endMaterial);
 
         return Log.endMaterial;
     }
@@ -84,7 +84,6 @@ export class Log extends Entity {
         // Rotate around Z axis by 90 deg.
         const geo = new THREE.CylinderGeometry(0.6, 0.6, length, 12);
         geo.name = 'Log';
-        GraphicsUtils.tracker.register(geo);
 
         // Create material array: [side, top cap, bottom cap]
         const materials = [
@@ -93,14 +92,13 @@ export class Log extends Entity {
             Log.getEndMaterial()     // Bottom cap
         ];
 
-        const mesh = new THREE.Mesh(geo, materials);
+        const mesh = GraphicsUtils.createMesh(geo, materials);
         this.meshes.push(mesh);
 
         mesh.rotation.z = Math.PI / 2;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
 
-        GraphicsUtils.tracker.register(mesh);
     }
 
     wasHitByPlayer() {

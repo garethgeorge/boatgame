@@ -26,13 +26,13 @@ export class RockFactory implements DecorationFactory {
 
     async load(): Promise<void> {
         // Retain static materials
-        GraphicsUtils.tracker.retain(RockFactory.rockMaterialDesert);
-        GraphicsUtils.tracker.retain(RockFactory.rockMaterialForest);
-        GraphicsUtils.tracker.retain(RockFactory.rockMaterialSwamp);
-        GraphicsUtils.tracker.retain(RockFactory.iceRockMaterial);
+        GraphicsUtils.registerObject(RockFactory.rockMaterialDesert);
+        GraphicsUtils.registerObject(RockFactory.rockMaterialForest);
+        GraphicsUtils.registerObject(RockFactory.rockMaterialSwamp);
+        GraphicsUtils.registerObject(RockFactory.iceRockMaterial);
 
         // Clear existing cache and release old meshes
-        this.cache.forEach(r => GraphicsUtils.tracker.release(r.mesh));
+        this.cache.forEach(r => GraphicsUtils.disposeObject(r.mesh));
         this.cache = [];
 
         console.log("Generating Rock Cache...");
@@ -40,14 +40,12 @@ export class RockFactory implements DecorationFactory {
         for (let i = 0; i < 30; i++) {
             const size = Math.random();
             const mesh = this.createRock(size, false);
-            GraphicsUtils.tracker.retain(mesh);
             this.cache.push({ mesh, size, isIcy: false });
         }
         // Generate Icy Rocks
         for (let i = 0; i < 20; i++) {
             const size = Math.random();
             const mesh = this.createRock(size, true);
-            GraphicsUtils.tracker.retain(mesh);
             this.cache.push({ mesh, size, isIcy: true });
         }
     }
@@ -66,15 +64,14 @@ export class RockFactory implements DecorationFactory {
                 ? candidates[Math.floor(Math.random() * candidates.length)]
                 : this.cache.find(r => r.isIcy === isIcy) || this.cache[0];
 
-            const cachedMesh = source ? source.mesh : this.createRock(size, isIcy);
-            const rock = cachedMesh.clone();
+            const rock = source ? GraphicsUtils.cloneObject(source.mesh) : this.createRock(size, isIcy);
 
             // Apply material based on biome if not icy
             if (!isIcy) {
                 const material = this.getMaterialForBiome(biome);
                 rock.traverse((child) => {
                     if (child instanceof THREE.Mesh) {
-                        child.material = material;
+                        GraphicsUtils.assignMaterial(child, material);
                     }
                 });
             }
@@ -96,7 +93,7 @@ export class RockFactory implements DecorationFactory {
             const material = this.getMaterialForBiome(biome);
             rock.traverse((child) => {
                 if (child instanceof THREE.Mesh) {
-                    child.material = material;
+                    GraphicsUtils.assignMaterial(child, material);
                 }
             });
         }
@@ -152,7 +149,7 @@ export class RockFactory implements DecorationFactory {
         );
 
         // Default material (will be swapped)
-        const mesh = new THREE.Mesh(geo, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest);
+        const mesh = GraphicsUtils.createMesh(geo, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest);
 
         // Random rotation
         mesh.rotation.set(
@@ -190,7 +187,7 @@ export class RockFactory implements DecorationFactory {
             geo2.computeVertexNormals();
             geo2.scale(1, 0.7, 1);
 
-            const mesh2 = new THREE.Mesh(geo2, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest);
+            const mesh2 = GraphicsUtils.createMesh(geo2, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest);
 
             const offsetDir = Math.random() * Math.PI * 2;
             const offsetDist = baseScale * 0.9;
@@ -201,7 +198,6 @@ export class RockFactory implements DecorationFactory {
             group.add(mesh2);
         }
 
-        GraphicsUtils.tracker.register(group);
         return group;
     }
 }

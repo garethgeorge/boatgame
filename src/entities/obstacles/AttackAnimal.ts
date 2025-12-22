@@ -107,8 +107,6 @@ export abstract class AttackAnimal extends Entity implements AttackAnimalEnterin
             this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
             this.playSwimmingAnimation();
         }
-
-        GraphicsUtils.tracker.register(mesh);
     }
 
     private applyModelBase(mesh: THREE.Group, model: THREE.Group, animations: THREE.AnimationClip[]) {

@@ -1,8 +1,110 @@
 import * as THREE from 'three';
-import { GraphicsTracker } from './GraphicsTracker';
+import { GraphicsTracker, DisposableResource } from './GraphicsTracker';
 
 export class GraphicsUtils {
     public static readonly tracker = new GraphicsTracker();
+
+    /**
+     * Registers an object hierarchy with the graphics tracker.
+     * Call this when loading a model.
+     */
+    public static registerObject(object: THREE.Object3D | DisposableResource) {
+        this.tracker.track(object);
+    }
+
+    /**
+     * Disposes an object hierarchy and releases its resources.
+     */
+    public static disposeObject(object: THREE.Object3D | DisposableResource) {
+        this.tracker.untrack(object);
+    }
+
+    /**
+     * Safely assigns a new material to a mesh, updating reference counts.
+     */
+    public static assignMaterial(mesh: THREE.Mesh | THREE.Sprite | THREE.Line | THREE.Points, newMaterial: THREE.Material | THREE.Material[]) {
+
+        // Retain new
+        if (newMaterial) {
+            if (Array.isArray(newMaterial)) {
+                newMaterial.forEach(m => this.tracker.track(m));
+            } else {
+                this.tracker.track(newMaterial);
+            }
+        }
+
+        // Release old
+        if (mesh.material) {
+            if (Array.isArray(mesh.material)) {
+                mesh.material.forEach(m => this.tracker.untrack(m));
+            } else {
+                this.tracker.untrack(mesh.material);
+            }
+        }
+
+        // Assign new
+        mesh.material = newMaterial;
+    }
+
+    /**
+     * Safely assigns a new geometry to a mesh, updating reference counts.
+     */
+    public static assignGeometry(mesh: THREE.Mesh | THREE.Line | THREE.Points, newGeometry: THREE.BufferGeometry) {
+        if (newGeometry) {
+            this.tracker.track(newGeometry);
+        }
+
+        if (mesh.geometry) {
+            this.tracker.untrack(mesh.geometry);
+        }
+
+        mesh.geometry = newGeometry;
+
+    }
+
+    /**
+     * Creates a new tracked Mesh.
+     */
+    public static createMesh(geometry?: THREE.BufferGeometry, material?: THREE.Material | THREE.Material[]): THREE.Mesh {
+        const mesh = new THREE.Mesh(geometry, material);
+        if (geometry) this.tracker.track(geometry);
+        if (material) {
+            if (Array.isArray(material)) {
+                material.forEach(m => this.tracker.track(m));
+            } else {
+                this.tracker.track(material);
+            }
+        }
+        return mesh;
+    }
+
+    /**
+     * Creates a new tracked Line.
+     */
+    public static createLine(geometry?: THREE.BufferGeometry, material?: THREE.Material): THREE.Line {
+        const line = new THREE.Line(geometry, material);
+        if (geometry) this.tracker.track(geometry);
+        if (material) this.tracker.track(material);
+        return line;
+    }
+
+    /**
+     * Creates a new tracked Sprite.
+     */
+    public static createSprite(material?: THREE.SpriteMaterial): THREE.Sprite {
+        const sprite = new THREE.Sprite(material);
+        if (material) this.tracker.track(material);
+        return sprite;
+    }
+
+    /**
+     * Clones an object and registers the new hierarchy.
+     */
+    public static cloneObject<T extends THREE.Object3D>(object: T, recursive: boolean = true): T {
+        const clone = object.clone(recursive) as T;
+        this.tracker.track(clone);
+        return clone;
+    }
 
     // Replace all materials with toon material
     public static toonify(model: THREE.Group) {
@@ -24,9 +126,13 @@ export class GraphicsUtils {
                     gradientMap: this.getToonGradientMap(),
                     toneMapped: false,
                 });
-                this.tracker.register(toonMaterial);
 
-                child.material = toonMaterial;
+                // Use safe assignment helper
+                // But wait, the child came from 'model' which MUST have been registered already 
+                // if we are following the rule.
+                // If model was just loaded and registered, child.material has a ref count.
+                // So assignMaterial will correctly decrement it and increment toonMaterial.
+                this.assignMaterial(child, toonMaterial);
             }
         });
     }
@@ -37,17 +143,21 @@ export class GraphicsUtils {
         mesh.traverse((child) => {
             if (child instanceof THREE.Mesh) {
                 const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+                // We use assignment helper, but we need to construct the new array first
                 const newMaterials = materials.map(m => {
                     const clone = m.clone();
                     clone.name = `${m.name || 'unnamed'} (cloned)`;
                     clone.transparent = true;
-                    this.tracker.register(clone);
+                    // Note: clone() creates a fresh object with ref count 0 effectively (untouched by tracker yet)
+                    // We don't manually retain here because assignMaterial will do it.
                     return clone;
                 });
+
                 if (Array.isArray(child.material)) {
-                    child.material = newMaterials;
+                    this.assignMaterial(child, newMaterials);
                 } else {
-                    child.material = newMaterials[0];
+                    this.assignMaterial(child, newMaterials[0]);
                 }
             }
         });
@@ -69,7 +179,7 @@ export class GraphicsUtils {
     private static getToonGradientMap(): THREE.Texture {
         if (!this.toonGradientMap) {
             this.toonGradientMap = this.createToonGradientMap();
-            this.tracker.retain(this.toonGradientMap);
+            this.registerObject(this.toonGradientMap);
         }
         return this.toonGradientMap;
     }

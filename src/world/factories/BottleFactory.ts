@@ -11,9 +11,6 @@ export class BottleFactory implements DecorationFactory {
         const greenBottle = this.createBottleMesh(0x88FF88);
         const blueBottle = this.createBottleMesh(0x0088FF);
 
-        GraphicsUtils.tracker.retain(greenBottle);
-        GraphicsUtils.tracker.retain(blueBottle);
-
         this.cache.set(0x88FF88, greenBottle);
         this.cache.set(0x0088FF, blueBottle);
 
@@ -21,18 +18,14 @@ export class BottleFactory implements DecorationFactory {
         this.animations.push(this.createDropAnimation());
         this.animations.push(this.createArcAnimation(-1));
         this.animations.push(this.createArcAnimation(1));
-
-        // Retain animations too - AnimationClips don't have GPU resources and don't need tracking in GraphicsTracker
-        // this.animations.forEach(a => GraphicsUtils.tracker.retain(a));
     }
 
     create(color: number): THREE.Group {
         if (!this.cache.has(color)) {
             const mesh = this.createBottleMesh(color);
-            GraphicsUtils.tracker.retain(mesh);
             this.cache.set(color, mesh);
         }
-        const mesh = this.cache.get(color)!.clone();
+        const mesh = GraphicsUtils.cloneObject(this.cache.get(color));
 
         return mesh;
     }
@@ -56,7 +49,7 @@ export class BottleFactory implements DecorationFactory {
         });
         glassMat.name = 'Bottle Glass';
 
-        const body = new THREE.Mesh(bodyGeo, glassMat);
+        const body = GraphicsUtils.createMesh(bodyGeo, glassMat);
         body.name = 'body';
         mesh.add(body);
 
@@ -64,7 +57,7 @@ export class BottleFactory implements DecorationFactory {
         const neckGeo = new THREE.CylinderGeometry(0.2, 0.4, 0.6, 8);
         neckGeo.name = 'Bottle Neck';
 
-        const neck = new THREE.Mesh(neckGeo, glassMat);
+        const neck = GraphicsUtils.createMesh(neckGeo, glassMat);
         neck.position.y = 0.9;
         neck.name = 'neck';
         mesh.add(neck);
@@ -76,7 +69,7 @@ export class BottleFactory implements DecorationFactory {
         const corkMat = new THREE.MeshToonMaterial({ color: 0x8B4513, name: 'Bottle - Cork Material' });
         corkMat.name = 'Bottle Cork';
 
-        const cork = new THREE.Mesh(corkGeo, corkMat);
+        const cork = GraphicsUtils.createMesh(corkGeo, corkMat);
         cork.position.y = 1.3;
         cork.name = 'cork';
         mesh.add(cork);
@@ -88,13 +81,12 @@ export class BottleFactory implements DecorationFactory {
         const paperMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide, name: 'Bottle - Paper Material' });
         paperMat.name = 'Bottle Paper';
 
-        const paper = new THREE.Mesh(paperGeo, paperMat);
+        const paper = GraphicsUtils.createMesh(paperGeo, paperMat);
         paper.rotation.y = Math.PI / 4;
         paper.rotation.z = Math.PI / 8;
         paper.name = 'paper';
         mesh.add(paper);
 
-        GraphicsUtils.tracker.register(mesh);
         return mesh;
     }
 

@@ -133,8 +133,6 @@ export class Boat extends Entity {
 
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-
-        GraphicsUtils.tracker.register(mesh);
     }
 
     update(dt: number, input?: InputManager) {

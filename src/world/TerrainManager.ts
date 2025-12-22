@@ -259,8 +259,7 @@ export class TerrainManager {
     const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
     material.name = 'TerrainManager - debug line';
 
-    const mesh = new THREE.Mesh(geometry, material);
-    GraphicsUtils.tracker.register(mesh);
+    const mesh = GraphicsUtils.createMesh(geometry, material);
 
     mesh.position.set(midX, 2.5, midY);
     mesh.rotation.y = -angle;

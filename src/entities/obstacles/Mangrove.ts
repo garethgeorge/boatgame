@@ -59,14 +59,12 @@ export class Mangrove extends Entity {
       this.generateCache();
     }
     const template = this.cache[Math.floor(Math.random() * this.cache.length)];
-    return template.clone();
+    return GraphicsUtils.cloneObject(template);
   }
 
   private static generateCache() {
     console.log("Generating Mangrove Cache...");
     // Register static materials
-    GraphicsUtils.tracker.register(this.trunkMaterial);
-    GraphicsUtils.tracker.register(this.leafMaterial);
 
     for (let i = 0; i < this.CACHE_SIZE; i++) {
       this.cache.push(this.createMangrove());
@@ -131,7 +129,7 @@ export class Mangrove extends Entity {
       // Thicker roots
       const tubeGeo = new THREE.TubeGeometry(curve, 8, 0.3 + Math.random() * 0.2, 5, false);
       tubeGeo.name = 'Mangrove - Root Geometry';
-      const root = new THREE.Mesh(tubeGeo, this.trunkMaterial);
+      const root = GraphicsUtils.createMesh(tubeGeo, this.trunkMaterial);
       root.castShadow = true;
       root.receiveShadow = true;
       group.add(root);
@@ -168,7 +166,7 @@ export class Mangrove extends Entity {
 
     const trunkGeo = new THREE.TubeGeometry(trunkCurve, 8, 1.2, 7, false);
     trunkGeo.name = 'Mangrove - Trunk Geometry';
-    const trunk = new THREE.Mesh(trunkGeo, this.trunkMaterial);
+    const trunk = GraphicsUtils.createMesh(trunkGeo, this.trunkMaterial);
     trunk.castShadow = true;
     trunk.receiveShadow = true;
     group.add(trunk);
@@ -185,7 +183,7 @@ export class Mangrove extends Entity {
 
       const branchGeo = new THREE.CylinderGeometry(0.3, 0.6, len, 5);
       branchGeo.name = 'Mangrove - Branch Geometry';
-      const branch = new THREE.Mesh(branchGeo, this.trunkMaterial);
+      const branch = GraphicsUtils.createMesh(branchGeo, this.trunkMaterial);
 
       // Branch position/rotation in Group space
       const bY = branchStartY + (Math.random() * trunkHeight * 0.4);
@@ -258,7 +256,6 @@ export class Mangrove extends Entity {
       if (child instanceof THREE.Mesh && child.material === this.trunkMaterial) {
         child.updateMatrixWorld();
         const geo = child.geometry.clone();
-        GraphicsUtils.tracker.register(geo);
         geo.applyMatrix4(child.matrixWorld);
         woodGeometries.push(geo);
       }
@@ -270,7 +267,6 @@ export class Mangrove extends Entity {
       if (child instanceof THREE.Mesh && child.material === this.leafMaterial) {
         child.updateMatrixWorld();
         const geo = child.geometry.clone();
-        GraphicsUtils.tracker.register(geo);
         geo.applyMatrix4(child.matrixWorld);
         leafGeometries.push(geo);
       }
@@ -281,7 +277,7 @@ export class Mangrove extends Entity {
 
     if (woodGeometries.length > 0) {
       const mergedWood = BufferGeometryUtils.mergeGeometries(woodGeometries);
-      const woodMesh = new THREE.Mesh(mergedWood, this.trunkMaterial);
+      const woodMesh = GraphicsUtils.createMesh(mergedWood, this.trunkMaterial);
       woodMesh.castShadow = true;
       woodMesh.receiveShadow = true;
       finalGroup.add(woodMesh);
@@ -292,7 +288,7 @@ export class Mangrove extends Entity {
 
     if (leafGeometries.length > 0) {
       const mergedLeaves = BufferGeometryUtils.mergeGeometries(leafGeometries);
-      const leafMesh = new THREE.Mesh(mergedLeaves, this.leafMaterial);
+      const leafMesh = GraphicsUtils.createMesh(mergedLeaves, this.leafMaterial);
       leafMesh.castShadow = true;
       leafMesh.receiveShadow = true;
       finalGroup.add(leafMesh);
@@ -308,7 +304,6 @@ export class Mangrove extends Entity {
       }
     });
 
-    GraphicsUtils.tracker.register(finalGroup);
     return finalGroup;
   }
 
@@ -355,8 +350,7 @@ export class Mangrove extends Entity {
     // Compute normals after modification
     geo.computeVertexNormals();
 
-    const mesh = new THREE.Mesh(geo, this.leafMaterial);
-    GraphicsUtils.tracker.register(mesh);
+    const mesh = GraphicsUtils.createMesh(geo, this.leafMaterial);
 
     // Strictly horizontal rotation with random yaw
     mesh.rotation.y = Math.random() * Math.PI * 2;

@@ -62,7 +62,6 @@ export class Iceberg extends Entity {
 
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         geometry.name = 'Iceberg - Geometry';
-        GraphicsUtils.tracker.register(geometry);
 
         // Center the geometry
         geometry.center();
@@ -74,7 +73,6 @@ export class Iceberg extends Entity {
             opacity: 0.9,
             side: THREE.DoubleSide
         });
-        GraphicsUtils.tracker.register(material);
         // @ts-ignore
         material.flatShading = true; // Works in runtime
         material.needsUpdate = true;
@@ -82,7 +80,7 @@ export class Iceberg extends Entity {
         const mesh = new THREE.Group(); // Parent group handles Y-rotation (yaw) from physics
         this.meshes.push(mesh);
 
-        const innerMesh = new THREE.Mesh(geometry, material);
+        const innerMesh = GraphicsUtils.createMesh(geometry, material);
 
         // Rotate inner mesh to lie flat on water
         innerMesh.rotation.x = -Math.PI / 2;
@@ -118,7 +116,6 @@ export class Iceberg extends Entity {
             }
         }
 
-        GraphicsUtils.tracker.register(mesh);
     }
 
     wasHitByPlayer() {

@@ -20,9 +20,6 @@ export class GraphicsEngine {
   fxaaPass?: ShaderPass;
   outputPass?: OutputPass;
 
-  private gcTimer: number = 0;
-  private GC_INTERVAL: number = 2.0; // Run GC every 2 seconds
-
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
 
@@ -44,6 +41,10 @@ export class GraphicsEngine {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
     this.renderer.info.autoReset = false;
+
+    this.renderer.info.autoReset = false;
+
+    // GraphicsUtils.tracker.patchThreeJS(); // Removed as per explicit strategy
 
     container.appendChild(this.renderer.domElement);
 
@@ -71,20 +72,10 @@ export class GraphicsEngine {
   }
 
   render(dt: number) {
-
-    this.renderer.info.reset();
-
     if (GraphicsEngine.USE_POSTPROCESSING && this.composer) {
       this.composer.render();
     } else {
       this.renderer.render(this.scene, this.camera);
-    }
-
-    // Periodically run garbage collection
-    this.gcTimer += dt;
-    if (this.gcTimer > this.GC_INTERVAL) {
-      this.gcTimer %= this.GC_INTERVAL;
-      GraphicsUtils.tracker.update(this.scene);
     }
   }
 
@@ -107,8 +98,6 @@ export class GraphicsEngine {
   }
 
   add(object: THREE.Object3D) {
-    //console.trace('Add scene object');
-    GraphicsUtils.tracker.register(object);
     this.scene.add(object);
   }
 

@@ -13,7 +13,6 @@ export class Skybox {
     private createSkybox(): THREE.Mesh {
         const skyGeo = new THREE.SphereGeometry(360, 32, 15);
         skyGeo.name = 'Skybox Geometry';
-        GraphicsUtils.tracker.register(skyGeo);
 
         this.uniforms = {
             topColor: { value: new THREE.Color(0x0099ff) },
@@ -58,10 +57,8 @@ export class Skybox {
             fog: true,
             name: 'Skybox Material'
         });
-        GraphicsUtils.tracker.register(skyMat);
 
-        const mesh = new THREE.Mesh(skyGeo, skyMat);
-        GraphicsUtils.tracker.register(mesh);
+        const mesh = GraphicsUtils.createMesh(skyGeo, skyMat);
         return mesh;
     }
 

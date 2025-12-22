@@ -24,8 +24,8 @@ export class GLTFModelFactory implements DecorationFactory {
             const loader = new GLTFLoader();
             loader.load(this.path, (gltf) => {
                 const model = gltf.scene;
+                GraphicsUtils.registerObject(model);
                 GraphicsUtils.toonify(model);
-                GraphicsUtils.tracker.retain(model);
                 this.cache.model = model;
                 this.cache.animations = gltf.animations || [];
                 resolve();
@@ -43,7 +43,7 @@ export class GLTFModelFactory implements DecorationFactory {
         }
 
         const clonedModel = SkeletonUtils.clone(this.cache.model) as THREE.Group;
-        GraphicsUtils.tracker.register(clonedModel);
+        GraphicsUtils.registerObject(clonedModel);
         return clonedModel;
     }
 

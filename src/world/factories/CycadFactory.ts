@@ -14,12 +14,12 @@ export class CycadFactory implements DecorationFactory {
 
     async load(): Promise<void> {
         // Retain static materials
-        GraphicsUtils.tracker.retain(CycadFactory.trunkMaterial);
-        GraphicsUtils.tracker.retain(CycadFactory.frondMaterial);
-        GraphicsUtils.tracker.retain(CycadFactory.coneMaterial);
+        GraphicsUtils.registerObject(CycadFactory.trunkMaterial);
+        GraphicsUtils.registerObject(CycadFactory.frondMaterial);
+        GraphicsUtils.registerObject(CycadFactory.coneMaterial);
 
         // Clear existing cache and release old meshes
-        this.cache.cycads.forEach(c => GraphicsUtils.tracker.release(c.mesh));
+        this.cache.cycads.forEach(c => GraphicsUtils.disposeObject(c.mesh));
         this.cache.cycads = [];
 
         // Pre-generate cycads
@@ -27,7 +27,6 @@ export class CycadFactory implements DecorationFactory {
 
         for (let i = 0; i < 20; i++) {
             const mesh = this.createCycad();
-            GraphicsUtils.tracker.retain(mesh);
             this.cache.cycads.push({ mesh });
         }
     }
@@ -37,7 +36,7 @@ export class CycadFactory implements DecorationFactory {
 
         if (this.cache.cycads.length > 0) {
             const source = this.cache.cycads[Math.floor(Math.random() * this.cache.cycads.length)];
-            mesh = source.mesh.clone();
+            mesh = GraphicsUtils.cloneObject(source.mesh);
         } else {
             mesh = this.createCycad();
         }
@@ -63,7 +62,7 @@ export class CycadFactory implements DecorationFactory {
         // Rough, scarred look - maybe just a cylinder for now
         const trunkGeo = new THREE.CylinderGeometry(trunkRadius * 0.7, trunkRadius, trunkHeight, 5);
         trunkGeo.name = 'Cycad - Trunk Geometry';
-        const trunk = new THREE.Mesh(trunkGeo, CycadFactory.trunkMaterial);
+        const trunk = GraphicsUtils.createMesh(trunkGeo, CycadFactory.trunkMaterial);
         trunk.position.y = trunkHeight / 2 - 0.1;  // to bury it in the ground
         group.add(trunk);
 
@@ -83,7 +82,7 @@ export class CycadFactory implements DecorationFactory {
             // Translate geometry so the base is at the origin (0,0,0)
             frondGeo.translate(0, crownRadius / 2, 0);
 
-            const frond = new THREE.Mesh(frondGeo, CycadFactory.frondMaterial);
+            const frond = GraphicsUtils.createMesh(frondGeo, CycadFactory.frondMaterial);
 
             // Flatten to resemble a leaf blade 
             frond.scale.set(1.0, 1.0, 0.025);
@@ -111,12 +110,11 @@ export class CycadFactory implements DecorationFactory {
             const coneHeight = coneRadius * 6.0;
             const coneGeo = new THREE.ConeGeometry(coneRadius, coneHeight, 6);
             coneGeo.name = 'Cycad - Cone Geometry';
-            const cone = new THREE.Mesh(coneGeo, CycadFactory.coneMaterial);
+            const cone = GraphicsUtils.createMesh(coneGeo, CycadFactory.coneMaterial);
             cone.position.y = crownY + coneHeight / 2;
             group.add(cone);
         }
 
-        GraphicsUtils.tracker.register(group);
         return group;
     }
 }

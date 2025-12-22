@@ -41,12 +41,15 @@ export abstract class Entity {
   }
 
   dispose() {
+    for (const mesh of this.meshes) {
+      GraphicsUtils.disposeObject(mesh);
+    }
+    for (const debugMesh of this.debugMeshes) {
+      GraphicsUtils.disposeObject(debugMesh);
+    }
     this.meshes = [];
     this.debugMeshes = [];
     this.physicsBodies = [];
-    // Physics bodies are managed by PhysicsEngine interaction usually, 
-    // but if we own them we should destroy them.
-    // Entity manager destroys bodies.
   }
 
   // Interpolation state
@@ -133,7 +136,6 @@ export abstract class Entity {
         let mesh: THREE.Mesh | null = null;
         const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
         material.name = `Debug - Physics Material`;
-        GraphicsUtils.tracker.register(material);
 
         if (type === 'circle') {
           const circle = shape as planck.Circle;
@@ -142,8 +144,7 @@ export abstract class Entity {
 
           const geometry = new THREE.CylinderGeometry(radius, radius, 1, 16);
           geometry.name = `Debug - Physics Circle`;
-          GraphicsUtils.tracker.register(geometry);
-          mesh = new THREE.Mesh(geometry, material);
+          mesh = GraphicsUtils.createMesh(geometry, material);
           mesh.position.set(center.x, 0, center.y); // Local offset
 
         } else if (type === 'polygon') {
@@ -160,11 +161,9 @@ export abstract class Entity {
 
           const geometry = new THREE.BufferGeometry().setFromPoints(points);
           geometry.name = `Debug - Physics Polygon`;
-          GraphicsUtils.tracker.register(geometry);
           const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
           lineMaterial.name = `Debug - Physics Line Material`;
-          const line = new THREE.Line(geometry, lineMaterial);
-          GraphicsUtils.tracker.register(line.material as THREE.Material);
+          const line = GraphicsUtils.createLine(geometry, lineMaterial);
 
           group.add(line);
           continue;

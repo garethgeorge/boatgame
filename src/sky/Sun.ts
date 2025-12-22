@@ -10,11 +10,8 @@ export class Sun {
         const textureLoader = new THREE.TextureLoader();
         const sunTexture = textureLoader.load('assets/sun.png');
         sunTexture.name = 'Sun Texture';
-        GraphicsUtils.tracker.register(sunTexture);
         const sunMat = new THREE.SpriteMaterial({ map: sunTexture, color: 0xfdf983, name: 'Sun Material' });
-        GraphicsUtils.tracker.register(sunMat);
-        this.mesh = new THREE.Sprite(sunMat);
-        GraphicsUtils.tracker.register(this.mesh);
+        this.mesh = GraphicsUtils.createSprite(sunMat);
         this.mesh.scale.set(50, 50, 1); // Adjust scale as needed
         scene.add(this.mesh);
 

@@ -32,7 +32,6 @@ export class RiverRock extends Entity {
         const height = radius * 3.0;
         const geometry = new THREE.CylinderGeometry(radius * 0.3, radius * 1.0, height, 8, 5);
         geometry.name = 'RiverRock';
-        GraphicsUtils.tracker.register(geometry);
 
         const posAttribute = geometry.attributes.position;
         const normalAttribute = geometry.attributes.normal;
@@ -72,9 +71,8 @@ export class RiverRock extends Entity {
 
         const material = new THREE.MeshToonMaterial({ color: 0x808080 });
         material.name = 'RiverRock';
-        GraphicsUtils.tracker.register(material);
 
-        const mesh = new THREE.Mesh(geometry, material);
+        const mesh = GraphicsUtils.createMesh(geometry, material);
         this.meshes.push(mesh);
         // @ts-ignore
         material.flatShading = true; // Works in runtime, types might be strict
@@ -98,7 +96,6 @@ export class RiverRock extends Entity {
         // So shift down by 1.5r - 0.5.
         mesh.position.y = -(height / 2) + 0.5 + (Math.random() * 0.5);
 
-        GraphicsUtils.tracker.register(mesh);
     }
 
     wasHitByPlayer() {

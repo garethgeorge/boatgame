@@ -60,7 +60,6 @@ export class BiomeDecorationHelper {
             if (child instanceof THREE.Mesh) {
                 // clone geometry with matrix applied
                 const geometry = child.geometry.clone();
-                GraphicsUtils.tracker.register(geometry);
                 geometry.name = 'Decorations - cloned geom';
                 geometry.applyMatrix4(child.matrixWorld);
 
@@ -81,10 +80,9 @@ export class BiomeDecorationHelper {
             if (geometries.length === 0) continue;
 
             const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries);
-            GraphicsUtils.tracker.register(mergedGeometry);
             mergedGeometry.name = 'Decorations - merged geom';
 
-            const mesh = new THREE.Mesh(mergedGeometry, material);
+            const mesh = GraphicsUtils.createMesh(mergedGeometry, material);
             // Material is shared from decorators, so we DON'T dispose it here
 
             mesh.castShadow = true;
