@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Profiler } from './Profiler';
 
 type DisposableResource = THREE.Material | THREE.BufferGeometry | THREE.Texture;
 
@@ -8,60 +9,91 @@ export class GraphicsTracker {
     private isPaused = false;
 
     private visit(item: DisposableResource | THREE.Object3D,
-        apply: (DisposableResource) => void) {
+        apply: (resource: DisposableResource) => void) {
 
         if (!item) return;
 
         if (item instanceof THREE.Object3D) {
             item.traverse((child) => {
-                if (child instanceof THREE.Mesh) {
-                    if (child.geometry) apply(child.geometry);
-                    if (child.material) {
-                        if (Array.isArray(child.material)) {
-                            child.material.forEach(m => this.visitMaterial(m, apply));
-                        } else {
-                            this.visitMaterial(child.material, apply);
-                        }
-                    }
-                }
+                this.visitObject(child, apply);
             });
+        } else if (item instanceof THREE.Material) {
+            this.visitMaterial(item, apply);
         } else {
-            if (item instanceof THREE.Material) {
-                this.visitMaterial(item, apply);
+            apply(item as DisposableResource);
+        }
+
+    }
+
+    private visitObject(obj: THREE.Object3D, apply: (resource: DisposableResource) => void) {
+        const anyObj = obj as any;
+        if (anyObj.geometry) {
+            apply(anyObj.geometry);
+        }
+        if (anyObj.material) {
+            if (Array.isArray(anyObj.material)) {
+                anyObj.material.forEach(m => this.visitMaterial(m, apply));
             } else {
-                apply(item);
+                this.visitMaterial(anyObj.material, apply);
             }
+        }
+
+        // Track skeleton bone textures (crucial for SkinnedMesh instances)
+        if (obj instanceof THREE.SkinnedMesh && obj.skeleton && obj.skeleton.boneTexture) {
+            apply(obj.skeleton.boneTexture);
         }
     }
 
     private visitMaterial(material: THREE.Material,
-        apply: (DisposableResource) => void) {
+        apply: (resource: DisposableResource) => void) {
 
         apply(material);
 
-        // Track textures
-        const mat = material as any;
-        const textures = [
-            mat.map, mat.normalMap, mat.specularMap, mat.envMap,
-            mat.alphaMap, mat.aoMap, mat.displacementMap, mat.emissiveMap,
-            mat.metalnessMap, mat.roughnessMap, mat.gradientMap
-        ];
-        textures.forEach(t => {
-            if (t instanceof THREE.Texture) apply(t);
-        });
+        // Track all textures attached to the material
+        for (const key in material) {
+            const value = (material as any)[key];
+            if (value && (value instanceof THREE.Texture || (value as any).isTexture)) {
+                apply(value as THREE.Texture);
+            }
+        }
+
+        // Search uniforms for textures (important for ShaderMaterial)
+        const uniforms = (material as any).uniforms;
+        if (uniforms) {
+            for (const name in uniforms) {
+                const uniform = uniforms[name];
+                if (uniform && uniform.value) {
+                    const val = uniform.value;
+                    if (val instanceof THREE.Texture || (val as any).isTexture) {
+                        apply(val as THREE.Texture);
+                    } else if (Array.isArray(val)) {
+                        val.forEach(v => {
+                            if (v && (v instanceof THREE.Texture || (v as any).isTexture)) {
+                                apply(v as THREE.Texture);
+                            }
+                        });
+                    }
+                }
+            }
+        }
     }
 
     /**
-     * Register a resource or an Object3D's resources for tracking.
+     * Register a resource or an Object3D's resources for tracking. If
+     * verbose is true the registered resources are logged.
      */
-    public register(item: DisposableResource | THREE.Object3D) {
-        this.visit(item, (resource) => this.registerResource(resource));
+    public register(item: DisposableResource | THREE.Object3D, verbose: boolean = false) {
+        this.visit(item, (resource) => this.registerResource(resource, verbose));
     }
 
-    private registerResource(resource: DisposableResource) {
+    private registerResource(resource: DisposableResource, verbose: boolean) {
         if (!this.trackedResources.has(resource)) {
-            console.log('Register', resource.name, resource);
+            if (verbose)
+                console.log('Register', resource.name, resource);
             this.trackedResources.set(resource, { refCount: 0, lastMarked: -1 });
+        } else {
+            if (verbose)
+                console.log('Known', resource.name, resource);
         }
     }
 
@@ -74,8 +106,7 @@ export class GraphicsTracker {
 
     private retainResource(resource: DisposableResource) {
         if (!resource) return;
-        this.registerResource(resource);
-        console.log('Retain', resource.name, resource);
+        this.registerResource(resource, false);
         const info = this.trackedResources.get(resource);
         if (info) info.refCount++;
     }
@@ -83,7 +114,7 @@ export class GraphicsTracker {
     /**
      * Release a resource (decrement ref count).
      */
-    public release(item: any) {
+    public release(item: DisposableResource | THREE.Object3D) {
         this.visit(item, (resource) => this.releaseResource(resource));
     }
 
@@ -99,26 +130,29 @@ export class GraphicsTracker {
      * Perform mark-and-sweep.
      */
     public update(scene: THREE.Scene) {
-        console.log('Collecting');
+        const verbose = false;
+
         if (this.isPaused) {
-            console.log('Paused');
+            console.log('Collecting Skipped - Paused');
             return;
         }
+        console.log('Collecting');
+
+        Profiler.start('Collection');
 
         this.currentGeneration++;
 
         // Mark Phase: Scene traversal
         scene.traverse((object) => {
-            if (object instanceof THREE.Mesh) {
-                this.visit(object, (resource) => this.markResource(resource));
-            }
+            this.visitObject(object, (resource) => this.markResource(resource));
         });
 
         // Sweep Phase
         for (const [resource, info] of this.trackedResources.entries()) {
             if (info.refCount <= 0 && info.lastMarked !== this.currentGeneration) {
                 try {
-                    console.log('Dispose:', resource.name, resource);
+                    if (verbose)
+                        console.log('Dispose:', resource.name, resource);
                     resource.dispose();
                 } catch (e) {
                     console.warn('Failed to dispose resource:', e);
@@ -126,6 +160,9 @@ export class GraphicsTracker {
                 this.trackedResources.delete(resource);
             }
         }
+
+        Profiler.end('Collection');
+
         console.log('Collected');
     }
 
