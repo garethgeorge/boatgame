@@ -7,40 +7,64 @@ export class GraphicsTracker {
     private trackedResources = new Map<DisposableResource, { refCount: number, lastMarked: number }>();
     private currentGeneration = 0;
     private isPaused = false;
+    private visitedSet = new Set<DisposableResource>();
+
+    // Common texture slots in Three.js materials for fast lookup
+    private static readonly TEXTURE_PROPERTIES = [
+        'map', 'lightMap', 'aoMap', 'emissiveMap', 'bumpMap', 'normalMap', 'displacementMap',
+        'roughnessMap', 'metalnessMap', 'alphaMap', 'envMap', 'gradientMap',
+        'clearcoatMap', 'clearcoatNormalMap', 'clearcoatRoughnessMap',
+        'sheenColorMap', 'sheenRoughnessMap', 'transmissionMap', 'thicknessMap',
+        'specularIntensityMap', 'specularColorMap', 'iridescenceMap', 'iridescenceThicknessMap',
+        'anisotropyMap'
+    ];
 
     private visit(item: DisposableResource | THREE.Object3D,
         apply: (resource: DisposableResource) => void) {
 
         if (!item) return;
 
-        if (item instanceof THREE.Object3D) {
-            item.traverse((child) => {
-                this.visitObject(child, apply);
-            });
-        } else if (item instanceof THREE.Material) {
-            this.visitMaterial(item, apply);
-        } else {
-            apply(item as DisposableResource);
-        }
+        const visited = new Set<DisposableResource>();
+        const applyOnce = (res: DisposableResource) => {
+            if (visited.has(res)) return;
+            visited.add(res);
+            apply(res);
+        };
 
+        if ((item as any).isObject3D) {
+            (item as THREE.Object3D).traverse((child) => {
+                this.visitObject(child, applyOnce);
+            });
+        } else if ((item as any).isMaterial) {
+            this.visitMaterial(item as THREE.Material, applyOnce);
+        } else {
+            applyOnce(item as DisposableResource);
+        }
     }
 
     private visitObject(obj: THREE.Object3D, apply: (resource: DisposableResource) => void) {
         const anyObj = obj as any;
-        if (anyObj.geometry) {
-            apply(anyObj.geometry);
-        }
-        if (anyObj.material) {
-            if (Array.isArray(anyObj.material)) {
-                anyObj.material.forEach(m => this.visitMaterial(m, apply));
-            } else {
-                this.visitMaterial(anyObj.material, apply);
+
+        // Skip non-renderable objects using fast internal flags.
+        const isRenderable = anyObj.isMesh || anyObj.isSprite || anyObj.isLine || anyObj.isPoints;
+
+        if (isRenderable) {
+            if (anyObj.geometry) apply(anyObj.geometry);
+
+            const material = anyObj.material;
+            if (material) {
+                if (Array.isArray(material)) {
+                    for (let i = 0, l = material.length; i < l; i++) {
+                        this.visitMaterial(material[i], apply);
+                    }
+                } else {
+                    this.visitMaterial(material, apply);
+                }
             }
         }
 
-        // Track skeleton bone textures (crucial for SkinnedMesh instances)
-        if (obj instanceof THREE.SkinnedMesh && obj.skeleton && obj.skeleton.boneTexture) {
-            apply(obj.skeleton.boneTexture);
+        if (anyObj.isSkinnedMesh && anyObj.skeleton?.boneTexture) {
+            apply(anyObj.skeleton.boneTexture);
         }
     }
 
@@ -49,29 +73,32 @@ export class GraphicsTracker {
 
         apply(material);
 
-        // Track all textures attached to the material
-        for (const key in material) {
-            const value = (material as any)[key];
-            if (value && (value instanceof THREE.Texture || (value as any).isTexture)) {
-                apply(value as THREE.Texture);
+        const anyMat = material as any;
+
+        // Fast path for standard materials using predefined property keys
+        const props = GraphicsTracker.TEXTURE_PROPERTIES;
+        for (let i = 0, l = props.length; i < l; i++) {
+            const tex = anyMat[props[i]];
+            if (tex && tex.isTexture) {
+                apply(tex);
             }
         }
 
-        // Search uniforms for textures (important for ShaderMaterial)
-        const uniforms = (material as any).uniforms;
-        if (uniforms) {
-            for (const name in uniforms) {
-                const uniform = uniforms[name];
-                if (uniform && uniform.value) {
-                    const val = uniform.value;
-                    if (val instanceof THREE.Texture || (val as any).isTexture) {
-                        apply(val as THREE.Texture);
-                    } else if (Array.isArray(val)) {
-                        val.forEach(v => {
-                            if (v && (v instanceof THREE.Texture || (v as any).isTexture)) {
-                                apply(v as THREE.Texture);
+        // Search uniforms for textures (fallback for ShaderMaterial or custom shaders)
+        if (anyMat.isShaderMaterial || anyMat.uniforms) {
+            const uniforms = anyMat.uniforms;
+            if (uniforms) {
+                for (const name in uniforms) {
+                    const uniform = uniforms[name];
+                    if (uniform && uniform.value) {
+                        const val = uniform.value;
+                        if (val.isTexture) {
+                            apply(val);
+                        } else if (Array.isArray(val)) {
+                            for (let i = 0, l = val.length; i < l; i++) {
+                                if (val[i]?.isTexture) apply(val[i]);
                             }
-                        });
+                        }
                     }
                 }
             }
@@ -142,9 +169,16 @@ export class GraphicsTracker {
 
         this.currentGeneration++;
 
+        this.visitedSet.clear();
+        const markOnce = (res: DisposableResource) => {
+            if (this.visitedSet.has(res)) return;
+            this.visitedSet.add(res);
+            this.markResource(res);
+        };
+
         // Mark Phase: Scene traversal
         scene.traverse((object) => {
-            this.visitObject(object, (resource) => this.markResource(resource));
+            this.visitObject(object, markOnce);
         });
 
         // Sweep Phase
