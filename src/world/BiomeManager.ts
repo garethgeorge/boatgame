@@ -10,7 +10,7 @@ import { TestBiomeFeatures } from './biomes/TestBiomeFeatures';
 import { BiomeType } from './biomes/BiomeType';
 
 export class BiomeManager {
-  public static DEBUG_BIOME = true;
+  public static DEBUG_BIOME = false;
 
   public readonly BIOME_LENGTH = 1000;
   private biomeArray: Array<BiomeType>;
@@ -33,7 +33,7 @@ export class BiomeManager {
     this.features.set('test', new TestBiomeFeatures());
 
     if (BiomeManager.DEBUG_BIOME) {
-      this.biomeArray = new Array(this.BIOME_ARRAY_SIZE).fill('jurassic');
+      this.biomeArray = new Array(this.BIOME_ARRAY_SIZE).fill('test');
       return;
     }
 

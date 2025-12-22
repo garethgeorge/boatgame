@@ -25,7 +25,7 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
     abstract spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void>;
 
     protected async spawnObstacle(spawner: Spawnable, context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        const count = 5; //spawner.getSpawnCount(context, difficulty, zStart, zEnd);
+        const count = spawner.getSpawnCount(context, difficulty, zStart, zEnd);
         await spawner.spawn(context, count, zStart, zEnd);
     }
 
