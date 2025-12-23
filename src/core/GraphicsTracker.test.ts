@@ -211,4 +211,29 @@ describe('GraphicsTracker', () => {
         expect(newLog).toBeUndefined();
         expect(oldLog).toBeUndefined(); // Should be in snapshot, so ignored
     });
+
+    it('should ignore objects marked as cache', () => {
+        const consoleSpy = vi.spyOn(console, 'log');
+        const now = 10000;
+        vi.spyOn(performance, 'now').mockReturnValue(now);
+
+        const cachedObject = new THREE.Mesh();
+        cachedObject.name = 'CachedMesh';
+
+        // 1. Mark as cache (which tracks it)
+        tracker.markAsCache(cachedObject);
+        tracker.createSnapshot();
+
+        // 2. Advance time significantly
+        const checkTime = now + 10000;
+        vi.spyOn(performance, 'now').mockReturnValue(checkTime);
+
+        // 3. Check for leaks
+        tracker.checkLeaks(2);
+
+        // 4. Verify NOT logged
+        const calls = consoleSpy.mock.calls.map(args => args.join(' '));
+        const leakedLog = calls.find(call => call.includes('CachedMesh'));
+        expect(leakedLog).toBeUndefined();
+    });
 });

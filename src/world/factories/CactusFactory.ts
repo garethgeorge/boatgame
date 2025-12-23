@@ -18,6 +18,7 @@ export class CactusFactory implements DecorationFactory {
         console.log("Generating Cactus Cache...");
         for (let i = 0; i < 20; i++) {
             const mesh = this.createCactus();
+            GraphicsUtils.markAsCache(mesh);
             this.cache.push(mesh);
         }
     }

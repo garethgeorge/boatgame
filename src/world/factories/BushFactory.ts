@@ -21,6 +21,7 @@ export class BushFactory implements DecorationFactory {
         for (let i = 0; i < 50; i++) {
             const wetness = Math.random();
             const mesh = this.createBush(wetness);
+            GraphicsUtils.markAsCache(mesh);
             this.cache.push({ mesh, wetness });
         }
     }

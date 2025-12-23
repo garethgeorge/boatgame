@@ -26,6 +26,7 @@ export class GLTFModelFactory implements DecorationFactory {
                 const model = gltf.scene;
                 GraphicsUtils.registerObject(model);
                 GraphicsUtils.toonify(model);
+                GraphicsUtils.markAsCache(model);
                 this.cache.model = model;
                 this.cache.animations = gltf.animations || [];
                 resolve();

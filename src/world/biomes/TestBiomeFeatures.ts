@@ -26,6 +26,6 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
         //const count = (zEnd - zStart) * 0.01;
-        await this.trexSpawner.spawn(context, 5, zStart, zEnd);
+        //await this.trexSpawner.spawn(context, 5, zStart, zEnd);
     }
 }

@@ -22,6 +22,7 @@ export class TreeFernFactory implements DecorationFactory {
         console.log("Generating Tree Fern Cache...");
         for (let i = 0; i < 20; i++) {
             const mesh = this.createTreeFern();
+            GraphicsUtils.markAsCache(mesh);
             this.cache.ferns.push({ mesh });
         }
     }

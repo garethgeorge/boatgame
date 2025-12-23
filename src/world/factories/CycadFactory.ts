@@ -27,6 +27,7 @@ export class CycadFactory implements DecorationFactory {
 
         for (let i = 0; i < 20; i++) {
             const mesh = this.createCycad();
+            GraphicsUtils.markAsCache(mesh);
             this.cache.cycads.push({ mesh });
         }
     }

@@ -29,18 +29,21 @@ export class TreeFactory implements DecorationFactory {
         for (let i = 0; i < 50; i++) {
             const wetness = Math.random();
             const mesh = this.createTree(wetness, false, false);
+            GraphicsUtils.markAsCache(mesh);
             this.cache.trees.push({ mesh, wetness, isSnowy: false, isLeafless: false });
         }
         // Generate Snowy Trees
         for (let i = 0; i < 30; i++) {
             const wetness = Math.random();
             const mesh = this.createTree(wetness, true, false);
+            GraphicsUtils.markAsCache(mesh);
             this.cache.trees.push({ mesh, wetness, isSnowy: true, isLeafless: false });
         }
         // Generate Leafless Trees (for Ice Biome)
         for (let i = 0; i < 20; i++) {
             const wetness = Math.random();
             const mesh = this.createTree(wetness, false, true);
+            GraphicsUtils.markAsCache(mesh);
             this.cache.trees.push({ mesh, wetness, isSnowy: false, isLeafless: true });
         }
     }

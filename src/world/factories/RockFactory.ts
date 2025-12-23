@@ -40,12 +40,14 @@ export class RockFactory implements DecorationFactory {
         for (let i = 0; i < 30; i++) {
             const size = Math.random();
             const mesh = this.createRock(size, false);
+            GraphicsUtils.markAsCache(mesh);
             this.cache.push({ mesh, size, isIcy: false });
         }
         // Generate Icy Rocks
         for (let i = 0; i < 20; i++) {
             const size = Math.random();
             const mesh = this.createRock(size, true);
+            GraphicsUtils.markAsCache(mesh);
             this.cache.push({ mesh, size, isIcy: true });
         }
     }

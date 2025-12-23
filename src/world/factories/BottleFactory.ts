@@ -15,8 +15,8 @@ export class BottleFactory implements DecorationFactory {
         this.cache.set(0x0088FF, blueBottle);
 
         // Pin cache entries
-        GraphicsUtils.registerObject(greenBottle);
-        GraphicsUtils.registerObject(blueBottle);
+        GraphicsUtils.markAsCache(greenBottle);
+        GraphicsUtils.markAsCache(blueBottle);
 
         this.animations.push(this.createFadeAnimation());
         this.animations.push(this.createDropAnimation());
@@ -27,6 +27,7 @@ export class BottleFactory implements DecorationFactory {
     create(color: number): THREE.Group {
         if (!this.cache.has(color)) {
             const mesh = this.createBottleMesh(color);
+            GraphicsUtils.markAsCache(mesh);
             this.cache.set(color, mesh);
         }
         const mesh = GraphicsUtils.cloneObject(this.cache.get(color));

@@ -72,7 +72,9 @@ export abstract class BaseMangrove extends Entity {
     this.preload();
 
     for (let i = 0; i < this.CACHE_SIZE; i++) {
-      this.cache.push(this.createMangrove());
+      const mangrove = this.createMangrove();
+      GraphicsUtils.markAsCache(mangrove);
+      this.cache.push(mangrove);
     }
   }
 

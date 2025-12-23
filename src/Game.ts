@@ -120,10 +120,6 @@ export class Game {
             // Add other entities here as needed
         ]);
         GraphicsUtils.tracker.verbose = false;
-        if (this.leakCheckInterval > 0) {
-            GraphicsUtils.tracker.createSnapshot();
-            this.nextLeakCheckTime = performance.now() + this.leakCheckInterval;
-        }
     }
 
 
@@ -427,7 +423,7 @@ export class Game {
         }
 
         if (this.leakCheckInterval > 0 && this.nextLeakCheckTime < performance.now()) {
-            GraphicsUtils.tracker.checkLeaks(60.0, true);
+            GraphicsUtils.tracker.checkLeaks(20.0, true);
             this.nextLeakCheckTime = performance.now() + this.leakCheckInterval;
         }
     }

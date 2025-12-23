@@ -89,6 +89,8 @@ export class GraphicsTracker {
         let count = 0;
 
         console.group('GraphicsTracker Leak Check');
+        console.log('Mesh/Line/Sprite', this.trackedLeaves.size, 'Resources', this.trackedResources.size);
+
         for (const [leaf, timestamp] of this.trackedLeaves) {
             // If it's NOT in the snapshot (meaning it's new since snapshot)
             // AND it's older than the threshold (meaning it's been around for a while)
@@ -108,6 +110,27 @@ export class GraphicsTracker {
             console.warn(`Found ${count} potential leaks.`);
         }
         console.groupEnd();
+    }
+
+    /**
+     * Flags an object hierarchy as "cached" or "permanent".
+     * These objects will be added to the snapshot so they are NOT
+     * reported as leaks, even if they stay alive forever.
+     */
+    public markAsCache(root: THREE.Object3D) {
+        // Ensure it's tracked
+        this.track(root);
+
+        // Add to snapshot
+        this.visit(root, (resource) => {
+            // No action needed for resources in snapshot (snapshots track leaves)
+        }, (leaf) => {
+            if (this.verbose) {
+                console.log('Marking as cache:', leaf.name, leaf);
+            }
+            this.snapshot.add(leaf);
+            return true;
+        });
     }
 
     /**

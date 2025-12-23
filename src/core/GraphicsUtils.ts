@@ -30,6 +30,14 @@ export class GraphicsUtils {
     }
 
     /**
+     * Marks an object as a long-lived cache object.
+     * This prevents it from being reported as a memory leak.
+     */
+    public static markAsCache(object: THREE.Object3D) {
+        this.tracker.markAsCache(object);
+    }
+
+    /**
      * Safely assigns a new material to a mesh, updating reference counts.
      * DO NOT directly assign materials, always use this function.
      */
