@@ -159,7 +159,12 @@ export class GraphicsUtils {
         });
     }
 
-    // To animate material properties of a shared mesh, we need to clone the materials.
+    /**
+     * Clones all materials ensuring correct tracking of resources. This
+     * ensures the materials are not shared so their properties can
+     * safely by changed for example by an animation that targets the
+     * materials.
+     */
     public static cloneMaterials(mesh: THREE.Object3D) {
         // Prepare materials for fading (clone and ensure transparent)
         mesh.traverse((child) => {
