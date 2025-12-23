@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { DecorationFactory } from './DecorationFactory';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class BottleFactory implements DecorationFactory {
     private cache: Map<number, THREE.Group> = new Map();
@@ -7,8 +8,15 @@ export class BottleFactory implements DecorationFactory {
 
     async load(): Promise<void> {
         // Pre-generate bottles (Green and Blue)
-        this.cache.set(0x88FF88, this.createBottleMesh(0x88FF88));
-        this.cache.set(0x0088FF, this.createBottleMesh(0x0088FF));
+        const greenBottle = this.createBottleMesh(0x88FF88);
+        const blueBottle = this.createBottleMesh(0x0088FF);
+
+        this.cache.set(0x88FF88, greenBottle);
+        this.cache.set(0x0088FF, blueBottle);
+
+        // Pin cache entries
+        GraphicsUtils.registerObject(greenBottle);
+        GraphicsUtils.registerObject(blueBottle);
 
         this.animations.push(this.createFadeAnimation());
         this.animations.push(this.createDropAnimation());
@@ -18,9 +26,10 @@ export class BottleFactory implements DecorationFactory {
 
     create(color: number): THREE.Group {
         if (!this.cache.has(color)) {
-            this.cache.set(color, this.createBottleMesh(color));
+            const mesh = this.createBottleMesh(color);
+            this.cache.set(color, mesh);
         }
-        const mesh = this.cache.get(color)!.clone();
+        const mesh = GraphicsUtils.cloneObject(this.cache.get(color));
 
         return mesh;
     }
@@ -34,34 +43,49 @@ export class BottleFactory implements DecorationFactory {
 
         // Bottle Body
         const bodyGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 8);
+        bodyGeo.name = 'Bottle Body';
+
         const glassMat = new THREE.MeshToonMaterial({
+            name: 'Bottle - Glass Material',
             color: color,
             transparent: true,
             opacity: 0.6
         });
-        const body = new THREE.Mesh(bodyGeo, glassMat);
+        glassMat.name = 'Bottle Glass';
+
+        const body = GraphicsUtils.createMesh(bodyGeo, glassMat);
         body.name = 'body';
         mesh.add(body);
 
         // Bottle Neck
         const neckGeo = new THREE.CylinderGeometry(0.2, 0.4, 0.6, 8);
-        const neck = new THREE.Mesh(neckGeo, glassMat);
+        neckGeo.name = 'Bottle Neck';
+
+        const neck = GraphicsUtils.createMesh(neckGeo, glassMat);
         neck.position.y = 0.9;
         neck.name = 'neck';
         mesh.add(neck);
 
         // Cork
         const corkGeo = new THREE.CylinderGeometry(0.24, 0.2, 0.3, 8);
-        const corkMat = new THREE.MeshToonMaterial({ color: 0x8B4513 });
-        const cork = new THREE.Mesh(corkGeo, corkMat);
+        corkGeo.name = 'Bottle Cork';
+
+        const corkMat = new THREE.MeshToonMaterial({ color: 0x8B4513, name: 'Bottle - Cork Material' });
+        corkMat.name = 'Bottle Cork';
+
+        const cork = GraphicsUtils.createMesh(corkGeo, corkMat);
         cork.position.y = 1.3;
         cork.name = 'cork';
         mesh.add(cork);
 
         // Paper Message
         const paperGeo = new THREE.PlaneGeometry(0.3, 0.6);
-        const paperMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide });
-        const paper = new THREE.Mesh(paperGeo, paperMat);
+        paperGeo.name = 'Bottle Paper';
+
+        const paperMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide, name: 'Bottle - Paper Material' });
+        paperMat.name = 'Bottle Paper';
+
+        const paper = GraphicsUtils.createMesh(paperGeo, paperMat);
         paper.rotation.y = Math.PI / 4;
         paper.rotation.z = Math.PI / 8;
         paper.name = 'paper';

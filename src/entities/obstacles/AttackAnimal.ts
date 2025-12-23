@@ -9,6 +9,7 @@ import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AttackAnimalEnteringWater, AttackAnimalShoreIdle, AttackAnimalWater } from '../behaviors/AttackAnimalBehavior';
 import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnteringWaterBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export interface AttackAnimalOptions {
     x: number;

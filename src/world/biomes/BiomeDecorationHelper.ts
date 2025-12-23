@@ -1,6 +1,8 @@
 import * as THREE from 'three';
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { DecorationContext } from '../decorators/TerrainDecorator';
 import { TerrainChunk } from '../TerrainChunk';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class BiomeDecorationHelper {
     public generateRandomPositionInRange(context: DecorationContext, zStart: number, zEnd: number): { worldX: number; worldZ: number; height: number } {
@@ -52,10 +54,14 @@ export class BiomeDecorationHelper {
         object.rotation.y = Math.random() * Math.PI * 2;
         object.updateMatrixWorld(true);
 
-        // Collect geometries for merging
+        // Collect geometries for merging. The cloned geometries
+        // are disposed when merged.
         object.traverse((child) => {
             if (child instanceof THREE.Mesh) {
+                // clone geometry with matrix applied
                 const geometry = child.geometry.clone();
+                GraphicsUtils.registerObject(geometry);
+                geometry.name = 'Decorations - cloned geom';
                 geometry.applyMatrix4(child.matrixWorld);
 
                 const material = child.material as THREE.Material;
@@ -65,5 +71,29 @@ export class BiomeDecorationHelper {
                 context.geometriesByMaterial.get(material)!.push(geometry);
             }
         });
+    }
+
+    public mergeAndAddGeometries(
+        geometriesByMaterial: Map<THREE.Material, THREE.BufferGeometry[]>,
+        group: THREE.Group
+    ): void {
+        for (const [material, geometries] of geometriesByMaterial) {
+            if (geometries.length === 0) continue;
+
+            const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries);
+            mergedGeometry.name = 'Decorations - merged geom';
+
+            const mesh = GraphicsUtils.createMesh(mergedGeometry, material);
+            // Material is shared from decorators, so we DON'T dispose it here
+
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            group.add(mesh);
+
+            // Dispose of the source geometries (clones) now that they are merged
+            for (const geometry of geometries) {
+                GraphicsUtils.disposeObject(geometry);
+            }
+        }
     }
 }

@@ -1,14 +1,12 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { ResourceDisposer } from './ResourceDisposer';
+import { GraphicsUtils } from './GraphicsUtils';
 import { Boat } from '../entities/Boat';
 
 export abstract class Entity {
   public physicsBodies: planck.Body[] = [];
   public meshes: THREE.Object3D[] = [];
   public debugMeshes: THREE.Object3D[] = [];
-
-  protected disposer: ResourceDisposer = new ResourceDisposer();
 
   // Set to true to have the entity deleted
   public shouldRemove: boolean = false;
@@ -43,13 +41,15 @@ export abstract class Entity {
   }
 
   dispose() {
-    this.disposer.dispose();
+    for (const mesh of this.meshes) {
+      GraphicsUtils.disposeObject(mesh);
+    }
+    for (const debugMesh of this.debugMeshes) {
+      GraphicsUtils.disposeObject(debugMesh);
+    }
     this.meshes = [];
     this.debugMeshes = [];
     this.physicsBodies = [];
-    // Physics bodies are managed by PhysicsEngine interaction usually, 
-    // but if we own them we should destroy them.
-    // Entity manager destroys bodies.
   }
 
   // Interpolation state
@@ -135,7 +135,7 @@ export abstract class Entity {
 
         let mesh: THREE.Mesh | null = null;
         const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
-        this.disposer.add(material);
+        material.name = `Debug - Physics Material`;
 
         if (type === 'circle') {
           const circle = shape as planck.Circle;
@@ -143,8 +143,8 @@ export abstract class Entity {
           const center = circle.getCenter();
 
           const geometry = new THREE.CylinderGeometry(radius, radius, 1, 16);
-          this.disposer.add(geometry);
-          mesh = new THREE.Mesh(geometry, material);
+          geometry.name = `Debug - Physics Circle`;
+          mesh = GraphicsUtils.createMesh(geometry, material);
           mesh.position.set(center.x, 0, center.y); // Local offset
 
         } else if (type === 'polygon') {
@@ -160,9 +160,10 @@ export abstract class Entity {
           }
 
           const geometry = new THREE.BufferGeometry().setFromPoints(points);
-          this.disposer.add(geometry);
-          const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xff0000 }));
-          this.disposer.add(line.material as THREE.Material);
+          geometry.name = `Debug - Physics Polygon`;
+          const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+          lineMaterial.name = `Debug - Physics Line Material`;
+          const line = GraphicsUtils.createLine(geometry, lineMaterial);
 
           group.add(line);
           continue;

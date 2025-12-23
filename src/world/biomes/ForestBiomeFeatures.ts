@@ -35,15 +35,15 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
         const count = Math.floor(length * 16);
 
         for (let i = 0; i < count; i++) {
-            const position = this.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-            if (!this.decoHelper.isValidDecorationPosition(context, position)) continue;
+            const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
+            if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
 
             if (Math.random() > 0.8) {
                 const tree = Decorations.getTree(Math.random(), false, false);
-                this.decoHelper.positionAndCollectGeometry(tree, position, context);
+                context.decoHelper.positionAndCollectGeometry(tree, position, context);
             } else if (Math.random() > 0.95) {
                 const rock = Decorations.getRock(this.id, Math.random());
-                this.decoHelper.positionAndCollectGeometry(rock, position, context);
+                context.decoHelper.positionAndCollectGeometry(rock, position, context);
             }
         }
     }

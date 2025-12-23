@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { createNoise3D } from 'simplex-noise';
 import { DecorationFactory } from './DecorationFactory';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class RockFactory implements DecorationFactory {
-    private static readonly rockMaterialDesert = new THREE.MeshToonMaterial({ color: 0xE6C288 }); // Yellow Sandstone
-    private static readonly rockMaterialForest = new THREE.MeshToonMaterial({ color: 0x888888 }); // Grey
-    private static readonly rockMaterialSwamp = new THREE.MeshToonMaterial({ color: 0x4D3E30 }); // Muddy Brown
-    private static readonly iceRockMaterial = new THREE.MeshToonMaterial({ color: 0xE0F6FF }); // Ice Blue
+    private static readonly rockMaterialDesert = new THREE.MeshToonMaterial({ color: 0xE6C288, name: 'Rock - Desert Material' }); // Yellow Sandstone
+    private static readonly rockMaterialForest = new THREE.MeshToonMaterial({ color: 0x888888, name: 'Rock - Forest Material' }); // Grey
+    private static readonly rockMaterialSwamp = new THREE.MeshToonMaterial({ color: 0x4D3E30, name: 'Rock - Swamp Material' }); // Muddy Brown
+    private static readonly iceRockMaterial = new THREE.MeshToonMaterial({ color: 0xE0F6FF, name: 'Rock - Ice Material' }); // Ice Blue
 
     private static rockNoise3D = createNoise3D();
 
@@ -24,16 +25,28 @@ export class RockFactory implements DecorationFactory {
     private cache: { mesh: THREE.Group, size: number, isIcy: boolean }[] = [];
 
     async load(): Promise<void> {
+        // Retain static materials
+        GraphicsUtils.registerObject(RockFactory.rockMaterialDesert);
+        GraphicsUtils.registerObject(RockFactory.rockMaterialForest);
+        GraphicsUtils.registerObject(RockFactory.rockMaterialSwamp);
+        GraphicsUtils.registerObject(RockFactory.iceRockMaterial);
+
+        // Clear existing cache and release old meshes
+        this.cache.forEach(r => GraphicsUtils.disposeObject(r.mesh));
+        this.cache = [];
+
         console.log("Generating Rock Cache...");
         // Generate Rocks
         for (let i = 0; i < 30; i++) {
             const size = Math.random();
-            this.cache.push({ mesh: this.createRock(size, false), size, isIcy: false });
+            const mesh = this.createRock(size, false);
+            this.cache.push({ mesh, size, isIcy: false });
         }
         // Generate Icy Rocks
         for (let i = 0; i < 20; i++) {
             const size = Math.random();
-            this.cache.push({ mesh: this.createRock(size, true), size, isIcy: true });
+            const mesh = this.createRock(size, true);
+            this.cache.push({ mesh, size, isIcy: true });
         }
     }
 
@@ -51,15 +64,14 @@ export class RockFactory implements DecorationFactory {
                 ? candidates[Math.floor(Math.random() * candidates.length)]
                 : this.cache.find(r => r.isIcy === isIcy) || this.cache[0];
 
-            const cachedMesh = source ? source.mesh : this.createRock(size, isIcy);
-            const rock = cachedMesh.clone();
+            const rock = source ? GraphicsUtils.cloneObject(source.mesh) : this.createRock(size, isIcy);
 
             // Apply material based on biome if not icy
             if (!isIcy) {
                 const material = this.getMaterialForBiome(biome);
                 rock.traverse((child) => {
                     if (child instanceof THREE.Mesh) {
-                        child.material = material;
+                        GraphicsUtils.assignMaterial(child, material);
                     }
                 });
             }
@@ -81,7 +93,7 @@ export class RockFactory implements DecorationFactory {
             const material = this.getMaterialForBiome(biome);
             rock.traverse((child) => {
                 if (child instanceof THREE.Mesh) {
-                    child.material = material;
+                    GraphicsUtils.assignMaterial(child, material);
                 }
             });
         }
@@ -97,6 +109,7 @@ export class RockFactory implements DecorationFactory {
 
         const detail = size > 0.5 ? 1 : 0;
         const geo = new THREE.IcosahedronGeometry(baseScale, detail);
+        geo.name = 'Rock - Geometry';
 
         const posAttribute = geo.attributes.position;
         const vertex = new THREE.Vector3();
@@ -136,7 +149,7 @@ export class RockFactory implements DecorationFactory {
         );
 
         // Default material (will be swapped)
-        const mesh = new THREE.Mesh(geo, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest);
+        const mesh = GraphicsUtils.createMesh(geo, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest);
 
         // Random rotation
         mesh.rotation.set(
@@ -154,6 +167,7 @@ export class RockFactory implements DecorationFactory {
             const size2 = size * 0.5;
             const scale2 = baseScale * 0.5;
             const geo2 = new THREE.IcosahedronGeometry(scale2, 0);
+            geo2.name = 'Rock - Cluster Geometry';
 
             const posAttribute2 = geo2.attributes.position;
             const vertex2 = new THREE.Vector3();
@@ -173,7 +187,7 @@ export class RockFactory implements DecorationFactory {
             geo2.computeVertexNormals();
             geo2.scale(1, 0.7, 1);
 
-            const mesh2 = new THREE.Mesh(geo2, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest);
+            const mesh2 = GraphicsUtils.createMesh(geo2, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest);
 
             const offsetDir = Math.random() * Math.PI * 2;
             const offsetDist = baseScale * 0.9;

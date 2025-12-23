@@ -47,19 +47,19 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         const count = Math.floor(length * 20); // Denser
 
         for (let i = 0; i < count; i++) {
-            const position = this.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-            if (!this.decoHelper.isValidDecorationPosition(context, position)) continue;
+            const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
+            if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
 
             const rand = Math.random();
             if (rand > 0.8) {
                 const cycad = Decorations.getCycad();
-                this.decoHelper.positionAndCollectGeometry(cycad, position, context);
+                context.decoHelper.positionAndCollectGeometry(cycad, position, context);
             } else if (rand > 0.6) {
                 const fern = Decorations.getTreeFern();
-                this.decoHelper.positionAndCollectGeometry(fern, position, context);
+                context.decoHelper.positionAndCollectGeometry(fern, position, context);
             } else if (rand > 0.55) {
                 const rock = Decorations.getRock(this.id, Math.random());
-                this.decoHelper.positionAndCollectGeometry(rock, position, context);
+                context.decoHelper.positionAndCollectGeometry(rock, position, context);
             }
         }
     }

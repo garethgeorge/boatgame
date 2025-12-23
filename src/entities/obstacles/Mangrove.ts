@@ -4,17 +4,24 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations'; // Re-using materials if possible, or define new ones
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class Mangrove extends Entity {
   private static cache: THREE.Group[] = [];
   private static readonly CACHE_SIZE = 100;
 
   // Materials
-  private static trunkMaterial = new THREE.MeshToonMaterial({ color: 0x5D5346 }); // Darker swamp wood
+  private static trunkMaterial = new THREE.MeshToonMaterial({ color: 0x5D5346, name: 'Mangrove - Trunk Material' }); // Darker swamp wood
   private static leafMaterial = new THREE.MeshToonMaterial({
+    name: 'Mangrove - Leaf Material',
     color: 0xffffff, // White base for vertex colors
     vertexColors: true
   });
+
+  public static preload() {
+    GraphicsUtils.registerObject(this.trunkMaterial);
+    GraphicsUtils.registerObject(this.leafMaterial);
+  }
 
   constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
     super();
@@ -57,11 +64,13 @@ export class Mangrove extends Entity {
       this.generateCache();
     }
     const template = this.cache[Math.floor(Math.random() * this.cache.length)];
-    return template.clone();
+    return GraphicsUtils.cloneObject(template);
   }
 
   private static generateCache() {
     console.log("Generating Mangrove Cache...");
+    this.preload();
+
     for (let i = 0; i < this.CACHE_SIZE; i++) {
       this.cache.push(this.createMangrove());
     }
@@ -124,7 +133,8 @@ export class Mangrove extends Entity {
 
       // Thicker roots
       const tubeGeo = new THREE.TubeGeometry(curve, 8, 0.3 + Math.random() * 0.2, 5, false);
-      const root = new THREE.Mesh(tubeGeo, this.trunkMaterial);
+      tubeGeo.name = 'Mangrove - Root Geometry';
+      const root = GraphicsUtils.createMesh(tubeGeo, this.trunkMaterial);
       root.castShadow = true;
       root.receiveShadow = true;
       group.add(root);
@@ -160,7 +170,8 @@ export class Mangrove extends Entity {
     // Let's stick to constant radius 1.2 (average of previous 0.9 and 1.5).
 
     const trunkGeo = new THREE.TubeGeometry(trunkCurve, 8, 1.2, 7, false);
-    const trunk = new THREE.Mesh(trunkGeo, this.trunkMaterial);
+    trunkGeo.name = 'Mangrove - Trunk Geometry';
+    const trunk = GraphicsUtils.createMesh(trunkGeo, this.trunkMaterial);
     trunk.castShadow = true;
     trunk.receiveShadow = true;
     group.add(trunk);
@@ -176,7 +187,8 @@ export class Mangrove extends Entity {
       const len = (2.0 + Math.random() * 1.5) * 4.5;
 
       const branchGeo = new THREE.CylinderGeometry(0.3, 0.6, len, 5);
-      const branch = new THREE.Mesh(branchGeo, this.trunkMaterial);
+      branchGeo.name = 'Mangrove - Branch Geometry';
+      const branch = GraphicsUtils.createMesh(branchGeo, this.trunkMaterial);
 
       // Branch position/rotation in Group space
       const bY = branchStartY + (Math.random() * trunkHeight * 0.4);
@@ -249,6 +261,7 @@ export class Mangrove extends Entity {
       if (child instanceof THREE.Mesh && child.material === this.trunkMaterial) {
         child.updateMatrixWorld();
         const geo = child.geometry.clone();
+        GraphicsUtils.registerObject(geo);
         geo.applyMatrix4(child.matrixWorld);
         woodGeometries.push(geo);
       }
@@ -260,6 +273,7 @@ export class Mangrove extends Entity {
       if (child instanceof THREE.Mesh && child.material === this.leafMaterial) {
         child.updateMatrixWorld();
         const geo = child.geometry.clone();
+        GraphicsUtils.registerObject(geo);
         geo.applyMatrix4(child.matrixWorld);
         leafGeometries.push(geo);
       }
@@ -270,30 +284,30 @@ export class Mangrove extends Entity {
 
     if (woodGeometries.length > 0) {
       const mergedWood = BufferGeometryUtils.mergeGeometries(woodGeometries);
-      const woodMesh = new THREE.Mesh(mergedWood, this.trunkMaterial);
+      const woodMesh = GraphicsUtils.createMesh(mergedWood, this.trunkMaterial);
       woodMesh.castShadow = true;
       woodMesh.receiveShadow = true;
       finalGroup.add(woodMesh);
 
       // Dispose of temporary geometries
-      woodGeometries.forEach(g => g.dispose());
+      woodGeometries.forEach(g => GraphicsUtils.disposeObject(g));
     }
 
     if (leafGeometries.length > 0) {
       const mergedLeaves = BufferGeometryUtils.mergeGeometries(leafGeometries);
-      const leafMesh = new THREE.Mesh(mergedLeaves, this.leafMaterial);
+      const leafMesh = GraphicsUtils.createMesh(mergedLeaves, this.leafMaterial);
       leafMesh.castShadow = true;
       leafMesh.receiveShadow = true;
       finalGroup.add(leafMesh);
 
       // Dispose of temporary geometries
-      leafGeometries.forEach(g => g.dispose());
+      leafGeometries.forEach(g => GraphicsUtils.disposeObject(g));
     }
 
     // Dispose of the original loose group and its children's geometries
     group.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        child.geometry.dispose();
+        GraphicsUtils.disposeObject(child.geometry);
       }
     });
 
@@ -305,6 +319,7 @@ export class Mangrove extends Entity {
     const radius = 2.0 + Math.random() * 1.5;
     const segments = 7; // Low poly, odd number for irregularity
     const geo = new THREE.CylinderGeometry(radius, radius, 0.1, segments);
+    geo.name = 'Mangrove - Leaf Disk Geometry';
 
     // Modulate vertices to make it irregular
     const posAttribute = geo.attributes.position;
@@ -342,7 +357,7 @@ export class Mangrove extends Entity {
     // Compute normals after modification
     geo.computeVertexNormals();
 
-    const mesh = new THREE.Mesh(geo, this.leafMaterial);
+    const mesh = GraphicsUtils.createMesh(geo, this.leafMaterial);
 
     // Strictly horizontal rotation with random yaw
     mesh.rotation.y = Math.random() * Math.PI * 2;

@@ -1,15 +1,24 @@
 import * as THREE from 'three';
 import { DecorationFactory } from './DecorationFactory';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class CactusFactory implements DecorationFactory {
-    private static readonly cactusMaterial = new THREE.MeshToonMaterial({ color: 0x6B8E23 }); // Olive Drab
+    private static readonly cactusMaterial = new THREE.MeshToonMaterial({ color: 0x6B8E23, name: 'Cactus - Material' }); // Olive Drab
 
     private cache: THREE.Group[] = [];
 
     async load(): Promise<void> {
+        // Retain static materials
+        GraphicsUtils.registerObject(CactusFactory.cactusMaterial);
+
+        // Clear existing cache and release old meshes
+        this.cache.forEach(m => GraphicsUtils.disposeObject(m));
+        this.cache = [];
+
         console.log("Generating Cactus Cache...");
         for (let i = 0; i < 20; i++) {
-            this.cache.push(this.createCactus());
+            const mesh = this.createCactus();
+            this.cache.push(mesh);
         }
     }
 
@@ -32,7 +41,8 @@ export class CactusFactory implements DecorationFactory {
 
         // Trunk
         const trunkGeo = new THREE.CapsuleGeometry(trunkRadius, height - trunkRadius * 2, 8, 16);
-        const trunk = new THREE.Mesh(trunkGeo, CactusFactory.cactusMaterial);
+        trunkGeo.name = 'Cactus - Trunk Geometry';
+        const trunk = GraphicsUtils.createMesh(trunkGeo, CactusFactory.cactusMaterial);
         trunk.position.y = height / 2;
         trunk.castShadow = true;
         trunk.receiveShadow = true;
@@ -72,14 +82,16 @@ export class CactusFactory implements DecorationFactory {
 
             // Tube Geometry
             const tubeGeo = new THREE.TubeGeometry(curve, 8, armRadius, 8, false);
-            const arm = new THREE.Mesh(tubeGeo, CactusFactory.cactusMaterial);
+            tubeGeo.name = 'Cactus - Arm Geometry';
+            const arm = GraphicsUtils.createMesh(tubeGeo, CactusFactory.cactusMaterial);
             arm.castShadow = true;
             arm.receiveShadow = true;
             group.add(arm);
 
             // Cap the top of the arm
             const capGeo = new THREE.SphereGeometry(armRadius, 8, 8);
-            const cap = new THREE.Mesh(capGeo, CactusFactory.cactusMaterial);
+            capGeo.name = 'Cactus - Arm Cap Geometry';
+            const cap = GraphicsUtils.createMesh(capGeo, CactusFactory.cactusMaterial);
             cap.position.copy(endPoint);
             cap.castShadow = true;
             cap.receiveShadow = true;

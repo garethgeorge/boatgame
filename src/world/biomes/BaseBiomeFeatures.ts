@@ -3,7 +3,6 @@ import { BiomeFeatures } from './BiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/TerrainDecorator';
-import { BiomeDecorationHelper } from './BiomeDecorationHelper';
 import { Decorations } from '../Decorations';
 import { LogSpawner } from '../../entities/spawners/LogSpawner';
 import { RockSpawner } from '../../entities/spawners/RockSpawner';
@@ -14,7 +13,6 @@ import { Spawnable } from '../../entities/Spawnable'
 
 export abstract class BaseBiomeFeatures implements BiomeFeatures {
     abstract id: BiomeType;
-    protected decoHelper = new BiomeDecorationHelper();
 
     // Common Spawners
     protected logSpawner = new LogSpawner();

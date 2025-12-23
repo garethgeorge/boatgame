@@ -15,7 +15,7 @@ export class TreeFernDecorator extends BaseDecorator {
             // Mix with cycads, maybe slightly more rare?
             if (Math.random() > 0.8) {
                 const fern = Decorations.getTreeFern();
-                this.positionAndCollectGeometry(fern, position, context);
+                context.decoHelper.positionAndCollectGeometry(fern, position, context);
             }
         }
     }

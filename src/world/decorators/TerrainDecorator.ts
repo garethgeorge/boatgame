@@ -3,6 +3,8 @@ import { TerrainChunk } from '../TerrainChunk';
 import { RiverSystem } from '../RiverSystem';
 import { TerrainGeometry } from '../TerrainGeometry';
 
+import { BiomeDecorationHelper } from '../biomes/BiomeDecorationHelper';
+
 export interface DecorationContext {
     // The chunk we are decorating
     chunk: TerrainChunk;
@@ -21,6 +23,8 @@ export interface DecorationContext {
     biomeZStart: number;
     // The end Z of the current biome
     biomeZEnd: number;
+    // Helper for biome decorations
+    decoHelper: BiomeDecorationHelper;
 }
 
 export interface TerrainDecorator {

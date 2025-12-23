@@ -1,17 +1,27 @@
 import * as THREE from 'three';
 import { DecorationFactory } from './DecorationFactory';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class BushFactory implements DecorationFactory {
-    private static readonly dryBushMaterial = new THREE.MeshToonMaterial({ color: 0x8B5A2B }); // Brownish
-    private static readonly greenBushMaterial = new THREE.MeshToonMaterial({ color: 0x32CD32 }); // Lime Green
+    private static readonly dryBushMaterial = new THREE.MeshToonMaterial({ color: 0x8B5A2B, name: 'Bush - Dry Material' }); // Brownish
+    private static readonly greenBushMaterial = new THREE.MeshToonMaterial({ color: 0x32CD32, name: 'Bush - Green Material' }); // Lime Green
 
     private cache: { mesh: THREE.Group, wetness: number }[] = [];
 
     async load(): Promise<void> {
+        // Retain static materials
+        GraphicsUtils.registerObject(BushFactory.dryBushMaterial);
+        GraphicsUtils.registerObject(BushFactory.greenBushMaterial);
+
+        // Clear existing cache and release old meshes
+        this.cache.forEach(b => GraphicsUtils.disposeObject(b.mesh));
+        this.cache = [];
+
         console.log("Generating Bush Cache...");
         for (let i = 0; i < 50; i++) {
             const wetness = Math.random();
-            this.cache.push({ mesh: this.createBush(wetness), wetness });
+            const mesh = this.createBush(wetness);
+            this.cache.push({ mesh, wetness });
         }
     }
 
@@ -25,7 +35,7 @@ export class BushFactory implements DecorationFactory {
                 ? candidates[Math.floor(Math.random() * candidates.length)]
                 : this.cache[Math.floor(Math.random() * this.cache.length)];
 
-            mesh = source ? source.mesh.clone() : this.createBush(wetness);
+            mesh = source ? GraphicsUtils.cloneObject(source.mesh) : this.createBush(wetness);
         }
         return mesh;
     }
@@ -55,9 +65,10 @@ export class BushFactory implements DecorationFactory {
                 for (let k = 0; k < segments; k++) {
                     const segWidth = width * (1 - k / segments);
                     const segGeo = new THREE.PlaneGeometry(segWidth, segmentLen);
+                    segGeo.name = 'Bush - Fern Frond Segment Geometry';
                     segGeo.translate(0, segmentLen / 2, 0);
 
-                    const seg = new THREE.Mesh(segGeo, BushFactory.greenBushMaterial);
+                    const seg = GraphicsUtils.createMesh(segGeo, BushFactory.greenBushMaterial);
                     seg.position.copy(currentPos);
                     seg.rotation.x = currentAngle;
                     (seg.material as THREE.MeshToonMaterial).side = THREE.DoubleSide;
@@ -81,7 +92,8 @@ export class BushFactory implements DecorationFactory {
                 const mid = start.clone().add(end).multiplyScalar(0.5);
 
                 const geo = new THREE.CylinderGeometry(thick * 0.7, thick, len, 4);
-                const mesh = new THREE.Mesh(geo, material);
+                geo.name = 'Bush - Dead Branch Geometry';
+                const mesh = GraphicsUtils.createMesh(geo, material);
                 mesh.position.copy(mid);
                 mesh.lookAt(end);
                 mesh.rotateX(Math.PI / 2);

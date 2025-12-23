@@ -21,7 +21,7 @@ export class RockDecorator extends BaseDecorator {
 
             if (Math.random() > threshold) {
                 const rock = Decorations.getRock(biomeType, Math.random());
-                this.positionAndCollectGeometry(rock, position, context);
+                context.decoHelper.positionAndCollectGeometry(rock, position, context);
             }
         }
     }

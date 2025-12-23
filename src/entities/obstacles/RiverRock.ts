@@ -2,6 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class RiverRock extends Entity {
 
@@ -30,6 +31,8 @@ export class RiverRock extends Entity {
         // Cylinder base
         const height = radius * 3.0;
         const geometry = new THREE.CylinderGeometry(radius * 0.3, radius * 1.0, height, 8, 5);
+        geometry.name = 'RiverRock';
+
         const posAttribute = geometry.attributes.position;
         const normalAttribute = geometry.attributes.normal;
         const vertex = new THREE.Vector3();
@@ -67,10 +70,9 @@ export class RiverRock extends Entity {
         geometry.computeVertexNormals();
 
         const material = new THREE.MeshToonMaterial({ color: 0x808080 });
-        this.disposer.add(geometry);
-        this.disposer.add(material);
+        material.name = 'RiverRock';
 
-        const mesh = new THREE.Mesh(geometry, material);
+        const mesh = GraphicsUtils.createMesh(geometry, material);
         this.meshes.push(mesh);
         // @ts-ignore
         material.flatShading = true; // Works in runtime, types might be strict
@@ -93,6 +95,7 @@ export class RiverRock extends Entity {
         // We want top to be at ~0.5m above water.
         // So shift down by 1.5r - 0.5.
         mesh.position.y = -(height / 2) + 0.5 + (Math.random() * 0.5);
+
     }
 
     wasHitByPlayer() {

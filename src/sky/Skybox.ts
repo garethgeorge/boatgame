@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GraphicsUtils } from '../core/GraphicsUtils';
 
 export class Skybox {
     public mesh: THREE.Mesh;
@@ -11,6 +12,7 @@ export class Skybox {
 
     private createSkybox(): THREE.Mesh {
         const skyGeo = new THREE.SphereGeometry(360, 32, 15);
+        skyGeo.name = 'Skybox Geometry';
 
         this.uniforms = {
             topColor: { value: new THREE.Color(0x0099ff) },
@@ -52,10 +54,12 @@ export class Skybox {
         }
       `,
             side: THREE.BackSide,
-            fog: true
+            fog: true,
+            name: 'Skybox Material'
         });
 
-        return new THREE.Mesh(skyGeo, skyMat);
+        const mesh = GraphicsUtils.createMesh(skyGeo, skyMat);
+        return mesh;
     }
 
     update(cameraPosition: THREE.Vector3, topColor: THREE.Color, bottomColor: THREE.Color) {

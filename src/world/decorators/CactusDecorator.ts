@@ -14,7 +14,7 @@ export class CactusDecorator extends BaseDecorator {
 
             if (Math.random() > 0.8) {
                 const cactus = Decorations.getCactus();
-                this.positionAndCollectGeometry(cactus, position, context);
+                context.decoHelper.positionAndCollectGeometry(cactus, position, context);
             }
         }
     }

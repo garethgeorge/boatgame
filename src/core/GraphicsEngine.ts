@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GraphicsUtils } from './GraphicsUtils';
 import { TerrainChunk } from '../world/TerrainChunk';
 import { Profiler } from './Profiler';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
@@ -9,15 +10,15 @@ import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass'
 
 export class GraphicsEngine {
+  public static readonly USE_POSTPROCESSING: boolean = true;
+
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
-
   renderer: THREE.WebGLRenderer;
-  composer: EffectComposer;
-  sobelPass: ShaderPass;
-  fxaaPass: ShaderPass;
-  outputPass: OutputPass;
-
+  composer?: EffectComposer;
+  sobelPass?: ShaderPass;
+  fxaaPass?: ShaderPass;
+  outputPass?: OutputPass;
 
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
@@ -39,44 +40,60 @@ export class GraphicsEngine {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap at 2x for performance
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
+    this.renderer.info.autoReset = false;
+
     container.appendChild(this.renderer.domElement);
 
     // Post-processing setup
-    this.composer = new EffectComposer(this.renderer);
-    const renderPass = new RenderPass(this.scene, this.camera);
-    this.composer.addPass(renderPass);
+    if (GraphicsEngine.USE_POSTPROCESSING) {
+      this.composer = new EffectComposer(this.renderer);
+      const renderPass = new RenderPass(this.scene, this.camera);
+      this.composer.addPass(renderPass);
 
-    this.sobelPass = new ShaderPass(SobelShader);
-    this.sobelPass.uniforms['resolution'].value.x = window.innerWidth * window.devicePixelRatio;
-    this.sobelPass.uniforms['resolution'].value.y = window.innerHeight * window.devicePixelRatio;
-    this.composer.addPass(this.sobelPass);
+      this.sobelPass = new ShaderPass(SobelShader);
+      this.sobelPass.uniforms['resolution'].value.x = window.innerWidth * window.devicePixelRatio;
+      this.sobelPass.uniforms['resolution'].value.y = window.innerHeight * window.devicePixelRatio;
+      this.composer.addPass(this.sobelPass);
 
-    this.fxaaPass = new ShaderPass(FXAAShader);
-    this.fxaaPass.uniforms['resolution'].value.x = 1 / (window.innerWidth * window.devicePixelRatio);
-    this.fxaaPass.uniforms['resolution'].value.y = 1 / (window.innerHeight * window.devicePixelRatio);
-    this.composer.addPass(this.fxaaPass);
+      this.fxaaPass = new ShaderPass(FXAAShader);
+      this.fxaaPass.uniforms['resolution'].value.x = 1 / (window.innerWidth * window.devicePixelRatio);
+      this.fxaaPass.uniforms['resolution'].value.y = 1 / (window.innerHeight * window.devicePixelRatio);
+      this.composer.addPass(this.fxaaPass);
 
-    this.outputPass = new OutputPass();
-    this.composer.addPass(this.outputPass);
+      this.outputPass = new OutputPass();
+      this.composer.addPass(this.outputPass);
+    }
 
     window.addEventListener('resize', () => this.onWindowResize(), false);
   }
 
-
-
   render(dt: number) {
-    this.composer.render();
+
+    this.renderer.info.reset();
+
+    if (GraphicsEngine.USE_POSTPROCESSING && this.composer) {
+      this.composer.render();
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   onWindowResize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.composer.setSize(window.innerWidth, window.innerHeight);
-    this.sobelPass.uniforms['resolution'].value.x = window.innerWidth * window.devicePixelRatio;
-    this.sobelPass.uniforms['resolution'].value.y = window.innerHeight * window.devicePixelRatio;
-    this.fxaaPass.uniforms['resolution'].value.x = 1 / (window.innerWidth * window.devicePixelRatio);
-    this.fxaaPass.uniforms['resolution'].value.y = 1 / (window.innerHeight * window.devicePixelRatio);
+
+    if (GraphicsEngine.USE_POSTPROCESSING && this.composer) {
+      this.composer.setSize(window.innerWidth, window.innerHeight);
+      if (this.sobelPass) {
+        this.sobelPass.uniforms['resolution'].value.x = window.innerWidth * window.devicePixelRatio;
+        this.sobelPass.uniforms['resolution'].value.y = window.innerHeight * window.devicePixelRatio;
+      }
+      if (this.fxaaPass) {
+        this.fxaaPass.uniforms['resolution'].value.x = 1 / (window.innerWidth * window.devicePixelRatio);
+        this.fxaaPass.uniforms['resolution'].value.y = 1 / (window.innerHeight * window.devicePixelRatio);
+      }
+    }
   }
 
   add(object: THREE.Object3D) {

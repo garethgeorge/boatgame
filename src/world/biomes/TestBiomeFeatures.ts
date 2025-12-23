@@ -2,6 +2,9 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/TerrainDecorator';
+import { Decorations } from '../Decorations';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
+import { TRexSpawner } from '../../entities/spawners/TRexSpawner';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -11,11 +14,18 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
-        // No decorations for test biome
+        for (let i = 0; i < 0; ++i) {
+            const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
+            const cycad = Decorations.getTreeFern();
+            context.decoHelper.positionAndCollectGeometry(cycad, position, context);
+            GraphicsUtils.disposeObject(cycad);
+        }
     }
+
+    private trexSpawner = new TRexSpawner();
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
         //const count = (zEnd - zStart) * 0.01;
-        //await this.rockSpawner.spawn(context, count, zStart, zEnd);
+        await this.trexSpawner.spawn(context, 5, zStart, zEnd);
     }
 }

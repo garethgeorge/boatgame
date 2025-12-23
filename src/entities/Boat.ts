@@ -8,6 +8,7 @@ import { Decorations } from '../world/Decorations';
 import { CollectedBottles } from './CollectedBottles';
 import { MessageInABottle } from './obstacles/MessageInABottle';
 import { Pier } from "./obstacles/Pier";
+import { GraphicsUtils } from '../core/GraphicsUtils';
 
 export class Boat extends Entity {
     public collectedBottles: CollectedBottles;

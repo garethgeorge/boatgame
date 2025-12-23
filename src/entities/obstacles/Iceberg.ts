@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class Iceberg extends Entity {
     private animationMixer?: THREE.AnimationMixer;
@@ -60,18 +61,18 @@ export class Iceberg extends Entity {
         };
 
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-        this.disposer.add(geometry);
+        geometry.name = 'Iceberg - Geometry';
 
         // Center the geometry
         geometry.center();
 
         const material = new THREE.MeshToonMaterial({
+            name: 'Iceberg - Material',
             color: 0xE0F6FF, // Ice Blue
             transparent: true,
             opacity: 0.9,
             side: THREE.DoubleSide
         });
-        this.disposer.add(material);
         // @ts-ignore
         material.flatShading = true; // Works in runtime
         material.needsUpdate = true;
@@ -79,7 +80,7 @@ export class Iceberg extends Entity {
         const mesh = new THREE.Group(); // Parent group handles Y-rotation (yaw) from physics
         this.meshes.push(mesh);
 
-        const innerMesh = new THREE.Mesh(geometry, material);
+        const innerMesh = GraphicsUtils.createMesh(geometry, material);
 
         // Rotate inner mesh to lie flat on water
         innerMesh.rotation.x = -Math.PI / 2;
@@ -114,6 +115,7 @@ export class Iceberg extends Entity {
                 }
             }
         }
+
     }
 
     wasHitByPlayer() {

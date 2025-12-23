@@ -8,10 +8,12 @@ import { RiverSystem } from './RiverSystem';
 import { ObstacleManager } from '../managers/ObstacleManager';
 
 import { Boat } from '../entities/Boat';
+import { GraphicsUtils } from '../core/GraphicsUtils';
 
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
   private loadingChunks: Set<number> = new Set();
+  private collisionMidZ: number = -Infinity;
   private collisionBodies: planck.Body[] = [];
   private collisionMeshes: THREE.Mesh[] = [];
 
@@ -96,12 +98,20 @@ export class TerrainManager {
     const renderDistance = 6; // Number of chunks to render in each direction
 
     // Create new chunks
-    for (let i = -renderDistance; i <= renderDistance; i++) {
-      const index = currentChunkIndex + i;
+    for (let i = 0; i <= 2 * renderDistance; i++) {
+
+      // limit number of concurrent creations
+      if (this.loadingChunks.size > 3)
+        break;
+
+      // 0, 1, 2, ... -> 0, -1, 1, -2, ...
+      const offset = i % 2 === 0 ? i / 2 : -((i + 1) / 2);
+      const index = currentChunkIndex + offset;
       if (!this.chunks.has(index) && !this.loadingChunks.has(index)) {
         const zOffset = index * TerrainChunk.CHUNK_SIZE;
         this.loadingChunks.add(index);
 
+        console.log(`[TerrainManager] Creating chunk ${index}`);
         TerrainChunk.createAsync(zOffset, this.graphicsEngine).then(chunk => {
           this.chunks.set(index, chunk);
           this.loadingChunks.delete(index);
@@ -113,9 +123,11 @@ export class TerrainManager {
       }
     }
 
-    // Remove old chunks
+    // Remove old chunks, slightly wider apture else chunks can be
+    // created and immediately destroyed if the boat is sitting close
+    // to a boundary
     for (const [index, chunk] of this.chunks) {
-      if (Math.abs(index - currentChunkIndex) > renderDistance) {
+      if (Math.abs(index - currentChunkIndex) > renderDistance + 1) {
         console.log(`[TerrainManager] Disposing chunk ${index}`);
         chunk.dispose();
         this.chunks.delete(index);
@@ -134,15 +146,27 @@ export class TerrainManager {
   setDebug(enabled: boolean) {
     if (this.debug === enabled) return;
     this.debug = enabled;
-    this.collisionMeshes.forEach(mesh => {
-      mesh.visible = this.debug;
-    });
+
+    // collision meshes will update when next generated
+    if (!this.debug) {
+      // Clear debug meshes immediately
+      this.collisionMeshes.forEach(mesh => {
+        this.graphicsEngine.remove(mesh);
+        GraphicsUtils.disposeObject(m);
+      });
+      this.collisionMeshes = [];
+    }
   }
 
   private updateCollision(boatZ: number) {
     // Generate collision segments around the boat
     const startZ = Math.floor((boatZ - this.collisionRadius) / this.collisionStep) * this.collisionStep;
     const endZ = Math.ceil((boatZ + this.collisionRadius) / this.collisionStep) * this.collisionStep;
+
+    // Regenerate when the new collision segment range is too far off
+    const midZ = (startZ + endZ) / 2;
+    if (Math.abs(midZ - this.collisionMidZ) < 50.0) return;
+    this.collisionMidZ = midZ;
 
     // Clear old collision bodies
     this.collisionBodies.forEach(b => this.physicsEngine.world.destroyBody(b));
@@ -151,30 +175,26 @@ export class TerrainManager {
     // Clear debug meshes
     this.collisionMeshes.forEach(m => {
       this.graphicsEngine.remove(m);
-      m.geometry.dispose();
-      if (Array.isArray(m.material)) {
-        m.material.forEach(mat => mat.dispose());
-      } else {
-        m.material.dispose();
-      }
+      GraphicsUtils.disposeObject(m);
     });
     this.collisionMeshes = [];
 
     // Generate new segments
     for (let z = startZ; z < endZ; z += this.collisionStep) {
-      const segment = this.createCollisionSegment(z, z + this.collisionStep);
+      const segment = this.createCollisionSegment(z, z + this.collisionStep, this.debug);
       this.collisionBodies.push(...segment.bodies);
-      this.collisionMeshes.push(...segment.meshes);
-      segment.meshes.forEach(m => {
-        m.visible = this.debug; // Set initial visibility
-        this.graphicsEngine.add(m);
-      });
+      if (segment.meshes) {
+        this.collisionMeshes.push(...segment.meshes);
+        segment.meshes.forEach(m => {
+          this.graphicsEngine.add(m);
+        });
+      }
     }
   }
 
-  private createCollisionSegment(zStart: number, zEnd: number): { bodies: planck.Body[], meshes: THREE.Mesh[] } {
+  private createCollisionSegment(zStart: number, zEnd: number, createMeshes: boolean): { bodies: planck.Body[], meshes?: THREE.Mesh[] } {
     const bodies: planck.Body[] = [];
-    const meshes: THREE.Mesh[] = [];
+    const meshes: THREE.Mesh[] = createMeshes ? [] : null as any;
 
     // Calculate positions including ghost vertices
     const zPrev = zStart - this.collisionStep;
@@ -210,7 +230,7 @@ export class TerrainManager {
       filterMaskBits: 0xFFFF
     });
     bodies.push(bodyL);
-    meshes.push(this.createDebugLine(pStartL, pEndL));
+    if (createMeshes) meshes.push(this.createDebugLine(pStartL, pEndL));
 
     // Right Bank
     const pPrevR = planck.Vec2(centerPrev + widthPrev / 2, zPrev);
@@ -231,9 +251,9 @@ export class TerrainManager {
       filterMaskBits: 0xFFFF
     });
     bodies.push(bodyR);
-    meshes.push(this.createDebugLine(pStartR, pEndR));
+    if (createMeshes) meshes.push(this.createDebugLine(pStartR, pEndR));
 
-    return { bodies, meshes };
+    return { bodies, meshes: createMeshes ? meshes : undefined };
   }
 
   private createDebugLine(p1: planck.Vec2, p2: planck.Vec2): THREE.Mesh {
@@ -245,8 +265,12 @@ export class TerrainManager {
     const midY = (p1.y + p2.y) / 2;
 
     const geometry = new THREE.BoxGeometry(length, 5, 0.5);
+    geometry.name = 'TerrainManager - debug line';
+
     const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
-    const mesh = new THREE.Mesh(geometry, material);
+    material.name = 'TerrainManager - debug line';
+
+    const mesh = GraphicsUtils.createMesh(geometry, material);
 
     mesh.position.set(midX, 2.5, midY);
     mesh.rotation.y = -angle;

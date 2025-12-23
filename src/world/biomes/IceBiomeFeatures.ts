@@ -47,16 +47,16 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         const count = Math.floor(length * 16);
 
         for (let i = 0; i < count; i++) {
-            const position = this.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-            if (!this.decoHelper.isValidDecorationPosition(context, position)) continue;
+            const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
+            if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
 
             if (Math.random() > 0.8) {
                 const isLeafless = Math.random() > 0.5;
                 const tree = Decorations.getTree(Math.random(), !isLeafless, isLeafless);
-                this.decoHelper.positionAndCollectGeometry(tree, position, context);
+                context.decoHelper.positionAndCollectGeometry(tree, position, context);
             } else if (Math.random() > 0.9) {
                 const rock = Decorations.getRock(this.id, Math.random());
-                this.decoHelper.positionAndCollectGeometry(rock, position, context);
+                context.decoHelper.positionAndCollectGeometry(rock, position, context);
             }
         }
     }
