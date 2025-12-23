@@ -28,7 +28,7 @@ export class Boat extends Entity {
     private readonly TRANSFER_INTERVAL: number = 1.0; // Seconds
 
     // Physics Constants
-    private readonly MAX_THRUST = 4000.0;
+    private readonly MAX_THRUST = 5000.0;
     private readonly MAX_STEER_ANGLE_KEYBOARD = Math.PI / 4; // 45 degrees
     private readonly MAX_STEER_ANGLE_TILT = Math.PI * 75.0 / 180.0; // 75 degrees
     private readonly THROTTLE_SPEED = 1.0;
@@ -39,8 +39,8 @@ export class Boat extends Entity {
 
     // For the "fin" effect where the propeller acts like a rudder
     // as a hack increase grip at low speed to get better maneuverability
-    private readonly FIN_GRIP_FAST = 20.0;
-    private readonly FIN_GRIP_SLOW = 2000.0;
+    private readonly FIN_GRIP_FAST = 100.0;
+    private readonly FIN_GRIP_SLOW = 2500.0;
 
     // Drag Constants
     private readonly DRAG_FORWARD = 4.0; // Low resistance forward 
