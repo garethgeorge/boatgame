@@ -14,7 +14,7 @@ export class CycadDecorator extends BaseDecorator {
 
             if (Math.random() > 0.8) {
                 const tree = Decorations.getCycad();
-                this.positionAndCollectGeometry(tree, position, context);
+                context.decoHelper.positionAndCollectGeometry(tree, position, context);
             }
         }
     }
