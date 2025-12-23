@@ -6,18 +6,30 @@ export class IcebergSpawner extends BaseSpawner {
   id = 'iceberg';
 
   protected getDensity(difficulty: number, zStart: number): number {
-    return 0.02;
+    return 0.05;
   }
 
   async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
-    const radius = 2.0 + Math.random() * 3.0; // Large
+    let radius = 4.0 + Math.random();
+
+    // Size Variance
+    let scaleMultiplier = 1.0;
+    let hasBear = false;
+    const r = Math.random();
+    if (r < 0.05) {
+      scaleMultiplier = 3.0;
+      hasBear = Math.random() < 0.5;
+    } else if (r < 0.30) {
+      scaleMultiplier = 1.5;
+    }
+    radius *= scaleMultiplier;
 
     const pos = context.placementHelper.tryPlace(z, z, radius, {
       minDistFromBank: 1.0
     });
 
     if (pos) {
-      const hasBear = Math.random() < 0.15;
+
       const iceberg = new Iceberg(pos.x, pos.z, radius, hasBear, context.physicsEngine);
       context.entityManager.add(iceberg, context.chunkIndex);
       return true;

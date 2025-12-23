@@ -21,22 +21,12 @@ export class Iceberg extends Entity {
         });
         this.physicsBodies.push(physicsBody);
 
-        // Polygon shape for physics (approximate with circle for now for stability, or box?)
-        // Circle is best for drifting objects to avoid getting stuck.
-        physicsBody.createFixture({
-            shape: planck.Circle(radius * 0.8),
-            density: 10.0, // Heavy ice (5x increase)
-            friction: 0.1, // Slippery
-            restitution: 0.2
-        });
-
-        physicsBody.setUserData({ type: 'obstacle', subtype: 'iceberg', entity: this });
-
         // Graphics: Floating Jagged Ice Sheet
         // Use ExtrudeGeometry for a flat top and jagged perimeter
         const shape = new THREE.Shape();
-        const numPoints = 12;
+        const numPoints = 8; // Max 8 for Box2D polygon
         const angleStep = (Math.PI * 2) / numPoints;
+        const vertices: planck.Vec2[] = [];
 
         // Generate random jagged points
         for (let i = 0; i < numPoints; i++) {
@@ -46,10 +36,23 @@ export class Iceberg extends Entity {
             const x = Math.cos(angle) * r;
             const y = Math.sin(angle) * r; // Shape is in XY plane initially
 
+            vertices.push(planck.Vec2(x, y));
+
             if (i === 0) shape.moveTo(x, y);
             else shape.lineTo(x, y);
         }
         shape.closePath();
+
+        // Polygon shape for physics (Convex Hull for safety)
+        const hullVertices = Iceberg.getConvexHull(vertices);
+        physicsBody.createFixture({
+            shape: planck.Polygon(hullVertices),
+            density: 10.0, // Heavy ice (5x increase)
+            friction: 0.1, // Slippery
+            restitution: 0.2
+        });
+
+        physicsBody.setUserData({ type: 'obstacle', subtype: 'iceberg', entity: this });
 
         const extrudeSettings = {
             steps: 1,
@@ -63,8 +66,8 @@ export class Iceberg extends Entity {
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         geometry.name = 'Iceberg - Geometry';
 
-        // Center the geometry
-        geometry.center();
+        // DO NOT center the geometry. Visual origin (0,0) must match Physics origin.
+        // geometry.center();
 
         const material = new THREE.MeshToonMaterial({
             name: 'Iceberg - Material',
@@ -83,9 +86,16 @@ export class Iceberg extends Entity {
         const innerMesh = GraphicsUtils.createMesh(geometry, material);
 
         // Rotate inner mesh to lie flat on water
-        innerMesh.rotation.x = -Math.PI / 2;
+        // Rot X +90 deg:
+        // Local Z (extrusion depth) -> World -Y (Down)
+        // Local Y (Shape Y) -> World +Z (Depth/Forward) matches Physics Y
+        // Local X (Shape X) -> World +X (Width) matches Physics X
+        innerMesh.rotation.x = Math.PI / 2;
 
         // Position inner mesh
+        // Top surface is at local Z=0 (start of extrusion).
+        // Rotated, it's at local Y=0.
+        // We want top surface slightly above water (0.2).
         innerMesh.position.y = 0.2;
 
         mesh.add(innerMesh);
@@ -100,9 +110,18 @@ export class Iceberg extends Entity {
                 const { model, animations } = polarBearData;
 
                 // Position the polar bear on top of the iceberg
-                model.position.y = 1.0; // Place on top of the ice sheet
+                model.position.y = 0.5; // Lower slightly to be on surface
                 model.scale.set(3.0, 3.0, 3.0);
                 model.rotation.y = Math.random() * Math.PI * 2; // Random rotation
+
+                // Reparent to innerMesh so it follows the tilt/rotation?
+                // No, innerMesh is rotated X=90. Bear expects Y-up.
+                // Bear should be child of 'mesh' (the yaw group).
+                // 'mesh' is at (x,0,z).
+
+                // But we want it relative to the visual ice surface?
+                // Ice top surface is at Y=0.2 world space.
+                // 1.0 might be too high if model origin is at feet.
 
                 mesh.add(model);
 
@@ -115,7 +134,6 @@ export class Iceberg extends Entity {
                 }
             }
         }
-
     }
 
     wasHitByPlayer() {
@@ -128,5 +146,48 @@ export class Iceberg extends Entity {
             this.animationMixer.update(dt);
         }
         // Drifts naturally
+    }
+
+    // Monotone Chain Convex Hull Algorithm
+    private static getConvexHull(points: planck.Vec2[]): planck.Vec2[] {
+        if (points.length <= 3) return points;
+
+        // Sort points lexographically (by x, then y)
+        // Clone to avoid modifying original array
+        const sorted = [...points].sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
+
+        const lower: planck.Vec2[] = [];
+        for (const p of sorted) {
+            while (lower.length >= 2 && this.crossProduct(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
+                lower.pop();
+            }
+            lower.push(p);
+        }
+
+        const upper: planck.Vec2[] = [];
+        for (let i = sorted.length - 1; i >= 0; i--) {
+            const p = sorted[i];
+            while (upper.length >= 2 && this.crossProduct(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
+                upper.pop();
+            }
+            upper.push(p);
+        }
+
+        // Concatenate lower and upper to form full hull
+        // Last point of lower is same as first of upper, so pop it
+        lower.pop();
+        const hull = lower.concat(upper);
+
+        // Remove duplicate end point if present (Monotone chain usually results in closed loop with start repeated? No, we popped.)
+        // But Box2D Polygon doesn't want the last point to equal the first.
+        // Monotone chain returns CCW order.
+
+        return hull;
+    }
+
+    // 2D Cross Product of OA and OB vectors, returns z-component of their 3D cross product.
+    // Positive if O->A->B is CCW
+    private static crossProduct(o: planck.Vec2, a: planck.Vec2, b: planck.Vec2): number {
+        return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
     }
 }

@@ -1,6 +1,6 @@
 import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
-import { Mangrove } from '../../entities/obstacles/Mangrove';
+import { SmallMangrove, LargeMangrove } from '../../entities/obstacles/Mangrove';
 import { RiverSystem } from '../../world/RiverSystem';
 
 export class MangroveSpawner extends BaseSpawner {
@@ -55,8 +55,28 @@ export class MangroveSpawner extends BaseSpawner {
 
     if (!valid) return false;
 
-    const mangrove = new Mangrove(x, z, context.physicsEngine);
-    context.entityManager.add(mangrove);
+    // Scale / Type Logic
+    // Size Variance
+    let baseScale = 1.0;
+    const rand = Math.random();
+    if (rand < 0.05) {
+      baseScale = 2.0;
+    } else if (rand < 0.30) {
+      baseScale = 1.3;
+    }
+
+    // Jitter: +/- 20% (0.8 to 1.2)
+    const jitter = 0.8 + Math.random() * 0.4;
+    const finalScale = baseScale * jitter;
+
+    if (baseScale > 1.05) {
+      const mangrove = new LargeMangrove(x, z, finalScale, context.physicsEngine);
+      context.entityManager.add(mangrove);
+    } else {
+      const mangrove = new SmallMangrove(x, z, finalScale, context.physicsEngine);
+      context.entityManager.add(mangrove);
+    }
+
     return true;
   }
 }

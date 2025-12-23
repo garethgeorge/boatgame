@@ -2,17 +2,16 @@ import * as THREE from 'three';
 import * as planck from 'planck';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { Decorations } from '../../world/Decorations'; // Re-using materials if possible, or define new ones
-import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
-export class Mangrove extends Entity {
+export abstract class BaseMangrove extends Entity {
   private static cache: THREE.Group[] = [];
   private static readonly CACHE_SIZE = 100;
 
   // Materials
-  private static trunkMaterial = new THREE.MeshToonMaterial({ color: 0x5D5346, name: 'Mangrove - Trunk Material' }); // Darker swamp wood
-  private static leafMaterial = new THREE.MeshToonMaterial({
+  protected static trunkMaterial = new THREE.MeshToonMaterial({ color: 0x5D5346, name: 'Mangrove - Trunk Material' }); // Darker swamp wood
+  protected static leafMaterial = new THREE.MeshToonMaterial({
     name: 'Mangrove - Leaf Material',
     color: 0xffffff, // White base for vertex colors
     vertexColors: true
@@ -23,25 +22,12 @@ export class Mangrove extends Entity {
     GraphicsUtils.registerObject(this.leafMaterial);
   }
 
-  constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
+  constructor(x: number, y: number, scale: number, physicsEngine: PhysicsEngine) {
     super();
 
-    // Size Variance
-    let baseScale = 1.0;
-    const rand = Math.random();
-    if (rand < 0.05) {
-      baseScale = 2.0;
-    } else if (rand < 0.30) {
-      baseScale = 1.3;
-    }
-
-    // Jitter: +/- 20% (0.8 to 1.2)
-    const jitter = 0.8 + Math.random() * 0.4;
-    const finalScale = baseScale * jitter;
-
     // Visuals
-    const mesh = Mangrove.getMangroveMesh();
-    mesh.scale.setScalar(finalScale); // Apply scale to visuals
+    const mesh = BaseMangrove.getMangroveMesh();
+    mesh.scale.setScalar(scale); // Apply scale to visuals
     this.meshes.push(mesh);
 
     // Physics Body
@@ -50,32 +36,7 @@ export class Mangrove extends Entity {
       position: planck.Vec2(x, y)
     });
 
-    // Root Fixtures
-    // Retrieve pre-calculated root offsets from userData
-    const rootOffsets = mesh.userData.rootOffsets as { x: number, z: number, r: number }[];
-    if (rootOffsets) {
-      for (const offset of rootOffsets) {
-        // Apply scale to position and radius
-        // Doubled collision radius as requested (* 2.0)
-        body.createFixture({
-          shape: planck.Circle(
-            planck.Vec2(offset.x * finalScale, offset.z * finalScale),
-            offset.r * finalScale * 4.0
-          ),
-          density: 1.0,
-          friction: 0.5,
-          restitution: 0.1
-        });
-      }
-    } else {
-      // Fallback if no data (shouldn't happen with new cache)
-      body.createFixture({
-        shape: planck.Circle(4.5 * finalScale),
-        density: 1.0,
-        friction: 0.5,
-        restitution: 0.1
-      });
-    }
+    this.createFixtures(body, mesh, scale);
 
     body.setUserData({ type: 'obstacle', entity: this });
     this.physicsBodies.push(body);
@@ -84,27 +45,25 @@ export class Mangrove extends Entity {
     this.sync();
 
     // Random rotation
-    // Note: We need to rotate the bodies if we rotate the mesh!
-    // But static bodies in planck are... static.
-    // Actually, we can just rotate the mesh and the physics body's fixtures?
-    // Box2D bodies have an angle.
     const angle = Math.random() * Math.PI * 2;
     mesh.rotation.y = angle;
     body.setAngle(angle);
   }
 
+  // Abstract method for subclasses to implement specific collider logic
+  protected abstract createFixtures(body: planck.Body, mesh: THREE.Group, scale: number): void;
+
   update(dt: number): void {
     // Static, no update needed
   }
 
-  private static getMangroveMesh(): THREE.Group {
+  // Helper Methods
+
+  protected static getMangroveMesh(): THREE.Group {
     if (this.cache.length === 0) {
       this.generateCache();
     }
     const template = this.cache[Math.floor(Math.random() * this.cache.length)];
-    // Clone logic needs deep userData copy if it's not handled by GraphicsUtils.cloneObject?
-    // GraphicsUtils.cloneObject usually uses obj.clone() which shallow copies userData.
-    // That's fine for read-only arrays.
     return GraphicsUtils.cloneObject(template);
   }
 
@@ -115,6 +74,44 @@ export class Mangrove extends Entity {
     for (let i = 0; i < this.CACHE_SIZE; i++) {
       this.cache.push(this.createMangrove());
     }
+  }
+
+  // Monotone Chain Convex Hull Algorithm
+  protected static getConvexHull(points: planck.Vec2[]): planck.Vec2[] {
+    if (points.length <= 3) return points;
+
+    // Sort points lexographically (by x, then y)
+    // Clone to avoid modifying original array
+    const sorted = [...points].sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
+
+    const lower: planck.Vec2[] = [];
+    for (const p of sorted) {
+      while (lower.length >= 2 && this.crossProduct(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
+        lower.pop();
+      }
+      lower.push(p);
+    }
+
+    const upper: planck.Vec2[] = [];
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const p = sorted[i];
+      while (upper.length >= 2 && this.crossProduct(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
+        upper.pop();
+      }
+      upper.push(p);
+    }
+
+    // Concatenate lower and upper to form full hull
+    // Last point of lower is same as first of upper, so pop it
+    lower.pop();
+    const hull = lower.concat(upper);
+
+    return hull;
+  }
+
+  // Cross product of vectors (b - a) and (c - a)
+  private static crossProduct(a: planck.Vec2, b: planck.Vec2, c: planck.Vec2): number {
+    return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
   }
 
   private static createMangrove(): THREE.Group {
@@ -216,16 +213,6 @@ export class Mangrove extends Entity {
     }
 
     const trunkCurve = new THREE.CatmullRomCurve3(trunkPoints);
-
-    // Tapering radius: Thick at bottom (1.5), thinner at top (0.8)
-    // TubeGeometry doesn't support tapering natively without custom generator or modifying geometry.
-    // But we can just use a constant radius that's "gnarly" enough, or use a custom geometry.
-    // For simplicity and style, let's use a slightly thinner constant radius but the curve gives it character.
-    // OR, we can just use multiple overlapping tubes? No, too expensive.
-    // Let's just use a constant radius for now, maybe 1.0.
-    // Actually, we can modify the radius in the vertex shader or just accept it.
-    // Let's stick to constant radius 1.2 (average of previous 0.9 and 1.5).
-
     const trunkGeo = new THREE.TubeGeometry(trunkCurve, 8, 1.2, 7, false);
     trunkGeo.name = 'Mangrove - Trunk Geometry';
     const trunk = GraphicsUtils.createMesh(trunkGeo, this.trunkMaterial);
@@ -258,25 +245,12 @@ export class Mangrove extends Entity {
       trunk.add(branch);
 
       // Foliage Generation (New Approach)
-      // We want horizontal disks forming a canopy.
-      // To ensure horizontal orientation, we add them to the main 'group', not the rotated 'branch'.
-      // We need to calculate the world (group) position of points along the branch.
-
-      // Branch start point (relative to trunk center) is (0, bY, 0)
-      // Branch vector:
-      // The branch is rotated by 'angle' around Y, then 'zRot' around Z.
-      // Vector pointing along the branch:
-      // Start with (0, 1, 0) (Y-up, default cylinder)
-      // Rotate Z by zRot -> points somewhat sideways/up
-      // Rotate Y by angle -> points in correct direction
-
       const dir = new THREE.Vector3(0, 1, 0);
       dir.applyAxisAngle(new THREE.Vector3(0, 0, 1), zRot);
       dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
       dir.normalize();
 
       const startPos = new THREE.Vector3(0, bY, 0);
-      // Adjust startPos for trunk offset if needed (trunk is at 0,0,0 local to group)
 
       // Spawn leaf disks along the branch
       const diskCount = 5 + Math.floor(Math.random() * 3);
@@ -310,7 +284,7 @@ export class Mangrove extends Entity {
       group.add(leaf);
     }
 
-    // Merge geometries to reduce draw calls and geometry count
+    // Merge geometries
     // 1. Wood Geometry (Roots, Trunk, Branches)
     const woodGeometries: THREE.BufferGeometry[] = [];
 
@@ -345,8 +319,6 @@ export class Mangrove extends Entity {
       woodMesh.castShadow = true;
       woodMesh.receiveShadow = true;
       finalGroup.add(woodMesh);
-
-      // Dispose of temporary geometries
       woodGeometries.forEach(g => GraphicsUtils.disposeObject(g));
     }
 
@@ -356,8 +328,6 @@ export class Mangrove extends Entity {
       leafMesh.castShadow = true;
       leafMesh.receiveShadow = true;
       finalGroup.add(leafMesh);
-
-      // Dispose of temporary geometries
       leafGeometries.forEach(g => GraphicsUtils.disposeObject(g));
     }
 
@@ -413,15 +383,10 @@ export class Mangrove extends Entity {
       colors[i * 3 + 2] = color.b;
     }
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    // Compute normals after modification
     geo.computeVertexNormals();
 
     const mesh = GraphicsUtils.createMesh(geo, this.leafMaterial);
-
-    // Strictly horizontal rotation with random yaw
     mesh.rotation.y = Math.random() * Math.PI * 2;
-    // Very slight tilt
     mesh.rotation.x = (Math.random() - 0.5) * 0.1;
     mesh.rotation.z = (Math.random() - 0.5) * 0.1;
 
@@ -429,3 +394,75 @@ export class Mangrove extends Entity {
   }
 }
 
+export class SmallMangrove extends BaseMangrove {
+  // Small mangroves have convex hull physics
+  protected createFixtures(body: planck.Body, mesh: THREE.Group, scale: number): void {
+    const rootOffsets = mesh.userData.rootOffsets as { x: number, z: number, r: number }[];
+
+    if (rootOffsets) {
+      // Small Mangrove: Convex Hull of roots + radius
+      const points = rootOffsets.map(o => planck.Vec2(o.x * scale, o.z * scale));
+
+      // 1. Get Hull
+      let hull = BaseMangrove.getConvexHull(points);
+
+      // 2. Expand Hull to account for root radius (approximate)
+      const centroid = planck.Vec2(0, 0);
+      for (const p of hull) centroid.add(p);
+      centroid.mul(1.0 / hull.length);
+
+      // Expand
+      const expandedHull = hull.map(p => {
+        const dir = planck.Vec2.sub(p, centroid);
+        dir.normalize();
+        // Add avg root radius (scaled) + small padding
+        const expansion = 0.4 * scale;
+        return planck.Vec2.add(p, planck.Vec2(dir.x * expansion, dir.y * expansion));
+      });
+
+      body.createFixture({
+        shape: planck.Polygon(expandedHull),
+        density: 1.0,
+        friction: 0.5,
+        restitution: 0.1
+      });
+    } else {
+      // Fallback
+      body.createFixture({
+        shape: planck.Circle(4.5 * scale),
+        density: 1.0,
+        friction: 0.5,
+        restitution: 0.1
+      });
+    }
+  }
+}
+
+export class LargeMangrove extends BaseMangrove {
+  // Medium/Large mangroves have complex physics (circles per root)
+  protected createFixtures(body: planck.Body, mesh: THREE.Group, scale: number): void {
+    const rootOffsets = mesh.userData.rootOffsets as { x: number, z: number, r: number }[];
+
+    if (rootOffsets) {
+      for (const offset of rootOffsets) {
+        body.createFixture({
+          shape: planck.Circle(
+            planck.Vec2(offset.x * scale, offset.z * scale),
+            offset.r * scale * 2.0
+          ),
+          density: 1.0,
+          friction: 0.5,
+          restitution: 0.1
+        });
+      }
+    } else {
+      // Fallback
+      body.createFixture({
+        shape: planck.Circle(4.5 * scale),
+        density: 1.0,
+        friction: 0.5,
+        restitution: 0.1
+      });
+    }
+  }
+}

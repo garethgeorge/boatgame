@@ -8,12 +8,16 @@ import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 export class AlligatorSpawner extends AttackAnimalSpawner {
     id = 'croc';
 
+    constructor(private readonly baseDensity: number = 0.00265) {
+        super();
+    }
+
     protected getDensity(difficulty: number, zStart: number): number {
         const dist = Math.abs(zStart);
         if (dist < 1000) return 0;
 
         const ramp = Math.max(0, (difficulty - 0.13) / 0.87);
-        return 0.00265 * ramp;
+        return this.baseDensity * ramp;
     }
 
     protected get shoreProbability(): number {

@@ -6,12 +6,14 @@ import { DecorationContext } from '../decorators/TerrainDecorator';
 import { MangroveSpawner } from '../../entities/spawners/MangroveSpawner';
 import { Decorations } from '../Decorations';
 import { LogSpawner } from '../../entities/spawners/LogSpawner';
+import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
 
     protected mangroveSpawner = new MangroveSpawner();
     protected logSpawner = new LogSpawner(0.003 * 5);
+    protected alligatorSpawner = new AlligatorSpawner(0.009);
 
     getGroundColor(): { r: number, g: number, b: number } {
         return { r: 0x2B / 255, g: 0x24 / 255, b: 0x1C / 255 }; // Muddy Dark Brown
@@ -67,5 +69,6 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         await this.spawnObstacle(this.rockSpawner, context, difficulty, zStart, zEnd);
         await this.spawnObstacle(this.bottleSpawner, context, difficulty, zStart, zEnd);
         await this.spawnObstacle(this.mangroveSpawner, context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(this.alligatorSpawner, context, difficulty, zStart, zEnd);
     }
 }
