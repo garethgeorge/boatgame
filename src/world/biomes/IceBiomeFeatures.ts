@@ -39,7 +39,7 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
     }
 
     getRiverWidthMultiplier(): number {
-        return 4.0;
+        return 2.3;
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
