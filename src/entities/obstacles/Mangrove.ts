@@ -18,6 +18,11 @@ export class Mangrove extends Entity {
     vertexColors: true
   });
 
+  public static preload() {
+    GraphicsUtils.registerObject(this.trunkMaterial);
+    GraphicsUtils.registerObject(this.leafMaterial);
+  }
+
   constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
     super();
 
@@ -64,7 +69,7 @@ export class Mangrove extends Entity {
 
   private static generateCache() {
     console.log("Generating Mangrove Cache...");
-    // Register static materials
+    this.preload();
 
     for (let i = 0; i < this.CACHE_SIZE; i++) {
       this.cache.push(this.createMangrove());
@@ -256,6 +261,7 @@ export class Mangrove extends Entity {
       if (child instanceof THREE.Mesh && child.material === this.trunkMaterial) {
         child.updateMatrixWorld();
         const geo = child.geometry.clone();
+        GraphicsUtils.registerObject(geo);
         geo.applyMatrix4(child.matrixWorld);
         woodGeometries.push(geo);
       }
@@ -267,6 +273,7 @@ export class Mangrove extends Entity {
       if (child instanceof THREE.Mesh && child.material === this.leafMaterial) {
         child.updateMatrixWorld();
         const geo = child.geometry.clone();
+        GraphicsUtils.registerObject(geo);
         geo.applyMatrix4(child.matrixWorld);
         leafGeometries.push(geo);
       }
@@ -283,7 +290,7 @@ export class Mangrove extends Entity {
       finalGroup.add(woodMesh);
 
       // Dispose of temporary geometries
-      woodGeometries.forEach(g => g.dispose());
+      woodGeometries.forEach(g => GraphicsUtils.disposeObject(g));
     }
 
     if (leafGeometries.length > 0) {
@@ -294,13 +301,13 @@ export class Mangrove extends Entity {
       finalGroup.add(leafMesh);
 
       // Dispose of temporary geometries
-      leafGeometries.forEach(g => g.dispose());
+      leafGeometries.forEach(g => GraphicsUtils.disposeObject(g));
     }
 
     // Dispose of the original loose group and its children's geometries
     group.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        child.geometry.dispose();
+        GraphicsUtils.disposeObject(child.geometry);
       }
     });
 

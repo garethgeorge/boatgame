@@ -65,6 +65,7 @@ export abstract class BaseDecorator implements TerrainDecorator {
         object.traverse((child) => {
             if (child instanceof THREE.Mesh) {
                 const geometry = child.geometry.clone();
+                GraphicsUtils.registerObject(geometry);
                 geometry.applyMatrix4(child.matrixWorld);
 
                 const material = child.material as THREE.Material;

@@ -14,6 +14,10 @@ export class BottleFactory implements DecorationFactory {
         this.cache.set(0x88FF88, greenBottle);
         this.cache.set(0x0088FF, blueBottle);
 
+        // Pin cache entries
+        GraphicsUtils.registerObject(greenBottle);
+        GraphicsUtils.registerObject(blueBottle);
+
         this.animations.push(this.createFadeAnimation());
         this.animations.push(this.createDropAnimation());
         this.animations.push(this.createArcAnimation(-1));
