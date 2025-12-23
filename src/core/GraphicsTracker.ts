@@ -64,20 +64,25 @@ export class GraphicsTracker {
         if (count !== undefined) {
             const newCount = count - 1;
             if (newCount <= 0) {
+                if (this.verbose)
+                    console.log('Dispose', resource.name, resource);
                 this.trackedResources.delete(resource);
-                try {
-                    if (this.verbose)
-                        console.log('Dispose', resource.name, resource);
-                    resource.dispose();
-                } catch (e) {
-                    console.warn('Failed to dispose resource:', e);
-                }
+                this.dispose(resource);
             } else {
                 this.trackedResources.set(resource, newCount);
             }
         } else {
             if (this.verbose)
                 console.log('Untracked', resource.name, resource);
+            this.dispose(resource);
+        }
+    }
+
+    private dispose(resource: DisposableResource) {
+        try {
+            resource.dispose();
+        } catch (e) {
+            console.warn('Failed to dispose resource:', e);
         }
     }
 

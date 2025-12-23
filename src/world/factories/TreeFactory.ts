@@ -56,7 +56,7 @@ export class TreeFactory implements DecorationFactory {
                 ? candidates[Math.floor(Math.random() * candidates.length)]
                 : this.cache.trees.find(t => t.isSnowy === isSnowy && t.isLeafless === isLeafless) || this.cache.trees[0];
 
-            mesh = source ? GraphicsUtils.clone(source.mesh) : this.createTree(wetness, isSnowy, isLeafless);
+            mesh = source ? GraphicsUtils.cloneObject(source.mesh) : this.createTree(wetness, isSnowy, isLeafless);
         } else {
             mesh = this.createTree(wetness, isSnowy, isLeafless);
         }

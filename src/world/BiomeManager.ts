@@ -10,7 +10,7 @@ import { TestBiomeFeatures } from './biomes/TestBiomeFeatures';
 import { BiomeType } from './biomes/BiomeType';
 
 export class BiomeManager {
-  public static DEBUG_BIOME = true;
+  public static DEBUG_BIOME = false;
 
   public readonly BIOME_LENGTH = 1000;
   private biomeArray: Array<BiomeType>;
