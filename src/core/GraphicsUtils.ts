@@ -98,10 +98,12 @@ export class GraphicsUtils {
     }
 
     /**
-     * Clones an object and registers the new hierarchy.
+     * Clones an object and registers the new hierarchy. Always
+     * recursive as we assume this creates new references to all
+     * geometry and materials.
      */
-    public static cloneObject<T extends THREE.Object3D>(object: T, recursive: boolean = true): T {
-        const clone = object.clone(recursive) as T;
+    public static cloneObject<T extends THREE.Object3D>(object: T): T {
+        const clone = object.clone(true) as T;
         this.tracker.track(clone);
         return clone;
     }

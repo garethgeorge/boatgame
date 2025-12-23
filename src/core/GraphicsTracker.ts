@@ -8,6 +8,7 @@ type DisposableResource = THREE.Material | THREE.BufferGeometry | THREE.Texture;
  * Use GraphicsUtils for public API.
  */
 export class GraphicsTracker {
+    public verbose: boolean = false;
     private trackedResources = new Map<DisposableResource, number>();
 
     // Common texture slots in Three.js materials for fast lookup
@@ -45,8 +46,14 @@ export class GraphicsTracker {
      * Explicitly retain a specific resource.
      */
     private retain(resource: DisposableResource) {
-        const count = this.trackedResources.get(resource) || 0;
-        this.trackedResources.set(resource, count + 1);
+        const count = this.trackedResources.get(resource);
+        if (count === undefined) {
+            if (this.verbose)
+                console.log('Tracking', resource.name, resource);
+            this.trackedResources.set(resource, 1);
+        } else {
+            this.trackedResources.set(resource, count + 1);
+        }
     }
 
     /**
@@ -59,6 +66,8 @@ export class GraphicsTracker {
             if (newCount <= 0) {
                 this.trackedResources.delete(resource);
                 try {
+                    if (this.verbose)
+                        console.log('Dispose', resource.name, resource);
                     resource.dispose();
                 } catch (e) {
                     console.warn('Failed to dispose resource:', e);
@@ -66,6 +75,9 @@ export class GraphicsTracker {
             } else {
                 this.trackedResources.set(resource, newCount);
             }
+        } else {
+            if (this.verbose)
+                console.log('Untracked', resource.name, resource);
         }
     }
 

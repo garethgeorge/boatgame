@@ -17,6 +17,7 @@ import { Profiler } from './core/Profiler';
 import { Entity } from './core/Entity';
 import { MessageInABottle } from './entities/obstacles/MessageInABottle';
 import { Fixture } from 'planck';
+import { GraphicsUtils } from './core/GraphicsUtils';
 
 export class Game {
     container: HTMLElement;
@@ -109,10 +110,12 @@ export class Game {
 
     async preload() {
         // Preload all assets here
+        GraphicsUtils.tracker.verbose = false;
         await Promise.all([
             Decorations.preload(),
             // Add other entities here as needed
         ]);
+        GraphicsUtils.tracker.verbose = true;
     }
 
 

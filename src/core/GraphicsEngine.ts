@@ -42,10 +42,6 @@ export class GraphicsEngine {
 
     this.renderer.info.autoReset = false;
 
-    this.renderer.info.autoReset = false;
-
-    // GraphicsUtils.tracker.patchThreeJS(); // Removed as per explicit strategy
-
     container.appendChild(this.renderer.domElement);
 
     // Post-processing setup
@@ -72,6 +68,9 @@ export class GraphicsEngine {
   }
 
   render(dt: number) {
+
+    this.renderer.info.reset();
+
     if (GraphicsEngine.USE_POSTPROCESSING && this.composer) {
       this.composer.render();
     } else {
