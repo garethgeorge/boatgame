@@ -80,14 +80,7 @@ export class GraphicsUtils {
      */
     public static createMesh(geometry?: THREE.BufferGeometry, material?: THREE.Material | THREE.Material[]): THREE.Mesh {
         const mesh = new THREE.Mesh(geometry, material);
-        if (geometry) this.tracker.track(geometry);
-        if (material) {
-            if (Array.isArray(material)) {
-                material.forEach(m => this.tracker.track(m));
-            } else {
-                this.tracker.track(material);
-            }
-        }
+        this.tracker.track(mesh);
         return mesh;
     }
 
@@ -97,8 +90,7 @@ export class GraphicsUtils {
      */
     public static createLine(geometry?: THREE.BufferGeometry, material?: THREE.Material): THREE.Line {
         const line = new THREE.Line(geometry, material);
-        if (geometry) this.tracker.track(geometry);
-        if (material) this.tracker.track(material);
+        this.tracker.track(line);
         return line;
     }
 
@@ -108,7 +100,7 @@ export class GraphicsUtils {
      */
     public static createSprite(material?: THREE.SpriteMaterial): THREE.Sprite {
         const sprite = new THREE.Sprite(material);
-        if (material) this.tracker.track(material);
+        this.tracker.track(sprite);
         return sprite;
     }
 

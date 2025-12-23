@@ -10,6 +10,7 @@ export type DisposableResource = THREE.Material | THREE.BufferGeometry | THREE.T
 export class GraphicsTracker {
     public verbose: boolean = false;
     private trackedResources = new Map<DisposableResource, number>();
+    private trackedLeaves = new Map<THREE.Object3D, number>();
 
     // Common texture slots in Three.js materials for fast lookup
     private static readonly TEXTURE_PROPERTIES = [
@@ -29,6 +30,17 @@ export class GraphicsTracker {
     public track(root: THREE.Object3D | DisposableResource) {
         this.visit(root, (resource) => {
             this.retain(resource);
+        }, (object) => {
+            const isTracked = this.trackedLeaves.has(object);
+            if (isTracked) {
+                if (this.verbose) {
+                    console.log('Already tracked', object.name, object);
+                }
+                return false;
+            }
+            this.trackedLeaves.set(object, performance.now());
+            console.log('Tracking', object.name, object);
+            return true;
         });
     }
 
@@ -39,6 +51,13 @@ export class GraphicsTracker {
     public untrack(root: THREE.Object3D | DisposableResource) {
         this.visit(root, (resource) => {
             this.release(resource);
+        }, (object) => {
+            if ((this.verbose) && !this.trackedLeaves.has(object)) {
+                console.log('Untracked?', object.name, object);
+            }
+            this.trackedLeaves.delete(object);
+            console.log('Disposing', object.name, object);
+            return true;
         });
     }
 
@@ -87,52 +106,61 @@ export class GraphicsTracker {
     }
 
     private visit(item: DisposableResource | THREE.Object3D,
-        apply: (resource: DisposableResource) => void) {
+        visitResource: (resource: DisposableResource) => void,
+        visitLeaf?: (object: THREE.Object3D) => boolean) {
 
         if (!item) return;
 
         if ((item as any).isObject3D) {
             (item as THREE.Object3D).traverse((child) => {
-                this.visitObject(child, apply);
+                this.visitObject(child, visitResource, visitLeaf);
             });
         } else if ((item as any).isMaterial) {
-            this.visitMaterial(item as THREE.Material, apply);
+            this.visitMaterial(item as THREE.Material, visitResource);
         } else if ((item as any).isBufferGeometry || (item as any).isTexture) {
             // It's a resource itself
-            apply(item as DisposableResource);
+            visitResource(item as DisposableResource);
         }
     }
 
-    private visitObject(obj: THREE.Object3D, apply: (resource: DisposableResource) => void) {
+    private visitObject(obj: THREE.Object3D,
+        visitResource: (resource: DisposableResource) => void,
+        visitLeaf?: (object: THREE.Object3D) => boolean) {
         const anyObj = obj as any;
 
         // Skip non-renderable objects using fast internal flags.
         const isRenderable = anyObj.isMesh || anyObj.isSprite || anyObj.isLine || anyObj.isPoints;
 
-        if (isRenderable) {
-            if (anyObj.geometry) apply(anyObj.geometry);
+        // The visitLeaf function can short cut traversal
+        const shouldVisit = isRenderable && (visitLeaf?.(obj) ?? true);
+
+        if (isRenderable && shouldVisit) {
+            if (anyObj.geometry) visitResource(anyObj.geometry);
 
             const material = anyObj.material;
             if (material) {
                 if (Array.isArray(material)) {
                     for (let i = 0, l = material.length; i < l; i++) {
-                        this.visitMaterial(material[i], apply);
+                        this.visitMaterial(material[i], visitResource);
                     }
                 } else {
-                    this.visitMaterial(material, apply);
+                    this.visitMaterial(material, visitResource);
                 }
+            }
+
+            if (anyObj.isSkinnedMesh && anyObj.skeleton?.boneTexture) {
+                visitResource(anyObj.skeleton.boneTexture);
             }
         }
 
-        if (anyObj.isSkinnedMesh && anyObj.skeleton?.boneTexture) {
-            apply(anyObj.skeleton.boneTexture);
-        }
+        if (anyObj.isSkinnedMesh && !anyObj.isMesh)
+            console.log('Hmm.. skinned mesh should be a mesh!');
     }
 
     private visitMaterial(material: THREE.Material,
-        apply: (resource: DisposableResource) => void) {
+        visitResource: (resource: DisposableResource) => void) {
 
-        apply(material);
+        visitResource(material);
 
         const anyMat = material as any;
 
@@ -141,7 +169,7 @@ export class GraphicsTracker {
         for (let i = 0, l = props.length; i < l; i++) {
             const tex = anyMat[props[i]];
             if (tex && tex.isTexture) {
-                apply(tex);
+                visitResource(tex);
             }
         }
 
@@ -154,10 +182,10 @@ export class GraphicsTracker {
                     if (uniform && uniform.value) {
                         const val = uniform.value;
                         if (val.isTexture) {
-                            apply(val);
+                            visitResource(val);
                         } else if (Array.isArray(val)) {
                             for (let i = 0, l = val.length; i < l; i++) {
-                                if (val[i]?.isTexture) apply(val[i]);
+                                if (val[i]?.isTexture) visitResource(val[i]);
                             }
                         }
                     }
