@@ -153,6 +153,7 @@ export class GraphicsUtils {
                 // if we are following the rule.
                 // If model was just loaded and registered, child.material has a ref count.
                 // So assignMaterial will correctly decrement it and increment toonMaterial.
+
                 this.assignMaterial(child, toonMaterial);
             }
         });

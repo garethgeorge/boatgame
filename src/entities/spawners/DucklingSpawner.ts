@@ -24,4 +24,8 @@ export class DucklingSpawner extends BaseSpawner {
             }
         }
     }
+    async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
+        // Not used, using custom spawn()
+        return false;
+    }
 }

@@ -5,8 +5,12 @@ import { Log } from '../../entities/obstacles/Log';
 export class LogSpawner extends BaseSpawner {
   id = 'log';
 
+  constructor(private readonly density: number = 0.003) {
+    super();
+  }
+
   protected getDensity(difficulty: number, zStart: number): number {
-    return 0.003;
+    return this.density;
   }
 
   async spawnAt(context: SpawnContext, z: number): Promise<boolean> {

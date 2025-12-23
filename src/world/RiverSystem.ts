@@ -13,10 +13,9 @@ export class RiverSystem {
   private readonly PATH_AMPLITUDE = 100;
 
   private readonly WIDTH_SCALE = 0.002; // Frequency of width changes
-  private readonly BANK_NOISE_SCALE = 0.002; // Frequency of bank jaggedness
 
-  private readonly MIN_WIDTH = 15; // Was 30
-  private readonly MAX_WIDTH = 75; // Was 150
+  public readonly MIN_WIDTH = 15; // Was 30
+  public readonly MAX_WIDTH = 75; // Was 150
 
   public biomeManager: BiomeManager;
   public terrainGeometry: TerrainGeometry;
