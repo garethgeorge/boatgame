@@ -5,14 +5,16 @@ import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/TerrainDecorator';
 import { MangroveSpawner } from '../../entities/spawners/MangroveSpawner';
 import { Decorations } from '../Decorations';
+import { LogSpawner } from '../../entities/spawners/LogSpawner';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
 
-    private mangroveSpawner = new MangroveSpawner();
+    protected mangroveSpawner = new MangroveSpawner();
+    protected logSpawner = new LogSpawner(0.003 * 5);
 
     getGroundColor(): { r: number, g: number, b: number } {
-        return { r: 0x4d / 255, g: 0x3e / 255, b: 0x30 / 255 };
+        return { r: 0x2B / 255, g: 0x24 / 255, b: 0x1C / 255 }; // Muddy Dark Brown
     }
 
     getScreenTint(): { r: number, g: number, b: number } {
@@ -20,11 +22,11 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     }
 
     getFogDensity(): number {
-        return 0.8;
+        return 0.9;
     }
 
     getFogRange(): { near: number, far: number } {
-        return { near: 0, far: 90 };
+        return { near: 0, far: 300 };
     }
 
     getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
@@ -64,7 +66,6 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         await this.spawnObstacle(this.logSpawner, context, difficulty, zStart, zEnd);
         await this.spawnObstacle(this.rockSpawner, context, difficulty, zStart, zEnd);
         await this.spawnObstacle(this.bottleSpawner, context, difficulty, zStart, zEnd);
-
         await this.spawnObstacle(this.mangroveSpawner, context, difficulty, zStart, zEnd);
     }
 }

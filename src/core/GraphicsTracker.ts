@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-type DisposableResource = THREE.Material | THREE.BufferGeometry | THREE.Texture;
+export type DisposableResource = THREE.Material | THREE.BufferGeometry | THREE.Texture;
 
 /**
  * Tracks reference counts for Three.js resources.

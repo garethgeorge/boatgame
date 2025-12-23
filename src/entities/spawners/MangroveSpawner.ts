@@ -6,8 +6,12 @@ import { RiverSystem } from '../../world/RiverSystem';
 export class MangroveSpawner extends BaseSpawner {
   id = 'mangrove';
 
+  constructor(private readonly density: number = 12 / 62) {
+    super();
+  }
+
   protected getDensity(difficulty: number, zStart: number): number {
-    return 14 / 62.5; // Approx 14 per 62.5m chunk
+    return this.density;
   }
 
   async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
@@ -17,13 +21,39 @@ export class MangroveSpawner extends BaseSpawner {
     const riverWidth = riverSystem.getRiverWidth(z);
     const riverCenter = riverSystem.getRiverCenter(z);
 
-    // Spawn across full width + 10m overlap on each side
-    const spawnWidth = riverWidth + 20; // width + 10 + 10
-    const x = riverCenter + (Math.random() - 0.5) * spawnWidth;
+    // Spawn across full width + 60m overlap on each side (shores)
+    const spawnWidth = riverWidth + 60;
 
-    // Keep a small clear channel in the middle for navigation
-    // Check distance from center
-    if (Math.abs(x - riverCenter) < 6) return false;
+    // Retry loop for rejection sampling (bias towards shores)
+    let x = 0;
+    let valid = false;
+    const attempts = 5;
+
+    for (let i = 0; i < attempts; i++) {
+      x = riverCenter + (Math.random() - 0.5) * spawnWidth;
+
+      // Rejection Sampling:
+      // Identify if we are in the "Center" (inner 50% of river)
+      const distFromCenter = Math.abs(x - riverCenter);
+      const isCenter = distFromCenter < (riverWidth * 0.25); // Inner 25% radius = 50% diameter
+
+      if (isCenter) {
+        // Reject 50% of center spawns to create 2:1 ratio favoring shores
+        if (Math.random() < 0.5) {
+          continue; // Retry
+        }
+      }
+
+      // Keep a small clear channel in the middle for navigation
+      if (distFromCenter < 6) {
+        continue;
+      }
+
+      valid = true;
+      break;
+    }
+
+    if (!valid) return false;
 
     const mangrove = new Mangrove(x, z, context.physicsEngine);
     context.entityManager.add(mangrove);

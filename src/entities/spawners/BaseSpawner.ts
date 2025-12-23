@@ -1,4 +1,5 @@
 import { Spawnable, SpawnContext } from '../Spawnable';
+import { RiverSystem } from '../../world/RiverSystem';
 
 export abstract class BaseSpawner implements Spawnable {
     abstract id: string;
@@ -8,7 +9,16 @@ export abstract class BaseSpawner implements Spawnable {
     getSpawnCount(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): number {
         const chunkLength = zEnd - zStart;
         const density = this.getDensity(difficulty, zStart);
-        const count = chunkLength * density;
+
+        // Scale by River Width
+        // Baseline width is ~45 (Median of 15 and 75)
+        // Denser spawns in wider areas, sparser in narrow areas
+        const riverSystem = RiverSystem.getInstance();
+        const width = (riverSystem.getRiverWidth(zStart) + riverSystem.getRiverWidth(zEnd)) / 2;
+        const baselineWidth = riverSystem.MAX_WIDTH;
+        const widthMultiplier = width / baselineWidth;
+
+        const count = chunkLength * density * widthMultiplier;
 
         // Use floor(count + random) to handle fractional parts probabilistically
         return Math.floor(count + Math.random());

@@ -26,7 +26,23 @@ export class Mangrove extends Entity {
   constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
     super();
 
-    const radius = 4.5; // Increased collision radius for 3x size
+    // Size Variance
+    let baseScale = 1.0;
+    const rand = Math.random();
+    if (rand < 0.05) {
+      baseScale = 2.0;
+    } else if (rand < 0.30) {
+      baseScale = 1.3;
+    }
+
+    // Jitter: +/- 20% (0.8 to 1.2)
+    const jitter = 0.8 + Math.random() * 0.4;
+    const finalScale = baseScale * jitter;
+
+    // Visuals
+    const mesh = Mangrove.getMangroveMesh();
+    mesh.scale.setScalar(finalScale); // Apply scale to visuals
+    this.meshes.push(mesh);
 
     // Physics Body
     const body = physicsEngine.world.createBody({
@@ -34,25 +50,47 @@ export class Mangrove extends Entity {
       position: planck.Vec2(x, y)
     });
 
-    body.createFixture({
-      shape: planck.Circle(radius),
-      density: 1.0,
-      friction: 0.5,
-      restitution: 0.1
-    });
+    // Root Fixtures
+    // Retrieve pre-calculated root offsets from userData
+    const rootOffsets = mesh.userData.rootOffsets as { x: number, z: number, r: number }[];
+    if (rootOffsets) {
+      for (const offset of rootOffsets) {
+        // Apply scale to position and radius
+        // Doubled collision radius as requested (* 2.0)
+        body.createFixture({
+          shape: planck.Circle(
+            planck.Vec2(offset.x * finalScale, offset.z * finalScale),
+            offset.r * finalScale * 4.0
+          ),
+          density: 1.0,
+          friction: 0.5,
+          restitution: 0.1
+        });
+      }
+    } else {
+      // Fallback if no data (shouldn't happen with new cache)
+      body.createFixture({
+        shape: planck.Circle(4.5 * finalScale),
+        density: 1.0,
+        friction: 0.5,
+        restitution: 0.1
+      });
+    }
 
     body.setUserData({ type: 'obstacle', entity: this });
     this.physicsBodies.push(body);
-
-    // Visuals
-    const mesh = Mangrove.getMangroveMesh();
-    this.meshes.push(mesh);
 
     // Sync initial position
     this.sync();
 
     // Random rotation
-    mesh.rotation.y = Math.random() * Math.PI * 2;
+    // Note: We need to rotate the bodies if we rotate the mesh!
+    // But static bodies in planck are... static.
+    // Actually, we can just rotate the mesh and the physics body's fixtures?
+    // Box2D bodies have an angle.
+    const angle = Math.random() * Math.PI * 2;
+    mesh.rotation.y = angle;
+    body.setAngle(angle);
   }
 
   update(dt: number): void {
@@ -64,6 +102,9 @@ export class Mangrove extends Entity {
       this.generateCache();
     }
     const template = this.cache[Math.floor(Math.random() * this.cache.length)];
+    // Clone logic needs deep userData copy if it's not handled by GraphicsUtils.cloneObject?
+    // GraphicsUtils.cloneObject usually uses obj.clone() which shallow copies userData.
+    // That's fine for read-only arrays.
     return GraphicsUtils.cloneObject(template);
   }
 
@@ -78,6 +119,7 @@ export class Mangrove extends Entity {
 
   private static createMangrove(): THREE.Group {
     const group = new THREE.Group();
+    const rootOffsets: { x: number, z: number, r: number }[] = [];
 
     // Parameters (Scaled 3x)
     const height = (4.0 + Math.random() * 2.0) * 3.0;
@@ -86,7 +128,7 @@ export class Mangrove extends Entity {
 
     // 1. Roots
     // Use CatmullRomCurve3 for organic, gnarled roots
-    const rootCount = 12 + Math.floor(Math.random() * 8); // More roots
+    const rootCount = 5 + Math.floor(Math.random() * 8); // 5 to 12 roots
 
     for (let i = 0; i < rootCount; i++) {
       const angle = (i / rootCount) * Math.PI * 2 + (Math.random() * 0.5);
@@ -130,6 +172,21 @@ export class Mangrove extends Entity {
       p1.add(new THREE.Vector3((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).multiplyScalar(0.5));
 
       const curve = new THREE.CatmullRomCurve3([p0, p1, p2, p3]);
+
+      // Calculate intersection with Water (y=0) for physics
+      // Simple linear scan approximation
+      const divisions = 20;
+      for (let j = 0; j <= divisions; j++) {
+        const t = j / divisions;
+        const pt = curve.getPoint(t);
+        if (pt.y >= 0) {
+          // Found transition point (approx)
+          // Store this point for collision
+          const rootRadius = 0.3 + Math.random() * 0.2; // Match visual radius approx
+          rootOffsets.push({ x: pt.x, z: pt.z, r: rootRadius });
+          break;
+        }
+      }
 
       // Thicker roots
       const tubeGeo = new THREE.TubeGeometry(curve, 8, 0.3 + Math.random() * 0.2, 5, false);
@@ -310,6 +367,9 @@ export class Mangrove extends Entity {
         GraphicsUtils.disposeObject(child.geometry);
       }
     });
+
+    // Attach Root Collider Offsets to userData
+    finalGroup.userData.rootOffsets = rootOffsets;
 
     return finalGroup;
   }
