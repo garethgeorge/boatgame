@@ -129,3 +129,7 @@ Dynamic game objects (Obstacles, Animals) follow a hierarchy designed for behavi
 **Rule**: This file (`GEMINI.md`) serves as the architectural source of truth. When implementing new features or refactoring existing systems:
 1.  **Check this file** to ensure your changes align with established patterns.
 2.  **Update this file** if you introduce new patterns, subsystems, or change the architecture. Keep it living and accurate.
+
+## 9. Code Style and Standards
+**Rule**
+- Avoid casting to any in typescript except where there is no reasonable alternative or it is being done for performance reasons.
