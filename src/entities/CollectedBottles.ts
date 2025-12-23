@@ -72,6 +72,7 @@ export class CollectedBottles {
                 if (container) {
                     this.mesh.remove(container);
                 }
+                GraphicsUtils.disposeObject(bottle);
                 // Uncache animation
                 this.mixer.uncacheRoot(bottle);
             }

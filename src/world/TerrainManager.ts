@@ -143,6 +143,7 @@ export class TerrainManager {
       // Clear debug meshes immediately
       this.collisionMeshes.forEach(mesh => {
         this.graphicsEngine.remove(mesh);
+        GraphicsUtils.disposeObject(m);
       });
       this.collisionMeshes = [];
     }
@@ -165,6 +166,7 @@ export class TerrainManager {
     // Clear debug meshes
     this.collisionMeshes.forEach(m => {
       this.graphicsEngine.remove(m);
+      GraphicsUtils.disposeObject(m);
     });
     this.collisionMeshes = [];
 
