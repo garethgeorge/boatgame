@@ -6,14 +6,24 @@ export class GraphicsUtils {
 
     /**
      * Registers an object hierarchy with the graphics tracker.
-     * Call this when loading a model.
+     * Call this:
+     * 
+     * - After loading a model from an external file
+     * - For materials, geometries, and textures that are cached
+     *   or stored in a JavaScript class.
      */
     public static registerObject(object: THREE.Object3D | DisposableResource) {
         this.tracker.track(object);
     }
 
     /**
-     * Disposes an object hierarchy and releases its resources.
+     * Indicates that the object will be discarded and not reused.
+     * Disposes any referenced resources that will be discarded as a
+     * result. Call this:
+     * 
+     * - When an object is being disposed
+     * - For materials, geometries, and textures that were registered
+     *   and are no longer needed.
      */
     public static disposeObject(object: THREE.Object3D | DisposableResource) {
         this.tracker.untrack(object);
@@ -21,6 +31,7 @@ export class GraphicsUtils {
 
     /**
      * Safely assigns a new material to a mesh, updating reference counts.
+     * DO NOT directly assign materials, always use this function.
      */
     public static assignMaterial(mesh: THREE.Mesh | THREE.Sprite | THREE.Line | THREE.Points, newMaterial: THREE.Material | THREE.Material[]) {
 
@@ -48,6 +59,7 @@ export class GraphicsUtils {
 
     /**
      * Safely assigns a new geometry to a mesh, updating reference counts.
+     * DO NOT directly assign geometry, always use this function.
      */
     public static assignGeometry(mesh: THREE.Mesh | THREE.Line | THREE.Points, newGeometry: THREE.BufferGeometry) {
         if (newGeometry) {
@@ -64,6 +76,7 @@ export class GraphicsUtils {
 
     /**
      * Creates a new tracked Mesh.
+     * DO NOT create directly, always use this function.
      */
     public static createMesh(geometry?: THREE.BufferGeometry, material?: THREE.Material | THREE.Material[]): THREE.Mesh {
         const mesh = new THREE.Mesh(geometry, material);
@@ -80,6 +93,7 @@ export class GraphicsUtils {
 
     /**
      * Creates a new tracked Line.
+     * DO NOT create directly, always use this function.
      */
     public static createLine(geometry?: THREE.BufferGeometry, material?: THREE.Material): THREE.Line {
         const line = new THREE.Line(geometry, material);
@@ -90,6 +104,7 @@ export class GraphicsUtils {
 
     /**
      * Creates a new tracked Sprite.
+     * DO NOT create directly, always use this function.
      */
     public static createSprite(material?: THREE.SpriteMaterial): THREE.Sprite {
         const sprite = new THREE.Sprite(material);
@@ -98,9 +113,10 @@ export class GraphicsUtils {
     }
 
     /**
-     * Clones an object and registers the new hierarchy. Always
-     * recursive as we assume this creates new references to all
-     * geometry and materials.
+     * Clones an object ensuring referenced resources are tracked
+     * correctly. Always recursive as we assume this creates new references
+     * to all geometry and materials.
+     * DO NOT clone directly, always use this function.
      */
     public static cloneObject<T extends THREE.Object3D>(object: T): T {
         const clone = object.clone(true) as T;
@@ -108,7 +124,10 @@ export class GraphicsUtils {
         return clone;
     }
 
-    // Replace all materials with toon material
+    /**
+     * Replaces all materials with toon material ensuring correct
+     * tracking of resources.
+     */
     public static toonify(model: THREE.Group) {
         model.traverse((child) => {
             if (child instanceof THREE.Mesh) {
