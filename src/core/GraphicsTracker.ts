@@ -39,7 +39,6 @@ export class GraphicsTracker {
                 return false;
             }
             this.trackedLeaves.set(object, performance.now());
-            console.log('Tracking', object.name, object);
             return true;
         });
     }
@@ -56,7 +55,6 @@ export class GraphicsTracker {
                 console.log('Untracked?', object.name, object);
             }
             this.trackedLeaves.delete(object);
-            console.log('Disposing', object.name, object);
             return true;
         });
     }
