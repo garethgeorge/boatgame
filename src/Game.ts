@@ -117,7 +117,7 @@ export class Game {
             Mangrove.preload(),
             // Add other entities here as needed
         ]);
-        GraphicsUtils.tracker.verbose = true;
+        //GraphicsUtils.tracker.verbose = true;
     }
 
 

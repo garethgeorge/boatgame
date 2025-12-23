@@ -98,8 +98,15 @@ export class TerrainManager {
     const renderDistance = 6; // Number of chunks to render in each direction
 
     // Create new chunks
-    for (let i = -renderDistance; i <= renderDistance; i++) {
-      const index = currentChunkIndex + i;
+    for (let i = 0; i <= 2 * renderDistance; i++) {
+
+      // limit number of concurrent creations
+      if (this.loadingChunks.size > 3)
+        break;
+
+      // 0, 1, 2, ... -> 0, -1, 1, -2, ...
+      const offset = i % 2 === 0 ? i / 2 : -((i + 1) / 2);
+      const index = currentChunkIndex + offset;
       if (!this.chunks.has(index) && !this.loadingChunks.has(index)) {
         const zOffset = index * TerrainChunk.CHUNK_SIZE;
         this.loadingChunks.add(index);
@@ -116,9 +123,11 @@ export class TerrainManager {
       }
     }
 
-    // Remove old chunks
+    // Remove old chunks, slightly wider apture else chunks can be
+    // created and immediately destroyed if the boat is sitting close
+    // to a boundary
     for (const [index, chunk] of this.chunks) {
-      if (Math.abs(index - currentChunkIndex) > renderDistance) {
+      if (Math.abs(index - currentChunkIndex) > renderDistance + 1) {
         console.log(`[TerrainManager] Disposing chunk ${index}`);
         chunk.dispose();
         this.chunks.delete(index);
