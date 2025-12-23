@@ -422,8 +422,8 @@ export class Game {
             TerrainChunk.waterMaterial.uniforms.uSwampFactor.value = swampFactor;
         }
 
-        if (this.leakCheckInterval > 0 && this.nextLeakCheckTime < performance.now()) {
-            GraphicsUtils.tracker.checkLeaks(20.0, true);
+        if (this.debugMode && this.nextLeakCheckTime < performance.now()) {
+            GraphicsUtils.tracker.checkLeaks(20.0, true, this.graphicsEngine.scene);
             this.nextLeakCheckTime = performance.now() + this.leakCheckInterval;
         }
     }

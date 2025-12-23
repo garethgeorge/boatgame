@@ -236,4 +236,78 @@ describe('GraphicsTracker', () => {
         const leakedLog = calls.find(call => call.includes('CachedMesh'));
         expect(leakedLog).toBeUndefined();
     });
+
+    it('should ignore objects attached to scene root', () => {
+        const consoleSpy = vi.spyOn(console, 'log');
+        const now = 10000;
+        vi.spyOn(performance, 'now').mockReturnValue(now);
+
+        const scene = new THREE.Scene();
+        const objectInScene = new THREE.Mesh();
+        objectInScene.name = 'SceneObject';
+        scene.add(objectInScene);
+
+        const objectLeaked = new THREE.Mesh();
+        objectLeaked.name = 'LeakedMesh2';
+
+        // 1. Track both (simulate new objects)
+        tracker.track(objectInScene);
+        tracker.track(objectLeaked);
+        tracker.createSnapshot();
+        // Note: createSnapshot adds EVERYTHING tracked to snapshot.
+        // To test leak logic, we need them NOT to be in snapshot but be tracked.
+
+        // Let's reset snapshot to empty to simulate "everything is new"
+        (tracker as any).snapshot = new WeakSet();
+
+        // 2. Advance time
+        const checkTime = now + 10000;
+        vi.spyOn(performance, 'now').mockReturnValue(checkTime);
+
+        // 3. Check for leaks, passing scene
+        tracker.checkLeaks(2, false, scene);
+
+        // 4. Verify
+        const calls = consoleSpy.mock.calls.map(args => args.join(' '));
+        const sceneLog = calls.find(call => call.includes('SceneObject'));
+        const leakedLog = calls.find(call => call.includes('LeakedMesh2'));
+
+        expect(sceneLog).toBeUndefined(); // Should be ignored because it's in scene
+        expect(leakedLog).toBeDefined(); // Should be leaked
+        expect(sceneLog).toBeUndefined(); // Should be ignored because it's in scene
+        expect(leakedLog).toBeDefined(); // Should be leaked
+    });
+
+    it('should identify untracked objects in the scene', () => {
+        const consoleSpy = vi.spyOn(console, 'warn');
+        const consoleErrorSpy = vi.spyOn(console, 'error');
+        const now = 10000;
+        vi.spyOn(performance, 'now').mockReturnValue(now);
+
+        const scene = new THREE.Scene();
+
+        // Create a mesh DIRECTLY (bypassing tracker)
+        const untrackedMesh = new THREE.Mesh();
+        untrackedMesh.name = 'BadMesh';
+        scene.add(untrackedMesh);
+
+        // Track a good mesh
+        const trackedMesh = new THREE.Mesh();
+        trackedMesh.name = 'GoodMesh';
+        tracker.track(trackedMesh);
+        scene.add(trackedMesh);
+
+        // Check leaks
+        tracker.checkLeaks(2, false, scene);
+
+        // Verify warning
+        const warnCalls = consoleSpy.mock.calls.map(args => args.join(' '));
+        const untrackedLog = warnCalls.find(call => call.includes('Untracked object found in scene') && call.includes('BadMesh'));
+
+        const errorCalls = consoleErrorSpy.mock.calls.map(args => args.join(' '));
+        const summaryLog = errorCalls.find(call => call.includes('objects in scene that are NOT tracked'));
+
+        expect(untrackedLog).toBeDefined();
+        expect(summaryLog).toBeDefined();
+    });
 });

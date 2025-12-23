@@ -33,6 +33,11 @@ Use the helper methods in **`src/core/GraphicsUtils.ts`** instead of raw Three.j
   // NOT THIS:
   const mesh = new THREE.Mesh(geometry, material); // Resource won't be tracked!
   ```
+If an object is cached rather than being added to the scene graph be sure to mark it as cached. If this isn't done the leak checking system will assume it has been leaked. Cached geometry, materials, and textures don't need to be marked.
+  ```typescript
+  // DO THIS:
+  GraphicsUtils.markAsCache(object);
+```
 
 - **Replacing Resources**:
   If you need to swap a material or geometry on an existing mesh, you **MUST** use the safe assignment helpers. These methods handle decrementing the reference count of the old resource and incrementing the new one.

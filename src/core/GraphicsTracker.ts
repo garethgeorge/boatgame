@@ -24,6 +24,14 @@ export class GraphicsTracker {
         'anisotropyMap'
     ];
 
+    public get resourceCount(): number {
+        return this.trackedResources.size;
+    }
+
+    public get primitiveCount(): number {
+        return this.trackedLeaves.size;
+    }
+
     /**
      * Recursively tracks resources for an object and its children.
      * This is called when a new object hierarchy loaded from file
@@ -80,21 +88,38 @@ export class GraphicsTracker {
      * @param snapshot The baseline snapshot created by createSnapshot()
      * @param minAgeSeconds Only log objects older than this (to avoid false positives from currently loading objects)
      * @param updateSnapshot Add objects that are reported to the snapshot to avoid reporting them again
+     * @param sceneRoot Optional. If provided, any object reachable from this root is considered "safe" and not leaked.
      */
-    public checkLeaks(minAgeSeconds: number, updateSnapshot: boolean = false) {
+    public checkLeaks(minAgeSeconds: number, updateSnapshot: boolean = false, sceneRoot?: THREE.Object3D) {
 
         const snapshot = this.snapshot;
         const now = performance.now();
         const threshold = now - (minAgeSeconds * 1000);
         let count = 0;
 
+        // Build set of reachable objects from scene
+        const reachable = new Set<THREE.Object3D>();
+        if (sceneRoot) {
+            sceneRoot.traverse((child) => {
+                reachable.add(child);
+            });
+        }
+
         console.group('GraphicsTracker Leak Check');
         console.log('Mesh/Line/Sprite', this.trackedLeaves.size, 'Resources', this.trackedResources.size);
 
         for (const [leaf, timestamp] of this.trackedLeaves) {
-            // If it's NOT in the snapshot (meaning it's new since snapshot)
-            // AND it's older than the threshold (meaning it's been around for a while)
+            // Leak Criteria:
+            // 1. Not in snapshot (new since start)
+            // 2. Older than threshold (not just created)
+            // 3. Not reachable from scene (if scene provided)
             if (!snapshot.has(leaf) && timestamp < threshold) {
+
+                if (reachable.has(leaf)) {
+                    // It is in the scene, so it's active, not a leak.
+                    continue;
+                }
+
                 console.log('Potential Leak:', leaf.name, leaf, 'Age:', ((now - timestamp) / 1000).toFixed(2) + 's');
                 count++;
 
@@ -109,6 +134,25 @@ export class GraphicsTracker {
         } else {
             console.warn(`Found ${count} potential leaks.`);
         }
+
+        // Reverse Check: Are there objects in the scene that are NOT tracked?
+        if (reachable.size > 0) {
+            let untrackedCount = 0;
+            for (const obj of reachable) {
+                const anyObj = obj as any;
+                // Check if it's a leaf type we care about
+                if (anyObj.isMesh || anyObj.isSprite || anyObj.isLine || anyObj.isPoints) {
+                    if (!this.trackedLeaves.has(obj)) {
+                        console.warn('Untracked object found in scene:', obj.name, obj);
+                        untrackedCount++;
+                    }
+                }
+            }
+            if (untrackedCount > 0) {
+                console.error(`Found ${untrackedCount} objects in scene that are NOT tracked! Use GraphicsUtils to create them.`);
+            }
+        }
+
         console.groupEnd();
     }
 

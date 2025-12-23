@@ -110,5 +110,9 @@ export class GraphicsEngine {
     Profiler.addInfo('Textures', stats.memory.textures);
     Profiler.addInfo('DrawCalls', stats.render.calls);
     Profiler.addInfo('Triangles', stats.render.triangles);
+
+    const tracker = GraphicsUtils.tracker;
+    Profiler.addInfo('Tracked Primitves', tracker.resourceCount);
+    Profiler.addInfo('Tracked Resources', tracker.primitiveCount);
   }
 }

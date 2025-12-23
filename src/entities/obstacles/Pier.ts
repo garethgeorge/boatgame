@@ -53,6 +53,7 @@ export class Pier extends Entity {
         const pileGeometry = new THREE.CylinderGeometry(0.2, 0.2, 4.0, 8);
         pileGeometry.name = 'Pier - Pile Geometry';
         Pier.pileMesh = GraphicsUtils.createMesh(pileGeometry, pileMaterial, 'PierPile');
+        GraphicsUtils.markAsCache(Pier.pileMesh);
 
         return Pier.pileMesh;
     }
