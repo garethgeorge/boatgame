@@ -92,7 +92,7 @@ export class Log extends Entity {
             Log.getEndMaterial()     // Bottom cap
         ];
 
-        const mesh = GraphicsUtils.createMesh(geo, materials);
+        const mesh = GraphicsUtils.createMesh(geo, materials, 'LogMesh');
         this.meshes.push(mesh);
 
         mesh.rotation.z = Math.PI / 2;

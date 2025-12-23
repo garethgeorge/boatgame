@@ -45,6 +45,10 @@ export class BiomeDecorationHelper {
         return true;
     }
 
+    /**
+     * Assumes it is passed an object that should be disposed. Collects
+     * copies of the geometry from the object.
+     */
     public positionAndCollectGeometry(
         object: THREE.Object3D,
         position: { worldX: number; height: number; worldZ: number },
@@ -71,6 +75,8 @@ export class BiomeDecorationHelper {
                 context.geometriesByMaterial.get(material)!.push(geometry);
             }
         });
+
+        GraphicsUtils.disposeObject(object);
     }
 
     public mergeAndAddGeometries(
@@ -83,7 +89,7 @@ export class BiomeDecorationHelper {
             const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries);
             mergedGeometry.name = 'Decorations - merged geom';
 
-            const mesh = GraphicsUtils.createMesh(mergedGeometry, material);
+            const mesh = GraphicsUtils.createMesh(mergedGeometry, material, 'BiomeMergedDecoration');
             // Material is shared from decorators, so we DON'T dispose it here
 
             mesh.castShadow = true;

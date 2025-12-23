@@ -142,4 +142,73 @@ describe('GraphicsTracker', () => {
         expect(geoDispose).toHaveBeenCalled();
         expect(t.trackedResources.has(geometry)).toBe(false);
     });
+
+    it('should create a snapshot of tracked leaves', () => {
+        const mesh1 = new THREE.Mesh();
+        const mesh2 = new THREE.Mesh();
+        const t = tracker as any;
+
+        tracker.track(mesh1);
+        const snapshot = tracker.createSnapshot();
+        tracker.track(mesh2);
+
+        expect(t.snapshot.has(mesh1)).toBe(true);
+        expect(t.snapshot.has(mesh2)).toBe(false);
+    });
+
+    it('should identify leaked objects correctly', () => {
+        const consoleSpy = vi.spyOn(console, 'log');
+        const now = 10000;
+        vi.spyOn(performance, 'now').mockReturnValue(now);
+
+        const meshOld = new THREE.Mesh();
+        meshOld.name = 'OldMesh';
+        const meshLeaked = new THREE.Mesh();
+        meshLeaked.name = 'LeakedMesh';
+        const meshNew = new THREE.Mesh();
+        meshNew.name = 'NewMesh';
+
+        // 1. Setup Baseline
+        tracker.track(meshOld);
+        tracker.createSnapshot();
+
+        // 2. Add a "leak" (simulated by time passing)
+        // Set time for the leaked object creation
+        const leakTime = now + 1000;
+        vi.spyOn(performance, 'now').mockReturnValue(leakTime);
+        tracker.track(meshLeaked);
+
+        // 3. Add a "new" object (simulated as very recent)
+        const newTime = now + 5000;
+        vi.spyOn(performance, 'now').mockReturnValue(newTime);
+        tracker.track(meshNew);
+
+        // 4. Check for leaks at a later time
+        const checkTime = now + 6000;
+        vi.spyOn(performance, 'now').mockReturnValue(checkTime);
+
+        // We check for leaks older than 2 seconds
+        // meshLeaked age = 6000 - 1000 = 5000ms = 5s (Should be caught)
+        // meshNew age = 6000 - 5000 = 1000ms = 1s (Should be ignored)
+
+        tracker.checkLeaks(2);
+
+        expect(consoleSpy).toHaveBeenCalledWith(
+            expect.stringContaining('Potential Leak:'),
+            expect.stringContaining('LeakedMesh'),
+            expect.any(Object),
+            expect.any(String), // Age string
+            expect.any(String)  // Age value
+        );
+
+        // Verify "NewMesh" was NOT logged
+        const calls = consoleSpy.mock.calls.map(args => args.join(' '));
+        const leakedLog = calls.find(call => call.includes('LeakedMesh'));
+        const newLog = calls.find(call => call.includes('NewMesh'));
+        const oldLog = calls.find(call => call.includes('OldMesh'));
+
+        expect(leakedLog).toBeDefined();
+        expect(newLog).toBeUndefined();
+        expect(oldLog).toBeUndefined(); // Should be in snapshot, so ignored
+    });
 });

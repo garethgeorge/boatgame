@@ -188,7 +188,7 @@ export abstract class BaseMangrove extends Entity {
       // Thicker roots
       const tubeGeo = new THREE.TubeGeometry(curve, 8, 0.3 + Math.random() * 0.2, 5, false);
       tubeGeo.name = 'Mangrove - Root Geometry';
-      const root = GraphicsUtils.createMesh(tubeGeo, this.trunkMaterial);
+      const root = GraphicsUtils.createMesh(tubeGeo, this.trunkMaterial, 'MangroveRoot');
       root.castShadow = true;
       root.receiveShadow = true;
       group.add(root);
@@ -215,7 +215,7 @@ export abstract class BaseMangrove extends Entity {
     const trunkCurve = new THREE.CatmullRomCurve3(trunkPoints);
     const trunkGeo = new THREE.TubeGeometry(trunkCurve, 8, 1.2, 7, false);
     trunkGeo.name = 'Mangrove - Trunk Geometry';
-    const trunk = GraphicsUtils.createMesh(trunkGeo, this.trunkMaterial);
+    const trunk = GraphicsUtils.createMesh(trunkGeo, this.trunkMaterial, 'MangroveTrunk');
     trunk.castShadow = true;
     trunk.receiveShadow = true;
     group.add(trunk);
@@ -232,7 +232,7 @@ export abstract class BaseMangrove extends Entity {
 
       const branchGeo = new THREE.CylinderGeometry(0.3, 0.6, len, 5);
       branchGeo.name = 'Mangrove - Branch Geometry';
-      const branch = GraphicsUtils.createMesh(branchGeo, this.trunkMaterial);
+      const branch = GraphicsUtils.createMesh(branchGeo, this.trunkMaterial, 'MangroveBranch');
 
       // Branch position/rotation in Group space
       const bY = branchStartY + (Math.random() * trunkHeight * 0.4);
@@ -287,7 +287,6 @@ export abstract class BaseMangrove extends Entity {
     // Merge geometries
     // 1. Wood Geometry (Roots, Trunk, Branches)
     const woodGeometries: THREE.BufferGeometry[] = [];
-
     group.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material === this.trunkMaterial) {
         child.updateMatrixWorld();
@@ -315,7 +314,7 @@ export abstract class BaseMangrove extends Entity {
 
     if (woodGeometries.length > 0) {
       const mergedWood = BufferGeometryUtils.mergeGeometries(woodGeometries);
-      const woodMesh = GraphicsUtils.createMesh(mergedWood, this.trunkMaterial);
+      const woodMesh = GraphicsUtils.createMesh(mergedWood, this.trunkMaterial, 'MangroveWood');
       woodMesh.castShadow = true;
       woodMesh.receiveShadow = true;
       finalGroup.add(woodMesh);
@@ -324,7 +323,7 @@ export abstract class BaseMangrove extends Entity {
 
     if (leafGeometries.length > 0) {
       const mergedLeaves = BufferGeometryUtils.mergeGeometries(leafGeometries);
-      const leafMesh = GraphicsUtils.createMesh(mergedLeaves, this.leafMaterial);
+      const leafMesh = GraphicsUtils.createMesh(mergedLeaves, this.leafMaterial, 'MangroveLeaves');
       leafMesh.castShadow = true;
       leafMesh.receiveShadow = true;
       finalGroup.add(leafMesh);
@@ -332,11 +331,7 @@ export abstract class BaseMangrove extends Entity {
     }
 
     // Dispose of the original loose group and its children's geometries
-    group.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        GraphicsUtils.disposeObject(child.geometry);
-      }
-    });
+    GraphicsUtils.disposeObject(group);
 
     // Attach Root Collider Offsets to userData
     finalGroup.userData.rootOffsets = rootOffsets;
@@ -385,7 +380,7 @@ export abstract class BaseMangrove extends Entity {
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geo.computeVertexNormals();
 
-    const mesh = GraphicsUtils.createMesh(geo, this.leafMaterial);
+    const mesh = GraphicsUtils.createMesh(geo, this.leafMaterial, 'MangroveLeafSingle');
     mesh.rotation.y = Math.random() * Math.PI * 2;
     mesh.rotation.x = (Math.random() - 0.5) * 0.1;
     mesh.rotation.z = (Math.random() - 0.5) * 0.1;

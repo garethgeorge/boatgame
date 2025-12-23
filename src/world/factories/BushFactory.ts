@@ -68,7 +68,7 @@ export class BushFactory implements DecorationFactory {
                     segGeo.name = 'Bush - Fern Frond Segment Geometry';
                     segGeo.translate(0, segmentLen / 2, 0);
 
-                    const seg = GraphicsUtils.createMesh(segGeo, BushFactory.greenBushMaterial);
+                    const seg = GraphicsUtils.createMesh(segGeo, BushFactory.greenBushMaterial, 'BushSegment');
                     seg.position.copy(currentPos);
                     seg.rotation.x = currentAngle;
                     (seg.material as THREE.MeshToonMaterial).side = THREE.DoubleSide;
@@ -93,7 +93,7 @@ export class BushFactory implements DecorationFactory {
 
                 const geo = new THREE.CylinderGeometry(thick * 0.7, thick, len, 4);
                 geo.name = 'Bush - Dead Branch Geometry';
-                const mesh = GraphicsUtils.createMesh(geo, material);
+                const mesh = GraphicsUtils.createMesh(geo, material, 'BushSingle');
                 mesh.position.copy(mid);
                 mesh.lookAt(end);
                 mesh.rotateX(Math.PI / 2);

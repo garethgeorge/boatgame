@@ -78,8 +78,9 @@ export class GraphicsUtils {
      * Creates a new tracked Mesh.
      * DO NOT create directly, always use this function.
      */
-    public static createMesh(geometry?: THREE.BufferGeometry, material?: THREE.Material | THREE.Material[]): THREE.Mesh {
+    public static createMesh(geometry?: THREE.BufferGeometry, material?: THREE.Material | THREE.Material[], name: string = 'Unnamed Mesh'): THREE.Mesh {
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.name = name;
         this.tracker.track(mesh);
         return mesh;
     }
@@ -88,8 +89,9 @@ export class GraphicsUtils {
      * Creates a new tracked Line.
      * DO NOT create directly, always use this function.
      */
-    public static createLine(geometry?: THREE.BufferGeometry, material?: THREE.Material): THREE.Line {
+    public static createLine(geometry?: THREE.BufferGeometry, material?: THREE.Material, name: string = 'Unnamed Line'): THREE.Line {
         const line = new THREE.Line(geometry, material);
+        line.name = name;
         this.tracker.track(line);
         return line;
     }
@@ -98,8 +100,9 @@ export class GraphicsUtils {
      * Creates a new tracked Sprite.
      * DO NOT create directly, always use this function.
      */
-    public static createSprite(material?: THREE.SpriteMaterial): THREE.Sprite {
+    public static createSprite(material?: THREE.SpriteMaterial, name: string = 'Unnamed Sprite'): THREE.Sprite {
         const sprite = new THREE.Sprite(material);
+        sprite.name = name;
         this.tracker.track(sprite);
         return sprite;
     }

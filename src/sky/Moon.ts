@@ -11,7 +11,7 @@ export class Moon {
         const moonTexture = textureLoader.load('assets/moon.png');
         moonTexture.name = 'Moon Texture';
         const moonMat = new THREE.SpriteMaterial({ map: moonTexture, color: 0xaadaff, name: 'Moon Material' });
-        this.mesh = GraphicsUtils.createSprite(moonMat);
+        this.mesh = GraphicsUtils.createSprite(moonMat, 'MoonSprite');
         this.mesh.scale.set(35, 35, 1); // Adjust scale to match previous size
         scene.add(this.mesh);
 

@@ -75,7 +75,7 @@ export class TreeFactory implements DecorationFactory {
         // Trunk
         const trunkGeo = new THREE.CylinderGeometry(trunkThickness * 0.6, trunkThickness, height, 6);
         trunkGeo.name = 'Tree - Trunk Geometry';
-        const trunk = GraphicsUtils.createMesh(trunkGeo, TreeFactory.treeMaterial);
+        const trunk = GraphicsUtils.createMesh(trunkGeo, TreeFactory.treeMaterial, 'TreeTrunk');
         trunk.position.y = height / 2;
         group.add(trunk);
 
@@ -91,7 +91,7 @@ export class TreeFactory implements DecorationFactory {
 
             const branchGeo = new THREE.CylinderGeometry(branchThick * 0.5, branchThick, branchLen, 4);
             branchGeo.name = 'Tree - Branch Geometry';
-            const branch = GraphicsUtils.createMesh(branchGeo, TreeFactory.treeMaterial);
+            const branch = GraphicsUtils.createMesh(branchGeo, TreeFactory.treeMaterial, 'TreeBranch');
 
             // Position on trunk
             branch.position.set(0, y, 0);
@@ -116,7 +116,7 @@ export class TreeFactory implements DecorationFactory {
 
                 const subGeo = new THREE.CylinderGeometry(subThick * 0.5, subThick, subLen, 4);
                 subGeo.name = 'Tree - Sub-branch Geometry';
-                const subBranch = GraphicsUtils.createMesh(subGeo, TreeFactory.treeMaterial);
+                const subBranch = GraphicsUtils.createMesh(subGeo, TreeFactory.treeMaterial, 'TreeSubBranch');
 
                 // Position along parent branch
                 const posAlong = (0.6 + Math.random() * 0.4) * branchLen;
@@ -135,7 +135,7 @@ export class TreeFactory implements DecorationFactory {
                     const leafSize = 1.0 + wetness * 0.5;
                     const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
                     leafGeo.name = 'Tree - Sub-branch Leaf Geometry';
-                    const leafMesh = GraphicsUtils.createMesh(leafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial);
+                    const leafMesh = GraphicsUtils.createMesh(leafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial, 'TreeLeafOuter');
                     leafMesh.position.set(0, subLen / 2, 0);
                     subBranch.add(leafMesh);
                 }
@@ -146,7 +146,7 @@ export class TreeFactory implements DecorationFactory {
                 const leafSize = 1.2 + wetness * 0.6;
                 const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
                 leafGeo.name = 'Tree - Branch Leaf Geometry';
-                const leafMesh = GraphicsUtils.createMesh(leafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial);
+                const leafMesh = GraphicsUtils.createMesh(leafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial, 'TreeLeafInner');
 
                 leafMesh.position.set(0, branchLen / 2, 0);
                 branch.add(leafMesh);
@@ -158,7 +158,7 @@ export class TreeFactory implements DecorationFactory {
             const topLeafSize = 1.5 + wetness * 0.8;
             const topLeafGeo = new THREE.IcosahedronGeometry(topLeafSize, 0);
             topLeafGeo.name = 'Tree - Top Leaf Geometry';
-            const topLeaf = GraphicsUtils.createMesh(topLeafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial);
+            const topLeaf = GraphicsUtils.createMesh(topLeafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial, 'TreeLeafTop');
             topLeaf.position.y = height;
             group.add(topLeaf);
         }

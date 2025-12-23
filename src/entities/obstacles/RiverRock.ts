@@ -72,7 +72,7 @@ export class RiverRock extends Entity {
         const material = new THREE.MeshToonMaterial({ color: 0x808080 });
         material.name = 'RiverRock';
 
-        const mesh = GraphicsUtils.createMesh(geometry, material);
+        const mesh = GraphicsUtils.createMesh(geometry, material, 'RiverRockMesh');
         this.meshes.push(mesh);
         // @ts-ignore
         material.flatShading = true; // Works in runtime, types might be strict

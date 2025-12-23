@@ -134,8 +134,7 @@ export abstract class Entity {
         const type = shape.getType();
 
         let mesh: THREE.Mesh | null = null;
-        const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
-        material.name = `Debug - Physics Material`;
+        let line: THREE.Line | null = null;
 
         if (type === 'circle') {
           const circle = shape as planck.Circle;
@@ -144,9 +143,11 @@ export abstract class Entity {
 
           const geometry = new THREE.CylinderGeometry(radius, radius, 1, 16);
           geometry.name = `Debug - Physics Circle`;
-          mesh = GraphicsUtils.createMesh(geometry, material);
-          mesh.position.set(center.x, 0, center.y); // Local offset
+          const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+          material.name = `Debug - Physics Material`;
 
+          mesh = GraphicsUtils.createMesh(geometry, material, 'EntityDebugCylinder');
+          mesh.position.set(center.x, 0, center.y);
         } else if (type === 'polygon') {
           const poly = shape as planck.Polygon;
           const vertices = (poly as any).m_vertices;
@@ -163,15 +164,12 @@ export abstract class Entity {
           geometry.name = `Debug - Physics Polygon`;
           const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
           lineMaterial.name = `Debug - Physics Line Material`;
-          const line = GraphicsUtils.createLine(geometry, lineMaterial);
 
-          group.add(line);
-          continue;
+          line = GraphicsUtils.createLine(geometry, lineMaterial, 'EntityDebugPolygon');
         }
 
-        if (mesh) {
-          group.add(mesh);
-        }
+        if (mesh) group.add(mesh);
+        if (line) group.add(line);
       }
 
       // Initial sync
@@ -182,4 +180,3 @@ export abstract class Entity {
     return this.debugMeshes;
   }
 }
-

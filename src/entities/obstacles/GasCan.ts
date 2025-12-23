@@ -53,7 +53,7 @@ export class GasCan extends Entity {
         const geo = new THREE.BoxGeometry(1.2, 1.6, 0.8); // Doubled
         geo.name = 'GasCan - Body Geometry';
         const mat = new THREE.MeshToonMaterial({ color: 0xFF0000, name: 'GasCan - Material' }); // Red
-        const can = GraphicsUtils.createMesh(geo, mat);
+        const can = GraphicsUtils.createMesh(geo, mat, 'GasCanBody');
         can.position.y = 0.8;
         mesh.add(can);
 
@@ -61,7 +61,7 @@ export class GasCan extends Entity {
         const handleGeo = new THREE.TorusGeometry(0.3, 0.1, 8, 16); // Doubled
         handleGeo.name = 'GasCan - Handle Geometry';
         const handleMat = new THREE.MeshToonMaterial({ color: 0xFF0000, name: 'GasCan - Handle Material' });
-        const handle = GraphicsUtils.createMesh(handleGeo, handleMat);
+        const handle = GraphicsUtils.createMesh(handleGeo, handleMat, 'GasCanHandle');
         handle.position.y = 1.8;
         // Fix rotation: was Math.PI / 2 (90 deg), user says off by 90.
         // Torus default is flat on XY plane.
@@ -74,7 +74,7 @@ export class GasCan extends Entity {
         const spoutGeo = new THREE.CylinderGeometry(0.1, 0.16, 0.6, 8); // Doubled
         spoutGeo.name = 'GasCan - Spout Geometry';
         const spoutMat = new THREE.MeshToonMaterial({ color: 0xFFD700, name: 'GasCan - Spout Material' }); // Yellow
-        const spout = GraphicsUtils.createMesh(spoutGeo, spoutMat);
+        const spout = GraphicsUtils.createMesh(spoutGeo, spoutMat, 'GasCanSpout');
         spout.position.set(0.4, 1.6, 0);
         spout.rotation.z = -Math.PI / 4;
         mesh.add(spout);

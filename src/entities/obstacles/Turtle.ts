@@ -38,7 +38,7 @@ export class Turtle extends Entity {
         const geo = new THREE.SphereGeometry(0.8, 16, 16);
         geo.name = 'Turtle - Shell Geometry';
         const mat = new THREE.MeshToonMaterial({ color: 0x006400, name: 'Turtle - Shell Material' }); // Dark Green
-        const mesh = GraphicsUtils.createMesh(geo, mat);
+        const mesh = GraphicsUtils.createMesh(geo, mat, 'TurtleMesh');
         this.meshes.push(mesh);
 
         mesh.scale.y = 0.5; // Flatten it

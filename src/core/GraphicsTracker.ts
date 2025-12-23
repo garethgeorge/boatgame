@@ -9,8 +9,10 @@ export type DisposableResource = THREE.Material | THREE.BufferGeometry | THREE.T
  */
 export class GraphicsTracker {
     public verbose: boolean = false;
+
     private trackedResources = new Map<DisposableResource, number>();
     private trackedLeaves = new Map<THREE.Object3D, number>();
+    private snapshot = new WeakSet<THREE.Object3D>();
 
     // Common texture slots in Three.js materials for fast lookup
     private static readonly TEXTURE_PROPERTIES = [
@@ -57,6 +59,55 @@ export class GraphicsTracker {
             this.trackedLeaves.delete(object);
             return true;
         });
+    }
+
+    /**
+     * Captures the current set of tracked leaf objects (weakly referenced).
+     * Use this to establish a baseline for leak checking.
+     */
+    public createSnapshot() {
+        const snapshot = new WeakSet<THREE.Object3D>();
+        for (const leaf of this.trackedLeaves.keys()) {
+            snapshot.add(leaf);
+        }
+        this.snapshot = snapshot;
+    }
+
+    /**
+     * Logs objects that are currently tracked but were NOT present in the snapshot,
+     * AND have been tracked for longer than the specified duration.
+     * 
+     * @param snapshot The baseline snapshot created by createSnapshot()
+     * @param minAgeSeconds Only log objects older than this (to avoid false positives from currently loading objects)
+     * @param updateSnapshot Add objects that are reported to the snapshot to avoid reporting them again
+     */
+    public checkLeaks(minAgeSeconds: number, updateSnapshot: boolean = false) {
+
+        const snapshot = this.snapshot;
+        const now = performance.now();
+        const threshold = now - (minAgeSeconds * 1000);
+        let count = 0;
+
+        console.group('GraphicsTracker Leak Check');
+        for (const [leaf, timestamp] of this.trackedLeaves) {
+            // If it's NOT in the snapshot (meaning it's new since snapshot)
+            // AND it's older than the threshold (meaning it's been around for a while)
+            if (!snapshot.has(leaf) && timestamp < threshold) {
+                console.log('Potential Leak:', leaf.name, leaf, 'Age:', ((now - timestamp) / 1000).toFixed(2) + 's');
+                count++;
+
+                // prevent reporting it in the future
+                if (updateSnapshot)
+                    snapshot.add(leaf);
+            }
+        }
+
+        if (count === 0) {
+            console.log('No leaks detected (new objects > ' + minAgeSeconds + 's old).');
+        } else {
+            console.warn(`Found ${count} potential leaks.`);
+        }
+        console.groupEnd();
     }
 
     /**

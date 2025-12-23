@@ -42,7 +42,7 @@ export class CactusFactory implements DecorationFactory {
         // Trunk
         const trunkGeo = new THREE.CapsuleGeometry(trunkRadius, height - trunkRadius * 2, 8, 16);
         trunkGeo.name = 'Cactus - Trunk Geometry';
-        const trunk = GraphicsUtils.createMesh(trunkGeo, CactusFactory.cactusMaterial);
+        const trunk = GraphicsUtils.createMesh(trunkGeo, CactusFactory.cactusMaterial, 'CactusTrunk');
         trunk.position.y = height / 2;
         trunk.castShadow = true;
         trunk.receiveShadow = true;
@@ -83,7 +83,7 @@ export class CactusFactory implements DecorationFactory {
             // Tube Geometry
             const tubeGeo = new THREE.TubeGeometry(curve, 8, armRadius, 8, false);
             tubeGeo.name = 'Cactus - Arm Geometry';
-            const arm = GraphicsUtils.createMesh(tubeGeo, CactusFactory.cactusMaterial);
+            const arm = GraphicsUtils.createMesh(tubeGeo, CactusFactory.cactusMaterial, 'CactusArm');
             arm.castShadow = true;
             arm.receiveShadow = true;
             group.add(arm);
@@ -91,7 +91,7 @@ export class CactusFactory implements DecorationFactory {
             // Cap the top of the arm
             const capGeo = new THREE.SphereGeometry(armRadius, 8, 8);
             capGeo.name = 'Cactus - Arm Cap Geometry';
-            const cap = GraphicsUtils.createMesh(capGeo, CactusFactory.cactusMaterial);
+            const cap = GraphicsUtils.createMesh(capGeo, CactusFactory.cactusMaterial, 'CactusCap');
             cap.position.copy(endPoint);
             cap.castShadow = true;
             cap.receiveShadow = true;

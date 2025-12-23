@@ -47,6 +47,8 @@ export class Game {
     isPaused: boolean = false;
     debugMode: boolean = false;
     profilerVisible: boolean = false;
+    leakCheckInterval: number = 10.0 * 1000.0; // milli-seconds
+    nextLeakCheckTime: number = 0;
     viewMode: 'close' | 'far' = 'close';
 
     // Collision Handling
@@ -118,6 +120,10 @@ export class Game {
             // Add other entities here as needed
         ]);
         GraphicsUtils.tracker.verbose = false;
+        if (this.leakCheckInterval > 0) {
+            GraphicsUtils.tracker.createSnapshot();
+            this.nextLeakCheckTime = performance.now() + this.leakCheckInterval;
+        }
     }
 
 
@@ -418,6 +424,11 @@ export class Game {
             const boatZ = this.boat.meshes[0].position.z;
             const swampFactor = RiverSystem.getInstance().biomeManager.getRiverMaterialSwampFactor(boatZ);
             TerrainChunk.waterMaterial.uniforms.uSwampFactor.value = swampFactor;
+        }
+
+        if (this.leakCheckInterval > 0 && this.nextLeakCheckTime < performance.now()) {
+            GraphicsUtils.tracker.checkLeaks(60.0, true);
+            this.nextLeakCheckTime = performance.now() + this.leakCheckInterval;
         }
     }
 

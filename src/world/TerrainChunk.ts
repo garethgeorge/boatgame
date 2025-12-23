@@ -48,8 +48,8 @@ export class TerrainChunk {
     // We initialize properties to null/empty first or rely on ! assertion if we are careful
     // But typescript expects them to be initialized.
     // Let's make them definite assignment assertion or initialize with empty.
-    this.mesh = GraphicsUtils.createMesh();
-    this.waterMesh = GraphicsUtils.createMesh();
+    this.mesh = GraphicsUtils.createMesh(undefined, undefined, 'TerrainChunkGround');
+    this.waterMesh = GraphicsUtils.createMesh(undefined, undefined, 'TerrainChunkWater');
     this.decorations = new THREE.Group();
   }
 
@@ -62,13 +62,19 @@ export class TerrainChunk {
   private async initAsync() {
     console.log('Chunk initAsync');
     try {
-      this.mesh = await this.generateMesh();
+      const groundMesh = await this.generateMesh();
+      GraphicsUtils.disposeObject(this.mesh);
+      this.mesh = groundMesh;
       await this.yieldToMain();
 
-      this.waterMesh = this.generateWater(); // Fast enough to be sync? Or make async too?
+      const waterMesh = this.generateWater(); // Fast enough to be sync? Or make async too?
+      GraphicsUtils.disposeObject(this.waterMesh);
+      this.waterMesh = waterMesh;
       // Water is simple plane, sync is fine.
 
-      this.decorations = await this.generateDecorations();
+      const decorations = await this.generateDecorations();
+      GraphicsUtils.disposeObject(this.decorations);
+      this.decorations = decorations;
 
       this.graphicsEngine.add(this.mesh);
       this.graphicsEngine.add(this.waterMesh);
@@ -240,7 +246,7 @@ export class TerrainChunk {
       side: THREE.DoubleSide
     });
 
-    const mesh = GraphicsUtils.createMesh(geometry, material);
+    const mesh = GraphicsUtils.createMesh(geometry, material, 'TerrainRiverbedDebug');
     // Vertices are already in world coordinates, no mesh offset needed
     mesh.position.set(0, 0, 0);
 
@@ -304,7 +310,7 @@ export class TerrainChunk {
       GraphicsUtils.registerObject(TerrainChunk.waterMaterial);
     }
 
-    const mesh = GraphicsUtils.createMesh(geometry, TerrainChunk.waterMaterial);
+    const mesh = GraphicsUtils.createMesh(geometry, TerrainChunk.waterMaterial, 'TerrainWaterMesh');
     // Vertices are already in world coordinates, no mesh offset needed
     mesh.position.set(0, 0, 0);
 

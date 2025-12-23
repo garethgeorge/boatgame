@@ -52,7 +52,7 @@ export class Pier extends Entity {
         // Create pile geometry and mesh
         const pileGeometry = new THREE.CylinderGeometry(0.2, 0.2, 4.0, 8);
         pileGeometry.name = 'Pier - Pile Geometry';
-        Pier.pileMesh = GraphicsUtils.createMesh(pileGeometry, pileMaterial);
+        Pier.pileMesh = GraphicsUtils.createMesh(pileGeometry, pileMaterial, 'PierPile');
 
         return Pier.pileMesh;
     }
@@ -160,7 +160,7 @@ export class Pier extends Entity {
         // Deck
         const deckGeo = new THREE.BoxGeometry(length, 0.5, width);
         deckGeo.name = 'Pier - Standard Deck Geometry';
-        const deck = GraphicsUtils.createMesh(deckGeo, Pier.getDeckMaterial());
+        const deck = GraphicsUtils.createMesh(deckGeo, Pier.getDeckMaterial(), 'PierDeck');
         deck.position.y = 1.5; // Raised up
         mesh.add(deck);
 
@@ -241,7 +241,7 @@ export class Pier extends Entity {
         // 5. Dock Sign
         const signGeo = new THREE.BoxGeometry(4.0, 4.0, 0.1);
         signGeo.name = 'Pier - Sign Geometry';
-        const signMesh = GraphicsUtils.createMesh(signGeo, Pier.getSignMaterials() as any);
+        const signMesh = GraphicsUtils.createMesh(signGeo, Pier.getSignMaterials() as any, 'PierSign');
 
         // Position on the Crossbar, facing the notch (+X)
         // Y = 1.5 (deck) + 2.0 (half sign height)
@@ -268,7 +268,7 @@ export class Pier extends Entity {
         // Visual Mesh
         const segmentGeo = new THREE.BoxGeometry(segmentLength, 0.5, segmentWidth);
         segmentGeo.name = 'Pier - Dock Segment Geometry';
-        const segmentMesh = GraphicsUtils.createMesh(segmentGeo, Pier.getDeckMaterial());
+        const segmentMesh = GraphicsUtils.createMesh(segmentGeo, Pier.getDeckMaterial(), 'PierSegment');
 
         // Position visual
         segmentMesh.position.set(centerX, 1.5, centerY);

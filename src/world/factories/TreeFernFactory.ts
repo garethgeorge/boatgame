@@ -48,7 +48,7 @@ export class TreeFernFactory implements DecorationFactory {
         // Trunk
         const trunkGeo = new THREE.CylinderGeometry(trunkRadius * 0.8, trunkRadius, trunkHeight, 6);
         trunkGeo.name = 'TreeFern - Trunk Geometry';
-        const trunk = GraphicsUtils.createMesh(trunkGeo, TreeFernFactory.trunkMaterial);
+        const trunk = GraphicsUtils.createMesh(trunkGeo, TreeFernFactory.trunkMaterial, 'TreeFernTrunk');
         trunk.position.y = trunkHeight / 2 - 0.1;
         group.add(trunk);
 
@@ -62,7 +62,7 @@ export class TreeFernFactory implements DecorationFactory {
             const frondGeo = new THREE.BoxGeometry(1.0, crownRadius, 0.1, 1, 4, 1);
             frondGeo.name = 'TreeFern - Frond Geometry';
             this.applyFrondDroop(frondGeo);
-            const frond = GraphicsUtils.createMesh(frondGeo, TreeFernFactory.frondMaterial);
+            const frond = GraphicsUtils.createMesh(frondGeo, TreeFernFactory.frondMaterial, 'TreeFernFrond');
 
             // arch out angle is pi/2 +/- pi/6
             const archAngle = -Math.PI / 2 + (Math.random() * 0.5) * Math.PI / 3;

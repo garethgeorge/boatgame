@@ -62,7 +62,7 @@ export class CycadFactory implements DecorationFactory {
         // Rough, scarred look - maybe just a cylinder for now
         const trunkGeo = new THREE.CylinderGeometry(trunkRadius * 0.7, trunkRadius, trunkHeight, 5);
         trunkGeo.name = 'Cycad - Trunk Geometry';
-        const trunk = GraphicsUtils.createMesh(trunkGeo, CycadFactory.trunkMaterial);
+        const trunk = GraphicsUtils.createMesh(trunkGeo, CycadFactory.trunkMaterial, 'CycadTrunk');
         trunk.position.y = trunkHeight / 2 - 0.1;  // to bury it in the ground
         group.add(trunk);
 
@@ -82,7 +82,7 @@ export class CycadFactory implements DecorationFactory {
             // Translate geometry so the base is at the origin (0,0,0)
             frondGeo.translate(0, crownRadius / 2, 0);
 
-            const frond = GraphicsUtils.createMesh(frondGeo, CycadFactory.frondMaterial);
+            const frond = GraphicsUtils.createMesh(frondGeo, CycadFactory.frondMaterial, 'CycadFrond');
 
             // Flatten to resemble a leaf blade 
             frond.scale.set(1.0, 1.0, 0.025);
@@ -110,7 +110,7 @@ export class CycadFactory implements DecorationFactory {
             const coneHeight = coneRadius * 6.0;
             const coneGeo = new THREE.ConeGeometry(coneRadius, coneHeight, 6);
             coneGeo.name = 'Cycad - Cone Geometry';
-            const cone = GraphicsUtils.createMesh(coneGeo, CycadFactory.coneMaterial);
+            const cone = GraphicsUtils.createMesh(coneGeo, CycadFactory.coneMaterial, 'CycadCone');
             cone.position.y = crownY + coneHeight / 2;
             group.add(cone);
         }

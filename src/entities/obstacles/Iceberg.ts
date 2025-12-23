@@ -83,7 +83,7 @@ export class Iceberg extends Entity {
         const mesh = new THREE.Group(); // Parent group handles Y-rotation (yaw) from physics
         this.meshes.push(mesh);
 
-        const innerMesh = GraphicsUtils.createMesh(geometry, material);
+        const innerMesh = GraphicsUtils.createMesh(geometry, material, 'IcebergInner');
 
         // Rotate inner mesh to lie flat on water
         // Rot X +90 deg:

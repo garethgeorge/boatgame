@@ -149,7 +149,7 @@ export class RockFactory implements DecorationFactory {
         );
 
         // Default material (will be swapped)
-        const mesh = GraphicsUtils.createMesh(geo, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest);
+        const mesh = GraphicsUtils.createMesh(geo, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest, 'RockMesh');
 
         // Random rotation
         mesh.rotation.set(
@@ -187,7 +187,7 @@ export class RockFactory implements DecorationFactory {
             geo2.computeVertexNormals();
             geo2.scale(1, 0.7, 1);
 
-            const mesh2 = GraphicsUtils.createMesh(geo2, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest);
+            const mesh2 = GraphicsUtils.createMesh(geo2, isIcy ? RockFactory.iceRockMaterial : RockFactory.rockMaterialForest, 'RockSubMesh');
 
             const offsetDir = Math.random() * Math.PI * 2;
             const offsetDist = baseScale * 0.9;

@@ -270,7 +270,7 @@ export class TerrainManager {
     const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
     material.name = 'TerrainManager - debug line';
 
-    const mesh = GraphicsUtils.createMesh(geometry, material);
+    const mesh = GraphicsUtils.createMesh(geometry, material, 'TerrainCollisionDebug');
 
     mesh.position.set(midX, 2.5, midY);
     mesh.rotation.y = -angle;

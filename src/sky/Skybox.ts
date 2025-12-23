@@ -58,7 +58,7 @@ export class Skybox {
             name: 'Skybox Material'
         });
 
-        const mesh = GraphicsUtils.createMesh(skyGeo, skyMat);
+        const mesh = GraphicsUtils.createMesh(skyGeo, skyMat, 'SkyboxMesh');
         return mesh;
     }
 

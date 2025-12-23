@@ -53,7 +53,7 @@ export class BottleFactory implements DecorationFactory {
         });
         glassMat.name = 'Bottle Glass';
 
-        const body = GraphicsUtils.createMesh(bodyGeo, glassMat);
+        const body = GraphicsUtils.createMesh(bodyGeo, glassMat, 'BottleBody');
         body.name = 'body';
         mesh.add(body);
 
@@ -61,7 +61,7 @@ export class BottleFactory implements DecorationFactory {
         const neckGeo = new THREE.CylinderGeometry(0.2, 0.4, 0.6, 8);
         neckGeo.name = 'Bottle Neck';
 
-        const neck = GraphicsUtils.createMesh(neckGeo, glassMat);
+        const neck = GraphicsUtils.createMesh(neckGeo, glassMat, 'BottleNeck');
         neck.position.y = 0.9;
         neck.name = 'neck';
         mesh.add(neck);
@@ -73,7 +73,7 @@ export class BottleFactory implements DecorationFactory {
         const corkMat = new THREE.MeshToonMaterial({ color: 0x8B4513, name: 'Bottle - Cork Material' });
         corkMat.name = 'Bottle Cork';
 
-        const cork = GraphicsUtils.createMesh(corkGeo, corkMat);
+        const cork = GraphicsUtils.createMesh(corkGeo, corkMat, 'BottleCork');
         cork.position.y = 1.3;
         cork.name = 'cork';
         mesh.add(cork);
@@ -85,7 +85,7 @@ export class BottleFactory implements DecorationFactory {
         const paperMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide, name: 'Bottle - Paper Material' });
         paperMat.name = 'Bottle Paper';
 
-        const paper = GraphicsUtils.createMesh(paperGeo, paperMat);
+        const paper = GraphicsUtils.createMesh(paperGeo, paperMat, 'BottlePaper');
         paper.rotation.y = Math.PI / 4;
         paper.rotation.z = Math.PI / 8;
         paper.name = 'paper';

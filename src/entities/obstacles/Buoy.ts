@@ -46,21 +46,21 @@ export class Buoy extends Entity {
         // Bottom Red
         const bottomGeo = new THREE.CylinderGeometry(radius, radius * 0.8, height * 0.4, segments);
         bottomGeo.name = 'Buoy - Bottom Geometry';
-        const bottom = GraphicsUtils.createMesh(bottomGeo, matRed);
+        const bottom = GraphicsUtils.createMesh(bottomGeo, matRed, 'BuoyBottom');
         bottom.position.y = -height * 0.2;
         mesh.add(bottom);
 
         // Middle White
         const midGeo = new THREE.CylinderGeometry(radius, radius, height * 0.3, segments);
         midGeo.name = 'Buoy - Middle Geometry';
-        const mid = GraphicsUtils.createMesh(midGeo, matWhite);
+        const mid = GraphicsUtils.createMesh(midGeo, matWhite, 'BuoyMid');
         mid.position.y = height * 0.15;
         mesh.add(mid);
 
         // Top Red
         const topGeo = new THREE.CylinderGeometry(radius * 0.6, radius, height * 0.3, segments);
         topGeo.name = 'Buoy - Top Geometry';
-        const top = GraphicsUtils.createMesh(topGeo, matRed);
+        const top = GraphicsUtils.createMesh(topGeo, matRed, 'BuoyTop');
         top.position.y = height * 0.45;
         mesh.add(top);
 
@@ -68,7 +68,7 @@ export class Buoy extends Entity {
         const lightGeo = new THREE.SphereGeometry(0.2, 8, 8);
         lightGeo.name = 'Buoy - Light Geometry';
         const lightMat = new THREE.MeshToonMaterial({ color: 0xFFFF00, emissive: 0x444400, name: 'Buoy - Light Material' });
-        const light = GraphicsUtils.createMesh(lightGeo, lightMat);
+        const light = GraphicsUtils.createMesh(lightGeo, lightMat, 'BuoyLight');
         light.position.y = height * 0.7;
         mesh.add(light);
 
