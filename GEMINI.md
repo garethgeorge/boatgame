@@ -23,7 +23,7 @@ The project implements a strict reference-counting system for Three.js resources
 - **NEVER** manually dispose a resource that might be shared. Use the tracker.
 
 **API Usage**:
-Use the helper methods in **`src/core/GraphicsUtils.ts`** instead of raw Three.js constructors where possible:
+Use the helper methods in **`src/core/GraphicsUtils.ts`** instead of raw Three.js constructors:
 
 - **Creating Objects**:
   ```typescript
@@ -46,14 +46,17 @@ Use the helper methods in **`src/core/GraphicsUtils.ts`** instead of raw Three.j
   ```
 
 - **Loading/Cloning**:
-  When loading models or cloning complex objects, register the root:
+  After loading a model register it so that its geometry, materials, and textures are
+  properly tracked. To clone an existing object use the cloneObject() helper function
+  to properly track the clone:
   ```typescript
   GraphicsUtils.registerObject(loadedModel);
   const clone = GraphicsUtils.cloneObject(original); // Recursively clones & tracks
   ```
 
 - **Disposal**:
-  When an entity is destroyed, ensure its meshes are untracked:
+  To destroy an object that will not be used again call the disposeObject() function.
+  This will dispose any referenced resources that are no longer needed:
   ```typescript
   GraphicsUtils.disposeObject(mesh); // Recursively releases resources
   ```
