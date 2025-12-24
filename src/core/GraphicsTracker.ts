@@ -126,6 +126,25 @@ export class GraphicsTracker {
             console.warn(`Found ${count} potential leaks.`);
         }
 
+        // Diagnostic: If we have a lot of active (non-cached) tracked objects, dump a histogram
+        if (this.trackedLeaves.size - this.cachedLeaves.size > 1000) {
+            console.groupCollapsed('High Object Count Diagnostics');
+            const histogram = new Map<string, number>();
+            for (const leaf of this.trackedLeaves.keys()) {
+                if (this.cachedLeaves.has(leaf)) continue; // Ignore cached objects in diagnostic
+
+                const name = leaf.name || 'Unnamed';
+                histogram.set(name, (histogram.get(name) || 0) + 1);
+            }
+
+            // Sort by count
+            const sorted = Array.from(histogram.entries()).sort((a, b) => b[1] - a[1]);
+            for (const [name, count] of sorted) {
+                if (count > 10) console.log(`${name}: ${count}`);
+            }
+            console.groupEnd();
+        }
+
         // Reverse Check: Are there objects in the scene that are NOT tracked?
         if (reachable.size > 0) {
             let untrackedCount = 0;

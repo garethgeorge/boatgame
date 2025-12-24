@@ -33,10 +33,12 @@ export class EntityManager {
     }
   }
 
-  add(entity: Entity, chunkId?: number) {
+  // Note: only pass null for entities that should never be
+  // removed from the scene.
+  add(entity: Entity, chunkId: number | null) {
     this.entities.add(entity);
 
-    if (chunkId !== undefined) {
+    if (chunkId !== null) {
       if (!this.chunkEntities.has(chunkId)) {
         this.chunkEntities.set(chunkId, new Set());
       }

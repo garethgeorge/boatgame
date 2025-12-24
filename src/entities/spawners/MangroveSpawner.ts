@@ -71,10 +71,10 @@ export class MangroveSpawner extends BaseSpawner {
 
     if (baseScale > 1.05) {
       const mangrove = new LargeMangrove(x, z, finalScale, context.physicsEngine);
-      context.entityManager.add(mangrove);
+      context.entityManager.add(mangrove, context.chunkIndex);
     } else {
       const mangrove = new SmallMangrove(x, z, finalScale, context.physicsEngine);
-      context.entityManager.add(mangrove);
+      context.entityManager.add(mangrove, context.chunkIndex);
     }
 
     return true;
