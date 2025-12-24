@@ -112,7 +112,8 @@ export class GraphicsEngine {
     Profiler.addInfo('Triangles', stats.render.triangles);
 
     const tracker = GraphicsUtils.tracker;
-    Profiler.addInfo('Tracked Primitves', tracker.resourceCount);
-    Profiler.addInfo('Tracked Resources', tracker.primitiveCount);
+    Profiler.addInfo('Tracked Resources', tracker.resourceCount);
+    Profiler.addInfo('Scene Primitives', tracker.primitiveCount - tracker.cachedCount);
+    Profiler.addInfo('Cached Primitives', tracker.cachedCount);
   }
 }

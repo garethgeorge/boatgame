@@ -143,34 +143,21 @@ describe('GraphicsTracker', () => {
         expect(t.trackedResources.has(geometry)).toBe(false);
     });
 
-    it('should create a snapshot of tracked leaves', () => {
-        const mesh1 = new THREE.Mesh();
-        const mesh2 = new THREE.Mesh();
-        const t = tracker as any;
-
-        tracker.track(mesh1);
-        const snapshot = tracker.createSnapshot();
-        tracker.track(mesh2);
-
-        expect(t.snapshot.has(mesh1)).toBe(true);
-        expect(t.snapshot.has(mesh2)).toBe(false);
-    });
-
     it('should identify leaked objects correctly', () => {
         const consoleSpy = vi.spyOn(console, 'log');
         const now = 10000;
         vi.spyOn(performance, 'now').mockReturnValue(now);
 
-        const meshOld = new THREE.Mesh();
-        meshOld.name = 'OldMesh';
+        const meshOldCached = new THREE.Mesh();
+        meshOldCached.name = 'OldCachedMesh';
         const meshLeaked = new THREE.Mesh();
         meshLeaked.name = 'LeakedMesh';
         const meshNew = new THREE.Mesh();
         meshNew.name = 'NewMesh';
 
-        // 1. Setup Baseline
-        tracker.track(meshOld);
-        tracker.createSnapshot();
+        // 1. Setup Baseline - Cached Object
+        tracker.track(meshOldCached);
+        tracker.markAsCache(meshOldCached); // Explicitly mark as cache
 
         // 2. Add a "leak" (simulated by time passing)
         // Set time for the leaked object creation
@@ -205,11 +192,11 @@ describe('GraphicsTracker', () => {
         const calls = consoleSpy.mock.calls.map(args => args.join(' '));
         const leakedLog = calls.find(call => call.includes('LeakedMesh'));
         const newLog = calls.find(call => call.includes('NewMesh'));
-        const oldLog = calls.find(call => call.includes('OldMesh'));
+        const oldLog = calls.find(call => call.includes('OldCachedMesh'));
 
         expect(leakedLog).toBeDefined();
         expect(newLog).toBeUndefined();
-        expect(oldLog).toBeUndefined(); // Should be in snapshot, so ignored
+        expect(oldLog).toBeUndefined(); // Should be ignored as cached
     });
 
     it('should ignore objects marked as cache', () => {
@@ -222,7 +209,6 @@ describe('GraphicsTracker', () => {
 
         // 1. Mark as cache (which tracks it)
         tracker.markAsCache(cachedObject);
-        tracker.createSnapshot();
 
         // 2. Advance time significantly
         const checkTime = now + 10000;
@@ -250,15 +236,9 @@ describe('GraphicsTracker', () => {
         const objectLeaked = new THREE.Mesh();
         objectLeaked.name = 'LeakedMesh2';
 
-        // 1. Track both (simulate new objects)
+        // 1. Track both
         tracker.track(objectInScene);
         tracker.track(objectLeaked);
-        tracker.createSnapshot();
-        // Note: createSnapshot adds EVERYTHING tracked to snapshot.
-        // To test leak logic, we need them NOT to be in snapshot but be tracked.
-
-        // Let's reset snapshot to empty to simulate "everything is new"
-        (tracker as any).snapshot = new WeakSet();
 
         // 2. Advance time
         const checkTime = now + 10000;
@@ -272,8 +252,6 @@ describe('GraphicsTracker', () => {
         const sceneLog = calls.find(call => call.includes('SceneObject'));
         const leakedLog = calls.find(call => call.includes('LeakedMesh2'));
 
-        expect(sceneLog).toBeUndefined(); // Should be ignored because it's in scene
-        expect(leakedLog).toBeDefined(); // Should be leaked
         expect(sceneLog).toBeUndefined(); // Should be ignored because it's in scene
         expect(leakedLog).toBeDefined(); // Should be leaked
     });

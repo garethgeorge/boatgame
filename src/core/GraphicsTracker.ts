@@ -12,7 +12,7 @@ export class GraphicsTracker {
 
     private trackedResources = new Map<DisposableResource, number>();
     private trackedLeaves = new Map<THREE.Object3D, number>();
-    private snapshot = new WeakSet<THREE.Object3D>();
+    private cachedLeaves = new Set<THREE.Object3D>();
 
     // Common texture slots in Three.js materials for fast lookup
     private static readonly TEXTURE_PROPERTIES = [
@@ -30,6 +30,10 @@ export class GraphicsTracker {
 
     public get primitiveCount(): number {
         return this.trackedLeaves.size;
+    }
+
+    public get cachedCount(): number {
+        return this.cachedLeaves.size;
     }
 
     /**
@@ -70,29 +74,16 @@ export class GraphicsTracker {
     }
 
     /**
-     * Captures the current set of tracked leaf objects (weakly referenced).
-     * Use this to establish a baseline for leak checking.
-     */
-    public createSnapshot() {
-        const snapshot = new WeakSet<THREE.Object3D>();
-        for (const leaf of this.trackedLeaves.keys()) {
-            snapshot.add(leaf);
-        }
-        this.snapshot = snapshot;
-    }
-
-    /**
      * Logs objects that are currently tracked but were NOT present in the snapshot,
      * AND have been tracked for longer than the specified duration.
      * 
-     * @param snapshot The baseline snapshot created by createSnapshot()
      * @param minAgeSeconds Only log objects older than this (to avoid false positives from currently loading objects)
      * @param updateSnapshot Add objects that are reported to the snapshot to avoid reporting them again
      * @param sceneRoot Optional. If provided, any object reachable from this root is considered "safe" and not leaked.
      */
     public checkLeaks(minAgeSeconds: number, updateSnapshot: boolean = false, sceneRoot?: THREE.Object3D) {
 
-        const snapshot = this.snapshot;
+        const cachedLeaves = this.cachedLeaves;
         const now = performance.now();
         const threshold = now - (minAgeSeconds * 1000);
         let count = 0;
@@ -110,10 +101,10 @@ export class GraphicsTracker {
 
         for (const [leaf, timestamp] of this.trackedLeaves) {
             // Leak Criteria:
-            // 1. Not in snapshot (new since start)
+            // 1. Not a cached leaf
             // 2. Older than threshold (not just created)
             // 3. Not reachable from scene (if scene provided)
-            if (!snapshot.has(leaf) && timestamp < threshold) {
+            if (!cachedLeaves.has(leaf) && timestamp < threshold) {
 
                 if (reachable.has(leaf)) {
                     // It is in the scene, so it's active, not a leak.
@@ -125,7 +116,7 @@ export class GraphicsTracker {
 
                 // prevent reporting it in the future
                 if (updateSnapshot)
-                    snapshot.add(leaf);
+                    cachedLeaves.add(leaf);
             }
         }
 
@@ -165,14 +156,14 @@ export class GraphicsTracker {
         // Ensure it's tracked
         this.track(root);
 
-        // Add to snapshot
+        // Add to cachedLeaves
         this.visit(root, (resource) => {
-            // No action needed for resources in snapshot (snapshots track leaves)
+            // No action needed for resources in cache (caches track leaves)
         }, (leaf) => {
             if (this.verbose) {
                 console.log('Marking as cache:', leaf.name, leaf);
             }
-            this.snapshot.add(leaf);
+            this.cachedLeaves.add(leaf);
             return true;
         });
     }
