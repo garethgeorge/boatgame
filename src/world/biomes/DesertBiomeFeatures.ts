@@ -64,30 +64,28 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 const r = Math.random();
 
                 if (t < 0.2) {
-                    // Phase 1: Arrival - Easy, bottles and logs
+                    // Phase 1: Arrival - Easy, bottles and rocks
                     if (r < 0.4) await this.bottleSpawner.spawnRiverBottle(context, z, 'none');
-                    else if (r < 0.55) await this.logSpawner.spawnRiverLog(context, z, 'none');
+                    else if (r < 0.6) await this.rockSpawner.spawnRiverRock(context, z, 'none');
                 } else if (t < 0.4) {
                     // Phase 2: Shore Life - Monkeys on shore, some obstacles
                     if (r < 0.3) await this.monkeySpawner.spawnShoreAnimal(context, z);
-                    else if (r < 0.5) await this.logSpawner.spawnRiverLog(context, z, 'none');
-                    else if (r < 0.6) await this.rockSpawner.spawnRiverRock(context, z, 'none');
-                    else if (r < 0.7) await this.bottleSpawner.spawnRiverBottle(context, z, 'none');
+                    else if (r < 0.5) await this.rockSpawner.spawnRiverRock(context, z, 'none');
+                    else if (r < 0.6) await this.bottleSpawner.spawnRiverBottle(context, z, 'none');
                 } else if (t < 0.6) {
                     // Phase 3: The Crossing - Clustering every 120m, hippos
                     const bias: RiverPlacementBias = (Math.floor(Math.abs(z) / 120) % 2 === 0) ? 'left' : 'right';
-                    if (r < 0.25) await this.logSpawner.spawnRiverLog(context, z, bias);
-                    else if (r < 0.5) await this.rockSpawner.spawnRiverRock(context, z, bias);
-                    else if (r < 0.7) await this.hippoSpawner.spawnRiverAnimal(context, z, false, 'none');
-                    else if (r < 0.8) await this.bottleSpawner.spawnRiverBottle(context, z, 'none');
+                    if (r < 0.2) await this.rockSpawner.spawnRiverRock(context, z, bias);
+                    else if (r < 0.3) await this.hippoSpawner.spawnRiverAnimal(context, z, false, 'none');
+                    else if (r < 0.4) await this.bottleSpawner.spawnRiverBottle(context, z, 'none');
                 } else if (t < 0.85) {
                     // Phase 4: The Gauntlet - Higher density clustering every 80m, alligators
                     const bias: RiverPlacementBias = (Math.floor(Math.abs(z) / 80) % 2 === 0) ? 'left' : 'right';
                     const oppositeBias = bias === 'left' ? 'right' : 'left';
-                    if (r < 0.3) await this.logSpawner.spawnRiverLog(context, z, bias);
-                    else if (r < 0.6) await this.rockSpawner.spawnRiverRock(context, z, bias);
-                    else if (r < 0.8) await this.alligatorSpawner.spawnRiverAnimal(context, z, false, 'none');
-                    else if (r < 0.95) await this.bottleSpawner.spawnRiverBottle(context, z, oppositeBias);
+                    if (r < 0.2) await this.rockSpawner.spawnRiverRock(context, z, bias);
+                    else if (r < 0.4) await this.alligatorSpawner.spawnRiverAnimal(context, z, false, 'none');
+                    else if (r < 0.6) await this.alligatorSpawner.spawnRiverAnimal(context, z, false, 'none');
+                    else if (r < 0.7) await this.bottleSpawner.spawnRiverBottle(context, z, oppositeBias);
                 }
             }
         }
@@ -103,17 +101,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
         if (minZ <= pierZ && pierZ < maxZ) {
             await this.pierSpawner.spawnAt(context, pierZ, true);
-
-            // Guiding bottles towards the pier (placed BEFORE the pier in the traversal direction)
-            // Traversal is +Z -> -Z. So before pierZ means LARGER Z.
-            for (let i = 1; i <= 6; i++) {
-                const bz = pierZ + i * 15;
-                const pos = context.placementHelper.tryPlace(bz, bz, 1.0, { bias: 'center', biasStrength: 0.5 });
-                if (pos) {
-                    const bottle = new MessageInABottle(pos.x, pos.z, context.physicsEngine, 0x00FF88, 50);
-                    context.entityManager.add(bottle, context.chunkIndex);
-                }
-            }
+            await this.bottleSpawner.spawnRiverBottleArc(context, 6, pierZ, 15);
         }
     }
 }
