@@ -9,19 +9,24 @@ import { JurassicBiomeFeatures } from './biomes/JurassicBiomeFeatures';
 import { TestBiomeFeatures } from './biomes/TestBiomeFeatures';
 import { BiomeType } from './biomes/BiomeType';
 
+interface BiomeInstance {
+  type: BiomeType;
+  length: number;
+  zStart: number;
+  zEnd: number;
+}
+
 export class BiomeManager {
   public static DEBUG_BIOME = false;
 
-  public readonly BIOME_LENGTH = 1000;
-  private biomeArray: Array<BiomeType>;
+  private biomeInstances: BiomeInstance[] = [];
+  private totalSequenceLength = 0;
   private readonly BIOME_ARRAY_SIZE = 100;
-  private readonly BIOME_SCALE = 1.0 / this.BIOME_LENGTH; // Multiplier for converting worldZ to biome array index
-  private readonly BIOME_TRANSITION_WIDTH = 0.05; // Width of biome transition zone
+  private readonly BIOME_TRANSITION_WIDTH = 50; // Transition width in units, not fraction
   private features: Map<BiomeType, BiomeFeatures> = new Map();
 
 
   constructor() {
-    this.biomeArray = [];
     const biomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic'];
 
     // Initialize features
@@ -32,41 +37,94 @@ export class BiomeManager {
     this.features.set('jurassic', new JurassicBiomeFeatures());
     this.features.set('test', new TestBiomeFeatures());
 
+    let biomeSequence: BiomeType[] = [];
+
     if (BiomeManager.DEBUG_BIOME) {
-      this.biomeArray = new Array(this.BIOME_ARRAY_SIZE).fill('test');
-      return;
-    }
-
-    while (this.biomeArray.length < this.BIOME_ARRAY_SIZE) {
-      // Create a shuffled list of biome types
-      const shuffled = [...biomeTypes];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-
-      // Ensure the first biome in the list is not the same as the last one currently in the array
-      if (this.biomeArray.length > 0) {
-        const lastBiome = this.biomeArray[this.biomeArray.length - 1];
-        if (shuffled[0] === lastBiome) {
-          // Swap the first element with the last element of the shuffled array
-          // Since all elements in biomeTypes are unique, the last element is guaranteed to be different
-          const temp = shuffled[0];
-          shuffled[0] = shuffled[shuffled.length - 1];
-          shuffled[shuffled.length - 1] = temp;
+      biomeSequence = new Array(this.BIOME_ARRAY_SIZE).fill('test');
+    } else {
+      while (biomeSequence.length < this.BIOME_ARRAY_SIZE) {
+        // Create a shuffled list of biome types
+        const shuffled = [...biomeTypes];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
-      }
 
-      // Append the list to the array
-      this.biomeArray.push(...shuffled);
+        // Ensure the first biome in the list is not the same as the last one currently in the array
+        if (biomeSequence.length > 0) {
+          const lastBiome = biomeSequence[biomeSequence.length - 1];
+          if (shuffled[0] === lastBiome) {
+            const temp = shuffled[0];
+            shuffled[0] = shuffled[shuffled.length - 1];
+            shuffled[shuffled.length - 1] = temp;
+          }
+        }
+
+        // Append the list to the array
+        biomeSequence.push(...shuffled);
+      }
     }
+
+    // Convert types to instances with specific lengths and boundaries
+    let currentZ = 0;
+    for (const type of biomeSequence) {
+      const length = this.getFeatures(type).getBiomeLength();
+      this.biomeInstances.push({
+        type,
+        length,
+        zStart: currentZ,
+        zEnd: currentZ + length
+      });
+      currentZ += length;
+    }
+    this.totalSequenceLength = currentZ;
+  }
+
+  /**
+   * Finds the biome instance containing the given worldZ (modulo totalSequenceLength)
+   */
+  private getBiomeInstanceAt(worldZ: number): BiomeInstance {
+    const index = this.getBiomeInstanceIndexAt(worldZ);
+    return this.biomeInstances[index];
+  }
+
+  /**
+   * Finds the index of the biome instance containing the given worldZ
+   */
+  private getBiomeInstanceIndexAt(worldZ: number): number {
+    const normalizedZ = ((worldZ % this.totalSequenceLength) + this.totalSequenceLength) % this.totalSequenceLength;
+
+    let low = 0;
+    let high = this.biomeInstances.length - 1;
+
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      const instance = this.biomeInstances[mid];
+
+      if (normalizedZ >= instance.zStart && normalizedZ < instance.zEnd) {
+        return mid;
+      } else if (normalizedZ < instance.zStart) {
+        high = mid - 1;
+      } else {
+        low = mid + 1;
+      }
+    }
+
+    return 0;
   }
 
   public getBiomeType(worldZ: number): BiomeType {
-    // Convert z to an index in the biome array
-    // Use modulo to wrap around for both positive and negative values
-    const index = ((Math.floor(worldZ * this.BIOME_SCALE) % this.BIOME_ARRAY_SIZE) + this.BIOME_ARRAY_SIZE) % this.BIOME_ARRAY_SIZE;
-    return this.biomeArray[index];
+    return this.getBiomeInstanceAt(worldZ).type;
+  }
+
+  public getBiomeBoundaries(worldZ: number): { zStart: number, zEnd: number } {
+    const instance = this.getBiomeInstanceAt(worldZ);
+    const numSequences = Math.floor(worldZ / this.totalSequenceLength);
+    const sequenceOffset = numSequences * this.totalSequenceLength;
+    return {
+      zStart: sequenceOffset + instance.zStart,
+      zEnd: sequenceOffset + instance.zEnd
+    };
   }
 
   public getFeatureSegments(zStart: number, zEnd: number): Array<{ biome: BiomeType, zStart: number, zEnd: number, biomeZStart: number, biomeZEnd: number }> {
@@ -74,18 +132,25 @@ export class BiomeManager {
     let currentZ = zStart;
 
     while (currentZ < zEnd) {
-      const biomeType = this.getBiomeType(currentZ);
-      // Find the next boundary after currentZ
-      // A boundary exists every BIOME_LENGTH meters.
-      const boundaryIndex = Math.floor(currentZ / this.BIOME_LENGTH);
-      const minZ = boundaryIndex * this.BIOME_LENGTH;
-      const maxZ = (boundaryIndex + 1) * this.BIOME_LENGTH;
+      const instance = this.getBiomeInstanceAt(currentZ);
 
-      const biomeZStart = minZ >= 0 ? minZ : maxZ;
-      const biomeZEnd = minZ >= 0 ? maxZ : minZ;
+      // We need to provide the "real" biomeZStart and biomeZEnd in world coordinates, 
+      // not normalized sequence coordinates.
+      // This is tricky because worldZ can be much larger than totalSequenceLength.
+      const numSequences = Math.floor(currentZ / this.totalSequenceLength);
+      const sequenceOffset = numSequences * this.totalSequenceLength;
 
-      const segmentEnd = Math.min(zEnd, maxZ);
-      segments.push({ biome: biomeType, zStart: currentZ, zEnd: segmentEnd, biomeZStart, biomeZEnd });
+      const biomeZStart = sequenceOffset + instance.zStart;
+      const biomeZEnd = sequenceOffset + instance.zEnd;
+
+      const segmentEnd = Math.min(zEnd, biomeZEnd);
+      segments.push({
+        biome: instance.type,
+        zStart: currentZ,
+        zEnd: segmentEnd,
+        biomeZStart,
+        biomeZEnd
+      });
       currentZ = segmentEnd;
     }
 
@@ -103,45 +168,40 @@ export class BiomeManager {
     weight2: number
   } {
     const transitionWidth = this.BIOME_TRANSITION_WIDTH;
+    const normalizedZ = ((worldZ % this.totalSequenceLength) + this.totalSequenceLength) % this.totalSequenceLength;
 
-    // Convert z to a continuous index value
-    const continuousIndex = worldZ * this.BIOME_SCALE;
+    const index = this.getBiomeInstanceIndexAt(worldZ);
+    const instance = this.biomeInstances[index];
 
-    // Get the current biome index (floor of continuous index)
-    const currentIndex = Math.floor(continuousIndex);
-
-    // Calculate the fractional part (0 to 1) representing position within the current biome
-    const fraction = continuousIndex - currentIndex;
-
-    let index1 = currentIndex;
-    let index2 = currentIndex;
+    let biome1 = instance.type;
+    let biome2 = instance.type;
     let weight1 = 1.0;
     let weight2 = 0.0;
 
-    // Check if we're in a transition zone
-    if (fraction < transitionWidth) {
-      // Transitioning FROM previous biome TO current biome
-      index1 = currentIndex;
-      index2 = currentIndex - 1;
-      // As fraction goes from 0 to transitionWidth, weight1 goes from 0.5 to 1.0
-      weight1 = this.lerp(0.5, 1.0, fraction / transitionWidth);
+    const distFromStart = normalizedZ - instance.zStart;
+    const distFromEnd = instance.zEnd - normalizedZ;
+
+    if (distFromStart < transitionWidth / 2) {
+      // Transition from previous biome
+      const prevIndex = (index - 1 + this.biomeInstances.length) % this.biomeInstances.length;
+      biome1 = instance.type;
+      biome2 = this.biomeInstances[prevIndex].type;
+
+      // As distFromStart goes from 0 to transitionWidth/2, weight1 goes from 0.5 to 1.0
+      const t = distFromStart / (transitionWidth / 2);
+      weight1 = this.lerp(0.5, 1.0, t);
       weight2 = 1.0 - weight1;
-    } else if (fraction > 1.0 - transitionWidth) {
-      // Transitioning FROM current biome TO next biome
-      index1 = currentIndex;
-      index2 = currentIndex + 1;
-      // As fraction goes from (1-transitionWidth) to 1.0, weight1 goes from 1.0 to 0.5
-      const transitionFraction = (fraction - (1.0 - transitionWidth)) / transitionWidth;
-      weight1 = this.lerp(1.0, 0.5, transitionFraction);
+    } else if (distFromEnd < transitionWidth / 2) {
+      // Transition to next biome
+      const nextIndex = (index + 1) % this.biomeInstances.length;
+      biome1 = instance.type;
+      biome2 = this.biomeInstances[nextIndex].type;
+
+      // As distFromEnd goes from transitionWidth/2 to 0, weight1 goes from 1.0 to 0.5
+      const t = (transitionWidth / 2 - distFromEnd) / (transitionWidth / 2);
+      weight1 = this.lerp(1.0, 0.5, t);
       weight2 = 1.0 - weight1;
     }
-
-    // Wrap indices to array bounds (handle both positive and negative)
-    const wrappedIndex1 = ((index1 % this.BIOME_ARRAY_SIZE) + this.BIOME_ARRAY_SIZE) % this.BIOME_ARRAY_SIZE;
-    const wrappedIndex2 = ((index2 % this.BIOME_ARRAY_SIZE) + this.BIOME_ARRAY_SIZE) % this.BIOME_ARRAY_SIZE;
-
-    const biome1 = this.biomeArray[wrappedIndex1];
-    const biome2 = this.biomeArray[wrappedIndex2];
 
     return { biome1, biome2, weight1, weight2 };
   }

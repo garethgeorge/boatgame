@@ -23,4 +23,5 @@ export interface BiomeFeatures {
     getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color };
     getAmplitudeMultiplier(): number;
     getRiverWidthMultiplier(): number;
+    getBiomeLength(): number;
 }

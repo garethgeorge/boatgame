@@ -86,4 +86,8 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
     public getRiverWidthMultiplier(): number {
         return 1.0;
     }
+
+    public getBiomeLength(): number {
+        return 1000;
+    }
 }

@@ -50,6 +50,10 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         return 5.0;
     }
 
+    getBiomeLength(): number {
+        return 400;
+    }
+
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         const length = zEnd - zStart;
         const count = Math.floor(length * 16);

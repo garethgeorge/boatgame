@@ -450,30 +450,19 @@ export class Game {
         if (!this.boat || this.boat.meshes.length === 0) return;
 
         const riverSystem = RiverSystem.getInstance();
-        const biomeLength = riverSystem.biomeManager.BIOME_LENGTH;
-
         const currentZ = this.boat.meshes[0].position.z;
 
         // Calculate start of next biome
         // We are moving in -Z direction.
-        // If z = -500, next is -1000.
-        // If z = -1000, next is -2000.
         // Use a small offset so if we are exactly on boundary, we go to next.
-        const nextZ = Math.floor(currentZ / biomeLength - 0.01) * biomeLength;
+        const boundaries = riverSystem.biomeManager.getBiomeBoundaries(currentZ - 1.0);
+        const nextZ = boundaries.zStart;
 
         // Get center of river at that location
         const nextX = riverSystem.getRiverCenter(nextZ);
 
         // Teleport boat
-        // Move slightly past the boundary to be safe? 
-        // User asked for "position of the start of the next biome".
-        // Boundary is exact start.
         this.boat.teleport(nextX, nextZ);
-
-        // Force terrain update?
-        // TerrainManager.update checks distance, so it should handle it.
-        // But might need to jump-start it if the jump is huge.
-        // update(boat, dt) should work fine.
     }
 
     private processContacts() {
