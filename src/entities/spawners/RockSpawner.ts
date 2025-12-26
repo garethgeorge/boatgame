@@ -1,6 +1,6 @@
 import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
-import { RiverPlacementOptions } from '../../managers/PlacementHelper';
+import { RiverPlacementOptions, RiverPlacementBias } from '../../managers/PlacementHelper';
 import { RiverRock } from '../../entities/obstacles/RiverRock';
 
 export class RockSpawner extends BaseSpawner {
@@ -19,6 +19,14 @@ export class RockSpawner extends BaseSpawner {
       minDistFromBank: 0.5, // Can be closer to bank
       bias: bias,
       biasStrength: biasStrength
+    });
+  }
+
+  async spawnRiverRock(context: SpawnContext, z: number, bias: RiverPlacementBias) {
+    return this.spawnInRiver(context, z, {
+      bias,
+      biasStrength: 0.8,
+      minDistFromBank: 4.0
     });
   }
 

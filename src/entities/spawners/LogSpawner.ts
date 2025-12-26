@@ -1,6 +1,6 @@
 import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
-import { RiverPlacementOptions } from '../../managers/PlacementHelper';
+import { RiverPlacementOptions, RiverPlacementBias } from '../../managers/PlacementHelper';
 import { Log } from '../../entities/obstacles/Log';
 
 export class LogSpawner extends BaseSpawner {
@@ -17,6 +17,14 @@ export class LogSpawner extends BaseSpawner {
   async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
     return this.spawnInRiver(context, z, {
       minDistFromBank: 2.0
+    });
+  }
+
+  async spawnRiverLog(context: SpawnContext, z: number, bias: RiverPlacementBias) {
+    return this.spawnInRiver(context, z, {
+      bias,
+      biasStrength: 0.8,
+      minDistFromBank: 4.0
     });
   }
 

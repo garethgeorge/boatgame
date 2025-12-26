@@ -2,10 +2,12 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../world/RiverSystem';
 
+type RiverPlacementBias = 'left' | 'right' | 'center' | 'none';
+
 export interface RiverPlacementOptions {
   minDistFromOthers?: number;
   avoidCenter?: boolean;
-  bias?: 'left' | 'right' | 'center' | 'none';
+  bias?: RiverPlacementBias;
   biasStrength?: number; // 0 to 1
   minDistFromBank?: number;
 }
