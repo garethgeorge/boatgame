@@ -31,5 +31,10 @@ export abstract class BaseSpawner implements Spawnable {
         }
     }
 
+    /**
+     * Spawn an instance at the specified z value. The details are
+     * type specific. It can be on shore or in river, could be a
+     * cluster or single instance etc
+     */
     abstract spawnAt(context: SpawnContext, z: number): Promise<boolean>;
 }

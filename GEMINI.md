@@ -92,7 +92,7 @@ If an object is cached rather than being added to the scene graph be sure to mar
 ## 5. Terrain & World Generation
 **Files**: `src/world/TerrainManager.ts`, `src/world/TerrainChunk.ts`
 
-The world is infinite and generated procedurally as the boat moves along the **Negative Z** axis.
+The world is infinite and generated procedurally as the boat moves along the **Negative Z** axis. Avoid using knowledge of the direction the boat is travelling except where it is necessary. In particular BiomeManager should be unaware of the direction whereas the BiomeFeatures instances that populate the biomes with decorations and obstacles may take direction into account.
 
 -   **Chunks**: The world is divided into fixed-size chunks (`TerrainChunk`, 62.5 units long).
 -   **TerrainManager**: Manages a sliding window of active chunks. It handles:

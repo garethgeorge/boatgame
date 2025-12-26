@@ -2,6 +2,7 @@ import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { MessageInABottle } from '../../entities/obstacles/MessageInABottle';
 import { RiverSystem } from '../../world/RiverSystem';
+import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 
 export class MessageInABottleSpawner extends BaseSpawner {
   id = 'bottle';
@@ -19,10 +20,13 @@ export class MessageInABottleSpawner extends BaseSpawner {
   }
 
   async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
-    const pos = context.placementHelper.tryPlace(z, z, 1.0, {
+    return this.spawnInRiver(context, z, {
       minDistFromBank: 1.0
     });
+  }
 
+  async spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {
+    const pos = context.placementHelper.tryPlace(z, z, 1.0, options);
     if (pos) {
       const bottle = new MessageInABottle(pos.x, pos.z, context.physicsEngine);
       context.entityManager.add(bottle, context.chunkIndex);

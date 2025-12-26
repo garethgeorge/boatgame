@@ -1,5 +1,6 @@
 import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
+import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 import { Log } from '../../entities/obstacles/Log';
 
 export class LogSpawner extends BaseSpawner {
@@ -14,11 +15,14 @@ export class LogSpawner extends BaseSpawner {
   }
 
   async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
-    const length = 10 + Math.random() * 10;
-    const pos = context.placementHelper.tryPlace(z, z, 3.0, {
+    return this.spawnInRiver(context, z, {
       minDistFromBank: 2.0
     });
+  }
 
+  async spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {
+    const length = 10 + Math.random() * 10;
+    const pos = context.placementHelper.tryPlace(z, z, length / 2, options);
     if (pos) {
       const log = new Log(pos.x, pos.z, length, context.physicsEngine);
       context.entityManager.add(log, context.chunkIndex);
@@ -26,4 +30,5 @@ export class LogSpawner extends BaseSpawner {
     }
     return false;
   }
+
 }
