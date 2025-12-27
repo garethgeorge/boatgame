@@ -44,8 +44,8 @@ export class MangroveSpawner extends BaseSpawner {
         }
       }
 
-      // Keep a small clear channel in the middle for navigation
-      if (distFromCenter < 6) {
+      // Skip spawning within the middle 20% of the river to create a clear path
+      if (distFromCenter < riverWidth * 0.1) {
         continue;
       }
 
