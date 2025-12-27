@@ -51,6 +51,7 @@ export class ObstacleManager {
     for (const segment of segments) {
       context.biomeZStart = segment.biomeZStart;
       context.biomeZEnd = segment.biomeZEnd;
+      context.biomeLayout = this.riverSystem.biomeManager.getLayoutForInstance(segment.instanceIndex);
       const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
       await features.spawn(context, difficulty, segment.zStart, segment.zEnd);
     }

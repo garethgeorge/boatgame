@@ -14,6 +14,7 @@ interface BiomeInstance {
   length: number;
   zStart: number;
   zEnd: number;
+  layout?: any;
 }
 
 export class BiomeManager {
@@ -127,12 +128,13 @@ export class BiomeManager {
     };
   }
 
-  public getFeatureSegments(zStart: number, zEnd: number): Array<{ biome: BiomeType, zStart: number, zEnd: number, biomeZStart: number, biomeZEnd: number }> {
-    const segments: Array<{ biome: BiomeType, zStart: number, zEnd: number, biomeZStart: number, biomeZEnd: number }> = [];
+  public getFeatureSegments(zStart: number, zEnd: number): Array<{ biome: BiomeType, zStart: number, zEnd: number, biomeZStart: number, biomeZEnd: number, instanceIndex: number }> {
+    const segments: Array<{ biome: BiomeType, zStart: number, zEnd: number, biomeZStart: number, biomeZEnd: number, instanceIndex: number }> = [];
     let currentZ = zStart;
 
     while (currentZ < zEnd) {
-      const instance = this.getBiomeInstanceAt(currentZ);
+      const index = this.getBiomeInstanceIndexAt(currentZ);
+      const instance = this.biomeInstances[index];
 
       // We need to provide the "real" biomeZStart and biomeZEnd in world coordinates, 
       // not normalized sequence coordinates.
@@ -149,7 +151,8 @@ export class BiomeManager {
         zStart: currentZ,
         zEnd: segmentEnd,
         biomeZStart,
-        biomeZEnd
+        biomeZEnd,
+        instanceIndex: index
       });
       currentZ = segmentEnd;
     }
@@ -159,6 +162,14 @@ export class BiomeManager {
 
   public getFeatures(biome: BiomeType): BiomeFeatures {
     return this.features.get(biome)!;
+  }
+
+  public getLayoutForInstance(index: number): any {
+    const instance = this.biomeInstances[index];
+    if (instance.layout === undefined) {
+      instance.layout = this.getFeatures(instance.type).createLayout(instance.length);
+    }
+    return instance.layout;
   }
 
   public getBiomeMixture(worldZ: number): {

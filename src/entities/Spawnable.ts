@@ -11,6 +11,7 @@ export interface SpawnContext {
   zEnd: number;
   biomeZStart: number;
   biomeZEnd: number;
+  biomeLayout?: any;
 }
 
 export interface Spawnable {

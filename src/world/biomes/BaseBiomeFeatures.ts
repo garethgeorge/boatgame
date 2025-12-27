@@ -90,4 +90,8 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
     public getBiomeLength(): number {
         return 1000;
     }
+
+    public createLayout(length: number): any {
+        return null;
+    }
 }

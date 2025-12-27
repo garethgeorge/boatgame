@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../world/RiverSystem';
 
-type RiverPlacementBias = 'left' | 'right' | 'center' | 'none';
+export type RiverPlacementBias = 'left' | 'right' | 'center' | 'none';
 
 export interface RiverPlacementOptions {
   minDistFromOthers?: number;
@@ -58,24 +58,34 @@ export class PlacementHelper {
 
       if (safeHalfWidth <= 0) continue; // River too narrow for this object
 
-      // Random X within safe bounds
-      let xOffset = (Math.random() - 0.5) * 2 * safeHalfWidth;
+      let minX = -safeHalfWidth;
+      let maxX = safeHalfWidth;
+      const strength = options.biasStrength !== undefined ? options.biasStrength : 0.5;
 
-      // Apply Bias
+      // Apply Bias as range scaling
       if (options.bias === 'left') {
-        // Bias towards negative X (relative to center)
-        if (Math.random() < (options.biasStrength || 0.5)) {
-          xOffset = -Math.abs(xOffset);
-        }
+        // Restrict range to favor negative side (relative to center)
+        // At strength 1.0, range is [-safeHalfWidth, -0.5 * safeHalfWidth]
+        maxX = safeHalfWidth * (1 - 1.5 * strength);
       } else if (options.bias === 'right') {
-        // Bias towards positive X
-        if (Math.random() < (options.biasStrength || 0.5)) {
-          xOffset = Math.abs(xOffset);
-        }
-      } else if (options.avoidCenter) {
-        // Push away from center
-        if (Math.abs(xOffset) < safeHalfWidth * 0.3) {
-          xOffset = (xOffset > 0 ? 1 : -1) * (safeHalfWidth * (0.3 + Math.random() * 0.7));
+        // Restrict range to favor positive side
+        // At strength 1.0, range is [0.5 * safeHalfWidth, safeHalfWidth]
+        minX = -safeHalfWidth * (1 - 1.5 * strength);
+      } else if (options.bias === 'center') {
+        // Restrict range to stay near center
+        // At strength 1.0, range is [-0.25 * safeHalfWidth, 0.25 * safeHalfWidth]
+        minX = -safeHalfWidth * (1 - 0.75 * strength);
+        maxX = safeHalfWidth * (1 - 0.75 * strength);
+      }
+
+      let xOffset = minX + Math.random() * (maxX - minX);
+
+      // Special handling for avoidCenter (can be combined with bias or used alone)
+      if (options.avoidCenter) {
+        // If xOffset is too close to center, push it to the edges of the allowed [minX, maxX] range
+        const centerThreshold = (maxX - minX) * 0.15;
+        if (Math.abs(xOffset) < centerThreshold) {
+          xOffset = xOffset > 0 ? maxX : minX;
         }
       }
 

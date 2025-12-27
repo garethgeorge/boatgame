@@ -6,8 +6,23 @@ import { Decorations } from '../Decorations';
 import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
 import { HippoSpawner } from '../../entities/spawners/HippoSpawner';
 import { MonkeySpawner } from '../../entities/spawners/MonkeySpawner';
-import { MessageInABottle } from '../../entities/obstacles/MessageInABottle';
 import { RiverPlacementBias } from '../../managers/PlacementHelper';
+
+interface DesertObstacle {
+    type: 'rock' | 'bottle' | 'gator' | 'hippo' | 'monkey';
+    weight: number;
+}
+
+interface DesertSpawnRun {
+    zOffsetStart: number;
+    zOffsetEnd: number;
+    bias: RiverPlacementBias;
+    obstacles: DesertObstacle[];
+}
+
+interface DesertBiomeLayout {
+    runs: DesertSpawnRun[];
+}
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';
@@ -22,6 +37,54 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
     public getBiomeLength(): number {
         return 2000;
+    }
+
+    public createLayout(length: number): DesertBiomeLayout {
+        const runLength = 100; // 20 100m runs, 0,0.05,0.1,0.15,0.2 ...
+        const runs: DesertSpawnRun[] = [];
+
+        for (let z = 0; z < length; z += runLength) {
+            const zEnd = Math.min(z + runLength, length);
+            const t = z / length;
+
+            const rBias = Math.random();
+            const bias: RiverPlacementBias = rBias < 0.4 ? 'left' : (rBias < 0.6 ? 'right' : 'none');
+
+            const obstacles: DesertObstacle[] = [];
+
+            if (t < 0.2) {
+                // Phase 1: Arrival - Easy, bottles and rocks
+                obstacles.push({ type: 'rock', weight: 0.2 });
+                obstacles.push({ type: 'bottle', weight: 0.2 });
+            } else if (t < 0.4) {
+                // Phase 2: Shore Life - Monkeys on shore, rocks/bottles in water
+                obstacles.push({ type: 'rock', weight: 0.2 });
+                obstacles.push({ type: 'bottle', weight: 0.1 });
+                obstacles.push({ type: 'monkey', weight: 0.3 });
+            } else if (t < 0.6) {
+                // Phase 3: The Crossing - Clustering, hippos
+                obstacles.push({ type: 'rock', weight: 0.2 });
+                obstacles.push({ type: 'bottle', weight: 0.1 });
+                obstacles.push({ type: 'hippo', weight: 0.3 });
+            } else if (t < 0.85) {
+                // Phase 4: The Gauntlet - Higher density, alligators
+                obstacles.push({ type: 'rock', weight: 0.2 });
+                obstacles.push({ type: 'bottle', weight: 0.1 });
+                obstacles.push({ type: 'hippo', weight: 0.2 });
+                obstacles.push({ type: 'gator', weight: 0.2 });
+            } else {
+                // Phase 5: bottles and depot
+            }
+
+            runs.push({
+                zOffsetStart: z,
+                zOffsetEnd: zEnd,
+                bias,
+                obstacles
+            });
+        }
+
+        return { runs };
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
@@ -50,7 +113,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
         const biomeEntranceZ = Math.max(context.biomeZStart, context.biomeZEnd);
         const biomeExitZ = Math.min(context.biomeZStart, context.biomeZEnd);
-        const biomeLength = Math.abs(biomeExitZ - biomeEntranceZ);
+        const layout = context.biomeLayout as DesertBiomeLayout;
 
         if (count > 0) {
             const subIntervalLength = length / count;
@@ -59,33 +122,36 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 // Determine z in this chunk segment
                 const z = zStart + i * subIntervalLength + Math.random() * subIntervalLength;
 
-                // Parametric distance: 0 at biome entrance (larger Z), 1 at exit (smaller Z)
-                const t = Math.min(0.999, Math.max(0, (z - biomeEntranceZ) / (biomeExitZ - biomeEntranceZ)));
-                const r = Math.random();
+                // Find current run from layout
+                const zOffset = Math.abs(z - biomeEntranceZ);
+                const run = layout.runs.find(r => zOffset >= r.zOffsetStart && zOffset < r.zOffsetEnd) || layout.runs[0];
 
-                if (t < 0.2) {
-                    // Phase 1: Arrival - Easy, bottles and rocks
-                    if (r < 0.4) await this.bottleSpawner.spawnRiverBottle(context, z, 'none');
-                    else if (r < 0.6) await this.rockSpawner.spawnRiverRock(context, z, 'none');
-                } else if (t < 0.4) {
-                    // Phase 2: Shore Life - Monkeys on shore, some obstacles
-                    if (r < 0.3) await this.monkeySpawner.spawnShoreAnimal(context, z);
-                    else if (r < 0.5) await this.rockSpawner.spawnRiverRock(context, z, 'none');
-                    else if (r < 0.6) await this.bottleSpawner.spawnRiverBottle(context, z, 'none');
-                } else if (t < 0.6) {
-                    // Phase 3: The Crossing - Clustering every 120m, hippos
-                    const bias: RiverPlacementBias = (Math.floor(Math.abs(z) / 120) % 2 === 0) ? 'left' : 'right';
-                    if (r < 0.2) await this.rockSpawner.spawnRiverRock(context, z, bias);
-                    else if (r < 0.3) await this.hippoSpawner.spawnRiverAnimal(context, z, false, 'none');
-                    else if (r < 0.4) await this.bottleSpawner.spawnRiverBottle(context, z, 'none');
-                } else if (t < 0.85) {
-                    // Phase 4: The Gauntlet - Higher density clustering every 80m, alligators
-                    const bias: RiverPlacementBias = (Math.floor(Math.abs(z) / 80) % 2 === 0) ? 'left' : 'right';
-                    const oppositeBias = bias === 'left' ? 'right' : 'left';
-                    if (r < 0.2) await this.rockSpawner.spawnRiverRock(context, z, bias);
-                    else if (r < 0.4) await this.alligatorSpawner.spawnRiverAnimal(context, z, false, 'none');
-                    else if (r < 0.6) await this.alligatorSpawner.spawnRiverAnimal(context, z, false, 'none');
-                    else if (r < 0.7) await this.bottleSpawner.spawnRiverBottle(context, z, oppositeBias);
+                const currentBias = run.bias;
+
+                if (run.obstacles.length > 0) {
+                    // random selection
+                    let r = Math.random();
+                    let selectedType: string | null = null;
+
+                    for (const obs of run.obstacles) {
+                        r -= obs.weight;
+                        if (r <= 0) {
+                            selectedType = obs.type;
+                            break;
+                        }
+                    }
+
+                    if (selectedType === 'rock') {
+                        await this.rockSpawner.spawnRiverRock(context, z, currentBias);
+                    } else if (selectedType === 'bottle') {
+                        await this.bottleSpawner.spawnRiverBottle(context, z, currentBias);
+                    } else if (selectedType === 'monkey') {
+                        await this.monkeySpawner.spawnShoreAnimal(context, z);
+                    } else if (selectedType === 'hippo') {
+                        await this.hippoSpawner.spawnRiverAnimal(context, z, false, currentBias);
+                    } else if (selectedType === 'gator') {
+                        await this.alligatorSpawner.spawnRiverAnimal(context, z, false, currentBias);
+                    }
                 }
             }
         }
