@@ -138,3 +138,7 @@ Dynamic game objects (Obstacles, Animals) follow a hierarchy designed for behavi
 ## 9. Code Style and Standards
 **Rule**
 - Avoid casting to any in typescript except where there is no reasonable alternative or it is being done for performance reasons.
+
+## 10. Verification
+
+Use `npx tsc --noEmit` to verify that the code passes typescript checks.

@@ -7,6 +7,7 @@ import { IceBiomeFeatures } from './biomes/IceBiomeFeatures';
 import { SwampBiomeFeatures } from './biomes/SwampBiomeFeatures';
 import { JurassicBiomeFeatures } from './biomes/JurassicBiomeFeatures';
 import { TestBiomeFeatures } from './biomes/TestBiomeFeatures';
+import { FracturedIceBiomeFeatures } from './biomes/FracturedIceBiomeFeatures';
 import { BiomeType } from './biomes/BiomeType';
 
 interface BiomeInstance {
@@ -28,7 +29,7 @@ export class BiomeManager {
 
 
   constructor() {
-    const biomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic'];
+    const biomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic', 'fractured_ice'];
 
     // Initialize features
     this.features.set('desert', new DesertBiomeFeatures());
@@ -37,6 +38,7 @@ export class BiomeManager {
     this.features.set('swamp', new SwampBiomeFeatures());
     this.features.set('jurassic', new JurassicBiomeFeatures());
     this.features.set('test', new TestBiomeFeatures());
+    this.features.set('fractured_ice', new FracturedIceBiomeFeatures());
 
     let biomeSequence: BiomeType[] = [];
 
@@ -167,9 +169,14 @@ export class BiomeManager {
   public getLayoutForInstance(index: number): any {
     const instance = this.biomeInstances[index];
     if (instance.layout === undefined) {
-      instance.layout = this.getFeatures(instance.type).createLayout(instance.length);
+      instance.layout = this.getFeatures(instance.type).createLayout(instance.length, instance.zStart);
     }
     return instance.layout;
+  }
+
+  public getLayoutAt(worldZ: number): any {
+    const index = this.getBiomeInstanceIndexAt(worldZ);
+    return this.getLayoutForInstance(index);
   }
 
   public getBiomeMixture(worldZ: number): {

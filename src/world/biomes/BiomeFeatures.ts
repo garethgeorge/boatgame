@@ -10,7 +10,7 @@ export interface BiomeFeatures {
      * Create a lazily initialized layout for this biome instance.
      * The type is biome-specific.
      */
-    createLayout(length: number): any;
+    createLayout(length: number, zStart: number): any;
 
     /**
      * Decorate the terrain with static meshes (trees, rocks, etc.)
