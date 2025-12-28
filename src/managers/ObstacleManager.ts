@@ -27,7 +27,8 @@ export class ObstacleManager {
     // Or we could check if chunk has entities in EntityManager?
     // Let's trust TerrainManager for now.
 
-    const placementHelper = new PlacementHelper();
+    const placementHelper = new PlacementHelper(this.physicsEngine.world);
+    const chunkLength = zEnd - zStart;
     const segments = this.riverSystem.biomeManager.getFeatureSegments(zStart, zEnd);
 
     // Calculate Difficulty
