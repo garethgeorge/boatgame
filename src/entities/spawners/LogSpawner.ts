@@ -1,6 +1,6 @@
 import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
-import { RiverPlacementOptions, RiverPlacementBias } from '../../managers/PlacementHelper';
+import { RiverPlacementOptions, PlacementBias } from '../../managers/PlacementHelper';
 import { Log } from '../../entities/obstacles/Log';
 
 export class LogSpawner extends BaseSpawner {
@@ -15,22 +15,17 @@ export class LogSpawner extends BaseSpawner {
   }
 
   async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
-    return this.spawnInRiver(context, z, {
-      minDistFromBank: 2.0
-    });
-  }
-
-  async spawnRiverLog(context: SpawnContext, z: number, bias: RiverPlacementBias) {
-    return this.spawnInRiver(context, z, {
-      bias,
-      biasStrength: 0.8,
-      minDistFromBank: 4.0
-    });
+    return this.spawnInRiver(context, z, {});
   }
 
   async spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {
+    const opts = {
+      biasStrength: 0.9,
+      minDistFromBank: 2.0,
+      ...options
+    };
     const length = 10 + Math.random() * 10;
-    const pos = context.placementHelper.tryPlace(z, z, length / 2, options);
+    const pos = context.placementHelper.tryPlace(z, z, length / 2, opts);
     if (pos) {
       const log = new Log(pos.x, pos.z, length, context.physicsEngine);
       context.entityManager.add(log, context.chunkIndex);

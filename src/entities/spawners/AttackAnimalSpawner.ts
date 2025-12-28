@@ -3,7 +3,7 @@ import { RiverSystem } from '../../world/RiverSystem';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
 import { Entity } from '../../core/Entity';
-import { RiverPlacementOptions, ShorePlacementOptions, RiverPlacementBias } from '../../managers/PlacementHelper';
+import { RiverPlacementOptions, ShorePlacementOptions, PlacementBias } from '../../managers/PlacementHelper';
 import { BaseSpawner } from './BaseSpawner';
 
 export interface ClusterPlacementOptions {
@@ -40,36 +40,43 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
         const isShore = Math.random() < this.shoreProbability;
 
         if (isShore) {
-            return this.spawnOnShore(context, z, this.shorePlacement);
+            const stayOnShore = Math.random() > 0.5;
+            return this.spawnOnShore(context, z, stayOnShore, {});
         } else {
             const cluster = this.clusterPlacement;
             const spawnCluster = Math.random() < cluster.probability;
-            return this.spawnInRiver(context, z, spawnCluster, this.waterPlacement);
+            return this.spawnInRiver(context, z, spawnCluster, {});
         }
     }
 
-    async spawnRiverAnimal(context: SpawnContext, z: number, spawnCluster: boolean,
-        bias: RiverPlacementBias) {
-        const options = {
-            ...this.waterPlacement,
-            bias,
-            biasStrength: 0.9,
-        };
-        return this.spawnInRiver(context, z, spawnCluster, options)
-    }
-
-    async spawnShoreAnimal(context: SpawnContext, z: number) {
-        return this.spawnOnShore(context, z, this.shorePlacement);
+    /**
+     *  Spawns an animal instance with bias left right or none and preference
+     * for shore or not.
+     */
+    async spawnAnimal(context: SpawnContext, z: number, bias: PlacementBias,
+        preferShore: boolean): Promise<boolean> {
+        let spawned = false;
+        if (preferShore)
+            await this.spawnOnShore(context, z, false, { bias });
+        if (!spawned)
+            spawned = await this.spawnInRiver(context, z, false, { bias });
+        return spawned;
     }
 
     async spawnInRiver(context: SpawnContext, z: number, spawnCluster: boolean,
         options: RiverPlacementOptions): Promise<boolean> {
 
+        const opts = {
+            biasStrength: 0.9,
+            ...this.waterPlacement,
+            ...options
+        };
+
         const cluster = this.clusterPlacement;
         const clusterSize = spawnCluster ? cluster.size : 1;
 
         const centerPos = context.placementHelper.tryPlace(
-            z, z, this.entityRadius, options
+            z, z, this.entityRadius, opts
         );
 
         if (centerPos) {
@@ -97,10 +104,17 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
         return false;
     }
 
-    async spawnOnShore(context: SpawnContext, z: number, options: ShorePlacementOptions): Promise<boolean> {
+    async spawnOnShore(context: SpawnContext, z: number, stayOnShore: boolean,
+        options: ShorePlacementOptions): Promise<boolean> {
+
+        const opts = {
+            ...this.shorePlacement,
+            ...options
+        };
+
         const riverSystem = RiverSystem.getInstance();
         const placement = context.placementHelper.findShorePlacement(
-            z, z, riverSystem, options
+            z, z, riverSystem, opts
         );
 
         if (placement) {
@@ -111,7 +125,7 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
                 height: placement.height,
                 terrainNormal: placement.normal,
                 onShore: true,
-                stayOnShore: Math.random() > 0.5
+                stayOnShore
             });
             if (entity) {
                 context.entityManager.add(entity, context.chunkIndex);

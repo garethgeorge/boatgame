@@ -1,6 +1,6 @@
 import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
-import { RiverPlacementOptions, RiverPlacementBias } from '../../managers/PlacementHelper';
+import { RiverPlacementOptions, PlacementBias } from '../../managers/PlacementHelper';
 import { RiverRock } from '../../entities/obstacles/RiverRock';
 
 export class RockSpawner extends BaseSpawner {
@@ -16,23 +16,25 @@ export class RockSpawner extends BaseSpawner {
     const biasStrength = bias === 'center' ? 0 : 0.8; // Strong bias to banks
 
     return this.spawnInRiver(context, z, {
-      minDistFromBank: 0.5, // Can be closer to bank
       bias: bias,
       biasStrength: biasStrength
     });
   }
 
-  async spawnRiverRock(context: SpawnContext, z: number, bias: RiverPlacementBias) {
+  async spawnRiverRock(context: SpawnContext, z: number, bias: PlacementBias) {
     return this.spawnInRiver(context, z, {
       bias,
-      biasStrength: 0.8,
-      minDistFromBank: 4.0
     });
   }
 
   async spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {
+    const opts = {
+      biasStrength: 0.9,
+      minDistFromBank: 0.5,
+      ...options
+    }
     const radius = 1.5 + Math.random() * 3.0; // 1.5 to 4.5m
-    const pos = context.placementHelper.tryPlace(z, z, radius, options);
+    const pos = context.placementHelper.tryPlace(z, z, radius, opts);
     if (pos) {
       const rock = new RiverRock(pos.x, pos.z, radius, context.physicsEngine);
       context.entityManager.add(rock, context.chunkIndex);

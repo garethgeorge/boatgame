@@ -2,20 +2,22 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../world/RiverSystem';
 
-export type RiverPlacementBias = 'left' | 'right' | 'center' | 'none';
+export type PlacementBias = 'left' | 'right' | 'center' | 'none';
 
 export interface RiverPlacementOptions {
   minDistFromOthers?: number;
   avoidCenter?: boolean;
-  bias?: RiverPlacementBias;
+  bias?: PlacementBias;
   biasStrength?: number; // 0 to 1
   minDistFromBank?: number;
 }
 
 export interface ShorePlacementOptions {
-  minDistFromBank: number;
-  maxDistFromBank: number;
+  minDistFromBank?: number;
+  maxDistFromBank?: number;
   maxSlopeDegrees?: number;
+  bias?: PlacementBias;
+  biasStrength?: number;
 }
 
 interface PlacedObject {
@@ -138,8 +140,21 @@ export class PlacementHelper {
 
       const riverWidth = riverSystem.getRiverWidth(worldZ);
       const riverCenter = riverSystem.getRiverCenter(worldZ);
-      const isLeftBank = Math.random() > 0.5;
-      const distFromBank = minDistFromBank + (maxDistFromBank - minDistFromBank) * Math.random();
+
+      // Bank selection based on bias
+      let isLeftBank: boolean;
+      const bias = options.bias || 'none';
+      const strength = options.biasStrength !== undefined ? options.biasStrength : 1.0;
+
+      if (bias === 'left') {
+        isLeftBank = Math.random() < strength;
+      } else if (bias === 'right') {
+        isLeftBank = Math.random() > strength;
+      } else {
+        isLeftBank = Math.random() > 0.5;
+      }
+
+      const distFromBank = (minDistFromBank || 0) + ((maxDistFromBank || 0) - (minDistFromBank || 0)) * Math.random();
       const localX = (isLeftBank ? -1 : 1) * (riverWidth / 2 + distFromBank);
       const worldX = localX + riverCenter;
       const height = riverSystem.terrainGeometry.calculateHeight(worldX, worldZ);

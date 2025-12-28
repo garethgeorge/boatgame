@@ -20,6 +20,10 @@ export class MonkeySpawner extends AttackAnimalSpawner {
         return { minDistFromBank: 2.0, maxDistFromBank: 2.0 };
     }
 
+    protected get heightInWater(): number {
+        return Monkey.HEIGHT_IN_WATER;
+    }
+
     protected spawnEntity(physicsEngine: PhysicsEngine, options: AttackAnimalOptions): Entity {
         return new Monkey(physicsEngine, options);
     }

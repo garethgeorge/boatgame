@@ -20,6 +20,10 @@ export class PolarBearSpawner extends AttackAnimalSpawner {
         return { minDistFromBank: 2.5, maxDistFromBank: 3.0 };
     }
 
+    protected get heightInWater(): number {
+        return PolarBear.HEIGHT_IN_WATER;
+    }
+
     protected spawnEntity(physicsEngine: PhysicsEngine, options: AttackAnimalOptions): Entity {
         return new PolarBear(physicsEngine, options);
     }

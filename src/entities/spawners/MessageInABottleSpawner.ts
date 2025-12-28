@@ -2,7 +2,7 @@ import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { MessageInABottle } from '../../entities/obstacles/MessageInABottle';
 import { RiverSystem } from '../../world/RiverSystem';
-import { RiverPlacementOptions, RiverPlacementBias } from '../../managers/PlacementHelper';
+import { RiverPlacementOptions, PlacementBias } from '../../managers/PlacementHelper';
 
 export class MessageInABottleSpawner extends BaseSpawner {
   id = 'bottle';
@@ -20,19 +20,13 @@ export class MessageInABottleSpawner extends BaseSpawner {
   }
 
   async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
-    return this.spawnInRiver(context, z, {
-      minDistFromBank: 1.0
-    });
+    return this.spawnInRiver(context, z, {});
   }
 
-  async spawnRiverBottle(context: SpawnContext, z: number, bias: RiverPlacementBias) {
-    return this.spawnInRiver(context, z, {
-      bias,
-      biasStrength: 0.9,
-      minDistFromBank: 2.0
-    });
-  }
-
+  /**
+   * Spawns count bottle instances starting at zStart and placed zStep distance
+   * apart.
+   */
   async spawnRiverBottleArc(context: SpawnContext, count: number, zStart: number, zStep: number) {
     for (let i = 1; i <= count; i++) {
       const bz = zStart + i * zStep;
@@ -45,7 +39,12 @@ export class MessageInABottleSpawner extends BaseSpawner {
   }
 
   async spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {
-    const pos = context.placementHelper.tryPlace(z, z, 1.0, options);
+    const opts = {
+      biasStrength: 0.9,
+      minDistFromBank: 1.0,
+      ...options
+    };
+    const pos = context.placementHelper.tryPlace(z, z, 1.0, opts);
     if (pos) {
       const bottle = new MessageInABottle(pos.x, pos.z, context.physicsEngine);
       context.entityManager.add(bottle, context.chunkIndex);

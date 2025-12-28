@@ -20,6 +20,10 @@ export class BrownBearSpawner extends AttackAnimalSpawner {
         return { minDistFromBank: 2.5, maxDistFromBank: 3.0 };
     }
 
+    protected get heightInWater(): number {
+        return BrownBear.HEIGHT_IN_WATER;
+    }
+
     protected spawnEntity(physicsEngine: PhysicsEngine, options: AttackAnimalOptions): Entity {
         return new BrownBear(physicsEngine, options);
     }

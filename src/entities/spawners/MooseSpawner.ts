@@ -20,6 +20,10 @@ export class MooseSpawner extends AttackAnimalSpawner {
         return { minDistFromBank: 3.0, maxDistFromBank: 7.0 };
     }
 
+    protected get heightInWater(): number {
+        return Moose.HEIGHT_IN_WATER;
+    }
+
     protected spawnEntity(physicsEngine: PhysicsEngine, options: AttackAnimalOptions): Entity {
         return new Moose(physicsEngine, options);
     }
