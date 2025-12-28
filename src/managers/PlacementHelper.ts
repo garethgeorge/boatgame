@@ -2,13 +2,13 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../world/RiverSystem';
 
-export type PlacementBias = 'left' | 'right' | 'center' | 'none';
+
 
 export interface RiverPlacementOptions {
   minDistFromOthers?: number;
   avoidCenter?: boolean;
-  bias?: PlacementBias;
-  biasStrength?: number; // 0 to 1
+  center?: number;    // -1 (left) to 1 (right)
+  variation?: number; // 0 to 1
   minDistFromBank?: number;
 }
 
@@ -16,8 +16,7 @@ export interface ShorePlacementOptions {
   minDistFromBank?: number;
   maxDistFromBank?: number;
   maxSlopeDegrees?: number;
-  bias?: PlacementBias;
-  biasStrength?: number;
+  side?: number; // negative for left, positive for right, abs() is probability
 }
 
 interface PlacedObject {
@@ -52,7 +51,7 @@ export class PlacementHelper {
       const worldZ = zMin + Math.random() * (zMax - zMin);
 
       // Get River Bounds
-      const center = this.riverSystem.getRiverCenter(worldZ);
+      const riverCenter = this.riverSystem.getRiverCenter(worldZ);
       const width = this.riverSystem.getRiverWidth(worldZ);
 
       // Calculate safe width (accounting for object radius and bank buffer)
@@ -62,23 +61,15 @@ export class PlacementHelper {
 
       let minX = -safeHalfWidth;
       let maxX = safeHalfWidth;
-      const strength = options.biasStrength !== undefined ? options.biasStrength : 0.5;
 
-      // Apply Bias as range scaling
-      if (options.bias === 'left') {
-        // Restrict range to favor negative side (relative to center)
-        // At strength 1.0, range is [-safeHalfWidth, -0.5 * safeHalfWidth]
-        maxX = safeHalfWidth * (1 - 1.5 * strength);
-      } else if (options.bias === 'right') {
-        // Restrict range to favor positive side
-        // At strength 1.0, range is [0.5 * safeHalfWidth, safeHalfWidth]
-        minX = -safeHalfWidth * (1 - 1.5 * strength);
-      } else if (options.bias === 'center') {
-        // Restrict range to stay near center
-        // At strength 1.0, range is [-0.25 * safeHalfWidth, 0.25 * safeHalfWidth]
-        minX = -safeHalfWidth * (1 - 0.75 * strength);
-        maxX = safeHalfWidth * (1 - 0.75 * strength);
-      }
+      const center = options.center !== undefined ? options.center : 0;
+      const variation = options.variation !== undefined ? options.variation : 1.0;
+
+      const centerOffset = safeHalfWidth * center;
+      const variability = (safeHalfWidth - Math.abs(centerOffset)) * variation;
+
+      minX = centerOffset - variability;
+      maxX = centerOffset + variability;
 
       let xOffset = minX + Math.random() * (maxX - minX);
 
@@ -91,7 +82,7 @@ export class PlacementHelper {
         }
       }
 
-      const x = center + xOffset;
+      const x = riverCenter + xOffset;
 
       // Check collision with other placed objects
       let collision = false;
@@ -141,16 +132,18 @@ export class PlacementHelper {
       const riverWidth = riverSystem.getRiverWidth(worldZ);
       const riverCenter = riverSystem.getRiverCenter(worldZ);
 
-      // Bank selection based on bias
+      // Bank selection based on side
       let isLeftBank: boolean;
-      const bias = options.bias || 'none';
-      const strength = options.biasStrength !== undefined ? options.biasStrength : 1.0;
+      const side = options.side || 0;
 
-      if (bias === 'left') {
-        isLeftBank = Math.random() < strength;
-      } else if (bias === 'right') {
-        isLeftBank = Math.random() > strength;
+      if (side < 0) {
+        // Favor left bank
+        isLeftBank = Math.random() < Math.abs(side);
+      } else if (side > 0) {
+        // Favor right bank
+        isLeftBank = Math.random() > Math.abs(side);
       } else {
+        // Neutral
         isLeftBank = Math.random() > 0.5;
       }
 

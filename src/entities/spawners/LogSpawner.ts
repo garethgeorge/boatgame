@@ -1,6 +1,6 @@
 import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
-import { RiverPlacementOptions, PlacementBias } from '../../managers/PlacementHelper';
+import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 import { Log } from '../../entities/obstacles/Log';
 
 export class LogSpawner extends BaseSpawner {
@@ -20,7 +20,6 @@ export class LogSpawner extends BaseSpawner {
 
   async spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {
     const opts = {
-      biasStrength: 0.9,
       minDistFromBank: 2.0,
       ...options
     };

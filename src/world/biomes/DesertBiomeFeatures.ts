@@ -6,12 +6,12 @@ import { Decorations } from '../Decorations';
 import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
 import { HippoSpawner } from '../../entities/spawners/HippoSpawner';
 import { MonkeySpawner } from '../../entities/spawners/MonkeySpawner';
-import { PlacementBias } from '../../managers/PlacementHelper';
 
 interface DesertObstacle {
     type: 'rock' | 'bottle' | 'gator' | 'hippo' | 'monkey';
     count: number;
-    bias: PlacementBias;
+    center: number;
+    variation: number;
     onShore: boolean;
 }
 
@@ -47,48 +47,49 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
         const runs: DesertSpawnRun[] = [];
 
-        // bias will alternate
-        let biasA: PlacementBias = Math.random() ? 'left' : 'right';
-        let biasB: PlacementBias = biasA === 'left' ? 'right' : 'left';
+        // center will alternate
+        let centerA = Math.random() < 0.5 ? -0.7 : 0.7;
+        let centerB = -centerA;
 
         for (let z = 0; z < length; z += runLength) {
             const zEnd = Math.min(z + runLength, length);
 
-            [biasA, biasB] = [biasB, biasA];
+            [centerA, centerB] = [centerB, centerA];
 
             // index of phase containing z
             const zFraction = z / length;
             const phaseIndex = phases.findLastIndex(phaseStart => zFraction >= phaseStart);
 
             const obstacles: DesertObstacle[] = [];
+            const varBiased = 0.5;
 
             switch (phaseIndex) {
                 case 0: {
                     // Phase 1: Arrival - Easy, bottles and rocks
-                    obstacles.push({ type: 'rock', count: 3, bias: biasA, onShore: false });
-                    obstacles.push({ type: 'bottle', count: 3, bias: biasB, onShore: false });
+                    obstacles.push({ type: 'rock', count: 3, center: centerA, variation: varBiased, onShore: false });
+                    obstacles.push({ type: 'bottle', count: 3, center: centerB, variation: varBiased, onShore: false });
                     break;
                 }
                 case 1: {
                     // Phase 2: Shore Life - Monkeys on shore, rocks/bottles in water
-                    obstacles.push({ type: 'rock', count: 2, bias: biasA, onShore: false });
-                    obstacles.push({ type: 'bottle', count: 2, bias: biasA, onShore: false });
-                    obstacles.push({ type: 'monkey', count: 3, bias: biasA, onShore: true });
+                    obstacles.push({ type: 'rock', count: 2, center: centerA, variation: varBiased, onShore: false });
+                    obstacles.push({ type: 'bottle', count: 2, center: centerA, variation: varBiased, onShore: false });
+                    obstacles.push({ type: 'monkey', count: 3, center: centerA, variation: varBiased, onShore: true });
                     break;
                 }
                 case 2: {
                     // Phase 3: The Crossing - Clustering, hippos
-                    obstacles.push({ type: 'rock', count: 1, bias: biasA, onShore: false });
-                    obstacles.push({ type: 'bottle', count: 1, bias: biasA, onShore: false });
-                    obstacles.push({ type: 'hippo', count: 2, bias: biasB, onShore: false });
+                    obstacles.push({ type: 'rock', count: 1, center: centerA, variation: varBiased, onShore: false });
+                    obstacles.push({ type: 'bottle', count: 1, center: centerA, variation: varBiased, onShore: false });
+                    obstacles.push({ type: 'hippo', count: 2, center: centerB, variation: varBiased, onShore: false });
                     break;
                 }
                 case 3: {
                     // Phase 4: The Gauntlet - Higher density, alligators
-                    obstacles.push({ type: 'rock', count: 1, bias: biasA, onShore: false });
-                    obstacles.push({ type: 'bottle', count: 1, bias: biasA, onShore: false });
-                    obstacles.push({ type: 'hippo', count: 1, bias: biasA, onShore: false });
-                    obstacles.push({ type: 'gator', count: 2, bias: biasA, onShore: true });
+                    obstacles.push({ type: 'rock', count: 1, center: centerA, variation: varBiased, onShore: false });
+                    obstacles.push({ type: 'bottle', count: 1, center: centerA, variation: varBiased, onShore: false });
+                    obstacles.push({ type: 'hippo', count: 1, center: centerA, variation: varBiased, onShore: false });
+                    obstacles.push({ type: 'gator', count: 2, center: centerA, variation: varBiased, onShore: true });
                     break;
                 }
                 case 4: {
@@ -160,23 +161,23 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
                         switch (obstacle.type) {
                             case 'rock': {
-                                await this.rockSpawner.spawnInRiver(context, z, { bias: obstacle.bias });
+                                await this.rockSpawner.spawnInRiver(context, z, { center: obstacle.center, variation: obstacle.variation });
                                 break;
                             }
                             case 'bottle': {
-                                await this.bottleSpawner.spawnInRiver(context, z, { bias: obstacle.bias });
+                                await this.bottleSpawner.spawnInRiver(context, z, { center: obstacle.center, variation: obstacle.variation });
                                 break;
                             }
                             case 'monkey': {
-                                await this.monkeySpawner.spawnAnimal(context, z, obstacle.bias, obstacle.onShore);
+                                await this.monkeySpawner.spawnAnimal(context, z, obstacle.center, obstacle.variation, obstacle.onShore);
                                 break;
                             }
                             case 'hippo': {
-                                await this.hippoSpawner.spawnInRiver(context, z, false, { bias: obstacle.bias });
+                                await this.hippoSpawner.spawnInRiver(context, z, false, { center: obstacle.center, variation: obstacle.variation });
                                 break;
                             }
                             case 'gator': {
-                                await this.alligatorSpawner.spawnAnimal(context, z, obstacle.bias, obstacle.onShore);
+                                await this.alligatorSpawner.spawnAnimal(context, z, obstacle.center, obstacle.variation, obstacle.onShore);
                                 break;
                             }
                         }

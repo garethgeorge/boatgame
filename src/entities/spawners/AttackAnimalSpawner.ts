@@ -3,7 +3,7 @@ import { RiverSystem } from '../../world/RiverSystem';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
 import { Entity } from '../../core/Entity';
-import { RiverPlacementOptions, ShorePlacementOptions, PlacementBias } from '../../managers/PlacementHelper';
+import { RiverPlacementOptions, ShorePlacementOptions } from '../../managers/PlacementHelper';
 import { BaseSpawner } from './BaseSpawner';
 
 export interface ClusterPlacementOptions {
@@ -50,16 +50,18 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
     }
 
     /**
-     *  Spawns an animal instance with bias left right or none and preference
+     *  Spawns an animal instance with center/variation and preference
      * for shore or not.
      */
-    async spawnAnimal(context: SpawnContext, z: number, bias: PlacementBias,
+    async spawnAnimal(context: SpawnContext, z: number, center: number, variation: number,
         preferShore: boolean): Promise<boolean> {
         let spawned = false;
-        if (preferShore)
-            await this.spawnOnShore(context, z, false, { bias });
+        if (preferShore) {
+            const side = center > 0 ? 1 : -1;
+            await this.spawnOnShore(context, z, false, { side });
+        }
         if (!spawned)
-            spawned = await this.spawnInRiver(context, z, false, { bias });
+            spawned = await this.spawnInRiver(context, z, false, { center, variation });
         return spawned;
     }
 
@@ -67,7 +69,6 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
         options: RiverPlacementOptions): Promise<boolean> {
 
         const opts = {
-            biasStrength: 0.9,
             ...this.waterPlacement,
             ...options
         };

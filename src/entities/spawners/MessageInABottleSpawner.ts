@@ -2,7 +2,7 @@ import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { MessageInABottle } from '../../entities/obstacles/MessageInABottle';
 import { RiverSystem } from '../../world/RiverSystem';
-import { RiverPlacementOptions, PlacementBias } from '../../managers/PlacementHelper';
+import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 
 export class MessageInABottleSpawner extends BaseSpawner {
   id = 'bottle';
@@ -30,7 +30,7 @@ export class MessageInABottleSpawner extends BaseSpawner {
   async spawnRiverBottleArc(context: SpawnContext, count: number, zStart: number, zStep: number) {
     for (let i = 1; i <= count; i++) {
       const bz = zStart + i * zStep;
-      const pos = context.placementHelper.tryPlace(bz, bz, 1.0, { bias: 'center', biasStrength: 0.8 });
+      const pos = context.placementHelper.tryPlace(bz, bz, 1.0, { center: 0, variation: 0.2 });
       if (pos) {
         const bottle = new MessageInABottle(pos.x, pos.z, context.physicsEngine, 0x00FF88, 50);
         context.entityManager.add(bottle, context.chunkIndex);
@@ -40,7 +40,6 @@ export class MessageInABottleSpawner extends BaseSpawner {
 
   async spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {
     const opts = {
-      biasStrength: 0.9,
       minDistFromBank: 1.0,
       ...options
     };

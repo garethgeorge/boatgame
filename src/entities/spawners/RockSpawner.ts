@@ -1,6 +1,6 @@
 import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
-import { RiverPlacementOptions, PlacementBias } from '../../managers/PlacementHelper';
+import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 import { RiverRock } from '../../entities/obstacles/RiverRock';
 
 export class RockSpawner extends BaseSpawner {
@@ -12,24 +12,25 @@ export class RockSpawner extends BaseSpawner {
 
   async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
     // Bias towards shores (70% chance)
-    const bias = Math.random() < 0.7 ? (Math.random() > 0.5 ? 'left' : 'right') : 'center';
-    const biasStrength = bias === 'center' ? 0 : 0.8; // Strong bias to banks
+    const isShore = Math.random() < 0.7;
+    const center = isShore ? (Math.random() > 0.5 ? -0.7 : 0.7) : 0;
+    const variation = isShore ? 0.5 : 0.3;
 
     return this.spawnInRiver(context, z, {
-      bias: bias,
-      biasStrength: biasStrength
+      center,
+      variation,
     });
   }
 
-  async spawnRiverRock(context: SpawnContext, z: number, bias: PlacementBias) {
+  async spawnRiverRock(context: SpawnContext, z: number, center: number = 0, variation: number = 1.0) {
     return this.spawnInRiver(context, z, {
-      bias,
+      center,
+      variation,
     });
   }
 
   async spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {
     const opts = {
-      biasStrength: 0.9,
       minDistFromBank: 0.5,
       ...options
     }
