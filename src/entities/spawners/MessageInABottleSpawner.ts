@@ -30,7 +30,7 @@ export class MessageInABottleSpawner extends BaseSpawner {
   async spawnRiverBottleArc(context: SpawnContext, count: number, zStart: number, zStep: number) {
     for (let i = 1; i <= count; i++) {
       const bz = zStart + i * zStep;
-      const pos = context.placementHelper.tryPlace(bz, bz, 1.0, { center: 0, variation: 0.2 });
+      const pos = context.placementHelper.tryPlace(bz, bz, 1.0, { range: [-0.2, 0.2] });
       if (pos) {
         const bottle = new MessageInABottle(pos.x, pos.z, context.physicsEngine, 0x00FF88, 50);
         context.entityManager.add(bottle, context.chunkIndex);

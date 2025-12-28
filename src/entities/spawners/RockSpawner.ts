@@ -13,20 +13,14 @@ export class RockSpawner extends BaseSpawner {
   async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
     // Bias towards shores (70% chance)
     const isShore = Math.random() < 0.7;
-    const center = isShore ? (Math.random() > 0.5 ? -0.7 : 0.7) : 0;
-    const variation = isShore ? 0.5 : 0.3;
+    const side = Math.random() > 0.5 ? 1 : -1;
+    const range: [number, number] = isShore ? [side * 0.5, side * 0.9] : [-0.3, 0.3];
 
-    return this.spawnInRiver(context, z, {
-      center,
-      variation,
-    });
+    return this.spawnInRiver(context, z, { range });
   }
 
-  async spawnRiverRock(context: SpawnContext, z: number, center: number = 0, variation: number = 1.0) {
-    return this.spawnInRiver(context, z, {
-      center,
-      variation,
-    });
+  async spawnRiverRock(context: SpawnContext, z: number, range: [number, number] = [-1, 1]) {
+    return this.spawnInRiver(context, z, { range });
   }
 
   async spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {

@@ -41,10 +41,9 @@ describe('PlacementHelper', () => {
         const radius = 5;
         const minDistFromBank = 2;
 
-        it('should place exactly at center when center=0 and variation=0', () => {
+        it('should place exactly at center when range=[0, 0]', () => {
             const pos = placementHelper.tryPlace(worldZ, worldZ, radius, {
-                center: 0,
-                variation: 0,
+                range: [0, 0],
                 minDistFromBank
             });
 
@@ -52,10 +51,9 @@ describe('PlacementHelper', () => {
             expect(pos!.x).toBe(0);
         });
 
-        it('should place exactly at left limit when center=-1 and variation=0', () => {
+        it('should place exactly at left limit when range=[-1, -1]', () => {
             const pos = placementHelper.tryPlace(worldZ, worldZ, radius, {
-                center: -1,
-                variation: 0,
+                range: [-1, -1],
                 minDistFromBank
             });
 
@@ -63,10 +61,9 @@ describe('PlacementHelper', () => {
             expect(pos!.x).toBe(-43);
         });
 
-        it('should place exactly at right limit when center=1 and variation=0', () => {
+        it('should place exactly at right limit when range=[1, 1]', () => {
             const pos = placementHelper.tryPlace(worldZ, worldZ, radius, {
-                center: 1,
-                variation: 0,
+                range: [1, 1],
                 minDistFromBank
             });
 
@@ -74,21 +71,21 @@ describe('PlacementHelper', () => {
             expect(pos!.x).toBe(43);
         });
 
-        it('should stay within limits when variation is high', () => {
+        it('should stay within limits when using random ranges', () => {
             for (let i = 0; i < 50; i++) {
-                const center = Math.random() * 2 - 1;
-                const variation = Math.random();
+                const r1 = Math.random() * 2 - 1;
+                const r2 = Math.random() * 2 - 1;
+                const range: [number, number] = [Math.min(r1, r2), Math.max(r1, r2)];
 
                 const localHelper = new PlacementHelper();
                 const pos = localHelper.tryPlace(worldZ, worldZ, radius, {
-                    center,
-                    variation,
+                    range,
                     minDistFromBank
                 });
 
                 expect(pos).not.toBeNull();
-                expect(pos!.x).toBeGreaterThanOrEqual(-43);
-                expect(pos!.x).toBeLessThanOrEqual(43);
+                expect(pos!.x).toBeGreaterThanOrEqual(-43.01);
+                expect(pos!.x).toBeLessThanOrEqual(43.01);
             }
         });
 
@@ -96,8 +93,7 @@ describe('PlacementHelper', () => {
             mockRiverSystem.getRiverCenter.mockReturnValue(100);
 
             const pos = placementHelper.tryPlace(worldZ, worldZ, radius, {
-                center: 0,
-                variation: 0,
+                range: [0, 0],
                 minDistFromBank
             });
 
@@ -109,8 +105,7 @@ describe('PlacementHelper', () => {
             mockRiverSystem.getRiverWidth.mockReturnValue(10);
 
             const pos = placementHelper.tryPlace(worldZ, worldZ, radius, {
-                center: 0,
-                variation: 1,
+                range: [-1, 1],
                 minDistFromBank
             });
 
@@ -119,20 +114,35 @@ describe('PlacementHelper', () => {
 
         it('should observe minDistFromOthers', () => {
             const pos1 = placementHelper.tryPlace(worldZ, worldZ, radius, {
-                center: 0,
-                variation: 0,
+                range: [0, 0],
                 minDistFromOthers: 10
             });
 
             expect(pos1).not.toBeNull();
 
             const pos2 = placementHelper.tryPlace(worldZ, worldZ, radius, {
-                center: 0,
-                variation: 0,
+                range: [0, 0],
                 minDistFromOthers: 10
             });
 
             expect(pos2).toBeNull();
+        });
+
+        it('should avoid center when avoidCenter is set', () => {
+            for (let i = 0; i < 50; i++) {
+                const localHelper = new PlacementHelper();
+                const pos = localHelper.tryPlace(worldZ, worldZ, radius, {
+                    range: [-1, 1],
+                    avoidCenter: 0.5, // Avoid [-0.5, 0.5] * safeHalfWidth
+                    minDistFromBank
+                });
+
+                expect(pos).not.toBeNull();
+                const absOffset = Math.abs(pos!.x);
+                // safeHalfWidth is 43. 43 * 0.5 = 21.5
+                expect(absOffset).toBeGreaterThanOrEqual(21.49);
+                expect(absOffset).toBeLessThanOrEqual(43.01);
+            }
         });
     });
 

@@ -6,9 +6,8 @@ import { RiverSystem } from '../world/RiverSystem';
 
 export interface RiverPlacementOptions {
   minDistFromOthers?: number;
-  avoidCenter?: boolean;
-  center?: number;    // -1 (left) to 1 (right)
-  variation?: number; // 0 to 1
+  range?: [number, number];   // [min, max] as multiples of safeHalfWidth, -1 to 1
+  avoidCenter?: number;        // Fraction of the range to "hole out" in the middle
   minDistFromBank?: number;
 }
 
@@ -17,6 +16,14 @@ export interface ShorePlacementOptions {
   maxDistFromBank?: number;
   maxSlopeDegrees?: number;
   side?: number; // negative for left, positive for right, abs() is probability
+}
+
+export interface ShorePlacement {
+  worldX: number;
+  worldZ: number;
+  height: number;
+  rotation: number;
+  normal: THREE.Vector3;
 }
 
 interface PlacedObject {
@@ -59,27 +66,38 @@ export class PlacementHelper {
 
       if (safeHalfWidth <= 0) continue; // River too narrow for this object
 
-      let minX = -safeHalfWidth;
-      let maxX = safeHalfWidth;
+      const range = options.range || [-1, 1];
+      const minX = safeHalfWidth * range[0];
+      const maxX = safeHalfWidth * range[1];
 
-      const center = options.center !== undefined ? options.center : 0;
-      const variation = options.variation !== undefined ? options.variation : 1.0;
+      const rangeCenter = (minX + maxX) / 2;
+      const rangeHalfWidth = (maxX - minX) / 2;
 
-      const centerOffset = safeHalfWidth * center;
-      const variability = (safeHalfWidth - Math.abs(centerOffset)) * variation;
+      let xOffset: number;
+      if (options.avoidCenter && options.avoidCenter > 0) {
+        const holeHalfWidth = rangeHalfWidth * options.avoidCenter;
+        const holeMin = rangeCenter - holeHalfWidth;
+        const holeMax = rangeCenter + holeHalfWidth;
 
-      minX = centerOffset - variability;
-      maxX = centerOffset + variability;
+        // Effective width is (maxX - minX) - (holeMax - holeMin)
+        // = (maxX - minX) - 2 * holeHalfWidth
+        const leftWidth = holeMin - minX;
+        const rightWidth = maxX - holeMax;
+        const totalEffectiveWidth = leftWidth + rightWidth;
 
-      let xOffset = minX + Math.random() * (maxX - minX);
-
-      // Special handling for avoidCenter (can be combined with bias or used alone)
-      if (options.avoidCenter) {
-        // If xOffset is too close to center, push it to the edges of the allowed [minX, maxX] range
-        const centerThreshold = (maxX - minX) * 0.15;
-        if (Math.abs(xOffset) < centerThreshold) {
-          xOffset = xOffset > 0 ? maxX : minX;
+        if (totalEffectiveWidth <= 0) {
+          // Range is entirely swallowed by the hole
+          continue;
         }
+
+        const rand = Math.random() * totalEffectiveWidth;
+        if (rand < leftWidth) {
+          xOffset = minX + rand;
+        } else {
+          xOffset = holeMax + (rand - leftWidth);
+        }
+      } else {
+        xOffset = minX + Math.random() * (maxX - minX);
       }
 
       const x = riverCenter + xOffset;
@@ -179,12 +197,4 @@ export class PlacementHelper {
 
     return null;
   }
-}
-
-export interface ShorePlacement {
-  worldX: number;
-  worldZ: number;
-  height: number;
-  rotation: number;
-  normal: THREE.Vector3;
 }

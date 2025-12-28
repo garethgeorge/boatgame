@@ -7,22 +7,27 @@ import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
 import { HippoSpawner } from '../../entities/spawners/HippoSpawner';
 import { MonkeySpawner } from '../../entities/spawners/MonkeySpawner';
 
-interface DesertObstacle {
-    type: 'rock' | 'bottle' | 'gator' | 'hippo' | 'monkey';
-    count: number;
-    center: number;
-    variation: number;
-    onShore: boolean;
+interface PathPoint {
+    zOffset: number;
+    xOffset: number; // -1 to 1 normalized river center offset
 }
 
-interface DesertSpawnRun {
-    zOffsetStart: number;
-    zOffsetEnd: number;
-    obstacles: DesertObstacle[];
+interface ObstaclePlacement {
+    lZ: number;
+    range: [number, number];
+}
+
+type DesertEntityType = 'rock' | 'bottle' | 'monkey' | 'gator' | 'hippo';
+
+interface DesertSection {
+    zStart: number;
+    zEnd: number;
+    placements: Partial<Record<DesertEntityType, ObstaclePlacement[]>>;
 }
 
 interface DesertBiomeLayout {
-    runs: DesertSpawnRun[];
+    path: PathPoint[];
+    sections: DesertSection[];
 }
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
@@ -40,72 +45,114 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         return 2000;
     }
 
-    public createLayout(length: number): DesertBiomeLayout {
-        // 5 phases each of 400 m and divided into 200 m runs
-        const phases = [0, 0.2, 0.4, 0.6, 0.85, 1.0];
-        const runLength = 200;
+    public createLayout(length: number, zStart: number): DesertBiomeLayout {
+        const path: PathPoint[] = [];
+        const sections: DesertSection[] = [];
+        const step = 10;
 
-        const runs: DesertSpawnRun[] = [];
+        // Path generation
+        for (let z = 0; z <= length; z += step) {
+            const progress = z / length;
+            // Difficulty increases: wavelength decreases from ~400 down to ~120
+            const wavelength = 400 - progress * 280;
 
-        // center will alternate
-        let centerA = Math.random() < 0.5 ? -0.7 : 0.7;
-        let centerB = -centerA;
+            // Add some "character" to the path with a second frequency
+            const baseFreq = (2 * Math.PI) / wavelength;
+            const detailFreq = baseFreq * 2.5;
 
-        for (let z = 0; z < length; z += runLength) {
-            const zEnd = Math.min(z + runLength, length);
+            const xOffset = Math.sin(z * baseFreq) * 0.6 +
+                Math.sin(z * detailFreq) * 0.15;
 
-            [centerA, centerB] = [centerB, centerA];
-
-            // index of phase containing z
-            const zFraction = z / length;
-            const phaseIndex = phases.findLastIndex(phaseStart => zFraction >= phaseStart);
-
-            const obstacles: DesertObstacle[] = [];
-            const varBiased = 0.5;
-
-            switch (phaseIndex) {
-                case 0: {
-                    // Phase 1: Arrival - Easy, bottles and rocks
-                    obstacles.push({ type: 'rock', count: 3, center: centerA, variation: varBiased, onShore: false });
-                    obstacles.push({ type: 'bottle', count: 3, center: centerB, variation: varBiased, onShore: false });
-                    break;
-                }
-                case 1: {
-                    // Phase 2: Shore Life - Monkeys on shore, rocks/bottles in water
-                    obstacles.push({ type: 'rock', count: 2, center: centerA, variation: varBiased, onShore: false });
-                    obstacles.push({ type: 'bottle', count: 2, center: centerA, variation: varBiased, onShore: false });
-                    obstacles.push({ type: 'monkey', count: 3, center: centerA, variation: varBiased, onShore: true });
-                    break;
-                }
-                case 2: {
-                    // Phase 3: The Crossing - Clustering, hippos
-                    obstacles.push({ type: 'rock', count: 1, center: centerA, variation: varBiased, onShore: false });
-                    obstacles.push({ type: 'bottle', count: 1, center: centerA, variation: varBiased, onShore: false });
-                    obstacles.push({ type: 'hippo', count: 2, center: centerB, variation: varBiased, onShore: false });
-                    break;
-                }
-                case 3: {
-                    // Phase 4: The Gauntlet - Higher density, alligators
-                    obstacles.push({ type: 'rock', count: 1, center: centerA, variation: varBiased, onShore: false });
-                    obstacles.push({ type: 'bottle', count: 1, center: centerA, variation: varBiased, onShore: false });
-                    obstacles.push({ type: 'hippo', count: 1, center: centerA, variation: varBiased, onShore: false });
-                    obstacles.push({ type: 'gator', count: 2, center: centerA, variation: varBiased, onShore: true });
-                    break;
-                }
-                case 4: {
-                    // Phase 5: bottles and depot
-                    break;
-                }
-            }
-
-            runs.push({
-                zOffsetStart: z,
-                zOffsetEnd: zEnd,
-                obstacles
-            });
+            // Clamp to [-0.75, 0.75] to avoid hitting banks
+            const clampedX = Math.max(-0.75, Math.min(0.75, xOffset));
+            path.push({ zOffset: z, xOffset: clampedX });
         }
 
-        return { runs };
+        // Sectioning based on bank proximity (extrema)
+        let sectionStart = 0;
+
+        for (let i = 1; i < path.length - 1; i++) {
+            const prev = path[i - 1].xOffset;
+            const curr = path[i].xOffset;
+            const next = path[i + 1].xOffset;
+
+            const isLocalMax = curr > prev && curr > next;
+            const isLocalMin = curr < prev && curr < next;
+            const sectionOffset = path[i].zOffset;
+            const sectionLen = sectionOffset - sectionStart;
+
+            // Split at extrema or if too long
+            if ((isLocalMax || isLocalMin) || sectionLen > 250) {
+                // Ensure section is at least a minimum length to be meaningful
+                if (sectionLen > 50) {
+                    sections.push(this.populateSection(sectionStart, sectionOffset, path));
+                    sectionStart = sectionOffset;
+                }
+            }
+        }
+
+        // Final section
+        if (sectionStart < length) {
+            sections.push(this.populateSection(sectionStart, length, path));
+        }
+
+        return { path, sections };
+    }
+
+    private populateSection(zStart: number, zEnd: number, path: PathPoint[]): DesertSection {
+        const sectionLen = zEnd - zStart;
+
+        const animalTypes: ('gator' | 'hippo' | 'monkey' | 'none')[] = ['gator', 'hippo', 'monkey', 'none'];
+        const animalType = animalTypes[Math.floor(Math.random() * animalTypes.length)];
+
+        const placements: Partial<Record<DesertEntityType, ObstaclePlacement[]>> = {
+            'rock': [],
+            'bottle': []
+        };
+
+        // --- Rock Barriers ---
+        const rockSpacing = animalType === 'none' ? 30 : 60;
+        const rockCount = Math.max(1, Math.floor(sectionLen / rockSpacing));
+        for (let j = 0; j < rockCount; j++) {
+            const lZ = zStart + Math.random() * sectionLen;
+            const pathX = this.getPathOffset(path, lZ);
+            const range: [number, number] = pathX < 0.0 ? [pathX + 0.1, 0.5] : [-0.5, pathX - 0.1];
+            placements['rock']!.push({ lZ, range });
+        }
+
+        // --- Animals ---
+        if (animalType !== 'none') {
+            placements[animalType] = [];
+            const animalSpacing = 40;
+            const animalCount = Math.floor(sectionLen / animalSpacing) + (Math.random() < 0.2 ? 1 : 0);
+            for (let j = 0; j < animalCount; j++) {
+                const lZ = zStart + Math.random() * sectionLen;
+                const pathX = this.getPathOffset(path, lZ);
+                const side = pathX < 0.0 ? 1.0 : -1.0;
+
+                if (animalType === 'hippo') {
+                    placements['hippo']!.push({ lZ, range: [side * 0.7 - 0.15, side * 0.7 + 0.15] });
+                } else {
+                    const range: [number, number] = side > 0 ? [0.9, 2.0] : [-2.0, -0.9];
+                    placements[animalType]!.push({ lZ, range });
+                }
+            }
+        }
+
+        // --- Bottles ---
+        const bottleSpacing = 50;
+        const bottleCount = Math.floor(sectionLen / bottleSpacing);
+        for (let j = 0; j < bottleCount; j++) {
+            const lZ = zStart + Math.random() * sectionLen;
+            const pathX = this.getPathOffset(path, lZ);
+            placements['bottle']!.push({ lZ, range: [pathX - 0.1, pathX + 0.1] });
+        }
+
+        return {
+            zStart,
+            zEnd,
+            placements
+        };
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
@@ -127,72 +174,88 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         }
     }
 
+    // e.g. if we enter biome at -10 and are at -12 then returns 2
+    private worldToLayoutZ(worldZ: number, entranceZ: number): number {
+        return entranceZ - worldZ;
+    }
+
+    // e.g. if we enter biome at -10 and are at 2 then returns -12
+    private layoutToWorldZ(layoutZ: number, entranceZ: number): number {
+        return entranceZ - layoutZ;
+    }
+
+    private getPathOffset(points: PathPoint[], zOffset: number): number {
+        if (points.length === 0) return 0;
+
+        // Binary search for zOffset in an ascending array [0, 10, 20, ...]
+        let low = 0;
+        let high = points.length - 1;
+        while (low <= high) {
+            const mid = Math.floor((low + high) / 2);
+            if (points[mid].zOffset === zOffset) return points[mid].xOffset;
+            if (points[mid].zOffset < zOffset) low = mid + 1;
+            else high = mid - 1;
+        }
+
+        if (high < 0) return points[0].xOffset;
+        if (low >= points.length) return points[points.length - 1].xOffset;
+
+        const p1 = points[high];
+        const p2 = points[low];
+        const t = (zOffset - p1.zOffset) / (p2.zOffset - p1.zOffset);
+        return p1.xOffset + t * (p2.xOffset - p1.xOffset);
+    }
+
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
         const biomeEntranceZ = Math.max(context.biomeZStart, context.biomeZEnd);
         const biomeExitZ = Math.min(context.biomeZStart, context.biomeZEnd);
         const layout = context.biomeLayout as DesertBiomeLayout;
 
-        // Current segment boundaries in world Z
-        const segmentMinZ = Math.min(zStart, zEnd);
-        const segmentMaxZ = Math.max(zStart, zEnd);
+        const layoutZStart = this.worldToLayoutZ(zStart, biomeEntranceZ);
+        const layoutZEnd = this.worldToLayoutZ(zEnd, biomeEntranceZ);
+        const layoutMinZ = Math.min(layoutZStart, layoutZEnd);
+        const layoutMaxZ = Math.max(layoutZStart, layoutZEnd);
 
-        // Find all runs that overlap with this chunk segment [segmentMinZ, segmentMaxZ]
-        for (const run of layout.runs) {
-            // run.zOffsetStart/End are distances from biomeEntranceZ (usually negative Z)
-            // So world Z for run is: biomeEntranceZ - offset (since boat moves to negative Z)
-            const runMaxZ = biomeEntranceZ - run.zOffsetStart; // Closer to 0
-            const runMinZ = biomeEntranceZ - run.zOffsetEnd;   // Further from 0
-
-            // Intersection of segment [segmentMinZ, segmentMaxZ] and run [runMinZ, runMaxZ]
-            const intersectMinZ = Math.max(segmentMinZ, runMinZ);
-            const intersectMaxZ = Math.min(segmentMaxZ, runMaxZ);
-
-            if (intersectMinZ < intersectMaxZ) {
-                const intersectLength = intersectMaxZ - intersectMinZ;
-
-                const runLength = run.zOffsetEnd - run.zOffsetStart;
-                for (const obstacle of run.obstacles) {
-                    // expectedCount is total count for the run * fraction of run in this segment
-                    const expectedCount = (intersectLength / runLength) * obstacle.count;
-                    const count = Math.floor(expectedCount) + (Math.random() < (expectedCount % 1) ? 1 : 0);
-
-                    for (let n = 0; n < count; n++) {
-                        const z = intersectMinZ + Math.random() * intersectLength * 0.5;
-
-                        switch (obstacle.type) {
-                            case 'rock': {
-                                await this.rockSpawner.spawnInRiver(context, z, { center: obstacle.center, variation: obstacle.variation });
+        // 1. Process Sections
+        for (const section of layout.sections) {
+            // Find intersection between segment and section in Layout Space
+            const isOverlap = layoutMinZ < section.zEnd && layoutMaxZ > section.zStart;
+            if (isOverlap) {
+                for (const [type, placements] of Object.entries(section.placements)) {
+                    if (!placements) continue;
+                    for (const p of placements) {
+                        if (p.lZ < layoutMinZ || p.lZ >= layoutMaxZ) continue;
+                        const worldZ = this.layoutToWorldZ(p.lZ, biomeEntranceZ);
+                        switch (type as DesertEntityType) {
+                            case 'rock':
+                                await this.rockSpawner.spawnInRiver(context, worldZ, { range: p.range });
                                 break;
-                            }
-                            case 'bottle': {
-                                await this.bottleSpawner.spawnInRiver(context, z, { center: obstacle.center, variation: obstacle.variation });
+                            case 'bottle':
+                                await this.bottleSpawner.spawnInRiver(context, worldZ, { range: p.range });
                                 break;
-                            }
-                            case 'monkey': {
-                                await this.monkeySpawner.spawnAnimal(context, z, obstacle.center, obstacle.variation, obstacle.onShore);
+                            case 'gator':
+                                await this.alligatorSpawner.spawnAnimal(context, worldZ, p.range);
                                 break;
-                            }
-                            case 'hippo': {
-                                await this.hippoSpawner.spawnInRiver(context, z, false, { center: obstacle.center, variation: obstacle.variation });
+                            case 'monkey':
+                                await this.monkeySpawner.spawnAnimal(context, worldZ, p.range);
                                 break;
-                            }
-                            case 'gator': {
-                                await this.alligatorSpawner.spawnAnimal(context, z, obstacle.center, obstacle.variation, obstacle.onShore);
+                            case 'hippo':
+                                await this.hippoSpawner.spawnInRiver(context, worldZ, false, { range: p.range });
                                 break;
-                            }
                         }
                     }
                 }
             }
         }
 
-        // Phase 5: The Destination - Pier at t=0.9
-        const pierT = 0.9;
+        // 3. Pier & Dock (End of biome)
+        const pierT = 0.95;
         const pierZ = biomeEntranceZ + pierT * (biomeExitZ - biomeEntranceZ);
+        const segmentMinWorldZ = Math.min(zStart, zEnd);
+        const segmentMaxWorldZ = Math.max(zStart, zEnd);
 
-        if (segmentMinZ <= pierZ && pierZ < segmentMaxZ) {
+        if (segmentMinWorldZ <= pierZ && pierZ < segmentMaxWorldZ) {
             await this.pierSpawner.spawnAt(context, pierZ, true);
-            await this.bottleSpawner.spawnRiverBottleArc(context, 6, pierZ, 15);
         }
     }
 }

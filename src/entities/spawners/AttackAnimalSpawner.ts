@@ -50,18 +50,18 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
     }
 
     /**
-     *  Spawns an animal instance with center/variation and preference
-     * for shore or not.
+     * Spawns an animal. If the range is outside of [-1,1] first tries to
+     * spawn on shore. Only one of the two limits should be outside.
      */
-    async spawnAnimal(context: SpawnContext, z: number, center: number, variation: number,
-        preferShore: boolean): Promise<boolean> {
+    async spawnAnimal(context: SpawnContext, z: number, range: [number, number]): Promise<boolean> {
         let spawned = false;
-        if (preferShore) {
-            const side = center > 0 ? 1 : -1;
-            await this.spawnOnShore(context, z, false, { side });
+        if (range[0] < -1) {
+            spawned = await this.spawnOnShore(context, z, false, { side: -1 });
+        } else if (range[1] > 1) {
+            spawned = await this.spawnOnShore(context, z, false, { side: 1 });
         }
         if (!spawned)
-            spawned = await this.spawnInRiver(context, z, false, { center, variation });
+            spawned = await this.spawnInRiver(context, z, false, { range: range });
         return spawned;
     }
 
