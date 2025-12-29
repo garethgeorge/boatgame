@@ -13,14 +13,15 @@ import { GraphicsUtils } from '../core/GraphicsUtils';
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
   private loadingChunks: Set<number> = new Set();
-  private collisionMidZ: number = -Infinity;
   private collisionBodies: planck.Body[] = [];
   private collisionMeshes: THREE.Mesh[] = [];
 
   private riverSystem: RiverSystem;
 
-  private readonly collisionRadius = 150; // Radius around boat to generate collision
+  private readonly collisionRadius = 300; // Radius around boat to generate collision
   private readonly collisionStep = 5; // Step size for collision segments
+  private readonly collisionUpdate = this.collisionStep * 10; // Step for updating segments
+  private collisionStartZ: number = -Infinity; // Current start position of generating segments
 
   constructor(
     private physicsEngine: PhysicsEngine,
@@ -180,13 +181,10 @@ export class TerrainManager {
 
   private updateCollision(boatZ: number) {
     // Generate collision segments around the boat
-    const startZ = Math.floor((boatZ - this.collisionRadius) / this.collisionStep) * this.collisionStep;
-    const endZ = Math.ceil((boatZ + this.collisionRadius) / this.collisionStep) * this.collisionStep;
+    const startZ = Math.floor((boatZ - this.collisionRadius) / this.collisionUpdate) * this.collisionUpdate;
+    const endZ = Math.ceil((boatZ + this.collisionRadius) / this.collisionUpdate) * this.collisionUpdate;
 
-    // Regenerate when the new collision segment range is too far off
-    const midZ = (startZ + endZ) / 2;
-    if (Math.abs(midZ - this.collisionMidZ) < 50.0) return;
-    this.collisionMidZ = midZ;
+    if (startZ === this.collisionStartZ) return;
 
     // Clear old collision bodies
     this.collisionBodies.forEach(b => this.physicsEngine.world.destroyBody(b));
