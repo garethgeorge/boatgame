@@ -33,7 +33,7 @@ export class MessageInABottleSpawner extends BaseSpawner {
       const pos = context.placementHelper.tryPlace(bz, bz, 1.0, { range: [-0.2, 0.2] });
       if (pos) {
         const bottle = new MessageInABottle(pos.x, pos.z, context.physicsEngine, 0x00FF88, 50);
-        context.entityManager.add(bottle, context.chunkIndex);
+        context.entityManager.add(bottle);
       }
     }
   }
@@ -46,7 +46,7 @@ export class MessageInABottleSpawner extends BaseSpawner {
     const pos = context.placementHelper.tryPlace(z, z, 1.0, opts);
     if (pos) {
       const bottle = new MessageInABottle(pos.x, pos.z, context.physicsEngine);
-      context.entityManager.add(bottle, context.chunkIndex);
+      context.entityManager.add(bottle);
       return true;
     }
     return false;
@@ -74,7 +74,7 @@ export class MessageInABottleSpawner extends BaseSpawner {
       // But better to check?
       // Let's just place them.
       const entity = new MessageInABottle(currentCenter + offsetX, currentZ, context.physicsEngine, 0x0088FF, 50);
-      context.entityManager.add(entity, context.chunkIndex);
+      context.entityManager.add(entity);
     }
   }
 }

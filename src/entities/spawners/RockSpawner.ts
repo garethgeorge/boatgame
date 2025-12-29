@@ -31,7 +31,7 @@ export class RockSpawner extends BaseSpawner {
     const pos = context.placementHelper.tryPlace(z, z, radius, opts);
     if (pos) {
       const rock = new RiverRock(pos.x, pos.z, radius, pillars, biome, context.physicsEngine);
-      context.entityManager.add(rock, context.chunkIndex);
+      context.entityManager.add(rock);
       return true;
     }
     return false;

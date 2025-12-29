@@ -31,7 +31,8 @@ export class IcebergSpawner extends BaseSpawner {
     if (pos) {
 
       const iceberg = new Iceberg(pos.x, pos.z, radius, hasBear, context.physicsEngine);
-      context.entityManager.add(iceberg, context.chunkIndex);
+      context.entityManager.add(iceberg);
+
       return true;
     }
     return false;

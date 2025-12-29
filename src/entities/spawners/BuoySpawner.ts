@@ -45,7 +45,7 @@ export class BuoySpawner extends BaseSpawner {
       wasHitByPlayer() { }
     }
     const anchorEntity = new AnchorEntity(anchorBody);
-    context.entityManager.add(anchorEntity, context.chunkIndex);
+    context.entityManager.add(anchorEntity);
 
     let prevBody = anchorBody;
     for (let j = 1; j <= buoyCount; j++) {
@@ -57,7 +57,7 @@ export class BuoySpawner extends BaseSpawner {
       context.placementHelper.registerPlacement(bx, wz + jitterZ, 1.0);
 
       const buoy = new Buoy(bx, wz + jitterZ, context.physicsEngine);
-      context.entityManager.add(buoy, context.chunkIndex);
+      context.entityManager.add(buoy);
 
       const joint = planck.DistanceJoint({
         frequencyHz: 2.0,

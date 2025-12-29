@@ -98,7 +98,7 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
                     angle
                 });
                 if (entity)
-                    context.entityManager.add(entity, context.chunkIndex);
+                    context.entityManager.add(entity);
             }
             return true;
         }
@@ -129,7 +129,7 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
                 stayOnShore
             });
             if (entity) {
-                context.entityManager.add(entity, context.chunkIndex);
+                context.entityManager.add(entity);
                 return true;
             }
         }

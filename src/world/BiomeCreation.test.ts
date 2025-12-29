@@ -28,7 +28,7 @@ const mockGraphicsEngine = {
 
 const mockObstacleManager = {
     spawnObstaclesForChunk: vi.fn(),
-    removeObstaclesForChunk: vi.fn(),
+    removeInRange: vi.fn(),
 } as unknown as ObstacleManager;
 
 describe('TerrainManager', () => {

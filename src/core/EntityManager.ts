@@ -10,9 +10,6 @@ export class EntityManager {
 
   debugMode: boolean = false;
 
-  private chunkEntities: Map<number, Set<Entity>> = new Map();
-  private entityToChunk: Map<Entity, number> = new Map();
-
   constructor(physicsEngine: PhysicsEngine, graphicsEngine: GraphicsEngine) {
     this.physicsEngine = physicsEngine;
     this.graphicsEngine = graphicsEngine;
@@ -35,16 +32,8 @@ export class EntityManager {
 
   // Note: only pass null for entities that should never be
   // removed from the scene.
-  add(entity: Entity, chunkId: number | null) {
+  add(entity: Entity) {
     this.entities.add(entity);
-
-    if (chunkId !== null) {
-      if (!this.chunkEntities.has(chunkId)) {
-        this.chunkEntities.set(chunkId, new Set());
-      }
-      this.chunkEntities.get(chunkId)!.add(entity);
-      this.entityToChunk.set(entity, chunkId);
-    }
 
     // Planck bodies are added to world upon creation, so no need to add here.
     for (const mesh of entity.meshes) {
@@ -63,19 +52,6 @@ export class EntityManager {
     if (this.entities.has(entity)) {
       this.entities.delete(entity);
 
-      // Remove from chunk tracking
-      if (this.entityToChunk.has(entity)) {
-        const chunkId = this.entityToChunk.get(entity)!;
-        const chunkSet = this.chunkEntities.get(chunkId);
-        if (chunkSet) {
-          chunkSet.delete(entity);
-          if (chunkSet.size === 0) {
-            this.chunkEntities.delete(chunkId);
-          }
-        }
-        this.entityToChunk.delete(entity);
-      }
-
       for (const body of entity.physicsBodies) {
         this.physicsEngine.world.destroyBody(body);
       }
@@ -92,16 +68,28 @@ export class EntityManager {
     }
   }
 
-  removeChunk(chunkId: number) {
-    const chunkSet = this.chunkEntities.get(chunkId);
-    if (chunkSet) {
-      // Create a copy to iterate safely while removing
-      const entitiesToRemove = Array.from(chunkSet);
-      for (const entity of entitiesToRemove) {
-        this.remove(entity);
+  removeEntitiesInRange(zMin: number, zMax: number) {
+    // chunk width is 400 so 10000 should be more than enough
+    const aabb = {
+      lowerBound: planck.Vec2(-10000, zMin),
+      upperBound: planck.Vec2(10000, zMax)
+    };
+
+    const entitiesToRemove = new Set<Entity>();
+    this.physicsEngine.world.queryAABB(aabb, (fixture) => {
+      const body = fixture.getBody();
+      const userData = body.getUserData() as any;
+      if (userData && userData.entity && userData.type !== 'player') {
+        entitiesToRemove.add(userData.entity);
       }
-      this.chunkEntities.delete(chunkId);
+      return true; // continue query
+    });
+
+    for (const entity of entitiesToRemove) {
+      this.remove(entity);
     }
+
+    console.log('Removed entities:', entitiesToRemove.size, 'current:', this.entities.size);
   }
 
   savePreviousState() {

@@ -20,7 +20,8 @@ export class DucklingSpawner extends BaseSpawner {
             if (pos) {
                 const angle = Math.random() * Math.PI * 2;
                 const entity = new Duckling(pos.x, pos.z, context.physicsEngine, angle);
-                context.entityManager.add(entity, context.chunkIndex);
+                context.entityManager.add(entity);
+
             }
         }
     }

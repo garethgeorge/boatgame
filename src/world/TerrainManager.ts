@@ -123,7 +123,7 @@ export class TerrainManager {
       }
     }
 
-    // Remove old chunks, slightly wider apture else chunks can be
+    // Remove old chunks, slightly wider aperture else chunks can be
     // created and immediately destroyed if the boat is sitting close
     // to a boundary
     for (const [index, chunk] of this.chunks) {
@@ -132,8 +132,28 @@ export class TerrainManager {
         chunk.dispose();
         this.chunks.delete(index);
 
-        // Remove obstacles for this chunk
-        this.obstacleManager.removeObstaclesForChunk(index);
+        // Calculate the range to remove. The range should extend to the boundaries
+        // of the nearest existing chunks.
+        // Find nearest existing indices
+        const existingIndices = Array.from(this.chunks.keys()).sort((a, b) => a - b);
+        const lowerIdx = existingIndices.slice().reverse().find(i => i < index);
+        const upperIdx = existingIndices.find(i => i > index);
+
+        let zMin = 0;
+        if (lowerIdx !== undefined) {
+          zMin = (lowerIdx + 1) * TerrainChunk.CHUNK_SIZE;
+        } else {
+          zMin = index * TerrainChunk.CHUNK_SIZE - 1000; // Far enough
+        }
+
+        let zMax = 0;
+        if (upperIdx !== undefined) {
+          zMax = upperIdx * TerrainChunk.CHUNK_SIZE;
+        } else {
+          zMax = (index + 1) * TerrainChunk.CHUNK_SIZE + 1000; // Far enough
+        }
+
+        this.obstacleManager.removeInRange(zMin, zMax);
       }
     }
 

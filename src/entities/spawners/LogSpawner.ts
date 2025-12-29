@@ -27,7 +27,8 @@ export class LogSpawner extends BaseSpawner {
     const pos = context.placementHelper.tryPlace(z, z, length / 2, opts);
     if (pos) {
       const log = new Log(pos.x, pos.z, length, context.physicsEngine);
-      context.entityManager.add(log, context.chunkIndex);
+      context.entityManager.add(log);
+
       return true;
     }
     return false;

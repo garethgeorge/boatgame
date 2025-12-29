@@ -75,6 +75,9 @@ If an object is cached rather than being added to the scene graph be sure to mar
   - It interpolates position and angle using `prevPos` and `prevAngle`.
   - It maps Physics Y -> Graphics Z.
 - **Debug Meshes**: Entities can implement `ensureDebugMeshes()` to visualize physics bodies.
+- **Physics Bodies**: Every entity MUST have at least one physics body.
+- **User Data**: Every physics body MUST have its user data set to include a reference to the entity: `physicsBody.setUserData({ ..., entity: this })`. This is required for physics-based entity removal.
+
 
 ### 3. Toon Shading & Visuals
 **File**: `src/core/GraphicsUtils.ts`

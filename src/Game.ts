@@ -136,7 +136,7 @@ export class Game {
 
         // Create Boat
         this.boat = new Boat(0, 0, this.physicsEngine);
-        this.entityManager.add(this.boat, null);
+        this.entityManager.add(this.boat);
 
         // Initial update to generate terrain around boat
         // This will now also trigger obstacle spawning via TerrainManager

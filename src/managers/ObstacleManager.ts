@@ -56,7 +56,7 @@ export class ObstacleManager {
   }
 
   // Called by TerrainManager when a chunk is disposed
-  removeObstaclesForChunk(chunkIndex: number) {
-    this.entityManager.removeChunk(chunkIndex);
+  removeInRange(zMin: number, zMax: number) {
+    this.entityManager.removeEntitiesInRange(zMin, zMax);
   }
 }

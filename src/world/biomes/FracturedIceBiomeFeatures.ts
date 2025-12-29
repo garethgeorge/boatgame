@@ -39,7 +39,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
     // Cache the material
     private static iceMaterial: THREE.Material | null = null;
-    
+
     getGroundColor(): { r: number, g: number, b: number } {
         // slightly bluer/darker water under ice? 
         // actually this is ground color (river bed). Ice biome uses white-ish.
@@ -58,12 +58,12 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         // Ice biome was 2.3. Fractured ice needs space.
         return 5.0;
     }
-    
+
     getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
         const colors = super.getSkyColors(dayness);
         if (dayness > 0) {
-            const iceTopMod = new THREE.Color(0xddeeff); 
-            const iceBotMod = new THREE.Color(0xffffff); 
+            const iceTopMod = new THREE.Color(0xddeeff);
+            const iceBotMod = new THREE.Color(0xffffff);
             colors.top.lerp(iceTopMod, 0.8);
             colors.bottom.lerp(iceBotMod, 0.8);
         }
@@ -76,34 +76,34 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
         // Reduced density slightly since elongated cells cover more Z space effectively?
         // Or keep same. Let's keep same for now.
-        let numSeeds = Math.floor(length / 8); 
+        let numSeeds = Math.floor(length / 8);
         const maxAttempts = 20;
 
         // Anisotropic scaling factor. 
         // 0.4 means Z is compressed 2.5x.
-        const zScale = 0.4; 
+        const zScale = 0.4;
 
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
             // Adjust shrink factor logic if needed. 
             // With elongated cells, gaps are anisotropic too.
             const shrinkFactor = Math.max(0.4, 0.85 - (attempt * 0.025));
             console.log(`[FracturedIce] Attempt ${attempt + 1}: Seeds ${numSeeds} | Shrink ${shrinkFactor.toFixed(2)}`);
-            
+
             // 1. Generate Seeds
             const boundsX = 220;
             const seeds: Point[] = [];
-            
+
             for (let i = 0; i < numSeeds; i++) {
                 const z = Math.random() * length;
                 const worldZ = z + zStart;
-                
+
                 const banks = riverSystem.getBankPositions(worldZ);
                 const width = banks.right - banks.left;
-                
-                const padding = width * 0.1; 
+
+                const padding = width * 0.1;
                 const safeWidth = width - 2 * padding;
                 const x = banks.left + padding + Math.random() * safeWidth;
-                
+
                 seeds.push({ x, y: z });
             }
 
@@ -131,13 +131,13 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         }
 
         console.warn("[FracturedIce] Failed to generate navigable layout after max attempts.");
-        return { cells: [] }; 
+        return { cells: [] };
     }
 
     private computeVoronoi(scaledSeeds: Point[], realSeeds: Point[], delaunay: Delaunator, length: number, boundsX: number, zScale: number) {
         // Reconstruct Voronoi cells from Delaunay
-        
-        const edges: { a: number, b: number, width: number }[] = []; 
+
+        const edges: { a: number, b: number, width: number }[] = [];
 
         const circumcenters: Point[] = [];
         const triangles = delaunay.triangles;
@@ -147,11 +147,11 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
             const i = triangles[3 * t];
             const j = triangles[3 * t + 1];
             const k = triangles[3 * t + 2];
-            
+
             const p1 = scaledSeeds[i];
             const p2 = scaledSeeds[j];
             const p3 = scaledSeeds[k];
-            
+
             circumcenters.push(this.getCircumcenter(p1, p2, p3));
         }
 
@@ -165,20 +165,20 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
         for (let e = 0; e < delaunay.halfedges.length; e++) {
             const eNext = delaunay.halfedges[e];
-            if (eNext < e) continue; 
+            if (eNext < e) continue;
 
             const t1 = Math.floor(e / 3);
             const t2 = Math.floor(eNext / 3);
 
-            if (t1 === -1 || t2 === -1) continue; 
+            if (t1 === -1 || t2 === -1) continue;
 
             const seedAIdx = triangles[e];
-            const seedBIdx = triangles[(e % 3 === 2) ? e - 2 : e + 1]; 
-            
+            const seedBIdx = triangles[(e % 3 === 2) ? e - 2 : e + 1];
+
             // Use REAL seeds for physical width calculation
             const seedA = realSeeds[seedAIdx];
             const seedB = realSeeds[seedBIdx];
-            
+
             const dist = Math.sqrt(Math.pow(seedA.x - seedB.x, 2) + Math.pow(seedA.y - seedB.y, 2));
 
             graphEdges.push({
@@ -191,33 +191,33 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         }
 
         const cellPolygons: Point[][] = new Array(scaledSeeds.length).fill(null).map(() => []);
-        
+
         const endpointToIncomingHalfedge = new Int32Array(scaledSeeds.length).fill(-1);
         for (let e = 0; e < delaunay.triangles.length; e++) {
             const endpoint = delaunay.triangles[this.nextHalfedge(e)];
             if (endpointToIncomingHalfedge[endpoint] === -1 || delaunay.halfedges[e] === -1) {
-                 endpointToIncomingHalfedge[endpoint] = e;
+                endpointToIncomingHalfedge[endpoint] = e;
             }
         }
-        
+
         for (let i = 0; i < scaledSeeds.length; i++) {
             const start = endpointToIncomingHalfedge[i];
-            if (start === -1) continue; 
-            
+            if (start === -1) continue;
+
             let e = start;
             const poly: Point[] = [];
-            
+
             do {
                 const t = Math.floor(e / 3);
                 // Use unscaled graph nodes
-                poly.push(graphNodes[t]); 
-                
-                const nextE = this.nextHalfedge(e); 
-                if (delaunay.halfedges[nextE] === -1) break; 
+                poly.push(graphNodes[t]);
+
+                const nextE = this.nextHalfedge(e);
+                if (delaunay.halfedges[nextE] === -1) break;
                 e = delaunay.halfedges[nextE];
-                
+
             } while (e !== start);
-            
+
             if (e === start && poly.length > 2) {
                 cellPolygons[i] = poly;
             } else {
@@ -229,7 +229,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
             cells: realSeeds.map((s, i) => ({
                 seed: s,
                 polygon: cellPolygons[i],
-                centroid: s 
+                centroid: s
             })).filter(c => c.polygon.length > 0),
             graphNodes,
             graphEdges
@@ -240,7 +240,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         // Build Adjacency List
         const adj: Map<number, number[]> = new Map();
         const nodes = voronoi.graphNodes as Point[];
-        const edges = voronoi.graphEdges as {u: number, v: number, width: number}[];
+        const edges = voronoi.graphEdges as { u: number, v: number, width: number }[];
 
         // Filter Navigable Edges
         let edgesTotal = edges.length;
@@ -252,7 +252,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
             // 1. Channel Width
             // Width of channel = Distance between seeds (e.width) * (1 - shrinkFactor)
             // Example: Dist 10, Shrink 0.7 -> Gap = 10 * 0.3 = 3.
-            
+
             const gap = e.width * (1.0 - shrinkFactor);
             if (gap < boatWidth) {
                 edgesWidth++;
@@ -262,7 +262,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
             // 2. Bank Intersection
             const p1 = nodes[e.u];
             const p2 = nodes[e.v];
-            
+
             // Check if points are in river
             // We check local Z + zStart
             if (!this.isInRiver(p1, riverSystem, zStart) || !this.isInRiver(p2, riverSystem, zStart)) {
@@ -281,7 +281,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
         const startNodes: number[] = [];
         const endNodes: Set<number> = new Set();
-        
+
         for (let i = 0; i < nodes.length; i++) {
             const z = nodes[i].y;
             if (z < 30 && this.isInRiver(nodes[i], riverSystem, zStart)) startNodes.push(i);
@@ -324,7 +324,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
     private getCircumcenter(a: Point, b: Point, c: Point): Point {
         const d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
-        if (Math.abs(d) < 1e-6) return { x: (a.x+b.x+c.x)/3, y: (a.y+b.y+c.y)/3 }; // Collinear/Zero area fallback
+        if (Math.abs(d) < 1e-6) return { x: (a.x + b.x + c.x) / 3, y: (a.y + b.y + c.y) / 3 }; // Collinear/Zero area fallback
         const ux = ((a.x * a.x + a.y * a.y) * (b.y - c.y) + (b.x * b.x + b.y * b.y) * (c.y - a.y) + (c.x * c.x + c.y * c.y) * (a.y - b.y)) / d;
         const uy = ((a.x * a.x + a.y * a.y) * (c.x - b.x) + (b.x * b.x + b.y * b.y) * (a.x - c.x) + (c.x * c.x + c.y * c.y) * (b.x - a.x)) / d;
         return { x: ux, y: uy };
@@ -336,25 +336,25 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-       const boundarySize = 50.0;
-       
-       const fracturedStart = context.biomeZStart + boundarySize;
-       const fracturedEnd = context.biomeZEnd - boundarySize;
+        const boundarySize = 50.0;
 
-       // 1. Spawn dynamic icebergs from layout
-       const layout = context.biomeLayout;
-       
-       if (layout && layout.cells) {
+        const fracturedStart = context.biomeZStart + boundarySize;
+        const fracturedEnd = context.biomeZEnd - boundarySize;
+
+        // 1. Spawn dynamic icebergs from layout
+        const layout = context.biomeLayout;
+
+        if (layout && layout.cells) {
             // Filter cells that are within the current chunk (zStart, zEnd)
             // AND are within the fractured ice region (fracturedStart, fracturedEnd)
-            
+
             const cells = (layout.cells as VoronoiCell[]).filter(c => {
-                const worldZ = c.centroid.y + context.biomeZStart; 
+                const worldZ = c.centroid.y + context.biomeZStart;
                 if (worldZ < zStart || worldZ >= zEnd) return false;
                 if (worldZ < fracturedStart || worldZ > fracturedEnd) return false;
                 return true;
             });
-            
+
             const shrinkFactor = layout.shrinkFactor || 0.7;
 
             for (const cell of cells) {
@@ -364,8 +364,8 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
                 const cx = cell.centroid.x;
                 const cy = cell.centroid.y;
 
-                const relativeVertices: {x: number, y: number}[] = [];
-                
+                const relativeVertices: { x: number, y: number }[] = [];
+
                 for (const p of poly) {
                     const px = cx + (p.x - cx) * shrinkFactor;
                     const py = cy + (p.y - cy) * shrinkFactor;
@@ -373,31 +373,31 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
                 }
 
                 const worldX = cx;
-                const worldZ = cy + context.biomeZStart; 
+                const worldZ = cy + context.biomeZStart;
 
                 const iceberg = new FracturedIceberg(worldX, worldZ, relativeVertices, context.physicsEngine);
-                context.entityManager.add(iceberg, context.chunkIndex);
+                context.entityManager.add(iceberg);
             }
-       }
+        }
 
-       // 2. Spawn Standard Boundary Icebergs
-       // Start Boundary
-       const startOverlapStart = Math.max(zStart, context.biomeZStart);
-       const startOverlapEnd = Math.min(zEnd, fracturedStart);
-       if (startOverlapStart < startOverlapEnd) {
-           await this.icebergSpawner.spawn(context, Math.ceil((startOverlapEnd - startOverlapStart)/10), startOverlapStart, startOverlapEnd);
-       }
+        // 2. Spawn Standard Boundary Icebergs
+        // Start Boundary
+        const startOverlapStart = Math.max(zStart, context.biomeZStart);
+        const startOverlapEnd = Math.min(zEnd, fracturedStart);
+        if (startOverlapStart < startOverlapEnd) {
+            await this.icebergSpawner.spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd);
+        }
 
-       // End Boundary
-       const endOverlapStart = Math.max(zStart, fracturedEnd);
-       const endOverlapEnd = Math.min(zEnd, context.biomeZEnd);
-       if (endOverlapStart < endOverlapEnd) {
-           await this.icebergSpawner.spawn(context, Math.ceil((endOverlapEnd - endOverlapStart)/10), endOverlapStart, endOverlapEnd);
-       }
+        // End Boundary
+        const endOverlapStart = Math.max(zStart, fracturedEnd);
+        const endOverlapEnd = Math.min(zEnd, context.biomeZEnd);
+        if (endOverlapStart < endOverlapEnd) {
+            await this.icebergSpawner.spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd);
+        }
 
-       // 3. Spawn bears/penguins
-       await this.spawnObstacle(this.penguinKayakSpawner, context, difficulty, zStart, zEnd);
-       await this.spawnObstacle(this.polarBearSpawner, context, difficulty, zStart, zEnd);
+        // 3. Spawn bears/penguins
+        await this.spawnObstacle(this.penguinKayakSpawner, context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(this.polarBearSpawner, context, difficulty, zStart, zEnd);
     }
 
     private nextHalfedge(e: number): number {

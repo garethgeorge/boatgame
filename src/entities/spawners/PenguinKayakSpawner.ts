@@ -19,7 +19,8 @@ export class PenguinKayakSpawner extends BaseSpawner {
         if (pos) {
             const angle = Math.random() * Math.PI * 2;
             const entity = new PenguinKayak(pos.x, pos.z, context.physicsEngine, angle);
-            context.entityManager.add(entity, context.chunkIndex);
+            context.entityManager.add(entity);
+
             return true;
         }
         return false;
