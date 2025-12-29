@@ -85,7 +85,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
             if ((isLocalMax || isLocalMin) || sectionLen > 250) {
                 // Ensure section is at least a minimum length to be meaningful
                 if (sectionLen > 50) {
-                    sections.push(this.populateSection(sectionStart, sectionOffset, path));
+                    sections.push(this.populateSection(sectionStart, sectionOffset, path, length));
                     sectionStart = sectionOffset;
                 }
             }
@@ -93,28 +93,53 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
         // Final section
         if (sectionStart < length) {
-            sections.push(this.populateSection(sectionStart, length, path));
+            sections.push(this.populateSection(sectionStart, length, path, length));
         }
 
         return { path, sections };
     }
 
-    private populateSection(zStart: number, zEnd: number, path: PathPoint[]): DesertSection {
-        const sectionLen = zEnd - zStart;
-
-        const animalTypes: ('gator' | 'hippo' | 'monkey' | 'none')[] = ['gator', 'hippo', 'monkey', 'none'];
-        const animalType = animalTypes[Math.floor(Math.random() * animalTypes.length)];
-
+    private populateSection(zStart: number, zEnd: number, path: PathPoint[], biomeLength: number): DesertSection {
         const placements: Partial<Record<DesertEntityType, ObstaclePlacement[]>> = {
             'rock': [],
             'bottle': []
         };
 
+        const cutoffZ = 0.9 * biomeLength;
+        const effectiveZEnd = Math.min(zEnd, cutoffZ);
+        const effectiveLen = effectiveZEnd - zStart;
+
+        // If the section is entirely beyond the cutoff, return empty placements
+        if (effectiveLen <= 0) {
+            return {
+                zStart,
+                zEnd,
+                placements
+            };
+        }
+
+        const progress = (zStart + effectiveZEnd) / (2 * biomeLength);
+
+        // Animal selection: No animals at the start, gradually increasing probability
+        const pNone = Math.max(0, 1.2 - progress * 1.5); // Starts at 1.0 (all 'none'), hits 0.0 at ~0.8 progress
+        let animalType: 'gator' | 'hippo' | 'monkey' | 'none';
+        if (Math.random() < pNone) {
+            animalType = 'none';
+        } else {
+            const types: ('gator' | 'hippo' | 'monkey')[] = ['gator', 'hippo', 'monkey'];
+            animalType = types[Math.floor(Math.random() * types.length)];
+        }
+
         // --- Rock Barriers ---
-        const rockSpacing = animalType === 'none' ? 30 : 60;
-        const rockCount = Math.max(1, Math.floor(sectionLen / rockSpacing));
+        // Scale spacing: ~150 (sparse) at start down to ~30 (dense) at end
+        const baseRockSpacing = 150 - progress * 120;
+        // If there's an animal, increase rock spacing to avoid overcrowding
+        const rockSpacing = animalType === 'none' ? baseRockSpacing : baseRockSpacing * 1.5;
+
+        const rockCount = Math.max(1, Math.floor(effectiveLen / rockSpacing));
+        const rockInterval = effectiveLen / rockCount;
         for (let j = 0; j < rockCount; j++) {
-            const lZ = zStart + Math.random() * sectionLen;
+            const lZ = zStart + (j + Math.random()) * rockInterval;
             const pathX = this.getPathOffset(path, lZ);
             const range: [number, number] = pathX < 0.0 ? [pathX + 0.1, 0.5] : [-0.5, pathX - 0.1];
             placements['rock']!.push({ lZ, range });
@@ -123,29 +148,36 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         // --- Animals ---
         if (animalType !== 'none') {
             placements[animalType] = [];
-            const animalSpacing = 40;
-            const animalCount = Math.floor(sectionLen / animalSpacing) + (Math.random() < 0.2 ? 1 : 0);
-            for (let j = 0; j < animalCount; j++) {
-                const lZ = zStart + Math.random() * sectionLen;
-                const pathX = this.getPathOffset(path, lZ);
-                const side = pathX < 0.0 ? 1.0 : -1.0;
+            // Scale animal spacing: ~100 at start of animal introduction down to ~40
+            const animalSpacing = 100 - progress * 60;
+            const animalCount = Math.floor(effectiveLen / animalSpacing) + (Math.random() < 0.2 ? 1 : 0);
+            if (animalCount > 0) {
+                const animalInterval = effectiveLen / animalCount;
+                for (let j = 0; j < animalCount; j++) {
+                    const lZ = zStart + (j + Math.random()) * animalInterval;
+                    const pathX = this.getPathOffset(path, lZ);
+                    const side = pathX < 0.0 ? 1.0 : -1.0;
 
-                if (animalType === 'hippo') {
-                    placements['hippo']!.push({ lZ, range: [side * 0.7 - 0.15, side * 0.7 + 0.15] });
-                } else {
-                    const range: [number, number] = side > 0 ? [0.9, 2.0] : [-2.0, -0.9];
-                    placements[animalType]!.push({ lZ, range });
+                    if (animalType === 'hippo') {
+                        placements['hippo']!.push({ lZ, range: [side * 0.7 - 0.15, side * 0.7 + 0.15] });
+                    } else {
+                        const range: [number, number] = side > 0 ? [0.9, 2.0] : [-2.0, -0.9];
+                        placements[animalType]!.push({ lZ, range });
+                    }
                 }
             }
         }
 
         // --- Bottles ---
         const bottleSpacing = 50;
-        const bottleCount = Math.floor(sectionLen / bottleSpacing);
-        for (let j = 0; j < bottleCount; j++) {
-            const lZ = zStart + Math.random() * sectionLen;
-            const pathX = this.getPathOffset(path, lZ);
-            placements['bottle']!.push({ lZ, range: [pathX - 0.1, pathX + 0.1] });
+        const bottleCount = Math.floor(effectiveLen / bottleSpacing);
+        if (bottleCount > 0) {
+            const bottleInterval = effectiveLen / bottleCount;
+            for (let j = 0; j < bottleCount; j++) {
+                const lZ = zStart + (j + Math.random()) * bottleInterval;
+                const pathX = this.getPathOffset(path, lZ);
+                placements['bottle']!.push({ lZ, range: [pathX - 0.1, pathX + 0.1] });
+            }
         }
 
         return {
