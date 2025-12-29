@@ -19,6 +19,7 @@ import { MessageInABottle } from './entities/obstacles/MessageInABottle';
 import { Fixture } from 'planck';
 import { GraphicsUtils } from './core/GraphicsUtils';
 import { BaseMangrove } from './entities/obstacles/Mangrove';
+import { DebugConsole } from './core/DebugConsole';
 
 export class Game {
     container: HTMLElement;
@@ -50,6 +51,7 @@ export class Game {
     leakCheckInterval: number = 10.0 * 1000.0; // milli-seconds
     nextLeakCheckTime: number = 0;
     viewMode: 'close' | 'far' = 'close';
+    debugConsoleVisible: boolean = false;
 
     // Collision Handling
     pendingContacts: Map<Entity, { type: string, subtype: any }> = new Map();
@@ -64,6 +66,8 @@ export class Game {
         this.entityManager = new EntityManager(this.physicsEngine, this.graphicsEngine);
         this.inputManager = new InputManager();
         this.clock = new THREE.Clock();
+
+        DebugConsole.init();
 
         // UI
         this.startScreen = document.getElementById('start-screen') as HTMLElement;
@@ -319,6 +323,11 @@ export class Game {
 
         if (this.inputManager.wasPressed('viewMode')) {
             this.viewMode = this.viewMode === 'close' ? 'far' : 'close';
+        }
+
+        if (this.inputManager.wasPressed('debugConsole')) {
+            this.debugConsoleVisible = !this.debugConsoleVisible;
+            DebugConsole.setVisibility(this.debugConsoleVisible);
         }
 
         if (this.inputManager.wasPressed('skipBiome')) {

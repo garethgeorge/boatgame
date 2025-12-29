@@ -76,7 +76,7 @@ export class GameThrottle {
 
             // Ignore if touching UI elements (like instructions)
             const target = e.target as HTMLElement;
-            if (target && target.closest && target.closest('#instructions-overlay')) {
+            if (target && target.closest && (target.closest('#instructions-overlay') || target.closest('#debug-console-overlay'))) {
                 return;
             }
 
@@ -93,7 +93,7 @@ export class GameThrottle {
 
             // Ignore if touching UI elements
             const target = e.target as HTMLElement;
-            if (target && target.closest && target.closest('#instructions-overlay')) {
+            if (target && target.closest && (target.closest('#instructions-overlay') || target.closest('#debug-console-overlay'))) {
                 return;
             }
 
