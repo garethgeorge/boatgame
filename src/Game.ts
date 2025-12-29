@@ -20,6 +20,7 @@ import { Fixture } from 'planck';
 import { GraphicsUtils } from './core/GraphicsUtils';
 import { BaseMangrove } from './entities/obstacles/Mangrove';
 import { DebugConsole } from './core/DebugConsole';
+import { DebugSettings } from './core/DebugSettings';
 
 export class Game {
     container: HTMLElement;
@@ -46,12 +47,7 @@ export class Game {
 
     // Game State
     isPaused: boolean = false;
-    debugMode: boolean = false;
-    profilerVisible: boolean = false;
-    leakCheckInterval: number = 10.0 * 1000.0; // milli-seconds
-    nextLeakCheckTime: number = 0;
     viewMode: 'close' | 'far' = 'close';
-    debugConsoleVisible: boolean = false;
 
     // Collision Handling
     pendingContacts: Map<Entity, { type: string, subtype: any }> = new Map();
@@ -285,40 +281,35 @@ export class Game {
     }
 
     update(dt: number) {
-        if (!this.isPlaying) return;
-
-        // Process deferred contacts
-        this.processContacts();
-
-        // Update Input State
+        // Update Input State (always happen so debug console can be toggled)
         this.inputManager.update();
 
-        // Handle Global Toggles (Pause, Debug, ViewMode)
+        // Handle Global Toggles (Pause, Debug, ViewMode, Console)
         if (this.inputManager.wasPressed('paused')) {
             this.isPaused = !this.isPaused;
         }
 
         if (this.inputManager.wasPressed('debug')) {
-            if (this.debugMode) {
-                this.debugMode = false;
-                this.profilerVisible = false;
+            if (DebugSettings.debugMode) {
+                DebugSettings.debugMode = false;
+                DebugSettings.profilerVisible = false;
             } else {
-                this.debugMode = true;
-                this.profilerVisible = true;
+                DebugSettings.debugMode = true;
+                DebugSettings.profilerVisible = true;
             }
-            this.terrainManager.setDebug(this.debugMode);
-            this.entityManager.setDebug(this.debugMode);
+            this.terrainManager.setDebug(DebugSettings.debugMode);
+            this.entityManager.setDebug(DebugSettings.debugMode);
         }
 
         if (this.inputManager.wasPressed('debugProfiler')) {
-            if (this.profilerVisible && !this.debugMode) {
-                this.profilerVisible = false;
+            if (DebugSettings.profilerVisible && !DebugSettings.debugMode) {
+                DebugSettings.profilerVisible = false;
             } else {
-                this.profilerVisible = true;
-                this.debugMode = false;
+                DebugSettings.profilerVisible = true;
+                DebugSettings.debugMode = false;
             }
-            this.terrainManager.setDebug(this.debugMode);
-            this.entityManager.setDebug(this.debugMode);
+            this.terrainManager.setDebug(DebugSettings.debugMode);
+            this.entityManager.setDebug(DebugSettings.debugMode);
         }
 
         if (this.inputManager.wasPressed('viewMode')) {
@@ -326,15 +317,20 @@ export class Game {
         }
 
         if (this.inputManager.wasPressed('debugConsole')) {
-            this.debugConsoleVisible = !this.debugConsoleVisible;
-            DebugConsole.setVisibility(this.debugConsoleVisible);
+            DebugSettings.debugConsoleVisible = !DebugSettings.debugConsoleVisible;
+            DebugConsole.setVisibility(DebugSettings.debugConsoleVisible);
         }
 
         if (this.inputManager.wasPressed('skipBiome')) {
             this.skipToNextBiome();
         }
 
-        Profiler.setVisibility(this.profilerVisible);
+        Profiler.setVisibility(DebugSettings.profilerVisible);
+
+        if (!this.isPlaying) return;
+
+        // Process deferred contacts
+        this.processContacts();
 
         // Pause handling - skip all updates if paused
         if (this.isPaused) return;
@@ -431,9 +427,9 @@ export class Game {
             TerrainChunk.waterMaterial.uniforms.uSwampFactor.value = swampFactor;
         }
 
-        if (this.debugMode && this.nextLeakCheckTime < performance.now()) {
+        if (DebugSettings.leakCheckEnabled && DebugSettings.nextLeakCheckTime < performance.now()) {
             GraphicsUtils.tracker.checkLeaks(20.0, true, this.graphicsEngine.scene);
-            this.nextLeakCheckTime = performance.now() + this.leakCheckInterval;
+            DebugSettings.nextLeakCheckTime = performance.now() + DebugSettings.leakCheckInterval;
         }
     }
 

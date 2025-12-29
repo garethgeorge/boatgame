@@ -42,7 +42,7 @@ export class InputManager {
     }
 
     public update() {
-        if (this.isPaused) return;
+        // if (this.isPaused) return; // REMOVE THIS to allow input snapshots while paused
 
         // Snapshot state for this frame
         this.previousActions = new Set(this.currentActions);
@@ -118,7 +118,8 @@ export class InputManager {
     }
 
     onKeyDown(e: KeyboardEvent) {
-        if (this.isPaused) return;
+        // We allow keys to be tracked even when paused, 
+        // but game logic will handle the pause state.
 
         switch (e.code) {
             case 'ArrowUp':
@@ -164,7 +165,6 @@ export class InputManager {
     }
 
     onKeyUp(e: KeyboardEvent) {
-        if (this.isPaused) return;
 
         switch (e.code) {
             case 'ArrowUp':
