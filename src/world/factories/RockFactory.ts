@@ -4,7 +4,7 @@ import { DecorationFactory } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class RockFactory implements DecorationFactory {
-    private static readonly rockMaterialDesert = new THREE.MeshToonMaterial({ color: 0xE6C288, name: 'Rock - Desert Material' }); // Yellow Sandstone
+    private static readonly rockMaterialDesert = new THREE.MeshToonMaterial({ color: 0xDDBB88, name: 'Rock - Desert Material' }); // Warm Tan
     private static readonly rockMaterialForest = new THREE.MeshToonMaterial({ color: 0x888888, name: 'Rock - Forest Material' }); // Grey
     private static readonly rockMaterialSwamp = new THREE.MeshToonMaterial({ color: 0x4D3E30, name: 'Rock - Swamp Material' }); // Muddy Brown
     private static readonly iceRockMaterial = new THREE.MeshToonMaterial({ color: 0xE0F6FF, name: 'Rock - Ice Material' }); // Ice Blue

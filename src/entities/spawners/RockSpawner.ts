@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { RiverPlacementOptions } from '../../managers/PlacementHelper';
@@ -16,22 +17,20 @@ export class RockSpawner extends BaseSpawner {
     const side = Math.random() > 0.5 ? 1 : -1;
     const range: [number, number] = isShore ? [side * 0.5, side * 0.9] : [-0.3, 0.3];
 
-    return this.spawnInRiver(context, z, { range });
+    return this.spawnInRiver(context, z, false, '', { range });
   }
 
-  async spawnRiverRock(context: SpawnContext, z: number, range: [number, number] = [-1, 1]) {
-    return this.spawnInRiver(context, z, { range });
-  }
-
-  async spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {
+  async spawnInRiver(context: SpawnContext, z: number, pillars: boolean, biome: string,
+    options: RiverPlacementOptions) {
     const opts = {
       minDistFromBank: 0.5,
       ...options
     }
+
     const radius = 1.5 + Math.random() * 3.0; // 1.5 to 4.5m
     const pos = context.placementHelper.tryPlace(z, z, radius, opts);
     if (pos) {
-      const rock = new RiverRock(pos.x, pos.z, radius, context.physicsEngine);
+      const rock = new RiverRock(pos.x, pos.z, radius, pillars, biome, context.physicsEngine);
       context.entityManager.add(rock, context.chunkIndex);
       return true;
     }

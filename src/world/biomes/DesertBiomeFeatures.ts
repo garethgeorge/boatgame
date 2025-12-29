@@ -227,21 +227,27 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                         if (p.lZ < layoutMinZ || p.lZ >= layoutMaxZ) continue;
                         const worldZ = this.layoutToWorldZ(p.lZ, biomeEntranceZ);
                         switch (type as DesertEntityType) {
-                            case 'rock':
-                                await this.rockSpawner.spawnInRiver(context, worldZ, { range: p.range });
+                            case 'rock': {
+                                const pillars = Math.random() < 0.3;
+                                await this.rockSpawner.spawnInRiver(context, worldZ, pillars, 'desert', { range: p.range });
                                 break;
-                            case 'bottle':
+                            }
+                            case 'bottle': {
                                 await this.bottleSpawner.spawnInRiver(context, worldZ, { range: p.range });
                                 break;
-                            case 'gator':
+                            }
+                            case 'gator': {
                                 await this.alligatorSpawner.spawnAnimal(context, worldZ, p.range);
                                 break;
-                            case 'monkey':
+                            }
+                            case 'monkey': {
                                 await this.monkeySpawner.spawnAnimal(context, worldZ, p.range);
                                 break;
-                            case 'hippo':
+                            }
+                            case 'hippo': {
                                 await this.hippoSpawner.spawnInRiver(context, worldZ, false, { range: p.range });
                                 break;
+                            }
                         }
                     }
                 }
