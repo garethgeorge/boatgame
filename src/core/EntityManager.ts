@@ -27,6 +27,9 @@ export class EntityManager {
           this.graphicsEngine.remove(debugMesh);
         }
       }
+      if (!this.debugMode) {
+        entity.destroyDebugMeshes();
+      }
     }
   }
 

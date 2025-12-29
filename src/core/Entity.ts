@@ -40,15 +40,19 @@ export abstract class Entity {
     this.physicsBodies = [];
   }
 
+  destroyDebugMeshes() {
+    for (const debugMesh of this.debugMeshes) {
+      GraphicsUtils.disposeObject(debugMesh);
+    }
+    this.debugMeshes = [];
+  }
+
   dispose() {
     for (const mesh of this.meshes) {
       GraphicsUtils.disposeObject(mesh);
     }
-    for (const debugMesh of this.debugMeshes) {
-      GraphicsUtils.disposeObject(debugMesh);
-    }
+    this.destroyDebugMeshes();
     this.meshes = [];
-    this.debugMeshes = [];
     this.physicsBodies = [];
   }
 
