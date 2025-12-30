@@ -175,16 +175,15 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
                 if (animalType === 'hippo') {
                     // Hippo near the bank opposite to the boat
-                    const side = boatOffset > 0 ? -1 : 1;
-                    const edgeDist = side > 0 ? pathPoint.rightBankDist : pathPoint.leftBankDist;
-                    const dist = side * (edgeDist - 10);
-                    placements['hippo']!.push({ index: pathIndex, range: [dist - 5, dist + 5] });
+                    const range: [number, number] = boatOffset < 0 ?
+                        [0.5 * pathPoint.rightBankDist, pathPoint.rightBankDist] :
+                        [-pathPoint.leftBankDist, 0.5 * -pathPoint.leftBankDist];
+                    placements['hippo']!.push({ index: pathIndex, range });
                 } else {
                     // Gators/Monkeys on the banks (opposite to boat)
-                    const side = boatOffset > 0 ? -1 : 1;
-                    const range: [number, number] = side > 0 ?
-                        [pathPoint.rightBankDist + 2, pathPoint.rightBankDist + 15] :
-                        [-pathPoint.leftBankDist - 15, -pathPoint.leftBankDist - 2];
+                    const range: [number, number] = boatOffset < 0 ?
+                        [0.5 * pathPoint.rightBankDist, pathPoint.rightBankDist + 15] :
+                        [-pathPoint.leftBankDist - 15, 0.5 * -pathPoint.leftBankDist];
                     placements[animalType]!.push({ index: pathIndex, range });
                 }
             }
