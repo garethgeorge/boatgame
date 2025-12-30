@@ -1,7 +1,7 @@
 import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { MessageInABottle } from '../../entities/obstacles/MessageInABottle';
-import { RiverSystem } from '../../world/RiverSystem';
+import { RiverGeometrySample, RiverSystem } from '../../world/RiverSystem';
 import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 
 export class MessageInABottleSpawner extends BaseSpawner {
@@ -46,6 +46,30 @@ export class MessageInABottleSpawner extends BaseSpawner {
     const pos = context.placementHelper.tryPlace(z, z, 1.0, opts);
     if (pos) {
       const bottle = new MessageInABottle(pos.x, pos.z, context.physicsEngine);
+      context.entityManager.add(bottle);
+      return true;
+    }
+    return false;
+  }
+  async spawnInRiverAbsolute(
+    context: SpawnContext,
+    sample: RiverGeometrySample,
+    distanceRange: [number, number]
+  ): Promise<boolean> {
+    const radius = 1.0;
+    const minSpacing = 1.0;
+    const minDistFromShore = 1.0;
+
+    const pos = context.placementHelper.tryRiverPlaceAbsolute(
+      sample,
+      radius,
+      minSpacing,
+      minDistFromShore,
+      distanceRange
+    );
+
+    if (pos) {
+      const bottle = new MessageInABottle(pos.worldX, pos.worldZ, context.physicsEngine);
       context.entityManager.add(bottle);
       return true;
     }

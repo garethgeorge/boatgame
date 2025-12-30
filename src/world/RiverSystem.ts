@@ -3,6 +3,15 @@ import { BiomeManager } from './BiomeManager';
 import { BiomeType } from './biomes/BiomeType';
 import { TerrainGeometry } from './TerrainGeometry';
 
+export interface RiverGeometrySample {
+  centerPos: { x: number, z: number };
+  tangent: { x: number, z: number };
+  normal: { x: number, z: number }; // Points to the right bank
+  leftBankDist: number;   // Distance to left bank along the normal vector
+  rightBankDist: number;  // Distance to right bank along the normal vector
+  arcLength: number;      // Cumulative arc length from some start point
+}
+
 export class RiverSystem {
   private static instance: RiverSystem;
 
@@ -118,6 +127,86 @@ export class RiverSystem {
     }
 
     return -1;
+  }
+
+  public getRiverGeometrySample(z: number, arcLength: number = 0): RiverGeometrySample {
+    const x = this.getRiverCenter(z);
+    const dx_dz = this.getRiverDerivative(z);
+
+    // Tangent vector T = (dx/dz, 1) normalized
+    const length = Math.sqrt(dx_dz * dx_dz + 1);
+    const tangent = { x: dx_dz / length, z: 1 / length };
+
+    // Normal vector N = (1, -dx/dz) normalized (pointing right-ish)
+    const normal = { x: 1 / length, z: -dx_dz / length };
+
+    // Iterative solver to find distance along normal to banks
+    // Banks are at x_bank = getRiverCenter(z_bank) +/- getRiverWidth(z_bank)/2
+    // returns distance d such that center + d * normal is on the target side
+    const findBankDistance = (side: 1 | -1): number => {
+      let d = side * this.getRiverWidth(z) / 2; // Initial guess
+      const maxAttempts = 5;
+      for (let i = 0; i < maxAttempts; i++) {
+        const pz = z + d * normal.z;
+        const px = x + d * normal.x;
+        const center = this.getRiverCenter(pz);
+        const halfWidth = this.getRiverWidth(pz) / 2;
+        const targetX = center + side * halfWidth;
+
+        // This is a simple iterative refinement.
+        // We want px to match targetX.
+        // The error is (px - targetX). We adjust d.
+        const error = px - targetX;
+        d -= error * normal.x;
+      }
+      return Math.abs(d);
+    };
+
+    const leftBankDist = findBankDistance(-1); // Side -1 is left
+    const rightBankDist = findBankDistance(1);  // Side 1 is right
+
+    return {
+      centerPos: { x, z },
+      tangent,
+      normal,
+      leftBankDist,
+      rightBankDist,
+      arcLength
+    };
+  }
+
+  /**
+   * Samples the river at regular arc length intervals.
+   * Supports sampling in either Z direction.
+   */
+  public sampleRiver(zStart: number, zEnd: number, stepArcLength: number): RiverGeometrySample[] {
+    const samples: RiverGeometrySample[] = [];
+    const direction = zEnd > zStart ? 1 : -1;
+    let currentZ = zStart;
+    let accumulatedArcLength = 0;
+    let nextSampleArcLengthTarget = 0;
+
+    // Initial point
+    samples.push(this.getRiverGeometrySample(currentZ, accumulatedArcLength));
+    nextSampleArcLengthTarget += stepArcLength;
+
+    const integrationStep = 1.0;
+
+    while (direction > 0 ? currentZ < zEnd : currentZ > zEnd) {
+      // Numerical integration of ds = sqrt(1 + (dx/dz)^2) |dz|
+      const dx_dz = this.getRiverDerivative(currentZ);
+      const ds = Math.sqrt(1 + dx_dz * dx_dz) * integrationStep;
+
+      currentZ += integrationStep * direction;
+      accumulatedArcLength += ds;
+
+      if (accumulatedArcLength >= nextSampleArcLengthTarget) {
+        samples.push(this.getRiverGeometrySample(currentZ, accumulatedArcLength));
+        nextSampleArcLengthTarget += stepArcLength;
+      }
+    }
+
+    return samples;
   }
 
   private lerp(start: number, end: number, t: number): number {

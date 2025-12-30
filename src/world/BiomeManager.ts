@@ -169,7 +169,7 @@ export class BiomeManager {
   public getLayoutForInstance(index: number): any {
     const instance = this.biomeInstances[index];
     if (instance.layout === undefined) {
-      instance.layout = this.getFeatures(instance.type).createLayout(instance.length, instance.zStart);
+      instance.layout = this.getFeatures(instance.type).createLayout(instance.zStart, instance.zEnd);
     }
     return instance.layout;
   }

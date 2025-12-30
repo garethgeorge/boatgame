@@ -70,9 +70,10 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         return colors;
     }
 
-    createLayout(length: number, zStart: number): BiomeLayout {
+    createLayout(zMin: number, zMax: number): BiomeLayout {
         const riverSystem = RiverSystem.getInstance();
         const boatWidth = 5.0; // Conservative boat width
+        const length = zMax - zMin;
 
         // Reduced density slightly since elongated cells cover more Z space effectively?
         // Or keep same. Let's keep same for now.
@@ -95,7 +96,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
             for (let i = 0; i < numSeeds; i++) {
                 const z = Math.random() * length;
-                const worldZ = z + zStart;
+                const worldZ = z + zMin;
 
                 const banks = riverSystem.getBankPositions(worldZ);
                 const width = banks.right - banks.left;
@@ -121,7 +122,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
             const voronoi = this.computeVoronoi(scaledSeeds, seeds, delaunay, length, boundsX, zScale);
 
             // 3. Build Graph
-            if (this.checkNavigability(voronoi, riverSystem, zStart, length, boatWidth, shrinkFactor)) {
+            if (this.checkNavigability(voronoi, riverSystem, zMin, length, boatWidth, shrinkFactor)) {
                 console.log(`[FracturedIce] Success on attempt ${attempt + 1}`);
                 return { cells: voronoi.cells, shrinkFactor };
             }

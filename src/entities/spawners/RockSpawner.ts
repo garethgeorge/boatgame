@@ -3,6 +3,7 @@ import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 import { RiverRock } from '../../entities/obstacles/RiverRock';
+import { RiverGeometrySample } from '../../world/RiverSystem';
 
 export class RockSpawner extends BaseSpawner {
   id = 'rock';
@@ -31,6 +32,33 @@ export class RockSpawner extends BaseSpawner {
     const pos = context.placementHelper.tryPlace(z, z, radius, opts);
     if (pos) {
       const rock = new RiverRock(pos.x, pos.z, radius, pillars, biome, context.physicsEngine);
+      context.entityManager.add(rock);
+      return true;
+    }
+    return false;
+  }
+
+  async spawnInRiverAbsolute(
+    context: SpawnContext,
+    sample: RiverGeometrySample,
+    pillars: boolean,
+    biome: string,
+    distanceRange: [number, number]
+  ): Promise<boolean> {
+    const radius = 1.5 + Math.random() * 3.0; // 1.5 to 4.5m
+    const minSpacing = radius * 2.0;
+    const minDistFromShore = radius * 1.5;
+
+    const pos = context.placementHelper.tryRiverPlaceAbsolute(
+      sample,
+      radius,
+      minSpacing,
+      minDistFromShore,
+      distanceRange
+    );
+
+    if (pos) {
+      const rock = new RiverRock(pos.worldX, pos.worldZ, radius, pillars, biome, context.physicsEngine);
       context.entityManager.add(rock);
       return true;
     }

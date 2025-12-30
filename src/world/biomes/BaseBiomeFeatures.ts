@@ -91,7 +91,7 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         return 1000;
     }
 
-    public createLayout(length: number, zStart: number): any {
+    public createLayout(zMin: number, zMax: number): any {
         return null;
     }
 }

@@ -1,5 +1,6 @@
+import * as THREE from 'three';
 import { Spawnable, SpawnContext } from '../Spawnable';
-import { RiverSystem } from '../../world/RiverSystem';
+import { RiverGeometrySample, RiverSystem } from '../../world/RiverSystem';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
 import { Entity } from '../../core/Entity';
@@ -63,6 +64,74 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
         if (!spawned)
             spawned = await this.spawnInRiver(context, z, false, { range: range });
         return spawned;
+    }
+
+    async spawnAnimalAbsolute(
+        context: SpawnContext,
+        sample: RiverGeometrySample,
+        distanceRange: [number, number]
+    ): Promise<boolean> {
+        let placement: any = null;
+
+        const stayOnShore = false;
+        const radius = this.entityRadius;
+        const minSpacing = this.waterPlacement.minDistFromOthers || 2.0;
+        const minWaterDist = this.waterPlacement.minDistFromBank || 2.0;
+        const minShoreDist = this.shorePlacement.minDistFromBank || 2.0;
+        const maxSlopeDegrees = this.shorePlacement.maxSlopeDegrees || 20.0;
+
+        // Check if range overlaps shore
+        // Negative d is left, positive d is right.
+        const overlapsShore = distanceRange[0] < -sample.leftBankDist - minShoreDist || distanceRange[1] > sample.rightBankDist + minShoreDist;
+
+        let onShore = true;
+        if (overlapsShore) {
+            placement = context.placementHelper.tryShorePlaceAbsolute(
+                sample,
+                radius,
+                minSpacing,
+                minShoreDist,
+                distanceRange,
+                maxSlopeDegrees
+            );
+        }
+
+        if (!placement) {
+            onShore = false;
+            const riverPos = context.placementHelper.tryRiverPlaceAbsolute(
+                sample,
+                radius,
+                minSpacing,
+                minWaterDist,
+                distanceRange
+            );
+            if (riverPos) {
+                placement = {
+                    worldX: riverPos.worldX,
+                    worldZ: riverPos.worldZ,
+                    height: 0,
+                    rotation: Math.random() * Math.PI * 2,
+                    normal: new THREE.Vector3(0, 1, 0)
+                };
+            }
+        }
+
+        if (placement) {
+            const entity = this.spawnEntity(context.physicsEngine, {
+                x: placement.worldX,
+                y: placement.worldZ,
+                angle: placement.rotation,
+                height: placement.height,
+                terrainNormal: placement.normal,
+                onShore,
+                stayOnShore
+            });
+            if (entity) {
+                context.entityManager.add(entity);
+                return true;
+            }
+        }
+        return false;
     }
 
     async spawnInRiver(context: SpawnContext, z: number, spawnCluster: boolean,
