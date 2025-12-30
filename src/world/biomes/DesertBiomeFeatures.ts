@@ -297,10 +297,9 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         // Pier spawning at the end of the biome
         const totalArcLength = layout.path[layout.path.length - 1].arcLength;
         const pierArcLength = totalArcLength * 0.95;
+        const pierIndex = this.getPathIndexByArcLen(layout.path, pierArcLength);
 
-        if (layout.path[iChunkMin].arcLength <= pierArcLength &&
-            pierArcLength < layout.path[iChunkMax].arcLength) {
-            const pierIndex = this.getPathIndexByArcLen(layout.path, pierArcLength);
+        if (iChunkMin <= pierIndex && pierIndex < iChunkMax) {
             const sample = this.getPathPoint(layout.path, pierIndex);
             await this.pierSpawner.spawnAt(context, sample.centerPos.z, true);
         }

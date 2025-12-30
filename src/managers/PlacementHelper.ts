@@ -178,7 +178,7 @@ export class PlacementHelper {
       const riverAngle = Math.atan2(sample.tangent.x, sample.tangent.z);
       // d < 0 is left bank, should face right (PI/2)
       // d > 0 is right bank, should face left (-PI/2)
-      let rotation = (d > 0) ? -Math.PI / 2 : Math.PI / 2;
+      let rotation = (d > 0) ? Math.PI / 2 : -Math.PI / 2;
       rotation += riverAngle;
       rotation += (Math.random() - 0.5) * (Math.PI / 2);
 
@@ -254,7 +254,7 @@ export class PlacementHelper {
       // Rotate around normal to face water with +/- 45 degrees variation
       const riverDerivative = riverSystem.getRiverDerivative(worldZ);
       const riverAngle = Math.atan(riverDerivative);
-      let baseAngle = isLeftBank ? -Math.PI / 2 : Math.PI / 2;
+      let baseAngle = isLeftBank ? Math.PI / 2 : -Math.PI / 2;
       baseAngle += riverAngle;
 
       // Add random variation between -45 and +45 degrees (PI/4)

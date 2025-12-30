@@ -66,6 +66,11 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
         return spawned;
     }
 
+    /**
+     * Spawns an animal within a distance range from a river position.
+     * If the range includes the shore prefers finding an on shore
+     * position. 
+     */
     async spawnAnimalAbsolute(
         context: SpawnContext,
         sample: RiverGeometrySample,
