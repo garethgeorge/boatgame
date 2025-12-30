@@ -55,6 +55,11 @@ export class Boat extends Entity {
         return Boat.instance.physicsBodies[0];
     }
 
+    public static getBottleCount(): number {
+        if (!Boat.instance) return 0;
+        return Boat.instance.collectedBottles.count;
+    }
+
     constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
         super();
         Boat.instance = this;

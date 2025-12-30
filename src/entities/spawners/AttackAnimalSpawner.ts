@@ -75,7 +75,8 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
     async spawnAnimalAbsolute(
         context: SpawnContext,
         sample: RiverGeometrySample,
-        distanceRange: [number, number]
+        distanceRange: [number, number],
+        aggressiveness: number
     ): Promise<boolean> {
         let placement: any = null;
 
@@ -115,7 +116,7 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
                 placement = {
                     worldX: riverPos.worldX,
                     worldZ: riverPos.worldZ,
-                    height: 0,
+                    height: this.heightInWater,
                     rotation: Math.random() * Math.PI * 2,
                     normal: new THREE.Vector3(0, 1, 0)
                 };
@@ -130,7 +131,8 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
                 height: placement.height,
                 terrainNormal: placement.normal,
                 onShore,
-                stayOnShore
+                stayOnShore,
+                aggressiveness
             });
             if (entity) {
                 context.entityManager.add(entity);

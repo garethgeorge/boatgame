@@ -16,6 +16,7 @@ interface PathPoint extends RiverGeometrySample {
 interface ObstaclePlacement {
     index: number;  // index + fractional offset in path  
     range: [number, number]; // Distance range along the normal vector
+    aggressiveness?: number;
 }
 
 type DesertEntityType = 'rock' | 'bottle' | 'monkey' | 'gator' | 'hippo';
@@ -178,13 +179,17 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                     const range: [number, number] = boatOffset < 0 ?
                         [0.5 * pathPoint.rightBankDist, pathPoint.rightBankDist] :
                         [-pathPoint.leftBankDist, 0.5 * -pathPoint.leftBankDist];
-                    placements['hippo']!.push({ index: pathIndex, range });
+                    // Random value that increases with progress
+                    const aggressiveness = Math.min(1.0, progress * 0.7 + Math.random() * 0.3);
+                    placements['hippo']!.push({ index: pathIndex, range, aggressiveness });
                 } else {
                     // Gators/Monkeys on the banks (opposite to boat)
                     const range: [number, number] = boatOffset < 0 ?
                         [0.5 * pathPoint.rightBankDist, pathPoint.rightBankDist + 15] :
                         [-pathPoint.leftBankDist - 15, 0.5 * -pathPoint.leftBankDist];
-                    placements[animalType]!.push({ index: pathIndex, range });
+                    // Random value that increases with progress
+                    const aggressiveness = Math.min(1.0, progress * 0.7 + Math.random() * 0.3);
+                    placements[animalType]!.push({ index: pathIndex, range, aggressiveness });
                 }
             }
         }
@@ -271,19 +276,19 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                             }
                             case 'gator': {
                                 await this.alligatorSpawner.spawnAnimalAbsolute(
-                                    context, sample, p.range
+                                    context, sample, p.range, p.aggressiveness || 0.5
                                 );
                                 break;
                             }
                             case 'monkey': {
                                 await this.monkeySpawner.spawnAnimalAbsolute(
-                                    context, sample, p.range
+                                    context, sample, p.range, p.aggressiveness || 0.5
                                 );
                                 break;
                             }
                             case 'hippo': {
                                 await this.hippoSpawner.spawnAnimalAbsolute(
-                                    context, sample, p.range
+                                    context, sample, p.range, p.aggressiveness || 0.5
                                 );
                                 break;
                             }

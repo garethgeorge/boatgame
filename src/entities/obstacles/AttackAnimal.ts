@@ -19,6 +19,7 @@ export interface AttackAnimalOptions {
     terrainNormal?: THREE.Vector3;
     onShore?: boolean;
     stayOnShore?: boolean;
+    aggressiveness?: number;
 }
 
 export interface AttackAnimalPhysicsOptions {
@@ -64,7 +65,7 @@ export abstract class AttackAnimal extends Entity implements AttackAnimalEnterin
             angularDamping = 1.0
         } = physicsOptions;
 
-        this.aggressiveness = Math.random();
+        this.aggressiveness = (options.aggressiveness !== undefined) ? options.aggressiveness : Math.random();
         this.canCausePenalty = true;
 
         const physicsBody = physicsEngine.world.createBody({
