@@ -2,6 +2,7 @@ import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 import { Log } from '../../entities/obstacles/Log';
+import { RiverGeometrySample } from '../../world/RiverGeometry';
 
 export class LogSpawner extends BaseSpawner {
   id = 'log';
@@ -29,6 +30,32 @@ export class LogSpawner extends BaseSpawner {
       const log = new Log(pos.x, pos.z, length, context.physicsEngine);
       context.entityManager.add(log);
 
+      return true;
+    }
+    return false;
+  }
+
+  async spawnInRiverAbsolute(
+    context: SpawnContext,
+    sample: RiverGeometrySample,
+    distanceRange: [number, number]
+  ): Promise<boolean> {
+    const length = 10 + Math.random() * 10;
+    const radius = length / 2;
+    const minSpacing = radius * 2.0;
+    const minDistFromShore = 2.0;
+
+    const pos = context.placementHelper.tryRiverPlaceAbsolute(
+      sample,
+      radius,
+      minSpacing,
+      minDistFromShore,
+      distanceRange
+    );
+
+    if (pos) {
+      const log = new Log(pos.worldX, pos.worldZ, length, context.physicsEngine);
+      context.entityManager.add(log);
       return true;
     }
     return false;
