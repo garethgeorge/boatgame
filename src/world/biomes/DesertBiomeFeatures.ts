@@ -6,7 +6,8 @@ import { Decorations } from '../Decorations';
 import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
 import { HippoSpawner } from '../../entities/spawners/HippoSpawner';
 import { MonkeySpawner } from '../../entities/spawners/MonkeySpawner';
-import { RiverGeometrySample, RiverSystem } from '../RiverSystem';
+import { RiverGeometry, RiverGeometrySample } from '../RiverGeometry';
+import { RiverSystem } from '../RiverSystem';
 
 interface PathPoint extends RiverGeometrySample {
     boatXOffset: number; // Offset from river center along the normal vector
@@ -52,7 +53,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         const zEnd = zMin;
 
         // Sample the river every 10 units of arc length
-        const path: PathPoint[] = riverSystem.sampleRiver(zStart, zEnd, 10.0).map((sample) => {
+        const path: PathPoint[] = RiverGeometry.sampleRiver(riverSystem, zStart, zEnd, 10.0).map((sample) => {
             const arcLength = sample.arcLength;
 
             // Weaving logic based on arc length
@@ -137,21 +138,14 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
             animalType = types[Math.floor(Math.random() * types.length)];
         }
 
-        // Return random fractional path index for the nth of count slots
-        // within the range [iStart, iEnd] 
-        const randomIndex = (n: number, count: number) => {
-            const index = iStart + (n + Math.random() * 0.99) * (iEnd - iStart) / count;
-            return index;
-        };
-
         // --- Rock Barriers ---
         const baseRockSpacing = 150 - progress * 120;
         const rockSpacing = animalType === 'none' ? baseRockSpacing : baseRockSpacing * 1.5;
 
         const rockCount = Math.max(1, Math.floor(sectionLen / rockSpacing));
         for (let j = 0; j < rockCount; j++) {
-            const pathIndex = randomIndex(j, rockCount);
-            const pathPoint = this.getPathPoint(path, pathIndex);
+            const pathIndex = this.randomIndex(iStart, iEnd, j, rockCount);
+            const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
 
             // Place rocks on the "opposite" side of the boat path to create a slalom
             // If boat is at offset > 0 (right), place rocks on the left side (negative d)
@@ -175,8 +169,8 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
             const animalSpacing = 100 - progress * 60;
             const animalCount = Math.floor(sectionLen / animalSpacing) + (Math.random() < 0.2 ? 1 : 0);
             for (let j = 0; j < animalCount; j++) {
-                const pathIndex = randomIndex(j, animalCount);
-                const pathPoint = this.getPathPoint(path, pathIndex);
+                const pathIndex = this.randomIndex(iStart, iEnd, j, animalCount);
+                const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
                 const boatOffset = pathPoint.boatXOffset;
 
                 if (animalType === 'hippo') {
@@ -200,8 +194,8 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         const bottleSpacing = 50;
         const bottleCount = Math.floor(sectionLen / bottleSpacing);
         for (let j = 0; j < bottleCount; j++) {
-            const pathIndex = randomIndex(j, bottleCount);
-            const pathPoint = this.getPathPoint(path, pathIndex);
+            const pathIndex = this.randomIndex(iStart, iEnd, j, bottleCount);
+            const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
             placements['bottle']!.push({
                 index: pathIndex,
                 range: [pathPoint.boatXOffset - 2, pathPoint.boatXOffset + 2]
@@ -210,6 +204,12 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
         return { iStart, iEnd, placements };
     }
+
+    private randomIndex(iStart: number, iEnd: number, n: number, count: number) {
+        const index = iStart + (n + Math.random() * 0.99) * (iEnd - iStart) / count;
+        return index;
+    }
+
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         const length = zEnd - zStart;
         const count = Math.floor(length * 16);
@@ -234,8 +234,8 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         if (!layout) return;
 
         // Map world Z range to path indices
-        const iChunkStart = this.getPathIndexByZ(layout.path, zStart);
-        const iChunkEnd = this.getPathIndexByZ(layout.path, zEnd);
+        const iChunkStart = RiverGeometry.getPathIndexByZ(layout.path, zStart);
+        const iChunkEnd = RiverGeometry.getPathIndexByZ(layout.path, zEnd);
 
         const iChunkMin = Math.min(iChunkStart, iChunkEnd);
         const iChunkMax = Math.max(iChunkStart, iChunkEnd);
@@ -253,7 +253,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 for (const p of placements) {
                     // Check if placement is within current segment
                     if (p.index >= iChunkMin && p.index < iChunkMax) {
-                        const sample = this.getPathPoint(layout.path, p.index);
+                        const sample = RiverGeometry.getPathPoint(layout.path, p.index);
 
                         switch (entityType as DesertEntityType) {
                             case 'rock': {
@@ -297,109 +297,12 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         // Pier spawning at the end of the biome
         const totalArcLength = layout.path[layout.path.length - 1].arcLength;
         const pierArcLength = totalArcLength * 0.95;
-        const pierIndex = this.getPathIndexByArcLen(layout.path, pierArcLength);
+        const pierIndex = RiverGeometry.getPathIndexByArcLen(layout.path, pierArcLength);
 
         if (iChunkMin <= pierIndex && pierIndex < iChunkMax) {
-            const sample = this.getPathPoint(layout.path, pierIndex);
+            const sample = RiverGeometry.getPathPoint(layout.path, pierIndex);
             await this.pierSpawner.spawnAt(context, sample.centerPos.z, true);
         }
-    }
-
-    /**
-     * Get path point given a fractional index
-     */
-    private getPathPoint(points: PathPoint[], index: number): PathPoint {
-        if (points.length === 0) throw new Error('Path is empty');
-
-        const i = Math.floor(index);
-        if (i + 1 >= points.length)
-            return points[points.length - 1];
-        const t = index - i;
-        const p1 = points[i];
-        const p2 = points[i + 1];
-        return this.interpolatePathPoint(p1, p2, t);
-    }
-
-    /**
-     * Get an interpolated location between two points
-     */
-    private interpolatePathPoint(p1: PathPoint, p2: PathPoint, t: number): PathPoint {
-        return {
-            centerPos: {
-                x: p1.centerPos.x + t * (p2.centerPos.x - p1.centerPos.x),
-                z: p1.centerPos.z + t * (p2.centerPos.z - p1.centerPos.z)
-            },
-            tangent: {
-                x: p1.tangent.x + t * (p2.tangent.x - p1.tangent.x),
-                z: p1.tangent.z + t * (p2.tangent.z - p1.tangent.z)
-            },
-            normal: {
-                x: p1.normal.x + t * (p2.normal.x - p1.normal.x),
-                z: p1.normal.z + t * (p2.normal.z - p1.normal.z)
-            },
-            leftBankDist: p1.leftBankDist + t * (p2.leftBankDist - p1.leftBankDist),
-            rightBankDist: p1.rightBankDist + t * (p2.rightBankDist - p1.rightBankDist),
-            arcLength: p1.arcLength + t * (p2.arcLength - p1.arcLength),
-            boatXOffset: p1.boatXOffset + t * (p2.boatXOffset - p1.boatXOffset)
-        };
-    }
-
-    /**
-     * Given an arc length find corresponding fractional index in the the path
-     * point array.
-     */
-    private getPathIndexByArcLen(points: PathPoint[], arcLen: number): number {
-        return this.binarySearchPath(points, arcLen, (point: PathPoint) => {
-            return point.arcLength;
-        })
-    }
-
-    /**
-     * Given a worldZ find corresponding fractional index in the the path
-     * point array. The path points may be in order of increasing or
-     * decreasing z.
-     */
-    private getPathIndexByZ(points: PathPoint[], worldZ: number): number {
-        return this.binarySearchPath(points, worldZ, (point: PathPoint) => {
-            return point.centerPos.z;
-        });
-    }
-
-    /**
-     * Search for fractional index corresponding to a given value. The
-     * values in the path must either be ascending or descending.
-     */
-    private binarySearchPath(points: PathPoint[], value: number,
-        pointValue: (point: PathPoint) => number): number {
-
-        const isAscending = pointValue(points[points.length - 1]) > pointValue(points[0]);
-
-        let low = 0;
-        let high = points.length - 1;
-
-        while (low <= high) {
-            const mid = Math.floor((low + high) / 2);
-            const midValue = pointValue(points[mid]);
-            if (midValue === value) return mid;
-
-            if (isAscending) {
-                if (midValue < value) low = mid + 1;
-                else high = mid - 1;
-            } else {
-                if (midValue > value) low = mid + 1;
-                else high = mid - 1;
-            }
-        }
-
-        if (high < 0) return 0;
-        if (low >= points.length) return points.length;
-
-        const p1 = points[high];
-        const p2 = points[low];
-        const delta = pointValue(p2) - pointValue(p1);
-        const t = delta === 0 ? 0 : (value - pointValue(p1)) / delta;
-
-        return high + t;
     }
 
 }

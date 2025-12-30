@@ -1,6 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { RiverGeometrySample, RiverSystem } from '../world/RiverSystem';
+import { RiverSystem } from '../world/RiverSystem';
+import { RiverGeometrySample } from '../world/RiverGeometry';
 
 
 

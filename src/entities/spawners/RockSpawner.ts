@@ -3,7 +3,7 @@ import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 import { RiverRock } from '../../entities/obstacles/RiverRock';
-import { RiverGeometrySample } from '../../world/RiverSystem';
+import { RiverGeometrySample } from '../../world/RiverGeometry';
 
 export class RockSpawner extends BaseSpawner {
   id = 'rock';

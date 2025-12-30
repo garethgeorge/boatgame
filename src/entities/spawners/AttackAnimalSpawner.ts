@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Spawnable, SpawnContext } from '../Spawnable';
-import { RiverGeometrySample, RiverSystem } from '../../world/RiverSystem';
+import { RiverSystem } from '../../world/RiverSystem';
+import { RiverGeometrySample } from '../../world/RiverGeometry';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
 import { Entity } from '../../core/Entity';

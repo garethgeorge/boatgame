@@ -1,7 +1,8 @@
 import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { MessageInABottle } from '../../entities/obstacles/MessageInABottle';
-import { RiverGeometrySample, RiverSystem } from '../../world/RiverSystem';
+import { RiverSystem } from '../../world/RiverSystem';
+import { RiverGeometrySample } from '../../world/RiverGeometry';
 import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 
 export class MessageInABottleSpawner extends BaseSpawner {
