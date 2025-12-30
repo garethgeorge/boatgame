@@ -110,6 +110,8 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
     private populateSection(path: PathPoint[], iStart: number, iEnd: number): DesertSection {
         const placements: Partial<Record<DesertEntityType, ObstaclePlacement[]>> = {
+            'rock': [],
+            'bottle': []
         };
 
         const pathLength = path[path.length - 1].arcLength;
@@ -164,7 +166,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 // Rock on right-side (positive d)
                 range = [boatOffset + 5.0, pathPoint.rightBankDist - 2.0];
             }
-            placements['rock']!.push({ index: pathIndex, range }); // lZ is arc length here
+            placements['rock']!.push({ index: pathIndex, range });
         }
 
         // --- Animals ---
@@ -298,7 +300,8 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
         if (layout.path[iChunkMin].arcLength <= pierArcLength &&
             pierArcLength < layout.path[iChunkMax].arcLength) {
-            const sample = this.getPathPoint(layout.path, pierArcLength);
+            const pierIndex = this.getPathIndexByArcLen(layout.path, pierArcLength);
+            const sample = this.getPathPoint(layout.path, pierIndex);
             await this.pierSpawner.spawnAt(context, sample.centerPos.z, true);
         }
     }
@@ -394,7 +397,8 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
         const p1 = points[high];
         const p2 = points[low];
-        const t = (value - pointValue(p1)) / (pointValue(p2) - pointValue(p1));
+        const delta = pointValue(p2) - pointValue(p1);
+        const t = delta === 0 ? 0 : (value - pointValue(p1)) / delta;
 
         return high + t;
     }

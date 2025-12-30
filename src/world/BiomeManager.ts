@@ -15,7 +15,6 @@ interface BiomeInstance {
   length: number;
   zStart: number;
   zEnd: number;
-  layout?: any;
 }
 
 export class BiomeManager {
@@ -26,7 +25,8 @@ export class BiomeManager {
   private readonly BIOME_ARRAY_SIZE = 100;
   private readonly BIOME_TRANSITION_WIDTH = 50; // Transition width in units, not fraction
   private features: Map<BiomeType, BiomeFeatures> = new Map();
-
+  private layoutCache: Map<number, any> = new Map();
+  private readonly MAX_LAYOUT_CACHE_SIZE = 20;
 
   constructor() {
     const biomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic', 'fractured_ice'];
@@ -130,8 +130,14 @@ export class BiomeManager {
     };
   }
 
-  public getFeatureSegments(zStart: number, zEnd: number): Array<{ biome: BiomeType, zStart: number, zEnd: number, biomeZStart: number, biomeZEnd: number, instanceIndex: number }> {
-    const segments: Array<{ biome: BiomeType, zStart: number, zEnd: number, biomeZStart: number, biomeZEnd: number, instanceIndex: number }> = [];
+  public getFeatureSegments(zStart: number, zEnd: number): Array<{
+    biome: BiomeType,
+    zStart: number, zEnd: number,
+    biomeZStart: number, biomeZEnd: number,
+    biomeIndex: number
+  }> {
+
+    const segments: Array<{ biome: BiomeType, zStart: number, zEnd: number, biomeZStart: number, biomeZEnd: number, biomeIndex: number }> = [];
     let currentZ = zStart;
 
     while (currentZ < zEnd) {
@@ -147,6 +153,8 @@ export class BiomeManager {
       const biomeZStart = sequenceOffset + instance.zStart;
       const biomeZEnd = sequenceOffset + instance.zEnd;
 
+      const biomeIndex = numSequences * this.biomeInstances.length + index;
+
       const segmentEnd = Math.min(zEnd, biomeZEnd);
       segments.push({
         biome: instance.type,
@@ -154,7 +162,7 @@ export class BiomeManager {
         zEnd: segmentEnd,
         biomeZStart,
         biomeZEnd,
-        instanceIndex: index
+        biomeIndex
       });
       currentZ = segmentEnd;
     }
@@ -166,17 +174,23 @@ export class BiomeManager {
     return this.features.get(biome)!;
   }
 
-  public getLayoutForInstance(index: number): any {
-    const instance = this.biomeInstances[index];
-    if (instance.layout === undefined) {
-      instance.layout = this.getFeatures(instance.type).createLayout(instance.zStart, instance.zEnd);
+  public getLayoutForBiome(biomeIndex: number, zStart: number, zEnd: number): any {
+    if (this.layoutCache.has(biomeIndex)) {
+      return this.layoutCache.get(biomeIndex);
     }
-    return instance.layout;
-  }
 
-  public getLayoutAt(worldZ: number): any {
-    const index = this.getBiomeInstanceIndexAt(worldZ);
-    return this.getLayoutForInstance(index);
+    const localIndex = ((biomeIndex % this.biomeInstances.length) + this.biomeInstances.length) % this.biomeInstances.length;
+    const instance = this.biomeInstances[localIndex];
+    const layout = this.getFeatures(instance.type).createLayout(zStart, zEnd);
+
+    // Basic cache management
+    if (this.layoutCache.size >= this.MAX_LAYOUT_CACHE_SIZE) {
+      const firstKey = this.layoutCache.keys().next().value;
+      if (firstKey !== undefined) this.layoutCache.delete(firstKey);
+    }
+    this.layoutCache.set(biomeIndex, layout);
+
+    return layout;
   }
 
   public getBiomeMixture(worldZ: number): {

@@ -45,7 +45,11 @@ export class ObstacleManager {
         zEnd: zEnd,
         biomeZStart: segment.biomeZStart,
         biomeZEnd: segment.biomeZEnd,
-        biomeLayout: this.riverSystem.biomeManager.getLayoutForInstance(segment.instanceIndex)
+        biomeLayout: this.riverSystem.biomeManager.getLayoutForBiome(
+          segment.biomeIndex,
+          segment.biomeZStart,
+          segment.biomeZEnd
+        )
       };
 
       const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
