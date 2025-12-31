@@ -78,11 +78,8 @@ export class BoatPathLayoutStrategy {
 
             // Available movement range (width - safety margin)
             const margin = 5.0;
-            const leftWidth = sample.leftBankDist - margin;
-            const rightWidth = sample.rightBankDist - margin;
-            const center = (rightWidth - leftWidth) / 2;
-            const width = (rightWidth + leftWidth) / 2;
-            const boatXOffset = center + normalizedX * width;
+            const width = sample.bankDist - margin;
+            const boatXOffset = normalizedX * width;
 
             return {
                 ...sample,
@@ -90,32 +87,30 @@ export class BoatPathLayoutStrategy {
             };
         });
 
-        // Sectioning based on boat offset extrema
+        // Detect center-crossing points
         const sections: BoatPathSection<T>[] = [];
         let sectionStartIdx = 0;
 
-        for (let i = 1; i < path.length - 1; i++) {
-            const prev = path[i - 1].boatXOffset;
-            const curr = path[i].boatXOffset;
-            const next = path[i + 1].boatXOffset;
+        for (let i = 1; i < path.length; i++) {
+            const prev = path[i - 1];
+            const curr = path[i];
 
-            const isLocalMax = curr > prev && curr > next;
-            const isLocalMin = curr < prev && curr < next;
+            const prevSide = prev.boatXOffset > 0;
+            const currSide = curr.boatXOffset > 0;
 
-            const currentArcLength = path[i].arcLength;
-            const sectionArcLen = currentArcLength - path[sectionStartIdx].arcLength;
+            if (prevSide !== currSide || i === path.length - 1) {
+                const iEnd = i;
+                if (iEnd - sectionStartIdx > 2) {
+                    // Midpoint determines the boat side for the section
+                    const midIdx = Math.floor((sectionStartIdx + iEnd) / 2);
+                    const midValue = path[midIdx].boatXOffset;
+                    const boatIsOnRight = midValue > 0;
+                    const targetSide = boatIsOnRight ? 'left' : 'right';
 
-            if ((isLocalMax || isLocalMin) || sectionArcLen > 250) {
-                if (sectionArcLen > 50) {
-                    sections.push(this.populateSection(path, sectionStartIdx, i, config));
-                    sectionStartIdx = i;
+                    sections.push(this.populateSection(path, sectionStartIdx, iEnd, config, targetSide));
                 }
+                sectionStartIdx = i;
             }
-        }
-
-        // Final section
-        if (sectionStartIdx < path.length - 1) {
-            sections.push(this.populateSection(path, sectionStartIdx, path.length - 1, config));
         }
 
         return { path, sections };
@@ -125,7 +120,8 @@ export class BoatPathLayoutStrategy {
         path: PathPoint[],
         iStart: number,
         iEnd: number,
-        config: BoatPathLayoutConfig<T>
+        config: BoatPathLayoutConfig<T>,
+        side: 'left' | 'right'
     ): BoatPathSection<T> {
         const placements: Partial<Record<T, ObstaclePlacement[]>> = {};
 
@@ -179,10 +175,10 @@ export class BoatPathLayoutStrategy {
                 const boatOffset = pathPoint.boatXOffset;
 
                 let range: [number, number];
-                if (boatOffset > 0) {
-                    range = [-pathPoint.leftBankDist + 2.0, boatOffset - 5.0];
+                if (side === 'right') {
+                    range = [boatOffset + 5.0, pathPoint.bankDist - 2.0];
                 } else {
-                    range = [boatOffset + 5.0, pathPoint.rightBankDist - 2.0];
+                    range = [-pathPoint.bankDist + 2.0, boatOffset - 5.0];
                 }
                 placements[slalomType]!.push({ index: pathIndex, range });
             }
@@ -203,14 +199,14 @@ export class BoatPathLayoutStrategy {
                 let range: [number, number];
                 if (isWaterAnimal) {
                     // Near bank but in water
-                    range = boatOffset < 0 ?
-                        [0.5 * pathPoint.rightBankDist, pathPoint.rightBankDist] :
-                        [-pathPoint.leftBankDist, 0.5 * -pathPoint.leftBankDist];
+                    range = side === 'right' ?
+                        [0.5 * pathPoint.bankDist, pathPoint.bankDist] :
+                        [-pathPoint.bankDist, 0.5 * -pathPoint.bankDist];
                 } else {
                     // On bank
-                    range = boatOffset < 0 ?
-                        [0.5 * pathPoint.rightBankDist, pathPoint.rightBankDist + 15] :
-                        [-pathPoint.leftBankDist - 15, 0.5 * -pathPoint.leftBankDist];
+                    range = side === 'right' ?
+                        [0.5 * pathPoint.bankDist, pathPoint.bankDist + 15] :
+                        [-pathPoint.bankDist - 15, 0.5 * -pathPoint.bankDist];
                 }
 
                 const aggressiveness = Math.min(1.0, progress * 0.7 + Math.random() * 0.3);

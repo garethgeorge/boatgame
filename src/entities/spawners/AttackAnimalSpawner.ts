@@ -88,8 +88,7 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
         const maxSlopeDegrees = this.shorePlacement.maxSlopeDegrees || 20.0;
 
         // Check if range overlaps shore
-        // Negative d is left, positive d is right.
-        const overlapsShore = distanceRange[0] < -sample.leftBankDist - minShoreDist || distanceRange[1] > sample.rightBankDist + minShoreDist;
+        const overlapsShore = distanceRange[0] < -sample.bankDist - minShoreDist || distanceRange[1] > sample.bankDist + minShoreDist;
 
         let onShore = true;
         if (overlapsShore) {

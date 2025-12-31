@@ -79,8 +79,8 @@ export class BuoySpawner extends BaseSpawner {
     const spacing = 4.0;
 
     // Determine which end of the range is closer to a bank to use as the anchor
-    const d0DistToBank = Math.min(Math.abs(distanceRange[0] + sample.leftBankDist), Math.abs(distanceRange[0] - sample.rightBankDist));
-    const d1DistToBank = Math.min(Math.abs(distanceRange[1] + sample.leftBankDist), Math.abs(distanceRange[1] - sample.rightBankDist));
+    const d0DistToBank = Math.abs(sample.bankDist - Math.abs(distanceRange[0]));
+    const d1DistToBank = Math.abs(sample.bankDist - Math.abs(distanceRange[1]));
 
     const [startOffset, endOffset] = d0DistToBank < d1DistToBank ?
       [distanceRange[0], distanceRange[1]] :

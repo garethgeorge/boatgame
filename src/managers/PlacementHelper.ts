@@ -125,8 +125,7 @@ export class PlacementHelper {
       const d = distanceRange[0] + Math.random() * (distanceRange[1] - distanceRange[0]);
 
       // Ensure distance is within river banks plus spacing
-      // Negative d is left, positive d is right.
-      if (d < -sample.leftBankDist + minDistFromShore || d > sample.rightBankDist - minDistFromShore) {
+      if (Math.abs(d) > sample.bankDist - minDistFromShore) {
         continue;
       }
 
@@ -156,10 +155,9 @@ export class PlacementHelper {
       const d = distanceRange[0] + Math.random() * (distanceRange[1] - distanceRange[0]);
 
       // Ensure distance is on shore plus spacing
-      const isLeftShore = d < -sample.leftBankDist - minDistFromShore;
-      const isRightShore = d > sample.rightBankDist + minDistFromShore;
-
-      if (!isLeftShore && !isRightShore) continue;
+      if (Math.abs(d) < sample.bankDist + minDistFromShore) {
+        continue;
+      }
 
       const worldX = sample.centerPos.x + d * sample.normal.x;
       const worldZ = sample.centerPos.z + d * sample.normal.z;

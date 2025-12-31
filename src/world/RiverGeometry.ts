@@ -4,8 +4,7 @@ export interface RiverGeometrySample {
     centerPos: { x: number, z: number };
     tangent: { x: number, z: number };
     normal: { x: number, z: number }; // Points to the right bank
-    leftBankDist: number;   // Distance to left bank along the normal vector
-    rightBankDist: number;  // Distance to right bank along the normal vector
+    bankDist: number;       // Distance to either bank along the normal vector
     arcLength: number;      // Cumulative arc length from some start point
 }
 
@@ -44,15 +43,20 @@ export class RiverGeometry {
             return Math.abs(d);
         };
 
-        const leftBankDist = findBankDistance(-1); // Side -1 is left
-        const rightBankDist = findBankDistance(1);  // Side 1 is right
+        const leftDist = findBankDistance(-1); // Side -1 is left
+        const rightDist = findBankDistance(1);  // Side 1 is right
+
+        // Adjust center so it is equidistant from both banks along the normal
+        const centerAdjustment = (rightDist - leftDist) / 2;
+        const adjustedX = x + centerAdjustment * normal.x;
+        const adjustedZ = z + centerAdjustment * normal.z;
+        const bankDist = (leftDist + rightDist) / 2;
 
         return {
-            centerPos: { x, z },
+            centerPos: { x: adjustedX, z: adjustedZ },
             tangent,
             normal,
-            leftBankDist,
-            rightBankDist,
+            bankDist,
             arcLength
         };
     }
@@ -123,8 +127,7 @@ export class RiverGeometry {
                 x: p1.normal.x + t * (p2.normal.x - p1.normal.x),
                 z: p1.normal.z + t * (p2.normal.z - p1.normal.z)
             },
-            leftBankDist: p1.leftBankDist + t * (p2.leftBankDist - p1.leftBankDist),
-            rightBankDist: p1.rightBankDist + t * (p2.rightBankDist - p1.rightBankDist),
+            bankDist: p1.bankDist + t * (p2.bankDist - p1.bankDist),
             arcLength: p1.arcLength + t * (p2.arcLength - p1.arcLength)
         };
 
