@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as planck from 'planck';
 import * as THREE from 'three';
 import { PlacementHelper } from './PlacementHelper';
 import { RiverSystem } from '../world/RiverSystem';
@@ -33,7 +34,12 @@ describe('PlacementHelper', () => {
         mockRiverSystem.getRiverDerivative.mockReturnValue(0);
         mockRiverSystem.terrainGeometry.calculateHeight.mockReturnValue(10);
         mockRiverSystem.terrainGeometry.calculateNormal.mockReturnValue(new THREE.Vector3(0, 1, 0));
-        placementHelper = new PlacementHelper();
+        
+        const mockWorld = {
+            queryAABB: vi.fn(),
+        } as unknown as planck.World;
+        
+        placementHelper = new PlacementHelper(mockWorld);
     });
 
     describe('tryPlace', () => {
@@ -77,7 +83,8 @@ describe('PlacementHelper', () => {
                 const r2 = Math.random() * 2 - 1;
                 const range: [number, number] = [Math.min(r1, r2), Math.max(r1, r2)];
 
-                const localHelper = new PlacementHelper();
+                // @ts-ignore
+                const localHelper = new PlacementHelper({ queryAABB: vi.fn() } as any);
                 const pos = localHelper.tryPlace(worldZ, worldZ, radius, {
                     range,
                     minDistFromBank
@@ -130,7 +137,8 @@ describe('PlacementHelper', () => {
 
         it('should avoid center when avoidCenter is set', () => {
             for (let i = 0; i < 50; i++) {
-                const localHelper = new PlacementHelper();
+                // @ts-ignore
+                const localHelper = new PlacementHelper({ queryAABB: vi.fn() } as any);
                 const pos = localHelper.tryPlace(worldZ, worldZ, radius, {
                     range: [-1, 1],
                     avoidCenter: 0.5, // Avoid [-0.5, 0.5] * safeHalfWidth

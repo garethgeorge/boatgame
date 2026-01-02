@@ -36,9 +36,11 @@ interface PlacedObject {
 export class PlacementHelper {
   private placedObjects: PlacedObject[] = [];
   private riverSystem: RiverSystem;
+  private world: planck.World;
 
-  constructor() {
+  constructor(world: planck.World) {
     this.riverSystem = RiverSystem.getInstance();
+    this.world = world;
   }
 
   public tryPlace(
@@ -93,7 +95,29 @@ export class PlacementHelper {
       const x = riverCenter + xOffset;
 
       // Check collision with other placed objects
-      const collision = this.checkCollision(x, worldZ, radius, minDistFromOthers);
+      let collision = this.checkCollision(x, worldZ, radius, minDistFromOthers);
+
+      if (collision) continue;
+
+      // Physics World Query
+      // We check for existing physics bodies in the potential location.
+      // This helps avoid placing objects on top of rocks or other obstacles
+      // that might have been placed by previous logic or persist (though usually this helper is per-chunk).
+      // More importantly, it helps if we decide to keep PlacementHelper across chunks or if other systems spawn things.
+      const aabb = planck.AABB(
+        planck.Vec2(x - radius, worldZ - radius),
+        planck.Vec2(x + radius, worldZ + radius)
+      );
+
+      this.world.queryAABB(aabb, (fixture) => {
+        // Ignore sensors.
+        if (fixture.isSensor()) return true; // Keep looking
+
+        // Check for other obstacles
+        // For now, treat any non-sensor overlap as a collision
+        collision = true;
+        return false; // Stop looking
+      });
       if (!collision) {
         // Valid placement found
         this.placedObjects.push({ x, z: worldZ, radius });
