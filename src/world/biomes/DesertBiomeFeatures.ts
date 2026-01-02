@@ -29,22 +29,24 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     public createLayout(zMin: number, zMax: number): BoatPathLayout<DesertEntityType> {
         return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
             animalPatterns: [
-                { name: 'scattered_animals', weight: 0.7, logic: 'scatter', types: ['hippo', 'gator', 'monkey'] },
-                { name: 'animal_corridor', weight: 0.3, logic: 'sequence', types: ['gator'], minCount: 2 }
+                { name: 'gator_corridor', weight: 1.0, logic: 'sequence', types: ['gator'] },
+                { name: 'monkey_corridor', weight: 1.0, logic: 'sequence', types: ['monkey'] },
+                { name: 'hippo_pod', weight: 1.0, logic: 'cluster', types: ['hippo'], minCount: 2, maxCount: 5 }
             ],
             slalomPatterns: [
-                { name: 'rocky_slalom', weight: 0.7, logic: 'sequence', types: ['rock'] },
-                { name: 'rock_stagger', weight: 0.3, logic: 'staggered', types: ['rock'], minCount: 4 }
+                { name: 'rocky_slalom', weight: 3.0, logic: 'sequence', types: ['rock'] },
+                { name: 'rock_stagger', weight: 1.0, logic: 'staggered', types: ['rock'], minCount: 3 },
             ],
             pathPatterns: [
-                { name: 'bottle_line', weight: 0.5, logic: 'staggered', types: ['bottle'], minCount: 3 },
-                { name: 'bottle_scatter', weight: 0.5, logic: 'scatter', types: ['bottle'] }
+                { name: 'bottle_cluster', weight: 1, logic: 'cluster', types: ['bottle'], minCount: 3 },
+                { name: 'bottle_scatter', weight: 1, logic: 'scatter', types: ['bottle'] }
             ],
             waterAnimals: ['hippo'],
             slalomDensity: { start: 0.6, end: 1.5 },
             animalDensity: { start: 0.4, end: 1.2 },
             pathDensity: { start: 2.0, end: 2.0 },
-            biomeLength: this.getBiomeLength()
+            biomeLength: this.getBiomeLength(),
+            minSectionLength: 200.0
         });
     }
 
