@@ -27,25 +27,21 @@ export interface DensityConfig {
     end: number;   // expected instances per 100m
 }
 
-/**
- * Each section is populated with animals from an animal group,
- * slalom objects from a slalom group, and path objects from a
- * path group.
- * 
- * waterAnimals identifies animals that should be placed in water
- * all others are placed on shore if possible.
- * 
- * weights determines the relative frequencies of each obstacle
- * type. The weights only matter within each set of groups. So
- * weights for things that are only in slalom groups don't affect
- * things only in animal groups. 
- */
+export interface SectionPattern<T extends string> {
+    name: string;
+    weight: number;
+    logic: 'scatter' | 'sequence' | 'gate' | 'staggered';
+    types: T[];
+    densityMultiplier?: number;
+    minCount?: number;
+    maxCount?: number;
+}
+
 export interface BoatPathLayoutConfig<T extends string> {
-    animalGroups: T[][];
-    slalomGroups: T[][];
-    pathGroups: T[][];
+    animalPatterns: SectionPattern<T>[];
+    slalomPatterns: SectionPattern<T>[];
+    pathPatterns: SectionPattern<T>[];
     waterAnimals: T[];
-    weights?: Partial<Record<T, number>>;
     slalomDensity: DensityConfig;
     animalDensity: DensityConfig;
     pathDensity: DensityConfig;
@@ -127,9 +123,9 @@ export class BoatPathLayoutStrategy {
 
         // Initialize all potential placement arrays in config
         const allPossibleTypes = new Set<T>([
-            ...config.animalGroups.flat(),
-            ...config.slalomGroups.flat(),
-            ...config.pathGroups.flat()
+            ...config.animalPatterns.flatMap(p => p.types),
+            ...config.slalomPatterns.flatMap(p => p.types),
+            ...config.pathPatterns.flatMap(p => p.types)
         ]);
         for (const type of allPossibleTypes) {
             placements[type] = [];
@@ -149,140 +145,231 @@ export class BoatPathLayoutStrategy {
         const progress = 0.5 * (sectionStart + sectionEnd) / pathLength;
 
         // Selection
-        const selectedAnimalGroup = this.pickWeightedGroup(config.animalGroups, config.weights);
-        const selectedSlalomGroup = this.pickWeightedGroup(config.slalomGroups, config.weights);
-        const selectedPathGroup = this.pickWeightedGroup(config.pathGroups, config.weights);
+        const selectedAnimalPattern = this.pickWeightedPattern(config.animalPatterns);
+        const selectedSlalomPattern = this.pickWeightedPattern(config.slalomPatterns);
+        const selectedPathPattern = this.pickWeightedPattern(config.pathPatterns);
 
-        // Calculate counts based on density (expected per 100m)
-        const getCount = (density: DensityConfig) => {
-            const d = density.start + progress * (density.end - density.start);
-            const expected = (sectionLen / 100) * d;
-            return Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
-        };
-
-        const slalomCount = selectedSlalomGroup.length > 0 ? getCount(config.slalomDensity) : 0;
-        const animalCount = selectedAnimalGroup.length > 0 ? getCount(config.animalDensity) : 0;
-        const pathCount = selectedPathGroup.length > 0 ? getCount(config.pathDensity) : 0;
-
-        // --- Slalom Obstacles ---
-        if (slalomCount > 0) {
-            for (let j = 0; j < slalomCount; j++) {
-                const slalomType = this.pickWeightedType(selectedSlalomGroup, config.weights);
-                if (!placements[slalomType]) placements[slalomType] = [];
-
-                const pathIndex = this.randomIndex(iStart, iEnd, j, slalomCount);
-                const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
-                const boatOffset = pathPoint.boatXOffset;
-
-                let range: [number, number];
-                if (side === 'right') {
-                    range = [boatOffset + 5.0, pathPoint.bankDist - 2.0];
-                } else {
-                    range = [-pathPoint.bankDist + 2.0, boatOffset - 5.0];
-                }
-                placements[slalomType]!.push({ index: pathIndex, range });
-            }
-        }
-
-        // --- Animals ---
-        if (animalCount > 0) {
-            for (let j = 0; j < animalCount; j++) {
-                const animalType = this.pickWeightedType(selectedAnimalGroup, config.weights);
-                if (!placements[animalType]) placements[animalType] = [];
-
-                const isWaterAnimal = config.waterAnimals.includes(animalType);
-
-                const pathIndex = this.randomIndex(iStart, iEnd, j, animalCount);
-                const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
-                const boatOffset = pathPoint.boatXOffset;
-
-                let range: [number, number];
-                if (isWaterAnimal) {
-                    // Near bank but in water
-                    range = side === 'right' ?
-                        [0.5 * pathPoint.bankDist, pathPoint.bankDist] :
-                        [-pathPoint.bankDist, 0.5 * -pathPoint.bankDist];
-                } else {
-                    // On bank
-                    range = side === 'right' ?
-                        [0.5 * pathPoint.bankDist, pathPoint.bankDist + 15] :
-                        [-pathPoint.bankDist - 15, 0.5 * -pathPoint.bankDist];
-                }
-
-                const aggressiveness = Math.min(1.0, progress * 0.7 + Math.random() * 0.3);
-                placements[animalType]!.push({ index: pathIndex, range, aggressiveness });
-            }
-        }
-
-        // --- Path Obstacles ---
-        if (pathCount > 0) {
-            for (let j = 0; j < pathCount; j++) {
-                const pathType = this.pickWeightedType(selectedPathGroup, config.weights);
-                if (!placements[pathType]) placements[pathType] = [];
-
-                const pathIndex = this.randomIndex(iStart, iEnd, j, pathCount);
-                const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
-                placements[pathType]!.push({
-                    index: pathIndex,
-                    range: [pathPoint.boatXOffset - 2, pathPoint.boatXOffset + 2]
-                });
-            }
-        }
+        // Apply Layout logic for each category
+        this.applyPattern(path, iStart, iEnd, sectionLen, selectedSlalomPattern, placements, config, side, 'slalom', progress);
+        this.applyPattern(path, iStart, iEnd, sectionLen, selectedAnimalPattern, placements, config, side, 'animal', progress);
+        this.applyPattern(path, iStart, iEnd, sectionLen, selectedPathPattern, placements, config, side, 'path', progress);
 
         return { iStart, iEnd, placements };
     }
 
-    /**
-     * Given a list of groups, picks one with probability equal
-     * to the sum of probabilities of the individual obstacles.
-     */
-    private static pickWeightedGroup<T extends string>(
-        groups: T[][],
-        weights: Partial<Record<T, number>> | undefined
-    ): T[] {
-        if (groups.length === 0) return [];
-        if (!weights) return groups[Math.floor(Math.random() * groups.length)];
+    private static applyPattern<T extends string>(
+        path: PathPoint[],
+        iStart: number,
+        iEnd: number,
+        sectionLength: number,
+        pattern: SectionPattern<T> | undefined,
+        placements: Partial<Record<T, ObstaclePlacement[]>>,
+        config: BoatPathLayoutConfig<T>,
+        side: 'left' | 'right',
+        category: 'slalom' | 'animal' | 'path',
+        progress: number
+    ) {
+        if (!pattern) return;
 
-        let totalWeight = 0;
-        const groupWeights = groups.map(group => {
-            const weight = group.reduce((sum, type) => sum + (weights[type] || 1), 0);
-            totalWeight += weight;
-            return weight;
-        });
+        const d = config.pathDensity.start + progress * (config.pathDensity.end - config.pathDensity.start);
+        let expected = (sectionLength / 100) * d;
 
-        if (totalWeight <= 0) return groups[Math.floor(Math.random() * groups.length)];
-
-        let r = Math.random() * totalWeight;
-        for (let i = 0; i < groups.length; i++) {
-            r -= groupWeights[i];
-            if (r <= 0) return groups[i];
+        if (pattern?.densityMultiplier !== undefined) {
+            expected *= pattern.densityMultiplier;
         }
-        return groups[groups.length - 1];
+
+        let count = Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
+
+        if (pattern?.minCount !== undefined) count = Math.max(count, pattern.minCount);
+        if (pattern?.maxCount !== undefined) count = Math.min(count, pattern.maxCount);
+
+        if (count <= 0) return;
+
+        switch (pattern.logic) {
+            case 'scatter':
+                this.applyScatter(path, iStart, iEnd, pattern, count, placements, config, side, category, progress);
+                break;
+            case 'sequence':
+                this.applySequence(path, iStart, iEnd, pattern, count, placements, config, side, category, progress);
+                break;
+            case 'gate':
+                this.applyGate(path, iStart, iEnd, pattern, count, placements, config, side, category, progress);
+                break;
+            case 'staggered':
+                this.applyStaggered(path, iStart, iEnd, pattern, count, placements, config, side, category, progress);
+                break;
+        }
     }
 
     /**
-     * Choose a random type applying the weights to influence frequency
+     * Randomly scatter instances along section and on one side
      */
-    private static pickWeightedType<T extends string>(
-        types: T[],
-        weights: Partial<Record<T, number>> | undefined
-    ): T {
-        if (types.length === 0) throw new Error("Empty type list");
-        if (!weights) return types[Math.floor(Math.random() * types.length)];
+    private static applyScatter<T extends string>(
+        path: PathPoint[],
+        iStart: number,
+        iEnd: number,
+        pattern: SectionPattern<T>,
+        count: number,
+        placements: Partial<Record<T, ObstaclePlacement[]>>,
+        config: BoatPathLayoutConfig<T>,
+        side: 'left' | 'right',
+        category: 'slalom' | 'animal' | 'path',
+        progress: number
+    ) {
+        for (let j = 0; j < count; j++) {
+            const type = pattern.types[Math.floor(Math.random() * pattern.types.length)];
+            const pathIndex = this.randomIndex(iStart, iEnd, j, count);
+            const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
 
-        let totalWeight = 0;
-        for (const type of types) {
-            totalWeight += (weights[type] || 1);
+            const range = this.placementRange(pathPoint, type, side, category, config);
+
+            this.recordPlacement(pathIndex, range, type, placements, category, progress);
         }
+    }
 
-        if (totalWeight <= 0) return types[Math.floor(Math.random() * types.length)];
+    /**
+     * Place instances equidistantly along the path on one side
+     */
+    private static applySequence<T extends string>(
+        path: PathPoint[],
+        iStart: number,
+        iEnd: number,
+        pattern: SectionPattern<T>,
+        count: number,
+        placements: Partial<Record<T, ObstaclePlacement[]>>,
+        config: BoatPathLayoutConfig<T>,
+        side: 'left' | 'right',
+        category: 'slalom' | 'animal' | 'path',
+        progress: number
+    ) {
+        for (let j = 0; j < count; j++) {
+            const type = pattern.types[Math.floor(Math.random() * pattern.types.length)];
+            const pathIndex = iStart + (j + 0.5) * (iEnd - iStart) / count;
+            const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
+
+            const range = this.placementRange(pathPoint, type, side, category, config);
+
+            this.recordPlacement(pathIndex, range, type, placements, category, progress);
+        }
+    }
+
+    /**
+     * Place pairs of instances equidistantly along path and on either
+     * side of the path.
+     */
+    private static applyGate<T extends string>(
+        path: PathPoint[],
+        iStart: number,
+        iEnd: number,
+        pattern: SectionPattern<T>,
+        count: number,
+        placements: Partial<Record<T, ObstaclePlacement[]>>,
+        config: BoatPathLayoutConfig<T>,
+        side: 'left' | 'right',
+        category: 'slalom' | 'animal' | 'path',
+        progress: number
+    ) {
+        const gateCount = Math.ceil(count / 2);
+        for (let j = 0; j < count; j++) {
+            const type = pattern.types[Math.floor(Math.random() * pattern.types.length)];
+            const pathIndex = iStart + (Math.floor(j / 2) + 0.5) * (iEnd - iStart) / gateCount;
+            const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
+
+            const gateSide = (j % 2 === 0) ? side : (side === 'left' ? 'right' : 'left');
+            const range = this.placementRange(pathPoint, type, gateSide, category, config);
+
+            this.recordPlacement(pathIndex, range, type, placements, category, progress);
+        }
+    }
+
+    /**
+     * Place instances equidistantly along the path and on alternating
+     * sides.
+     */
+    private static applyStaggered<T extends string>(
+        path: PathPoint[],
+        iStart: number,
+        iEnd: number,
+        pattern: SectionPattern<T>,
+        count: number,
+        placements: Partial<Record<T, ObstaclePlacement[]>>,
+        config: BoatPathLayoutConfig<T>,
+        side: 'left' | 'right',
+        category: 'slalom' | 'animal' | 'path',
+        progress: number
+    ) {
+        for (let j = 0; j < count; j++) {
+            const type = pattern.types[Math.floor(Math.random() * pattern.types.length)];
+            const pathIndex = iStart + (j + 0.5) * (iEnd - iStart) / count;
+            const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
+
+            const staggerSide = (j % 2 === 0) ? side : (side === 'left' ? 'right' : 'left');
+            const range = this.placementRange(pathPoint, type, staggerSide, category, config);
+
+            this.recordPlacement(pathIndex, range, type, placements, category, progress);
+        }
+    }
+
+    /**
+     * Returns the placement range for an instance.
+     * slalom objects are placed anywhere between the boat path and the bank
+     * animals are placed on or close to the bank
+     * path objects are placed close to the boat and ignore side
+     */
+    private static placementRange<T extends string>(
+        pathPoint: PathPoint,
+        type: T,
+        side: 'left' | 'right',
+        category: 'slalom' | 'animal' | 'path',
+        config: BoatPathLayoutConfig<T>
+    ): [number, number] {
+        if (category === 'slalom') {
+            return side === 'right' ?
+                [pathPoint.boatXOffset + 5.0, pathPoint.bankDist - 2.0] :
+                [-pathPoint.bankDist + 2.0, pathPoint.boatXOffset - 5.0];
+        } else if (category === 'animal') {
+            const isWaterAnimal = config.waterAnimals.includes(type);
+            if (isWaterAnimal) {
+                return side === 'right' ?
+                    [0.5 * pathPoint.bankDist, pathPoint.bankDist] :
+                    [-pathPoint.bankDist, 0.5 * -pathPoint.bankDist];
+            } else {
+                return side === 'right' ?
+                    [0.5 * pathPoint.bankDist, pathPoint.bankDist + 15] :
+                    [-pathPoint.bankDist - 15, 0.5 * -pathPoint.bankDist];
+            }
+        } else {
+            return [pathPoint.boatXOffset - 2, pathPoint.boatXOffset + 2];
+        }
+    }
+
+    private static recordPlacement<T extends string>(
+        pathIndex: number,
+        range: [number, number],
+        type: T,
+        placements: Partial<Record<T, ObstaclePlacement[]>>,
+        category: 'slalom' | 'animal' | 'path',
+        progress: number
+    ) {
+        const aggressiveness = category === 'animal' ?
+            Math.min(1.0, progress * 0.7 + Math.random() * 0.3) : undefined;
+
+        if (!placements[type]) placements[type] = [];
+        placements[type]!.push({ index: pathIndex, range, aggressiveness });
+    }
+
+    private static pickWeightedPattern<T extends string>(patterns: SectionPattern<T>[]): SectionPattern<T> | undefined {
+        if (patterns.length === 0) return undefined;
+        let totalWeight = 0;
+        for (const p of patterns) totalWeight += p.weight;
+        if (totalWeight <= 0) return patterns[0];
 
         let r = Math.random() * totalWeight;
-        for (const type of types) {
-            r -= (weights[type] || 1);
-            if (r <= 0) return type;
+        for (const p of patterns) {
+            r -= p.weight;
+            if (r <= 0) return p;
         }
-        return types[types.length - 1];
+        return patterns[patterns.length - 1];
     }
 
     private static randomIndex(iStart: number, iEnd: number, n: number, count: number) {

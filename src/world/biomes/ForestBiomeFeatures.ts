@@ -40,15 +40,18 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
 
     public createLayout(zMin: number, zMax: number): BoatPathLayout<ForestEntityType> {
         return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
-            animalGroups: [['moose', 'bear']],
-            slalomGroups: [['log', 'rock', 'buoy', 'pier']],
-            pathGroups: [['duckling']],
+            animalPatterns: [
+                { name: 'scattered_animals', weight: 1.0, logic: 'scatter', types: ['bear', 'moose'] }
+            ],
+            slalomPatterns: [
+                { name: 'random_slalom', weight: 1.0, logic: 'scatter', types: ['log', 'rock', 'buoy'] },
+                { name: 'rock_gates', weight: 0.5, logic: 'gate', types: ['rock'], minCount: 4, densityMultiplier: 1.5 },
+                { name: 'pier_sequence', weight: 0.3, logic: 'sequence', types: ['pier'], minCount: 2, maxCount: 3 }
+            ],
+            pathPatterns: [
+                { name: 'duckling_train', weight: 1.0, logic: 'sequence', types: ['duckling'], minCount: 3 }
+            ],
             waterAnimals: ['duckling'],
-            weights: {
-                'moose': 1, 'bear': 1,
-                'log': 30, 'rock': 40, 'buoy': 15, 'pier': 15,
-                'duckling': 1
-            },
             slalomDensity: { start: 1.0, end: 3.0 },
             animalDensity: { start: 0.8, end: 2.5 },
             pathDensity: { start: 0.5, end: 2.0 },

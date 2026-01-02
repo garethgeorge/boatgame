@@ -52,15 +52,18 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
 
     public createLayout(zMin: number, zMax: number): BoatPathLayout<JurassicEntityType> {
         return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
-            animalGroups: [['trex', 'triceratops'], ['bronto']],
-            slalomGroups: [['log', 'rock']],
-            pathGroups: [['bottle']],
+            animalPatterns: [
+                { name: 'scattered_dinosaurs', weight: 1.0, logic: 'scatter', types: ['trex', 'triceratops'] },
+                { name: 'bronto_migration', weight: 0.4, logic: 'sequence', types: ['bronto'], minCount: 2 }
+            ],
+            slalomPatterns: [
+                { name: 'jurassic_slalom', weight: 1.0, logic: 'scatter', types: ['log', 'rock'] },
+                { name: 'staggered_logs', weight: 0.5, logic: 'staggered', types: ['log'], minCount: 4 }
+            ],
+            pathPatterns: [
+                { name: 'bottle_hunt', weight: 1.0, logic: 'scatter', types: ['bottle'] }
+            ],
             waterAnimals: ['bronto'],
-            weights: {
-                'trex': 35, 'triceratops': 45, 'bronto': 20,
-                'log': 2, 'rock': 1,
-                'bottle': 1
-            },
             slalomDensity: { start: 1.0, end: 3.0 },
             animalDensity: { start: 0.5, end: 1.5 },
             pathDensity: { start: 0.25, end: 0.5 },
