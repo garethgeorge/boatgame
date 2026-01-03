@@ -1,23 +1,23 @@
 import * as planck from 'planck';
 import { Boat } from '../Boat';
-import { AttackAnimalWater } from './AttackAnimalBehavior';
+import { AnimalWaterAttack } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
-import { AttackAnimalUtils } from './AttackAnimalUtils';
+import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
 
-export class AttackAnimalWaterBehavior implements EntityBehavior {
-    private entity: AttackAnimalWater;
+export class AnimalWaterAttackBehavior implements EntityBehavior {
+    private entity: AnimalWaterAttack;
     private state: 'IDLE' | 'TURNING' | 'ATTACKING' = 'IDLE';
     private aggressiveness: number;
 
-    constructor(entity: AttackAnimalWater, aggressiveness: number) {
+    constructor(entity: AnimalWaterAttack, aggressiveness: number) {
         this.entity = entity;
         this.aggressiveness = aggressiveness;
     }
 
     update(dt: number) {
         const bottles = Boat.getBottleCount();
-        const speed = AttackAnimalUtils.evaluateAttackSpeed(this.aggressiveness, bottles);
-        const startAttackDistance = AttackAnimalUtils.evaluateStartAttackDistance(this.aggressiveness, bottles);
+        const speed = AnimalBehaviorUtils.evaluateAttackSpeed(this.aggressiveness, bottles);
+        const startAttackDistance = AnimalBehaviorUtils.evaluateStartAttackDistance(this.aggressiveness, bottles);
         const stopAttackDistance = startAttackDistance > 0 ? startAttackDistance + 20 : 0;
 
         const targetBody = Boat.getPlayerBody();
@@ -38,7 +38,7 @@ export class AttackAnimalWaterBehavior implements EntityBehavior {
         const pos = physicsBody.getPosition();
         const targetPos = targetBody.getPosition();
         const playerVel = targetBody.getLinearVelocity();
-        
+
         const realDiff = targetPos.clone().sub(pos);
         const dist = realDiff.length(); // Use real distance for state transitions
 
@@ -50,13 +50,13 @@ export class AttackAnimalWaterBehavior implements EntityBehavior {
             timeToIntercept = dist / averageAttackSpeed;
             // Clamp prediction to max 2 seconds to avoid crazy behavior
             timeToIntercept = Math.min(timeToIntercept, 2.0);
-            
+
             // Dampen the intercept prediction to keep it closer to the boat
             timeToIntercept *= 0.7;
         }
 
         const predictedPos = targetPos.clone().add(playerVel.clone().mul(timeToIntercept));
-        
+
         // Blend between direct pursuit and intercept based on distance
         // Dist < 8: 0 (Direct)
         // Dist > 40: 1 (Intercept)

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
-import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
+import { AnimalWaterAttackBehavior } from '../behaviors/AnimalWaterAttackBehavior';
 
 export class Moose extends AttackAnimal {
 

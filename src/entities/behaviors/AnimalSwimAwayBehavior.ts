@@ -1,10 +1,10 @@
 import * as planck from 'planck';
 import { Boat } from '../Boat';
-import { AttackAnimalWater } from './AttackAnimalBehavior';
+import { AnimalWaterAttack } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
 
 export class AnimalSwimAwayBehavior implements EntityBehavior {
-    private entity: AttackAnimalWater;
+    private entity: AnimalWaterAttack;
     private state: 'IDLE' | 'FLEEING' = 'IDLE';
     private speed: number;
     private startFleeDistance: number;
@@ -13,7 +13,7 @@ export class AnimalSwimAwayBehavior implements EntityBehavior {
     private timeSinceLastAngleChange: number = 0;
     private readonly angleChangeInterval: number = 2.0;
 
-    constructor(entity: AttackAnimalWater, aggressiveness: number) {
+    constructor(entity: AnimalWaterAttack, aggressiveness: number) {
         this.entity = entity;
         this.speed = 1 + 3 * aggressiveness;
         this.startFleeDistance = 20 + 40 * aggressiveness;

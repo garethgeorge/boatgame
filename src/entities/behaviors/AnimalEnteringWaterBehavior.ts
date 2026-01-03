@@ -2,11 +2,11 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { CollisionCategories } from '../../core/PhysicsEngine';
 import { RiverSystem } from '../../world/RiverSystem';
-import { AttackAnimalEnteringWater } from './AttackAnimalBehavior';
+import { AnimalEnteringWater } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
 
-export class AttackAnimalEnteringWaterBehavior implements EntityBehavior {
-    private entity: AttackAnimalEnteringWater;
+export class AnimalEnteringWaterBehavior implements EntityBehavior {
+    private entity: AnimalEnteringWater;
     private targetWaterHeight: number;
     private speed: number;
 
@@ -18,7 +18,7 @@ export class AttackAnimalEnteringWaterBehavior implements EntityBehavior {
     public readonly duration: number;
 
     constructor(
-        entity: AttackAnimalEnteringWater,
+        entity: AnimalEnteringWater,
         targetWaterHeight: number,
         aggressiveness: number
     ) {

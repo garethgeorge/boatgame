@@ -3,11 +3,11 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
-import { AttackAnimalShoreIdleBehavior } from '../behaviors/AttackAnimalShoreIdleBehavior';
-import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
+import { AnimalShoreIdleBehavior } from '../behaviors/AnimalShoreIdleBehavior';
+import { AnimalWaterAttackBehavior } from '../behaviors/AnimalWaterAttackBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
-import { AttackAnimalEnteringWater, AttackAnimalShoreIdle, AttackAnimalWater } from '../behaviors/AttackAnimalBehavior';
-import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnteringWaterBehavior';
+import { AnimalEnteringWater, AnimalShoreIdle, AnimalWaterAttack } from '../behaviors/AnimalBehavior';
+import { AnimalEnteringWaterBehavior } from '../behaviors/AnimalEnteringWaterBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
@@ -32,7 +32,7 @@ export interface AttackAnimalPhysicsOptions {
     angularDamping?: number;
 }
 
-export abstract class AttackAnimal extends Entity implements AttackAnimalEnteringWater, AttackAnimalShoreIdle, AttackAnimalWater {
+export abstract class AttackAnimal extends Entity implements AnimalEnteringWater, AnimalShoreIdle, AnimalWaterAttack {
     protected player: AnimationPlayer | null = null;
     protected behavior: EntityBehavior | null = null;
     protected aggressiveness: number;
@@ -101,11 +101,11 @@ export abstract class AttackAnimal extends Entity implements AttackAnimalEnterin
 
         if (onShore) {
             if (!stayOnShore) {
-                this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
+                this.behavior = new AnimalShoreIdleBehavior(this, this.aggressiveness);
             }
             this.playIdleAnimation();
         } else {
-            this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
+            this.behavior = new AnimalWaterAttackBehavior(this, this.aggressiveness);
             this.playSwimmingAnimation();
         }
     }
@@ -181,8 +181,8 @@ export abstract class AttackAnimal extends Entity implements AttackAnimalEnterin
         }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
     }
 
-    shoreIdleMaybeStartEnteringWater(): boolean {
-        const behavior = new AttackAnimalEnteringWaterBehavior(
+    shoreIdleMaybeNoticeBoat(): boolean {
+        const behavior = new AnimalEnteringWaterBehavior(
             this,
             this.heightInWater,
             this.aggressiveness
@@ -193,7 +193,7 @@ export abstract class AttackAnimal extends Entity implements AttackAnimalEnterin
     }
 
     enteringWaterDidComplete(speed: number) {
-        this.behavior = new AttackAnimalWaterBehavior(this, this.aggressiveness);
+        this.behavior = new AnimalWaterAttackBehavior(this, this.aggressiveness);
         this.normalVector.set(0, 1, 0);
         this.playSwimmingAnimation();
     }

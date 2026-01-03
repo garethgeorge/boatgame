@@ -1,16 +1,16 @@
 import * as planck from 'planck';
 import { RiverSystem } from '../../world/RiverSystem';
 import { Boat } from '../Boat';
-import { AttackAnimalShoreIdle } from './AttackAnimalBehavior';
+import { AnimalShoreIdle } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
-import { AttackAnimalUtils } from './AttackAnimalUtils';
+import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
 
-export class AttackAnimalShoreIdleBehavior implements EntityBehavior {
-    private entity: AttackAnimalShoreIdle;
+export class AnimalShoreIdleBehavior implements EntityBehavior {
+    private entity: AnimalShoreIdle;
     private aggressiveness: number;
 
     constructor(
-        entity: AttackAnimalShoreIdle,
+        entity: AnimalShoreIdle,
         aggressiveness: number
     ) {
         this.entity = entity;
@@ -19,18 +19,18 @@ export class AttackAnimalShoreIdleBehavior implements EntityBehavior {
 
     update(dt: number) {
         const bottles = Boat.getBottleCount();
-        const enterWaterDistance = AttackAnimalUtils.evaluateEnterWaterDistance(this.aggressiveness, bottles);
+        const noticeBoatDistance = AnimalBehaviorUtils.evaluateNoticeBoatDistance(this.aggressiveness, bottles);
 
-        if (enterWaterDistance <= 0) {
+        if (noticeBoatDistance <= 0) {
             this.perhapsShouldSwitchBehavior(dt);
         } else {
-            if (!this.perhapsShouldEnterWater(dt, enterWaterDistance)) {
+            if (!this.perhapsShouldNoticeBoat(dt, noticeBoatDistance)) {
                 this.perhapsShouldSwitchBehavior(dt);
             }
         }
     }
 
-    private perhapsShouldEnterWater(dt: number, enterWaterDistance: number): boolean {
+    private perhapsShouldNoticeBoat(dt: number, noticeBoatDistance: number): boolean {
         const targetBody = Boat.getPlayerBody();
         const physicsBody = this.entity.getPhysicsBody();
 
@@ -42,9 +42,9 @@ export class AttackAnimalShoreIdleBehavior implements EntityBehavior {
         const dist = diff.length();
 
         // Activate when boat is within distance
-        if (dist < enterWaterDistance) {
+        if (dist < noticeBoatDistance) {
             // Let the entity decide what to do (e.g., create entering water behavior)
-            return this.entity.shoreIdleMaybeStartEnteringWater?.();
+            return this.entity.shoreIdleMaybeNoticeBoat?.();
         }
 
         return false;

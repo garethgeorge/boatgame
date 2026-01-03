@@ -7,9 +7,9 @@ import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { AnimalSwimAwayBehavior } from '../behaviors/AnimalSwimAwayBehavior';
-import { AnyAttackAnimal } from '../behaviors/AttackAnimalBehavior';
+import { AnyAnimal } from '../behaviors/AnimalBehavior';
 
-export class PenguinKayak extends Entity implements AnyAttackAnimal {
+export class PenguinKayak extends Entity implements AnyAnimal {
 
     private aggressiveness: number = 1.0;
     private player: AnimationPlayer | null = null;

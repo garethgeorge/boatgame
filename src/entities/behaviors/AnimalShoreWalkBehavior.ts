@@ -1,12 +1,10 @@
 import * as planck from 'planck';
-import * as THREE from 'three';
-import { CollisionCategories } from '../../core/PhysicsEngine';
 import { RiverSystem } from '../../world/RiverSystem';
-import { AttackAnimalShoreWalk } from './AttackAnimalBehavior';
+import { AnimalShoreWalk } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
 
 export class AnimalShoreWalkBehavior implements EntityBehavior {
-    private entity: AttackAnimalShoreWalk;
+    private entity: AnimalShoreWalk;
     private walkDistance: number;
     private speed: number;
     private rotationSpeed: number = 3.0; // radians per second
@@ -26,7 +24,7 @@ export class AnimalShoreWalkBehavior implements EntityBehavior {
     private targetPosition: planck.Vec2 | null = null;
 
     constructor(
-        entity: AttackAnimalShoreWalk,
+        entity: AnimalShoreWalk,
         walkDistance: number,
         speed: number
     ) {

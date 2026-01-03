@@ -2,13 +2,13 @@ import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
-import { AttackAnimalShoreIdleBehavior } from '../behaviors/AttackAnimalShoreIdleBehavior';
-import { AttackAnimalWaterBehavior } from '../behaviors/AttackAnimalWaterBehavior';
-import { AttackAnimalEnteringWaterBehavior } from '../behaviors/AttackAnimalEnteringWaterBehavior';
+import { AnimalShoreIdleBehavior } from '../behaviors/AnimalShoreIdleBehavior';
+import { AnimalWaterAttackBehavior } from '../behaviors/AnimalWaterAttackBehavior';
+import { AnimalEnteringWaterBehavior } from '../behaviors/AnimalEnteringWaterBehavior';
 import { AnimalShoreWalkBehavior } from '../behaviors/AnimalShoreWalkBehavior';
-import { AttackAnimalShoreWalk } from '../behaviors/AttackAnimalBehavior';
+import { AnimalShoreWalk } from '../behaviors/AnimalBehavior';
 
-export class Monkey extends AttackAnimal implements AttackAnimalShoreWalk {
+export class Monkey extends AttackAnimal implements AnimalShoreWalk {
 
     public static readonly HEIGHT_IN_WATER: number = -1.7;
 
@@ -86,7 +86,7 @@ export class Monkey extends AttackAnimal implements AttackAnimalShoreWalk {
 
     shoreWalkDidComplete(): void {
         // Return to idle behavior after completing shore walk
-        this.behavior = new AttackAnimalShoreIdleBehavior(this, this.aggressiveness);
+        this.behavior = new AnimalShoreIdleBehavior(this, this.aggressiveness);
         this.player?.play({ name: 'idle', timeScale: 1.0 });
     }
 }

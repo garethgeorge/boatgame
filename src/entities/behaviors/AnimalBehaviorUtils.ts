@@ -1,5 +1,5 @@
 
-export class AttackAnimalUtils {
+export class AnimalBehaviorUtils {
     /**
      * If the boat has no bottles, they should ignore it completely.
      * Otherwise, distance thresholds and speed of attack scale with the number of bottles.
@@ -11,7 +11,7 @@ export class AttackAnimalUtils {
         return 1.0 + (bottles - 1) * 0.1;
     }
 
-    public static evaluateEnterWaterDistance(aggressiveness: number, bottles: number): number {
+    public static evaluateNoticeBoatDistance(aggressiveness: number, bottles: number): number {
         const mult = this.getAgressivenessMultiplier(bottles);
         if (mult === 0) return 0;
 
