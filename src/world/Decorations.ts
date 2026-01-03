@@ -32,6 +32,7 @@ DecorationRegistry.register('depot', new GLTFModelFactory('assets/depot-model-1.
 DecorationRegistry.register('trex', new GLTFModelFactory('assets/t-rex-model-1.glb'));
 DecorationRegistry.register('triceratops', new GLTFModelFactory('assets/triceratops-model-1.glb'));
 DecorationRegistry.register('brontosaurus', new GLTFModelFactory('assets/brontosaurus-model-1.glb'));
+DecorationRegistry.register('pterodactyl', new GLTFModelFactory('assets/pterodactyl-model-1.glb'));
 
 
 export class Decorations {
@@ -120,4 +121,5 @@ export class Decorations {
   static getTRex() { return this.getModelAndAnimations('trex'); }
   static getTriceratops() { return this.getModelAndAnimations('triceratops'); }
   static getBrontosaurus() { return this.getModelAndAnimations('brontosaurus'); }
+  static getPterodactyl() { return this.getModelAndAnimations('pterodactyl'); }
 }
