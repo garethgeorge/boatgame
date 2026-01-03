@@ -572,7 +572,7 @@ export class BoatPathLayoutStrategy {
         }
     }
 
-    private static getDensity(pattern: PatternConfig<T>, progress: number): number {
+    private static getDensity<T extends string>(pattern: PatternConfig<T>, progress: number): number {
         if (pattern.density === undefined) return 1.0;
         return pattern.density[0] + progress * (pattern.density[1] - pattern.density[0]);
     }
