@@ -36,15 +36,42 @@ export class AttackAnimalWaterBehavior implements EntityBehavior {
         }
 
         const pos = physicsBody.getPosition();
-        const target = targetBody.getPosition();
-        const diff = target.clone().sub(pos);
-        const dist = diff.length();
+        const targetPos = targetBody.getPosition();
+        const playerVel = targetBody.getLinearVelocity();
+        
+        const realDiff = targetPos.clone().sub(pos);
+        const dist = realDiff.length(); // Use real distance for state transitions
+
+        // Calculate intercept
+        // Estimate time to reach target
+        const averageAttackSpeed = 12.0 * speed; // Should match force multiplier in updateAttacking
+        let timeToIntercept = 0;
+        if (averageAttackSpeed > 0) {
+            timeToIntercept = dist / averageAttackSpeed;
+            // Clamp prediction to max 2 seconds to avoid crazy behavior
+            timeToIntercept = Math.min(timeToIntercept, 2.0);
+            
+            // Dampen the intercept prediction to keep it closer to the boat
+            timeToIntercept *= 0.7;
+        }
+
+        const predictedPos = targetPos.clone().add(playerVel.clone().mul(timeToIntercept));
+        
+        // Blend between direct pursuit and intercept based on distance
+        // Dist < 8: 0 (Direct)
+        // Dist > 40: 1 (Intercept)
+        // This biases heavily towards direct pursuit when "remotely close"
+        let predictionWeight = (dist - 8.0) / (40.0 - 8.0);
+        predictionWeight = Math.max(0, Math.min(1, predictionWeight));
+
+        const blendedTarget = planck.Vec2.combine(1 - predictionWeight, targetPos, predictionWeight, predictedPos);
+        const diff = blendedTarget.sub(pos); // Use blended diff for steering
 
         // Check if behind the boat
         // V = Forward vector for the boat (local -y)
         const boatForward = targetBody.getWorldVector(planck.Vec2(0, -1));
         // U = Vector from boat to animal
-        const boatToAnimal = pos.clone().sub(target);
+        const boatToAnimal = pos.clone().sub(targetPos);
         // Dot positive = in front, negative = behind
         const isBehind = planck.Vec2.dot(boatToAnimal, boatForward) < 0;
 
