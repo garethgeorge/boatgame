@@ -31,7 +31,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
             animalPatterns: [
                 { name: 'gator_corridor', weight: 1.0, logic: 'sequence', types: ['gator'] },
                 { name: 'monkey_corridor', weight: 1.0, logic: 'sequence', types: ['monkey'] },
-                { name: 'hippo_pod', weight: 1.0, logic: 'cluster', types: ['hippo'], minCount: 2, maxCount: 5 }
+                { name: 'hippo_pod', weight: 1.0, logic: 'cluster', types: ['hippo'], minCount: 2, maxCount: 5, minProgress: 0.3 }
             ],
             slalomPatterns: [
                 { name: 'rocky_slalom', weight: 3.0, logic: 'sequence', types: ['rock'] },

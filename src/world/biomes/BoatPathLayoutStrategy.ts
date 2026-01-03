@@ -42,6 +42,8 @@ export interface SectionPattern<T extends string> {
     densityMultiplier?: number;
     minCount?: number;
     maxCount?: number;
+    minProgress?: number; // 0.0 to 1.0
+    maxProgress?: number; // 0.0 to 1.0
 }
 
 /**
@@ -107,103 +109,159 @@ export class BoatPathLayoutStrategy {
             }
         }
 
-        // 2. Group sub-sections into LayoutBlocks based on minSectionLength
-        const minLen = config.minSectionLength ?? 100.0;
+        // 2. Dynamic Block Formation
+        // We now form blocks by picking patterns and then consuming enough sub-sections
+        // to satisfy those patterns' requirements.
+        const pathLength = path[path.length - 1].arcLength;
         const blocks: LayoutBlock<T>[] = [];
-        let currentBlockSubSections: BoatPathSection<T>[] = [];
-        let currentBlockLen = 0;
 
-        for (const sub of subSections) {
-            currentBlockSubSections.push(sub);
-            currentBlockLen += path[sub.iEnd].arcLength - path[sub.iStart].arcLength;
+        // Prepare pattern pools
+        const animalPool = this.generatePatternPool(config.animalPatterns);
+        const slalomPool = this.generatePatternPool(config.slalomPatterns);
+        const pathPool = this.generatePatternPool(config.pathPatterns);
 
-            if (currentBlockLen >= minLen) {
-                blocks.push({
-                    iStart: currentBlockSubSections[0].iStart,
-                    iEnd: sub.iEnd,
-                    subSections: currentBlockSubSections,
-                    placements: {}
-                });
-                currentBlockSubSections = [];
-                currentBlockLen = 0;
-            }
-        }
-
-        // Last block if any
-        if (currentBlockSubSections.length > 0) {
-            if (blocks.length > 0) {
-                // Merge with previous block
-                const lastBlock = blocks[blocks.length - 1];
-                lastBlock.iEnd = currentBlockSubSections[currentBlockSubSections.length - 1].iEnd;
-                lastBlock.subSections.push(...currentBlockSubSections);
-            } else {
-                blocks.push({
-                    iStart: currentBlockSubSections[0].iStart,
-                    iEnd: currentBlockSubSections[currentBlockSubSections.length - 1].iEnd,
-                    subSections: currentBlockSubSections,
-                    placements: {}
-                });
-            }
-        }
-
-        // 3. Generate deterministic shuffled queues for patterns per block
-        const numBlocks = blocks.length;
-        const animalQueue = this.generatePatternQueue(config.animalPatterns, numBlocks);
-        const slalomQueue = this.generatePatternQueue(config.slalomPatterns, numBlocks);
-        const pathQueue = this.generatePatternQueue(config.pathPatterns, numBlocks);
-
-        // 4. Populate blocks using queues and tracking state
+        let subIdx = 0;
         const state = {
             lastStaggerSide: 'right' as 'left' | 'right'
         };
 
-        const resultSections: LayoutBlock<T>[] = blocks.map((block, idx) => {
-            return this.populateBlock(
-                path,
-                block,
-                config,
-                animalQueue[idx],
-                slalomQueue[idx],
-                pathQueue[idx],
-                state
-            );
-        });
+        while (subIdx < subSections.length) {
+            const blockStartSubIdx = subIdx;
+            const blockStartPathIdx = subSections[subIdx].iStart;
+            const blockStartArcLen = path[blockStartPathIdx].arcLength;
+            const progress = blockStartArcLen / pathLength;
 
-        return { path, sections: resultSections };
+            // Pick patterns that match the current progress
+            const animalPattern = this.pickPattern(animalPool, progress);
+            const slalomPattern = this.pickPattern(slalomPool, progress);
+            const pathPattern = this.pickPattern(pathPool, progress);
+
+            // Determine minimum length needed for these patterns
+            const minLen = this.calculateRequiredLength(
+                config,
+                animalPattern,
+                slalomPattern,
+                pathPattern,
+                progress
+            );
+
+            // Consume sub-sections until we meet minLen or hit end
+            let currentLen = 0;
+            let currentBlockSubSections: BoatPathSection<T>[] = [];
+
+            while (subIdx < subSections.length) {
+                const sub = subSections[subIdx];
+                currentBlockSubSections.push(sub);
+                currentLen = path[sub.iEnd].arcLength - blockStartArcLen;
+                subIdx++;
+
+                if (currentLen >= minLen) break;
+                // If we are at the last sub-section, we must stop anyway
+            }
+
+            if (currentBlockSubSections.length > 0) {
+                const block: LayoutBlock<T> = {
+                    iStart: blockStartPathIdx,
+                    iEnd: currentBlockSubSections[currentBlockSubSections.length - 1].iEnd,
+                    subSections: currentBlockSubSections,
+                    placements: {}
+                };
+
+                // Populate this block immediately so we can pass the patterns we picked
+                const populatedBlock = this.populateBlock(
+                    path,
+                    block,
+                    config,
+                    animalPattern,
+                    slalomPattern,
+                    pathPattern,
+                    state,
+                    progress // Pass progress explicitly
+                );
+                blocks.push(populatedBlock);
+            }
+        }
+
+        return { path, sections: blocks };
     }
 
-    private static generatePatternQueue<T extends string>(
-        patterns: SectionPattern<T>[],
-        count: number
-    ): (SectionPattern<T> | undefined)[] {
-        if (patterns.length === 0) return Array(count).fill(undefined);
+    private static generatePatternPool<T extends string>(
+        patterns: SectionPattern<T>[]
+    ): SectionPattern<T>[] {
+        if (patterns.length === 0) return [];
 
+        // Create a large enough pool to draw from (e.g. 100 items)
+        const pool: SectionPattern<T>[] = [];
         const totalWeight = patterns.reduce((sum, p) => sum + p.weight, 0);
-        if (totalWeight <= 0) return Array(count).fill(patterns[0]);
+        const poolSize = 100;
 
-        const queue: (SectionPattern<T> | undefined)[] = [];
-
-        // Allocate patterns based on weighted proportion
-        let allocatedCount = 0;
-        for (let i = 0; i < patterns.length; i++) {
-            const p = patterns[i];
-            const pCount = i === patterns.length - 1
-                ? count - allocatedCount
-                : Math.round((p.weight / totalWeight) * count);
-
-            for (let j = 0; j < pCount; j++) {
-                queue.push(p);
+        for (const p of patterns) {
+            const count = Math.max(1, Math.round((p.weight / totalWeight) * poolSize));
+            for (let i = 0; i < count; i++) {
+                pool.push(p);
             }
-            allocatedCount += pCount;
         }
 
-        // Shuffle the queue (Fisher-Yates)
-        for (let i = queue.length - 1; i > 0; i--) {
+        // Shuffle
+        for (let i = pool.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [queue[i], queue[j]] = [queue[j], queue[i]];
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        return pool;
+    }
+
+    private static pickPattern<T extends string>(
+        pool: SectionPattern<T>[],
+        progress: number
+    ): SectionPattern<T> | undefined {
+        if (pool.length === 0) return undefined;
+
+        // Find first pattern in shuffled pool that satisfies progress
+        // We can just iterate linearly since it's already shuffled
+        for (let i = 0; i < pool.length; i++) {
+            const p = pool[i];
+            const min = p.minProgress ?? 0;
+            const max = p.maxProgress ?? 1.0;
+            if (progress >= min && progress <= max) {
+                // To keep it random but not always the same, we could swap it to the end
+                // or just return it. For now, let's just return it to keep simplicity.
+                return p;
+            }
         }
 
-        return queue;
+        // Fallback to any pattern if none match progress (shouldn't happen with good config)
+        return pool[0];
+    }
+
+    private static calculateRequiredLength<T extends string>(
+        config: BoatPathLayoutConfig<T>,
+        animalPattern: SectionPattern<T> | undefined,
+        slalomPattern: SectionPattern<T> | undefined,
+        pathPattern: SectionPattern<T> | undefined,
+        progress: number
+    ): number {
+        const calculatePatternMinLen = (p: SectionPattern<T> | undefined, category: 'slalom' | 'animal' | 'path') => {
+            if (!p || p.minCount === undefined) return 0;
+
+            const dConfig = category === 'slalom' ? config.slalomDensity :
+                category === 'animal' ? config.animalDensity : config.pathDensity;
+
+            const density = dConfig.start + progress * (dConfig.end - dConfig.start);
+            if (density <= 0) return 0;
+
+            let required = (p.minCount / (density / 100)); // length = count / (density/100)
+            if (p.densityMultiplier !== undefined) {
+                required /= p.densityMultiplier;
+            }
+            return required;
+        };
+
+        const lenA = calculatePatternMinLen(animalPattern, 'animal');
+        const lenS = calculatePatternMinLen(slalomPattern, 'slalom');
+        const lenP = calculatePatternMinLen(pathPattern, 'path');
+
+        const baseMin = config.minSectionLength ?? 100.0;
+        return Math.max(baseMin, lenA, lenS, lenP);
     }
 
     private static populateBlock<T extends string>(
@@ -213,7 +271,8 @@ export class BoatPathLayoutStrategy {
         animalPattern: SectionPattern<T> | undefined,
         slalomPattern: SectionPattern<T> | undefined,
         pathPattern: SectionPattern<T> | undefined,
-        state: { lastStaggerSide: 'left' | 'right' }
+        state: { lastStaggerSide: 'left' | 'right' },
+        progress: number
     ): LayoutBlock<T> {
         const placements: Partial<Record<T, ObstaclePlacement[]>> = {};
 
@@ -237,9 +296,6 @@ export class BoatPathLayoutStrategy {
             block.placements = placements;
             return block;
         }
-
-        // Use mid point of block as progress along path
-        const progress = 0.5 * (blockStart + blockEnd) / pathLength;
 
         // Apply Layout logic for each category
         this.applyPattern(path, block, blockLen, slalomPattern, placements, config, 'slalom', progress, state);
