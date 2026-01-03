@@ -52,22 +52,75 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
 
     public createLayout(zMin: number, zMax: number): BoatPathLayout<JurassicEntityType> {
         return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
-            animalPatterns: [
-                { name: 'scattered_dinosaurs', weight: 1.0, logic: 'scatter', types: ['trex', 'triceratops'] },
-                { name: 'bronto_migration', weight: 0.4, logic: 'sequence', types: ['bronto'], minCount: 2 }
+            patterns: {
+                'scattered_rocks': {
+                    logic: 'scatter',
+                    place: 'slalom',
+                    density: [1.0, 3.0],
+                    types: ['rock']
+                },
+                'staggered_logs': {
+                    logic: 'staggered',
+                    place: 'slalom',
+                    density: [0.5, 1.5],
+                    types: ['log'],
+                    minCount: 4
+                },
+                'dino_scatter': {
+                    logic: 'scatter',
+                    place: 'shore',
+                    density: [0.5, 1.5],
+                    types: ['trex', 'triceratops']
+                },
+                'bronto_migration': {
+                    logic: 'sequence',
+                    place: 'shore',
+                    density: [0.4, 0.4],
+                    types: ['bronto']
+                },
+                'bottle_hunt': {
+                    logic: 'scatter',
+                    place: 'path',
+                    density: [0.25, 0.5],
+                    types: ['bottle']
+                }
+            },
+            tracks: [
+                {
+                    name: 'obstacles',
+                    stages: [
+                        {
+                            name: 'danger_zone',
+                            progress: [0, 1.0],
+                            patterns: [
+                                [
+                                    { pattern: 'scattered_rocks', weight: 1.0 },
+                                    { pattern: 'staggered_logs', weight: 0.5 }
+                                ],
+                                [
+                                    { pattern: 'dino_scatter', weight: 1.0 },
+                                    { pattern: 'bronto_migration', weight: 0.4 }
+                                ]
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: 'collectables',
+                    stages: [
+                        {
+                            name: 'bottles',
+                            progress: [0, 1.0],
+                            patterns: [
+                                [
+                                    { pattern: 'bottle_hunt', weight: 1.0 }
+                                ]
+                            ]
+                        }
+                    ]
+                }
             ],
-            slalomPatterns: [
-                { name: 'jurassic_slalom', weight: 1.0, logic: 'scatter', types: ['log', 'rock'] },
-                { name: 'staggered_logs', weight: 0.5, logic: 'staggered', types: ['log'], minCount: 4 }
-            ],
-            pathPatterns: [
-                { name: 'bottle_hunt', weight: 1.0, logic: 'scatter', types: ['bottle'] }
-            ],
-            waterAnimals: ['bronto'],
-            slalomDensity: { start: 1.0, end: 3.0 },
-            animalDensity: { start: 0.5, end: 1.5 },
-            pathDensity: { start: 0.25, end: 0.5 },
-            biomeLength: this.getBiomeLength()
+            waterAnimals: ['bronto']
         });
     }
 

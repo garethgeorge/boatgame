@@ -1,67 +1,145 @@
 import { RiverGeometry, RiverGeometrySample } from '../RiverGeometry';
 import { RiverSystem } from '../RiverSystem';
 
+/**
+ * Represents a point on the boat path, extending the basic river geometry
+ * with a boat-specific X offset for weaving.
+ */
 export interface PathPoint extends RiverGeometrySample {
-    boatXOffset: number; // Offset from river center along the normal vector
-}
-
-export interface ObstaclePlacement {
-    index: number;  // index + fractional offset in path  
-    range: [number, number]; // Distance range along the normal vector
-    aggressiveness?: number;
-}
-
-export interface BoatPathSection<T extends string> {
-    iStart: number;
-    iEnd: number;
-    side: 'left' | 'right';
-}
-
-export interface LayoutBlock<T extends string> {
-    iStart: number;
-    iEnd: number;
-    subSections: BoatPathSection<T>[];
-    placements: Partial<Record<T, ObstaclePlacement[]>>;
-}
-
-export interface BoatPathLayout<T extends string> {
-    path: PathPoint[];
-    sections: LayoutBlock<T>[];
-}
-
-export interface DensityConfig {
-    start: number; // expected instances per 100m
-    end: number;   // expected instances per 100m
-}
-
-export interface SectionPattern<T extends string> {
-    name: string;
-    weight: number;
-    logic: 'scatter' | 'sequence' | 'gate' | 'staggered' | 'cluster';
-    types: T[];
-    densityMultiplier?: number;
-    minCount?: number;
-    maxCount?: number;
-    minProgress?: number; // 0.0 to 1.0
-    maxProgress?: number; // 0.0 to 1.0
+    /** Offset from river center along the normal vector (negative is left, positive is right) */
+    boatXOffset: number;
 }
 
 /**
- * Densities are instances per 100 m
+ * Details for placing a single obstacle instance along the boat path.
  */
-export interface BoatPathLayoutConfig<T extends string> {
-    animalPatterns: SectionPattern<T>[];
-    slalomPatterns: SectionPattern<T>[];
-    pathPatterns: SectionPattern<T>[];
-    waterAnimals: T[];
-    slalomDensity: DensityConfig;
-    animalDensity: DensityConfig;
-    pathDensity: DensityConfig;
-    biomeLength: number;
-    minSectionLength?: number;
+export interface ObstaclePlacement {
+    /** Index + fractional offset in the path array */
+    index: number;
+    /** Allowed distance range [-bankDist, bankDist] along the normal vector */
+    range: [number, number];
+    /** Optional behavior scaling for attack animals */
+    aggressiveness?: number;
 }
 
+/**
+ * A block of the layout, grouping multiple path segments (sub-sections).
+ */
+export interface LayoutBlock<T extends string> {
+    /** Starting global path index of this block */
+    iStart: number;
+    /** Ending global path index of this block */
+    iEnd: number;
+    /** Map of entity types to their specific placements within this block */
+    placements: Partial<Record<T, ObstaclePlacement[]>>;
+}
+
+/**
+ * The final generated boat path and its associated obstacle layout sections.
+ */
+export interface BoatPathLayout<T extends string> {
+    /** Array of geometry and boat offset samples */
+    path: PathPoint[];
+    /** Sequential blocks of placements */
+    sections: LayoutBlock<T>[];
+}
+
+export type PatternLogic = 'scatter' | 'sequence' | 'gate' | 'staggered' | 'cluster';
+export type PlacementType = 'path' | 'slalom' | 'shore';
+
+/**
+ * Configuration for a single behavioral pattern of obstacle placement.
+ */
+export interface PatternConfig<T extends string> {
+    /** Distribution logic (scattered, ordered, etc.) */
+    logic: PatternLogic;
+    /** Target area (near path, across river, or on shore) */
+    place: PlacementType;
+    /** Min and Max density in instances per 100m. Scales from start to end of biome. */
+    density?: [number, number];
+    /** Candidate obstacle types for this pattern */
+    types: T[];
+    /** Minimum required instances */
+    minCount?: number;
+    /** Maximum allowed instances */
+    maxCount?: number;
+}
+
+export interface PatternChoice<T extends string> {
+    pattern: string; // Name of the pattern
+    weight: number;
+    at?: number[]; // Explicit progress locations [0-1]
+}
+
+/**
+ * Defines a segment of a track where certain patterns apply.
+ */
+export interface StageConfig<T extends string> {
+    name: string;
+    /** The progress range [0.0, 1.0] within the biome where this stage can be selected */
+    progress: [number, number];
+    /** A set of pattern choices. One pattern is chosen from each inner array at random based on weights. */
+    patterns: PatternChoice<T>[][];
+}
+
+/**
+ * Configuration for a specific, non-procedural placement on a track.
+ */
+export interface ExplicitPlacementConfig<T extends string> {
+    /** Unique name for this placement */
+    name: string;
+    /** Area for placement (path, slalom, shore) */
+    place: PlacementType;
+    /** Progress [0-1] along the biome length */
+    at: number;
+    /** The obstacle type to spawn */
+    type: T;
+}
+
+/**
+ * Defines a track which can either be a sequence of procedural stages
+ * or a collection of explicit, unique placements.
+ */
+export interface TrackConfig<T extends string> {
+    name: string;
+    /** Procedural stages that fill the biome length (optional if placements is used) */
+    stages?: StageConfig<T>[];
+    /** Explicit, unique placements at specific progress points (optional if stages is used) */
+    placements?: ExplicitPlacementConfig<T>[];
+}
+
+/**
+ * Top-level configuration for the BoatPathLayoutStrategy and Biome features.
+ */
+export interface BoatPathLayoutConfig<T extends string> {
+    /** Record of all named pattern configurations available in this biome */
+    patterns: Record<string, PatternConfig<T>>;
+    /** Array of tracks. Each track generates stages independently to fill the biome. */
+    tracks: TrackConfig<T>[];
+    /** List of entity types that are considered 'water animals' for shore placement refinement */
+    waterAnimals: T[];
+}
+
+interface CalculatedStage<T extends string> {
+    config: StageConfig<T>;
+    patterns: PatternConfig<T>[];
+    patternAts: (number[] | undefined)[];
+    pStart: number;
+    pEnd: number;
+}
+
+/**
+ * Strategy class for generating a procedural boat path and its associated obstacle layout.
+ * Uses a track-based system where multiple independent tracks contribute to the final distribution.
+ */
 export class BoatPathLayoutStrategy {
+    /**
+     * The main entry point for layout generation.
+     * 1. Samples river geometry.
+     * 2. Independently scales and generates stages for each configured track.
+     * 3. Generates a sinusoidal weaving boat path based on the primary track's boundaries.
+     * 4. Merges all track placements into layout blocks.
+     */
     public static createLayout<T extends string>(
         zMin: number,
         zMax: number,
@@ -73,450 +151,411 @@ export class BoatPathLayoutStrategy {
         const zStart = zMax;
         const zEnd = zMin;
 
-        // Sample the river
+        // 1. Sample the river first to get the total arc length
         const path: PathPoint[] = RiverGeometry.sampleRiver(riverSystem, zStart, zEnd, 10.0).map((sample) => {
-            const arcLength = sample.arcLength;
-            const wavelength = 400 - (arcLength / config.biomeLength) * 280;
-            const baseFreq = (2 * Math.PI) / wavelength;
-            const detailFreq = baseFreq * 2.5;
-
-            const normalizedX = Math.sin(arcLength * baseFreq) * 0.6 +
-                Math.sin(arcLength * detailFreq) * 0.15;
-
-            const margin = 5.0;
-            const width = sample.bankDist - margin;
-            const boatXOffset = normalizedX * width;
-
-            return { ...sample, boatXOffset };
+            return { ...sample, boatXOffset: 0 }; // Temporarily 0, will update below
         });
 
-        // 1. Identify sub-sections first (crossing points)
-        const subSections: BoatPathSection<T>[] = [];
-        let subStartIdx = 0;
+        if (path.length < 2) return { path, sections: [] };
 
-        for (let i = 1; i < path.length; i++) {
-            const prevSide = path[i - 1].boatXOffset > 0;
-            const currSide = path[i].boatXOffset > 0;
+        const totalArcLength = path[path.length - 1].arcLength;
 
-            if (prevSide !== currSide || i === path.length - 1) {
-                if (i - subStartIdx > 2) {
-                    const midIdx = Math.floor((subStartIdx + i) / 2);
-                    const boatIsOnRight = path[midIdx].boatXOffset > 0;
-                    const targetSide = boatIsOnRight ? 'left' : 'right' as 'left' | 'right';
-                    subSections.push({ iStart: subStartIdx, iEnd: i, side: targetSide });
-                }
-                subStartIdx = i;
-            }
+        // 2. Generate tracks independently
+        const trackPlacements: { trackName: string, stages: CalculatedStage<T>[] }[] = [];
+        for (const track of config.tracks) {
+            const stages = this.generateTrackStages(track, config, totalArcLength);
+            trackPlacements.push({ trackName: track.name, stages });
         }
 
-        // 2. Dynamic Block Formation
-        // We now form blocks by picking patterns and then consuming enough sub-sections
-        // to satisfy those patterns' requirements.
-        const pathLength = path[path.length - 1].arcLength;
+        // 3. Determine boat path crossings based on Track 0 stage boundaries
+        const track0 = trackPlacements[0];
+        const crossings: number[] = [0]; // progress values [0-1]
+        if (track0) {
+            for (let i = 0; i < track0.stages.length - 1; i++) {
+                crossings.push(track0.stages[i].pEnd);
+            }
+        }
+        crossings.push(1.0);
+
+        // 4. Update path points with weaving boatXOffset
+        for (const p of path) {
+            const progress = p.arcLength / totalArcLength;
+
+            // Find which crossing segment we are in
+            let segmentIdx = 0;
+            for (let i = 0; i < crossings.length - 1; i++) {
+                if (progress >= crossings[i] && progress <= crossings[i + 1]) {
+                    segmentIdx = i;
+                    break;
+                }
+            }
+
+            // Weave back and forth
+            const side = (segmentIdx % 2 === 0) ? 1 : -1;
+            const segmentProgress = (progress - crossings[segmentIdx]) / (crossings[segmentIdx + 1] - crossings[segmentIdx]);
+
+            // Sinusoidal weave within segment
+            const normalizedX = Math.sin(segmentProgress * Math.PI) * side * 0.7;
+
+            const margin = 5.0;
+            const width = p.bankDist - margin;
+            p.boatXOffset = normalizedX * width;
+        }
+
+        // 5. Form LayoutBlocks by merging all track placements
         const blocks: LayoutBlock<T>[] = [];
 
-        // Prepare pattern pools
-        const animalPool = this.generatePatternPool(config.animalPatterns);
-        const slalomPool = this.generatePatternPool(config.slalomPatterns);
-        const pathPool = this.generatePatternPool(config.pathPatterns);
+        // For simplicity, we create one block per track stage if they don't overlap too much,
+        // but since tracks are independent, it's better to just collect all placements.
+        // Let's create a single large block for now, or split by some constant interval.
+        // Actually, the original design had 'sections', let's just make one block for the whole biome
+        // and populate it from all tracks. Or better, split it into chunks for performance/paging if needed.
+        // For now, let's keep it simple: One block per track 0 stage.
 
-        let subIdx = 0;
-        const state = {
-            lastStaggerSide: 'right' as 'left' | 'right'
-        };
+        for (let i = 0; i < crossings.length - 1; i++) {
+            const pStart = crossings[i];
+            const pEnd = crossings[i + 1];
 
-        while (subIdx < subSections.length) {
-            const blockStartSubIdx = subIdx;
-            const blockStartPathIdx = subSections[subIdx].iStart;
-            const blockStartArcLen = path[blockStartPathIdx].arcLength;
-            const progress = blockStartArcLen / pathLength;
+            const iStart = Math.floor(pStart * (path.length - 1));
+            const iEnd = Math.floor(pEnd * (path.length - 1));
 
-            // Pick patterns that match the current progress
-            const animalPattern = this.pickPattern(animalPool, progress);
-            const slalomPattern = this.pickPattern(slalomPool, progress);
-            const pathPattern = this.pickPattern(pathPool, progress);
+            const block: LayoutBlock<T> = {
+                iStart,
+                iEnd,
+                placements: {}
+            };
 
-            // Determine minimum length needed for these patterns
-            const minLen = this.calculateRequiredLength(
-                config,
-                animalPattern,
-                slalomPattern,
-                pathPattern,
-                progress
-            );
+            // Populate placements from all tracks that overlap this progress range
+            for (const tp of trackPlacements) {
+                // Procedural stages
+                for (const stage of tp.stages) {
+                    if (stage.pEnd <= pStart || stage.pStart >= pEnd) continue;
 
-            // Consume sub-sections until we meet minLen or hit end
-            let currentLen = 0;
-            let currentBlockSubSections: BoatPathSection<T>[] = [];
-
-            while (subIdx < subSections.length) {
-                const sub = subSections[subIdx];
-                currentBlockSubSections.push(sub);
-                currentLen = path[sub.iEnd].arcLength - blockStartArcLen;
-                subIdx++;
-
-                if (currentLen >= minLen) break;
-                // If we are at the last sub-section, we must stop anyway
+                    // Apply patterns for this stage
+                    this.populatePlacements(path, block, stage, config, totalArcLength);
+                }
             }
 
-            if (currentBlockSubSections.length > 0) {
-                const block: LayoutBlock<T> = {
-                    iStart: blockStartPathIdx,
-                    iEnd: currentBlockSubSections[currentBlockSubSections.length - 1].iEnd,
-                    subSections: currentBlockSubSections,
-                    placements: {}
-                };
-
-                // Populate this block immediately so we can pass the patterns we picked
-                const populatedBlock = this.populateBlock(
-                    path,
-                    block,
-                    config,
-                    animalPattern,
-                    slalomPattern,
-                    pathPattern,
-                    state,
-                    progress // Pass progress explicitly
-                );
-                blocks.push(populatedBlock);
+            // Populate explicit placements from tracks
+            for (const track of config.tracks) {
+                if (track.placements) {
+                    for (const ep of track.placements) {
+                        if (ep.at >= pStart && ep.at < pEnd) {
+                            const pathIndex = ep.at * (path.length - 1);
+                            const state = { lastStaggerSide: 'right' as 'left' | 'right' };
+                            this.applyIndividualPlacement(
+                                path,
+                                block,
+                                ep.type,
+                                ep.place,
+                                pathIndex,
+                                config,
+                                state,
+                                ep.at
+                            );
+                        }
+                    }
+                }
             }
+
+            blocks.push(block);
         }
 
         return { path, sections: blocks };
     }
 
-    private static generatePatternPool<T extends string>(
-        patterns: SectionPattern<T>[]
-    ): SectionPattern<T>[] {
-        if (patterns.length === 0) return [];
-
-        // Create a large enough pool to draw from (e.g. 100 items)
-        const pool: SectionPattern<T>[] = [];
-        const totalWeight = patterns.reduce((sum, p) => sum + p.weight, 0);
-        const poolSize = 100;
-
-        for (const p of patterns) {
-            const count = Math.max(1, Math.round((p.weight / totalWeight) * poolSize));
-            for (let i = 0; i < count; i++) {
-                pool.push(p);
-            }
-        }
-
-        // Shuffle
-        for (let i = pool.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [pool[i], pool[j]] = [pool[j], pool[i]];
-        }
-        return pool;
-    }
-
-    private static pickPattern<T extends string>(
-        pool: SectionPattern<T>[],
-        progress: number
-    ): SectionPattern<T> | undefined {
-        if (pool.length === 0) return undefined;
-
-        // Find first pattern in shuffled pool that satisfies progress
-        // We can just iterate linearly since it's already shuffled
-        for (let i = 0; i < pool.length; i++) {
-            const p = pool[i];
-            const min = p.minProgress ?? 0;
-            const max = p.maxProgress ?? 1.0;
-            if (progress >= min && progress <= max) {
-                // To keep it random but not always the same, we could swap it to the end
-                // or just return it. For now, let's just return it to keep simplicity.
-                return p;
-            }
-        }
-
-        // Fallback to any pattern if none match progress (shouldn't happen with good config)
-        return pool[0];
-    }
-
-    private static calculateRequiredLength<T extends string>(
+    /**
+     * Generates a sequence of stages for a track to fill the biome.
+     * Each stage is randomly chosen from applicable stage configs and scaled
+     * so it reaches the end of the biome.
+     */
+    private static generateTrackStages<T extends string>(
+        track: TrackConfig<T>,
         config: BoatPathLayoutConfig<T>,
-        animalPattern: SectionPattern<T> | undefined,
-        slalomPattern: SectionPattern<T> | undefined,
-        pathPattern: SectionPattern<T> | undefined,
-        progress: number
-    ): number {
-        const calculatePatternMinLen = (p: SectionPattern<T> | undefined, category: 'slalom' | 'animal' | 'path') => {
-            if (!p || p.minCount === undefined) return 0;
+        totalArcLength: number
+    ): CalculatedStage<T>[] {
+        const stages: CalculatedStage<T>[] = [];
+        if (!track.stages) return stages;
 
-            const dConfig = category === 'slalom' ? config.slalomDensity :
-                category === 'animal' ? config.animalDensity : config.pathDensity;
+        let currentProgress = 0;
 
-            const density = dConfig.start + progress * (dConfig.end - dConfig.start);
-            if (density <= 0) return 0;
+        while (currentProgress < 1.0) {
+            // 2. Choose at random a stage that is applicable
+            const applicableStages = track.stages.filter(s =>
+                currentProgress >= s.progress[0] && currentProgress <= s.progress[1]
+            );
 
-            let required = (p.minCount / (density / 100)); // length = count / (density/100)
-            if (p.densityMultiplier !== undefined) {
-                required /= p.densityMultiplier;
+            if (applicableStages.length === 0) {
+                // Advance until one is available
+                const nextStage = track.stages.find(s => s.progress[0] > currentProgress);
+                if (!nextStage) break;
+                currentProgress = nextStage.progress[0];
+                continue;
             }
-            return required;
-        };
 
-        const lenA = calculatePatternMinLen(animalPattern, 'animal');
-        const lenS = calculatePatternMinLen(slalomPattern, 'slalom');
-        const lenP = calculatePatternMinLen(pathPattern, 'path');
+            // Shuffle and pick
+            const stageConfig = applicableStages[Math.floor(Math.random() * applicableStages.length)];
 
-        const baseMin = config.minSectionLength ?? 100.0;
-        return Math.max(baseMin, lenA, lenS, lenP);
+            // 3. Choose one pattern from each set
+            const chosenPatterns: PatternConfig<T>[] = [];
+            const chosenAts: (number[] | undefined)[] = [];
+
+            for (const set of stageConfig.patterns) {
+                const choice = this.weightedPickFromArray(set);
+                chosenPatterns.push(config.patterns[choice.pattern]);
+                chosenAts.push(choice.at);
+            }
+
+            // 4. Determine the range of minimum lengths
+            let Lmin = Infinity;
+            let Lmax = -Infinity;
+
+            for (const p of chosenPatterns) {
+                const density = this.getDensity(p, currentProgress);
+                const minCount = p.minCount ?? 1;
+                const len = (minCount / (density / 100));
+                Lmin = Math.min(Lmin, len);
+                Lmax = Math.max(Lmax, len);
+            }
+
+            if (Lmin === Infinity) Lmin = 50; // Fallback
+            if (Lmax === -Infinity) Lmax = 100;
+
+            const chosenLen = Lmax + Math.random() * (Math.max(2 * Lmin, Lmax) - Lmax);
+            const progressLen = chosenLen / totalArcLength;
+
+            stages.push({
+                config: stageConfig,
+                patterns: chosenPatterns,
+                patternAts: chosenAts,
+                pStart: currentProgress,
+                pEnd: currentProgress + progressLen
+            });
+
+            currentProgress += progressLen;
+        }
+
+        // 5. Scale to fit intended range
+        if (stages.length > 0) {
+            const firstStage = stages[0];
+            const lastStage = stages[stages.length - 1];
+
+            const initialStart = firstStage.pStart;
+            const generatedEnd = lastStage.pEnd;
+            const targetEnd = lastStage.config.progress[1];
+
+            const generatedDuration = generatedEnd - initialStart;
+            const targetDuration = targetEnd - initialStart;
+
+            if (generatedDuration > 0 && targetDuration > 0) {
+                const scale = targetDuration / generatedDuration;
+                for (const s of stages) {
+                    s.pStart = initialStart + (s.pStart - initialStart) * scale;
+                    s.pEnd = initialStart + (s.pEnd - initialStart) * scale;
+                }
+            }
+        }
+
+        return stages;
     }
 
-    private static populateBlock<T extends string>(
+    private static weightedPickFromArray<T>(choices: ({ weight: number } & T)[]): T {
+        const totalWeight = choices.reduce((sum, c) => sum + c.weight, 0);
+        let r = Math.random() * totalWeight;
+        for (const c of choices) {
+            r -= c.weight;
+            if (r <= 0) return c;
+        }
+        return choices[0];
+    }
+
+    /**
+     * Populates a layout block with placements generated for a specific track stage.
+     * Handles pattern logic (scatter, sequence, etc.) and density-based counts.
+     */
+    private static populatePlacements<T extends string>(
         path: PathPoint[],
         block: LayoutBlock<T>,
+        stage: CalculatedStage<T>,
         config: BoatPathLayoutConfig<T>,
-        animalPattern: SectionPattern<T> | undefined,
-        slalomPattern: SectionPattern<T> | undefined,
-        pathPattern: SectionPattern<T> | undefined,
+        totalArcLength: number
+    ) {
+        const stageProgress = (stage.pStart + stage.pEnd) / 2;
+
+        for (let i = 0; i < stage.patterns.length; i++) {
+            const pattern = stage.patterns[i];
+            const explicitAt = stage.patternAts[i];
+
+            const density = this.getDensity(pattern, stageProgress);
+            const blockLenProgress = stage.pEnd - stage.pStart;
+            const blockLenMeters = blockLenProgress * totalArcLength;
+
+            let expected = (blockLenMeters / 100) * density;
+            let count = Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
+
+            if (pattern.minCount !== undefined) count = Math.max(count, pattern.minCount);
+            if (pattern.maxCount !== undefined) count = Math.min(count, pattern.maxCount);
+
+            if (count <= 0) continue;
+
+            const state = { lastStaggerSide: 'right' as 'left' | 'right' };
+
+            // Determine indices within the global path
+            const iStart = Math.floor(stage.pStart * (path.length - 1));
+            const iEnd = Math.floor(stage.pEnd * (path.length - 1));
+
+            if (explicitAt) {
+                // Use explicit locations
+                for (const p of explicitAt) {
+                    const pathIndex = iStart + p * (iEnd - iStart);
+                    this.applyIndividualPlacement(
+                        path,
+                        block,
+                        pattern.types[Math.floor(Math.random() * pattern.types.length)],
+                        pattern.place,
+                        pathIndex,
+                        config,
+                        state,
+                        stageProgress
+                    );
+                }
+            } else {
+                // Use patterned logic
+                switch (pattern.logic) {
+                    case 'scatter':
+                        for (let j = 0; j < count; j++) {
+                            const pathIndex = iStart + Math.random() * (iEnd - iStart);
+                            this.applyIndividualPlacement(
+                                path,
+                                block,
+                                pattern.types[Math.floor(Math.random() * pattern.types.length)],
+                                pattern.place,
+                                pathIndex,
+                                config,
+                                state,
+                                stageProgress
+                            );
+                        }
+                        break;
+                    case 'sequence':
+                        for (let j = 0; j < count; j++) {
+                            const pathIndex = iStart + (j + 0.5) * (iEnd - iStart) / count;
+                            this.applyIndividualPlacement(
+                                path,
+                                block,
+                                pattern.types[Math.floor(Math.random() * pattern.types.length)],
+                                pattern.place,
+                                pathIndex,
+                                config,
+                                state,
+                                stageProgress
+                            );
+                        }
+                        break;
+                    case 'staggered':
+                    case 'gate':
+                        const subCount = pattern.logic === 'gate' ? Math.ceil(count / 2) : count;
+                        for (let j = 0; j < count; j++) {
+                            const step = pattern.logic === 'gate' ? Math.floor(j / 2) : j;
+                            const pathIndex = iStart + (step + 0.5) * (iEnd - iStart) / subCount;
+                            this.applyIndividualPlacement(
+                                path,
+                                block,
+                                pattern.types[Math.floor(Math.random() * pattern.types.length)],
+                                pattern.place,
+                                pathIndex,
+                                config,
+                                state,
+                                stageProgress,
+                                pattern.logic,
+                                j % 2
+                            );
+                        }
+                        break;
+                    case 'cluster':
+                        const center = iStart + Math.random() * (iEnd - iStart);
+                        for (let j = 0; j < count; j++) {
+                            const jitter = (Math.random() - 0.5) * 5.0; // +/- 50m appx at 10m steps? wait path is 10m
+                            const pathIndex = Math.max(iStart, Math.min(iEnd, center + jitter));
+                            this.applyIndividualPlacement(
+                                path,
+                                block,
+                                pattern.types[Math.floor(Math.random() * pattern.types.length)],
+                                pattern.place,
+                                pathIndex,
+                                config,
+                                state,
+                                stageProgress
+                            );
+                        }
+                        break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Logic for deciding exactly where a single obstacle should be placed.
+     * Resolves the side (left/right) relative to the boat path and pattern logic.
+     * Picks a random obstacle type from the pattern.
+     */
+    private static applyIndividualPlacement<T extends string>(
+        path: PathPoint[],
+        block: LayoutBlock<T>,
+        type: T,
+        place: PlacementType,
+        pathIndex: number,
+        config: BoatPathLayoutConfig<T>,
         state: { lastStaggerSide: 'left' | 'right' },
-        progress: number
-    ): LayoutBlock<T> {
-        const placements: Partial<Record<T, ObstaclePlacement[]>> = {};
-
-        // Initialize all potential placement arrays in config
-        const allPossibleTypes = new Set<T>([
-            ...(animalPattern ? animalPattern.types : []),
-            ...(slalomPattern ? slalomPattern.types : []),
-            ...(pathPattern ? pathPattern.types : [])
-        ]);
-        for (const type of allPossibleTypes) {
-            placements[type] = [];
-        }
-
-        const pathLength = path[path.length - 1].arcLength;
-        const pathCutoff = 0.9 * pathLength;
-        const blockStart = path[block.iStart].arcLength;
-        const blockEnd = Math.min(path[block.iEnd].arcLength, pathCutoff);
-        const blockLen = blockEnd - blockStart;
-
-        if (blockLen <= 0) {
-            block.placements = placements;
-            return block;
-        }
-
-        // Apply Layout logic for each category
-        this.applyPattern(path, block, blockLen, slalomPattern, placements, config, 'slalom', progress, state);
-        this.applyPattern(path, block, blockLen, animalPattern, placements, config, 'animal', progress, state);
-        this.applyPattern(path, block, blockLen, pathPattern, placements, config, 'path', progress, state);
-
-        block.placements = placements;
-        return block;
-    }
-
-    private static applyPattern<T extends string>(
-        path: PathPoint[],
-        block: LayoutBlock<T>,
-        blockLength: number,
-        pattern: SectionPattern<T> | undefined,
-        placements: Partial<Record<T, ObstaclePlacement[]>>,
-        config: BoatPathLayoutConfig<T>,
-        category: 'slalom' | 'animal' | 'path',
         progress: number,
-        state: { lastStaggerSide: 'left' | 'right' }
+        logic?: PatternLogic,
+        gateIndex?: number
     ) {
-        if (!pattern) return;
+        const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
+        const boatSide = pathPoint.boatXOffset > 0 ? 'right' : 'left';
 
-        const dConfig = category === 'slalom' ? config.slalomDensity :
-            category === 'animal' ? config.animalDensity : config.pathDensity;
+        let side: 'left' | 'right';
 
-        const d = dConfig.start + progress * (dConfig.end - dConfig.start);
-        let expected = (blockLength / 100) * d;
-
-        if (pattern.densityMultiplier !== undefined) {
-            expected *= pattern.densityMultiplier;
-        }
-
-        let count = Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
-
-        if (pattern.minCount !== undefined) count = Math.max(count, pattern.minCount);
-        if (pattern.maxCount !== undefined) count = Math.min(count, pattern.maxCount);
-
-        if (count <= 0) return;
-
-        switch (pattern.logic) {
-            case 'scatter':
-                this.applyScatter(path, block, pattern, count, placements, config, category, progress);
-                break;
-            case 'sequence':
-                this.applySequence(path, block, pattern, count, placements, config, category, progress);
-                break;
-            case 'gate':
-                this.applyGate(path, block, pattern, count, placements, config, category, progress);
-                break;
-            case 'staggered':
-                this.applyStaggered(path, block, pattern, count, placements, config, category, progress, state);
-                break;
-            case 'cluster':
-                this.applyCluster(path, block, pattern, count, placements, config, category, progress);
-                break;
-        }
-    }
-
-    /**
-     * Randomly scatter instances along block and resolve side
-     */
-    private static applyScatter<T extends string>(
-        path: PathPoint[],
-        block: LayoutBlock<T>,
-        pattern: SectionPattern<T>,
-        count: number,
-        placements: Partial<Record<T, ObstaclePlacement[]>>,
-        config: BoatPathLayoutConfig<T>,
-        category: 'slalom' | 'animal' | 'path',
-        progress: number
-    ) {
-        for (let j = 0; j < count; j++) {
-            const type = pattern.types[Math.floor(Math.random() * pattern.types.length)];
-            const pathIndex = this.randomIndex(block.iStart, block.iEnd, j, count);
-            const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
-
-            const side = this.resolveSide(block, pathIndex);
-            const range = this.placementRange(pathPoint, type, side, category, config);
-
-            this.recordPlacement(pathIndex, range, type, placements, category, progress);
-        }
-    }
-
-    /**
-     * Place instances equidistantly along the block and resolve side
-     */
-    private static applySequence<T extends string>(
-        path: PathPoint[],
-        block: LayoutBlock<T>,
-        pattern: SectionPattern<T>,
-        count: number,
-        placements: Partial<Record<T, ObstaclePlacement[]>>,
-        config: BoatPathLayoutConfig<T>,
-        category: 'slalom' | 'animal' | 'path',
-        progress: number
-    ) {
-        for (let j = 0; j < count; j++) {
-            const type = pattern.types[Math.floor(Math.random() * pattern.types.length)];
-            const pathIndex = block.iStart + (j + 0.5) * (block.iEnd - block.iStart) / count;
-            const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
-
-            const side = this.resolveSide(block, pathIndex);
-            const range = this.placementRange(pathPoint, type, side, category, config);
-
-            this.recordPlacement(pathIndex, range, type, placements, category, progress);
-        }
-    }
-
-    /**
-     * Place pairs of instances equidistantly along block and resolve side
-     */
-    private static applyGate<T extends string>(
-        path: PathPoint[],
-        block: LayoutBlock<T>,
-        pattern: SectionPattern<T>,
-        count: number,
-        placements: Partial<Record<T, ObstaclePlacement[]>>,
-        config: BoatPathLayoutConfig<T>,
-        category: 'slalom' | 'animal' | 'path',
-        progress: number
-    ) {
-        const gateCount = Math.ceil(count / 2);
-        for (let j = 0; j < count; j++) {
-            const type = pattern.types[Math.floor(Math.random() * pattern.types.length)];
-            const pathIndex = block.iStart + (Math.floor(j / 2) + 0.5) * (block.iEnd - block.iStart) / gateCount;
-            const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
-
-            const subSide = this.resolveSide(block, pathIndex);
-            const gateSide = (j % 2 === 0) ? subSide : (subSide === 'left' ? 'right' : 'left');
-            const range = this.placementRange(pathPoint, type, gateSide, category, config);
-
-            this.recordPlacement(pathIndex, range, type, placements, category, progress);
-        }
-    }
-
-    /**
-     * Place instances equidistantly along the block and on alternating
-     * sides.
-     */
-    private static applyStaggered<T extends string>(
-        path: PathPoint[],
-        block: LayoutBlock<T>,
-        pattern: SectionPattern<T>,
-        count: number,
-        placements: Partial<Record<T, ObstaclePlacement[]>>,
-        config: BoatPathLayoutConfig<T>,
-        category: 'slalom' | 'animal' | 'path',
-        progress: number,
-        state: { lastStaggerSide: 'left' | 'right' }
-    ) {
-        for (let j = 0; j < count; j++) {
-            const type = pattern.types[Math.floor(Math.random() * pattern.types.length)];
-            const pathIndex = block.iStart + (j + 0.5) * (block.iEnd - block.iStart) / count;
-            const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
-
-            // Flip side based on tracker
+        if (place === 'path') {
+            side = Math.random() > 0.5 ? 'left' : 'right';
+        } else if (logic === 'staggered') {
             state.lastStaggerSide = state.lastStaggerSide === 'left' ? 'right' : 'left';
-            const range = this.placementRange(pathPoint, type, state.lastStaggerSide, category, config);
-
-            this.recordPlacement(pathIndex, range, type, placements, category, progress);
-        }
-    }
-
-    private static applyCluster<T extends string>(
-        path: PathPoint[],
-        block: LayoutBlock<T>,
-        pattern: SectionPattern<T>,
-        count: number,
-        placements: Partial<Record<T, ObstaclePlacement[]>>,
-        config: BoatPathLayoutConfig<T>,
-        category: 'slalom' | 'animal' | 'path',
-        progress: number
-    ) {
-        // Find a center for the cluster
-        const clusterCenterIndex = block.iStart + Math.random() * (block.iEnd - block.iStart);
-
-        for (let j = 0; j < count; j++) {
-            const type = pattern.types[Math.floor(Math.random() * pattern.types.length)];
-
-            // Tight path index jitter around center
-            const jitter = (Math.random() - 0.5) * 2.0; // +/- 1 path point appx
-            const pathIndex = Math.max(block.iStart, Math.min(block.iEnd, clusterCenterIndex + jitter));
-            const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
-
-            const side = this.resolveSide(block, pathIndex);
-            const range = this.placementRange(pathPoint, type, side, category, config);
-
-            this.recordPlacement(pathIndex, range, type, placements, category, progress);
-        }
-    }
-
-    private static resolveSide<T extends string>(block: LayoutBlock<T>, pathIndex: number): 'left' | 'right' {
-        // Find which subsection this pathIndex falls into
-        for (const sub of block.subSections) {
-            if (pathIndex >= sub.iStart && pathIndex <= sub.iEnd) {
-                return sub.side;
+            side = state.lastStaggerSide;
+        } else if (logic === 'gate') {
+            if (gateIndex === 0) {
+                side = boatSide === 'right' ? 'left' : 'right'; // opposite to boat
+            } else {
+                side = boatSide === 'right' ? 'right' : 'left'; // same as boat
             }
+        } else {
+            // Default: opposite to boat
+            side = boatSide === 'right' ? 'left' : 'right';
         }
-        // Fallback to the first subsection's side if it's somehow out of bounds
-        return block.subSections[0]?.side ?? 'right';
+
+        const range = this.placementRange(pathPoint, type, side, place, config);
+
+        const aggressiveness = Math.min(1.0, progress * 0.7 + Math.random() * 0.3);
+
+        if (!block.placements[type]) block.placements[type] = [];
+        block.placements[type]!.push({ index: pathIndex, range, aggressiveness });
     }
 
     /**
-     * Returns the placement range for an instance.
-     * slalom objects are placed anywhere between the boat path and the bank
-     * animals are placed on or close to the bank
-     * path objects are placed close to the boat and ignore side
+     * Calculates the world-coordinate offset range along the normal vector
+     * for a given placement type and side.
      */
     private static placementRange<T extends string>(
         pathPoint: PathPoint,
         type: T,
         side: 'left' | 'right',
-        category: 'slalom' | 'animal' | 'path',
+        place: PlacementType,
         config: BoatPathLayoutConfig<T>
     ): [number, number] {
-        if (category === 'slalom') {
+        if (place === 'slalom') {
             return side === 'right' ?
                 [pathPoint.boatXOffset + 5.0, pathPoint.bankDist - 2.0] :
                 [-pathPoint.bankDist + 2.0, pathPoint.boatXOffset - 5.0];
-        } else if (category === 'animal') {
+        } else if (place === 'shore') {
             const isWaterAnimal = config.waterAnimals.includes(type);
             if (isWaterAnimal) {
                 return side === 'right' ?
@@ -528,26 +567,13 @@ export class BoatPathLayoutStrategy {
                     [-pathPoint.bankDist - 15, 0.5 * -pathPoint.bankDist];
             }
         } else {
+            // path, random position offset by +/-2
             return [pathPoint.boatXOffset - 2, pathPoint.boatXOffset + 2];
         }
     }
 
-    private static recordPlacement<T extends string>(
-        pathIndex: number,
-        range: [number, number],
-        type: T,
-        placements: Partial<Record<T, ObstaclePlacement[]>>,
-        category: 'slalom' | 'animal' | 'path',
-        progress: number
-    ) {
-        const aggressiveness = category === 'animal' ?
-            Math.min(1.0, progress * 0.7 + Math.random() * 0.3) : undefined;
-
-        if (!placements[type]) placements[type] = [];
-        placements[type]!.push({ index: pathIndex, range, aggressiveness });
-    }
-
-    private static randomIndex(iStart: number, iEnd: number, n: number, count: number) {
-        return iStart + (n + Math.random() * 0.99) * (iEnd - iStart) / count;
+    private static getDensity(pattern: PatternConfig<T>, progress: number): number {
+        if (pattern.density === undefined) return 1.0;
+        return pattern.density[0] + progress * (pattern.density[1] - pattern.density[0]);
     }
 }

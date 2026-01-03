@@ -9,7 +9,7 @@ import { MonkeySpawner } from '../../entities/spawners/MonkeySpawner';
 import { RiverGeometry } from '../RiverGeometry';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 
-type DesertEntityType = 'rock' | 'bottle' | 'monkey' | 'gator' | 'hippo';
+type DesertEntityType = 'rock' | 'bottle' | 'monkey' | 'gator' | 'hippo' | 'dock';
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';
@@ -28,25 +28,93 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
     public createLayout(zMin: number, zMax: number): BoatPathLayout<DesertEntityType> {
         return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
-            animalPatterns: [
-                { name: 'gator_corridor', weight: 1.0, logic: 'sequence', types: ['gator'] },
-                { name: 'monkey_corridor', weight: 1.0, logic: 'sequence', types: ['monkey'] },
-                { name: 'hippo_pod', weight: 1.0, logic: 'cluster', types: ['hippo'], minCount: 2, maxCount: 5, minProgress: 0.3 }
+            patterns: {
+                'animal_corridor': {
+                    logic: 'sequence',
+                    place: 'shore',
+                    density: [0.5, 2.0],
+                    types: ['gator', 'monkey']
+                },
+                'hippo_pod': {
+                    logic: 'cluster',
+                    place: 'shore',
+                    density: [0.3, 1.5],
+                    types: ['hippo'],
+                    minCount: 2
+                },
+                'rocky_slalom': {
+                    logic: 'sequence',
+                    place: 'slalom',
+                    density: [0.5, 2.0],
+                    types: ['rock']
+                },
+                'rock_stagger': {
+                    logic: 'staggered',
+                    place: 'slalom',
+                    density: [0.5, 2.0],
+                    types: ['rock'],
+                    minCount: 3
+                },
+                'bottle_cluster': {
+                    logic: 'cluster',
+                    place: 'path',
+                    density: [1.5, 0.5],
+                    types: ['bottle'],
+                    minCount: 3
+                }
+            },
+            tracks: [
+                {
+                    name: 'main',
+                    stages: [
+                        {
+                            name: 'intro',
+                            progress: [0, 0.4],
+                            patterns: [
+                                [
+                                    { pattern: 'rocky_slalom', weight: 1 },
+                                    { pattern: 'rock_stagger', weight: 1 }
+                                ]
+                            ]
+                        },
+                        {
+                            name: 'gauntlet',
+                            progress: [0.3, 0.9],
+                            patterns: [
+                                [
+                                    { pattern: 'animal_corridor', weight: 2 },
+                                    { pattern: 'hippo_pod', weight: 1 }
+                                ],
+                                [
+                                    { pattern: 'rocky_slalom', weight: 1 },
+                                    { pattern: 'rock_stagger', weight: 1 }
+                                ]
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: 'unique_elements',
+                    placements: [
+                        { name: 'dock', place: 'shore', at: 0.95, type: 'dock' }
+                    ]
+                },
+                {
+                    name: 'rewards',
+                    stages: [
+                        {
+                            name: 'bottles',
+                            progress: [0.0, 0.9],
+                            patterns: [
+                                [
+                                    { pattern: 'bottle_cluster', weight: 1 }
+                                ]
+                            ]
+                        }
+                    ]
+                }
             ],
-            slalomPatterns: [
-                { name: 'rocky_slalom', weight: 3.0, logic: 'sequence', types: ['rock'] },
-                { name: 'rock_stagger', weight: 1.0, logic: 'staggered', types: ['rock'], minCount: 3 },
-            ],
-            pathPatterns: [
-                { name: 'bottle_cluster', weight: 1, logic: 'cluster', types: ['bottle'], minCount: 3 },
-                { name: 'bottle_scatter', weight: 1, logic: 'scatter', types: ['bottle'] }
-            ],
-            waterAnimals: ['hippo'],
-            slalomDensity: { start: 0.6, end: 1.5 },
-            animalDensity: { start: 0.4, end: 1.2 },
-            pathDensity: { start: 2.0, end: 2.0 },
-            biomeLength: this.getBiomeLength(),
-            minSectionLength: 200.0
+            waterAnimals: ['hippo']
         });
     }
 
@@ -127,21 +195,26 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                                 );
                                 break;
                             }
+                            case 'dock': {
+                                await this.pierSpawner.spawnAt(
+                                    context, sample.centerPos.z, true);
+                                break;
+                            }
                         }
                     }
                 }
             }
         }
 
-        // Pier spawning at the end of the biome
-        const totalArcLength = layout.path[layout.path.length - 1].arcLength;
-        const pierArcLength = totalArcLength * 0.95;
-        const pierIndex = RiverGeometry.getPathIndexByArcLen(layout.path, pierArcLength);
+        // // Pier spawning at the end of the biome
+        // const totalArcLength = layout.path[layout.path.length - 1].arcLength;
+        // const pierArcLength = totalArcLength * 0.95;
+        // const pierIndex = RiverGeometry.getPathIndexByArcLen(layout.path, pierArcLength);
 
-        if (iChunkMin <= pierIndex && pierIndex < iChunkMax) {
-            const sample = RiverGeometry.getPathPoint(layout.path, pierIndex);
-            await this.pierSpawner.spawnAt(context, sample.centerPos.z, true);
-        }
+        // if (iChunkMin <= pierIndex && pierIndex < iChunkMax) {
+        //     const sample = RiverGeometry.getPathPoint(layout.path, pierIndex);
+        //     await this.pierSpawner.spawnAt(context, sample.centerPos.z, true);
+        // }
     }
 
 }

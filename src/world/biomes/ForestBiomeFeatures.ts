@@ -40,22 +40,77 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
 
     public createLayout(zMin: number, zMax: number): BoatPathLayout<ForestEntityType> {
         return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
-            animalPatterns: [
-                { name: 'scattered_animals', weight: 1.0, logic: 'scatter', types: ['bear', 'moose'] }
+            patterns: {
+                'forest_slalom': {
+                    logic: 'scatter',
+                    place: 'slalom',
+                    density: [1.0, 2.0],
+                    types: ['log', 'rock', 'buoy']
+                },
+                'rock_gates': {
+                    logic: 'gate',
+                    place: 'slalom',
+                    density: [1.0, 2.0],
+                    types: ['rock'],
+                    minCount: 2
+                },
+                'piers': {
+                    logic: 'staggered',
+                    place: 'slalom',
+                    density: [0.3, 0.9],
+                    types: ['pier'],
+                    minCount: 2
+                },
+                'forest_animals': {
+                    logic: 'scatter',
+                    place: 'shore',
+                    density: [0.8, 2.5],
+                    types: ['bear', 'moose']
+                },
+                'duckling_train': {
+                    logic: 'sequence',
+                    place: 'path',
+                    density: [0.5, 1.5],
+                    types: ['duckling'],
+                    minCount: 3
+                }
+            },
+            tracks: [
+                {
+                    name: 'obstacles',
+                    stages: [
+                        {
+                            name: 'forest_mix',
+                            progress: [0, 1.0],
+                            patterns: [
+                                [
+                                    { pattern: 'forest_slalom', weight: 1.0 },
+                                    { pattern: 'rock_gates', weight: 0.5 },
+                                    { pattern: 'piers', weight: 0.3 }
+                                ],
+                                [
+                                    { pattern: 'forest_animals', weight: 1.0 }
+                                ]
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: 'path_life',
+                    stages: [
+                        {
+                            name: 'ducklings',
+                            progress: [0.3, 1.0],
+                            patterns: [
+                                [
+                                    { pattern: 'duckling_train', weight: 1.0 }
+                                ]
+                            ]
+                        }
+                    ]
+                }
             ],
-            slalomPatterns: [
-                { name: 'random_slalom', weight: 1.0, logic: 'scatter', types: ['log', 'rock', 'buoy'] },
-                { name: 'rock_gates', weight: 0.5, logic: 'gate', types: ['rock'], minCount: 4, densityMultiplier: 1.5 },
-                { name: 'pier_sequence', weight: 0.3, logic: 'sequence', types: ['pier'], minCount: 2, maxCount: 3 }
-            ],
-            pathPatterns: [
-                { name: 'duckling_train', weight: 1.0, logic: 'sequence', types: ['duckling'], minCount: 3 }
-            ],
-            waterAnimals: ['duckling'],
-            slalomDensity: { start: 1.0, end: 3.0 },
-            animalDensity: { start: 0.8, end: 2.5 },
-            pathDensity: { start: 0.5, end: 2.0 },
-            biomeLength: this.getBiomeLength()
+            waterAnimals: ['duckling']
         });
     }
 
