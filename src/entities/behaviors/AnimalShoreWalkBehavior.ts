@@ -111,7 +111,7 @@ export class AnimalShoreWalkBehavior implements EntityBehavior {
             // Update terrain position
             const height = RiverSystem.getInstance().terrainGeometry.calculateHeight(currentPos.x, currentPos.y);
             const normal = RiverSystem.getInstance().terrainGeometry.calculateNormal(currentPos.x, currentPos.y);
-            this.entity.setLandPosition(height, normal, 0);
+            this.entity.setExplictPosition(height, normal);
             return;
         }
 
@@ -140,7 +140,7 @@ export class AnimalShoreWalkBehavior implements EntityBehavior {
             // Update terrain position
             const height = RiverSystem.getInstance().terrainGeometry.calculateHeight(constrainedX, currentZ);
             const normal = RiverSystem.getInstance().terrainGeometry.calculateNormal(constrainedX, currentZ);
-            this.entity.setLandPosition(height, normal, 0);
+            this.entity.setExplictPosition(height, normal);
             return;
         }
 

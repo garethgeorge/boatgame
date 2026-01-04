@@ -72,6 +72,10 @@ export class PenguinKayak extends Entity implements AnyAnimal {
         return this.physicsBodies.length > 0 ? this.physicsBodies[0] : null;
     }
 
+    getHeight(): number {
+        return this.meshes[0].position.y;
+    }
+
     wasHitByPlayer() {
         this.destroyPhysicsBodies();
         this.behavior = new ObstacleHitBehavior(this.meshes, () => {

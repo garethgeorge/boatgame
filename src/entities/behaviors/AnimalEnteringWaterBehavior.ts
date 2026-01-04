@@ -103,7 +103,8 @@ export class AnimalEnteringWaterBehavior implements EntityBehavior {
             // Still on land
             const height = RiverSystem.getInstance().terrainGeometry.calculateHeight(pos.x, pos.y);
             const normal = RiverSystem.getInstance().terrainGeometry.calculateNormal(pos.x, pos.y);
-            this.entity.setLandPosition(height, normal, progress);
+            const adjustedHeight = this.entity.enteringWaterApplyHeightCurve?.(height, progress) ?? height;
+            this.entity.setExplictPosition(adjustedHeight, normal);
         } else if (distIntoWater < 0) {
             // Close to water edge don't update height/normal because it's not stable 
         } else if (distIntoWater < margin) {
@@ -113,12 +114,13 @@ export class AnimalEnteringWaterBehavior implements EntityBehavior {
             // Interpolate height
             const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(pos.x, pos.y);
             const height = THREE.MathUtils.lerp(terrainHeight, targetHeight, t);
+            const adjustedHeight = this.entity.enteringWaterApplyHeightCurve?.(height, progress) ?? height;
 
             // Interpolate normal
             const terrainNormal = RiverSystem.getInstance().terrainGeometry.calculateNormal(pos.x, pos.y);
             const normal = terrainNormal.clone().lerp(targetNormal, t).normalize();
 
-            this.entity.setLandPosition(height, normal, progress);
+            this.entity.setExplictPosition(adjustedHeight, normal);
         } else {
             // Fully in water
 

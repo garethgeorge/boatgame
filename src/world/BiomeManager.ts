@@ -18,7 +18,7 @@ interface BiomeInstance {
 }
 
 export class BiomeManager {
-  public static DEBUG_BIOME = false;
+  public static DEBUG_BIOME = true;
 
   private biomeInstances: BiomeInstance[] = [];
   private totalSequenceLength = 0;

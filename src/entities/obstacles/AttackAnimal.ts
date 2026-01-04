@@ -167,7 +167,11 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
         return this.physicsBodies.length > 0 ? this.physicsBodies[0] : null;
     }
 
-    setLandPosition(height: number, normal: THREE.Vector3, progress: number): void {
+    getHeight(): number {
+        return this.meshes[0].position.y;
+    }
+
+    setExplictPosition(height: number, normal: THREE.Vector3): void {
         if (this.meshes.length > 0) {
             this.meshes[0].position.y = height;
         }

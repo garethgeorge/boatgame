@@ -142,22 +142,20 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
         return this.physicsBodies.length > 0 ? this.physicsBodies[0] : null;
     }
 
-    setLandPosition(height: number, normal: planck.Vec3 | THREE.Vector3, progress: number): void {
+    getHeight(): number {
+        return this.meshes[0].position.y;
+    }
+
+    setExplictPosition(height: number, normal: THREE.Vector3): void {
         if (this.meshes.length > 0) {
             this.meshes[0].position.y = height;
         }
-        // normal is usually THREE.Vector3 or planck.Vec3 (which is {x,y})
-        // but here we expect THREE.Vector3 for normalVector
-        if (normal instanceof THREE.Vector3) {
-            this.normalVector.copy(normal);
-        } else {
-            this.normalVector.set(normal.x, normal.y, 0); // fallback or handle appropriately
-        }
+        this.normalVector.copy(normal);
     }
 
     shoreIdleMaybeNoticeBoat(): boolean {
         if (this.meshes.length > 0) {
-            this.behavior = new AnimalFlightBehavior(this, this.meshes[0].position.y);
+            this.behavior = new AnimalFlightBehavior(this);
             this.playFlightAnimation();
             return true;
         }
@@ -175,7 +173,7 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
 
     wasHitByPlayer() {
         // For now, same as attack animal
-        this.destroyPhysicsBodies();
-        this.shouldRemove = true;
+        // this.destroyPhysicsBodies();
+        // this.shouldRemove = true;
     }
 }

@@ -8,9 +8,11 @@ export interface AnyAnimal {
     // the collision mask can also be modified by the behavior
     getPhysicsBody(): planck.Body | null;
 
-    // set the height and normal of the animal when it is on land
-    // progress: 0 (start of entry) to 1 (fully in water)
-    setLandPosition?(height: number, normal: THREE.Vector3, progress: number): void;
+    // get the height of the animal with water level being 0
+    getHeight(): number;
+
+    // explicitly set the height and normal of the animal
+    setExplictPosition?(height: number, normal: THREE.Vector3): void;
 }
 
 // Behavior callbacks for animal in idle shore state
@@ -26,6 +28,7 @@ export interface AnimalShoreIdle extends AnyAnimal {
 
 // Behavior callbacks for animal entering water
 export interface AnimalEnteringWater extends AnyAnimal {
+    enteringWaterApplyHeightCurve?(height: number, progress: number): number;
     enteringWaterDidComplete?(speed: number): void;
 }
 
