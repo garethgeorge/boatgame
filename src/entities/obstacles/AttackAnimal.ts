@@ -20,6 +20,7 @@ export interface AttackAnimalOptions {
     onShore?: boolean;
     stayOnShore?: boolean;
     aggressiveness?: number;
+    minNoticeDistance?: number;
 }
 
 export interface AttackAnimalPhysicsOptions {
@@ -52,7 +53,8 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
             angle = 0,
             terrainNormal,
             onShore = false,
-            stayOnShore = false
+            stayOnShore = false,
+            minNoticeDistance = 50.0
         } = options;
 
         const {
@@ -101,7 +103,7 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
 
         if (onShore) {
             if (!stayOnShore) {
-                this.behavior = new AnimalShoreIdleBehavior(this, this.aggressiveness);
+                this.behavior = new AnimalShoreIdleBehavior(this, this.aggressiveness, false, minNoticeDistance);
             }
             this.playIdleAnimation();
         } else {

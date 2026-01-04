@@ -9,6 +9,8 @@ import { BaseSpawner } from './BaseSpawner';
 
 export abstract class FlyingAnimalSpawner extends BaseSpawner {
 
+    private readonly MIN_NOTICE_DISTANCE = 200.0;
+
     protected get entityRadius(): number {
         return 3.0;
     }
@@ -55,7 +57,8 @@ export abstract class FlyingAnimalSpawner extends BaseSpawner {
                 angle: placement.rotation,
                 height: placement.height,
                 terrainNormal: placement.normal,
-                aggressiveness
+                aggressiveness,
+                minNoticeDistance: this.MIN_NOTICE_DISTANCE
             });
             if (entity) {
                 context.entityManager.add(entity);
@@ -85,6 +88,7 @@ export abstract class FlyingAnimalSpawner extends BaseSpawner {
                 angle: placement.rotation,
                 height: placement.height,
                 terrainNormal: placement.normal,
+                minNoticeDistance: this.MIN_NOTICE_DISTANCE
             });
             if (entity) {
                 context.entityManager.add(entity);

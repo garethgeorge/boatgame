@@ -131,7 +131,8 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
                 terrainNormal: placement.normal,
                 onShore,
                 stayOnShore,
-                aggressiveness
+                aggressiveness,
+                minNoticeDistance: 50.0 // Default or configure here
             });
             if (entity) {
                 context.entityManager.add(entity);
@@ -202,7 +203,8 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
                 height: placement.height,
                 terrainNormal: placement.normal,
                 onShore: true,
-                stayOnShore
+                stayOnShore,
+                minNoticeDistance: 50.0
             });
             if (entity) {
                 context.entityManager.add(entity);

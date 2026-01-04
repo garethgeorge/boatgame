@@ -16,6 +16,7 @@ export interface FlyingAnimalOptions {
     angle?: number;
     terrainNormal?: THREE.Vector3;
     aggressiveness?: number;
+    minNoticeDistance?: number;
 }
 
 export interface FlyingAnimalPhysicsOptions {
@@ -47,6 +48,7 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
             height,
             angle = 0,
             terrainNormal,
+            minNoticeDistance = 50.0
         } = options;
 
         const {
@@ -65,7 +67,7 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
             position: planck.Vec2(x, y),
-            angle: -angle,
+            angle: angle,
             linearDamping: linearDamping,
             angularDamping: angularDamping
         });
@@ -93,7 +95,7 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
         else
             this.normalVector = new THREE.Vector3(0, 1, 0);
 
-        this.behavior = new AnimalShoreIdleBehavior(this, this.aggressiveness, true);
+        this.behavior = new AnimalShoreIdleBehavior(this, this.aggressiveness, true, minNoticeDistance);
         this.playIdleAnimation();
     }
 

@@ -18,10 +18,11 @@ export class AnimalFlightBehavior implements EntityBehavior {
 
     private readonly MAX_HEIGHT = 15.0;
     private readonly BUZZ_HEIGHT = 2.5;
-    private readonly HORIZ_SPEED: number = 30.0; // Units per second
+    private readonly HORIZ_SPEED: number = 30.0; // Meters per second
     private readonly VERT_SPEED: number = 10.0;
     private readonly RIVER_MARGIN: number = 20.0;
-    private readonly ROTATION_SPEED: number = Math.PI * 1.5; // Radians per second
+    private readonly ROTATION_SPEED: number = Math.PI * 1.0; // Radians per second
+    private readonly LOCK_ON_DISTANCE: number = 75.0;
 
     private flightTime: number = 0;
     private lastDirectionUpdateTime: number = -1; // Force immediate update
@@ -38,6 +39,9 @@ export class AnimalFlightBehavior implements EntityBehavior {
         AnimalBehaviorUtils.setCollisionMask(body, 0);
         // Switch to kinematic for precise path control
         body.setType(planck.Body.KINEMATIC);
+
+        this.currentAngle = body.getAngle();
+        this.targetAngle = this.currentAngle;
     }
 
     update(dt: number) {
@@ -55,6 +59,7 @@ export class AnimalFlightBehavior implements EntityBehavior {
     }
 
     private updateTowardBoat(dt: number, body: planck.Body, boatBody: planck.Body) {
+        this.flightTime += dt;
         const currentPos = body.getPosition();
         const boatPos = boatBody.getPosition();
         const distToBoat = planck.Vec2.distance(currentPos, boatPos);
@@ -62,25 +67,39 @@ export class AnimalFlightBehavior implements EntityBehavior {
         // If we are very close to the boat
         if (distToBoat < 2.0) {
             this.state = FlightState.AWAY_FROM_BOAT;
-            this.targetAngle = this.randomFlightAngle(boatBody);
+            this.targetAngle = this.randomAngleAway(boatBody);
             this.currentAngle = body.getAngle();
-            this.flightTime = 0;
-            this.lastDirectionUpdateTime = 0;
+            this.lastDirectionUpdateTime = this.flightTime;
             return;
         }
 
-        // Move toward boat
-        const dir = boatPos.clone().sub(currentPos);
-        dir.normalize();
+        // Periodic direction update toward boat
+        if (this.flightTime - this.lastDirectionUpdateTime > 1.0) {
+            const dirToBoat = boatPos.clone().sub(currentPos);
+            let angleToBoat = Math.atan2(dirToBoat.x, -dirToBoat.y);
 
-        // Don't overshoot
+            if (distToBoat > this.LOCK_ON_DISTANCE) {
+                // Random offset +/- 45 degrees
+                const offsetRad = (Math.random() - 0.5) * Math.PI * 0.5;
+                this.targetAngle = angleToBoat + offsetRad;
+            } else {
+                // Lock on
+                this.targetAngle = angleToBoat;
+            }
+            this.lastDirectionUpdateTime = this.flightTime;
+        }
+
+        // Turn to desired direction
+        this.currentAngle = this.rotateToward(this.currentAngle, this.targetAngle, this.ROTATION_SPEED * dt);
+
+        // Move
+        const flightDir = planck.Vec2(Math.sin(this.currentAngle), -Math.cos(this.currentAngle));
         const distance = Math.min(distToBoat, this.HORIZ_SPEED * dt);
-        const newPos = currentPos.clone().add(dir.mul(distance));
+        const newPos = currentPos.clone().add(flightDir.mul(distance));
         body.setPosition(newPos);
 
-        // Turn to face boat
-        const angle = Math.atan2(dir.x, dir.y);
-        body.setAngle(-angle + Math.PI);
+        // Turn to face direction
+        body.setAngle(this.currentAngle);
 
         // Height calculation
         const currentHeight = this.entity.getHeight();
@@ -104,7 +123,7 @@ export class AnimalFlightBehavior implements EntityBehavior {
 
         // 1s direction update
         if (this.flightTime - this.lastDirectionUpdateTime > 1.0) {
-            this.targetAngle = this.randomFlightAngle(boatBody);
+            this.targetAngle = this.randomAngleAway(boatBody);
             this.lastDirectionUpdateTime = this.flightTime;
         }
 
@@ -139,7 +158,7 @@ export class AnimalFlightBehavior implements EntityBehavior {
         }
     }
 
-    private randomFlightAngle(boatBody: planck.Body): number {
+    private randomAngleAway(boatBody: planck.Body): number {
 
         let boatAngle = boatBody.getAngle();
 
