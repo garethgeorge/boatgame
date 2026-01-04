@@ -4,6 +4,7 @@ import { CollisionCategories } from '../../core/PhysicsEngine';
 import { RiverSystem } from '../../world/RiverSystem';
 import { AnimalEnteringWater } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
+import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
 
 export class AnimalEnteringWaterBehavior implements EntityBehavior {
     private entity: AnimalEnteringWater;
@@ -57,7 +58,7 @@ export class AnimalEnteringWaterBehavior implements EntityBehavior {
         this.duration = distanceToWater / moveSpeed;
 
         // Ignore terrain collision
-        this.setCollisionMask(physicsBody, 0xFFFF ^ CollisionCategories.TERRAIN);
+        AnimalBehaviorUtils.setCollisionMask(physicsBody, 0xFFFF ^ CollisionCategories.TERRAIN);
 
         // Switch to kinematic for precise path control
         physicsBody.setType(planck.Body.KINEMATIC);
@@ -123,20 +124,10 @@ export class AnimalEnteringWaterBehavior implements EntityBehavior {
 
             // Restore dynamic body type and collision
             physicsBody.setType(planck.Body.DYNAMIC);
-            this.setCollisionMask(physicsBody, 0xFFFF);
+            AnimalBehaviorUtils.setCollisionMask(physicsBody, 0xFFFF);
 
             // Trigger completion callback
             this.entity.enteringWaterDidComplete?.(this.speed);
-        }
-    }
-
-    private setCollisionMask(body: planck.Body, maskBits: number) {
-        for (let b = body.getFixtureList(); b; b = b.getNext()) {
-            b.setFilterData({
-                categoryBits: b.getFilterCategoryBits(),
-                maskBits: maskBits,
-                groupIndex: b.getFilterGroupIndex()
-            });
         }
     }
 }

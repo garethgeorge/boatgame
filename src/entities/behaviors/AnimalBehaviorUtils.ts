@@ -1,3 +1,4 @@
+import * as planck from 'planck';
 
 export class AnimalBehaviorUtils {
     /**
@@ -36,5 +37,15 @@ export class AnimalBehaviorUtils {
         // Base speed from original WaterBehavior: 1 + 3 * aggressiveness
         const baseSpeed = 1 + 3 * aggressiveness;
         return baseSpeed * mult;
+    }
+
+    public static setCollisionMask(body: planck.Body, maskBits: number) {
+        for (let b = body.getFixtureList(); b; b = b.getNext()) {
+            b.setFilterData({
+                categoryBits: b.getFilterCategoryBits(),
+                maskBits: maskBits,
+                groupIndex: b.getFilterGroupIndex()
+            });
+        }
     }
 }
