@@ -4,6 +4,10 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
+import { AnimalShoreIdle, AnimalFlight } from '../behaviors/AnimalBehavior';
+import { EntityBehavior } from '../behaviors/EntityBehavior';
+import { AnimalShoreIdleBehavior } from '../behaviors/AnimalShoreIdleBehavior';
+import { AnimalFlightBehavior } from '../behaviors/AnimalFlightBehavior';
 
 export interface FlyingAnimalOptions {
     x: number;
@@ -11,7 +15,7 @@ export interface FlyingAnimalOptions {
     height: number;
     angle?: number;
     terrainNormal?: THREE.Vector3;
-    onShore?: boolean;
+    aggressiveness?: number;
 }
 
 export interface FlyingAnimalPhysicsOptions {
@@ -24,8 +28,10 @@ export interface FlyingAnimalPhysicsOptions {
     angularDamping?: number;
 }
 
-export abstract class FlyingAnimal extends Entity {
+export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, AnimalFlight {
     protected player: AnimationPlayer | null = null;
+    protected behavior: EntityBehavior | null = null;
+    protected aggressiveness: number;
 
     constructor(
         physicsEngine: PhysicsEngine,
@@ -53,6 +59,7 @@ export abstract class FlyingAnimal extends Entity {
             angularDamping = 1.0
         } = physicsOptions;
 
+        this.aggressiveness = (options.aggressiveness !== undefined) ? options.aggressiveness : Math.random();
         this.canCausePenalty = true;
 
         const physicsBody = physicsEngine.world.createBody({
@@ -86,6 +93,7 @@ export abstract class FlyingAnimal extends Entity {
         else
             this.normalVector = new THREE.Vector3(0, 1, 0);
 
+        this.behavior = new AnimalShoreIdleBehavior(this, this.aggressiveness, true);
         this.playIdleAnimation();
     }
 
@@ -99,9 +107,9 @@ export abstract class FlyingAnimal extends Entity {
 
     protected abstract setupModel(model: THREE.Group): void;
 
-    protected getIdleAnimationName(): string {
-        return 'idle';
-    }
+    protected abstract getIdleAnimationName(): string;
+
+    protected abstract getFlightAnimationName(): string;
 
     protected playIdleAnimation() {
         this.player?.play({
@@ -112,10 +120,57 @@ export abstract class FlyingAnimal extends Entity {
         });
     }
 
+    protected playFlightAnimation() {
+        this.player?.play({
+            name: this.getFlightAnimationName(),
+            timeScale: 1.0,
+            randomizeLength: 0.2,
+            startTime: -1
+        });
+    }
+
     update(dt: number) {
         if (this.player) {
             this.player.update(dt);
         }
+        if (this.behavior) {
+            this.behavior.update(dt);
+        }
+    }
+
+    getPhysicsBody(): planck.Body | null {
+        return this.physicsBodies.length > 0 ? this.physicsBodies[0] : null;
+    }
+
+    setLandPosition(height: number, normal: planck.Vec3 | THREE.Vector3, progress: number): void {
+        if (this.meshes.length > 0) {
+            this.meshes[0].position.y = height;
+        }
+        // normal is usually THREE.Vector3 or planck.Vec3 (which is {x,y})
+        // but here we expect THREE.Vector3 for normalVector
+        if (normal instanceof THREE.Vector3) {
+            this.normalVector.copy(normal);
+        } else {
+            this.normalVector.set(normal.x, normal.y, 0); // fallback or handle appropriately
+        }
+    }
+
+    shoreIdleMaybeNoticeBoat(): boolean {
+        if (this.meshes.length > 0) {
+            this.behavior = new AnimalFlightBehavior(this, this.meshes[0].position.y);
+            this.playFlightAnimation();
+            return true;
+        }
+        return false;
+    }
+
+    flightDidComplete(): void {
+        // Remove or land? User said "just fly to opposite bank". 
+        // Let's just remove for now or let it sit? 
+        // For now let's just mark it to be removed to keep it simple, or it will just hover there.
+        // Actually, let's just stop the behavior.
+        this.behavior = null;
+        this.playIdleAnimation();
     }
 
     wasHitByPlayer() {

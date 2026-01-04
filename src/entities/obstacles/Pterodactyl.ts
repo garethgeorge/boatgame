@@ -28,4 +28,8 @@ export class Pterodactyl extends FlyingAnimal {
     protected getIdleAnimationName(): string {
         return 'idle';
     }
+
+    protected getFlightAnimationName(): string {
+        return 'flying';
+    }
 }

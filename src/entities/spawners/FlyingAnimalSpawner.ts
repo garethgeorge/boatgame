@@ -32,6 +32,7 @@ export abstract class FlyingAnimalSpawner extends BaseSpawner {
         context: SpawnContext,
         sample: RiverGeometrySample,
         distanceRange: [number, number],
+        aggressiveness: number
     ): Promise<boolean> {
         const radius = this.entityRadius;
         const minSpacing = 2.0; // Default
@@ -54,7 +55,7 @@ export abstract class FlyingAnimalSpawner extends BaseSpawner {
                 angle: placement.rotation,
                 height: placement.height,
                 terrainNormal: placement.normal,
-                onShore: true
+                aggressiveness
             });
             if (entity) {
                 context.entityManager.add(entity);
@@ -84,7 +85,6 @@ export abstract class FlyingAnimalSpawner extends BaseSpawner {
                 angle: placement.rotation,
                 height: placement.height,
                 terrainNormal: placement.normal,
-                onShore: true
             });
             if (entity) {
                 context.entityManager.add(entity);

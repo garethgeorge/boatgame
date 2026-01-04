@@ -198,7 +198,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                                 await this.brontoSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
                                 break;
                             case 'pterodactyl':
-                                await this.pterodactylSpawner.spawnAnimalAbsolute(context, sample, p.range);
+                                await this.pterodactylSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
                                 break;
                         }
                     }

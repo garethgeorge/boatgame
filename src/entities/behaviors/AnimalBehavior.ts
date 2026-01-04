@@ -41,3 +41,8 @@ export interface AnimalWaterAttack extends AnyAnimal {
     waterAttackUpdateAttacking?(dt: number): void;
 }
 
+// Behavior callbacks for animal in flight
+export interface AnimalFlight extends AnyAnimal {
+    flightDidComplete?(): void;
+}
+

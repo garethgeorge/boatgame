@@ -8,17 +8,20 @@ import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
 export class AnimalShoreIdleBehavior implements EntityBehavior {
     private entity: AnimalShoreIdle;
     private aggressiveness: number;
+    private ignoreBottles: boolean;
 
     constructor(
         entity: AnimalShoreIdle,
-        aggressiveness: number
+        aggressiveness: number,
+        ignoreBottles: boolean = false
     ) {
         this.entity = entity;
         this.aggressiveness = aggressiveness;
+        this.ignoreBottles = ignoreBottles;
     }
 
     update(dt: number) {
-        const bottles = Boat.getBottleCount();
+        const bottles = this.ignoreBottles ? -1 : Boat.getBottleCount();
         const noticeBoatDistance = AnimalBehaviorUtils.evaluateNoticeBoatDistance(this.aggressiveness, bottles);
 
         if (noticeBoatDistance <= 0) {

@@ -12,7 +12,7 @@ export class AnimalBehaviorUtils {
     }
 
     public static evaluateNoticeBoatDistance(aggressiveness: number, bottles: number): number {
-        const mult = this.getAgressivenessMultiplier(bottles);
+        const mult = bottles < 0 ? 1.0 : this.getAgressivenessMultiplier(bottles);
         if (mult === 0) return 0;
 
         // Base distance from original ShoreIdleBehavior: 50 + 50 * aggressiveness
