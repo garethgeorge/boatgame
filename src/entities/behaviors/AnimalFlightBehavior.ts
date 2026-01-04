@@ -9,6 +9,7 @@ import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
 enum FlightState {
     TOWARD_BOAT,
     AWAY_FROM_BOAT,
+    LANDING,
     FINISHED
 }
 
@@ -28,6 +29,7 @@ export class AnimalFlightBehavior implements EntityBehavior {
     private lastDirectionUpdateTime: number = -1; // Force immediate update
     private currentAngle: number = 0;
     private targetAngle: number = 0;
+    private landingStartAltitude: number = 0;
 
     constructor(entity: AnimalFlight) {
         this.entity = entity;
@@ -53,8 +55,8 @@ export class AnimalFlightBehavior implements EntityBehavior {
             this.updateTowardBoat(dt, body, boatBody);
         } else if (this.state === FlightState.AWAY_FROM_BOAT) {
             this.updateAwayFromBoat(dt, body, boatBody);
-        } else if (this.state === FlightState.FINISHED) {
-
+        } else if (this.state === FlightState.LANDING) {
+            this.updateLanding(dt, body, boatBody);
         }
     }
 
@@ -102,20 +104,10 @@ export class AnimalFlightBehavior implements EntityBehavior {
         body.setAngle(this.currentAngle);
 
         // Height calculation
+        const targetHeight = distToBoat > 50.0 ? this.MAX_HEIGHT : this.BUZZ_HEIGHT;
         const currentHeight = this.entity.getHeight();
-        if (distToBoat > 50.0) {
-            // fly up
-            if (currentHeight < this.MAX_HEIGHT) {
-                const newHeight = currentHeight + this.VERT_SPEED * dt;
-                this.entity.setExplictPosition(newHeight, new THREE.Vector3(0, 1, 0));
-            }
-        } else {
-            // fly down
-            if (currentHeight > this.BUZZ_HEIGHT) {
-                const newHeight = currentHeight - this.VERT_SPEED * dt;
-                this.entity.setExplictPosition(newHeight, new THREE.Vector3(0, 1, 0));
-            }
-        }
+        const newHeight = this.calculateHeight(currentPos, currentHeight, targetHeight, dt);
+        this.entity.setExplictPosition?.(newHeight, new THREE.Vector3(0, 1, 0));
     }
 
     private updateAwayFromBoat(dt: number, body: planck.Body, boatBody: planck.Body) {
@@ -139,22 +131,77 @@ export class AnimalFlightBehavior implements EntityBehavior {
         // Turn to face direction
         body.setAngle(this.currentAngle);
 
-        // Height increase
+        // Update height
         const currentHeight = this.entity.getHeight();
-        if (currentHeight < this.MAX_HEIGHT) {
-            const newHeight = currentHeight + this.VERT_SPEED * dt;
-            this.entity.setExplictPosition(newHeight, new THREE.Vector3(0, 1, 0));
-        }
+        const newHeight = this.calculateHeight(currentPos, currentHeight, this.MAX_HEIGHT, dt);
+        this.entity.setExplictPosition?.(newHeight, new THREE.Vector3(0, 1, 0));
 
         // Over land check
         const banks = RiverSystem.getInstance().getBankPositions(currentPos.y);
         const nearRiver = banks.left - this.RIVER_MARGIN < currentPos.x && currentPos.x < banks.right + this.RIVER_MARGIN;
 
         if (!nearRiver) {
+            this.state = FlightState.LANDING;
+
+            // Pick landing orientation facing toward the river based on slope
+            const derivative = RiverSystem.getInstance().getRiverDerivative(currentPos.y);
+            if (currentPos.x < banks.left) {
+                // Left side: Normal toward river is (1, -derivative)
+                this.targetAngle = Math.atan2(1, derivative); // Math.atan2(nx, -nz) = Math.atan2(1, -(-derivative))
+            } else {
+                // Right side: Normal toward river is (-1, derivative)
+                this.targetAngle = Math.atan2(-1, -derivative); // Math.atan2(nx, -nz) = Math.atan2(-1, -(derivative))
+            }
+
+            const groundHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(currentPos.x, currentPos.y);
+            this.landingStartAltitude = Math.max(0.1, currentHeight - groundHeight);
+        }
+    }
+
+    private updateLanding(dt: number, body: planck.Body, boatBody: planck.Body) {
+        const currentPos = body.getPosition();
+        const currentHeight = this.entity.getHeight();
+        const groundHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(currentPos.x, currentPos.y);
+        const currentAltitude = Math.max(0, currentHeight - groundHeight);
+
+        // Turn to landing direction
+        this.currentAngle = this.rotateToward(this.currentAngle, this.targetAngle, this.ROTATION_SPEED * dt);
+
+        // Horizontal movement - speed interpolates to 0 as we land
+        const speedFactor = Math.max(0, Math.min(1, currentAltitude / this.landingStartAltitude));
+        const currentSpeed = this.HORIZ_SPEED * speedFactor;
+
+        const flightDir = planck.Vec2(Math.sin(this.currentAngle), -Math.cos(this.currentAngle));
+        const newPos = currentPos.clone().add(flightDir.mul(currentSpeed * dt));
+        body.setPosition(newPos);
+        body.setAngle(this.currentAngle);
+
+        // Descend to ground
+        const newHeight = this.calculateHeight(currentPos, currentHeight, 0, dt);
+        this.entity.setExplictPosition?.(newHeight, new THREE.Vector3(0, 1, 0));
+
+        // Finish flight if on ground and stopped
+        if (currentAltitude < 0.1 && currentSpeed < 1.0) {
             this.state = FlightState.FINISHED;
             AnimalBehaviorUtils.setCollisionMask(body, 0xFFFF);
             body.setType(planck.Body.DYNAMIC);
             this.entity.flightDidComplete?.();
+        }
+    }
+
+    private calculateHeight(currentPos: planck.Vec2, currentHeight: number,
+        heightOffset: number, dt: number): number {
+        // Height increase
+        const groundHeightAtPos = RiverSystem.getInstance().terrainGeometry.calculateHeight(currentPos.x, currentPos.y);
+        const baseHeight = Math.max(0, groundHeightAtPos);
+        const targetHeight = baseHeight + heightOffset;
+
+        if (currentHeight < targetHeight) {
+            return Math.min(targetHeight, currentHeight + this.VERT_SPEED * dt);
+        } else if (currentHeight > targetHeight) {
+            return Math.max(targetHeight, currentHeight - this.VERT_SPEED * dt);
+        } else {
+            return currentHeight;
         }
     }
 
