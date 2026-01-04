@@ -29,7 +29,11 @@ export class AnimalFlightBehavior implements EntityBehavior {
     private lastDirectionUpdateTime: number = -1; // Force immediate update
     private currentAngle: number = 0;
     private targetAngle: number = 0;
+    private currentBank: number = 0;
     private landingStartAltitude: number = 0;
+
+    private readonly MAX_BANK = Math.PI * 0.15;
+    private readonly BANK_SPEED = Math.PI * 1.5;
 
     constructor(entity: AnimalFlight) {
         this.entity = entity;
@@ -91,8 +95,8 @@ export class AnimalFlightBehavior implements EntityBehavior {
             this.lastDirectionUpdateTime = this.flightTime;
         }
 
-        // Turn to desired direction
-        this.currentAngle = this.rotateToward(this.currentAngle, this.targetAngle, this.ROTATION_SPEED * dt);
+        // Turn and bank to desired direction
+        this.handleRotationAndBanking(this.targetAngle, dt);
 
         // Move
         const flightDir = planck.Vec2(Math.sin(this.currentAngle), -Math.cos(this.currentAngle));
@@ -103,11 +107,10 @@ export class AnimalFlightBehavior implements EntityBehavior {
         // Turn to face direction
         body.setAngle(this.currentAngle);
 
-        // Height calculation
         const targetHeight = distToBoat > 50.0 ? this.MAX_HEIGHT : this.BUZZ_HEIGHT;
         const currentHeight = this.entity.getHeight();
         const newHeight = this.calculateHeight(currentPos, currentHeight, targetHeight, dt);
-        this.entity.setExplictPosition?.(newHeight, new THREE.Vector3(0, 1, 0));
+        this.entity.setExplictPosition?.(newHeight, this.getBankingNormal());
     }
 
     private updateAwayFromBoat(dt: number, body: planck.Body, boatBody: planck.Body) {
@@ -119,8 +122,8 @@ export class AnimalFlightBehavior implements EntityBehavior {
             this.lastDirectionUpdateTime = this.flightTime;
         }
 
-        // turn to desired direction
-        this.currentAngle = this.rotateToward(this.currentAngle, this.targetAngle, this.ROTATION_SPEED * dt);
+        // turn and bank to desired direction
+        this.handleRotationAndBanking(this.targetAngle, dt);
 
         // Move
         const flightDir = planck.Vec2(Math.sin(this.currentAngle), -Math.cos(this.currentAngle));
@@ -134,7 +137,7 @@ export class AnimalFlightBehavior implements EntityBehavior {
         // Update height
         const currentHeight = this.entity.getHeight();
         const newHeight = this.calculateHeight(currentPos, currentHeight, this.MAX_HEIGHT, dt);
-        this.entity.setExplictPosition?.(newHeight, new THREE.Vector3(0, 1, 0));
+        this.entity.setExplictPosition?.(newHeight, this.getBankingNormal());
 
         // Over land check
         const banks = RiverSystem.getInstance().getBankPositions(currentPos.y);
@@ -164,8 +167,8 @@ export class AnimalFlightBehavior implements EntityBehavior {
         const groundHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(currentPos.x, currentPos.y);
         const currentAltitude = Math.max(0, currentHeight - groundHeight);
 
-        // Turn to landing direction
-        this.currentAngle = this.rotateToward(this.currentAngle, this.targetAngle, this.ROTATION_SPEED * dt);
+        // Turn and bank to landing direction
+        this.handleRotationAndBanking(this.targetAngle, dt);
 
         // Horizontal movement - speed interpolates to 0 as we land
         const speedFactor = Math.max(0, Math.min(1, currentAltitude / this.landingStartAltitude));
@@ -178,7 +181,7 @@ export class AnimalFlightBehavior implements EntityBehavior {
 
         // Descend to ground
         const newHeight = this.calculateHeight(currentPos, currentHeight, 0, dt);
-        this.entity.setExplictPosition?.(newHeight, new THREE.Vector3(0, 1, 0));
+        this.entity.setExplictPosition?.(newHeight, this.getBankingNormal());
 
         // Finish flight if on ground and stopped
         if (currentAltitude < 0.1 && currentSpeed < 1.0) {
@@ -205,6 +208,52 @@ export class AnimalFlightBehavior implements EntityBehavior {
         }
     }
 
+    private handleRotationAndBanking(targetAngle: number, dt: number) {
+        // Shortest arc rotation
+        let diff = targetAngle - this.currentAngle;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+
+        const maxRotation = this.ROTATION_SPEED * dt;
+        const turnDirection = Math.sign(diff);
+
+        if (Math.abs(diff) < maxRotation) {
+            this.currentAngle = targetAngle;
+        } else {
+            this.currentAngle += turnDirection * maxRotation;
+        }
+
+        // Normalize angle
+        while (this.currentAngle > Math.PI) this.currentAngle -= Math.PI * 2;
+        while (this.currentAngle < -Math.PI) this.currentAngle += Math.PI * 2;
+
+        // Banking (Roll)
+        // Target bank is based on turn direction and magnitude of the turn difference.
+        // We reach full banking at a 45 degree turn (PI / 4).
+        const targetIntensity = Math.min(1.0, Math.abs(diff) / (Math.PI / 4));
+        const targetBank = turnDirection * targetIntensity * this.MAX_BANK;
+        const bankDiff = targetBank - this.currentBank;
+        const maxBankChange = this.BANK_SPEED * dt;
+
+        if (Math.abs(bankDiff) < maxBankChange) {
+            this.currentBank = targetBank;
+        } else {
+            this.currentBank += Math.sign(bankDiff) * maxBankChange;
+        }
+    }
+
+    private getBankingNormal(): THREE.Vector3 {
+        // Right vector is (cos(angle), 0, sin(angle))
+        // Up vector is (0, 1, 0)
+        // Banked normal = Up * cos(bank) + Right * sin(bank)
+        const right = new THREE.Vector3(Math.cos(this.currentAngle), 0, Math.sin(this.currentAngle));
+        const up = new THREE.Vector3(0, 1, 0);
+
+        return up.multiplyScalar(Math.cos(this.currentBank))
+            .add(right.multiplyScalar(Math.sin(this.currentBank)))
+            .normalize();
+    }
+
     private randomAngleAway(boatBody: planck.Body): number {
 
         let boatAngle = boatBody.getAngle();
@@ -217,27 +266,5 @@ export class AnimalFlightBehavior implements EntityBehavior {
         const side = Math.random() < 0.5 ? -1 : 1;
 
         return boatAngle + side * offsetRad;
-    }
-
-    private rotateToward(startAngle: number, endAngle: number, maxRotation: number): number {
-        // Constant rate rotation (shortest arc)
-        let diff = endAngle - startAngle;
-        if (diff === 0.0) return startAngle;
-
-        while (diff > Math.PI) diff -= Math.PI * 2;
-        while (diff < -Math.PI) diff += Math.PI * 2;
-
-        let newAngle = startAngle;
-        if (Math.abs(diff) < maxRotation) {
-            newAngle = endAngle;
-        } else {
-            newAngle += Math.sign(diff) * maxRotation;
-        }
-
-        // Normalize
-        while (newAngle > Math.PI) newAngle -= Math.PI * 2;
-        while (newAngle < -Math.PI) newAngle += Math.PI * 2;
-
-        return newAngle;
     }
 }
