@@ -21,10 +21,12 @@ export class AnimalFlightBehavior implements EntityBehavior {
     private readonly HORIZ_SPEED: number = 30.0; // Units per second
     private readonly VERT_SPEED: number = 10.0;
     private readonly RIVER_MARGIN: number = 20.0;
+    private readonly ROTATION_SPEED: number = Math.PI * 1.5; // Radians per second
 
     private flightTime: number = 0;
     private lastDirectionUpdateTime: number = -1; // Force immediate update
-    private currentFlightDir: planck.Vec2 = planck.Vec2(0, 1);
+    private currentAngle: number = 0;
+    private targetAngle: number = 0;
 
     constructor(entity: AnimalFlight) {
         this.entity = entity;
@@ -60,7 +62,8 @@ export class AnimalFlightBehavior implements EntityBehavior {
         // If we are very close to the boat
         if (distToBoat < 2.0) {
             this.state = FlightState.AWAY_FROM_BOAT;
-            this.currentFlightDir = this.randomFlightDirection(boatBody);
+            this.targetAngle = this.randomFlightAngle(boatBody);
+            this.currentAngle = body.getAngle();
             this.flightTime = 0;
             this.lastDirectionUpdateTime = 0;
             return;
@@ -101,18 +104,21 @@ export class AnimalFlightBehavior implements EntityBehavior {
 
         // 1s direction update
         if (this.flightTime - this.lastDirectionUpdateTime > 1.0) {
-            this.currentFlightDir = this.randomFlightDirection(boatBody);
+            this.targetAngle = this.randomFlightAngle(boatBody);
             this.lastDirectionUpdateTime = this.flightTime;
         }
 
+        // turn to desired direction
+        this.currentAngle = this.rotateToward(this.currentAngle, this.targetAngle, this.ROTATION_SPEED * dt);
+
         // Move
+        const flightDir = planck.Vec2(Math.sin(this.currentAngle), -Math.cos(this.currentAngle));
         const currentPos = body.getPosition();
-        const newPos = currentPos.clone().add(this.currentFlightDir.clone().mul(this.HORIZ_SPEED * dt));
+        const newPos = currentPos.clone().add(flightDir.mul(this.HORIZ_SPEED * dt));
         body.setPosition(newPos);
 
         // Turn to face direction
-        const angle = Math.atan2(this.currentFlightDir.x, this.currentFlightDir.y);
-        body.setAngle(-angle + Math.PI);
+        body.setAngle(this.currentAngle);
 
         // Height increase
         const currentHeight = this.entity.getHeight();
@@ -133,15 +139,9 @@ export class AnimalFlightBehavior implements EntityBehavior {
         }
     }
 
-    private randomFlightDirection(boatBody: planck.Body): planck.Vec2 {
+    private randomFlightAngle(boatBody: planck.Body): number {
 
-        // "direction the boat is moving"
-        const vel = boatBody.getLinearVelocity();
         let boatAngle = boatBody.getAngle();
-
-        if (vel.length() > 0.5) {
-            boatAngle = Math.atan2(vel.y, vel.x) + Math.PI / 2;
-        }
 
         // Offset between 30 and 50 degrees
         const offsetDeg = 30 + Math.random() * 20;
@@ -150,7 +150,28 @@ export class AnimalFlightBehavior implements EntityBehavior {
         // Random side
         const side = Math.random() < 0.5 ? -1 : 1;
 
-        const targetAngle = boatAngle + side * offsetRad;
-        return planck.Vec2(Math.sin(targetAngle), -Math.cos(targetAngle));
+        return boatAngle + side * offsetRad;
+    }
+
+    private rotateToward(startAngle: number, endAngle: number, maxRotation: number): number {
+        // Constant rate rotation (shortest arc)
+        let diff = endAngle - startAngle;
+        if (diff === 0.0) return startAngle;
+
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+
+        let newAngle = startAngle;
+        if (Math.abs(diff) < maxRotation) {
+            newAngle = endAngle;
+        } else {
+            newAngle += Math.sign(diff) * maxRotation;
+        }
+
+        // Normalize
+        while (newAngle > Math.PI) newAngle -= Math.PI * 2;
+        while (newAngle < -Math.PI) newAngle += Math.PI * 2;
+
+        return newAngle;
     }
 }
