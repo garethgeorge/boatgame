@@ -33,9 +33,6 @@ export class Duckling extends Entity implements AnyAnimal {
     constructor(x: number, y: number, physicsEngine: PhysicsEngine, angle: number = 0) {
         super();
 
-        // Ducklings can cause penalties when hit
-        this.canCausePenalty = true;
-
         // Physics
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
@@ -53,7 +50,7 @@ export class Duckling extends Entity implements AnyAnimal {
             restitution: 0.0
         });
 
-        physicsBody.setUserData({ type: 'obstacle', subtype: 'duckling', entity: this });
+        physicsBody.setUserData({ type: Entity.TYPE_COLLECTABLE, subtype: 'duckling', entity: this });
 
         // Graphics
         const mesh = new THREE.Group();

@@ -50,7 +50,7 @@ export class Game {
     viewMode: 'close' | 'far' = 'close';
 
     // Collision Handling
-    pendingContacts: Map<Entity, { type: string, subtype: any }> = new Map();
+    pendingContacts: Map<Entity, { type: string, subtype: any, boatPart: string }> = new Map();
 
     constructor() {
         this.container = document.getElementById('game-container') as HTMLElement;
@@ -150,8 +150,8 @@ export class Game {
             const fixtureB = contact.getFixtureB();
 
             // Ignore sensor contacts for collision handling
-            if ((fixtureA.getUserData() as any)?.type === 'sensor' ||
-                (fixtureB.getUserData() as any)?.type === 'sensor') return;
+            if ((fixtureA.getUserData() as any)?.type === Entity.TYPE_SENSOR ||
+                (fixtureB.getUserData() as any)?.type === Entity.TYPE_SENSOR) return;
 
             const bodyA = fixtureA.getBody();
             const bodyB = fixtureB.getBody();
@@ -163,22 +163,26 @@ export class Game {
             let player: Boat | null = null;
             let entityData = null;
 
-            if (userDataA.type === 'player') {
+            let boatPart = 'unknown';
+
+            if (userDataA.type === Entity.TYPE_PLAYER) {
                 player = userDataA.entity as Boat;
                 entityData = userDataB;
-            } else if (userDataB.type === 'player') {
+                boatPart = (fixtureA.getUserData() as any)?.part || 'unknown';
+            } else if (userDataB.type === Entity.TYPE_PLAYER) {
                 player = userDataB.entity as Boat;
                 entityData = userDataA;
+                boatPart = (fixtureB.getUserData() as any)?.part || 'unknown';
             }
 
-            const entity = userDataB.entity as Entity;
-            const entityType = userDataB.type;
-            const entitySubtype = userDataB.subtype;
+            const entity = entityData?.entity as Entity;
+            const entityType = entityData?.type;
+            const entitySubtype = entityData?.subtype;
 
             if (!player || !entity) return;
 
             // Store contact for processing in next update loop
-            this.pendingContacts.set(entity, { type: entityType!, subtype: entitySubtype });
+            this.pendingContacts.set(entity, { type: entityType!, subtype: entitySubtype, boatPart });
         });
 
         // Enable start button now that we are ready
@@ -474,9 +478,8 @@ export class Game {
 
         // Process the pending contact events
         this.pendingContacts.forEach((data, entity) => {
-            const { type, subtype } = data;
-            entity.wasHitByPlayer(this.boat);
-            this.boat.didHitObstacle(entity, type, subtype);
+            const { type, subtype, boatPart } = data;
+            this.boat.didHitObstacle(entity, type, subtype, boatPart);
         });
 
         this.pendingContacts.clear();
@@ -495,10 +498,10 @@ export class Game {
             const dataA = fixtureA.getUserData() as any;
             const dataB = fixtureB.getUserData() as any;
 
-            if (dataA?.type === 'sensor') {
+            if (dataA?.type === Entity.TYPE_SENSOR) {
                 sensor = fixtureA;
                 other = fixtureB;
-            } else if (dataB?.type === 'sensor') {
+            } else if (dataB?.type === Entity.TYPE_SENSOR) {
                 sensor = fixtureB;
                 other = fixtureA;
             }
@@ -508,7 +511,7 @@ export class Game {
             // Check if interaction involves player
             const otherBody = other.getBody();
             const otherData = otherBody.getUserData() as any;
-            if (otherData?.type !== 'player') continue;
+            if (otherData?.type !== Entity.TYPE_PLAYER) continue;
 
             // Get sensor owner entity
             const sensorBody = sensor.getBody();

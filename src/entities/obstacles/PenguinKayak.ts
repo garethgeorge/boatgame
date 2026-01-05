@@ -31,9 +31,6 @@ export class PenguinKayak extends Entity implements AnyAnimal {
     constructor(x: number, y: number, physicsEngine: PhysicsEngine, angle: number = 0) {
         super();
 
-        // Penguins can cause penalties when hit
-        this.canCausePenalty = true;
-
         // Physics
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',

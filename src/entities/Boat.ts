@@ -15,6 +15,17 @@ export class Boat extends Entity {
     public score: number = 0;
     public fuel: number = 100;
 
+    // Dimensions of the boat. Its also divided into front and back sections.
+    public static readonly WIDTH = 2.4;
+    public static readonly LENGTH = 6.0;
+    public static readonly BOW_Y = -3.0;
+    public static readonly STERN_Y = 3.0;
+    public static readonly FRONT_ZONE_END_Y = -0.5;
+
+    // Fixture names for the front and back parts
+    public static readonly PART_FRONT = 'front';
+    public static readonly PART_BACK = 'back';
+
     private innerMesh: THREE.Group;
 
     private currentThrottle: number = 0;
@@ -74,32 +85,51 @@ export class Boat extends Entity {
         });
         this.physicsBodies.push(physicsBody);
 
-        // Custom Polygon Shape matching the boat image
+        physicsBody.setUserData({ type: Entity.TYPE_PLAYER, entity: this });
+
+        // Custom Polygon Shapes matching the boat image
         // Physics coordinates: Forward is -Y, Right is +X.
         // Boat is approx 2.4m wide, 6.0m long.
         // Vertices must be in Counter-Clockwise (CCW) order
-        const vertices = [
-            planck.Vec2(0, -3.0),   // Bow (Front)
-            planck.Vec2(1.2, -0.5), // Front Right Shoulder
-            planck.Vec2(1.2, 2.5),  // Back Right Side
-            planck.Vec2(0.9, 3.0),  // Stern Right (Back)
-            planck.Vec2(-0.9, 3.0), // Stern Left (Back)
-            planck.Vec2(-1.2, 2.5), // Back Left Side
-            planck.Vec2(-1.2, -0.5) // Front Left Shoulder
+
+        // Split the boat into two fixtures: Front and Back
+        // Front section (Bow to middle)
+        const halfWidth = Boat.WIDTH * 0.5;
+        const frontVertices = [
+            planck.Vec2(0, Boat.BOW_Y),   // Bow (Front)
+            planck.Vec2(halfWidth, Boat.FRONT_ZONE_END_Y), // Front Right Shoulder
+            planck.Vec2(-halfWidth, Boat.FRONT_ZONE_END_Y) // Front Left Shoulder
+        ];
+
+        // Back section (Middle to Stern)
+        const backVertices = [
+            planck.Vec2(halfWidth, Boat.FRONT_ZONE_END_Y), // Middle Right
+            planck.Vec2(halfWidth, 2.5),  // Back Right Side
+            planck.Vec2(0.9, Boat.STERN_Y),  // Stern Right (Back)
+            planck.Vec2(-0.9, Boat.STERN_Y), // Stern Left (Back)
+            planck.Vec2(-halfWidth, 2.5), // Back Left Side
+            planck.Vec2(-halfWidth, Boat.FRONT_ZONE_END_Y) // Middle Left
         ];
 
         physicsBody.createFixture({
-            shape: planck.Polygon(vertices),
-            density: 20.0,
+            shape: planck.Polygon(frontVertices),
+            density: 10.0,
             friction: 0.1,
-            restitution: 0.1
+            restitution: 0.1,
+            userData: { part: Boat.PART_FRONT }
+        });
+
+        physicsBody.createFixture({
+            shape: planck.Polygon(backVertices),
+            density: 10.0,
+            friction: 0.1,
+            restitution: 0.1,
+            userData: { part: Boat.PART_BACK }
         });
 
         // Set mass to a standard value for consistent tuning
         const massData = { mass: 500, center: planck.Vec2(0, 0), I: 2000 };
         physicsBody.setMassData(massData);
-
-        physicsBody.setUserData({ type: 'player', entity: this });
 
         // Graphics - Tugboat (GLB Model)
         const mesh = new THREE.Group();
@@ -329,14 +359,23 @@ export class Boat extends Entity {
         }
     }
 
-    public didHitObstacle(entity: Entity, type: string, subtype: string) {
-        if (type === 'obstacle') {
-            if (entity.canCausePenalty && !entity.hasCausedPenalty) {
-                this.flashRed();
-                this.collectedBottles.removeBottle(true); // Lose a bottle
-                entity.hasCausedPenalty = true;
+    public didHitObstacle(entity: Entity, type: string, subtype: string, boatPart: string) {
+        if (type === Entity.TYPE_OBSTACLE) {
+            if (boatPart === Boat.PART_FRONT) {
+                // Front hit: Animals sink, but no penalty for the boat
+                if (entity.canCausePenalty) {
+                    entity.wasHitByPlayer(this);
+                    entity.hasCausedPenalty = true;
+                }
+            } else {
+                // Back/Side hit: Penalty for the boat, but animal doesn't sink
+                if (entity.canCausePenalty && !entity.hasCausedPenalty) {
+                    this.flashRed();
+                    this.collectedBottles.removeBottle(true); // Lose a bottle
+                    entity.hasCausedPenalty = true;
+                }
             }
-        } else if (type === 'collectable') {
+        } else if (type === Entity.TYPE_COLLECTABLE) {
             if (subtype === 'bottle') {
                 const bottle = entity as MessageInABottle;
                 const points = bottle.points;
@@ -344,6 +383,7 @@ export class Boat extends Entity {
                 // delay accounts for the time of the bottle entity animation
                 this.collectedBottles.addBottle(color, true, 0.25); // Add a bottle
             }
+            entity.wasHitByPlayer(this);
         }
     }
 

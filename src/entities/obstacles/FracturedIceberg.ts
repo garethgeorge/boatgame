@@ -6,8 +6,8 @@ import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class FracturedIceberg extends Entity {
     constructor(
-        x: number, 
-        y: number, 
+        x: number,
+        y: number,
         vertices: { x: number, y: number }[], // Vertices relative to (x,y)
         physicsEngine: PhysicsEngine
     ) {
@@ -28,7 +28,7 @@ export class FracturedIceberg extends Entity {
         // Ensure vertices are CCW? Delaunator usually gives CCW or we can ensure it.
         // Box2D requires CCW.
         const planckVertices = vertices.map(v => planck.Vec2(v.x, v.y));
-        
+
         body.createFixture({
             shape: planck.Polygon(planckVertices),
             density: 5.0, // Heavy
@@ -36,7 +36,7 @@ export class FracturedIceberg extends Entity {
             restitution: 0.1
         });
 
-        body.setUserData({ type: 'obstacle', subtype: 'iceberg', entity: this });
+        body.setUserData({ type: Entity.TYPE_OBSTACLE, subtype: 'iceberg', entity: this });
 
         // 2. Graphics
         const shape = new THREE.Shape();
@@ -62,20 +62,20 @@ export class FracturedIceberg extends Entity {
         // If we pass relative vertices, we are good.
         // If we pass absolute vertices, we need to correct.
         // The constructor expects vertices relative to (x,y).
-        
+
         // Align graphics to physics
         // Physics: X-Y plane (Top Down)
         // Graphics: X-Z plane (3D)
         // Extrude: Creates X-Y geometry.
-        
+
         // We need a mesh that, when Entity syncs, aligns correctly.
         // Entity.sync():
         // mesh.position.x = body.position.x
         // mesh.position.z = body.position.y (Physics Y -> Graphics Z)
         // mesh.rotation.y = -body.getAngle()
-        
+
         // So the mesh geometry should be flat on X-Z plane.
-        
+
         geometry.rotateX(Math.PI / 2); // Now on X-Z
         geometry.translate(0, 0.2, 0); // Float at Y=0.2
 
@@ -93,7 +93,7 @@ export class FracturedIceberg extends Entity {
 
         this.meshes.push(mesh);
     }
-    
+
     update(dt: number): void {
         // Passive physics object, no logic needed
     }

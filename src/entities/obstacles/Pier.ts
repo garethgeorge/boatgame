@@ -120,7 +120,7 @@ export class Pier extends Entity {
             angle: angle // Set rotation
         });
         this.physicsBodies.push(physicsBody);
-        physicsBody.setUserData({ type: 'obstacle', subtype: 'pier', entity: this });
+        physicsBody.setUserData({ type: Entity.TYPE_OBSTACLE, subtype: 'pier', entity: this });
 
         if (hasDepot && length > Pier.MIN_LENGTH_FOR_DOCK) {
             this.buildDockedPier(length, width, physicsBody, mesh);
@@ -237,7 +237,7 @@ export class Pier extends Entity {
             shape: sensorShape,
             isSensor: true
         });
-        sensorFixture.setUserData({ type: 'sensor' });
+        sensorFixture.setUserData({ type: Entity.TYPE_SENSOR });
 
         // 5. Dock Sign
         const signGeo = new THREE.BoxGeometry(4.0, 4.0, 0.1);

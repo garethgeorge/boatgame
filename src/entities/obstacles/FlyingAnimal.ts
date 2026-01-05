@@ -62,7 +62,6 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
         } = physicsOptions;
 
         this.aggressiveness = (options.aggressiveness !== undefined) ? options.aggressiveness : Math.random();
-        this.canCausePenalty = true;
 
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',

@@ -43,7 +43,7 @@ export class GasCan extends Entity {
             isSensor: true
         });
 
-        physicsBody.setUserData({ type: 'collectable', subtype: 'gas', entity: this });
+        physicsBody.setUserData({ type: Entity.TYPE_COLLECTABLE, subtype: 'gas', entity: this });
 
         // Graphics
         const mesh = new THREE.Group();

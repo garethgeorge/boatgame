@@ -54,7 +54,7 @@ export class MessageInABottle extends Entity {
             isSensor: true
         });
 
-        physicsBody.setUserData({ type: 'collectable', subtype: 'bottle', entity: this });
+        physicsBody.setUserData({ type: Entity.TYPE_COLLECTABLE, subtype: 'bottle', entity: this });
 
         // Graphics
         const mesh = Decorations.getBottle(color);

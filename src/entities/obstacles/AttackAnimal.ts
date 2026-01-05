@@ -83,7 +83,7 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
             friction: friction,
             restitution: restitution
         });
-        physicsBody.setUserData({ type: 'obstacle', subtype: subtype, entity: this });
+        physicsBody.setUserData({ type: Entity.TYPE_OBSTACLE, subtype: subtype, entity: this });
         this.physicsBodies.push(physicsBody);
 
         const mesh = new THREE.Group();

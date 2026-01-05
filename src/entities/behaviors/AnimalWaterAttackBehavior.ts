@@ -39,51 +39,68 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
         const targetPos = targetBody.getPosition();
         const playerVel = targetBody.getLinearVelocity();
 
-        const realDiff = targetPos.clone().sub(pos);
-        const dist = realDiff.length(); // Use real distance for state transitions
+        // 1. Determine Local Position of Animal relative to Boat
+        const localPos = targetBody.getLocalPoint(pos);
 
-        // Calculate intercept
-        // Estimate time to reach target
-        const averageAttackSpeed = 12.0 * speed; // Should match force multiplier in updateAttacking
+        // 2. Select Local Target Point
+        // Boat is approx 2.4 wide (-1.2 to 1.2), 6 long (-3.0 to 3.0).
+        // +Y is Stern (Back), -Y is Bow (Front).
+        // Danger zone (Bow) is y < Boat.FRONT_ZONE_END_Y.
+        // We target a point in the target zone (Stern).
+        const sternLocalY = Boat.STERN_Y * 0.5; // Halfway to stern tip
+        let chosenTargetLocal: planck.Vec2;
+
+        if (localPos.y < Boat.FRONT_ZONE_END_Y) {
+            // Animal is in front of the boat. Flank!
+            // Head towards a staging point to the side of the stern.
+            const side = localPos.x > 0 ? 1 : -1;
+            chosenTargetLocal = planck.Vec2(side * Boat.WIDTH * 2.5, sternLocalY);
+        } else {
+            // Animal is alongside or behind the danger zone. Go for the back.
+            chosenTargetLocal = planck.Vec2(0, sternLocalY);
+        }
+
+        // 3. Convert Local Target to World Base
+        const worldTargetBase = targetBody.getWorldPoint(chosenTargetLocal);
+        const realDiff = worldTargetBase.clone().sub(pos);
+        const dist = realDiff.length(); // Use distance to chosen target
+
+        // 4. Intercept Prediction for that World Target
+        const averageAttackSpeed = 12.0 * speed;
         let timeToIntercept = 0;
         if (averageAttackSpeed > 0) {
             timeToIntercept = dist / averageAttackSpeed;
-            // Clamp prediction to max 2 seconds to avoid crazy behavior
-            timeToIntercept = Math.min(timeToIntercept, 2.0);
-
-            // Dampen the intercept prediction to keep it closer to the boat
-            timeToIntercept *= 0.7;
+            timeToIntercept = Math.min(timeToIntercept, 2.0) * 0.7;
         }
 
-        const predictedPos = targetPos.clone().add(playerVel.clone().mul(timeToIntercept));
+        // Predicted position of the stern point in world space
+        const predictedWorldTarget = worldTargetBase.clone().add(playerVel.clone().mul(timeToIntercept));
 
-        // Blend between direct pursuit and intercept based on distance
-        // Dist < 8: 0 (Direct)
-        // Dist > 40: 1 (Intercept)
-        // This biases heavily towards direct pursuit when "remotely close"
+        // 5. Blend between direct pursuit and intercept based on distance
         let predictionWeight = (dist - 8.0) / (40.0 - 8.0);
         predictionWeight = Math.max(0, Math.min(1, predictionWeight));
 
-        const blendedTarget = planck.Vec2.combine(1 - predictionWeight, targetPos, predictionWeight, predictedPos);
-        const diff = blendedTarget.sub(pos); // Use blended diff for steering
+        const blendedTarget = planck.Vec2.combine(1 - predictionWeight, worldTargetBase, predictionWeight, predictedWorldTarget);
+        const diff = blendedTarget.clone().sub(pos);
 
-        // Check if behind the boat
-        // V = Forward vector for the boat (local -y)
+        // 6. State Machine Update
+        // "isBehind" means we overshot our current target
+        // Boat Forward is local -Y. 
+        // We use the dot product of the normalized diff and our own forward to see if we are overshooting?
+        // Actually, let's keep it simple: are we overshooting the boat?
         const boatForward = targetBody.getWorldVector(planck.Vec2(0, -1));
-        // U = Vector from boat to animal
         const boatToAnimal = pos.clone().sub(targetPos);
-        // Dot positive = in front, negative = behind
-        const isBehind = planck.Vec2.dot(boatToAnimal, boatForward) < 0;
+        const isBehindBoat = planck.Vec2.dot(boatToAnimal, boatForward) < -Boat.STERN_Y * 2.0;
 
         switch (this.state) {
             case 'IDLE':
                 this.updateIdle(dt, dist, startAttackDistance);
                 break;
             case 'TURNING':
-                this.updateTurning(dt, dist, diff, physicsBody, isBehind, stopAttackDistance, speed);
+                this.updateTurning(dt, dist, diff, physicsBody, isBehindBoat, stopAttackDistance, speed);
                 break;
             case 'ATTACKING':
-                this.updateAttacking(dt, dist, diff, physicsBody, isBehind, stopAttackDistance, speed);
+                this.updateAttacking(dt, dist, diff, physicsBody, isBehindBoat, stopAttackDistance, speed);
                 break;
         }
     }

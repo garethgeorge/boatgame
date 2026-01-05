@@ -4,6 +4,15 @@ import { GraphicsUtils } from './GraphicsUtils';
 import { Boat } from '../entities/Boat';
 
 export abstract class Entity {
+
+  // Physics body type names
+  public static readonly TYPE_PLAYER = 'player';
+  public static readonly TYPE_OBSTACLE = 'obstacle';
+  public static readonly TYPE_COLLECTABLE = 'collectable';
+
+  // Physics fixture type names
+  public static readonly TYPE_SENSOR = 'sensor';
+
   public physicsBodies: planck.Body[] = [];
   public meshes: THREE.Object3D[] = [];
   public debugMeshes: THREE.Object3D[] = [];
