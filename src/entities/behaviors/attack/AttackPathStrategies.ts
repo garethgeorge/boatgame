@@ -1,6 +1,15 @@
 import * as planck from 'planck';
 import { Boat } from '../../Boat';
 import { AnimalAttackParams } from '../AnimalBehaviorUtils';
+import { RiverSystem } from '../../../world/RiverSystem';
+
+/**
+ * Result of a strategy calculation, including target position and desired movement speed.
+ */
+export interface AttackPathResult {
+    targetWorldPos: planck.Vec2;
+    desiredSpeed: number;
+}
 
 /**
  * Interface for animal attack path strategies.
@@ -10,17 +19,18 @@ export interface AttackPathStrategy {
     readonly name: string;
 
     /**
-     * Calculates the world-space target position for the animal.
-     * @param animalPos Current position of the animal
+     * Calculates the target position and speed for the animal.
+     * @param originPos Center/Pivot of the animal
+     * @param attackPointWorld Interaction point (snout) of the animal
      * @param boatBody Physics body of the boat
      * @param params Attack parameters
      */
-    calculateTarget(animalPos: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): planck.Vec2;
+    calculateTarget(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): AttackPathResult;
 
     /**
      * Returns true if the strategy is no longer viable (e.g. overshot or outpaced).
      */
-    shouldAbort(animalPos: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean;
+    shouldAbort(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean;
 }
 
 /**
@@ -35,13 +45,12 @@ export class SternInterceptStrategy implements AttackPathStrategy {
      */
     constructor(private interceptFactor: number = 0.5) { }
 
-    calculateTarget(animalPos: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): planck.Vec2 {
+    calculateTarget(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): AttackPathResult {
         // Target a point near the stern center
         const sternLocalY = (Boat.STERN_Y + Boat.FRONT_ZONE_END_Y) / 2.0;
         const sternWorldPos = boatBody.getWorldPoint(planck.Vec2(0, sternLocalY));
         const boatVel = boatBody.getLinearVelocity();
-
-        const diff = sternWorldPos.clone().sub(animalPos);
+        const diff = sternWorldPos.clone().sub(attackPointWorld);
         const dist = diff.length();
         const dirToTarget = diff.clone();
         if (dist > 0.01) dirToTarget.normalize();
@@ -66,18 +75,23 @@ export class SternInterceptStrategy implements AttackPathStrategy {
         }
 
         // The point we steer towards to achieve this velocity
-        const interceptPos = animalPos.clone().add(steeringDir);
+        const calculatedInterceptPos = attackPointWorld.clone().add(steeringDir);
 
         // Interpolate between current target (stern) and intercept point based on intelligence
-        return planck.Vec2(
-            sternWorldPos.x + (interceptPos.x - sternWorldPos.x) * this.interceptFactor,
-            sternWorldPos.y + (interceptPos.y - sternWorldPos.y) * this.interceptFactor
+        const targetWorldPos = planck.Vec2(
+            sternWorldPos.x + (calculatedInterceptPos.x - sternWorldPos.x) * this.interceptFactor,
+            sternWorldPos.y + (calculatedInterceptPos.y - sternWorldPos.y) * this.interceptFactor
         );
+
+        return {
+            targetWorldPos,
+            desiredSpeed: params.attackSpeed
+        };
     }
 
-    shouldAbort(animalPos: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean {
+    shouldAbort(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean {
         const boatSpeed = boatBody.getLinearVelocity().length();
-        const localPos = boatBody.getLocalPoint(animalPos);
+        const localPos = boatBody.getLocalPoint(attackPointWorld);
         // If we are behind the stern and the boat is faster, we'll never catch it.
         return localPos.y > Boat.STERN_Y && boatSpeed > 0.5 * params.attackSpeed;
     }
@@ -97,24 +111,27 @@ export class CircleFlankStrategy implements AttackPathStrategy {
         this.side = Math.random() > 0.5 ? 1 : -1;
     }
 
-    calculateTarget(animalPos: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): planck.Vec2 {
-        const localPos = boatBody.getLocalPoint(animalPos);
+    calculateTarget(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): AttackPathResult {
+        const localPos = boatBody.getLocalPoint(attackPointWorld);
 
         // If we are already significantly on one side, stick to it
-        if (Math.abs(localPos.x) > 2.0) {
-            this.side = localPos.x > 0 ? 1 : -1;
-        }
+        if (localPos.x > 1.0) this.side = 1;
+        if (localPos.x < -1.0) this.side = -1;
+        else this.side = localPos.x > 0 ? 1 : -1;
 
         // Target a point 5-8 units to the side of the boat, and slightly ahead of the stern
         // This creates an "arcing" approach.
         const flankOffsetMultiplier = 3.0 + Math.random() * 2.0;
         const flankLocal = planck.Vec2(this.side * Boat.WIDTH * flankOffsetMultiplier, Boat.STERN_Y * 0.2);
 
-        return boatBody.getWorldPoint(flankLocal);
+        return {
+            targetWorldPos: boatBody.getWorldPoint(flankLocal),
+            desiredSpeed: params.attackSpeed
+        };
     }
 
-    shouldAbort(animalPos: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean {
-        const localPos = boatBody.getLocalPoint(animalPos);
+    shouldAbort(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean {
+        const localPos = boatBody.getLocalPoint(attackPointWorld);
         // If we've overshot the stern significantly, the flank is a failure.
         return localPos.y > Boat.STERN_Y + 4.0;
     }
@@ -127,15 +144,85 @@ export class CircleFlankStrategy implements AttackPathStrategy {
 export class VulnerableChargeStrategy implements AttackPathStrategy {
     readonly name = 'Charging';
 
-    calculateTarget(animalPos: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): planck.Vec2 {
+    calculateTarget(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): AttackPathResult {
         // Direct charge at the stern tip - no prediction, just meat-headed charge
         const sternLocalY = Boat.STERN_Y;
-        return boatBody.getWorldPoint(planck.Vec2(0, sternLocalY));
+        return {
+            targetWorldPos: boatBody.getWorldPoint(planck.Vec2(0, sternLocalY)),
+            desiredSpeed: params.attackSpeed
+        };
     }
 
-    shouldAbort(animalPos: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean {
-        const localPos = boatBody.getLocalPoint(animalPos);
+    shouldAbort(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean {
+        const localPos = boatBody.getLocalPoint(attackPointWorld);
         // Direct charges are easily overshot if the boat moves.
         return localPos.y > Boat.STERN_Y + 2.0;
+    }
+}
+
+/**
+ * Strategy that targets a point near the river bank.
+ * It chooses the bank nearest to its current position and stays a few units away from the edge.
+ */
+export class ShoreHuggingStrategy implements AttackPathStrategy {
+    readonly name = 'ShoreHugging';
+
+    constructor() { }
+
+    calculateTarget(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): AttackPathResult {
+        const boatPos = boatBody.getPosition();
+        const riverSystem = RiverSystem.getInstance();
+
+        // Default to a sane position if river system is somehow missing
+        if (!riverSystem) {
+            return {
+                targetWorldPos: boatPos.clone(),
+                desiredSpeed: params.attackSpeed
+            };
+        }
+
+
+        // Target a point nearer to the boat and close to a bank
+        const targetY = originPos.y < boatPos.y ? originPos.y + 1.0 : originPos.y - 1.0;
+
+        const banks = riverSystem.getBankPositions(targetY);
+        const distToLeft = Math.abs(originPos.x - banks.left);
+        const distToRight = Math.abs(originPos.x - banks.right);
+        const targetX = distToLeft < distToRight ? banks.left + distToLeft : banks.right - distToRight;
+
+        // Move slower
+        return {
+            targetWorldPos: planck.Vec2(targetX, targetY),
+            desiredSpeed: params.attackSpeed * 0.5
+        };
+    }
+
+    shouldAbort(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean {
+        const localPos = boatBody.getLocalPoint(attackPointWorld);
+        return localPos.y > Boat.STERN_Y;
+    }
+}
+
+/**
+ * Strategy that keeps the animal stationary but facing the boat.
+ */
+export class LurkingStrategy implements AttackPathStrategy {
+    readonly name = 'Lurking';
+
+    calculateTarget(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): AttackPathResult {
+        // We stay stationary at our current position
+        // The rotation logic in moveTowardPoint will still use the vector from origin to boatPos
+        // to face the boat, even though desiredSpeed is 0.
+        const boatPos = boatBody.getPosition();
+        return {
+            targetWorldPos: boatPos.clone(),
+            desiredSpeed: 0
+        };
+    }
+
+    shouldAbort(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean {
+        const localPos = boatBody.getLocalPoint(attackPointWorld);
+        // If the boat has passed us, we are no longer lurking in ambush.
+        return localPos.y > Boat.STERN_Y;
     }
 }

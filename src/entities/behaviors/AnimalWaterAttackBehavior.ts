@@ -126,27 +126,26 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
             return;
         }
 
-        // 1. Action Selection: Decide the goal
-        // Check if strategy should abort (e.g. overshot or boat too fast)
-        if (this.attackLogic.shouldAbort(attackPos, targetBody, params)) {
+        // 1. Decision: Should we continue the attack?
+        if (this.attackLogic.shouldAbort(originPos, attackPos, targetBody, params)) {
             this.state = 'IDLE';
             return;
         }
 
-        // Use the point we want to guide (snout) for strategy and target prediction
-        this.attackLogic.update(dt, attackPos, targetBody, this.aggressiveness);
+        // Update logic timers/state
+        this.attackLogic.update(dt, originPos, attackPos, targetBody, this.aggressiveness);
 
         // 2. Steering: Calculate where to go
         // Predict the target point based on strategy
-        const targetWorldPos = this.attackLogic.calculateTarget(attackPos, targetBody, params);
+        const result = this.attackLogic.calculateTarget(originPos, attackPos, targetBody, params);
 
         // 3. Locomotion: Move the body
-        this.moveTowardPoint(dt, originPos, attackPos, targetWorldPos, physicsBody, params);
+        this.moveTowardPoint(dt, originPos, attackPos, result.targetWorldPos, result.desiredSpeed, physicsBody, params);
     }
 
 
     private moveTowardPoint(dt: number, originPos: planck.Vec2, attackPos: planck.Vec2,
-        targetWorldPos: planck.Vec2, physicsBody: planck.Body, params: AnimalAttackParams) {
+        targetWorldPos: planck.Vec2, desiredSpeed: number, physicsBody: planck.Body, params: AnimalAttackParams) {
 
         // Use vector from origin to target for steering direction.
         // This ensures the animal rotates correctly around its origin to align the snout with the target.
@@ -180,7 +179,7 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
 
         // Maintain speed, but slow down for sharp turns or if poorly aligned.
         // Also slow down if snout is very close to target to prevent overshooting jitter.
-        let targetSpeed = params.attackSpeed * alignment;
+        let targetSpeed = desiredSpeed * alignment;
         if (snoutToTargetDist < 2.0) {
             targetSpeed *= (snoutToTargetDist / 2.0);
         }

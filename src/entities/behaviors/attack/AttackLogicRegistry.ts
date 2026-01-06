@@ -1,11 +1,13 @@
 import { AttackLogic } from './AttackLogic';
 import { WolfAttackLogic } from './WolfAttackLogic';
+import { AmbushAttackLogic } from './AmbushAttackLogic';
 
 export class AttackLogicRegistry {
     private static logics: Map<string, () => AttackLogic> = new Map();
 
     static {
         this.register('wolf', () => new WolfAttackLogic());
+        this.register('ambush', () => new AmbushAttackLogic());
     }
 
     public static register(name: string, factory: () => AttackLogic) {

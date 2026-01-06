@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import { Boat } from '../../Boat';
 import { AnimalAttackParams } from '../AnimalBehaviorUtils';
-import { AttackPathStrategy, SternInterceptStrategy, CircleFlankStrategy, VulnerableChargeStrategy } from './AttackPathStrategies';
+import { AttackPathStrategy, SternInterceptStrategy, CircleFlankStrategy, VulnerableChargeStrategy, AttackPathResult } from './AttackPathStrategies';
 import { AttackLogic } from './AttackLogic';
 
 /**
@@ -17,7 +17,7 @@ export class WolfAttackLogic extends AttackLogic {
         this.currentStrategy = new CircleFlankStrategy();
     }
 
-    override update(dt: number, attackPointWorld: planck.Vec2, targetBody: planck.Body, aggressiveness: number) {
+    override update(dt: number, originPos: planck.Vec2, attackPointWorld: planck.Vec2, targetBody: planck.Body, aggressiveness: number) {
         this.strategyTimer -= dt;
         if (this.strategyTimer > 0) return;
 
@@ -43,11 +43,11 @@ export class WolfAttackLogic extends AttackLogic {
         }
     }
 
-    override calculateTarget(attackPointWorld: planck.Vec2, targetBody: planck.Body, params: AnimalAttackParams): planck.Vec2 {
-        return this.currentStrategy.calculateTarget(attackPointWorld, targetBody, params);
+    override calculateTarget(originPos: planck.Vec2, attackPointWorld: planck.Vec2, targetBody: planck.Body, params: AnimalAttackParams): AttackPathResult {
+        return this.currentStrategy.calculateTarget(originPos, attackPointWorld, targetBody, params);
     }
 
-    override shouldAbort(attackPointWorld: planck.Vec2, targetBody: planck.Body, params: AnimalAttackParams): boolean {
-        return this.currentStrategy.shouldAbort(attackPointWorld, targetBody, params);
+    override shouldAbort(originPos: planck.Vec2, attackPointWorld: planck.Vec2, targetBody: planck.Body, params: AnimalAttackParams): boolean {
+        return this.currentStrategy.shouldAbort(originPos, attackPointWorld, targetBody, params);
     }
 }
