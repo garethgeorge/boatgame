@@ -41,7 +41,7 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
         // State Machine logic - switch only calls update functions
         switch (this.state) {
             case 'IDLE':
-                this.updateIdle(dt, originPos, targetPos, attackParams);
+                this.updateIdle(dt, targetBody, originPos, targetPos, attackParams);
                 break;
 
             case 'TURNING':
@@ -62,10 +62,13 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
         physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.95)); // Just drift
     }
 
-    private updateIdle(dt: number, originPos: planck.Vec2, targetPos: planck.Vec2, params: AnimalAttackParams) {
+    private updateIdle(dt: number, targetBody: planck.Body, originPos: planck.Vec2, targetPos: planck.Vec2, params: AnimalAttackParams) {
         if (this.entity.waterAttackUpdateIdle) {
             this.entity.waterAttackUpdateIdle(dt);
         }
+
+        const localPos = targetBody.getLocalPoint(originPos);
+        if (localPos.y > Boat.STERN_Y) return;
 
         const distToBoat = planck.Vec2.distance(originPos, targetPos);
         if (distToBoat < params.startAttackDistance) {
@@ -124,6 +127,12 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
         }
 
         // 1. Action Selection: Decide the goal
+        // Check if strategy should abort (e.g. overshot or boat too fast)
+        if (this.attackLogic.shouldAbort(attackPos, targetBody, params)) {
+            this.state = 'IDLE';
+            return;
+        }
+
         // Use the point we want to guide (snout) for strategy and target prediction
         this.attackLogic.update(dt, attackPos, targetBody, this.aggressiveness);
 

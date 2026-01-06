@@ -16,6 +16,11 @@ export interface AttackPathStrategy {
      * @param params Attack parameters
      */
     calculateTarget(animalPos: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): planck.Vec2;
+
+    /**
+     * Returns true if the strategy is no longer viable (e.g. overshot or outpaced).
+     */
+    shouldAbort(animalPos: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean;
 }
 
 /**
@@ -69,6 +74,13 @@ export class SternInterceptStrategy implements AttackPathStrategy {
             sternWorldPos.y + (interceptPos.y - sternWorldPos.y) * this.interceptFactor
         );
     }
+
+    shouldAbort(animalPos: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean {
+        const boatSpeed = boatBody.getLinearVelocity().length();
+        const localPos = boatBody.getLocalPoint(animalPos);
+        // If we are behind the stern and the boat is faster, we'll never catch it.
+        return localPos.y > Boat.STERN_Y && boatSpeed > 0.5 * params.attackSpeed;
+    }
 }
 
 /**
@@ -100,6 +112,12 @@ export class CircleFlankStrategy implements AttackPathStrategy {
 
         return boatBody.getWorldPoint(flankLocal);
     }
+
+    shouldAbort(animalPos: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean {
+        const localPos = boatBody.getLocalPoint(animalPos);
+        // If we've overshot the stern significantly, the flank is a failure.
+        return localPos.y > Boat.STERN_Y + 4.0;
+    }
 }
 
 /**
@@ -113,5 +131,11 @@ export class VulnerableChargeStrategy implements AttackPathStrategy {
         // Direct charge at the stern tip - no prediction, just meat-headed charge
         const sternLocalY = Boat.STERN_Y;
         return boatBody.getWorldPoint(planck.Vec2(0, sternLocalY));
+    }
+
+    shouldAbort(animalPos: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): boolean {
+        const localPos = boatBody.getLocalPoint(animalPos);
+        // Direct charges are easily overshot if the boat moves.
+        return localPos.y > Boat.STERN_Y + 2.0;
     }
 }

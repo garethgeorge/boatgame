@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import { Boat } from '../../Boat';
 import { AnimalAttackParams } from '../AnimalBehaviorUtils';
-import { AttackPathStrategy, SternInterceptStrategy, CircleFlankStrategy } from './AttackPathStrategies';
+import { AttackPathStrategy, SternInterceptStrategy, CircleFlankStrategy, VulnerableChargeStrategy } from './AttackPathStrategies';
 import { AttackLogic } from './AttackLogic';
 
 /**
@@ -26,21 +26,28 @@ export class WolfAttackLogic extends AttackLogic {
 
         // Switch to SternIntercept if we are in a good position to strike the back
         // e.g., on the flank and not too far ahead.
-        if (longitudinalDist > Boat.BOW_Y - 0 * Boat.LENGTH) {
+        if (longitudinalDist > Boat.BOW_Y - 1.0 * Boat.LENGTH) {
             if (this.currentStrategy.name !== 'SternIntercept') {
                 const interceptFactor = 0.2 + (aggressiveness * 0.8);
                 this.currentStrategy = new SternInterceptStrategy(interceptFactor);
                 this.strategyTimer = 2.0; // Stay in this strategy for a bit
             }
         } else {
-            if (this.currentStrategy.name !== 'Flanking') {
+            // Positioning phase: randomly choose between flanking or a vulnerable charge
+            if (Math.random() > 0.5) {
                 this.currentStrategy = new CircleFlankStrategy();
-                this.strategyTimer = 1.0 + Math.random();
+            } else {
+                this.currentStrategy = new VulnerableChargeStrategy();
             }
+            this.strategyTimer = 1.5 + Math.random() * 2.0;
         }
     }
 
     override calculateTarget(attackPointWorld: planck.Vec2, targetBody: planck.Body, params: AnimalAttackParams): planck.Vec2 {
         return this.currentStrategy.calculateTarget(attackPointWorld, targetBody, params);
+    }
+
+    override shouldAbort(attackPointWorld: planck.Vec2, targetBody: planck.Body, params: AnimalAttackParams): boolean {
+        return this.currentStrategy.shouldAbort(attackPointWorld, targetBody, params);
     }
 }
