@@ -21,6 +21,8 @@ export interface AttackAnimalOptions {
     stayOnShore?: boolean;
     aggressiveness?: number;
     minNoticeDistance?: number;
+    attackLogicName?: string;
+    attackOffset?: planck.Vec2;
 }
 
 export interface AttackAnimalPhysicsOptions {
@@ -37,6 +39,8 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
     protected player: AnimationPlayer | null = null;
     protected behavior: EntityBehavior | null = null;
     protected aggressiveness: number;
+    protected attackLogicName: string | undefined;
+    protected attackOffset: planck.Vec2;
 
     constructor(
         physicsEngine: PhysicsEngine,
@@ -68,6 +72,8 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
         } = physicsOptions;
 
         this.aggressiveness = (options.aggressiveness !== undefined) ? options.aggressiveness : Math.random();
+        this.attackLogicName = options.attackLogicName;
+        this.attackOffset = options.attackOffset || planck.Vec2(0, -halfLength);
         this.canCausePenalty = true;
 
         const physicsBody = physicsEngine.world.createBody({
@@ -107,7 +113,7 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
             }
             this.playIdleAnimation();
         } else {
-            this.behavior = new AnimalWaterAttackBehavior(this, this.aggressiveness);
+            this.behavior = new AnimalWaterAttackBehavior(this, this.aggressiveness, this.attackLogicName, this.attackOffset);
             this.playSwimmingAnimation();
         }
     }
@@ -199,7 +205,7 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
     }
 
     enteringWaterDidComplete(speed: number) {
-        this.behavior = new AnimalWaterAttackBehavior(this, this.aggressiveness);
+        this.behavior = new AnimalWaterAttackBehavior(this, this.aggressiveness, this.attackLogicName, this.attackOffset);
         this.normalVector.set(0, 1, 0);
         this.playSwimmingAnimation();
     }

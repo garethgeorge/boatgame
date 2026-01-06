@@ -2,10 +2,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/TerrainDecorator';
-import { Decorations } from '../Decorations';
-import { GraphicsUtils } from '../../core/GraphicsUtils';
-import { TRexSpawner } from '../../entities/spawners/TRexSpawner';
-import { PterodactylSpawner } from '../../entities/spawners/PterodactylSpawner';
+import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -23,12 +20,10 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         // }
     }
 
-    private trexSpawner = new TRexSpawner();
-    private pteroSpawner = new PterodactylSpawner();
+    private gatorSpawner = new AlligatorSpawner();
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        //const count = (zEnd - zStart) * 0.01;
-        //await this.trexSpawner.spawn(context, 5, zStart, zEnd);
-        await this.pteroSpawner.spawn(context, 2, zStart, zEnd);
+        await this.bottleSpawner.spawn(context, 4, zStart, zEnd);
+        await this.gatorSpawner.spawn(context, 2, zStart, zEnd);
     }
 }

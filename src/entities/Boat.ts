@@ -20,7 +20,7 @@ export class Boat extends Entity {
     public static readonly LENGTH = 6.0;
     public static readonly BOW_Y = -3.0;
     public static readonly STERN_Y = 3.0;
-    public static readonly FRONT_ZONE_END_Y = -0.5;
+    public static readonly FRONT_ZONE_END_Y = -1.0;
 
     // Fixture names for the front and back parts
     public static readonly PART_FRONT = 'front';
@@ -372,6 +372,7 @@ export class Boat extends Entity {
                 if (entity.canCausePenalty && !entity.hasCausedPenalty) {
                     this.flashRed();
                     this.collectedBottles.removeBottle(true); // Lose a bottle
+                    entity.wasHitByPlayer(this);
                     entity.hasCausedPenalty = true;
                 }
             }

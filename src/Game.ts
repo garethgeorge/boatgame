@@ -47,7 +47,7 @@ export class Game {
 
     // Game State
     isPaused: boolean = false;
-    viewMode: 'close' | 'far' = 'close';
+    viewMode: 'close' | 'far' | 'birds' = 'close';
 
     // Collision Handling
     pendingContacts: Map<Entity, { type: string, subtype: any, boatPart: string }> = new Map();
@@ -317,7 +317,13 @@ export class Game {
         }
 
         if (this.inputManager.wasPressed('viewMode')) {
-            this.viewMode = this.viewMode === 'close' ? 'far' : 'close';
+            if (this.viewMode === 'close') {
+                this.viewMode = 'far';
+            } else if (this.viewMode === 'far') {
+                this.viewMode = 'birds';
+            } else {
+                this.viewMode = 'close';
+            }
         }
 
         if (this.inputManager.wasPressed('debugConsole')) {
@@ -389,8 +395,16 @@ export class Game {
             // Offset: Behind (positive Z relative to boat facing -Z) and Up (positive Y)
             // If boat faces -Z, "behind" is +Z.
 
-            const offsetDistance = this.viewMode === 'far' ? 20 : 7;
-            const offsetHeight = this.viewMode === 'far' ? 15 : 3;
+            let offsetDistance = 7;
+            let offsetHeight = 3;
+
+            if (this.viewMode === 'far') {
+                offsetDistance = 20;
+                offsetHeight = 15;
+            } else if (this.viewMode === 'birds') {
+                offsetDistance = 0.5; // Small offset so lookAt orient correctly 
+                offsetHeight = 40;
+            }
 
             // Calculate offset vector based on rotation
             // We want to be 'offsetDistance' units "behind" the boat.

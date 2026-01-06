@@ -2,178 +2,188 @@ import * as planck from 'planck';
 import { Boat } from '../Boat';
 import { AnimalWaterAttack } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
-import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
+import { AnimalAttackParams, AnimalBehaviorUtils } from './AnimalBehaviorUtils';
+import { AttackLogic } from './attack/AttackLogic';
+import { AttackLogicRegistry } from './attack/AttackLogicRegistry';
 
 export class AnimalWaterAttackBehavior implements EntityBehavior {
     private entity: AnimalWaterAttack;
     private state: 'IDLE' | 'TURNING' | 'ATTACKING' = 'IDLE';
     private aggressiveness: number;
 
-    constructor(entity: AnimalWaterAttack, aggressiveness: number) {
+    private attackLogic: AttackLogic;
+    private attackOffset: planck.Vec2;
+
+    constructor(entity: AnimalWaterAttack, aggressiveness: number, attackLogicName: string = 'wolf', attackOffset?: planck.Vec2) {
         this.entity = entity;
         this.aggressiveness = aggressiveness;
+        this.attackLogic = AttackLogicRegistry.create(attackLogicName);
+        this.attackOffset = attackOffset || planck.Vec2(0, 0);
     }
 
     update(dt: number) {
-        const bottles = Boat.getBottleCount();
-        const speed = AnimalBehaviorUtils.evaluateAttackSpeed(this.aggressiveness, bottles);
-        const startAttackDistance = AnimalBehaviorUtils.evaluateStartAttackDistance(this.aggressiveness, bottles);
-        const stopAttackDistance = startAttackDistance > 0 ? startAttackDistance + 20 : 0;
-
         const targetBody = Boat.getPlayerBody();
         const physicsBody = this.entity.getPhysicsBody();
 
         if (!targetBody || !physicsBody) return;
 
-        // If no speed (no bottles), animal is effectively disabled from attacking
-        if (speed <= 0) {
-            if (this.entity.waterAttackUpdateIdle) {
-                this.entity.waterAttackUpdateIdle(dt);
-            }
-            this.state = 'IDLE';
-            physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.95)); // Just drift
+        const bottles = Boat.getBottleCount();
+        if (bottles <= 0) {
+            this.handleNoBottles(dt, physicsBody);
             return;
         }
 
-        const pos = physicsBody.getPosition();
+        const attackParams = AnimalBehaviorUtils.evaluateAttackParams(this.aggressiveness, bottles);
+        const originPos = physicsBody.getPosition();
         const targetPos = targetBody.getPosition();
-        const playerVel = targetBody.getLinearVelocity();
+        const attackPos = physicsBody.getWorldPoint(this.attackOffset);
 
-        // 1. Determine Local Position of Animal relative to Boat
-        const localPos = targetBody.getLocalPoint(pos);
-
-        // 2. Select Local Target Point
-        // Boat is approx 2.4 wide (-1.2 to 1.2), 6 long (-3.0 to 3.0).
-        // +Y is Stern (Back), -Y is Bow (Front).
-        // Danger zone (Bow) is y < Boat.FRONT_ZONE_END_Y.
-        // We target a point in the target zone (Stern).
-        const sternLocalY = Boat.STERN_Y * 0.5; // Halfway to stern tip
-        let chosenTargetLocal: planck.Vec2;
-
-        if (localPos.y < Boat.FRONT_ZONE_END_Y) {
-            // Animal is in front of the boat. Flank!
-            // Head towards a staging point to the side of the stern.
-            const side = localPos.x > 0 ? 1 : -1;
-            chosenTargetLocal = planck.Vec2(side * Boat.WIDTH * 2.5, sternLocalY);
-        } else {
-            // Animal is alongside or behind the danger zone. Go for the back.
-            chosenTargetLocal = planck.Vec2(0, sternLocalY);
-        }
-
-        // 3. Convert Local Target to World Base
-        const worldTargetBase = targetBody.getWorldPoint(chosenTargetLocal);
-        const realDiff = worldTargetBase.clone().sub(pos);
-        const dist = realDiff.length(); // Use distance to chosen target
-
-        // 4. Intercept Prediction for that World Target
-        const averageAttackSpeed = 12.0 * speed;
-        let timeToIntercept = 0;
-        if (averageAttackSpeed > 0) {
-            timeToIntercept = dist / averageAttackSpeed;
-            timeToIntercept = Math.min(timeToIntercept, 2.0) * 0.7;
-        }
-
-        // Predicted position of the stern point in world space
-        const predictedWorldTarget = worldTargetBase.clone().add(playerVel.clone().mul(timeToIntercept));
-
-        // 5. Blend between direct pursuit and intercept based on distance
-        let predictionWeight = (dist - 8.0) / (40.0 - 8.0);
-        predictionWeight = Math.max(0, Math.min(1, predictionWeight));
-
-        const blendedTarget = planck.Vec2.combine(1 - predictionWeight, worldTargetBase, predictionWeight, predictedWorldTarget);
-        const diff = blendedTarget.clone().sub(pos);
-
-        // 6. State Machine Update
-        // "isBehind" means we overshot our current target
-        // Boat Forward is local -Y. 
-        // We use the dot product of the normalized diff and our own forward to see if we are overshooting?
-        // Actually, let's keep it simple: are we overshooting the boat?
-        const boatForward = targetBody.getWorldVector(planck.Vec2(0, -1));
-        const boatToAnimal = pos.clone().sub(targetPos);
-        const isBehindBoat = planck.Vec2.dot(boatToAnimal, boatForward) < -Boat.STERN_Y * 2.0;
-
+        // State Machine logic - switch only calls update functions
         switch (this.state) {
             case 'IDLE':
-                this.updateIdle(dt, dist, startAttackDistance);
+                this.updateIdle(dt, originPos, targetPos, attackParams);
                 break;
+
             case 'TURNING':
-                this.updateTurning(dt, dist, diff, physicsBody, isBehindBoat, stopAttackDistance, speed);
+                this.updateTurning(dt, targetBody, physicsBody, originPos, attackPos, targetPos, attackParams);
                 break;
+
             case 'ATTACKING':
-                this.updateAttacking(dt, dist, diff, physicsBody, isBehindBoat, stopAttackDistance, speed);
+                this.updateAttacking(dt, targetBody, physicsBody, originPos, attackPos, targetPos, attackParams);
                 break;
         }
     }
 
-    private updateIdle(dt: number, dist: number, startAttackDistance: number) {
+    private handleNoBottles(dt: number, physicsBody: planck.Body) {
+        if (this.entity.waterAttackUpdateIdle) {
+            this.entity.waterAttackUpdateIdle(dt);
+        }
+        this.state = 'IDLE';
+        physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.95)); // Just drift
+    }
+
+    private updateIdle(dt: number, originPos: planck.Vec2, targetPos: planck.Vec2, params: AnimalAttackParams) {
         if (this.entity.waterAttackUpdateIdle) {
             this.entity.waterAttackUpdateIdle(dt);
         }
 
-        if (dist < startAttackDistance) {
+        const distToBoat = planck.Vec2.distance(originPos, targetPos);
+        if (distToBoat < params.startAttackDistance) {
             this.state = 'TURNING';
         }
     }
 
-    private updateTurning(dt: number, dist: number, diff: planck.Vec2, physicsBody: planck.Body, isBehind: boolean, stopAttackDistance: number, speed: number) {
+    private updateTurning(dt: number, targetBody: planck.Body, physicsBody: planck.Body,
+        originPos: planck.Vec2, attackPos: planck.Vec2, targetPos: planck.Vec2, params: AnimalAttackParams) {
+
         if (this.entity.waterAttackUpdatePreparing) {
             this.entity.waterAttackUpdatePreparing(dt);
         }
 
-        if (dist > stopAttackDistance) {
+        const distToBoat = planck.Vec2.distance(originPos, targetPos);
+        if (distToBoat > params.endAttackDistance) {
             this.state = 'IDLE';
             return;
         }
 
-        const angleDiff = this.calculateAngleToTarget(diff, physicsBody.getAngle());
+        // Just turn to face the boat center initially to get oriented
+        const diffToBoat = targetBody.getPosition().clone().sub(originPos);
 
-        // Rotate towards target
-        const rotationSpeed = 0.05 * speed; // Very slow turn
-        physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60));
+        // Slow down movement while turning
+        if (distToBoat > 10) {
+            physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.95));
+        }
 
-        // Drag to stop movement while turning
-        physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.9));
+        const currentAngle = physicsBody.getAngle();
+        const desiredAngle = Math.atan2(diffToBoat.y, diffToBoat.x) + Math.PI / 2;
+        let angleDiff = desiredAngle - currentAngle;
+        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
 
-        // Check if facing target (within ~15 degrees = 0.26 rad)
-        // And ensure we are not behind the boat
-        if (Math.abs(angleDiff) < 0.26 && !isBehind) {
+        const turnSpeed = params.turningSpeed;
+        const nextAngle = currentAngle + angleDiff * Math.min(1.0, turnSpeed * dt);
+        physicsBody.setAngle(nextAngle);
+
+        // Transition to attacking once roughly facing boat
+        if (Math.abs(angleDiff) < 0.45) { // ~25 degrees
             this.state = 'ATTACKING';
         }
     }
 
-    private updateAttacking(dt: number, dist: number, diff: planck.Vec2, physicsBody: planck.Body, isBehind: boolean, stopAttackDistance: number, speed: number) {
+    updateAttacking(dt: number, targetBody: planck.Body, physicsBody: planck.Body,
+        originPos: planck.Vec2, attackPos: planck.Vec2, targetPos: planck.Vec2,
+        params: AnimalAttackParams) {
         if (this.entity.waterAttackUpdateAttacking) {
             this.entity.waterAttackUpdateAttacking(dt);
         }
 
-        if (dist > stopAttackDistance) {
+        const distToBoat = planck.Vec2.distance(originPos, targetPos);
+        if (distToBoat > params.endAttackDistance) {
             this.state = 'IDLE';
             return;
         }
 
-        if (isBehind) {
-            this.state = 'TURNING';
-            return;
-        }
+        // 1. Action Selection: Decide the goal
+        // Use the point we want to guide (snout) for strategy and target prediction
+        this.attackLogic.update(dt, attackPos, targetBody, this.aggressiveness);
 
-        const angleDiff = this.calculateAngleToTarget(diff, physicsBody.getAngle());
+        // 2. Steering: Calculate where to go
+        // Predict the target point based on strategy
+        const targetWorldPos = this.attackLogic.calculateTarget(attackPos, targetBody, params);
 
-        diff.normalize();
-        // Move towards target
-        const attackForce = 12.0 * speed; // Faster drift
-        const force = diff.mul(attackForce * physicsBody.getMass());
-        physicsBody.applyForceToCenter(force);
-
-        // Continue rotating to track
-        const rotationSpeed = 0.05 * speed;
-        physicsBody.setAngularVelocity(angleDiff * rotationSpeed / (1 / 60));
+        // 3. Locomotion: Move the body
+        this.moveTowardPoint(dt, originPos, attackPos, targetWorldPos, physicsBody, params);
     }
 
-    private calculateAngleToTarget(diff: planck.Vec2, currentAngle: number): number {
-        const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
+
+    private moveTowardPoint(dt: number, originPos: planck.Vec2, attackPos: planck.Vec2,
+        targetWorldPos: planck.Vec2, physicsBody: planck.Body, params: AnimalAttackParams) {
+
+        // Use vector from origin to target for steering direction.
+        // This ensures the animal rotates correctly around its origin to align the snout with the target.
+        const originToTarget = targetWorldPos.clone().sub(originPos);
+        const originToTargetDist = originToTarget.length();
+
+        // Target Direction (Angle)
+        const desiredAngle = Math.atan2(originToTarget.y, originToTarget.x) + Math.PI / 2;
+
+        // Smoothly interpolate angle
+        const currentAngle = physicsBody.getAngle();
         let angleDiff = desiredAngle - currentAngle;
         while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
         while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-        return angleDiff;
+
+        // Turn speed depends on difficulty/aggressiveness
+        const turnSpeed = params.turningSpeed;
+        const nextAngle = currentAngle + angleDiff * Math.min(1.0, turnSpeed * dt);
+        physicsBody.setAngle(nextAngle);
+
+        // Forward direction in world space
+        const forwardDir = planck.Vec2(Math.sin(nextAngle), -Math.cos(nextAngle));
+
+        // Alignment multiplier scaling speed by how well origin/snout is pointed at target
+        const steerDir = originToTarget.clone();
+        if (originToTargetDist > 0.1) steerDir.normalize();
+        const alignment = Math.max(0, planck.Vec2.dot(forwardDir, steerDir));
+
+        // Use Snoot to Target distance for arrival slowing if close
+        const snoutToTargetDist = planck.Vec2.distance(attackPos, targetWorldPos);
+
+        // Maintain speed, but slow down for sharp turns or if poorly aligned.
+        // Also slow down if snout is very close to target to prevent overshooting jitter.
+        let targetSpeed = params.attackSpeed * alignment;
+        if (snoutToTargetDist < 2.0) {
+            targetSpeed *= (snoutToTargetDist / 2.0);
+        }
+
+        // Smoothed velocity interpolation
+        const currentVel = physicsBody.getLinearVelocity();
+        const targetVel = forwardDir.mul(targetSpeed);
+
+        const accelSpeed = 5.0; // Acceleration responsiveness
+        const nextVel = currentVel.clone().add(targetVel.clone().sub(currentVel).mul(Math.min(1.0, accelSpeed * dt)));
+
+        physicsBody.setLinearVelocity(nextVel);
+        physicsBody.setAngularVelocity(0); // No physics-based rotation
     }
 }

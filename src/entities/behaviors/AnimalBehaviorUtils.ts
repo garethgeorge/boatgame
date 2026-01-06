@@ -1,5 +1,12 @@
 import * as planck from 'planck';
 
+export interface AnimalAttackParams {
+    startAttackDistance: number,
+    endAttackDistance: number,
+    attackSpeed: number,
+    turningSpeed: number
+}
+
 export class AnimalBehaviorUtils {
     /**
      * If the boat has no bottles, they should ignore it completely.
@@ -22,22 +29,19 @@ export class AnimalBehaviorUtils {
         return baseDist * mult;
     }
 
-    public static evaluateStartAttackDistance(aggressiveness: number, bottles: number): number {
+    public static evaluateAttackParams(aggressiveness: number, bottles: number): AnimalAttackParams {
         const mult = this.getAgressivenessMultiplier(bottles);
-        if (mult === 0) return 0;
 
         // Base distance from original WaterBehavior: 30 + 60 * aggressiveness
-        const baseDist = 30 + 60 * aggressiveness;
-        return baseDist * mult;
-    }
-
-    public static evaluateAttackSpeed(aggressiveness: number, bottles: number): number {
-        const mult = this.getAgressivenessMultiplier(bottles);
-        if (mult === 0) return 0;
+        const startAttackDistance = (30 + 60 * aggressiveness) * mult;
+        const endAttackDistance = startAttackDistance + 20;
 
         // Base speed from original WaterBehavior: 1 + 3 * aggressiveness
-        const baseSpeed = 1 + 3 * aggressiveness;
-        return baseSpeed * mult;
+        const attackSpeed = (1 + 3 * aggressiveness) * mult * 5.0;
+
+        const turningSpeed = 2.0 + (aggressiveness * 3.0);
+
+        return { startAttackDistance, endAttackDistance, attackSpeed, turningSpeed };
     }
 
     public static setCollisionMask(body: planck.Body, maskBits: number) {
