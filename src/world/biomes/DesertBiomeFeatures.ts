@@ -178,20 +178,23 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                                 break;
                             }
                             case 'gator': {
+                                const logic = Math.random() < 0.5 ? 'wolf' : 'ambush';
                                 await this.alligatorSpawner.spawnAnimalAbsolute(
-                                    context, sample, p.range, p.aggressiveness || 0.5
+                                    context, sample, p.range, p.aggressiveness || 0.5, logic
                                 );
                                 break;
                             }
                             case 'monkey': {
+                                const logic = Math.random() < 0.5 ? 'wolf' : 'ambush';
                                 await this.monkeySpawner.spawnAnimalAbsolute(
-                                    context, sample, p.range, p.aggressiveness || 0.5
+                                    context, sample, p.range, p.aggressiveness || 0.5, logic
                                 );
                                 break;
                             }
                             case 'hippo': {
+                                const logic = Math.random() < 0.5 ? 'wolf' : 'ambush';
                                 await this.hippoSpawner.spawnAnimalAbsolute(
-                                    context, sample, p.range, p.aggressiveness || 0.5
+                                    context, sample, p.range, p.aggressiveness || 0.5, logic
                                 );
                                 break;
                             }
@@ -205,16 +208,6 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 }
             }
         }
-
-        // // Pier spawning at the end of the biome
-        // const totalArcLength = layout.path[layout.path.length - 1].arcLength;
-        // const pierArcLength = totalArcLength * 0.95;
-        // const pierIndex = RiverGeometry.getPathIndexByArcLen(layout.path, pierArcLength);
-
-        // if (iChunkMin <= pierIndex && pierIndex < iChunkMax) {
-        //     const sample = RiverGeometry.getPathPoint(layout.path, pierIndex);
-        //     await this.pierSpawner.spawnAt(context, sample.centerPos.z, true);
-        // }
     }
 
 }

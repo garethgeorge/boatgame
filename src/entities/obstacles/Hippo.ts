@@ -11,10 +11,11 @@ export class Hippo extends AttackAnimal {
         return Hippo.HEIGHT_IN_WATER;
     }
 
-    constructor(x: number, y: number, physicsEngine: PhysicsEngine, angle: number = 0) {
-        super(physicsEngine, 'hippo', {
-            x, y, angle, height: Hippo.HEIGHT_IN_WATER, onShore: false
-        }, {
+    constructor(
+        physicsEngine: PhysicsEngine,
+        options: AttackAnimalOptions
+    ) {
+        super(physicsEngine, 'hippo', options, {
             halfWidth: 1.5,
             halfLength: 3.0,
             density: 5.0,

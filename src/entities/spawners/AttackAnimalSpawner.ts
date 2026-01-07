@@ -76,7 +76,8 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
         context: SpawnContext,
         sample: RiverGeometrySample,
         distanceRange: [number, number],
-        aggressiveness: number
+        aggressiveness: number,
+        attackLogicName?: string
     ): Promise<boolean> {
         let placement: any = null;
 
@@ -132,7 +133,8 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
                 onShore,
                 stayOnShore,
                 aggressiveness,
-                minNoticeDistance: 50.0 // Default or configure here
+                minNoticeDistance: 50.0, // Default or configure here
+                attackLogicName
             });
             if (entity) {
                 context.entityManager.add(entity);

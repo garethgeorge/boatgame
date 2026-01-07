@@ -39,6 +39,6 @@ export class HippoSpawner extends AttackAnimalSpawner {
     }
 
     protected spawnEntity(physicsEngine: PhysicsEngine, options: AttackAnimalOptions): Entity {
-        return new Hippo(options.x, options.y, physicsEngine, options.angle);
+        return new Hippo(physicsEngine, options);
     }
 }
