@@ -4,7 +4,7 @@ import { AnimalAttackParams } from '../AnimalBehaviorUtils';
 import { AttackPathStrategy, SternInterceptStrategy, ShoreHuggingStrategy, AttackPathResult } from './AttackPathStrategies';
 import { AttackLogic } from './AttackLogic';
 
-type AmbushState = 'STALKING' | 'STRIKING';
+type AmbushState = 'PREPARING' | 'STALKING' | 'STRIKING';
 
 /**
  * "Ambush" attack logic: 
@@ -15,14 +15,30 @@ type AmbushState = 'STALKING' | 'STRIKING';
 export class AmbushAttackLogic extends AttackLogic {
     readonly name = 'ambush';
     private currentStrategy: AttackPathStrategy;
-    private state: AmbushState = 'STALKING';
+    private state: AmbushState = 'PREPARING';
 
     constructor() {
         super();
         this.currentStrategy = new ShoreHuggingStrategy();
     }
 
+    override isPreparing(): boolean {
+        return this.state === 'PREPARING';
+    }
+
     override update(dt: number, originPos: planck.Vec2, attackPointWorld: planck.Vec2, animalBody: planck.Body, targetBody: planck.Body, aggressiveness: number, params: AnimalAttackParams) {
+        if (this.state === 'PREPARING') {
+            const result = this.currentStrategy.calculateTarget(originPos, attackPointWorld, targetBody, params);
+            const diff = result.targetWorldPos.clone().sub(originPos);
+            const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
+            const angleDiff = this.angleDifference(animalBody.getAngle(), desiredAngle);
+
+            if (Math.abs(angleDiff) < 0.45) {
+                this.state = 'STALKING';
+            }
+            return;
+        }
+
         const localPos = targetBody.getLocalPoint(attackPointWorld);
         const longitudinalDist = localPos.y; // Positive is behind boat center
 
@@ -51,6 +67,13 @@ export class AmbushAttackLogic extends AttackLogic {
                 // Already in strike strategy
                 break;
         }
+    }
+
+    private angleDifference(currentAngle: number, desiredAngle: number): number {
+        let angleDiff = desiredAngle - currentAngle;
+        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+        return angleDiff;
     }
 
     override calculateTarget(originPos: planck.Vec2, attackPointWorld: planck.Vec2, targetBody: planck.Body, params: AnimalAttackParams): AttackPathResult {

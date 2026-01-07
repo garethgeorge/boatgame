@@ -11,13 +11,30 @@ export class WolfAttackLogic extends AttackLogic {
     readonly name = 'wolf';
     private currentStrategy: AttackPathStrategy;
     private strategyTimer: number = 0;
+    private state: 'PREPARING' | 'ATTACKING' = 'PREPARING';
 
     constructor() {
         super();
         this.currentStrategy = new CircleFlankStrategy();
     }
 
+    override isPreparing(): boolean {
+        return this.state === 'PREPARING';
+    }
+
     override update(dt: number, originPos: planck.Vec2, attackPointWorld: planck.Vec2, animalBody: planck.Body, targetBody: planck.Body, aggressiveness: number, params: AnimalAttackParams) {
+        if (this.state === 'PREPARING') {
+            const result = this.currentStrategy.calculateTarget(originPos, attackPointWorld, targetBody, params);
+            const diff = result.targetWorldPos.clone().sub(originPos);
+            const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
+            const angleDiff = this.angleDifference(animalBody.getAngle(), desiredAngle);
+
+            if (Math.abs(angleDiff) < 0.45) {
+                this.state = 'ATTACKING';
+            }
+            return;
+        }
+
         this.strategyTimer -= dt;
 
         const localPos = targetBody.getLocalPoint(attackPointWorld);
@@ -51,6 +68,13 @@ export class WolfAttackLogic extends AttackLogic {
             }
             this.strategyTimer = 1.5 + Math.random() * 2.0;
         }
+    }
+
+    private angleDifference(currentAngle: number, desiredAngle: number): number {
+        let angleDiff = desiredAngle - currentAngle;
+        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+        return angleDiff;
     }
 
     override calculateTarget(originPos: planck.Vec2, attackPointWorld: planck.Vec2, targetBody: planck.Body, params: AnimalAttackParams): AttackPathResult {

@@ -8,7 +8,7 @@ import { AttackLogicRegistry } from './attack/AttackLogicRegistry';
 
 export class AnimalWaterAttackBehavior implements EntityBehavior {
     private entity: AnimalWaterAttack;
-    private state: 'IDLE' | 'TURNING' | 'ATTACKING' = 'IDLE';
+    private state: 'IDLE' | 'ATTACKING' = 'IDLE';
     private aggressiveness: number;
     private minAttackDistance: number;
 
@@ -23,9 +23,11 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
         minAttackDistance: number = 30.0
     ) {
         this.entity = entity;
-        this.aggressiveness = aggressiveness;
+        //this.aggressiveness = aggressiveness;
+        this.aggressiveness = 0;
         this.minAttackDistance = minAttackDistance;
-        this.attackLogic = AttackLogicRegistry.create(attackLogicName);
+        this.attackLogic = AttackLogicRegistry.create('ambush');
+        //this.attackLogic = AttackLogicRegistry.create(attackLogicName);
         this.attackOffset = attackOffset || planck.Vec2(0, 0);
     }
 
@@ -52,10 +54,6 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
                 this.updateIdle(dt, targetBody, originPos, targetPos, attackParams);
                 break;
 
-            case 'TURNING':
-                this.updateTurning(dt, targetBody, physicsBody, originPos, attackPos, targetPos, attackParams);
-                break;
-
             case 'ATTACKING':
                 this.updateAttacking(dt, targetBody, physicsBody, originPos, attackPos, targetPos, attackParams);
                 break;
@@ -80,48 +78,13 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
 
         const distToBoat = planck.Vec2.distance(originPos, targetPos);
         if (distToBoat < params.startAttackDistance) {
-            this.state = 'TURNING';
-        }
-    }
-
-    private updateTurning(dt: number, targetBody: planck.Body, physicsBody: planck.Body,
-        originPos: planck.Vec2, attackPos: planck.Vec2, targetPos: planck.Vec2, params: AnimalAttackParams) {
-
-        if (this.entity.waterAttackUpdatePreparing) {
-            this.entity.waterAttackUpdatePreparing(dt);
-        }
-
-        const distToBoat = planck.Vec2.distance(originPos, targetPos);
-        if (distToBoat > params.endAttackDistance) {
-            this.state = 'IDLE';
-            return;
-        }
-
-        // Slow down movement while turning
-        if (distToBoat > 10) {
-            physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.95));
-        }
-
-        // Just turn to face the boat center initially to get oriented
-        const diffToBoat = targetBody.getPosition().clone().sub(originPos);
-        const desiredAngle = Math.atan2(diffToBoat.y, diffToBoat.x) + Math.PI / 2;
-        const currentAngle = physicsBody.getAngle();
-        const angleDiff = this.angleDifference(currentAngle, desiredAngle);
-
-        // Transition to attacking once roughly facing boat
-        if (Math.abs(angleDiff) < 0.45) { // ~25 degrees
             this.state = 'ATTACKING';
-        } else {
-            this.rotateToward(desiredAngle, physicsBody, params);
         }
     }
 
     updateAttacking(dt: number, targetBody: planck.Body, physicsBody: planck.Body,
         originPos: planck.Vec2, attackPos: planck.Vec2, targetPos: planck.Vec2,
         params: AnimalAttackParams) {
-        if (this.entity.waterAttackUpdateAttacking) {
-            this.entity.waterAttackUpdateAttacking(dt);
-        }
 
         const distToBoat = planck.Vec2.distance(originPos, targetPos);
         if (distToBoat > params.endAttackDistance) {
@@ -135,15 +98,31 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
             return;
         }
 
-        // Update logic timers/state
+        // Update logic internal state (timers, current strategy, etc.)
         this.attackLogic.update(dt, originPos, attackPos, physicsBody, targetBody, this.aggressiveness, params);
 
+        // Trigger visual animations based on whether we are preparing or active
+        if (this.attackLogic.isPreparing()) {
+            if (this.entity.waterAttackUpdatePreparing) {
+                this.entity.waterAttackUpdatePreparing(dt);
+            }
+        } else {
+            if (this.entity.waterAttackUpdateAttacking) {
+                this.entity.waterAttackUpdateAttacking(dt);
+            }
+        }
+
         // 2. Steering: Calculate where to go
-        // Predict the target point based on strategy
         const result = this.attackLogic.calculateTarget(originPos, attackPos, targetBody, params);
 
         // 3. Locomotion: Move the body
-        this.moveTowardPoint(dt, originPos, attackPos, result.targetWorldPos, result.desiredSpeed, physicsBody, params);
+        // If preparing, we just rotate (speed = 0) and damp existing velocity
+        if (this.attackLogic.isPreparing()) {
+            physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.95));
+            this.moveTowardPoint(dt, originPos, attackPos, result.targetWorldPos, 0, physicsBody, params);
+        } else {
+            this.moveTowardPoint(dt, originPos, attackPos, result.targetWorldPos, result.desiredSpeed, physicsBody, params);
+        }
     }
 
     private moveTowardPoint(dt: number, originPos: planck.Vec2, attackPos: planck.Vec2,
