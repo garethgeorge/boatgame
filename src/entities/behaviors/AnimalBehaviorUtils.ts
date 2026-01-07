@@ -41,7 +41,7 @@ export class AnimalBehaviorUtils {
      * Start between 1 and 3 times min
      * Break off if 20 m further away than start
      * Speed from 10 to 50 m/s
-     * Turning from pi to 2pi radians/s
+     * Turning from pi to 4 pi radians/s
      * Default min distance of 30 gives start range from 30 to 90 m
      */
     public static evaluateAttackParams(aggressiveness: number,
@@ -55,9 +55,9 @@ export class AnimalBehaviorUtils {
         // Speed from 10 to 50 m/s
         const attackSpeed = 10.0 + 40.0 * aggro;
 
-        // Turning from 2 to 5 radians/s
-        const turningSpeed = Math.PI * (1.0 + 7.0 * aggressiveness);
-        const turningSmoothing = 0.1 + 0.4 * aggressiveness;
+        // Turning from pi to 8 pi radians/s
+        const turningSpeed = Math.PI * (1.0 + 3.0 * aggro);
+        const turningSmoothing = 0.1 + 0.4 * aggro;
 
         return { startAttackDistance, endAttackDistance, attackSpeed, turningSpeed, turningSmoothing };
     }

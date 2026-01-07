@@ -17,15 +17,26 @@ export class WolfAttackLogic extends AttackLogic {
         this.currentStrategy = new CircleFlankStrategy();
     }
 
-    override update(dt: number, originPos: planck.Vec2, attackPointWorld: planck.Vec2, targetBody: planck.Body, aggressiveness: number) {
+    override update(dt: number, originPos: planck.Vec2, attackPointWorld: planck.Vec2, animalBody: planck.Body, targetBody: planck.Body, aggressiveness: number, params: AnimalAttackParams) {
         this.strategyTimer -= dt;
 
         const localPos = targetBody.getLocalPoint(attackPointWorld);
         const longitudinalDist = localPos.y; // Positive is behind boat center
 
+        // Calculate relative longitudinal velocity (how fast the boat is "passing" us or pulling away)
+        const relVelWorld = animalBody.getLinearVelocity().clone().sub(targetBody.getLinearVelocity());
+        const relVelLocal = targetBody.getLocalVector(relVelWorld);
+        const relVelLong = relVelLocal.y; // Positive if animal is moving backward relative to boat
+
+        // Dynamic threshold for switching to SternIntercept.
+        // Base threshold: we are behind the bow (Boat.BOW_Y = -3). 
+        // We add a lead time to account for the time it takes to turn and accelerate.
+        const leadTime = 0.25; // seconds
+        const baseThreshold = Boat.BOW_Y;
+        const dynamicThreshold = baseThreshold - relVelLong * leadTime;
+
         // Switch to SternIntercept if we are in a good position to strike the back
-        // e.g., on the flank and not too far ahead.
-        if (longitudinalDist > Boat.BOW_Y - 1.0 * Boat.LENGTH) {
+        if (longitudinalDist > dynamicThreshold) {
             if (this.currentStrategy.name !== 'SternIntercept') {
                 const interceptFactor = 0.2 + (aggressiveness * 0.8);
                 this.currentStrategy = new SternInterceptStrategy(interceptFactor);

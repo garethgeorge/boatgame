@@ -1,16 +1,16 @@
 import * as planck from 'planck';
 import { Boat } from '../../Boat';
 import { AnimalAttackParams } from '../AnimalBehaviorUtils';
-import { AttackPathStrategy, SternInterceptStrategy, ShoreHuggingStrategy, LurkingStrategy, AttackPathResult } from './AttackPathStrategies';
+import { AttackPathStrategy, SternInterceptStrategy, ShoreHuggingStrategy, AttackPathResult } from './AttackPathStrategies';
 import { AttackLogic } from './AttackLogic';
 
-type AmbushState = 'STALKING' | 'LURKING' | 'STRIKING';
+type AmbushState = 'STALKING' | 'STRIKING';
 
 /**
  * "Ambush" attack logic: 
  * 1. Move toward the boat hugging the shore (STALKING).
- * 2. Lie in wait when at a certain distance, facing the boat (LURKING).
- * 3. Strike the stern when the boat is close enough (STRIKING).
+ * 2. Strike the stern when the boat is close enough (STRIKING), 
+ *    using relative velocity to determine the intercept point.
  */
 export class AmbushAttackLogic extends AttackLogic {
     readonly name = 'ambush';
@@ -22,30 +22,28 @@ export class AmbushAttackLogic extends AttackLogic {
         this.currentStrategy = new ShoreHuggingStrategy();
     }
 
-    override update(dt: number, originPos: planck.Vec2, attackPointWorld: planck.Vec2, targetBody: planck.Body, aggressiveness: number) {
-        const boatPos = targetBody.getPosition();
-        const distToBoat = planck.Vec2.distance(attackPointWorld, boatPos);
+    override update(dt: number, originPos: planck.Vec2, attackPointWorld: planck.Vec2, animalBody: planck.Body, targetBody: planck.Body, aggressiveness: number, params: AnimalAttackParams) {
         const localPos = targetBody.getLocalPoint(attackPointWorld);
+        const longitudinalDist = localPos.y; // Positive is behind boat center
+
+        // Calculate relative longitudinal velocity (how fast the boat is "passing" us or pulling away)
+        const relVelWorld = animalBody.getLinearVelocity().clone().sub(targetBody.getLinearVelocity());
+        const relVelLocal = targetBody.getLocalVector(relVelWorld);
+        const relVelLong = relVelLocal.y; // Positive if animal is moving backward relative to boat
+
+        // Dynamic threshold for switching to SternIntercept.
+        // Match the tuned values from WolfAttackLogic
+        const leadTime = 0.25; // seconds
+        const baseThreshold = Boat.BOW_Y;
+        const dynamicThreshold = baseThreshold - relVelLong * leadTime;
 
         switch (this.state) {
             case 'STALKING':
-                // Move toward boat until we are reasonably close but still ahead
-                if (distToBoat < 4 * Boat.LENGTH && localPos.y < Boat.BOW_Y) {
-                    this.state = 'LURKING';
-                    this.currentStrategy = new LurkingStrategy();
-                }
-                break;
-
-            case 'LURKING':
-                // If boat gets very close, strike!
-                if (distToBoat < 2 * Boat.LENGTH) {
+                // Move toward boat until we reach the striking threshold
+                if (longitudinalDist > dynamicThreshold) {
                     this.state = 'STRIKING';
                     const interceptFactor = 0.4 + (aggressiveness * 0.6);
                     this.currentStrategy = new SternInterceptStrategy(interceptFactor);
-                } else if (distToBoat > 8 * Boat.LENGTH || localPos.y > Boat.STERN_Y) {
-                    // Lost them or overshot? Go back to stalking or abort
-                    this.state = 'STALKING';
-                    this.currentStrategy = new ShoreHuggingStrategy();
                 }
                 break;
 

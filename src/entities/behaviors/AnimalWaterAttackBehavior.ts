@@ -136,7 +136,7 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
         }
 
         // Update logic timers/state
-        this.attackLogic.update(dt, originPos, attackPos, targetBody, this.aggressiveness);
+        this.attackLogic.update(dt, originPos, attackPos, physicsBody, targetBody, this.aggressiveness, params);
 
         // 2. Steering: Calculate where to go
         // Predict the target point based on strategy
@@ -202,7 +202,7 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
         }
 
         // Determine desired angular speed, taper over last few degrees
-        const taper = Math.min(Math.abs(angleDiff) * 6.0, 1.0);
+        const taper = Math.min(Math.abs(angleDiff) * 3.0, 1.0);
         const targetSpeed = Math.sign(angleDiff) * params.turningSpeed * taper;
 
         // Interpolate with current to smooth
