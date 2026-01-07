@@ -24,10 +24,6 @@ export class HippoSpawner extends AttackAnimalSpawner {
         return 5.0;
     }
 
-    protected get clusterPlacement(): { probability: number, size: number, distance: number } {
-        return { probability: 0.5, size: 2, distance: 5.0 };
-    }
-
     protected get heightInWater(): number {
         return Hippo.HEIGHT_IN_WATER;
     }

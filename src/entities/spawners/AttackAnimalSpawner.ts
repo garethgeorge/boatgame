@@ -1,18 +1,12 @@
 import * as THREE from 'three';
 import { Spawnable, SpawnContext } from '../Spawnable';
 import { RiverSystem } from '../../world/RiverSystem';
-import { RiverGeometrySample } from '../../world/RiverGeometry';
+import { RiverGeometry, RiverGeometrySample } from '../../world/RiverGeometry';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
 import { Entity } from '../../core/Entity';
 import { RiverPlacementOptions, ShorePlacementOptions } from '../../managers/PlacementHelper';
 import { BaseSpawner } from './BaseSpawner';
-
-export interface ClusterPlacementOptions {
-    probability: number;
-    size: number;
-    distance: number;
-}
 
 export abstract class AttackAnimalSpawner extends BaseSpawner {
 
@@ -25,9 +19,6 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
     protected get heightInWater(): number {
         return 0.0;
     }
-    protected get clusterPlacement(): ClusterPlacementOptions {
-        return { probability: 0.0, size: 2, distance: 5.0 };
-    }
     protected get shorePlacement(): ShorePlacementOptions {
         return { minDistFromBank: 3.0, maxDistFromBank: 6.0 };
     }
@@ -39,32 +30,26 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
         options: AttackAnimalOptions): Entity;
 
     async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
+
+        const riverSystem = RiverSystem.getInstance();
+        const sample = RiverGeometry.getRiverGeometrySample(riverSystem, z);
+
         const isShore = Math.random() < this.shoreProbability;
+        const aggro = Math.random();
 
         if (isShore) {
+            const shorePlace = this.shorePlacement;
             const stayOnShore = Math.random() > 0.5;
-            return this.spawnOnShore(context, z, stayOnShore, {});
-        } else {
-            const cluster = this.clusterPlacement;
-            const spawnCluster = Math.random() < cluster.probability;
-            return this.spawnInRiver(context, z, spawnCluster, {});
-        }
-    }
+            const left = Math.random() < 0.5;
+            const range: [number, number] = left ?
+                [-sample.bankDist - shorePlace.maxDistFromBank, -sample.bankDist] :
+                [sample.bankDist, sample.bankDist + shorePlace.maxDistFromBank];
+            return this.spawnAnimalAbsolute(context, sample, range, aggro);
 
-    /**
-     * Spawns an animal. If the range is outside of [-1,1] first tries to
-     * spawn on shore. Only one of the two limits should be outside.
-     */
-    async spawnAnimal(context: SpawnContext, z: number, range: [number, number]): Promise<boolean> {
-        let spawned = false;
-        if (range[0] < -1) {
-            spawned = await this.spawnOnShore(context, z, false, { side: -1 });
-        } else if (range[1] > 1) {
-            spawned = await this.spawnOnShore(context, z, false, { side: 1 });
+        } else {
+            const range: [number, number] = [-sample.bankDist, sample.bankDist];
+            return this.spawnAnimalAbsolute(context, sample, range, aggro);
         }
-        if (!spawned)
-            spawned = await this.spawnInRiver(context, z, false, { range: range });
-        return spawned;
     }
 
     /**
@@ -135,78 +120,6 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
                 aggressiveness,
                 minNoticeDistance: 50.0, // Default or configure here
                 attackLogicName
-            });
-            if (entity) {
-                context.entityManager.add(entity);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    async spawnInRiver(context: SpawnContext, z: number, spawnCluster: boolean,
-        options: RiverPlacementOptions): Promise<boolean> {
-
-        const opts = {
-            ...this.waterPlacement,
-            ...options
-        };
-
-        const cluster = this.clusterPlacement;
-        const clusterSize = spawnCluster ? cluster.size : 1;
-
-        const centerPos = context.placementHelper.tryPlace(
-            z, z, this.entityRadius, opts
-        );
-
-        if (centerPos) {
-            for (let j = 0; j < clusterSize; j++) {
-                let x = centerPos.x;
-                let cz = centerPos.z;
-
-                if (clusterSize > 1) {
-                    x += (Math.random() - 0.5) * cluster.distance;
-                    cz += (Math.random() - 0.5) * cluster.distance;
-                }
-
-                const angle = Math.random() * Math.PI * 2;
-                const entity = this.spawnEntity(context.physicsEngine, {
-                    x,
-                    y: cz,
-                    height: this.heightInWater,
-                    angle
-                });
-                if (entity)
-                    context.entityManager.add(entity);
-            }
-            return true;
-        }
-        return false;
-    }
-
-    async spawnOnShore(context: SpawnContext, z: number, stayOnShore: boolean,
-        options: ShorePlacementOptions): Promise<boolean> {
-
-        const opts = {
-            ...this.shorePlacement,
-            ...options
-        };
-
-        const riverSystem = RiverSystem.getInstance();
-        const placement = context.placementHelper.findShorePlacement(
-            z, z, riverSystem, opts
-        );
-
-        if (placement) {
-            const entity = this.spawnEntity(context.physicsEngine, {
-                x: placement.worldX,
-                y: placement.worldZ,
-                angle: placement.rotation,
-                height: placement.height,
-                terrainNormal: placement.normal,
-                onShore: true,
-                stayOnShore,
-                minNoticeDistance: 50.0
             });
             if (entity) {
                 context.entityManager.add(entity);
