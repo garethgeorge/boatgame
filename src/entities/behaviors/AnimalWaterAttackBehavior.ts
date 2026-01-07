@@ -14,6 +14,8 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
     private attackLogic: AttackLogic;
     private attackOffset: planck.Vec2;
 
+    private currentRotationSpeed: number = 0;
+
     constructor(entity: AnimalWaterAttack, aggressiveness: number, attackLogicName: string = 'wolf', attackOffset?: planck.Vec2) {
         this.entity = entity;
         this.aggressiveness = aggressiveness;
@@ -97,15 +99,9 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
             physicsBody.setLinearVelocity(physicsBody.getLinearVelocity().mul(0.95));
         }
 
-        const currentAngle = physicsBody.getAngle();
         const desiredAngle = Math.atan2(diffToBoat.y, diffToBoat.x) + Math.PI / 2;
-        let angleDiff = desiredAngle - currentAngle;
-        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-
-        const turnSpeed = params.turningSpeed;
-        const nextAngle = currentAngle + angleDiff * Math.min(1.0, turnSpeed * dt);
-        physicsBody.setAngle(nextAngle);
+        const angleDiff = this.angleDifference(physicsBody.getAngle(), desiredAngle);
+        const nextAngle = this.rotateToward(dt, angleDiff, physicsBody, params);
 
         // Transition to attacking once roughly facing boat
         if (Math.abs(angleDiff) < 0.45) { // ~25 degrees
@@ -143,28 +139,20 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
         this.moveTowardPoint(dt, originPos, attackPos, result.targetWorldPos, result.desiredSpeed, physicsBody, params);
     }
 
-
     private moveTowardPoint(dt: number, originPos: planck.Vec2, attackPos: planck.Vec2,
-        targetWorldPos: planck.Vec2, desiredSpeed: number, physicsBody: planck.Body, params: AnimalAttackParams) {
+        targetWorldPos: planck.Vec2, desiredSpeed: number, physicsBody: planck.Body,
+        params: AnimalAttackParams) {
 
         // Use vector from origin to target for steering direction.
         // This ensures the animal rotates correctly around its origin to align the snout with the target.
         const originToTarget = targetWorldPos.clone().sub(originPos);
         const originToTargetDist = originToTarget.length();
 
+        // Update facing
         // Target Direction (Angle)
         const desiredAngle = Math.atan2(originToTarget.y, originToTarget.x) + Math.PI / 2;
-
-        // Smoothly interpolate angle
-        const currentAngle = physicsBody.getAngle();
-        let angleDiff = desiredAngle - currentAngle;
-        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-
-        // Turn speed depends on difficulty/aggressiveness
-        const turnSpeed = params.turningSpeed;
-        const nextAngle = currentAngle + angleDiff * Math.min(1.0, turnSpeed * dt);
-        physicsBody.setAngle(nextAngle);
+        const angleDiff = this.angleDifference(physicsBody.getAngle(), desiredAngle);
+        const nextAngle = this.rotateToward(dt, angleDiff, physicsBody, params);
 
         // Forward direction in world space
         const forwardDir = planck.Vec2(Math.sin(nextAngle), -Math.cos(nextAngle));
@@ -188,10 +176,43 @@ export class AnimalWaterAttackBehavior implements EntityBehavior {
         const currentVel = physicsBody.getLinearVelocity();
         const targetVel = forwardDir.mul(targetSpeed);
 
+        // nextVel = currentVel + (targetVel - currentVel) * accel/dt
         const accelSpeed = 5.0; // Acceleration responsiveness
         const nextVel = currentVel.clone().add(targetVel.clone().sub(currentVel).mul(Math.min(1.0, accelSpeed * dt)));
 
         physicsBody.setLinearVelocity(nextVel);
         physicsBody.setAngularVelocity(0); // No physics-based rotation
     }
+
+    private angleDifference(currentAngle: number, desiredAngle: number): number {
+        let angleDiff = desiredAngle - currentAngle;
+        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+        return angleDiff;
+    }
+
+    private rotateToward(dt: number, angleDiff: number, physicsBody: planck.Body,
+        params: AnimalAttackParams): number {
+
+        // Determine target rotation speed based on angle difference
+        // If angle difference is very small, we should stop rotating
+        let targetRotationSpeed = 0;
+        if (Math.abs(angleDiff) > 0.01) {
+            targetRotationSpeed = angleDiff < 0.0 ? -params.turningSpeed : params.turningSpeed;
+        }
+
+        // Interpolate current rotation speed towards the target
+        const turningAccelSpeed = 3.0; // Acceleration responsiveness for turning
+        this.currentRotationSpeed += (targetRotationSpeed - this.currentRotationSpeed) * Math.min(1.0, turningAccelSpeed * dt);
+
+        // Update angle using smoothed rotation speed
+        const currentAngle = physicsBody.getAngle();
+        const nextAngle = angleDiff < 0.0 ?
+            currentAngle + Math.max(angleDiff, this.currentRotationSpeed * dt) :
+            currentAngle + Math.min(angleDiff, this.currentRotationSpeed * dt);
+        physicsBody.setAngle(nextAngle);
+
+        return nextAngle;
+    }
+
 }
