@@ -46,9 +46,13 @@ export class SternInterceptStrategy implements AttackPathStrategy {
     constructor(private interceptFactor: number = 0.5) { }
 
     calculateTarget(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): AttackPathResult {
-        // Target a point near the stern center
-        const sternLocalY = (Boat.STERN_Y + Boat.FRONT_ZONE_END_Y) / 2.0;
-        const sternWorldPos = boatBody.getWorldPoint(planck.Vec2(0, sternLocalY));
+        // Target a point near the stern center in y and on the same side
+        // as the attack point unless we're behind the boat
+        const localAttackPos = boatBody.getLocalPoint(attackPointWorld);
+        const sternLocalY = (Boat.STERN_Y * 0.7 + Boat.FRONT_ZONE_END_Y * 0.3);
+        const sternLocalX = localAttackPos.y < Boat.STERN_Y ?
+            (localAttackPos.x < 0.0 ? -Boat.WIDTH * 0.4 : Boat.WIDTH * 0.4) : 0.0;
+        const sternWorldPos = boatBody.getWorldPoint(planck.Vec2(sternLocalX, sternLocalY));
         const boatVel = boatBody.getLinearVelocity();
         const diff = sternWorldPos.clone().sub(attackPointWorld);
         const dist = diff.length();
@@ -105,10 +109,12 @@ export class CircleFlankStrategy implements AttackPathStrategy {
     readonly name = 'Flanking';
 
     private side: number;
+    private flankOffsetMultiplier: number;
 
     constructor() {
         // Randomly pick a side if not already flanking
         this.side = Math.random() > 0.5 ? 1 : -1;
+        this.flankOffsetMultiplier = 3.0 + Math.random() * 2.0;
     }
 
     calculateTarget(originPos: planck.Vec2, attackPointWorld: planck.Vec2, boatBody: planck.Body, params: AnimalAttackParams): AttackPathResult {
@@ -121,8 +127,7 @@ export class CircleFlankStrategy implements AttackPathStrategy {
 
         // Target a point 5-8 units to the side of the boat, and slightly ahead of the stern
         // This creates an "arcing" approach.
-        const flankOffsetMultiplier = 3.0 + Math.random() * 2.0;
-        const flankLocal = planck.Vec2(this.side * Boat.WIDTH * flankOffsetMultiplier, Boat.STERN_Y * 0.2);
+        const flankLocal = planck.Vec2(this.side * Boat.WIDTH * this.flankOffsetMultiplier, Boat.STERN_Y * 0.2);
 
         return {
             targetWorldPos: boatBody.getWorldPoint(flankLocal),

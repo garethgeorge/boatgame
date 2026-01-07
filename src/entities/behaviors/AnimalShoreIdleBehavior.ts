@@ -8,14 +8,14 @@ import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
 export class AnimalShoreIdleBehavior implements EntityBehavior {
     private entity: AnimalShoreIdle;
     private aggressiveness: number;
+    private minNoticeDistance: number;
     private ignoreBottles: boolean;
-    private minNoticeDistance?: number;
 
     constructor(
         entity: AnimalShoreIdle,
         aggressiveness: number,
-        ignoreBottles: boolean = false,
-        minNoticeDistance: number = 50.0
+        minNoticeDistance: number = 50.0,
+        ignoreBottles: boolean = false
     ) {
         this.entity = entity;
         this.aggressiveness = aggressiveness;

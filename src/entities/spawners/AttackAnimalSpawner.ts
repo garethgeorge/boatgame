@@ -118,7 +118,6 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
                 onShore,
                 stayOnShore,
                 aggressiveness,
-                minNoticeDistance: 50.0, // Default or configure here
                 attackLogicName
             });
             if (entity) {

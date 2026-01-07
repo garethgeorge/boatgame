@@ -19,7 +19,6 @@ export class WolfAttackLogic extends AttackLogic {
 
     override update(dt: number, originPos: planck.Vec2, attackPointWorld: planck.Vec2, targetBody: planck.Body, aggressiveness: number) {
         this.strategyTimer -= dt;
-        if (this.strategyTimer > 0) return;
 
         const localPos = targetBody.getLocalPoint(attackPointWorld);
         const longitudinalDist = localPos.y; // Positive is behind boat center
@@ -32,9 +31,9 @@ export class WolfAttackLogic extends AttackLogic {
                 this.currentStrategy = new SternInterceptStrategy(interceptFactor);
                 this.strategyTimer = 2.0; // Stay in this strategy for a bit
             }
-        } else {
+        } else if (this.strategyTimer < 0) {
             // Positioning phase: randomly choose between flanking or a vulnerable charge
-            if (Math.random() > 0.5) {
+            if (Math.random() < 0.67) {
                 this.currentStrategy = new CircleFlankStrategy();
             } else {
                 this.currentStrategy = new VulnerableChargeStrategy();

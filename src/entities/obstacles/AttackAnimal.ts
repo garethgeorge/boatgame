@@ -20,7 +20,6 @@ export interface AttackAnimalOptions {
     onShore?: boolean;
     stayOnShore?: boolean;
     aggressiveness?: number;
-    minNoticeDistance?: number;
     attackLogicName?: string;
     attackOffset?: planck.Vec2;
 }
@@ -58,7 +57,6 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
             terrainNormal,
             onShore = false,
             stayOnShore = false,
-            minNoticeDistance = 50.0
         } = options;
 
         const {
@@ -109,7 +107,7 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
 
         if (onShore) {
             if (!stayOnShore) {
-                this.behavior = new AnimalShoreIdleBehavior(this, this.aggressiveness, false, minNoticeDistance);
+                this.behavior = new AnimalShoreIdleBehavior(this, this.aggressiveness);
             }
             this.playIdleAnimation();
         } else {

@@ -16,7 +16,6 @@ export interface FlyingAnimalOptions {
     angle?: number;
     terrainNormal?: THREE.Vector3;
     aggressiveness?: number;
-    minNoticeDistance?: number;
 }
 
 export interface FlyingAnimalPhysicsOptions {
@@ -48,7 +47,6 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
             height,
             angle = 0,
             terrainNormal,
-            minNoticeDistance = 50.0
         } = options;
 
         const {
@@ -94,7 +92,7 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
         else
             this.normalVector = new THREE.Vector3(0, 1, 0);
 
-        this.behavior = new AnimalShoreIdleBehavior(this, this.aggressiveness, true, minNoticeDistance);
+        this.behavior = new AnimalShoreIdleBehavior(this, this.aggressiveness, 200.0, true);
         this.playIdleAnimation();
     }
 

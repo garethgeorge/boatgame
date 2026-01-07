@@ -3,8 +3,6 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 import { AnimalShoreIdleBehavior } from '../behaviors/AnimalShoreIdleBehavior';
-import { AnimalWaterAttackBehavior } from '../behaviors/AnimalWaterAttackBehavior';
-import { AnimalEnteringWaterBehavior } from '../behaviors/AnimalEnteringWaterBehavior';
 import { AnimalShoreWalkBehavior } from '../behaviors/AnimalShoreWalkBehavior';
 import { AnimalShoreWalk } from '../behaviors/AnimalBehavior';
 

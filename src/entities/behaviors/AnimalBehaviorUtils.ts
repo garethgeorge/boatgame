@@ -4,44 +4,62 @@ export interface AnimalAttackParams {
     startAttackDistance: number,
     endAttackDistance: number,
     attackSpeed: number,
-    turningSpeed: number
+    turningSpeed: number,
+    turningSmoothing: number
 }
 
 export class AnimalBehaviorUtils {
     /**
-     * If the boat has no bottles, they should ignore it completely.
-     * Otherwise, distance thresholds and speed of attack scale with the number of bottles.
+     * The effective aggressiveness given a base value and number of collectables.
+     * numCollectables < 0 => ignore them
      */
-    public static getAgressivenessMultiplier(bottles: number): number {
-        if (bottles === 0) return 0;
-        // 1.0 at 1 bottle, scaling up linearly. 
-        // Example: 2.0 at 10 bottles.
-        return 1.0 + (bottles - 1) * 0.1;
+    public static effectiveAggressiveness(baseValue: number, numCollectables: number): number {
+        if (numCollectables < 0.0) {
+            return baseValue;
+        } else {
+            return (baseValue + Math.min(numCollectables / 20.0, 1.0)) * 0.5;
+        }
     }
 
+    /**
+     * Distance from which to notice the boat. Between 1 and 3 times the
+     * min distance.
+     * Default min distance of 50 gives a range from 50 to 150 m
+     * Returns 0 if there are no collectables indicating boat is ignored.
+     */
     public static evaluateNoticeBoatDistance(aggressiveness: number,
-        bottles: number, minDistance: number = 50.0): number {
-        const mult = bottles < 0 ? 1.0 : this.getAgressivenessMultiplier(bottles);
-        if (mult === 0) return 0;
-
-        // Default base distance: 50 + 50 * aggressiveness
-        const baseDist = minDistance * (1.0 + aggressiveness);
-        return baseDist * mult;
+        numCollectables: number, minDistance: number): number {
+        if (numCollectables === 0.0) {
+            return 0.0;
+        }
+        const aggro = this.effectiveAggressiveness(aggressiveness, numCollectables);
+        return minDistance + 2.0 * minDistance * aggro;
     }
 
-    public static evaluateAttackParams(aggressiveness: number, bottles: number): AnimalAttackParams {
-        const mult = this.getAgressivenessMultiplier(bottles);
+    /**
+     * Attack parameters.
+     * Start between 1 and 3 times min
+     * Break off if 20 m further away than start
+     * Speed from 10 to 50 m/s
+     * Turning from pi to 2pi radians/s
+     * Default min distance of 30 gives start range from 30 to 90 m
+     */
+    public static evaluateAttackParams(aggressiveness: number,
+        numCollectables: number, minDistance: number): AnimalAttackParams {
+        const aggro = this.effectiveAggressiveness(aggressiveness, numCollectables);
 
         // Base distance from original WaterBehavior: 30 + 60 * aggressiveness
-        const startAttackDistance = (30 + 60 * aggressiveness) * mult;
+        const startAttackDistance = minDistance + 2.0 * minDistance * aggro;
         const endAttackDistance = startAttackDistance + 20;
 
-        // Base speed from original WaterBehavior: 1 + 3 * aggressiveness
-        const attackSpeed = (1 + 3 * aggressiveness) * mult * 5.0;
+        // Speed from 10 to 50 m/s
+        const attackSpeed = 10.0 + 40.0 * aggro;
 
-        const turningSpeed = 2.0 + (aggressiveness * 3.0);
+        // Turning from 2 to 5 radians/s
+        const turningSpeed = Math.PI * (1.0 + 7.0 * aggressiveness);
+        const turningSmoothing = 0.1 + 0.4 * aggressiveness;
 
-        return { startAttackDistance, endAttackDistance, attackSpeed, turningSpeed };
+        return { startAttackDistance, endAttackDistance, attackSpeed, turningSpeed, turningSmoothing };
     }
 
     public static setCollisionMask(body: planck.Body, maskBits: number) {
