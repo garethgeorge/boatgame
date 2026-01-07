@@ -32,13 +32,13 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 'animal_corridor': {
                     logic: 'sequence',
                     place: 'shore',
-                    density: [0.5, 2.0],
+                    density: [0.5, 4.0],
                     types: ['gator', 'monkey']
                 },
                 'hippo_pod': {
                     logic: 'cluster',
                     place: 'shore',
-                    density: [0.3, 1.5],
+                    density: [0.3, 2.0],
                     types: ['hippo'],
                     minCount: 2
                 },
