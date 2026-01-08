@@ -2,6 +2,14 @@ import * as planck from 'planck';
 import { AnimalStrategyContext } from './AnimalPathStrategies';
 
 /**
+ * Configuration for any animal behavioral logic.
+ */
+export interface AnimalLogicConfig {
+    name: string;
+    params?: Record<string, any>;
+}
+
+/**
  * Shared context passed to ALL animal logic modules every frame.
  */
 export interface AnimalLogicContext extends AnimalStrategyContext {

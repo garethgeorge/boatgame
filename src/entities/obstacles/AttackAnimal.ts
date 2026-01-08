@@ -11,6 +11,7 @@ import { AmbushAttackLogic } from '../behaviors/logic/AmbushAttackLogic';
 import { DefaultSwimAwayLogic } from '../behaviors/logic/DefaultSwimAwayLogic';
 import { AnimalEnteringWater, AnimalShoreIdle, AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
+import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogic';
 import { AnimalEnteringWaterBehavior } from '../behaviors/AnimalEnteringWaterBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
@@ -115,7 +116,7 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
             }
             this.playIdleAnimation();
         } else {
-            this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, this.attackLogicName || 'wolf', this.attackOffset);
+            this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, { name: this.attackLogicName || 'wolf' }, this.attackOffset);
             this.playSwimmingAnimation();
         }
     }
@@ -207,7 +208,7 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
     }
 
     enteringWaterDidComplete(speed: number) {
-        this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, this.attackLogicName || 'wolf', this.attackOffset);
+        this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, { name: this.attackLogicName || 'wolf' }, this.attackOffset);
         this.normalVector.set(0, 1, 0);
         this.playSwimmingAnimation();
     }

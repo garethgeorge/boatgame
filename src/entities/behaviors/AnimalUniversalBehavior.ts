@@ -4,7 +4,7 @@ import { Boat } from '../Boat';
 import { AnyAnimal } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
 import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult } from './logic/AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig } from './logic/AnimalLogic';
 import { AnimalLogicRegistry } from './logic/AnimalLogicRegistry';
 import { AnimalBehaviorEvent } from './AnimalBehavior';
 
@@ -29,12 +29,12 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     constructor(
         entity: AnyAnimal,
         aggressiveness: number,
-        logicName: string,
+        logicConfig: AnimalLogicConfig,
         snoutOffset?: planck.Vec2
     ) {
         this.entity = entity;
         this.aggressiveness = aggressiveness;
-        this.logic = AnimalLogicRegistry.create(logicName);
+        this.logic = AnimalLogicRegistry.create(logicConfig);
         this.snoutOffset = snoutOffset || planck.Vec2(0, 0);
 
         const body = entity.getPhysicsBody();

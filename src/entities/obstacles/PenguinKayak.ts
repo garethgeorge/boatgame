@@ -8,6 +8,7 @@ import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { AnyAnimal, AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
+import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogic';
 import { DefaultSwimAwayLogic } from '../behaviors/logic/DefaultSwimAwayLogic';
 
 export class PenguinKayak extends Entity implements AnyAnimal {
@@ -62,7 +63,7 @@ export class PenguinKayak extends Entity implements AnyAnimal {
             this.applyModel(penguinData.model, penguinData.animations);
         }
 
-        this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, 'swimaway');
+        this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, { name: 'swimaway' });
         this.player.play({ name: 'paddling', timeScale: 2.0, randomizeLength: 0.2, startTime: -1 });
     }
 

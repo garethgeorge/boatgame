@@ -1,4 +1,4 @@
-import { AnimalLogic } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicConfig } from './AnimalLogic';
 import { WolfAttackLogic } from './WolfAttackLogic';
 import { AmbushAttackLogic } from './AmbushAttackLogic';
 import { DefaultSwimAwayLogic } from './DefaultSwimAwayLogic';
@@ -18,10 +18,10 @@ export class AnimalLogicRegistry {
         this.factories.set(name, factory);
     }
 
-    public static create(name: string): AnimalLogic {
-        const factory = this.factories.get(name);
+    public static create(config: AnimalLogicConfig): AnimalLogic {
+        const factory = this.factories.get(config.name);
         if (!factory) {
-            console.warn(`AnimalLogic "${name}" not found, falling back to "wolf"`);
+            console.warn(`AnimalLogic "${config.name}" not found, falling back to "wolf"`);
             return new WolfAttackLogic();
         }
         return factory();

@@ -9,6 +9,7 @@ import { AnimalBehaviorEvent, AnimalShoreIdle, AnyAnimal } from '../behaviors/An
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AnimalShoreIdleBehavior } from '../behaviors/AnimalShoreIdleBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
+import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogic';
 
 export interface FlyingAnimalOptions {
     x: number;
@@ -171,7 +172,7 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
 
     shoreIdleMaybeNoticeBoat(): boolean {
         if (this.meshes.length > 0) {
-            this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, 'flight');
+            this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, { name: 'flight' });
             this.playFlightAnimation();
             return true;
         }
