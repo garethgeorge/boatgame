@@ -3,6 +3,10 @@ import * as THREE from 'three';
 export interface AnimationParameters {
     name: string;
 
+    // Logical state name to identify what is playing (e.g. 'FLEEING', 'ATTACKING')
+    // If provided, the player will skip redundant play() calls if the state matches.
+    state?: string;
+
     // -1 => randomize the start time
     startTime?: number;
 
@@ -16,6 +20,7 @@ export interface AnimationParameters {
 export class AnimationPlayer {
 
     public readonly mixer: THREE.AnimationMixer;
+    public currentAnimationState: string | null = null;
     private readonly actions: Map<string, THREE.AnimationAction> = new Map();
     private currentAction: THREE.AnimationAction | null = null;
     private sequence: AnimationParameters[] | null = null;
@@ -38,6 +43,7 @@ export class AnimationPlayer {
     public stopAll() {
         this.mixer.stopAllAction();
         this.currentAction = null;
+        this.currentAnimationState = null;
         this.sequence = null;
     }
 
@@ -49,7 +55,9 @@ export class AnimationPlayer {
     }
 
     public playOnce(options: AnimationParameters, isPlayingSequenceStep: boolean = false) {
-        this.sequence = null;
+        if (!isPlayingSequenceStep) {
+            this.sequence = null;
+        }
         this.playAction(options, THREE.LoopOnce, 1);
     }
 
@@ -77,6 +85,7 @@ export class AnimationPlayer {
     private playNextInSequence() {
         if (!this.sequence || this.sequenceIndex >= this.sequence.length) {
             this.sequence = null;
+            this.currentAnimationState = null;
             return;
         }
 
@@ -90,7 +99,12 @@ export class AnimationPlayer {
         mode: THREE.AnimationActionLoopStyles,
         repetitions: number): boolean {
 
-        let { name, startTime = 0.0, timeScale = 1.0, duration = undefined, randomizeLength = undefined } = options;
+        let { name, state = null, startTime = 0.0, timeScale = 1.0, duration = undefined, randomizeLength = undefined } = options;
+
+        if (state !== null && state === this.currentAnimationState) {
+            return true;
+        }
+
         const action = this.actions.get(name);
         if (!action) {
             return false;
@@ -111,10 +125,11 @@ export class AnimationPlayer {
         }
 
         if (this.currentAction === action &&
-            action.isRunning &&
+            action.isRunning() &&
             action.loop === mode &&
             action.timeScale === timeScale) {
-            return;
+            this.currentAnimationState = state;
+            return true;
         }
 
         action.reset();
@@ -124,10 +139,12 @@ export class AnimationPlayer {
         action.play();
 
         if (this.currentAction && this.currentAction !== action) {
-            this.currentAction.crossFadeTo(action, 1.0, true);
+            this.currentAction.crossFadeTo(action, 0.25, true);
         }
 
         this.currentAction = action;
+        this.currentAnimationState = state;
+        return true;
     }
 
 }

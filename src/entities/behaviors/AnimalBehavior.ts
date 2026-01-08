@@ -1,6 +1,12 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 
+export type AnimalBehaviorEvent =
+    | { type: 'IDLE_TICK', dt: number }
+    | { type: 'PREPARING_TICK', dt: number }
+    | { type: 'ACTIVE_TICK', dt: number, animationState?: string }
+    | { type: 'COMPLETED' };
+
 // Any animal must implement this interface to get behavior
 export interface AnyAnimal {
     // the physics body is directly read and updated by the behavior
@@ -13,6 +19,9 @@ export interface AnyAnimal {
 
     // explicitly set the height and normal of the animal
     setExplictPosition?(height: number, normal: THREE.Vector3): void;
+
+    // Handle generic behavior events
+    handleBehaviorEvent?(event: AnimalBehaviorEvent): void;
 }
 
 // Behavior callbacks for animal in idle shore state
@@ -37,15 +46,4 @@ export interface AnimalShoreWalk extends AnyAnimal {
     shoreWalkDidComplete?(): void;
 }
 
-// Behavior callbacks for animal in water
-export interface AnimalWaterAttack extends AnyAnimal {
-    waterAttackUpdateIdle?(dt: number): void;
-    waterAttackUpdatePreparing?(dt: number): void;
-    waterAttackUpdateAttacking?(dt: number): void;
-}
-
-// Behavior callbacks for animal in flight
-export interface AnimalFlight extends AnyAnimal {
-    flightDidComplete?(): void;
-}
 

@@ -1,0 +1,57 @@
+import * as planck from 'planck';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult } from './AnimalLogic';
+import { BuzzTargetStrategy, FleeRiverStrategy, LandingStrategy, AnimalPathStrategy } from './AnimalPathStrategies';
+import { RiverSystem } from '../../../world/RiverSystem';
+
+export class DefaultFlightLogic implements AnimalLogic {
+    readonly name = 'DefaultFlight';
+
+    /** Animal is in flight. */
+    public static readonly ANIM_FLYING = 'flying';
+    /** Animal is landing or on the ground. */
+    public static readonly ANIM_WALKING = 'walking';
+
+    private state: 'TOWARD' | 'AWAY' | 'LANDING' = 'TOWARD';
+    private strategy: AnimalPathStrategy;
+
+    constructor() {
+        this.strategy = new BuzzTargetStrategy(15.0, 2.5, 75.0, 30.0);
+    }
+
+    shouldActivate(context: AnimalLogicContext): boolean {
+        return true;
+    }
+
+    shouldDeactivate(context: AnimalLogicContext): boolean {
+        return false;
+    }
+
+    update(context: AnimalLogicContext): void {
+        this.strategy.update(context);
+
+        if (this.state === 'TOWARD') {
+            if (planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < 2.0) {
+                this.state = 'AWAY';
+                this.strategy = new FleeRiverStrategy(15.0, 30.0);
+            }
+        } else if (this.state === 'AWAY') {
+            const banks = RiverSystem.getInstance().getBankPositions(context.originPos.y);
+            if (context.originPos.x < banks.left - 20.0 || context.originPos.x > banks.right + 20.0) {
+                this.state = 'LANDING';
+                this.strategy = new LandingStrategy(30.0);
+            }
+        }
+    }
+
+    calculatePath(context: AnimalLogicContext): AnimalLogicPathResult {
+        const result = this.strategy.calculatePath(context);
+        const anim = this.state === 'LANDING' ? DefaultFlightLogic.ANIM_WALKING : DefaultFlightLogic.ANIM_FLYING;
+        return { ...result, animationState: anim, isFinished: this.isFinished(context) };
+    }
+
+    private isFinished(context: AnimalLogicContext): boolean {
+        if (this.state !== 'LANDING') return false;
+        const currentAltitude = Math.max(0, context.currentHeight - RiverSystem.getInstance().terrainGeometry.calculateHeight(context.originPos.x, context.originPos.y));
+        return currentAltitude < 0.1 && context.physicsBody.getLinearVelocity().length() < 1.0;
+    }
+}

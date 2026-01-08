@@ -4,10 +4,11 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
-import { AnimalShoreIdle, AnimalFlight } from '../behaviors/AnimalBehavior';
+import { DefaultFlightLogic } from '../behaviors/logic/DefaultFlightLogic';
+import { AnimalBehaviorEvent, AnimalShoreIdle, AnyAnimal } from '../behaviors/AnimalBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AnimalShoreIdleBehavior } from '../behaviors/AnimalShoreIdleBehavior';
-import { AnimalFlightBehavior } from '../behaviors/AnimalFlightBehavior';
+import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 
 export interface FlyingAnimalOptions {
     x: number;
@@ -28,7 +29,7 @@ export interface FlyingAnimalPhysicsOptions {
     angularDamping?: number;
 }
 
-export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, AnimalFlight {
+export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, AnyAnimal {
     protected player: AnimationPlayer | null = null;
     protected behavior: EntityBehavior | null = null;
     protected aggressiveness: number;
@@ -110,9 +111,14 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
 
     protected abstract getFlightAnimationName(): string;
 
+    protected getWalkingAnimationName(): string {
+        return 'walking';
+    }
+
     protected playIdleAnimation() {
         this.player?.play({
             name: this.getIdleAnimationName(),
+            state: 'IDLE',
             timeScale: 1.0,
             randomizeLength: 0.2,
             startTime: -1
@@ -122,6 +128,17 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
     protected playFlightAnimation() {
         this.player?.play({
             name: this.getFlightAnimationName(),
+            state: DefaultFlightLogic.ANIM_FLYING,
+            timeScale: 1.0,
+            randomizeLength: 0.2,
+            startTime: -1
+        });
+    }
+
+    protected playWalkingAnimation() {
+        this.player?.play({
+            name: this.getWalkingAnimationName(),
+            state: DefaultFlightLogic.ANIM_WALKING,
             timeScale: 1.0,
             randomizeLength: 0.2,
             startTime: -1
@@ -154,20 +171,26 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
 
     shoreIdleMaybeNoticeBoat(): boolean {
         if (this.meshes.length > 0) {
-            this.behavior = new AnimalFlightBehavior(this);
+            this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, 'flight');
             this.playFlightAnimation();
             return true;
         }
         return false;
     }
 
-    flightDidComplete(): void {
-        // Remove or land? User said "just fly to opposite bank". 
-        // Let's just remove for now or let it sit? 
-        // For now let's just mark it to be removed to keep it simple, or it will just hover there.
-        // Actually, let's just stop the behavior.
-        this.behavior = null;
-        this.playIdleAnimation();
+    handleBehaviorEvent(event: AnimalBehaviorEvent): void {
+        if (event.type === 'COMPLETED') {
+            this.behavior = null;
+            this.playIdleAnimation();
+        } else if (event.type === 'ACTIVE_TICK') {
+            const state = event.animationState || DefaultFlightLogic.ANIM_FLYING;
+
+            if (state === DefaultFlightLogic.ANIM_WALKING) {
+                this.playWalkingAnimation();
+            } else if (state === DefaultFlightLogic.ANIM_FLYING) {
+                this.playFlightAnimation();
+            }
+        }
     }
 
     wasHitByPlayer() {
