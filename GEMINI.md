@@ -141,6 +141,7 @@ Dynamic game objects (Obstacles, Animals) follow a hierarchy designed for behavi
 ## 9. Code Style and Standards
 **Rule**
 - Avoid casting to any in typescript except where there is no reasonable alternative or it is being done for performance reasons.
+- Don't remove comments in the code unless they are no longer applicable.
 
 ## 10. Verification
 

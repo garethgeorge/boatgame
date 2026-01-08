@@ -4,7 +4,7 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { AnimalShoreIdleBehavior } from '../behaviors/AnimalShoreIdleBehavior';
-import { AnimalWaterAttackBehavior } from '../behaviors/AnimalWaterAttackBehavior';
+import { AnimalWaterBehavior } from '../behaviors/AnimalWaterBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AnimalEnteringWater, AnimalShoreIdle, AnimalWaterAttack } from '../behaviors/AnimalBehavior';
 import { AnimalEnteringWaterBehavior } from '../behaviors/AnimalEnteringWaterBehavior';
@@ -111,7 +111,7 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
             }
             this.playIdleAnimation();
         } else {
-            this.behavior = new AnimalWaterAttackBehavior(this, this.aggressiveness, this.attackLogicName, this.attackOffset);
+            this.behavior = new AnimalWaterBehavior(this, this.aggressiveness, this.attackLogicName || 'wolf', this.attackOffset);
             this.playSwimmingAnimation();
         }
     }
@@ -203,7 +203,7 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
     }
 
     enteringWaterDidComplete(speed: number) {
-        this.behavior = new AnimalWaterAttackBehavior(this, this.aggressiveness, this.attackLogicName, this.attackOffset);
+        this.behavior = new AnimalWaterBehavior(this, this.aggressiveness, this.attackLogicName || 'wolf', this.attackOffset);
         this.normalVector.set(0, 1, 0);
         this.playSwimmingAnimation();
     }

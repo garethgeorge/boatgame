@@ -6,7 +6,7 @@ import { Decorations } from '../../world/Decorations';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
-import { AnimalSwimAwayBehavior } from '../behaviors/AnimalSwimAwayBehavior';
+import { AnimalWaterBehavior } from '../behaviors/AnimalWaterBehavior';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 
 export class Duckling extends Entity implements AnyAnimal {
@@ -63,7 +63,7 @@ export class Duckling extends Entity implements AnyAnimal {
             this.applyModel(ducklingData.model, ducklingData.animations);
         }
 
-        this.behavior = new AnimalSwimAwayBehavior(this, this.aggressiveness);
+        this.behavior = new AnimalWaterBehavior(this, this.aggressiveness, 'swimaway');
         this.player.play({ name: 'bob', timeScale: 2.0, randomizeLength: 0.2, startTime: -1.0 });
     }
 

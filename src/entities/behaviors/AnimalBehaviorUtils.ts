@@ -8,6 +8,14 @@ export interface AnimalAttackParams {
     turningSmoothing: number
 }
 
+export interface AnimalSwimAwayParams {
+    startFleeDistance: number,
+    stopFleeDistance: number,
+    fleeSpeed: number,
+    turningSpeed: number,
+    turningSmoothing: number
+}
+
 export class AnimalBehaviorUtils {
     /**
      * The effective aggressiveness given a base value and number of collectables.
@@ -60,6 +68,29 @@ export class AnimalBehaviorUtils {
         const turningSmoothing = 0.1 + 0.4 * aggro;
 
         return { startAttackDistance, endAttackDistance, attackSpeed, turningSpeed, turningSmoothing };
+    }
+
+    /**
+     * Swim away parameters.
+     */
+    public static evaluateSwimAwayParams(aggressiveness: number,
+        numCollectables: number, minDistance: number = 20): AnimalSwimAwayParams {
+        const aggro = this.effectiveAggressiveness(aggressiveness, numCollectables);
+
+        // Original: startFleeDistance = 20 + 40 * aggressiveness
+        const startFleeDistance = minDistance + 2.0 * minDistance * aggro;
+        const stopFleeDistance = startFleeDistance + 30;
+
+        // Original: speed = 1 + 3 * aggressiveness; Flee speed = 12.0 * this.speed
+        // This gives 12 to 48 m/s
+        const fleeSpeed = 12.0 * (1.0 + 3.0 * aggro);
+
+        // Turning similar to attack but maybe a bit more frantic or slower?
+        // Let's use similar turning speeds.
+        const turningSpeed = Math.PI * (1.0 + 3.0 * aggro);
+        const turningSmoothing = 0.1 + 0.4 * aggro;
+
+        return { startFleeDistance, stopFleeDistance, fleeSpeed, turningSpeed, turningSmoothing };
     }
 
     public static setCollisionMask(body: planck.Body, maskBits: number) {
