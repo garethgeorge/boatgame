@@ -5,35 +5,31 @@ import { FleePathStrategy } from './AnimalPathStrategies';
 
 export class DefaultSwimAwayLogic implements AnimalLogic {
     readonly name = 'swimaway';
+
+    /** Animal is swimming away. */
+    public static readonly ANIM_FLEEING = 'FLEEING';
+
     private strategy: FleePathStrategy;
 
     constructor() {
         this.strategy = new FleePathStrategy();
     }
 
-    isPreparing(): boolean {
-        return false;
-    }
-
     shouldActivate(context: AnimalLogicContext): boolean {
         const params = AnimalBehaviorUtils.evaluateSwimAwayParams(context.aggressiveness, context.bottles);
-        const distToBoat = planck.Vec2.distance(context.originPos, context.targetBody.getPosition());
-        return distToBoat < params.startFleeDistance;
+        return planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < params.startFleeDistance;
     }
 
     shouldDeactivate(context: AnimalLogicContext): boolean {
-        return this.strategy.shouldAbort(context.originPos, context.snoutPos, context.targetBody, context.aggressiveness, context.bottles);
+        return this.strategy.shouldAbort(context);
     }
 
     update(context: AnimalLogicContext): void {
-        this.strategy.updateAngle(context.dt, context.targetBody);
+        this.strategy.update(context);
     }
 
     calculatePath(context: AnimalLogicContext): AnimalLogicPathResult {
-        const result = this.strategy.calculatePath(context.originPos, context.snoutPos, context.targetBody, context.aggressiveness, context.bottles);
-        return {
-            ...result,
-            animationState: 'FLEEING'
-        };
+        const result = this.strategy.calculatePath(context);
+        return { ...result, animationState: DefaultSwimAwayLogic.ANIM_FLEEING };
     }
 }

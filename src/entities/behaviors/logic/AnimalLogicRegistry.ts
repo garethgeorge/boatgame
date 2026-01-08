@@ -2,6 +2,7 @@ import { AnimalLogic } from './AnimalLogic';
 import { WolfAttackLogic } from './WolfAttackLogic';
 import { AmbushAttackLogic } from './AmbushAttackLogic';
 import { DefaultSwimAwayLogic } from './DefaultSwimAwayLogic';
+import { DefaultFlightLogic } from './DefaultFlightLogic';
 
 export class AnimalLogicRegistry {
     private static factories: Map<string, () => AnimalLogic> = new Map();
@@ -10,6 +11,7 @@ export class AnimalLogicRegistry {
         this.register('wolf', () => new WolfAttackLogic());
         this.register('ambush', () => new AmbushAttackLogic());
         this.register('swimaway', () => new DefaultSwimAwayLogic());
+        this.register('flight', () => new DefaultFlightLogic());
     }
 
     public static register(name: string, factory: () => AnimalLogic) {
