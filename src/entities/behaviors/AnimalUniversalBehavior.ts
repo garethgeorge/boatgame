@@ -15,7 +15,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     private aggressiveness: number;
     private snoutOffset: planck.Vec2;
 
-    // Flight state tracking
+    // Flight/Land state tracking
     private currentAngle: number = 0;
     private currentBank: number = 0;
     private isKinematic: boolean = false;
@@ -75,20 +75,18 @@ export class AnimalUniversalBehavior implements EntityBehavior {
 
         if (this.logic.shouldActivate(context)) {
             this.state = 'ACTIVE';
+
+            const duration = this.logic.getEstimatedDuration?.(context);
+            this.entity.handleBehaviorEvent?.({
+                type: 'LOGIC_STARTING', logicName: this.logic.name, duration
+            });
         }
     }
 
     private updateActive(context: AnimalLogicContext) {
         // 1. Broad deactivation check (distance, etc)
         if (this.logic.shouldDeactivate(context)) {
-            this.state = 'IDLE';
-            const wasKinematic = this.isKinematic;
-            this.setPhysicsMode(context.physicsBody, false);
-            context.physicsBody.setLinearVelocity(context.physicsBody.getLinearVelocity().mul(0.95));
-
-            if (wasKinematic) {
-                this.entity.handleBehaviorEvent?.({ type: 'COMPLETED' });
-            }
+            this.deactivate(context);
             return;
         }
 
@@ -96,29 +94,62 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         this.logic.update(context);
 
         // 3. Calculate Path based on fresh state
-        const result = this.logic.calculatePath(context);
+        let result = this.logic.calculatePath(context);
 
-        // 4. Check for logic-driven completion (e.g. landed)
+        // 4. Handle Logic Chaining
+        if (result.nextLogicConfig) {
+            // Transfer to next logic
+            const nextLogic = AnimalLogicRegistry.create(result.nextLogicConfig);
+
+            // Notify completion of previous logic
+            this.entity.handleBehaviorEvent?.({
+                type: 'LOGIC_COMPLETED', logicName: this.logic.name
+            });
+
+            this.logic = nextLogic;
+
+            // Update immediately with new logic to avoid stutter
+            this.logic.update(context);
+            result = this.logic.calculatePath(context);
+
+            const duration = this.logic.getEstimatedDuration?.(context);
+            this.entity.handleBehaviorEvent?.({
+                type: 'LOGIC_STARTING', logicName: this.logic.name, duration
+            });
+        }
+
+        // 5. Check for logic-driven completion
         if (result.isFinished) {
-            this.state = 'IDLE';
-            const wasKinematic = this.isKinematic;
-            this.setPhysicsMode(context.physicsBody, false);
-            context.physicsBody.setLinearVelocity(context.physicsBody.getLinearVelocity().mul(0.95));
-
-            if (wasKinematic) {
-                this.entity.handleBehaviorEvent?.({ type: 'COMPLETED' });
-            }
+            this.deactivate(context);
             return;
         }
 
-        // 5. Animations
+        // 6. Animations
         this.handleAnimations(context, result);
 
-        // 6. Locomotion
-        if (result.desiredHeight !== undefined) {
-            this.executeFlightLocomotion(context, result);
-        } else {
-            this.executeWaterLocomotion(context, result);
+        // 7. Locomotion
+        switch (result.locomotionType) {
+            case 'FLIGHT':
+                this.executeFlightLocomotion(context, result);
+                break;
+            case 'LAND':
+                this.executeLandLocomotion(context, result);
+                break;
+            case 'WATER':
+            default:
+                this.executeWaterLocomotion(context, result);
+                break;
+        }
+    }
+
+    private deactivate(context: AnimalLogicContext) {
+        this.state = 'IDLE';
+        const wasKinematic = this.isKinematic;
+        this.setPhysicsMode(context.physicsBody, false);
+        context.physicsBody.setLinearVelocity(context.physicsBody.getLinearVelocity().mul(0.95));
+
+        if (wasKinematic) {
+            this.entity.handleBehaviorEvent?.({ type: 'COMPLETED' });
         }
     }
 
@@ -126,18 +157,25 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const state = result.animationState;
 
         if (this.logic.isPreparing?.()) {
-            this.entity.handleBehaviorEvent?.({ type: 'PREPARING_TICK', dt: context.dt });
+            this.entity.handleBehaviorEvent?.({
+                type: 'PREPARING_TICK',
+                dt: context.dt
+            });
         } else {
-            this.entity.handleBehaviorEvent?.({ type: 'ACTIVE_TICK', dt: context.dt, animationState: state });
+            this.entity.handleBehaviorEvent?.({
+                type: 'ACTIVE_TICK',
+                dt: context.dt,
+                animationState: state
+            });
         }
     }
 
-    private setPhysicsMode(body: planck.Body, flight: boolean) {
-        if (flight && !this.isKinematic) {
+    private setPhysicsMode(body: planck.Body, kinematic: boolean) {
+        if (kinematic && !this.isKinematic) {
             AnimalBehaviorUtils.setCollisionMask(body, 0);
             body.setType(planck.Body.KINEMATIC);
             this.isKinematic = true;
-        } else if (!flight && this.isKinematic) {
+        } else if (!kinematic && this.isKinematic) {
             AnimalBehaviorUtils.setCollisionMask(body, 0xFFFF);
             body.setType(planck.Body.DYNAMIC);
             this.isKinematic = false;
@@ -183,6 +221,35 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const nextVel = currentVel.clone().add(targetVel.clone().sub(currentVel).mul(Math.min(1.0, 5.0 * dt)));
 
         physicsBody.setLinearVelocity(nextVel);
+    }
+
+    private executeLandLocomotion(context: AnimalLogicContext, path: AnimalLogicPathResult) {
+        this.setPhysicsMode(context.physicsBody, true);
+        const { dt, physicsBody, originPos } = context;
+        const { targetWorldPos, desiredSpeed, explicitHeight, explicitNormal } = path;
+
+        // --- Movement ---
+        const originToTarget = targetWorldPos.clone().sub(originPos);
+        const originToTargetDist = originToTarget.length();
+        if (originToTargetDist > 0.01) {
+            const moveDir = originToTarget.clone().mul(1.0 / originToTargetDist);
+            const moveVel = moveDir.mul(desiredSpeed);
+            physicsBody.setLinearVelocity(moveVel);
+        } else {
+            physicsBody.setLinearVelocity(planck.Vec2(0, 0));
+        }
+
+        // --- Rotation ---
+        // Simple rotation towards target
+        if (originToTargetDist > 0.1) {
+            const targetAngle = Math.atan2(originToTarget.y, originToTarget.x) + Math.PI / 2;
+            physicsBody.setAngle(targetAngle);
+        }
+
+        // --- Precise Positioning (Height/Normal) ---
+        if (explicitHeight !== undefined && explicitNormal !== undefined) {
+            this.entity.setExplictPosition?.(explicitHeight, explicitNormal);
+        }
     }
 
     private executeFlightLocomotion(context: AnimalLogicContext, path: AnimalLogicPathResult) {

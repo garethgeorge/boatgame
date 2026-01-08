@@ -2,10 +2,12 @@ import * as planck from 'planck';
 import { Boat } from '../../Boat';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult } from './AnimalLogic';
-import { AnimalPathStrategy, ShoreHuggingStrategy, SternInterceptStrategy } from './AnimalPathStrategies';
+import { AnimalPathStrategy } from './AnimalPathStrategy';
+import { ShoreHuggingStrategy, SternInterceptStrategy } from './AttackPathStrategies';
 
 export class AmbushAttackLogic implements AnimalLogic {
-    readonly name = 'ambush';
+    public static readonly NAME = 'ambush';
+    readonly name = AmbushAttackLogic.NAME;
 
     /** Animal is orienting towards the target. */
     public static readonly ANIM_PREPARING = 'PREPARING';
@@ -63,6 +65,6 @@ export class AmbushAttackLogic implements AnimalLogic {
     calculatePath(context: AnimalLogicContext): AnimalLogicPathResult {
         const result = this.currentStrategy.calculatePath(context);
         const anim = this.state === 'STRIKING' ? AmbushAttackLogic.ANIM_ATTACKING : (this.state === 'PREPARING' ? AmbushAttackLogic.ANIM_PREPARING : AmbushAttackLogic.ANIM_IDLE);
-        return { ...result, animationState: anim };
+        return { ...result, locomotionType: 'WATER', animationState: anim };
     }
 }

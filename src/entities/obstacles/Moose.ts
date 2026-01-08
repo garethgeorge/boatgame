@@ -11,6 +11,10 @@ export class Moose extends AttackAnimal {
         return Moose.HEIGHT_IN_WATER;
     }
 
+    protected get jumpsIntoWater(): boolean {
+        return true;
+    }
+
     constructor(
         physicsEngine: PhysicsEngine,
         options: AttackAnimalOptions
@@ -61,21 +65,5 @@ export class Moose extends AttackAnimal {
         } else {
             this.player.play({ name: 'walk', startTime: -1 });
         }
-    }
-
-    enteringWaterApplyHeightCurve(height: number, progress: number): number {
-        const t = Math.max(0, Math.min(progress, 1));
-        const curve = 4 * t * (1.0 - t);
-        const jumpHeight = 2.0 * curve;
-        return height + jumpHeight;
-    }
-
-    enteringWaterDidComplete(speed: number) {
-        super.enteringWaterDidComplete(speed);
-
-        if (this.meshes.length > 0) {
-            this.meshes[0].position.y = this.heightInWater;
-        }
-        this.normalVector.set(0, 1, 0);
     }
 }

@@ -1,10 +1,12 @@
 import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult } from './AnimalLogic';
-import { BuzzTargetStrategy, FleeRiverStrategy, LandingStrategy, AnimalPathStrategy } from './AnimalPathStrategies';
+import { AnimalPathStrategy } from './AnimalPathStrategy';
+import { BuzzTargetStrategy, FleeRiverStrategy, LandingStrategy } from './FlightPathStrategies';
 import { RiverSystem } from '../../../world/RiverSystem';
 
 export class DefaultFlightLogic implements AnimalLogic {
-    readonly name = 'DefaultFlight';
+    public static readonly NAME = 'flight';
+    readonly name = DefaultFlightLogic.NAME;
 
     /** Animal is in flight. */
     public static readonly ANIM_FLYING = 'flying';
@@ -46,7 +48,7 @@ export class DefaultFlightLogic implements AnimalLogic {
     calculatePath(context: AnimalLogicContext): AnimalLogicPathResult {
         const result = this.strategy.calculatePath(context);
         const anim = this.state === 'LANDING' ? DefaultFlightLogic.ANIM_WALKING : DefaultFlightLogic.ANIM_FLYING;
-        return { ...result, animationState: anim, isFinished: this.isFinished(context) };
+        return { ...result, locomotionType: 'FLIGHT', animationState: anim, isFinished: this.isFinished(context) };
     }
 
     private isFinished(context: AnimalLogicContext): boolean {

@@ -2,10 +2,12 @@ import * as planck from 'planck';
 import { Boat } from '../../Boat';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult } from './AnimalLogic';
-import { AnimalPathStrategy, CircleFlankStrategy, SternInterceptStrategy, VulnerableChargeStrategy } from './AnimalPathStrategies';
+import { AnimalPathStrategy } from './AnimalPathStrategy';
+import { CircleFlankStrategy, SternInterceptStrategy, VulnerableChargeStrategy } from './AttackPathStrategies';
 
 export class WolfAttackLogic implements AnimalLogic {
-    readonly name = 'wolf';
+    public static readonly NAME = 'wolf';
+    readonly name = WolfAttackLogic.NAME;
 
     /** Animal is orienting towards the target. */
     public static readonly ANIM_PREPARING = 'PREPARING';
@@ -70,6 +72,7 @@ export class WolfAttackLogic implements AnimalLogic {
         const result = this.currentStrategy.calculatePath(context);
         return {
             ...result,
+            locomotionType: 'WATER',
             animationState: this.isPreparing() ? WolfAttackLogic.ANIM_PREPARING : WolfAttackLogic.ANIM_ATTACKING
         };
     }

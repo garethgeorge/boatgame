@@ -7,12 +7,10 @@ import { AnimalShoreIdleBehavior } from '../behaviors/AnimalShoreIdleBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { WolfAttackLogic } from '../behaviors/logic/WolfAttackLogic';
-import { AmbushAttackLogic } from '../behaviors/logic/AmbushAttackLogic';
-import { DefaultSwimAwayLogic } from '../behaviors/logic/DefaultSwimAwayLogic';
-import { AnimalEnteringWater, AnimalShoreIdle, AnyAnimal } from '../behaviors/AnimalBehavior';
+import { EnteringWaterLogic } from '../behaviors/logic/EnteringWaterLogic';
+import { AnimalShoreIdle, AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
 import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogic';
-import { AnimalEnteringWaterBehavior } from '../behaviors/AnimalEnteringWaterBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
@@ -39,7 +37,7 @@ export interface AttackAnimalPhysicsOptions {
     angularDamping?: number;
 }
 
-export abstract class AttackAnimal extends Entity implements AnimalEnteringWater, AnimalShoreIdle, AnyAnimal {
+export abstract class AttackAnimal extends Entity implements AnimalShoreIdle, AnyAnimal {
     protected player: AnimationPlayer | null = null;
     protected behavior: EntityBehavior | null = null;
     protected aggressiveness: number;
@@ -116,7 +114,7 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
             }
             this.playIdleAnimation();
         } else {
-            this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, { name: this.attackLogicName || 'wolf' }, this.attackOffset);
+            this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, { name: this.attackLogicName || WolfAttackLogic.NAME }, this.attackOffset);
             this.playSwimmingAnimation();
         }
     }
@@ -132,6 +130,11 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
 
     // The height for the model when in water
     protected abstract get heightInWater(): number;
+
+    // Does the animal jump into the water?
+    protected get jumpsIntoWater(): boolean {
+        return false;
+    }
 
     // e.g. derived class can scale and rotate model to desired size and facing
     protected abstract setupModel(model: THREE.Group): void;
@@ -197,42 +200,45 @@ export abstract class AttackAnimal extends Entity implements AnimalEnteringWater
     }
 
     shoreIdleMaybeNoticeBoat(): boolean {
-        const behavior = new AnimalEnteringWaterBehavior(
-            this,
-            this.heightInWater,
-            this.aggressiveness
-        );
-        this.behavior = behavior;
-        this.playWalkingAnimation(behavior.duration);
-        return true;
-    }
+        // Create an entering water logic that chains into the final attack/flight logic
+        const nextLogicConfig: AnimalLogicConfig = {
+            name: this.attackLogicName || WolfAttackLogic.NAME
+        };
 
-    enteringWaterDidComplete(speed: number) {
-        this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, { name: this.attackLogicName || 'wolf' }, this.attackOffset);
-        this.normalVector.set(0, 1, 0);
-        this.playSwimmingAnimation();
+        const enteringWaterConfig: AnimalLogicConfig = {
+            name: EnteringWaterLogic.NAME,
+            params: {
+                targetWaterHeight: this.heightInWater,
+                jump: this.jumpsIntoWater,
+                nextLogicConfig: nextLogicConfig
+            }
+        };
+
+        this.behavior = new AnimalUniversalBehavior(
+            this,
+            this.aggressiveness,
+            enteringWaterConfig,
+            this.attackOffset
+        );
+
+        return true;
     }
 
     handleBehaviorEvent(event: AnimalBehaviorEvent): void {
         if (event.type === 'COMPLETED') {
             this.behavior = null;
             this.playIdleAnimation();
-        } else if (event.type === 'PREPARING_TICK' || event.type === 'ACTIVE_TICK') {
-            const state = event.type === 'ACTIVE_TICK' ? (event.animationState || 'ACTIVE') : WolfAttackLogic.ANIM_PREPARING;
-            let timeScale = this.getAnimationTimeScale();
-
-            // Speed up animations for aggressive states
-            if (state === WolfAttackLogic.ANIM_ATTACKING || state === DefaultSwimAwayLogic.ANIM_FLEEING) {
-                timeScale *= 1.5;
+        } else if (event.type === 'LOGIC_STARTING') {
+            if (event.logicName === EnteringWaterLogic.NAME) {
+                const duration = event.duration === undefined ? 1.0 : event.duration;
+                this.playWalkingAnimation(duration);
+            } else {
+                // just to be sure
+                if (this.meshes.length > 0) {
+                    this.meshes[0].position.y = this.heightInWater;
+                }
+                this.playSwimmingAnimation();
             }
-
-            this.player?.play({
-                name: this.getSwimmingAnimationName(),
-                state: state,
-                timeScale: timeScale,
-                randomizeLength: 0.2,
-                startTime: -1
-            });
         }
     }
 }

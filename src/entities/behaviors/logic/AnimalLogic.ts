@@ -1,5 +1,11 @@
 import * as planck from 'planck';
-import { AnimalStrategyContext } from './AnimalPathStrategies';
+import * as THREE from 'three';
+import { AnimalStrategyContext } from './AnimalPathStrategy';
+
+/**
+ * Supported locomotion physics models.
+ */
+export type LocomotionType = 'WATER' | 'LAND' | 'FLIGHT';
 
 /**
  * Configuration for any animal behavioral logic.
@@ -13,28 +19,41 @@ export interface AnimalLogicConfig {
  * Shared context passed to ALL animal logic modules every frame.
  */
 export interface AnimalLogicContext extends AnimalStrategyContext {
-    physicsBody: planck.Body;
 }
 
 /**
  * Standardized result from any animal logic calculation.
  */
 export interface AnimalLogicPathResult {
-    // Parameters for all types of locomotion
+    // Basic locomotion targets
     targetWorldPos: planck.Vec2;
     desiredSpeed: number;
 
-    // Parameters for flight locomotion
-    desiredHeight?: number;      // If present, engine engages flight dynamics
+    // The physics model to use for this frame
+    locomotionType: LocomotionType;
 
-    // Parameters for water locomotion
+    // --- LAND Locomotion Properties ---
+    // Specifically for use when locomotionType is 'LAND'
+    explicitHeight?: number;
+    explicitNormal?: THREE.Vector3;
+
+    // --- FLIGHT Locomotion Properties ---
+    // Specifically for use when locomotionType is 'FLIGHT'
+    desiredHeight?: number;
+
+    // --- WATER Locomotion Properties ---
+    // Specifically for use when locomotionType is 'WATER'
     turningSpeed?: number;
     turningSmoothing?: number;
 
-    // Specifies the current phase of the logic
+    // Specifies the current visual phase of the logic
     animationState?: string;
 
-    // True if the logic is complete
+    // --- Logic Chaining ---
+    // Transition to a new logic if specified
+    nextLogicConfig?: AnimalLogicConfig;
+
+    // True if the current behavioral sequence is complete
     isFinished?: boolean;
 }
 
@@ -49,6 +68,12 @@ export interface AnimalLogic {
 
     shouldActivate(context: AnimalLogicContext): boolean;
     shouldDeactivate(context: AnimalLogicContext): boolean;
+
+    /**
+     * Optional: Get the estimated duration of the current logic block.
+     * Useful for syncing animations or external logic.
+     */
+    getEstimatedDuration?(context: AnimalLogicContext): number | undefined;
 
     isPreparing?(): boolean;
 }
