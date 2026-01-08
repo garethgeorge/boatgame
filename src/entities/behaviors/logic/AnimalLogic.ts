@@ -20,18 +20,21 @@ export interface AnimalLogicContext extends AnimalStrategyContext {
  * Standardized result from any animal logic calculation.
  */
 export interface AnimalLogicPathResult {
+    // Parameters for all types of locomotion
     targetWorldPos: planck.Vec2;
     desiredSpeed: number;
 
-    // Optional Flight Parameters
+    // Parameters for flight locomotion
     desiredHeight?: number;      // If present, engine engages flight dynamics
 
-    // Optional Locomotion Tuning
+    // Parameters for water locomotion
     turningSpeed?: number;
     turningSmoothing?: number;
 
-    // Feedback
+    // Specifies the current phase of the logic
     animationState?: string;
+
+    // True if the logic is complete
     isFinished?: boolean;
 }
 
