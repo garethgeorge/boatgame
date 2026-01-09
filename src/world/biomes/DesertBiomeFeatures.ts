@@ -22,6 +22,9 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         return { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 };
     }
 
+    protected skyTopColors: number[] = [0x04193c, 0x05559c, 0x058fea]; // [Night, Sunset, Noon]
+    protected skyBottomColors: number[] = [0x024b82, 0xafd9ae, 0x53baf5]; // [Night, Sunset, Noon]
+
     public getBiomeLength(): number {
         return 2000;
     }

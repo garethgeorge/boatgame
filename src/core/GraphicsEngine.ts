@@ -34,7 +34,7 @@ export class GraphicsEngine {
     });
     this.renderer.shadowMap.enabled = false; // Shadows disabled per user request
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap at 2x for performance

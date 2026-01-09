@@ -23,16 +23,8 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
         return { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 };
     }
 
-    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
-        const colors = super.getSkyColors(dayness);
-        if (dayness > 0) {
-            const forestTopMod = new THREE.Color(0x4488ff); // Crisp Blue
-            const forestBotMod = new THREE.Color(0xcceeff); // White/Blue Horizon
-            colors.top.lerp(forestTopMod, 0.6);
-            colors.bottom.lerp(forestBotMod, 0.6);
-        }
-        return colors;
-    }
+    protected skyTopColors: number[] = [0x0b1517, 0x455d96, 0x0067b6]; // [Night, Sunset, Noon]
+    protected skyBottomColors: number[] = [0x2b4f68, 0xede6da, 0xb1daec]; // [Night, Sunset, Noon]
 
     public getBiomeLength(): number {
         return 2000;

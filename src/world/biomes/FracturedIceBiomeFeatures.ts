@@ -59,16 +59,8 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         return 5.0;
     }
 
-    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
-        const colors = super.getSkyColors(dayness);
-        if (dayness > 0) {
-            const iceTopMod = new THREE.Color(0xddeeff);
-            const iceBotMod = new THREE.Color(0xffffff);
-            colors.top.lerp(iceTopMod, 0.8);
-            colors.bottom.lerp(iceBotMod, 0.8);
-        }
-        return colors;
-    }
+    protected skyTopColors: number[] = [0x0c1424, 0x888b8f, 0xc2c7da]; // [Night, Sunset, Noon]
+    protected skyBottomColors: number[] = [0x20283d, 0x85a2bd, 0xe5d9b2]; // [Night, Sunset, Noon]
 
     createLayout(zMin: number, zMax: number): BiomeLayout {
         const riverSystem = RiverSystem.getInstance();

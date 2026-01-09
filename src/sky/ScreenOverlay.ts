@@ -19,7 +19,7 @@ export class ScreenOverlay {
     }
 
     update(color: { r: number, g: number, b: number }, desaturation: number) {
-        this.element.style.backgroundColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.15)`;
+        this.element.style.backgroundColor = `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, 0.15)`;
         this.rendererDomElement.style.filter = `grayscale(${desaturation})`;
     }
 

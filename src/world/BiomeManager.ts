@@ -8,6 +8,7 @@ import { SwampBiomeFeatures } from './biomes/SwampBiomeFeatures';
 import { JurassicBiomeFeatures } from './biomes/JurassicBiomeFeatures';
 import { TestBiomeFeatures } from './biomes/TestBiomeFeatures';
 import { FracturedIceBiomeFeatures } from './biomes/FracturedIceBiomeFeatures';
+import { HappyBiomeFeatures } from './biomes/HappyBiomeFeatures';
 import { BiomeType } from './biomes/BiomeType';
 
 interface BiomeInstance {
@@ -29,7 +30,7 @@ export class BiomeManager {
   private readonly MAX_LAYOUT_CACHE_SIZE = 20;
 
   constructor() {
-    const biomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic', 'fractured_ice'];
+    const biomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic', 'fractured_ice', 'happy'];
 
     // Initialize features
     this.features.set('desert', new DesertBiomeFeatures());
@@ -39,6 +40,7 @@ export class BiomeManager {
     this.features.set('jurassic', new JurassicBiomeFeatures());
     this.features.set('test', new TestBiomeFeatures());
     this.features.set('fractured_ice', new FracturedIceBiomeFeatures());
+    this.features.set('happy', new HappyBiomeFeatures());
 
     let biomeSequence: BiomeType[] = [];
 

@@ -43,40 +43,30 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         return this.getGroundColor();
     }
 
-    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
-        const dayTop = new THREE.Color(0xA69AC2); // Pastel Lavender
-        const dayBot = new THREE.Color(0xFFCBA4); // Pastel Peach
-        const nightTop = new THREE.Color(0x1A1A3A); // Dark Slate Blue
-        const nightBot = new THREE.Color(0x2D2D44); // Muted Dark Purple
-        const sunsetTop = new THREE.Color(0x967BB6); // Muted Purple
-        const sunsetBot = new THREE.Color(0xFF9966); // Soft Orange
+    protected skyTopColors: number[] = [0x1A1A3A, 0x967BB6, 0x4488ff]; // [Night, Sunset, Noon]
+    protected skyBottomColors: number[] = [0x2D2D44, 0xFF9966, 0xccddff]; // [Night, Sunset, Noon]
 
-        let currentTop: THREE.Color;
-        let currentBot: THREE.Color;
-
-        const transitionThreshold = 0.1;
+    protected interpolateSkyColors(dayness: number, colors: number[]): THREE.Color {
 
         if (dayness > 0) {
-            if (dayness < transitionThreshold) {
-                const t = dayness / transitionThreshold;
-                currentTop = sunsetTop.clone().lerp(dayTop, t);
-                currentBot = sunsetBot.clone().lerp(dayBot, t);
-            } else {
-                currentTop = dayTop.clone();
-                currentBot = dayBot.clone();
-            }
+            // Lerp between Sunset (0) and Noon (1)
+            const sunset = new THREE.Color(colors[1]);
+            const noon = new THREE.Color(colors[2]);
+            return sunset.lerp(noon, dayness);
         } else {
-            if (dayness > -transitionThreshold) {
-                const t = -dayness / transitionThreshold;
-                currentTop = sunsetTop.clone().lerp(nightTop, t);
-                currentBot = sunsetBot.clone().lerp(nightBot, t);
-            } else {
-                currentTop = nightTop.clone();
-                currentBot = nightBot.clone();
-            }
+            // Lerp between Sunset (0) and Night (-1)
+            // dayness is -1 to 0, so -dayness is 0 to 1
+            const sunset = new THREE.Color(colors[1]);
+            const night = new THREE.Color(colors[0]);
+            return sunset.lerp(night, -dayness);
         }
+    }
 
-        return { top: currentTop, bottom: currentBot };
+    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
+        return {
+            top: this.interpolateSkyColors(dayness, this.skyTopColors),
+            bottom: this.interpolateSkyColors(dayness, this.skyBottomColors)
+        };
     }
 
     public getAmplitudeMultiplier(): number {

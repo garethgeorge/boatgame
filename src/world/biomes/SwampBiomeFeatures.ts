@@ -31,16 +31,8 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         return { near: 0, far: 300 };
     }
 
-    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
-        const colors = super.getSkyColors(dayness);
-        if (dayness > 0) {
-            const swampTopMod = new THREE.Color(0x776655); // Muted Brown/Purple
-            const swampBotMod = new THREE.Color(0x5D5346); // Earthen Tone (Matches Banks)
-            colors.top.lerp(swampTopMod, 0.8);
-            colors.bottom.lerp(swampBotMod, 0.9); // Strong influence for fog color
-        }
-        return colors;
-    }
+    protected skyTopColors: number[] = [0xf5674c, 0xb99d95, 0xcfcff3]; // [Night, Sunset, Noon]
+    protected skyBottomColors: number[] = [0xf5674c, 0xf5674c, 0xbbc1f1]; // [Night, Sunset, Noon]
 
     getAmplitudeMultiplier(): number {
         return 0.1;

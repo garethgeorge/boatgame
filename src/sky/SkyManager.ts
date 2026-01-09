@@ -24,7 +24,20 @@ export class SkyManager {
     private readonly cycleDuration: number = 15 * 60; // 15 minutes in seconds
     // Start at High Morning (Angle 30 degrees)
     // 30/360 * 15*60 = 1/12 * 900 = 75 seconds.
-    private cycleTime: number = 75;
+    private cycleTime: number = 225; // 30 degrees of 15 min cycle = 1/12 * 900 = 75? Wait.
+    // 360 degrees = 900 seconds. 
+    // Noon is Angle PI/2 (90 degrees). 90/360 * 900 = 225 seconds.
+    // Sunset is Angle PI (180 degrees). 180/360 * 900 = 450 seconds.
+    // Midnight is Angle 1.5 PI (270 degrees). 675 seconds.
+    // Sunrise is Angle 0/2PI. 
+    // "High Morning" (30 deg above horizon) = 30 degrees. 30/360 * 900 = 75 seconds.
+    // Wait, let's check the angle calculation: angle = time * Math.PI * 2.
+    // Time 0 -> Angle 0 (Sunrise). 
+    // Time 0.25 -> Angle PI/2 (Noon).
+    // Time 0.5 -> Angle PI (Sunset).
+    // Time 0.75 -> Angle 1.5 PI (Midnight).
+    // So 30 degrees is 30/360 = 1/12 of the cycle.
+    // 1/12 * 900 = 75 seconds.
 
     constructor(scene: THREE.Scene, container: HTMLElement, rendererDomElement: HTMLCanvasElement) {
         this.scene = scene;
@@ -89,7 +102,6 @@ export class SkyManager {
     private updateSkyAndFog(boatZ: number, dayness: number, cameraPosition: THREE.Vector3) {
 
         const biomeSkyGradient = RiverSystem.getInstance().biomeManager.getBiomeSkyGradient(boatZ, dayness);
-        const biomeGroundColor = RiverSystem.getInstance().biomeManager.getBiomeGroundColor(boatZ);
         const biomeFogDensity = RiverSystem.getInstance().biomeManager.getBiomeFogDensity(boatZ);
         const biomeScreenTint = RiverSystem.getInstance().biomeManager.getBiomeScreenTint(boatZ);
 
@@ -117,20 +129,29 @@ export class SkyManager {
         // Should never drop below 0.8
         // Day: 1.2, Night: 1.2 (at peak)
         // dayness ranges from -1 (Night) to 1 (Day)
-
-        const intensity = 0.8 + 0.4 * Math.abs(dayness);
+        // Intensity: Day: 1.2, Night: 0.8
+        const intensity = 1.0 + 0.2 * dayness;
         this.hemiLight.intensity = intensity;
+        this.ambientLight.intensity = 0.2;
 
         // Hemisphere Light Colors
         const daySkyColor = new THREE.Color(0xffffff);
         const dayGroundColor = new THREE.Color(0xaaaaaa);
-        const nightSkyColor = new THREE.Color(0x6666aa); // Very bright night blue
-        const nightGroundColor = new THREE.Color(0x444466); // Very bright night ground
+        const sunsetSkyColor = new THREE.Color(0x967BB6); // Sunset Purple
+        const sunsetGroundColor = new THREE.Color(0xFF9966); // Sunset Orange
+        const nightSkyColor = new THREE.Color(0x1A1A3A); // Dark Night Blue
+        const nightGroundColor = new THREE.Color(0x2D2D44); // Dark Night Ground
 
-        // Interpolate based on dayness (-1 to 1) mapped to 0 to 1
-        const t = (dayness + 1) / 2;
-
-        this.hemiLight.color.lerpColors(nightSkyColor, daySkyColor, t);
-        this.hemiLight.groundColor.lerpColors(nightGroundColor, dayGroundColor, t);
+        // Interpolate based on dayness (-1 to 1) using same logic as biomes
+        if (dayness > 0) {
+            // Lerp between Sunset (0) and Noon (1)
+            this.hemiLight.color.lerpColors(sunsetSkyColor, daySkyColor, dayness);
+            this.hemiLight.groundColor.lerpColors(sunsetGroundColor, dayGroundColor, dayness);
+        } else {
+            // Lerp between Sunset (0) and Night (-1)
+            // dayness is -1 to 0, so -dayness is 0 to 1
+            this.hemiLight.color.lerpColors(sunsetSkyColor, nightSkyColor, -dayness);
+            this.hemiLight.groundColor.lerpColors(sunsetGroundColor, nightGroundColor, -dayness);
+        }
     }
 }

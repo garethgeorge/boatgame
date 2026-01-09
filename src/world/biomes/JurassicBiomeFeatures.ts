@@ -33,16 +33,8 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         return { near: 50, far: 600 };
     }
 
-    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
-        const colors = super.getSkyColors(dayness);
-        if (dayness > 0) {
-            const jurassicTopMod = new THREE.Color(0xaaffaa); // Very Green
-            const jurassicBotMod = new THREE.Color(0xccffcc); // Pale Green Horizon
-            colors.top.lerp(jurassicTopMod, 0.4);
-            colors.bottom.lerp(jurassicBotMod, 0.4);
-        }
-        return colors;
-    }
+    protected skyTopColors: number[] = [0x101510, 0x667755, 0x88aa88]; // [Night, Sunset, Noon]
+    protected skyBottomColors: number[] = [0x151A15, 0x889977, 0xaabb99]; // [Night, Sunset, Noon]
 
     getRiverWidthMultiplier(): number {
         return 1.7;

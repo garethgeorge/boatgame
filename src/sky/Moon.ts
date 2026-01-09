@@ -52,5 +52,17 @@ export class Moon {
 
         const moonDir = new THREE.Vector3(x, yInclined, zInclined).normalize();
         this.mesh.position.copy(cameraPosition).add(moonDir.multiplyScalar(300));
+
+        // Update Moon Light Intensity
+        // Moon is at its highest point when moonAngle is 0.5 PI (Midnight)
+        // moonAngle = angle + PI. 
+        // angle = time * 2PI.
+        // angle is 0 at Sunrise, PI/2 at Noon, PI at Sunset, 1.5 PI at Midnight.
+        // moonAngle is PI at Sunrise, 1.5 PI at Noon, 2PI at Sunset, 2.5 PI at Midnight.
+        // sin(moonAngle) at Noon = sin(1.5 PI) = -1.
+        // sin(moonAngle) at Midnight = sin(2.5 PI) = 1.
+        // So sin(moonAngle) works for moon height!
+        const moonHeight = Math.max(0, Math.sin(moonAngle));
+        this.light.intensity = THREE.MathUtils.lerp(0, 0.5, moonHeight);
     }
 }

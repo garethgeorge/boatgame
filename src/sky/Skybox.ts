@@ -54,9 +54,12 @@ export class Skybox {
         }
       `,
             side: THREE.BackSide,
-            fog: true,
+            fog: false,
             name: 'Skybox Material'
         });
+
+        // Re-bind uniforms because merge clones them
+        this.uniforms = skyMat.uniforms;
 
         const mesh = GraphicsUtils.createMesh(skyGeo, skyMat, 'SkyboxMesh');
         return mesh;
