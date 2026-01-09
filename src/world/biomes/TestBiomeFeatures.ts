@@ -3,6 +3,7 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/TerrainDecorator';
 import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
+import { MonkeySpawner } from '../../entities/spawners/MonkeySpawner';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -20,10 +21,10 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         // }
     }
 
-    private gatorSpawner = new AlligatorSpawner();
+    private spawner = new MonkeySpawner();
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        await this.bottleSpawner.spawn(context, 4, zStart, zEnd);
-        await this.gatorSpawner.spawn(context, 2, zStart, zEnd);
+        //await this.bottleSpawner.spawn(context, 4, zStart, zEnd);
+        await this.spawner.spawn(context, 2, zStart, zEnd);
     }
 }

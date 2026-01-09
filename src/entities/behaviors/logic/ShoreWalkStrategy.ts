@@ -24,9 +24,14 @@ export class ShoreWalkStrategy {
         this.directionSign = Math.random() < 0.5 ? 1 : -1;
     }
 
+    public get walkDirection(): number {
+        return this.directionSign;
+    }
+
     calculateWalkAngle(z: number): number {
         const dxdz = RiverSystem.getInstance().getRiverDerivative(z);
-        // Tangent vector is (dx/dz, 1)
+        // Tangent vector is (dx/dz, 1) if walking downstream (positive z)
+        // Correctly maps to the world rotation required by Entity.sync
         return Math.atan2(1.0 * this.directionSign, dxdz * this.directionSign) + Math.PI / 2;
     }
 

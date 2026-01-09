@@ -67,32 +67,45 @@ If an object is cached rather than being added to the scene graph be sure to mar
   ```
   *Note: The base `Entity` class handles this for `this.meshes` automatically.*
 
-### 2. Entity System & Physics Sync
+### 2. Coordinate Systems & Orientation
+The game uses a specific mapping between the 2D physics engine (Planck.js) and the 3D rendering engine (Three.js).
+
+| System | Longitudinal Axis | Lateral Axis | Vertical Axis |
+| :--- | :--- | :--- | :--- |
+| **Physics (Planck.js)** | Y | X | N/A |
+| **Graphics (Three.js)** | Z | X | Y |
+
+**Mapping Rules**:
+- **Position**: `mesh.position.x = body.x` and `mesh.position.z = body.y`.
+- **Forward Direction**: At `angle = 0`, an entity faces **Negative Y** in physics, which is **Negative Z** in world space (towards the top of the "river").
+- **Rotation**: Graphics rotation is the negation of physics rotation: `mesh.rotation.y = -body.getAngle()`. This is handled automatically in `Entity.sync()`.
+- **Model Alignment**: In `setupModel()`, models are typically rotated to face their internal "front" toward the Negative Z axis. For most animals, this requires a base rotation of `Math.PI`.
+
+### 3. Entity System & Physics Sync
 **File**: `src/core/Entity.ts`
 
 - **Physics-Graphics Separation**: Physics runs in 2D (Planck.js) on the X-Z plane (simulating top-down). Graphics run in 3D.
 - **Syncing**: The `Entity.sync(alpha)` method handles interpolation between physics steps for smooth rendering.
   - It interpolates position and angle using `prevPos` and `prevAngle`.
-  - It maps Physics Y -> Graphics Z.
+  - It maps Physics Y -> Graphics Z and applies `-angle` to `mesh.rotation.y`.
 - **Debug Meshes**: Entities can implement `ensureDebugMeshes()` to visualize physics bodies.
 - **Physics Bodies**: Every entity MUST have at least one physics body.
 - **User Data**: Every physics body MUST have its user data set to include a reference to the entity: `physicsBody.setUserData({ ..., entity: this })`. This is required for physics-based entity removal.
 
-
-### 3. Toon Shading & Visuals
+### 4. Toon Shading & Visuals
 **File**: `src/core/GraphicsUtils.ts`
 
 - **`toonify(model)`**: Converts standard materials to `MeshToonMaterial` using a shared gradient map for a cell-shaded look.
 - **Gradient Map**: The gradient map is a shared resource managed by `GraphicsUtils`.
 
-### 4. Game Loop
+### 5. Game Loop
 **File**: `src/Game.ts`
 
 - **`animate()`**: The main loop.
 - **`update(dt)`**: Fixed-step logic can be implemented here, though currently, it passes variable `dt`.
 - **`Profiler`**: Use `Profiler.start('Label')` and `Profiler.end('Label')` to measure performance blocks.
 
-## 5. Terrain & World Generation
+## 6. Terrain & World Generation
 **Files**: `src/world/TerrainManager.ts`, `src/world/TerrainChunk.ts`
 
 The world is infinite and generated procedurally as the boat moves along the **Negative Z** axis. Avoid using knowledge of the direction the boat is travelling except where it is necessary. In particular BiomeManager should be unaware of the direction whereas the BiomeFeatures instances that populate the biomes with decorations and obstacles may take direction into account.
@@ -106,7 +119,7 @@ The world is infinite and generated procedurally as the boat moves along the **N
     -   **Water**: Custom `WaterShader`.
     -   **Decorations**: Instanced/merged meshes for performance.
 
-## 6. Decoration System
+## 7. Decoration System
 **Files**: `src/world/Decorations.ts`, `src/world/factories/*`
 
 Decorations (trees, rocks, etc.) use a **Registry + Factory** pattern to decouple placement logic from asset creation.
@@ -116,7 +129,7 @@ Decorations (trees, rocks, etc.) use a **Registry + Factory** pattern to decoupl
 -   **`Decorations`**: Static facade providing strongly-typed accessors (e.g., `Decorations.getTree(...)`) that delegate to the registry.
 -   **Optimization**: `TerrainChunk` uses `BiomeDecorationHelper` to batch and merge decoration geometries to reduce draw calls.
 
-## 7. Entity & Spawner System
+## 8. Entity & Spawner System
 **Files**: `src/entities/obstacles/*`, `src/entities/spawners/*`
 
 Dynamic game objects (Obstacles, Animals) follow a hierarchy designed for behavioral complexity.
@@ -133,16 +146,16 @@ Dynamic game objects (Obstacles, Animals) follow a hierarchy designed for behavi
 -   **Spawners**: Encapsulate placement rules (e.g., `AttackAnimalSpawner`).
 -   **PlacementHelper**: Used to find valid positions (Shore vs. Water, clustering, distance from banks) without colliding with static terrain.
 
-## 8. Documentation Maintenance
+## 9. Documentation Maintenance
 **Rule**: This file (`GEMINI.md`) serves as the architectural source of truth. When implementing new features or refactoring existing systems:
 1.  **Check this file** to ensure your changes align with established patterns.
 2.  **Update this file** if you introduce new patterns, subsystems, or change the architecture. Keep it living and accurate.
 
-## 9. Code Style and Standards
+## 10. Code Style and Standards
 **Rule**
 - Avoid casting to any in typescript except where there is no reasonable alternative or it is being done for performance reasons.
 - Don't remove comments in the code unless they are no longer applicable.
 
-## 10. Verification
+## 11. Verification
 
 Use `npx tsc --noEmit` to verify that the code passes typescript checks.

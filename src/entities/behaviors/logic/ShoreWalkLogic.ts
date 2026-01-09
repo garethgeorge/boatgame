@@ -27,6 +27,9 @@ export class ShoreWalkLogic implements AnimalLogic {
     private targetPosition: planck.Vec2 | null = null;
     private initialized: boolean = false;
 
+    private lastPosition: planck.Vec2 | null = null;
+    private accumulatedDistance: number = 0;
+
     constructor(params: ShoreWalkParams) {
         this.strategy = new ShoreWalkStrategy();
         this.walkDistance = params.walkDistance;
@@ -42,7 +45,14 @@ export class ShoreWalkLogic implements AnimalLogic {
 
         this.strategy.initialize(this.startPosition);
         this.walkAngle = this.strategy.calculateWalkAngle(this.startPosition.y);
-        this.targetPosition = this.strategy.calculateTargetPosition(this.startPosition.y, this.walkDistance);
+
+        // Initial target is just a small step in the walk direction
+        const stepZ = this.startPosition.y + (this.strategy.walkDirection * 2.0);
+        const targetX = this.strategy.getConstrainedX(stepZ);
+        this.targetPosition = planck.Vec2(targetX, stepZ);
+
+        this.lastPosition = context.originPos.clone();
+        this.accumulatedDistance = 0;
 
         this.initialized = true;
     }
@@ -64,8 +74,14 @@ export class ShoreWalkLogic implements AnimalLogic {
 
         const currentPos = context.originPos;
         const currentAngle = context.physicsBody.getAngle();
-        const angleThreshold = 0.05;
+        const angleThreshold = 0.1;
         const posThreshold = 0.5;
+
+        // Track distance
+        if (this.lastPosition && (this.state === 'WALKING_OUT' || this.state === 'WALKING_IN')) {
+            this.accumulatedDistance += planck.Vec2.distance(currentPos, this.lastPosition);
+        }
+        this.lastPosition = currentPos.clone();
 
         let desiredSpeed = 0;
         let targetWorldPos = currentPos.clone();
@@ -74,29 +90,32 @@ export class ShoreWalkLogic implements AnimalLogic {
 
         switch (this.state) {
             case 'ROTATING_OUT': {
-                desiredAngle = this.walkAngle;
+                desiredAngle = this.strategy.calculateWalkAngle(currentPos.y);
                 if (Math.abs(this.normalizeAngle(desiredAngle - currentAngle)) < angleThreshold) {
                     this.state = 'WALKING_OUT';
+                    this.accumulatedDistance = 0;
                 }
                 break;
             }
             case 'WALKING_OUT': {
                 desiredSpeed = 3.0 * this.speed;
-                targetWorldPos = this.targetPosition!;
-                desiredAngle = this.walkAngle;
+                desiredAngle = this.strategy.calculateWalkAngle(currentPos.y);
 
-                // Enforce bank constraint in the target
-                const constrainedX = this.strategy.getConstrainedX(currentPos.y);
-                targetWorldPos = planck.Vec2(constrainedX, this.targetPosition!.y);
+                // Set target a bit ahead of current Z
+                const stepAhead = 2.0;
+                const nextZ = currentPos.y + (this.strategy.walkDirection * stepAhead);
+                const nextX = this.strategy.getConstrainedX(nextZ);
+                targetWorldPos = planck.Vec2(nextX, nextZ);
 
-                if (planck.Vec2.distance(currentPos, this.targetPosition!) < posThreshold) {
+                if (this.accumulatedDistance >= this.walkDistance) {
                     this.state = 'ROTATING_IN';
-                    this.walkAngle = this.normalizeAngle(this.walkAngle + Math.PI);
+                    this.accumulatedDistance = 0;
                 }
                 break;
             }
             case 'ROTATING_IN': {
-                desiredAngle = this.walkAngle;
+                // Rotate to face back towards start
+                desiredAngle = this.strategy.calculateWalkAngle(currentPos.y) + Math.PI;
                 if (Math.abs(this.normalizeAngle(desiredAngle - currentAngle)) < angleThreshold) {
                     this.state = 'WALKING_IN';
                 }
@@ -104,16 +123,22 @@ export class ShoreWalkLogic implements AnimalLogic {
             }
             case 'WALKING_IN': {
                 desiredSpeed = 3.0 * this.speed;
-                targetWorldPos = this.startPosition!;
-                desiredAngle = this.walkAngle;
+                // Face back towards start
+                desiredAngle = this.strategy.calculateWalkAngle(currentPos.y) + Math.PI;
 
-                // Enforce bank constraint in the target
-                const constrainedX = this.strategy.getConstrainedX(currentPos.y);
-                targetWorldPos = planck.Vec2(constrainedX, this.startPosition!.y);
+                // Set target a bit ahead towards start Z
+                const stepAhead = 2.0;
+                const nextZ = currentPos.y - (this.strategy.walkDirection * stepAhead);
+                const nextX = this.strategy.getConstrainedX(nextZ);
+                targetWorldPos = planck.Vec2(nextX, nextZ);
 
-                if (planck.Vec2.distance(currentPos, this.startPosition!) < posThreshold) {
+                // Check if we've reached the start Z (with a small buffer)
+                const startZ = this.startPosition!.y;
+                const directionSign = this.strategy.walkDirection;
+                const hasReachedStart = directionSign > 0 ? (currentPos.y <= startZ + 0.5) : (currentPos.y >= startZ - 0.5);
+
+                if (hasReachedStart) {
                     this.state = 'ROTATING_START';
-                    desiredAngle = this.startAngle;
                 }
                 break;
             }

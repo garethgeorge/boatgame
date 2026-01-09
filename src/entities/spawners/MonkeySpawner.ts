@@ -17,7 +17,7 @@ export class MonkeySpawner extends AttackAnimalSpawner {
     }
 
     protected get shorePlacement(): ShorePlacementOptions {
-        return { minDistFromBank: 2.0, maxDistFromBank: 2.0 };
+        return { minDistFromBank: 2.0, maxDistFromBank: 8.0 };
     }
 
     protected get heightInWater(): number {
