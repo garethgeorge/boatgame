@@ -33,21 +33,3 @@ export interface AnyAnimal {
     // Handle generic behavior events
     handleBehaviorEvent?(event: AnimalBehaviorEvent): void;
 }
-
-// Behavior callbacks for animal in idle shore state
-export interface AnimalShoreIdle extends AnyAnimal {
-    // Called at random to give the animal a chance to switch to another
-    //  behavior e.g. from standing still to walking away or dancing
-    shoreIdleMaybeSwitchBehavior?(): void;
-
-    // Called when the idle behavior determines it's time to notice the boat
-    // Returns true if the animal started a new behavior, false otherwise
-    shoreIdleMaybeNoticeBoat?(): boolean;
-}
-
-// Behavior callbacks for animal walking on shore
-export interface AnimalShoreWalk extends AnyAnimal {
-    shoreWalkDidComplete?(): void;
-}
-
-

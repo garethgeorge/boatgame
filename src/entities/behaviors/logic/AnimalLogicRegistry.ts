@@ -4,6 +4,8 @@ import { AmbushAttackLogic } from './AmbushAttackLogic';
 import { DefaultSwimAwayLogic } from './DefaultSwimAwayLogic';
 import { DefaultFlightLogic } from './DefaultFlightLogic';
 import { EnteringWaterLogic } from './EnteringWaterLogic';
+import { ShoreIdleLogic } from './ShoreIdleLogic';
+import { ShoreWalkLogic } from './ShoreWalkLogic';
 
 export class AnimalLogicRegistry {
     private static factories: Map<string, (params?: any) => AnimalLogic> = new Map();
@@ -14,6 +16,8 @@ export class AnimalLogicRegistry {
         this.register(DefaultSwimAwayLogic.NAME, () => new DefaultSwimAwayLogic());
         this.register(DefaultFlightLogic.NAME, () => new DefaultFlightLogic());
         this.register(EnteringWaterLogic.NAME, (params) => new EnteringWaterLogic(params as any));
+        this.register(ShoreIdleLogic.NAME, (params) => new ShoreIdleLogic(params as any));
+        this.register(ShoreWalkLogic.NAME, (params) => new ShoreWalkLogic(params as any));
     }
 
     public static register(name: string, factory: (params?: any) => AnimalLogic) {

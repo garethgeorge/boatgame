@@ -5,11 +5,11 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { DefaultFlightLogic } from '../behaviors/logic/DefaultFlightLogic';
-import { AnimalBehaviorEvent, AnimalShoreIdle, AnyAnimal } from '../behaviors/AnimalBehavior';
+import { AnimalBehaviorEvent, AnyAnimal } from '../behaviors/AnimalBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
-import { AnimalShoreIdleBehavior } from '../behaviors/AnimalShoreIdleBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogic';
+import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
 
 export interface FlyingAnimalOptions {
     x: number;
@@ -30,7 +30,7 @@ export interface FlyingAnimalPhysicsOptions {
     angularDamping?: number;
 }
 
-export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, AnyAnimal {
+export abstract class FlyingAnimal extends Entity implements AnyAnimal {
     protected player: AnimationPlayer | null = null;
     protected behavior: EntityBehavior | null = null;
     protected aggressiveness: number;
@@ -94,7 +94,15 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
         else
             this.normalVector = new THREE.Vector3(0, 1, 0);
 
-        this.behavior = new AnimalShoreIdleBehavior(this, this.aggressiveness, 200.0, true);
+        const idleConfig: AnimalLogicConfig = {
+            name: ShoreIdleLogic.NAME,
+            params: {
+                minNoticeDistance: 200.0,
+                ignoreBottles: true,
+                nextLogicConfig: { name: DefaultFlightLogic.NAME }
+            }
+        };
+        this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, idleConfig);
         this.playIdleAnimation();
     }
 
@@ -168,15 +176,6 @@ export abstract class FlyingAnimal extends Entity implements AnimalShoreIdle, An
             this.meshes[0].position.y = height;
         }
         this.normalVector.copy(normal);
-    }
-
-    shoreIdleMaybeNoticeBoat(): boolean {
-        if (this.meshes.length > 0) {
-            this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, { name: 'flight' });
-            this.playFlightAnimation();
-            return true;
-        }
-        return false;
     }
 
     handleBehaviorEvent(event: AnimalBehaviorEvent): void {

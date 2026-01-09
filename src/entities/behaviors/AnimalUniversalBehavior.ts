@@ -240,11 +240,22 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         }
 
         // --- Rotation ---
-        // Simple rotation towards target
-        if (originToTargetDist > 0.1) {
-            const targetAngle = Math.atan2(originToTarget.y, originToTarget.x) + Math.PI / 2;
-            physicsBody.setAngle(targetAngle);
+        let targetAngle = physicsBody.getAngle();
+        if (path.desiredAngle !== undefined) {
+            targetAngle = path.desiredAngle;
+        } else if (originToTargetDist > 0.1) {
+            targetAngle = Math.atan2(originToTarget.y, originToTarget.x) + Math.PI / 2;
         }
+
+        const currentAngle = physicsBody.getAngle();
+        let angleDiff = targetAngle - currentAngle;
+        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+        const rotationSpeed = 3.0; // matched to legacy AnimalShoreWalkBehavior
+        const maxRotation = rotationSpeed * dt;
+        const rotation = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), maxRotation);
+        physicsBody.setAngle(currentAngle + rotation);
 
         // --- Precise Positioning (Height/Normal) ---
         if (explicitHeight !== undefined && explicitNormal !== undefined) {

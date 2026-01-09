@@ -36,6 +36,7 @@ export interface AnimalLogicPathResult {
     // Specifically for use when locomotionType is 'LAND'
     explicitHeight?: number;
     explicitNormal?: THREE.Vector3;
+    desiredAngle?: number;
 
     // --- FLIGHT Locomotion Properties ---
     // Specifically for use when locomotionType is 'FLIGHT'

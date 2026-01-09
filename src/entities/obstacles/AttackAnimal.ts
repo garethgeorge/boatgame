@@ -3,16 +3,17 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
-import { AnimalShoreIdleBehavior } from '../behaviors/AnimalShoreIdleBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { WolfAttackLogic } from '../behaviors/logic/WolfAttackLogic';
 import { EnteringWaterLogic } from '../behaviors/logic/EnteringWaterLogic';
-import { AnimalShoreIdle, AnyAnimal } from '../behaviors/AnimalBehavior';
+import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
+import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
 import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogic';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
+import { ShoreWalkLogic } from '../behaviors/logic/ShoreWalkLogic';
 
 export interface AttackAnimalOptions {
     x: number;
@@ -37,7 +38,7 @@ export interface AttackAnimalPhysicsOptions {
     angularDamping?: number;
 }
 
-export abstract class AttackAnimal extends Entity implements AnimalShoreIdle, AnyAnimal {
+export abstract class AttackAnimal extends Entity implements AnyAnimal {
     protected player: AnimationPlayer | null = null;
     protected behavior: EntityBehavior | null = null;
     protected aggressiveness: number;
@@ -110,11 +111,13 @@ export abstract class AttackAnimal extends Entity implements AnimalShoreIdle, An
 
         if (onShore) {
             if (!stayOnShore) {
-                this.behavior = new AnimalShoreIdleBehavior(this, this.aggressiveness);
+                const idleConfig = this.getOnShoreConfig();
+                this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, idleConfig, this.attackOffset);
             }
             this.playIdleAnimation();
         } else {
-            this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, { name: this.attackLogicName || WolfAttackLogic.NAME }, this.attackOffset);
+            const waterConfig = this.getInWaterConfig();
+            this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, waterConfig, this.attackOffset);
             this.playSwimmingAnimation();
         }
     }
@@ -199,29 +202,39 @@ export abstract class AttackAnimal extends Entity implements AnimalShoreIdle, An
         }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
     }
 
-    shoreIdleMaybeNoticeBoat(): boolean {
-        // Create an entering water logic that chains into the final attack/flight logic
-        const nextLogicConfig: AnimalLogicConfig = {
-            name: this.attackLogicName || WolfAttackLogic.NAME
+    getOnShoreConfig(): AnimalLogicConfig {
+        const idleConfig: AnimalLogicConfig = {
+            name: ShoreIdleLogic.NAME,
+            params: {
+                nextLogicConfig: this.getEnterWaterConfig(),
+                maybeSwitchBehavior: () => this.shoreIdleMaybeSwitchBehavior()
+            }
         };
+        return idleConfig;
+    }
 
-        const enteringWaterConfig: AnimalLogicConfig = {
+    getEnterWaterConfig(): AnimalLogicConfig {
+        // Create an entering water logic that chains into the final attack/flight logic
+        return {
             name: EnteringWaterLogic.NAME,
             params: {
                 targetWaterHeight: this.heightInWater,
                 jump: this.jumpsIntoWater,
-                nextLogicConfig: nextLogicConfig
+                nextLogicConfig: this.getInWaterConfig()
             }
         };
+    }
 
-        this.behavior = new AnimalUniversalBehavior(
-            this,
-            this.aggressiveness,
-            enteringWaterConfig,
-            this.attackOffset
-        );
+    getInWaterConfig(): AnimalLogicConfig {
+        return { name: this.attackLogicName || WolfAttackLogic.NAME };
+    }
 
-        return true;
+    /**
+     * Can be overriden in derived classes to change behavior while
+     * idle.
+     */
+    shoreIdleMaybeSwitchBehavior(): AnimalLogicConfig | null {
+        return null; // Default: stay in idle
     }
 
     handleBehaviorEvent(event: AnimalBehaviorEvent): void {
@@ -232,12 +245,16 @@ export abstract class AttackAnimal extends Entity implements AnimalShoreIdle, An
             if (event.logicName === EnteringWaterLogic.NAME) {
                 const duration = event.duration === undefined ? 1.0 : event.duration;
                 this.playWalkingAnimation(duration);
-            } else {
+            } else if (event.logicName === ShoreWalkLogic.NAME) {
+                this.playWalkingAnimation(1.0);
+            } else if (event.logicName === (this.attackLogicName || WolfAttackLogic.NAME)) {
                 // just to be sure
                 if (this.meshes.length > 0) {
                     this.meshes[0].position.y = this.heightInWater;
                 }
                 this.playSwimmingAnimation();
+            } else {
+                this.playIdleAnimation();
             }
         }
     }
