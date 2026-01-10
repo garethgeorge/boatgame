@@ -59,7 +59,7 @@ export abstract class BaseMangrove extends Entity {
 
   // Helper Methods
 
-  protected static getMangroveMesh(): THREE.Group {
+  public static getMangroveMesh(): THREE.Group {
     if (this.cache.length === 0) {
       this.generateCache();
     }

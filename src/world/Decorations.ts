@@ -11,6 +11,7 @@ import { TreeFernFactory } from './factories/TreeFernFactory';
 import { RiverRockFactory } from './factories/RiverRockFactory';
 import { FlowerFactory } from './factories/FlowerFactory';
 import { DecorationInstance } from './factories/DecorationFactory';
+import { MangroveFactory } from './factories/MangroveFactory';
 
 export type { DecorationInstance };
 
@@ -39,6 +40,7 @@ DecorationRegistry.register('triceratops', new GLTFModelFactory('assets/tricerat
 DecorationRegistry.register('brontosaurus', new GLTFModelFactory('assets/brontosaurus-model-1.glb'));
 DecorationRegistry.register('pterodactyl', new GLTFModelFactory('assets/pterodactyl-model-1.glb'));
 DecorationRegistry.register('dolphin', new GLTFModelFactory('assets/dolphin-model-1.glb'));
+DecorationRegistry.register('mangrove', new MangroveFactory());
 
 
 
@@ -138,4 +140,8 @@ export class Decorations {
   }
 
   // Animal getters
+  
+  static getMangrove(scale: number = 1.0): THREE.Group {
+    return DecorationRegistry.getFactory('mangrove').create({ scale });
+  }
 }

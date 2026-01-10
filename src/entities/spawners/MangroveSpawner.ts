@@ -79,5 +79,39 @@ export class MangroveSpawner extends BaseSpawner {
 
     return true;
   }
+
+  async spawnAbsolute(
+    context: SpawnContext, 
+    x: number, 
+    z: number, 
+    scaleOverride?: number
+  ): Promise<boolean> {
+      // Scale / Type Logic
+      // Size Variance
+      let baseScale = 1.0;
+      if (scaleOverride) {
+          baseScale = scaleOverride;
+      } else {
+          const rand = Math.random();
+          if (rand < 0.05) {
+              baseScale = 2.0;
+          } else if (rand < 0.30) {
+              baseScale = 1.3;
+          }
+      }
+
+      // Jitter: +/- 20% (0.8 to 1.2)
+      const jitter = 0.8 + Math.random() * 0.4;
+      const finalScale = baseScale * jitter;
+
+      if (baseScale > 1.05) {
+          const mangrove = new LargeMangrove(x, z, finalScale, context.physicsEngine);
+          context.entityManager.add(mangrove);
+      } else {
+          const mangrove = new SmallMangrove(x, z, finalScale, context.physicsEngine);
+          context.entityManager.add(mangrove);
+      }
+      return true;
+  }
 }
 
