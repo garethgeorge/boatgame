@@ -8,9 +8,10 @@ import { Decorations } from '../Decorations';
 import { LogSpawner } from '../../entities/spawners/LogSpawner';
 import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
+import { WaterGrassSpawner } from '../../entities/spawners/WaterGrassSpawner';
 import { RiverGeometry } from '../RiverGeometry';
 
-type SwampEntityType = 'mangrove' | 'log' | 'bottle' | 'alligator';
+type SwampEntityType = 'mangrove' | 'log' | 'bottle' | 'alligator' | 'water_grass';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
@@ -18,6 +19,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     protected mangroveSpawner = new MangroveSpawner();
     protected logSpawner = new LogSpawner(0.003 * 5);
     protected alligatorSpawner = new AlligatorSpawner(0.009);
+    protected waterGrassSpawner = new WaterGrassSpawner();
 
     getGroundColor(): { r: number, g: number, b: number } {
         return { r: 0x2B / 255, g: 0x24 / 255, b: 0x1C / 255 }; // Muddy Dark Brown
@@ -78,6 +80,12 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     place: 'path',
                     density: [0.1, 0.3],
                     types: ['alligator']
+                },
+                'grass_patches': {
+                    logic: 'scatter',
+                    place: 'shore',
+                    density: [1.5, 3.0],
+                    types: ['water_grass']
                 }
             },
             tracks: [
@@ -112,7 +120,8 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                             progress: [0.0, 1.0],
                             patterns: [
                                 [
-                                    { pattern: 'log_scatter', weight: 3 }
+                                    { pattern: 'log_scatter', weight: 3 },
+                                    { pattern: 'grass_patches', weight: 1.5 }
                                 ]
                             ]
                         }
@@ -241,6 +250,12 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                                 const logic = 'ambush'; // Mainly ambush in swamp
                                 await this.alligatorSpawner.spawnAnimalAbsolute(
                                     context, sample, p.range, p.aggressiveness || 0.5, logic
+                                );
+                                break;
+                            }
+                            case 'water_grass': {
+                                await this.waterGrassSpawner.spawnInRiverAbsolute(
+                                    context, sample, p.range
                                 );
                                 break;
                             }
