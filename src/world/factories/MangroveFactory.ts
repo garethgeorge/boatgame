@@ -4,7 +4,7 @@ import { BaseMangrove } from '../../entities/obstacles/Mangrove';
 
 export class MangroveFactory implements DecorationFactory {
   async load(): Promise<void> {
-    BaseMangrove.preload();
+    await BaseMangrove.preload();
   }
 
   create(options?: { scale?: number }): THREE.Group {
