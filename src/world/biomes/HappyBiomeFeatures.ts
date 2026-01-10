@@ -3,7 +3,11 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/TerrainDecorator';
-import { BoatPathLayout } from './BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
+import { DolphinSpawner } from '../../entities/spawners/DolphinSpawner';
+import { RiverGeometry } from '../RiverGeometry';
+
+type HappyEntityType = 'dolphin' | 'bottle';
 
 /**
  * Happy Biome: A beautiful spring-like day with lush green fields.
@@ -11,6 +15,8 @@ import { BoatPathLayout } from './BoatPathLayoutStrategy';
  */
 export class HappyBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'happy';
+
+    private dolphinSpawner = new DolphinSpawner();
 
     getGroundColor(): { r: number, g: number, b: number } {
         // Lush green ground color
@@ -29,13 +35,34 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return 1500;
     }
 
-    public createLayout(zMin: number, zMax: number): BoatPathLayout<any> {
-        // Return an empty layout for now
-        return {
-            path: [],
-            sections: [],
-            waterAnimals: []
-        } as any;
+    public createLayout(zMin: number, zMax: number): BoatPathLayout<HappyEntityType> {
+        return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
+            patterns: {
+                'dolphin_pods': {
+                    logic: 'scatter',
+                    place: 'slalom',
+                    density: [1.0, 2.0],
+                    types: ['dolphin']
+                }
+            },
+            tracks: [
+                {
+                    name: 'animals',
+                    stages: [
+                        {
+                            name: 'dolphin_waters',
+                            progress: [0, 1.0],
+                            patterns: [
+                                [
+                                    { pattern: 'dolphin_pods', weight: 1.0 }
+                                ]
+                            ]
+                        }
+                    ]
+                }
+            ],
+            waterAnimals: ['dolphin']
+        });
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
@@ -43,6 +70,36 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        // Empty for now as requested
+        const layout = context.biomeLayout as BoatPathLayout<HappyEntityType>;
+        if (!layout) return;
+
+        const iChunkStart = RiverGeometry.getPathIndexByZ(layout.path, zStart);
+        const iChunkEnd = RiverGeometry.getPathIndexByZ(layout.path, zEnd);
+
+        const iChunkMin = Math.min(iChunkStart, iChunkEnd);
+        const iChunkMax = Math.max(iChunkStart, iChunkEnd);
+
+        for (const section of layout.sections) {
+            if (section.iEnd <= iChunkMin || section.iStart >= iChunkMax) continue;
+
+            for (const [entityType, placements] of Object.entries(section.placements)) {
+                if (!placements) continue;
+
+                for (const p of placements) {
+                    if (p.index >= iChunkMin && p.index < iChunkMax) {
+                        const sample = RiverGeometry.getPathPoint(layout.path, p.index);
+
+                        switch (entityType as HappyEntityType) {
+                            case 'dolphin':
+                                await this.dolphinSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
+                                break;
+                            case 'bottle':
+                                await this.bottleSpawner.spawnInRiverAbsolute(context, sample, p.range);
+                                break;
+                        }
+                    }
+                }
+            }
+        }
     }
 }
