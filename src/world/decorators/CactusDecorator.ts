@@ -13,8 +13,8 @@ export class CactusDecorator extends BaseDecorator {
             const biomeType = context.riverSystem.biomeManager.getBiomeType(position.worldZ);
 
             if (Math.random() > 0.8) {
-                const cactus = Decorations.getCactus();
-                context.decoHelper.positionAndCollectGeometry(cactus, position, context);
+                const cactusInstances = Decorations.getCactusInstance();
+                context.decoHelper.addInstancedDecoration(context, cactusInstances, position);
             }
         }
     }

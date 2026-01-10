@@ -131,8 +131,8 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
             const rand = Math.random();
             if (rand > 0.95) {
-                const cactus = Decorations.getCactus();
-                context.decoHelper.positionAndCollectGeometry(cactus, position, context);
+                const cactusInstances = Decorations.getCactusInstance();
+                context.decoHelper.addInstancedDecoration(context, cactusInstances, position);
             } else if (rand > 0.90) {
                 const rock = Decorations.getRock(this.id, Math.random());
                 context.decoHelper.positionAndCollectGeometry(rock, position, context);

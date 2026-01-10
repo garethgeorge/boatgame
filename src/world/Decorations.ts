@@ -63,8 +63,9 @@ export class Decorations {
     return DecorationRegistry.getFactory('bush').create(wetness);
   }
 
-  static getCactus(): THREE.Group {
-    return DecorationRegistry.getFactory('cactus').create();
+  static getCactusInstance(): DecorationInstance[] {
+    const factory = DecorationRegistry.getFactory('cactus') as CactusFactory;
+    return factory.createInstance();
   }
 
   static getCycad(): THREE.Group {

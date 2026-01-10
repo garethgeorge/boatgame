@@ -1,40 +1,56 @@
 import * as THREE from 'three';
-import { DecorationFactory } from './DecorationFactory';
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { DecorationFactory, DecorationInstance } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
+
+interface CactusArchetype {
+    cactusGeo: THREE.BufferGeometry;
+}
 
 export class CactusFactory implements DecorationFactory {
     private static readonly cactusMaterial = new THREE.MeshToonMaterial({ color: 0x6B8E23, name: 'Cactus - Material' }); // Olive Drab
 
-    private cache: THREE.Group[] = [];
+    private archetypes: CactusArchetype[] = [];
 
     async load(): Promise<void> {
-        // Retain static materials
+        // Register material
         GraphicsUtils.registerObject(CactusFactory.cactusMaterial);
 
-        // Clear existing cache and release old meshes
-        this.cache.forEach(m => GraphicsUtils.disposeObject(m));
-        this.cache = [];
+        // Clear existing archetypes
+        this.archetypes.forEach(a => GraphicsUtils.disposeObject(a.cactusGeo));
+        this.archetypes = [];
 
-        console.log("Generating Cactus Cache...");
+        console.log("Generating Cactus Archetypes...");
         for (let i = 0; i < 20; i++) {
-            const mesh = this.createCactus();
-            GraphicsUtils.markAsCache(mesh);
-            this.cache.push(mesh);
+            this.archetypes.push(this.generateArchetype());
         }
+    }
+
+    createInstance(): DecorationInstance[] {
+        if (this.archetypes.length === 0) return [];
+
+        const archetype = this.archetypes[Math.floor(Math.random() * this.archetypes.length)];
+        return [{
+            geometry: archetype.cactusGeo,
+            material: CactusFactory.cactusMaterial,
+            matrix: new THREE.Matrix4(),
+            color: new THREE.Color(1, 1, 1) // Default color
+        }];
     }
 
     create(): THREE.Group {
-        let mesh: THREE.Group;
-        if (this.cache.length === 0) {
-            mesh = this.createCactus();
-        } else {
-            mesh = this.cache[Math.floor(Math.random() * this.cache.length)].clone();
+        const instances = this.createInstance();
+        const group = new THREE.Group();
+        for (const inst of instances) {
+            const mesh = GraphicsUtils.createMesh(inst.geometry, inst.material);
+            mesh.applyMatrix4(inst.matrix);
+            group.add(mesh);
         }
-        return mesh;
+        return group;
     }
 
-    private createCactus(): THREE.Group {
-        const group = new THREE.Group();
+    private generateArchetype(): CactusArchetype {
+        const geometries: THREE.BufferGeometry[] = [];
 
         // Saguaro Parameters (2x Scale)
         const height = 3.0 + Math.random() * 3.0; // 3m to 6m
@@ -42,12 +58,8 @@ export class CactusFactory implements DecorationFactory {
 
         // Trunk
         const trunkGeo = new THREE.CapsuleGeometry(trunkRadius, height - trunkRadius * 2, 8, 16);
-        trunkGeo.name = 'Cactus - Trunk Geometry';
-        const trunk = GraphicsUtils.createMesh(trunkGeo, CactusFactory.cactusMaterial, 'CactusTrunk');
-        trunk.position.y = height / 2;
-        trunk.castShadow = true;
-        trunk.receiveShadow = true;
-        group.add(trunk);
+        trunkGeo.translate(0, height / 2, 0);
+        geometries.push(trunkGeo);
 
         // Arms
         const armCount = Math.floor(Math.random() * 4); // 0 to 3 arms
@@ -62,17 +74,12 @@ export class CactusFactory implements DecorationFactory {
             const angle = Math.random() * Math.PI * 2;
 
             // Create Curve
-            // Start at trunk surface
             const startPoint = new THREE.Vector3(Math.cos(angle) * trunkRadius * 0.8, startHeight, Math.sin(angle) * trunkRadius * 0.8);
-
-            // Control point: Outwards and slightly up
             const controlPoint = new THREE.Vector3(
                 Math.cos(angle) * (trunkRadius + armOutwardDist),
                 startHeight,
                 Math.sin(angle) * (trunkRadius + armOutwardDist)
             );
-
-            // End point: Upwards
             const endPoint = new THREE.Vector3(
                 Math.cos(angle) * (trunkRadius + armOutwardDist),
                 startHeight + armLengthVertical,
@@ -83,22 +90,21 @@ export class CactusFactory implements DecorationFactory {
 
             // Tube Geometry
             const tubeGeo = new THREE.TubeGeometry(curve, 8, armRadius, 8, false);
-            tubeGeo.name = 'Cactus - Arm Geometry';
-            const arm = GraphicsUtils.createMesh(tubeGeo, CactusFactory.cactusMaterial, 'CactusArm');
-            arm.castShadow = true;
-            arm.receiveShadow = true;
-            group.add(arm);
+            geometries.push(tubeGeo);
 
             // Cap the top of the arm
             const capGeo = new THREE.SphereGeometry(armRadius, 8, 8);
-            capGeo.name = 'Cactus - Arm Cap Geometry';
-            const cap = GraphicsUtils.createMesh(capGeo, CactusFactory.cactusMaterial, 'CactusCap');
-            cap.position.copy(endPoint);
-            cap.castShadow = true;
-            cap.receiveShadow = true;
-            group.add(cap);
+            capGeo.translate(endPoint.x, endPoint.y, endPoint.z);
+            geometries.push(capGeo);
         }
 
-        return group;
+        const mergedGeo = BufferGeometryUtils.mergeGeometries(geometries);
+        mergedGeo.name = 'Cactus - Merged Geometry';
+        GraphicsUtils.registerObject(mergedGeo);
+
+        // Clean up temporary geometries
+        geometries.forEach(g => g.dispose());
+
+        return { cactusGeo: mergedGeo };
     }
 }
