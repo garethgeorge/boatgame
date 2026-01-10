@@ -47,18 +47,9 @@ export class FlowerDecorator extends BaseDecorator {
                 // Get flower instances from Decorations
                 const flowerInstances = Decorations.getFlowerInstance();
 
-                // World transformation matrix for this flower
-                worldPos.set(pos.worldX, pos.height, pos.worldZ);
-                // No additional rotation/scale here as it's handled by getFlowerInstance internally?
-                // Wait, getFlowerInstance returns a flower at origin with its own random scale/rotation.
-                // We just need to move it to the world position.
-                worldMatrix.makeTranslation(worldPos.x, worldPos.y, worldPos.z);
-
-                for (const instance of flowerInstances) {
-                    // Combine instance matrix with world matrix
-                    const finalMatrix = instance.matrix.clone().premultiply(worldMatrix);
-                    context.decoHelper.addInstance(context, instance.geometry, instance.material, finalMatrix, instance.color);
-                }
+                // Add as instanced decoration at the world position
+                // Note: rotation and scale are already randomized within getFlowerInstance archetypes
+                context.decoHelper.addInstancedDecoration(context, flowerInstances, pos, 0, 1.0);
             }
         }
     }

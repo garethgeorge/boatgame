@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { DecorationContext } from '../decorators/TerrainDecorator';
+import { DecorationInstance } from '../factories/DecorationFactory';
 import { TerrainChunk } from '../TerrainChunk';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
@@ -151,6 +152,24 @@ export class BiomeDecorationHelper {
                     group.add(iMesh);
                 }
             }
+        }
+    }
+    public addInstancedDecoration(
+        context: DecorationContext,
+        instances: DecorationInstance[],
+        position: { worldX: number; height: number; worldZ: number },
+        rotationY: number = Math.random() * Math.PI * 2,
+        scale: number = 1.0 + (Math.random() - 0.5) * 0.2
+    ): void {
+        const worldMatrix = new THREE.Matrix4().compose(
+            new THREE.Vector3(position.worldX, position.height, position.worldZ),
+            new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotationY, 0)),
+            new THREE.Vector3(scale, scale, scale)
+        );
+
+        for (const instance of instances) {
+            const finalMatrix = instance.matrix.clone().premultiply(worldMatrix);
+            this.addInstance(context, instance.geometry, instance.material, finalMatrix, instance.color);
         }
     }
 }

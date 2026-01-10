@@ -54,8 +54,9 @@ export class Decorations {
     return DecorationRegistry.getFactory('boat').create();
   }
 
-  static getTree(wetness: number, isSnowy: boolean = false, isLeafless: boolean = false): THREE.Group {
-    return DecorationRegistry.getFactory('tree').create({ wetness, isSnowy, isLeafless });
+  static getTreeInstance(wetness: number, isSnowy: boolean = false, isLeafless: boolean = false): DecorationInstance[] {
+    const factory = DecorationRegistry.getFactory('tree') as TreeFactory;
+    return factory.createInstance({ wetness, isSnowy, isLeafless });
   }
 
   static getBush(wetness: number): THREE.Group {
@@ -140,7 +141,7 @@ export class Decorations {
   }
 
   // Animal getters
-  
+
   static getMangrove(scale: number = 1.0): THREE.Group {
     return DecorationRegistry.getFactory('mangrove').create({ scale });
   }

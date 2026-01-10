@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { TerrainDecorator, DecorationContext } from './TerrainDecorator';
 import { TerrainChunk } from '../TerrainChunk';
 import { GraphicsUtils } from '../../core/GraphicsUtils';

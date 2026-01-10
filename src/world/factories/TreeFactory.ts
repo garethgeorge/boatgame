@@ -1,171 +1,192 @@
 import * as THREE from 'three';
-import { DecorationFactory } from './DecorationFactory';
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { DecorationFactory, DecorationInstance } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
-export class TreeFactory implements DecorationFactory {
-    private static readonly treeMaterial = new THREE.MeshToonMaterial({ color: 0x8B4513, name: 'Tree - Trunk Material' }); // Brown trunk
-    private static readonly leafMaterial = new THREE.MeshToonMaterial({ color: 0x228B22, name: 'Tree - Leaf Material' }); // Forest Green
-    private static readonly snowyLeafMaterial = new THREE.MeshToonMaterial({ color: 0xFFFFFF, name: 'Tree - Snowy Leaf Material' }); // White
+interface TreeArchetype {
+    woodGeo: THREE.BufferGeometry;
+    leafGeo: THREE.BufferGeometry;
+    wetness: number;
+}
 
-    // Cache stores arrays of pre-generated trees
-    private cache: {
-        trees: { mesh: THREE.Group, wetness: number, isSnowy: boolean, isLeafless: boolean }[];
-    } = { trees: [] };
+export class TreeFactory implements DecorationFactory {
+    private static readonly woodMaterial = new THREE.MeshToonMaterial({ color: 0x8B4513, name: 'Tree - Wood Material' }); // Brown
+    private static readonly leafMaterial = new THREE.MeshToonMaterial({ color: 0xffffff, name: 'Tree - Leaf Material' }); // White (for vertex coloring/instancing)
+
+    private static readonly DEFAULT_LEAF_COLOR = new THREE.Color(0x228B22); // Forest Green
+    private static readonly SNOWY_LEAF_COLOR = new THREE.Color(0xFFFFFF); // White
+
+    private archetypes: TreeArchetype[] = [];
 
     async load(): Promise<void> {
-        // Retain static materials
-        GraphicsUtils.registerObject(TreeFactory.treeMaterial);
+        GraphicsUtils.registerObject(TreeFactory.woodMaterial);
         GraphicsUtils.registerObject(TreeFactory.leafMaterial);
-        GraphicsUtils.registerObject(TreeFactory.snowyLeafMaterial);
 
-        // Clear existing cache and release old meshes
-        this.cache.trees.forEach(t => GraphicsUtils.disposeObject(t.mesh));
-        this.cache.trees = [];
+        // Clear existing archetypes
+        this.archetypes.forEach(a => {
+            GraphicsUtils.disposeObject(a.woodGeo);
+            GraphicsUtils.disposeObject(a.leafGeo);
+        });
+        this.archetypes = [];
 
-        // Pre-generate trees
-        console.log("Generating Tree Cache...");
+        console.log("Generating Tree Archetypes...");
 
-        // Generate Standard Trees
-        for (let i = 0; i < 50; i++) {
-            const wetness = Math.random();
-            const mesh = this.createTree(wetness, false, false);
-            GraphicsUtils.markAsCache(mesh);
-            this.cache.trees.push({ mesh, wetness, isSnowy: false, isLeafless: false });
-        }
-        // Generate Snowy Trees
+        // Generate a set of archetypes with varying wetness
         for (let i = 0; i < 30; i++) {
-            const wetness = Math.random();
-            const mesh = this.createTree(wetness, true, false);
-            GraphicsUtils.markAsCache(mesh);
-            this.cache.trees.push({ mesh, wetness, isSnowy: true, isLeafless: false });
-        }
-        // Generate Leafless Trees (for Ice Biome)
-        for (let i = 0; i < 20; i++) {
-            const wetness = Math.random();
-            const mesh = this.createTree(wetness, false, true);
-            GraphicsUtils.markAsCache(mesh);
-            this.cache.trees.push({ mesh, wetness, isSnowy: false, isLeafless: true });
+            const wetness = i / 30;
+            const archetype = this.generateArchetype(wetness);
+            this.archetypes.push(archetype);
         }
     }
 
-    create(options: { wetness: number, isSnowy?: boolean, isLeafless?: boolean }): THREE.Group {
-        const { wetness, isSnowy = false, isLeafless = false } = options;
+    private generateArchetype(wetness: number): TreeArchetype {
+        const woodGeos: THREE.BufferGeometry[] = [];
+        const leafGeos: THREE.BufferGeometry[] = [];
 
-        let mesh: THREE.Group;
-
-        if (this.cache.trees.length > 0) {
-            const candidates = this.cache.trees.filter(t => t.isSnowy === isSnowy && t.isLeafless === isLeafless && Math.abs(t.wetness - wetness) < 0.3);
-            const source = candidates.length > 0
-                ? candidates[Math.floor(Math.random() * candidates.length)]
-                : this.cache.trees.find(t => t.isSnowy === isSnowy && t.isLeafless === isLeafless) || this.cache.trees[0];
-
-            mesh = source ? GraphicsUtils.cloneObject(source.mesh) : this.createTree(wetness, isSnowy, isLeafless);
-        } else {
-            mesh = this.createTree(wetness, isSnowy, isLeafless);
-        }
-
-        return mesh;
-    }
-
-    private createTree(wetness: number, isSnowy: boolean, isLeafless: boolean): THREE.Group {
-        const group = new THREE.Group();
-
-        // Tree parameters based on wetness
-        // Taller trees: 4-8m
+        // Parameters based on wetness
         const height = 4 + wetness * 4 + Math.random() * 2;
         const trunkThickness = 0.4 + wetness * 0.3;
 
-        // Trunk
+        // 1. Trunk
         const trunkGeo = new THREE.CylinderGeometry(trunkThickness * 0.6, trunkThickness, height, 6);
-        trunkGeo.name = 'Tree - Trunk Geometry';
-        const trunk = GraphicsUtils.createMesh(trunkGeo, TreeFactory.treeMaterial, 'TreeTrunk');
-        trunk.position.y = height / 2;
-        group.add(trunk);
+        trunkGeo.translate(0, height / 2, 0);
+        woodGeos.push(trunkGeo);
 
-        // Branches & Leaves
+        // 2. Branches
         const branchCount = 4 + Math.floor(Math.random() * 3);
-
         for (let i = 0; i < branchCount; i++) {
-            const y = height * (0.4 + Math.random() * 0.5); // Start higher up
-
-            // Branch length: 1.5m to 3.0m
+            const y = height * (0.4 + Math.random() * 0.5);
             const branchLen = 1.5 + Math.random() * 1.5;
             const branchThick = trunkThickness * 0.5;
 
             const branchGeo = new THREE.CylinderGeometry(branchThick * 0.5, branchThick, branchLen, 4);
-            branchGeo.name = 'Tree - Branch Geometry';
-            const branch = GraphicsUtils.createMesh(branchGeo, TreeFactory.treeMaterial, 'TreeBranch');
+            branchGeo.translate(0, branchLen / 2, 0);
 
-            // Position on trunk
-            branch.position.set(0, y, 0);
-
-            // Rotation
+            // Rotation and position
             const angleY = Math.random() * Math.PI * 2;
-            const angleX = Math.PI / 3 + (Math.random() - 0.5) * 0.5; // Angled up/out
+            const angleX = Math.PI / 3 + (Math.random() - 0.5) * 0.5;
 
-            branch.rotation.y = angleY;
-            branch.rotation.z = angleX;
-
-            // Shift branch so it starts at trunk surface
-            branch.translateY(branchLen / 2);
-
-            group.add(branch);
+            const matrix = new THREE.Matrix4().compose(
+                new THREE.Vector3(0, y, 0),
+                new THREE.Quaternion().setFromEuler(new THREE.Euler(0, angleY, angleX, 'YXZ')),
+                new THREE.Vector3(1, 1, 1)
+            );
+            branchGeo.applyMatrix4(matrix);
+            woodGeos.push(branchGeo);
 
             // Sub-branches
             const subBranchCount = 1 + Math.floor(Math.random() * 2);
             for (let j = 0; j < subBranchCount; j++) {
                 const subLen = branchLen * (0.6 + Math.random() * 0.4);
                 const subThick = branchThick * 0.7;
-
                 const subGeo = new THREE.CylinderGeometry(subThick * 0.5, subThick, subLen, 4);
-                subGeo.name = 'Tree - Sub-branch Geometry';
-                const subBranch = GraphicsUtils.createMesh(subGeo, TreeFactory.treeMaterial, 'TreeSubBranch');
+                subGeo.translate(0, subLen / 2, 0);
 
-                // Position along parent branch
                 const posAlong = (0.6 + Math.random() * 0.4) * branchLen;
-                subBranch.position.set(0, posAlong - branchLen / 2, 0);
-
-                // Rotate out
-                subBranch.rotation.z = Math.PI / 4 * (Math.random() > 0.5 ? 1 : -1);
-                subBranch.rotation.x = (Math.random() - 0.5) * 1.5;
-
-                subBranch.translateY(subLen / 2);
-
-                branch.add(subBranch);
+                const subMatrix = new THREE.Matrix4().compose(
+                    new THREE.Vector3(0, posAlong, 0),
+                    new THREE.Quaternion().setFromEuler(new THREE.Euler((Math.random() - 0.5) * 1.5, 0, Math.PI / 4 * (Math.random() > 0.5 ? 1 : -1))),
+                    new THREE.Vector3(1, 1, 1)
+                );
+                // Sub-branch is relative to parent branch
+                subGeo.applyMatrix4(subMatrix);
+                subGeo.applyMatrix4(matrix); // Apply parent branch transform
+                woodGeos.push(subGeo);
 
                 // Leaf Cluster at end of sub-branch
-                if (!isLeafless) {
-                    const leafSize = 1.0 + wetness * 0.5;
-                    const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
-                    leafGeo.name = 'Tree - Sub-branch Leaf Geometry';
-                    const leafMesh = GraphicsUtils.createMesh(leafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial, 'TreeLeafOuter');
-                    leafMesh.position.set(0, subLen / 2, 0);
-                    subBranch.add(leafMesh);
-                }
+                const leafSize = 1.0 + wetness * 0.5;
+                const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
+                const leafMatrix = new THREE.Matrix4().compose(
+                    new THREE.Vector3(0, subLen, 0),
+                    new THREE.Quaternion(),
+                    new THREE.Vector3(1, 1, 1)
+                );
+                leafGeo.applyMatrix4(leafMatrix);
+                leafGeo.applyMatrix4(subMatrix);
+                leafGeo.applyMatrix4(matrix);
+                leafGeos.push(leafGeo);
             }
 
             // Leaf Cluster at end of main branch
-            if (!isLeafless) {
-                const leafSize = 1.2 + wetness * 0.6;
-                const leafGeo = new THREE.IcosahedronGeometry(leafSize, 0);
-                leafGeo.name = 'Tree - Branch Leaf Geometry';
-                const leafMesh = GraphicsUtils.createMesh(leafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial, 'TreeLeafInner');
+            const mainLeafSize = 1.2 + wetness * 0.6;
+            const mainLeafGeo = new THREE.IcosahedronGeometry(mainLeafSize, 0);
+            const mainLeafMatrix = new THREE.Matrix4().compose(
+                new THREE.Vector3(0, branchLen, 0),
+                new THREE.Quaternion(),
+                new THREE.Vector3(1, 1, 1)
+            );
+            mainLeafGeo.applyMatrix4(mainLeafMatrix);
+            mainLeafGeo.applyMatrix4(matrix);
+            leafGeos.push(mainLeafGeo);
+        }
 
-                leafMesh.position.set(0, branchLen / 2, 0);
-                branch.add(leafMesh);
+        // 3. Top Leaf Cluster
+        const topLeafSize = 1.5 + wetness * 0.8;
+        const topLeafGeo = new THREE.IcosahedronGeometry(topLeafSize, 0);
+        topLeafGeo.translate(0, height, 0);
+        leafGeos.push(topLeafGeo);
+
+        // Merge Wood
+        const mergedWood = BufferGeometryUtils.mergeGeometries(woodGeos);
+        mergedWood.name = `Tree - Wood Archetype ${wetness.toFixed(2)}`;
+        GraphicsUtils.registerObject(mergedWood);
+        woodGeos.forEach(g => g.dispose());
+
+        // Merge Leaves
+        const mergedLeaves = BufferGeometryUtils.mergeGeometries(leafGeos);
+        mergedLeaves.name = `Tree - Leaf Archetype ${wetness.toFixed(2)}`;
+        GraphicsUtils.registerObject(mergedLeaves);
+        leafGeos.forEach(g => g.dispose());
+
+        return { woodGeo: mergedWood, leafGeo: mergedLeaves, wetness };
+    }
+
+    createInstance(options: { wetness: number, isSnowy?: boolean, isLeafless?: boolean }): DecorationInstance[] {
+        const { wetness, isSnowy = false, isLeafless = false } = options;
+
+        // Find closest archetype
+        let bestArchetype = this.archetypes[0];
+        let minDist = Infinity;
+        for (const archetype of this.archetypes) {
+            const dist = Math.abs(archetype.wetness - wetness);
+            if (dist < minDist) {
+                minDist = dist;
+                bestArchetype = archetype;
             }
         }
 
-        // Top Leaf Cluster
+        const instances: DecorationInstance[] = [];
+
+        // Wood Instance
+        instances.push({
+            geometry: bestArchetype.woodGeo,
+            material: TreeFactory.woodMaterial,
+            matrix: new THREE.Matrix4()
+        });
+
+        // Leaf Instance
         if (!isLeafless) {
-            const topLeafSize = 1.5 + wetness * 0.8;
-            const topLeafGeo = new THREE.IcosahedronGeometry(topLeafSize, 0);
-            topLeafGeo.name = 'Tree - Top Leaf Geometry';
-            const topLeaf = GraphicsUtils.createMesh(topLeafGeo, isSnowy ? TreeFactory.snowyLeafMaterial : TreeFactory.leafMaterial, 'TreeLeafTop');
-            topLeaf.position.y = height;
-            group.add(topLeaf);
+            instances.push({
+                geometry: bestArchetype.leafGeo,
+                material: TreeFactory.leafMaterial,
+                matrix: new THREE.Matrix4(),
+                color: isSnowy ? TreeFactory.SNOWY_LEAF_COLOR : TreeFactory.DEFAULT_LEAF_COLOR
+            });
         }
 
+        return instances;
+    }
+
+    create(options: { wetness: number, isSnowy?: boolean, isLeafless?: boolean }): THREE.Group {
+        const instances = this.createInstance(options);
+        const group = new THREE.Group();
+        for (const instance of instances) {
+            const mesh = GraphicsUtils.createMesh(instance.geometry, instance.material);
+            if (instance.color) {
+                (mesh.material as THREE.MeshToonMaterial).color.copy(instance.color);
+            }
+            group.add(mesh);
+        }
         return group;
     }
 }

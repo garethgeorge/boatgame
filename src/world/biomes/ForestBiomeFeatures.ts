@@ -125,8 +125,8 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
             if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
 
             if (Math.random() > 0.8) {
-                const tree = Decorations.getTree(Math.random(), false, false);
-                context.decoHelper.positionAndCollectGeometry(tree, position, context);
+                const treeInstances = Decorations.getTreeInstance(Math.random(), false, false);
+                context.decoHelper.addInstancedDecoration(context, treeInstances, position);
             } else if (Math.random() > 0.95) {
                 const rock = Decorations.getRock(this.id, Math.random());
                 context.decoHelper.positionAndCollectGeometry(rock, position, context);
