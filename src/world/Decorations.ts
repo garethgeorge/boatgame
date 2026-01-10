@@ -50,17 +50,24 @@ export class Decorations {
     await DecorationRegistry.loadAll();
   }
 
+  /**
+   * The boat!
+   */
   static getBoat() {
     return DecorationRegistry.getFactory('boat').create();
   }
 
+  /**
+   * Functions returning data to be used for instancing
+   */
   static getTreeInstance(wetness: number, isSnowy: boolean = false, isLeafless: boolean = false): DecorationInstance[] {
     const factory = DecorationRegistry.getFactory('tree') as TreeFactory;
     return factory.createInstance({ wetness, isSnowy, isLeafless });
   }
 
-  static getBush(wetness: number): THREE.Group {
-    return DecorationRegistry.getFactory('bush').create(wetness);
+  static getBushInstance(wetness: number): DecorationInstance[] {
+    const factory = DecorationRegistry.getFactory('bush') as BushFactory;
+    return factory.createInstance(wetness);
   }
 
   static getCactusInstance(): DecorationInstance[] {
@@ -83,6 +90,14 @@ export class Decorations {
     return factory.createInstance({ biome, size });
   }
 
+  static getFlowerInstance(): DecorationInstance[] {
+    const factory = DecorationRegistry.getFactory('flower') as FlowerFactory;
+    return factory.createInstance();
+  }
+
+  /**
+   * Functions that return models etc generally these are used as entities
+   */
   static getRiverRock(radius: number, hasPillars: boolean, biome: string): THREE.Group {
     return DecorationRegistry.getFactory('riverRock').create({ radius, hasPillars, biome });
   }
@@ -111,19 +126,13 @@ export class Decorations {
     return DecorationRegistry.getFactory('depot').create();
   }
 
-  // Animal getters
-  private static getModelAndAnimations(name: string): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
-    try {
-      const factory = DecorationRegistry.getFactory(name);
-      const model = factory.create();
-      const animations = factory.getAllAnimations();
-      return { model, animations };
-    } catch (e) {
-      console.warn(`${name} model not loaded yet`);
-      return null;
-    }
+  static getMangrove(scale: number = 1.0): THREE.Group {
+    return DecorationRegistry.getFactory('mangrove').create({ scale });
   }
 
+  /** 
+   * Functions that return a model and animations
+   */
   static getPolarBear() { return this.getModelAndAnimations('polarBear'); }
   static getHippo() { return this.getModelAndAnimations('hippo'); }
   static getAlligator() { return this.getModelAndAnimations('alligator'); }
@@ -138,15 +147,15 @@ export class Decorations {
   static getPterodactyl() { return this.getModelAndAnimations('pterodactyl'); }
   static getDolphin() { return this.getModelAndAnimations('dolphin'); }
 
-  // Flower Accessors
-  static getFlowerInstance(): DecorationInstance[] {
-    const factory = DecorationRegistry.getFactory('flower') as FlowerFactory;
-    return factory.createInstance();
-  }
-
-  // Animal getters
-
-  static getMangrove(scale: number = 1.0): THREE.Group {
-    return DecorationRegistry.getFactory('mangrove').create({ scale });
+  private static getModelAndAnimations(name: string): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
+    try {
+      const factory = DecorationRegistry.getFactory(name);
+      const model = factory.create();
+      const animations = factory.getAllAnimations();
+      return { model, animations };
+    } catch (e) {
+      console.warn(`${name} model not loaded yet`);
+      return null;
+    }
   }
 }

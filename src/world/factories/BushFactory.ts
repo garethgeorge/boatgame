@@ -1,64 +1,84 @@
 import * as THREE from 'three';
-import { DecorationFactory } from './DecorationFactory';
+import { DecorationFactory, DecorationInstance } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+
+interface BushArchetype {
+    geometry: THREE.BufferGeometry;
+    isWet: boolean;
+}
 
 export class BushFactory implements DecorationFactory {
     private static readonly dryBushMaterial = new THREE.MeshToonMaterial({ color: 0x8B5A2B, name: 'Bush - Dry Material' }); // Brownish
-    private static readonly greenBushMaterial = new THREE.MeshToonMaterial({ color: 0x32CD32, name: 'Bush - Green Material' }); // Lime Green
+    private static readonly greenBushMaterial = new THREE.MeshToonMaterial({ color: 0x32CD32, name: 'Bush - Green Material', side: THREE.DoubleSide }); // Lime Green
 
-    private cache: { mesh: THREE.Group, wetness: number }[] = [];
+    private archetypes: BushArchetype[] = [];
 
     async load(): Promise<void> {
         // Retain static materials
         GraphicsUtils.registerObject(BushFactory.dryBushMaterial);
         GraphicsUtils.registerObject(BushFactory.greenBushMaterial);
 
-        // Clear existing cache and release old meshes
-        this.cache.forEach(b => GraphicsUtils.disposeObject(b.mesh));
-        this.cache = [];
+        // Clear existing archetypes
+        this.archetypes.forEach(a => GraphicsUtils.disposeObject(a.geometry));
+        this.archetypes = [];
 
-        console.log("Generating Bush Cache...");
-        for (let i = 0; i < 50; i++) {
-            const wetness = Math.random();
-            const mesh = this.createBush(wetness);
-            GraphicsUtils.markAsCache(mesh);
-            this.cache.push({ mesh, wetness });
+        console.log("Generating Bush Archetypes...");
+        // Generate Wet Bushes (Ferns)
+        for (let i = 0; i < 20; i++) {
+            this.archetypes.push(this.generateArchetype(true));
         }
+        // Generate Dry Bushes (Dead)
+        for (let i = 0; i < 20; i++) {
+            this.archetypes.push(this.generateArchetype(false));
+        }
+    }
+
+    createInstance(wetness: number): DecorationInstance[] {
+        const isWet = wetness > 0.5;
+        const candidates = this.archetypes.filter(a => a.isWet === isWet);
+        if (candidates.length === 0) return [];
+
+        const archetype = candidates[Math.floor(Math.random() * candidates.length)];
+
+        // Random scale jitter
+        const scale = 0.9 + Math.random() * 0.2;
+        const matrix = new THREE.Matrix4().makeScale(scale, scale, scale);
+
+        return [{
+            geometry: archetype.geometry,
+            material: isWet ? BushFactory.greenBushMaterial : BushFactory.dryBushMaterial,
+            matrix: matrix,
+            color: new THREE.Color(1, 1, 1)
+        }];
     }
 
     create(wetness: number): THREE.Group {
-        let mesh: THREE.Group;
-        if (this.cache.length === 0) {
-            mesh = this.createBush(wetness);
-        } else {
-            const candidates = this.cache.filter(b => Math.abs(b.wetness - wetness) < 0.3);
-            const source = candidates.length > 0
-                ? candidates[Math.floor(Math.random() * candidates.length)]
-                : this.cache[Math.floor(Math.random() * this.cache.length)];
-
-            mesh = source ? GraphicsUtils.cloneObject(source.mesh) : this.createBush(wetness);
+        const instances = this.createInstance(wetness);
+        const group = new THREE.Group();
+        for (const inst of instances) {
+            const mesh = GraphicsUtils.createMesh(inst.geometry, inst.material);
+            mesh.applyMatrix4(inst.matrix);
+            group.add(mesh);
         }
-        return mesh;
+        return group;
     }
 
-    private createBush(wetness: number): THREE.Group {
-        const group = new THREE.Group();
+    private generateArchetype(isWet: boolean): BushArchetype {
+        const geometries: THREE.BufferGeometry[] = [];
 
-        if (wetness > 0.5) {
-            // FERN (Wet) - Larger
+        if (isWet) {
+            // FERN (Wet)
             const frondCount = 6 + Math.floor(Math.random() * 5);
             for (let i = 0; i < frondCount; i++) {
-                const length = (1.5 + Math.random() * 1.5) * 3.0; // 3x larger
-                const width = (0.5 + Math.random() * 0.3) * 3.0; // 3x larger
+                const length = (1.5 + Math.random() * 1.5) * 3.0;
+                const width = (0.5 + Math.random() * 0.3) * 3.0;
 
                 const segments = 5;
                 const segmentLen = length / segments;
 
-                const curveGroup = new THREE.Group();
                 const angleY = (i / frondCount) * Math.PI * 2 + (Math.random() * 0.5);
                 const angleX = Math.PI / 4 + Math.random() * 0.3;
-
-                curveGroup.rotation.y = angleY;
 
                 let currentPos = new THREE.Vector3(0, 0, 0);
                 let currentAngle = angleX;
@@ -66,26 +86,22 @@ export class BushFactory implements DecorationFactory {
                 for (let k = 0; k < segments; k++) {
                     const segWidth = width * (1 - k / segments);
                     const segGeo = new THREE.PlaneGeometry(segWidth, segmentLen);
-                    segGeo.name = 'Bush - Fern Frond Segment Geometry';
                     segGeo.translate(0, segmentLen / 2, 0);
 
-                    const seg = GraphicsUtils.createMesh(segGeo, BushFactory.greenBushMaterial, 'BushSegment');
-                    seg.position.copy(currentPos);
-                    seg.rotation.x = currentAngle;
-                    (seg.material as THREE.MeshToonMaterial).side = THREE.DoubleSide;
+                    const matrix = new THREE.Matrix4()
+                        .makeRotationFromEuler(new THREE.Euler(currentAngle, angleY, 0, 'YXZ'))
+                        .setPosition(currentPos);
 
-                    curveGroup.add(seg);
+                    segGeo.applyMatrix4(matrix);
+                    geometries.push(segGeo);
 
-                    currentPos.add(new THREE.Vector3(0, segmentLen, 0).applyAxisAngle(new THREE.Vector3(1, 0, 0), currentAngle));
-                    currentAngle += 0.25; // Less curve for longer fronds
+                    const forward = new THREE.Vector3(0, segmentLen, 0).applyAxisAngle(new THREE.Vector3(1, 0, 0), currentAngle).applyAxisAngle(new THREE.Vector3(0, 1, 0), angleY);
+                    currentPos.add(forward);
+                    currentAngle += 0.25;
                 }
-                group.add(curveGroup);
             }
-
         } else {
             // DEAD BUSH (Dry)
-            const material = BushFactory.dryBushMaterial;
-
             const generateJaggedBranch = (start: THREE.Vector3, len: number, thick: number, depth: number, ang: THREE.Euler) => {
                 if (depth === 0) return;
 
@@ -93,20 +109,19 @@ export class BushFactory implements DecorationFactory {
                 const mid = start.clone().add(end).multiplyScalar(0.5);
 
                 const geo = new THREE.CylinderGeometry(thick * 0.7, thick, len, 4);
-                geo.name = 'Bush - Dead Branch Geometry';
-                const mesh = GraphicsUtils.createMesh(geo, material, 'BushSingle');
-                mesh.position.copy(mid);
-                mesh.lookAt(end);
-                mesh.rotateX(Math.PI / 2);
-                group.add(mesh);
 
-                // 1 or 2 sub-branches, jagged angles
+                // Align cylinder to branch direction
+                const direction = end.clone().sub(start).normalize();
+                const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+                const matrix = new THREE.Matrix4().makeRotationFromQuaternion(quaternion).setPosition(mid);
+
+                geo.applyMatrix4(matrix);
+                geometries.push(geo);
+
                 const count = 1 + Math.floor(Math.random() * 2);
                 for (let i = 0; i < count; i++) {
                     const newLen = len * 0.6;
                     const newThick = thick * 0.7;
-
-                    // Jagged angle: abrupt change
                     const newAng = new THREE.Euler(
                         ang.x + (Math.random() - 0.5) * 2.0,
                         ang.y + (Math.random() - 0.5) * 2.0,
@@ -116,24 +131,25 @@ export class BushFactory implements DecorationFactory {
                 }
             };
 
-            // 2-3 Stems from ground
             const stemCount = 2 + Math.floor(Math.random() * 2);
             for (let i = 0; i < stemCount; i++) {
-                // Random angle out from center
                 const angleY = Math.random() * Math.PI * 2;
-                const angleX = 0.3 + Math.random() * 0.5; // Angle up from ground
-
                 const startAngle = new THREE.Euler(
-                    (Math.random() - 0.5) * 1.5, // Widen spread
+                    (Math.random() - 0.5) * 1.5,
                     angleY,
-                    (Math.random() - 0.5) * 1.5 // Widen spread
+                    (Math.random() - 0.5) * 1.5
                 );
-
-                // Increase base size by 3x
                 generateJaggedBranch(new THREE.Vector3(0, 0, 0), 0.5 * 3.0, 0.1 * 3.0, 3, startAngle);
             }
         }
 
-        return group;
+        const mergedGeo = BufferGeometryUtils.mergeGeometries(geometries);
+        mergedGeo.name = isWet ? 'Bush - Fern Merged Geometry' : 'Bush - Dead Merged Geometry';
+        GraphicsUtils.registerObject(mergedGeo);
+
+        // Dispose intermediate geometries
+        geometries.forEach(g => GraphicsUtils.disposeObject(g));
+
+        return { geometry: mergedGeo, isWet };
     }
 }
