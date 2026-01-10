@@ -30,7 +30,7 @@ export class BiomeManager {
   private readonly MAX_LAYOUT_CACHE_SIZE = 20;
 
   constructor() {
-    const biomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic', 'fractured_ice', 'happy'];
+    const biomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic', 'happy'];
 
     // Initialize features
     this.features.set('desert', new DesertBiomeFeatures());
