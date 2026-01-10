@@ -90,7 +90,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                 'grass_patches': {
                     logic: 'scatter',
                     place: 'shore',
-                    density: [1.5, 3.0], 
+                    density: [1.5, 3.0],
                     types: ['water_grass']
                 }
             },
@@ -147,8 +147,8 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
 
             const rand = Math.random();
             if (rand > 0.8) {
-                const cycad = Decorations.getCycad();
-                context.decoHelper.positionAndCollectGeometry(cycad, position, context);
+                const cycadInstances = Decorations.getCycadInstance();
+                context.decoHelper.addInstancedDecoration(context, cycadInstances, position);
             } else if (rand > 0.6) {
                 const fern = Decorations.getTreeFern();
                 context.decoHelper.positionAndCollectGeometry(fern, position, context);

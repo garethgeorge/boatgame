@@ -13,8 +13,8 @@ export class CycadDecorator extends BaseDecorator {
             const biomeType = context.riverSystem.biomeManager.getBiomeType(position.worldZ);
 
             if (Math.random() > 0.8) {
-                const tree = Decorations.getCycad();
-                context.decoHelper.positionAndCollectGeometry(tree, position, context);
+                const cycadInstances = Decorations.getCycadInstance();
+                context.decoHelper.addInstancedDecoration(context, cycadInstances, position);
             }
         }
     }

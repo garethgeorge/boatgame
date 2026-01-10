@@ -68,8 +68,9 @@ export class Decorations {
     return factory.createInstance();
   }
 
-  static getCycad(): THREE.Group {
-    return DecorationRegistry.getFactory('cycad').create();
+  static getCycadInstance(): DecorationInstance[] {
+    const factory = DecorationRegistry.getFactory('cycad') as CycadFactory;
+    return factory.createInstance();
   }
 
   static getTreeFern(): THREE.Group {
