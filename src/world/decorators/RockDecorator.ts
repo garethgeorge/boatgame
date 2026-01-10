@@ -20,8 +20,8 @@ export class RockDecorator extends BaseDecorator {
             else if (biomeType === 'jurassic') threshold = 0.96;
 
             if (Math.random() > threshold) {
-                const rock = Decorations.getRock(biomeType, Math.random());
-                context.decoHelper.positionAndCollectGeometry(rock, position, context);
+                const rockInstances = Decorations.getRockInstance(biomeType, Math.random());
+                context.decoHelper.addInstancedDecoration(context, rockInstances, position);
             }
         }
     }

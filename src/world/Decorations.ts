@@ -78,8 +78,9 @@ export class Decorations {
     return factory.createInstance();
   }
 
-  static getRock(biome: string, size: number): THREE.Group {
-    return DecorationRegistry.getFactory('rock').create({ size, biome });
+  static getRockInstance(biome: string, size: number): DecorationInstance[] {
+    const factory = DecorationRegistry.getFactory('rock') as RockFactory;
+    return factory.createInstance({ biome, size });
   }
 
   static getRiverRock(radius: number, hasPillars: boolean, biome: string): THREE.Group {
