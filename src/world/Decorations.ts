@@ -73,8 +73,9 @@ export class Decorations {
     return factory.createInstance();
   }
 
-  static getTreeFern(): THREE.Group {
-    return DecorationRegistry.getFactory('treeFern').create();
+  static getTreeFernInstance(): DecorationInstance[] {
+    const factory = DecorationRegistry.getFactory('treeFern') as TreeFernFactory;
+    return factory.createInstance();
   }
 
   static getRock(biome: string, size: number): THREE.Group {

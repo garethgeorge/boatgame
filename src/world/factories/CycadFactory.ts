@@ -104,6 +104,7 @@ export class CycadFactory implements DecorationFactory {
             // Move base to origin
             fGeo.translate(0, crownRadius / 2, 0);
 
+            // Apply rosette transformation
             const archAngle = Math.PI / 4 + Math.random() * 0.4;
             const angleY = (i / frondCount) * Math.PI * 2 + (Math.random() * 0.1);
 

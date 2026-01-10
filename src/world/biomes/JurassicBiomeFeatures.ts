@@ -150,8 +150,8 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                 const cycadInstances = Decorations.getCycadInstance();
                 context.decoHelper.addInstancedDecoration(context, cycadInstances, position);
             } else if (rand > 0.6) {
-                const fern = Decorations.getTreeFern();
-                context.decoHelper.positionAndCollectGeometry(fern, position, context);
+                const fernInstances = Decorations.getTreeFernInstance();
+                context.decoHelper.addInstancedDecoration(context, fernInstances, position);
             } else if (rand > 0.55) {
                 const rock = Decorations.getRock(this.id, Math.random());
                 context.decoHelper.positionAndCollectGeometry(rock, position, context);
