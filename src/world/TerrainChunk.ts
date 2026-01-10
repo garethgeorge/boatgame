@@ -89,6 +89,7 @@ export class TerrainChunk {
   private async generateDecorations(): Promise<THREE.Group> {
     const geometryGroup = new THREE.Group();
     const geometriesByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
+    const instancedData = new Map<THREE.BufferGeometry, Map<THREE.Material, THREE.Matrix4[]>>();
 
     const segments = this.riverSystem.biomeManager.getFeatureSegments(this.zOffset, this.zOffset + TerrainChunk.CHUNK_SIZE);
 
@@ -96,6 +97,7 @@ export class TerrainChunk {
       chunk: this,
       riverSystem: this.riverSystem,
       geometriesByMaterial: geometriesByMaterial,
+      instancedData: instancedData,
       geometryGroup: geometryGroup,
       animationMixers: this.mixers,
       zOffset: this.zOffset,
@@ -118,7 +120,7 @@ export class TerrainChunk {
     Profiler.end('GenDecoBatch');
 
     // Merge geometries and create meshes
-    context.decoHelper.mergeAndAddGeometries(geometriesByMaterial, geometryGroup);
+    context.decoHelper.mergeAndAddGeometries(context);
 
     return geometryGroup;
   }

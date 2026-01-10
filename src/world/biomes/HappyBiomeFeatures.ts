@@ -6,6 +6,7 @@ import { DecorationContext } from '../decorators/TerrainDecorator';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { DolphinSpawner } from '../../entities/spawners/DolphinSpawner';
 import { RiverGeometry } from '../RiverGeometry';
+import { FlowerDecorator } from '../decorators/FlowerDecorator';
 
 type HappyEntityType = 'dolphin' | 'bottle';
 
@@ -17,6 +18,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'happy';
 
     private dolphinSpawner = new DolphinSpawner();
+    private flowerDecorator = new FlowerDecorator();
 
     getGroundColor(): { r: number, g: number, b: number } {
         // Lush green ground color
@@ -66,7 +68,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
-        // Empty for now as requested
+        await this.flowerDecorator.decorate(context, zStart, zEnd);
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {

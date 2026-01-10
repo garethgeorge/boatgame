@@ -79,10 +79,31 @@ export class BiomeDecorationHelper {
         GraphicsUtils.disposeObject(object);
     }
 
-    public mergeAndAddGeometries(
-        geometriesByMaterial: Map<THREE.Material, THREE.BufferGeometry[]>,
-        group: THREE.Group
+    /**
+     * Registers an instance for instanced rendering.
+     */
+    public addInstance(
+        context: DecorationContext,
+        geometry: THREE.BufferGeometry,
+        material: THREE.Material,
+        matrix: THREE.Matrix4
     ): void {
+        if (!context.instancedData.has(geometry)) {
+            context.instancedData.set(geometry, new Map());
+        }
+        const materialsMap = context.instancedData.get(geometry)!;
+        if (!materialsMap.has(material)) {
+            materialsMap.set(material, []);
+        }
+        materialsMap.get(material)!.push(matrix.clone());
+    }
+
+    public mergeAndAddGeometries(
+        context: DecorationContext
+    ): void {
+        const geometriesByMaterial = context.geometriesByMaterial;
+        const group = context.geometryGroup;
+        // Merge standard geometries
         for (const [material, geometries] of geometriesByMaterial) {
             if (geometries.length === 0) continue;
 
@@ -99,6 +120,32 @@ export class BiomeDecorationHelper {
             // Dispose of the source geometries (clones) now that they are merged
             for (const geometry of geometries) {
                 GraphicsUtils.disposeObject(geometry);
+            }
+        }
+
+        // Add instanced meshes
+        if (context && context.instancedData) {
+            for (const [geometry, materialsMap] of context.instancedData) {
+                for (const [material, matrices] of materialsMap) {
+                    if (matrices.length === 0) continue;
+
+                    const iMesh = GraphicsUtils.createInstancedMesh(
+                        geometry,
+                        material,
+                        matrices.length,
+                        'BiomeInstancedDecoration'
+                    );
+
+                    for (let i = 0; i < matrices.length; i++) {
+                        iMesh.setMatrixAt(i, matrices[i]);
+                    }
+
+                    // iMesh instances don't individualy cast/receive shadows in simple setups
+                    // but the mesh as a whole can.
+                    iMesh.castShadow = true;
+                    iMesh.receiveShadow = true;
+                    group.add(iMesh);
+                }
             }
         }
     }

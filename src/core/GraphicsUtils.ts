@@ -116,6 +116,17 @@ export class GraphicsUtils {
     }
 
     /**
+     * Creates a new tracked InstancedMesh.
+     * DO NOT create directly, always use this function.
+     */
+    public static createInstancedMesh(geometry: THREE.BufferGeometry, material: THREE.Material, count: number, name: string = 'Unnamed Instanced Mesh'): THREE.InstancedMesh {
+        const mesh = new THREE.InstancedMesh(geometry, material, count);
+        mesh.name = name;
+        this.tracker.track(mesh);
+        return mesh;
+    }
+
+    /**
      * Clones an object ensuring referenced resources are tracked
      * correctly. Always recursive as we assume this creates new references
      * to all geometry and materials.
