@@ -8,10 +8,11 @@ import { TRexSpawner } from '../../entities/spawners/TRexSpawner';
 import { TriceratopsSpawner } from '../../entities/spawners/TriceratopsSpawner';
 import { BrontosaurusSpawner } from '../../entities/spawners/BrontosaurusSpawner';
 import { PterodactylSpawner } from '../../entities/spawners/PterodactylSpawner';
+import { WaterGrassSpawner } from '../../entities/spawners/WaterGrassSpawner';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { RiverGeometry } from '../RiverGeometry';
 
-type JurassicEntityType = 'log' | 'rock' | 'bottle' | 'trex' | 'triceratops' | 'bronto' | 'pterodactyl';
+type JurassicEntityType = 'log' | 'rock' | 'bottle' | 'trex' | 'triceratops' | 'bronto' | 'pterodactyl' | 'water_grass';
 
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'jurassic';
@@ -20,6 +21,8 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     private triceratopsSpawner = new TriceratopsSpawner();
     private brontoSpawner = new BrontosaurusSpawner();
     private pterodactylSpawner = new PterodactylSpawner();
+    private waterGrassSpawner = new WaterGrassSpawner();
+
 
     getGroundColor(): { r: number, g: number, b: number } {
         return { r: 0x2E / 255, g: 0x4B / 255, b: 0x2E / 255 };
@@ -83,6 +86,12 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                     place: 'path',
                     density: [0.25, 0.5],
                     types: ['bottle']
+                },
+                'grass_patches': {
+                    logic: 'scatter',
+                    place: 'shore',
+                    density: [1.5, 3.0], 
+                    types: ['water_grass']
                 }
             },
             tracks: [
@@ -95,7 +104,8 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                             patterns: [
                                 [
                                     { pattern: 'scattered_rocks', weight: 1.0 },
-                                    { pattern: 'staggered_logs', weight: 0.5 }
+                                    { pattern: 'staggered_logs', weight: 0.5 },
+                                    { pattern: 'grass_patches', weight: 1.5 }
                                 ],
                                 [
                                     { pattern: 'dino_scatter', weight: 1.0 },
@@ -191,6 +201,9 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                                 break;
                             case 'pterodactyl':
                                 await this.pterodactylSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
+                                break;
+                            case 'water_grass':
+                                await this.waterGrassSpawner.spawnInRiverAbsolute(context, sample, p.range);
                                 break;
                         }
                     }

@@ -11,13 +11,16 @@ export abstract class BaseMangrove extends Entity {
 
   // Materials
   protected static trunkMaterial = new THREE.MeshToonMaterial({ color: 0x5D5346, name: 'Mangrove - Trunk Material' }); // Darker swamp wood
+  
+  // Leaf material - Solid colors
   protected static leafMaterial = new THREE.MeshToonMaterial({
     name: 'Mangrove - Leaf Material',
     color: 0xffffff, // White base for vertex colors
-    vertexColors: true
+    vertexColors: true,
+    side: THREE.DoubleSide,
   });
 
-  public static preload() {
+  public static async preload() {
     GraphicsUtils.registerObject(this.trunkMaterial);
     GraphicsUtils.registerObject(this.leafMaterial);
   }
@@ -59,7 +62,7 @@ export abstract class BaseMangrove extends Entity {
 
   // Helper Methods
 
-  protected static getMangroveMesh(): THREE.Group {
+  public static getMangroveMesh(): THREE.Group {
     if (this.cache.length === 0) {
       this.generateCache();
     }
@@ -69,8 +72,7 @@ export abstract class BaseMangrove extends Entity {
 
   private static generateCache() {
     console.log("Generating Mangrove Cache...");
-    this.preload();
-
+    // Ensure loaded
     for (let i = 0; i < this.CACHE_SIZE; i++) {
       const mangrove = this.createMangrove();
       GraphicsUtils.markAsCache(mangrove);
@@ -254,9 +256,9 @@ export abstract class BaseMangrove extends Entity {
 
       const startPos = new THREE.Vector3(0, bY, 0);
 
-      // Spawn leaf disks along the branch
-      const diskCount = 5 + Math.floor(Math.random() * 3);
-      for (let j = 0; j < diskCount; j++) {
+      // Spawn leaf groups along the branch
+      const leafGroupCount = 5 + Math.floor(Math.random() * 3);
+      for (let j = 0; j < leafGroupCount; j++) {
         const t = 0.3 + Math.random() * 0.7; // Dist along branch
         const pos = startPos.clone().add(dir.clone().multiplyScalar(len * t));
 
@@ -265,23 +267,29 @@ export abstract class BaseMangrove extends Entity {
         pos.z += (Math.random() - 0.5) * 3.0;
         pos.y += (Math.random() - 0.5) * 0.5; // Slight vertical jitter
 
-        const leaf = this.createLeafDisk();
+        const leaf = this.createLeafCluster();
         leaf.position.copy(pos);
+        
+        // Random rotations for the leaf cluster
+        leaf.rotation.y = Math.random() * Math.PI * 2;
+        // No extra tilt needed as triangles are already tilted in cluster
 
-        // Add to main group to maintain horizontal orientation
+        // Add to main group to maintain horizontal-ish orientation
         group.add(leaf);
       }
     }
 
-    // Top canopy - Cluster of disks at the top
-    const topDiskCount = 15;
-    for (let i = 0; i < topDiskCount; i++) {
-      const leaf = this.createLeafDisk();
+    // Top canopy - Cluster of leaves at the top
+    const topLeafCount = 15;
+    for (let i = 0; i < topLeafCount; i++) {
+      const leaf = this.createLeafCluster();
 
       // Cluster at top
       leaf.position.y = height + (Math.random() - 0.5) * 1.5;
       leaf.position.x = (Math.random() - 0.5) * 9.0;
       leaf.position.z = (Math.random() - 0.5) * 9.0;
+      
+      leaf.rotation.y = Math.random() * Math.PI * 2;
 
       group.add(leaf);
     }
@@ -325,9 +333,14 @@ export abstract class BaseMangrove extends Entity {
 
     if (leafGeometries.length > 0) {
       const mergedLeaves = BufferGeometryUtils.mergeGeometries(leafGeometries);
+      // Ensure color attribute is preserved
+      if (!mergedLeaves.getAttribute('color')) {
+          // Should have it if triangles were created with it
+      }
+      
       const leafMesh = GraphicsUtils.createMesh(mergedLeaves, this.leafMaterial, 'MangroveLeaves');
-      leafMesh.castShadow = true;
-      leafMesh.receiveShadow = true;
+      leafMesh.castShadow = false;
+      leafMesh.receiveShadow = false;
       finalGroup.add(leafMesh);
       leafGeometries.forEach(g => GraphicsUtils.disposeObject(g));
     }
@@ -341,53 +354,84 @@ export abstract class BaseMangrove extends Entity {
     return finalGroup;
   }
 
-  private static createLeafDisk(): THREE.Mesh {
-    // Irregular disk
-    const radius = 2.0 + Math.random() * 1.5;
-    const segments = 7; // Low poly, odd number for irregularity
-    const geo = new THREE.CylinderGeometry(radius, radius, 0.1, segments);
-    geo.name = 'Mangrove - Leaf Disk Geometry';
+  private static createLeafCluster(): THREE.Mesh {
+    // Generate a cluster of triangles
+    const triCount = 12 + Math.floor(Math.random() * 6);
+    const geom = new THREE.BufferGeometry();
+    const positions: number[] = [];
+    const colors: number[] = [];
+    const normals: number[] = [];
 
-    // Modulate vertices to make it irregular
-    const posAttribute = geo.attributes.position;
-    const vertex = new THREE.Vector3();
+    const baseColor = new THREE.Color(0x7FB048); // Base green
 
-    for (let i = 0; i < posAttribute.count; i++) {
-      vertex.fromBufferAttribute(posAttribute, i);
+    for (let i = 0; i < triCount; i++) {
+        // Random center for this leaf (relative to cluster center)
+        const cx = (Math.random() - 0.5) * 4.0; 
+        const cy = (Math.random() - 0.5) * 3.0; // Increased vertical spread for volume
+        const cz = (Math.random() - 0.5) * 4.0;
 
-      // If it's an outer vertex (radius > 0.1)
-      const r = Math.sqrt(vertex.x * vertex.x + vertex.z * vertex.z);
-      if (r > 0.5) {
-        // Push in/out
-        const scale = 0.7 + Math.random() * 0.6;
-        vertex.x *= scale;
-        vertex.z *= scale;
-        // Slight y wobble
-        vertex.y += (Math.random() - 0.5) * 0.2;
-      }
+        // Color variation (tight range)
+        const leafColor = baseColor.clone().offsetHSL(
+            (Math.random() - 0.5) * 0.08, // Hue (subtle)
+            (Math.random() - 0.5) * 0.1,  // Sat
+            (Math.random() - 0.5) * 0.15  // Lightness
+        );
 
-      posAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
+        // Triangle vertices (local to leaf center)
+        // Doubled size as requested
+        const size = 1.0 + Math.random() * 0.8;
+        
+        // Create an equilateral triangle lying on XZ plane
+        const p1 = new THREE.Vector3(Math.cos(0) * size, 0, Math.sin(0) * size);
+        const p2 = new THREE.Vector3(Math.cos(2*Math.PI/3) * size, 0, Math.sin(2*Math.PI/3) * size);
+        const p3 = new THREE.Vector3(Math.cos(4*Math.PI/3) * size, 0, Math.sin(4*Math.PI/3) * size);
+
+        // Orient the triangle
+        // 1. Random rotation Y
+        const rotY = Math.random() * Math.PI * 2;
+        // 2. Slight tilt X/Z to be "biased horizontal" but not perfectly flat
+        const tiltX = (Math.random() - 0.5) * 0.6; // +/- ~17 deg
+        const tiltZ = (Math.random() - 0.5) * 0.6;
+
+        const euler = new THREE.Euler(tiltX, rotY, tiltZ);
+        p1.applyEuler(euler);
+        p2.applyEuler(euler);
+        p3.applyEuler(euler);
+
+        // Translate to cluster position
+        p1.add(new THREE.Vector3(cx, cy, cz));
+        p2.add(new THREE.Vector3(cx, cy, cz));
+        p3.add(new THREE.Vector3(cx, cy, cz));
+
+        // Push positions
+        positions.push(p1.x, p1.y, p1.z);
+        positions.push(p2.x, p2.y, p2.z);
+        positions.push(p3.x, p3.y, p3.z);
+
+        // Push colors
+        colors.push(leafColor.r, leafColor.g, leafColor.b);
+        colors.push(leafColor.r, leafColor.g, leafColor.b);
+        colors.push(leafColor.r, leafColor.g, leafColor.b);
+
+        // Normals - compute face normal
+        const ab = new THREE.Vector3().subVectors(p2, p1);
+        const ac = new THREE.Vector3().subVectors(p3, p1);
+        const n = new THREE.Vector3().crossVectors(ab, ac).normalize();
+        
+        // Double sided lighting usually wants normals for both sides or just one side? 
+        // With DoubleSide material, one side might look dark if normal opposes light?
+        // Actually MeshToonMaterial with DoubleSide usually handles this okay.
+        
+        normals.push(n.x, n.y, n.z);
+        normals.push(n.x, n.y, n.z);
+        normals.push(n.x, n.y, n.z);
     }
+    
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geom.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
 
-    // Vertex Colors
-    const color = new THREE.Color(0x4A5D23);
-    color.offsetHSL(0, (Math.random() - 0.5) * 0.15, (Math.random() - 0.5) * 0.1);
-
-    const colors = new Float32Array(posAttribute.count * 3);
-    for (let i = 0; i < posAttribute.count; i++) {
-      colors[i * 3] = color.r;
-      colors[i * 3 + 1] = color.g;
-      colors[i * 3 + 2] = color.b;
-    }
-    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    geo.computeVertexNormals();
-
-    const mesh = GraphicsUtils.createMesh(geo, this.leafMaterial, 'MangroveLeafSingle');
-    mesh.rotation.y = Math.random() * Math.PI * 2;
-    mesh.rotation.x = (Math.random() - 0.5) * 0.1;
-    mesh.rotation.z = (Math.random() - 0.5) * 0.1;
-
-    return mesh;
+    return GraphicsUtils.createMesh(geom, this.leafMaterial, 'MangroveLeafCluster');
   }
 }
 

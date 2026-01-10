@@ -8,9 +8,10 @@ import { BrownBearSpawner } from '../../entities/spawners/BrownBearSpawner';
 import { MooseSpawner } from '../../entities/spawners/MooseSpawner';
 import { DucklingSpawner } from '../../entities/spawners/DucklingSpawner';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
+import { WaterGrassSpawner } from '../../entities/spawners/WaterGrassSpawner';
 import { RiverGeometry } from '../RiverGeometry';
 
-type ForestEntityType = 'log' | 'rock' | 'buoy' | 'bear' | 'moose' | 'duckling' | 'pier';
+type ForestEntityType = 'log' | 'rock' | 'buoy' | 'bear' | 'moose' | 'duckling' | 'pier' | 'water_grass';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';
@@ -18,6 +19,8 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     private bearSpawner = new BrownBearSpawner();
     private mooseSpawner = new MooseSpawner();
     private ducklingSpawner = new DucklingSpawner();
+    private waterGrassSpawner = new WaterGrassSpawner();
+
 
     getGroundColor(): { r: number, g: number, b: number } {
         return { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 };
@@ -65,6 +68,12 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                     density: [0.5, 1.5],
                     types: ['duckling'],
                     minCount: 3
+                },
+                'grass_patches': {
+                    logic: 'scatter',
+                    place: 'shore',
+                    density: [1.0, 2.0],
+                    types: ['water_grass']
                 }
             },
             tracks: [
@@ -78,7 +87,8 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                                 [
                                     { pattern: 'forest_slalom', weight: 1.0 },
                                     { pattern: 'rock_gates', weight: 0.5 },
-                                    { pattern: 'piers', weight: 0.3 }
+                                    { pattern: 'piers', weight: 0.3 },
+                                    { pattern: 'grass_patches', weight: 1.0 }
                                 ],
                                 [
                                     { pattern: 'forest_animals', weight: 1.0 }
@@ -167,6 +177,9 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                                 break;
                             case 'duckling':
                                 await this.ducklingSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
+                                break;
+                            case 'water_grass':
+                                await this.waterGrassSpawner.spawnInRiverAbsolute(context, sample, p.range);
                                 break;
                         }
                     }
