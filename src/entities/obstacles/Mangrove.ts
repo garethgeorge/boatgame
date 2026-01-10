@@ -339,8 +339,8 @@ export abstract class BaseMangrove extends Entity {
       }
       
       const leafMesh = GraphicsUtils.createMesh(mergedLeaves, this.leafMaterial, 'MangroveLeaves');
-      leafMesh.castShadow = true;
-      leafMesh.receiveShadow = true;
+      leafMesh.castShadow = false;
+      leafMesh.receiveShadow = false;
       finalGroup.add(leafMesh);
       leafGeometries.forEach(g => GraphicsUtils.disposeObject(g));
     }
