@@ -3,7 +3,7 @@ import { DecorationContext } from './TerrainDecorator';
 import { Decorations } from '../Decorations';
 
 export class TreeFernDecorator extends BaseDecorator {
-    async decorate(context: DecorationContext): Promise<void> {
+    async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         const count = 500;
 
         for (let i = 0; i < count; i++) {

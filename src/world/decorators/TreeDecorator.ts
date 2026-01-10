@@ -3,8 +3,8 @@ import { DecorationContext } from './TerrainDecorator';
 import { Decorations } from '../Decorations';
 
 export class TreeDecorator extends BaseDecorator {
-    async decorate(context: DecorationContext): Promise<void> {
-        return this.decorateInRange(context, context.zOffset, context.zOffset + 62.5); // CHUNK_SIZE
+    async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
+        return this.decorateInRange(context, zStart, zEnd);
     }
 
     async decorateInRange(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
@@ -19,13 +19,13 @@ export class TreeDecorator extends BaseDecorator {
 
             if (biomeType === 'forest') {
                 if (Math.random() > 0.8) {
-                    const treeInstances = Decorations.getTreeInstance(Math.random(), false, false);
+                    const treeInstances = Decorations.getTreeInstance(Math.random(), 'default', false, false);
                     context.decoHelper.addInstancedDecoration(context, treeInstances, position);
                 }
             } else if (biomeType === 'ice') {
                 if (Math.random() > 0.8) {
                     const isLeafless = Math.random() > 0.5;
-                    const treeInstances = Decorations.getTreeInstance(Math.random(), !isLeafless, isLeafless);
+                    const treeInstances = Decorations.getTreeInstance(Math.random(), 'default', !isLeafless, isLeafless);
                     context.decoHelper.addInstancedDecoration(context, treeInstances, position);
                 }
             }

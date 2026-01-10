@@ -30,5 +30,5 @@ export interface DecorationContext {
 }
 
 export interface TerrainDecorator {
-    decorate(context: DecorationContext): Promise<void>;
+    decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void>;
 }

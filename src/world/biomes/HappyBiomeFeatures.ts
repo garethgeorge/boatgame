@@ -7,6 +7,9 @@ import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy
 import { DolphinSpawner } from '../../entities/spawners/DolphinSpawner';
 import { RiverGeometry } from '../RiverGeometry';
 import { FlowerDecorator } from '../decorators/FlowerDecorator';
+import { Decorations } from '../Decorations';
+import { TreeDecorator } from '../decorators/TreeDecorator';
+import { TreeKind } from '../factories/TreeFactory';
 
 type HappyEntityType = 'dolphin' | 'bottle';
 
@@ -69,6 +72,19 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         await this.flowerDecorator.decorate(context, zStart, zEnd);
+
+        const length = zEnd - zStart;
+        const count = Math.floor(length);
+
+        for (let i = 0; i < count; i++) {
+            const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
+            if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
+
+            const wetness = Math.random();
+            const kind: TreeKind = Math.random() < 0.8 ? 'default' : 'willow';
+            const treeInstances = Decorations.getTreeInstance(wetness, kind, false, false);
+            context.decoHelper.addInstancedDecoration(context, treeInstances, position);
+        }
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {

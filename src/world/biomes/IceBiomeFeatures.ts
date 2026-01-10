@@ -44,7 +44,7 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
 
             if (Math.random() > 0.8) {
                 const isLeafless = Math.random() > 0.5;
-                const treeInstances = Decorations.getTreeInstance(Math.random(), !isLeafless, isLeafless);
+                const treeInstances = Decorations.getTreeInstance(Math.random(), 'default', !isLeafless, isLeafless);
                 context.decoHelper.addInstancedDecoration(context, treeInstances, position);
             } else if (Math.random() > 0.9) {
                 const rockInstances = Decorations.getRockInstance(this.id, Math.random());

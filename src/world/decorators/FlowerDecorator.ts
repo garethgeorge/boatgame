@@ -4,12 +4,9 @@ import { DecorationContext } from './TerrainDecorator';
 import { Decorations, DecorationInstance } from '../Decorations';
 
 export class FlowerDecorator extends BaseDecorator {
-    async decorate(context: DecorationContext, zStart?: number, zEnd?: number): Promise<void> {
-        const startZ = zStart !== undefined ? zStart : context.zOffset;
-        const endZ = zEnd !== undefined ? zEnd : context.zOffset + 62.5; // TerrainChunk.CHUNK_SIZE;
-
+    async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         // Number of flowers per chunk segment
-        const count = 300 * ((endZ - startZ) / 62.5);
+        const count = 300 * ((zEnd - zStart) / 62.5);
         const worldPos = new THREE.Vector3();
         const worldMatrix = new THREE.Matrix4();
 
@@ -22,7 +19,7 @@ export class FlowerDecorator extends BaseDecorator {
             let patchCenter;
             let attempts = 0;
             while (attempts < 10) {
-                patchCenter = this.generateRandomPositionInRange(context, startZ, endZ);
+                patchCenter = this.generateRandomPositionInRange(context, zStart, zEnd);
                 if (this.isValidDecorationPosition(context, patchCenter)) break;
                 attempts++;
             }

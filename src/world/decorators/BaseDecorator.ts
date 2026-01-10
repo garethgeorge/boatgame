@@ -3,7 +3,7 @@ import { TerrainChunk } from '../TerrainChunk';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export abstract class BaseDecorator implements TerrainDecorator {
-    abstract decorate(context: DecorationContext): Promise<void>;
+    abstract decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void>;
 
     // Generate a random world position within a specific Z range
     protected generateRandomPositionInRange(context: DecorationContext, zStart: number, zEnd: number): { worldX: number; worldZ: number; height: number } {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { DecorationRegistry } from './DecorationRegistry';
-import { TreeFactory } from './factories/TreeFactory';
+import { TreeFactory, TreeKind } from './factories/TreeFactory';
 import { BushFactory } from './factories/BushFactory';
 import { CactusFactory } from './factories/CactusFactory';
 import { RockFactory } from './factories/RockFactory';
@@ -60,9 +60,9 @@ export class Decorations {
   /**
    * Functions returning data to be used for instancing
    */
-  static getTreeInstance(wetness: number, isSnowy: boolean = false, isLeafless: boolean = false): DecorationInstance[] {
+  static getTreeInstance(wetness: number, kind: TreeKind = 'default', isSnowy: boolean = false, isLeafless: boolean = false): DecorationInstance[] {
     const factory = DecorationRegistry.getFactory('tree') as TreeFactory;
-    return factory.createInstance({ wetness, isSnowy, isLeafless });
+    return factory.createInstance({ wetness, kind, isSnowy, isLeafless });
   }
 
   static getBushInstance(wetness: number): DecorationInstance[] {
