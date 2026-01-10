@@ -57,7 +57,7 @@ export class FlowerDecorator extends BaseDecorator {
                 for (const instance of flowerInstances) {
                     // Combine instance matrix with world matrix
                     const finalMatrix = instance.matrix.clone().premultiply(worldMatrix);
-                    context.decoHelper.addInstance(context, instance.geometry, instance.material, finalMatrix);
+                    context.decoHelper.addInstance(context, instance.geometry, instance.material, finalMatrix, instance.color);
                 }
             }
         }

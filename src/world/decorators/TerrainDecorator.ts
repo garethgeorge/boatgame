@@ -13,8 +13,8 @@ export interface DecorationContext {
     // Output for geometries that are grouped by material. These can be
     // merged for better performance. 
     geometriesByMaterial: Map<THREE.Material, THREE.BufferGeometry[]>;
-    // Output for instanced data. Map<Geometry, Map<Material, Matrices>>
-    instancedData: Map<THREE.BufferGeometry, Map<THREE.Material, THREE.Matrix4[]>>;
+    // Output for instanced data. Map<Geometry, Map<Material, { matrix: THREE.Matrix4, color?: THREE.Color }[]>>
+    instancedData: Map<THREE.BufferGeometry, Map<THREE.Material, { matrix: THREE.Matrix4, color?: THREE.Color }[]>>;
     // Output for geometries that can't be grouped by material.
     geometryGroup: THREE.Group;
     // Output for animation mixers

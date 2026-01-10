@@ -89,7 +89,7 @@ export class TerrainChunk {
   private async generateDecorations(): Promise<THREE.Group> {
     const geometryGroup = new THREE.Group();
     const geometriesByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
-    const instancedData = new Map<THREE.BufferGeometry, Map<THREE.Material, THREE.Matrix4[]>>();
+    const instancedData = new Map<THREE.BufferGeometry, Map<THREE.Material, { matrix: THREE.Matrix4, color?: THREE.Color }[]>>();
 
     const segments = this.riverSystem.biomeManager.getFeatureSegments(this.zOffset, this.zOffset + TerrainChunk.CHUNK_SIZE);
 

@@ -4,6 +4,7 @@ export interface DecorationInstance {
     geometry: THREE.BufferGeometry;
     material: THREE.Material;
     matrix: THREE.Matrix4;
+    color?: THREE.Color;
 }
 
 export interface DecorationFactory {

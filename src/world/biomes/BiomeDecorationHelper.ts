@@ -86,7 +86,8 @@ export class BiomeDecorationHelper {
         context: DecorationContext,
         geometry: THREE.BufferGeometry,
         material: THREE.Material,
-        matrix: THREE.Matrix4
+        matrix: THREE.Matrix4,
+        color?: THREE.Color
     ): void {
         if (!context.instancedData.has(geometry)) {
             context.instancedData.set(geometry, new Map());
@@ -95,7 +96,7 @@ export class BiomeDecorationHelper {
         if (!materialsMap.has(material)) {
             materialsMap.set(material, []);
         }
-        materialsMap.get(material)!.push(matrix.clone());
+        materialsMap.get(material)!.push({ matrix: matrix.clone(), color: color?.clone() });
     }
 
     public mergeAndAddGeometries(
@@ -126,18 +127,21 @@ export class BiomeDecorationHelper {
         // Add instanced meshes
         if (context && context.instancedData) {
             for (const [geometry, materialsMap] of context.instancedData) {
-                for (const [material, matrices] of materialsMap) {
-                    if (matrices.length === 0) continue;
+                for (const [material, data] of materialsMap) {
+                    if (data.length === 0) continue;
 
                     const iMesh = GraphicsUtils.createInstancedMesh(
                         geometry,
                         material,
-                        matrices.length,
+                        data.length,
                         'BiomeInstancedDecoration'
                     );
 
-                    for (let i = 0; i < matrices.length; i++) {
-                        iMesh.setMatrixAt(i, matrices[i]);
+                    for (let i = 0; i < data.length; i++) {
+                        iMesh.setMatrixAt(i, data[i].matrix);
+                        if (data[i].color) {
+                            iMesh.setColorAt(i, data[i].color!);
+                        }
                     }
 
                     // iMesh instances don't individualy cast/receive shadows in simple setups
