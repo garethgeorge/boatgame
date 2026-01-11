@@ -101,7 +101,7 @@ class RoundTreeConfig implements TreeConfig {
 class SpreadingTreeConfig implements TreeConfig {
     readonly kind: TreeKind = 'spreading';
     readonly params: TreeParams = {
-        symmetry: 0.9,
+        symmetry: 0.6,
         openness: 0.2,
         trunk: {
             heightRange: [6, 12],
@@ -338,71 +338,45 @@ export class TreeFactory implements DecorationFactory {
     /**
      * Generates all main branches for a tree archetype.
      * Branches are split into two groups: 
-     * 1. Top branches: explicitly attached to the very tip of the trunk.
-     * 2. Side branches: placed along the trunk in pairs with interpolated symmetry.
+     * 1. Side branches: placed along the trunk in intervals with interpolated symmetry.
+     * 2. Top branches: explicitly attached to the very tip of the trunk.
      */
     private generateBranches(config: TreeConfig, trunkHeight: number, trunkEndThick: number, woodGeos: THREE.BufferGeometry[], leafGeos: THREE.BufferGeometry[], wetness: number) {
         const p = config.params;
-        const branchCount = Math.floor(THREE.MathUtils.lerp(p.mainBranch.countRange[0], p.mainBranch.countRange[1], Math.random()));
+        const totalBranches = Math.floor(THREE.MathUtils.lerp(p.mainBranch.countRange[0], p.mainBranch.countRange[1], Math.random()));
+        const numTopBranches = p.mainBranch.minEndCount;
+        const numTrunkBranches = Math.max(0, totalBranches - numTopBranches);
 
-        // 1. Top branches - These all share the max trunk height
-        for (let i = 0; i < p.mainBranch.minEndCount; i++) {
-            const branchData = this.calculateMainBranchPlacement(p, trunkHeight, i, branchCount, true);
-            this.createMainBranch(config, branchData.y, branchData.angleY, branchData.angleX, trunkHeight, trunkEndThick, woodGeos, leafGeos, wetness);
-        }
+        const maxAngleOffset = Math.max(Math.PI / 2, (2 * Math.PI) / totalBranches);
+        const availableHeight = trunkHeight * (1 - p.mainBranch.minPosRatio);
+        const intervalSize = availableHeight / totalBranches;
+        const minHeight = trunkHeight * p.mainBranch.minPosRatio;
 
-        // 2. Remaining branches in pairs
-        const remaining = branchCount - p.mainBranch.minEndCount;
-        for (let i = 0; i < remaining; i += 2) {
-            const idx = p.mainBranch.minEndCount + i;
+        let currentAngle = Math.random() * Math.PI * 2;
 
-            // First branch of pair: placed randomly within height constraints
-            const branchA = this.calculateMainBranchPlacement(p, trunkHeight, idx, branchCount, false);
-            this.createMainBranch(config, branchA.y, branchA.angleY, branchA.angleX, trunkHeight, trunkEndThick, woodGeos, leafGeos, wetness);
+        for (let i = 0; i < totalBranches; i++) {
+            const isTop = i >= numTrunkBranches;
 
-            if (i + 1 < remaining) {
-                // Second branch: calculated by interpolating between a fresh random placement
-                // and a perfectly symmetric (mirrored) version of Branch A.
-                const randomB = this.calculateMainBranchPlacement(p, trunkHeight, idx + 1, branchCount, false);
-                const symmetricB = {
-                    y: branchA.y,
-                    angleY: branchA.angleY + Math.PI,
-                    angleX: branchA.angleX
-                };
-
-                const weight = p.symmetry;
-                const finalY = THREE.MathUtils.lerp(randomB.y, symmetricB.y, weight);
-                const finalAngleY = this.lerpAngle(randomB.angleY, symmetricB.angleY, weight);
-                const finalAngleX = THREE.MathUtils.lerp(randomB.angleX, symmetricB.angleX, weight);
-
-                this.createMainBranch(config, finalY, finalAngleY, finalAngleX, trunkHeight, trunkEndThick, woodGeos, leafGeos, wetness);
+            // 1. Calculate height
+            let branchY: number;
+            if (isTop) {
+                branchY = trunkHeight;
+            } else {
+                const intervalStart = minHeight + i * intervalSize;
+                const randomY = intervalStart + Math.random() * intervalSize;
+                branchY = THREE.MathUtils.lerp(randomY, intervalStart, p.symmetry);
             }
+
+            // 2. Calculate angle around trunk (angleY)
+            const randomOffset = Math.random() * maxAngleOffset;
+            const finalOffset = THREE.MathUtils.lerp(randomOffset, maxAngleOffset, p.symmetry);
+            currentAngle += finalOffset;
+
+            // 3. Calculate tilt angle (angleX)
+            const angleX = (Math.PI / 180) * (p.mainBranch.angleDeg + (Math.random() - 0.5) * p.mainBranch.angleVarDeg * 2.0);
+
+            this.createMainBranch(config, branchY, currentAngle, angleX, trunkHeight, trunkEndThick, woodGeos, leafGeos, wetness);
         }
-    }
-
-    /**
-     * Calculates the position (y) and rotation (angleY, angleX) for a main branch.
-     * - angleY: Radial rotation around the trunk (0 to 2PI).
-     * - angleX: Tilt away from the trunk's vertical axis (e.g., 90deg is horizontal).
-     */
-    private calculateMainBranchPlacement(p: TreeParams, height: number, index: number, total: number, isTop: boolean) {
-        if (isTop) {
-            return {
-                y: height,
-                angleY: (index / p.mainBranch.minEndCount) * Math.PI * 2,
-                // Top branches use the full angleDeg (e.g., 90deg for horizontal)
-                angleX: (Math.PI / 180) * (p.mainBranch.angleDeg + (Math.random() - 0.5) * p.mainBranch.angleVarDeg)
-            };
-        }
-
-        const availableHeight = height * (1 - p.mainBranch.minPosRatio);
-        const y = height * p.mainBranch.minPosRatio + Math.random() * availableHeight;
-
-        return {
-            y,
-            angleY: Math.random() * Math.PI * 2,
-            angleX: (Math.PI / 180) * (p.mainBranch.angleDeg + (Math.random() - 0.5) * p.mainBranch.angleVarDeg * 2)
-        };
     }
 
     /**
