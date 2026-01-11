@@ -19,13 +19,13 @@ export class TreeDecorator extends BaseDecorator {
 
             if (biomeType === 'forest') {
                 if (Math.random() > 0.8) {
-                    const treeInstances = Decorations.getTreeInstance(Math.random(), 'default', false, false);
+                    const treeInstances = Decorations.getTreeInstance(Math.random(), 'round', false, false);
                     context.decoHelper.addInstancedDecoration(context, treeInstances, position);
                 }
             } else if (biomeType === 'ice') {
                 if (Math.random() > 0.8) {
                     const isLeafless = Math.random() > 0.5;
-                    const treeInstances = Decorations.getTreeInstance(Math.random(), 'default', !isLeafless, isLeafless);
+                    const treeInstances = Decorations.getTreeInstance(Math.random(), 'round', !isLeafless, isLeafless);
                     context.decoHelper.addInstancedDecoration(context, treeInstances, position);
                 }
             }

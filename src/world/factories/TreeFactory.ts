@@ -3,7 +3,7 @@ import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUti
 import { DecorationFactory, DecorationInstance } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
-export type TreeKind = 'default' | 'willow';
+export type TreeKind = 'round' | 'weeping';
 
 interface TreeArchetype {
     woodGeo: THREE.BufferGeometry;
@@ -33,7 +33,7 @@ interface TreeConfig {
 }
 
 class DefaultTreeConfig implements TreeConfig {
-    readonly kind: TreeKind = 'default';
+    readonly kind: TreeKind = 'round';
 
     getHeight(wetness: number): number {
         return 4 + wetness * 4 + Math.random() * 2;
@@ -114,7 +114,7 @@ class DefaultTreeConfig implements TreeConfig {
 }
 
 class WillowTreeConfig implements TreeConfig {
-    readonly kind: TreeKind = 'willow';
+    readonly kind: TreeKind = 'weeping';
 
     getHeight(wetness: number): number {
         return 5 + wetness * 3 + Math.random() * 2;
@@ -351,10 +351,10 @@ export class TreeFactory implements DecorationFactory {
     }
 
     createInstance(options: { wetness: number, kind?: TreeKind, isSnowy?: boolean, isLeafless?: boolean }): DecorationInstance[] {
-        const { wetness, kind = 'default', isSnowy = false, isLeafless = false } = options;
+        const { wetness, kind = 'round', isSnowy = false, isLeafless = false } = options;
 
-        const archetypeList = this.archetypes.get(kind) || this.archetypes.get('default')!;
-        const config = (kind === 'willow' ? new WillowTreeConfig() : new DefaultTreeConfig());
+        const archetypeList = this.archetypes.get(kind) || this.archetypes.get('round')!;
+        const config = (kind === 'weeping' ? new WillowTreeConfig() : new DefaultTreeConfig());
 
         let bestArchetype = archetypeList[0];
         let minDist = Infinity;

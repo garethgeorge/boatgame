@@ -60,7 +60,7 @@ export class Decorations {
   /**
    * Functions returning data to be used for instancing
    */
-  static getTreeInstance(wetness: number, kind: TreeKind = 'default', isSnowy: boolean = false, isLeafless: boolean = false): DecorationInstance[] {
+  static getTreeInstance(wetness: number, kind: TreeKind = 'round', isSnowy: boolean = false, isLeafless: boolean = false): DecorationInstance[] {
     const factory = DecorationRegistry.getFactory('tree') as TreeFactory;
     return factory.createInstance({ wetness, kind, isSnowy, isLeafless });
   }

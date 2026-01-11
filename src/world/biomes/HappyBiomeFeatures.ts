@@ -81,7 +81,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
 
             const wetness = Math.random();
-            const kind: TreeKind = Math.random() < 0.8 ? 'default' : 'willow';
+            const kind: TreeKind = Math.random() < 0.8 ? 'round' : 'weeping';
             const treeInstances = Decorations.getTreeInstance(wetness, kind, false, false);
             context.decoHelper.addInstancedDecoration(context, treeInstances, position);
         }
