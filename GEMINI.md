@@ -146,16 +146,88 @@ Dynamic game objects (Obstacles, Animals) follow a hierarchy designed for behavi
 -   **Spawners**: Encapsulate placement rules (e.g., `AttackAnimalSpawner`).
 -   **PlacementHelper**: Used to find valid positions (Shore vs. Water, clustering, distance from banks) without colliding with static terrain.
 
-## 9. Documentation Maintenance
+## 9. Animal Behavior & Logic System
+**Files**: `src/entities/behaviors/AnimalUniversalBehavior.ts`, `src/entities/behaviors/logic/*`
+
+The animal behavior system uses a three-tier architecture to separate high-level goals from movement execution.
+
+### Tier 1: `AnimalUniversalBehavior` (Orchestrator)
+The central component that interfaces with the `Entity` system. It manages:
+- **State Switching**: Transitions between `IDLE` and `ACTIVE` states based on `AnimalLogic.shouldActivate()`.
+- **Logic Execution**: Holds a reference to the current `AnimalLogic` and calls its `update()` and `calculatePath()` methods.
+- **Locomotion Execution**: Based on the `LocomotionType` (WATER, LAND, FLIGHT) returned by the logic, it applies physics forces (velocities, angular velocities, or kinematic positioning).
+- **Logic Chaining**: Automatically replaces the current logic with a new one if `AnimalLogicPathResult.nextLogicConfig` is provided.
+
+### Tier 2: `AnimalLogic` (Goal Setting)
+Defines *what* the animal wants to do. Each logic class (e.g., `WolfAttackLogic`, `ShoreWalkLogic`) implements the `AnimalLogic` interface.
+- **Reference Implementation**: `WolfAttackLogic` is the gold standard for this tier.
+- **Responsibility**: Manages its own internal state (e.g., timers, strategy switching) and delegates pathfinding to one or more `AnimalPathStrategy` instances.
+- **Visual State**: Returns an `animationState` string (e.g., `'ATTACKING'`, `'PREPARING'`) which is passed to the entity's `AnimationPlayer`.
+
+### Tier 3: `AnimalPathStrategy` (Movement Execution)
+Defines *how* the animal moves to achieve its goal.
+- **Reference Implementation**: `AttackPathStrategies.ts` (e.g., `CircleFlankStrategy`, `SternInterceptStrategy`).
+- **Responsibility**: Calculates a single `targetWorldPos` and `desiredSpeed` based on the target's position and velocity.
+- **Abstraction**: Logic classes can swap strategies dynamically (e.g., switching from flanking to charging) without changing their overall goal.
+
+### Key Concepts
+- **Locomotion Types**:
+    - **WATER**: Dynamic physics using `setLinearVelocity` and `setAngularVelocity`.
+    - **LAND**: Kinematic physics for precise positioning on terrain (includes height/normal alignment).
+    - **FLIGHT**: Kinematic physics with banking and height control.
+- **Logic Chaining**: Allows complex behavioral sequences (e.g., `ShoreIdleLogic` -> `EnteringWaterLogic` -> `WolfAttackLogic`).
+- **Logic Registry**: `AnimalLogicRegistry` is used to instantiate logic from configuration objects, enabling extensible behavior definitions in spawners.
+
+## 10. Declarative Biome Layout System
+**Files**: `src/world/biomes/BoatPathLayoutStrategy.ts`, `src/world/biomes/*BiomeFeatures.ts`
+
+The layout system uses a declarative approach to define the "intended path" for the boat and the distribution of obstacles and rewards.
+
+### 1. Conceptual Design
+The system generates a **BoatPathLayout** which consists of:
+- **Directed Weaving Path**: A sinusoidal path that weaves between river banks, providing a guided but challenging route.
+- **Independent Tracks**: Multiple parallel tracks (e.g., 'main', 'rewards', 'unique_elements') that contribute obstacle placements independently, allowing for layered behavioral complexity.
+
+### 2. Pattern System
+Obstacles are placed according to high-level patterns defined in `PatternConfig`.
+- **Pattern Logics**:
+    - `scatter`: Randomized placement within a segment.
+    - `sequence`: Evenly spaced placements.
+    - `gate`: Placements on opposite sides of the boat path to create a narrowing.
+    - `staggered`: Alternating sides relative to the boat path.
+    - `cluster`: Dense grouping around a central point.
+- **Placement Types**:
+    - `path`: Directly on the boat's intended path.
+    - `slalom`: Off-path, forcing the player to weave.
+    - `shore`: Placed on or near the banks (refined by `waterAnimals` list).
+
+### 3. Track & Stage Architecture
+A biome's layout is composed of one or more **Tracks**. Each track consists of a sequence of **Stages**.
+- **Stages**: Defined for specific progress ranges (0.0 to 1.0). The system randomly selects and scales stages to fill the biome.
+- **Weighted Selection**: Each stage picks patterns from weighted arrays, ensuring variety in procedural generation.
+- **Explicit Placements**: Tracks can also contain `ExplicitPlacementConfig` for unique, non-procedural elements (e.g., a finish line or a boss encounter) at fixed progress points.
+
+### 4. Implementation Details
+The `BoatPathLayoutStrategy.createLayout()` follows a deterministic multi-step process:
+1. **Geometry Sampling**: Samples `RiverGeometry` to establish an arc-length coordinate system.
+2. **Track Generation**: Independently chooses and scales stages for every track.
+3. **Weaving Calculation**: Calculates "crossings" based on the primary track's stage boundaries to determine when the boat should weave.
+4. **Placement Resolution**: Resolves pattern logic into concrete `ObstaclePlacement` objects with defined `range` (lateral boundaries) and `aggressiveness`).
+
+### 5. Extension Guide
+- **Adding Pattern Logics**: Implement the logic in `populatePlacements()` to calculate `pathIndex` and pass hints to `applyIndividualPlacement()`.
+- **Adding Placement Types**: Update `placementRange()` to define how the lateral `[min, max]` range is calculated relative to the boat path and river banks.
+
+## 11. Documentation Maintenance
 **Rule**: This file (`GEMINI.md`) serves as the architectural source of truth. When implementing new features or refactoring existing systems:
 1.  **Check this file** to ensure your changes align with established patterns.
 2.  **Update this file** if you introduce new patterns, subsystems, or change the architecture. Keep it living and accurate.
 
-## 10. Code Style and Standards
+## 12. Code Style and Standards
 **Rule**
 - Avoid casting to any in typescript except where there is no reasonable alternative or it is being done for performance reasons.
 - Don't remove comments in the code unless they are no longer applicable.
 
-## 11. Verification
+## 13. Verification
 
 Use `npx tsc --noEmit` to verify that the code passes typescript checks.
