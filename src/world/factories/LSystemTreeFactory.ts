@@ -16,7 +16,7 @@ type TreeShape = 'default' | 'umbrella';
 interface DefaultTreeShapeParams { name: 'default', gravity: number };
 interface UmbrellaTreeShapeParams { name: 'umbrella', strength: number };
 
-type LeafKind = 'blob' | 'willow' | 'irregular' | 'cluster';
+type LeafKind = 'blob' | 'willow' | 'irregular' | 'cluster' | 'umbrella';
 interface BlobLeafKindParams {
     name: 'blob'; color: number; size: number; thickness: number;
 }
@@ -27,7 +27,10 @@ interface IrregularLeafKindParams {
     name: 'irregular', color: number; size: number; thickness: number;
 }
 interface ClusterLeafKindParams {
-    name: 'cluster', color: number; size: number; thickness: number; leaves: number;
+    name: 'cluster', color: number; size: number; thickness: number; leaves: number; leafSize: number;
+}
+interface UmbrellaLeafKindParams {
+    name: 'umbrella', color: number; size: number; leaves: number; leafSize: number;
 }
 
 interface TreeParams {
@@ -46,7 +49,7 @@ interface TreeParams {
     trunkLengthMultiplier: number; // Optional multiplier for the initial segment
     thickness: number;     // Starting radius of the trunk
     thicknessDecay: number; // Ratio for branch tapering (e.g. 0.7)
-    leafKind: BlobLeafKindParams | WillowLeafKindParams | IrregularLeafKindParams | ClusterLeafKindParams;
+    leafKind: BlobLeafKindParams | WillowLeafKindParams | IrregularLeafKindParams | ClusterLeafKindParams | UmbrellaLeafKindParams;
     treeShape: DefaultTreeShapeParams | UmbrellaTreeShapeParams;
 }
 
@@ -91,7 +94,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         branchLength: 2,
         lengthDecay: 0.75,
         trunkLengthMultiplier: 1.2,
-        thickness: 0.2,
+        thickness: 0.5,
         thicknessDecay: 0.75,
         leafKind: { name: 'blob', color: 0x3ea043, size: 1.0, thickness: 2.5 },
         treeShape: { name: 'default', gravity: 0.15 }
@@ -118,7 +121,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         trunkLengthMultiplier: 1.5,
         thickness: 0.9,
         thicknessDecay: 0.75,
-        leafKind: { name: 'cluster', color: 0x228B22, size: 2.0, thickness: 0.2, leaves: 8 },
+        leafKind: { name: 'blob', color: 0x228B22, size: 1.8, thickness: 0.6 },
         treeShape: { name: 'default', gravity: -0.05 }
     },
     elm: {
@@ -130,7 +133,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
                 weights: [0.7, 0.3]
             }
         ],
-        iterations: 5,
+        iterations: 6,
         spread: 34.4,
         jitter: 5.7,
         branchLength: 6,
@@ -138,11 +141,11 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         trunkLengthMultiplier: 1.5,
         thickness: 0.8,
         thicknessDecay: 0.7,
-        leafKind: { name: 'blob', color: 0x2e8b57, size: 1.5, thickness: 1.0 },
+        leafKind: { name: 'cluster', color: 0x2e8b57, size: 1.0, thickness: 0.3, leaves: 4, leafSize: 0.8 },
         treeShape: { name: 'default', gravity: 0.0 }
     },
     umbrella: { // Stone Pine / Acacia style
-        axiom: "FFFX",
+        axiom: "FFFFFX",
         rules: [
             {
                 levels: [0, Infinity],
@@ -152,50 +155,65 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         ],
         iterations: 5,
         spread: 70,
-        jitter: 5,
+        jitter: 10,
         branchLength: 1.5,
         lengthDecay: 0.8,
         trunkLengthMultiplier: 2.0,
         thickness: 0.8,
         thicknessDecay: 0.9,
-        leafKind: { name: 'blob', color: 0x1a4a1c, size: 2.0, thickness: 0.3 },
+        leafKind: { name: 'umbrella', color: 0x1a4a1c, size: 2.0, leaves: 10, leafSize: 0.8 },
         treeShape: { name: 'umbrella', strength: 0.5 }
     },
-    open: { // Japanese Maple / Birch style -- needs work
-        axiom: "X",
+    open: { // Japanese Maple / Birch style
+        axiom: "FX",
         rules: [
             {
-                levels: [0, Infinity],
+                levels: [0, 0],
+                successors: ["&F/&FX", "/&F/&FX"],
+                weights: [0.5, 0.5]
+            },
+            {
+                levels: [1, 3],
+                successors: ["F[&X]/[&X]", "F[&X]"],
+                weights: [0.8, 0.2]
+            },
+            {
+                levels: [4, Infinity],
                 successors: ["F[&X]/[&FL]", "F[&FL]/[&X]"],
                 weights: [0.5, 0.5]
-            }
+            },
         ],
-        iterations: 5,
-        spread: 45.8,
-        jitter: 11.5,
+        iterations: 6,
+        spread: 40,
+        jitter: 10,
         branchLength: 1.5,
         lengthDecay: 0.9,
-        trunkLengthMultiplier: 3.0,
+        trunkLengthMultiplier: 1.0,
         thickness: 0.3,
         thicknessDecay: 0.7,
-        leafKind: { name: 'blob', color: 0xa03e3e, size: 1.0, thickness: 1.0 },
-        treeShape: { name: 'default', gravity: 0 }
+        leafKind: { name: 'cluster', color: 0xa03e3e, size: 1.0, thickness: 0.3, leaves: 20, leafSize: 0.6 },
+        treeShape: { name: 'default', gravity: 0.0 }
     },
     irregular: { // Monterey Cypress / Gnarled Oak style
         axiom: "X",
         rules: [
             {
                 levels: [0, 2],
-                successors: ["F[&X]", "F/&X", "F[&X]/[&X]", "FX"],
-                weights: [0.15, 0.15, 0.65, 0.05]
+                successors: ["F[&X]", "F/&X", "F[&X]/[&X]"],
+                weights: [0.2, 0.2, 0.6]
             },
             {
-                levels: [3, Infinity],
+                levels: [2, 3],
+                successors: ["F[&X]/[&X]"],
+                weights: [1.0]
+            },
+            {
+                levels: [4, Infinity],
                 successors: ["F[&X]", "F/&X", "F[&X]/[&X]", "L"],
                 weights: [0.1, 0.1, 0.7, 0.1]
             }
         ],
-        iterations: 8,
+        iterations: 12,
         spread: 40.1,
         jitter: 28.6,
         branchLength: 2.5,
@@ -203,7 +221,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         trunkLengthMultiplier: 1.5,
         thickness: 0.4,
         thicknessDecay: 0.7,
-        leafKind: { name: 'blob', color: 0x2d5a27, size: 1.0, thickness: 1.0 },
+        leafKind: { name: 'cluster', color: 0x2d5a27, size: 1.0, thickness: 0.1, leaves: 4, leafSize: 0.8 },
         treeShape: { name: 'default', gravity: 0.1 }
     }
 };
@@ -396,7 +414,7 @@ class ClusterLeafGenerator implements LeafGenerator {
 
             // 4. Create a triangle at P oriented to face Vout
             // A simple triangle in the X-Z plane, then orient its normal (0, 1, 0) to Vout
-            const triSize = 0.8 * baseRadius;
+            const triSize = this.params.leafSize * baseRadius;
             const triGeo = new THREE.BufferGeometry();
             const vertices = new Float32Array([
                 -triSize / 2, 0, -triSize / 2,
@@ -426,6 +444,77 @@ class ClusterLeafGenerator implements LeafGenerator {
 
         // Transformation: Orient to face leafData.dir and translate to leafData.pos
         const finalQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), leafData.dir);
+        const finalMatrix = new THREE.Matrix4().compose(leafData.pos, finalQuat, new THREE.Vector3(1, 1, 1));
+        mergedTriangles.applyMatrix4(finalMatrix);
+
+        leafGeos.push(mergedTriangles);
+    }
+}
+
+class UmbrellaLeafGenerator implements LeafGenerator {
+    constructor(readonly params: UmbrellaLeafKindParams) {
+    }
+
+    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData): void {
+        const radius = this.params.size;
+        const variation = 0.25;
+        const numTriangles = Math.max(1, Math.floor(this.params.leaves * (1 + (Math.random() - 0.5) * 2 * variation)));
+
+        const triangleGeos: THREE.BufferGeometry[] = [];
+        const center = new THREE.Vector3(0, 0, 0);
+
+        for (let i = 0; i < numTriangles; i++) {
+            // 1. Generate a point on the UPPER hemisphere only
+            const phi = Math.random() * Math.PI * 2;
+            const theta = Math.acos(Math.random()); // Random 0 to 1 instead of -1 to 1 for upper hemishphere
+
+            const pos = new THREE.Vector3(
+                Math.sin(theta) * Math.cos(phi),
+                Math.sin(theta) * Math.sin(phi),
+                Math.cos(theta)
+            );
+
+            // 2. Apply "Plateau" scaling
+            // Wide on X/Z, very flat on Y
+            pos.x *= radius * 1.5;
+            pos.z *= radius * 1.5;
+            pos.y *= radius * 0.4;
+
+            // 3. Create the triangle 'leaf'
+            const triSize = this.params.leafSize * radius;
+            const triGeo = new THREE.BufferGeometry();
+            const vertices = new Float32Array([
+                -triSize / 2, 0, -triSize / 2,
+                triSize / 2, 0, -triSize / 2,
+                0, 0, triSize / 2
+            ]);
+            triGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            triGeo.computeVertexNormals();
+
+            // 4. Align the triangle to the "Upper" normal
+            // This ensures the faces catch top-down light like a roof
+            const lookDir = pos.clone().add(new THREE.Vector3(0, 1, 0)).normalize();
+            const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), lookDir);
+
+            const matrix = new THREE.Matrix4().compose(pos, quat, new THREE.Vector3(1, 1, 1));
+            triGeo.applyMatrix4(matrix);
+
+            // Per-triangle color jitter
+            const color = new THREE.Color(this.params.color);
+            color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.15);
+            GraphicsUtils.addVertexColors(triGeo, color);
+
+            triangleGeos.push(triGeo);
+        }
+
+        if (triangleGeos.length === 0) return;
+
+        let mergedTriangles = BufferGeometryUtils.mergeGeometries(triangleGeos);
+        if (!mergedTriangles) return;
+
+        // Transformation: For umbrella trees, clusters should always point upward (World-Up).
+        // Apply a random Y-axis rotation for variety and translate to leafData.pos.
+        const finalQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.random() * Math.PI * 2);
         const finalMatrix = new THREE.Matrix4().compose(leafData.pos, finalQuat, new THREE.Vector3(1, 1, 1));
         mergedTriangles.applyMatrix4(finalMatrix);
 
@@ -691,6 +780,8 @@ export class LSystemTreeFactory implements DecorationFactory {
                 return new IrregularLeafGenerator(params.leafKind);
             case 'cluster':
                 return new ClusterLeafGenerator(params.leafKind);
+            case 'umbrella':
+                return new UmbrellaLeafGenerator(params.leafKind);
             case 'blob':
             default:
                 return new BlobLeafGenerator(params.leafKind);
