@@ -135,27 +135,27 @@ export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' | 'umbrella' |
 
 const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
     willow: {
-        axiom: "X",
+        axiom: "FX",
         rules: [
             {
-                levels: [0, 1],
-                successors: ["F[&X]/[&X]/[&X]", "F[&X]/[&X]"],
-                weights: [0.7, 0.3]
+                levels: [0, 3],
+                successors: ["F[&&X]/[&&X]/[&&X]"],
+                weights: [1.0]
             },
             {
-                levels: [2, Infinity],
-                successors: ["F[&X]/[&X]/[&X]", "F[&X]/[&X]", "L"],
-                weights: [0.5, 0.3, 0.2]
+                levels: [4, Infinity],
+                successors: ["FX", "L"],
+                weights: [0.9, 0.1]
             }
         ],
         spread: 22.9,
-        gravity: -0.5,
-        iterations: 5,
+        gravity: -0.25,
+        iterations: 8,
         branchLength: 3,
         lengthDecay: 0.8,
         trunkLengthMultiplier: 1.5,
-        thickness: 0.15,
-        thicknessDecay: 0.7,
+        thickness: 0.7,
+        thicknessDecay: 0.6,
         jitter: 11.5,
         leafColor: 0x41b98d,
         leafStrategy: new WillowLeafStrategy(),
@@ -166,14 +166,14 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         rules: [
             {
                 levels: [0, Infinity],
-                successors: ["F[&X]/[&X]/[&X]", "F[&X]/[&X]"],
-                weights: [0.8, 0.2]
+                successors: ["F[&X]/X"],
+                weights: [1.0]
             }
         ],
         spread: 5.7,
         gravity: 0.15,
-        iterations: 3,
-        branchLength: 3,
+        iterations: 7,
+        branchLength: 2,
         lengthDecay: 0.75,
         trunkLengthMultiplier: 1.2,
         thickness: 0.2,
@@ -184,7 +184,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         interpretationStrategy: new DefaultInterpretationStrategy()
     },
     oak: {
-        axiom: "X",
+        axiom: "FX",
         rules: [
             {
                 levels: [0, 2],
@@ -199,12 +199,12 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         ],
         spread: 63.0,
         gravity: -0.05,
-        iterations: 5,
-        branchLength: 2.5,
+        iterations: 6,
+        branchLength: 4.0,
         lengthDecay: 0.8,
-        trunkLengthMultiplier: 3.0,
-        thickness: 0.6,
-        thicknessDecay: 0.6,
+        trunkLengthMultiplier: 1.5,
+        thickness: 0.9,
+        thicknessDecay: 0.75,
         jitter: 17.2,
         leafColor: 0x228B22,
         leafStrategy: new DefaultLeafStrategy(),
@@ -222,10 +222,10 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         spread: 34.4,
         gravity: 0.0,
         iterations: 5,
-        branchLength: 4,
+        branchLength: 6,
         lengthDecay: 0.7,
         trunkLengthMultiplier: 1.5,
-        thickness: 0.25,
+        thickness: 0.8,
         thicknessDecay: 0.7,
         jitter: 5.7,
         leafColor: 0x2e8b57,
