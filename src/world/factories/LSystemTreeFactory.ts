@@ -3,64 +3,229 @@ import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUti
 import { DecorationFactory, DecorationInstance } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
+export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' | 'umbrella' | 'open' | 'irregular';
+
 interface LSystemRuleGroup {
     levels: [number, number]; // [min, max] levels (inclusive, use Infinity for no max)
     successors: string[];     // Successor strings for 'X'
     weights: number[];        // Probabilities for each successor
 }
 
-interface InterpretationStrategy {
-    applyOrientationInfluence(quat: THREE.Quaternion, params: TreeParams, level: number, currentDir: THREE.Vector3): void;
-}
-
-class DefaultInterpretationStrategy implements InterpretationStrategy {
-    applyOrientationInfluence(quat: THREE.Quaternion, params: TreeParams, level: number, currentDir: THREE.Vector3): void {
-        if (params.gravity !== 0) {
-            const pullDir = params.gravity > 0 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, -1, 0);
-            const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), pullDir);
-            quat.slerp(targetQuat, Math.abs(params.gravity) * (level + 1) * 0.2);
-        }
-    }
-}
-
-class UmbrellaInterpretationStrategy implements InterpretationStrategy {
-    applyOrientationInfluence(quat: THREE.Quaternion, params: TreeParams, level: number, currentDir: THREE.Vector3): void {
-        if (level > 0) {
-            // Create a "Horizon Target" by stripping the Y (vertical) component
-            const horizonDir = new THREE.Vector3(currentDir.x, 0, currentDir.z).normalize();
-            if (horizonDir.lengthSq() > 0.001) {
-                // Create a Quaternion that represents facing that horizon
-                const horizonQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), horizonDir);
-                // Blend the current rotation toward the horizon
-                // higher strength makes the umbrella flatter
-                quat.slerp(horizonQuat, 0.5);
-            }
-        }
-    }
-}
+type TreeShape = 'default' | 'umbrella';
+type LeafKind = 'default' | 'willow';
 
 interface TreeParams {
+    // L-system string generation parameters. The starting axiom, derivation
+    // rules and number of iterations to run
     axiom: string;
     rules: LSystemRuleGroup[];
-    spread: number;        // Base angle of branching (degrees)
-    gravity: number;       // Positive (Up/Columnar) to Negative (Down/Weeping)
-    iterations: number;    // Usually 2 or 3 for small trees
-    branchLength: number;  // Length of the trunk
+    iterations: number;
+
+    // Interpretation parameters describe how the string is interpreted by
+    // the turtle graphics to generate geometry
+    spread: number;        // '&' tip down angle in degrees away from parent branch 
+    jitter: number;        // Randomness in degrees for both tip down and rotate around parent
+    gravity: number;       // Applied to branches. Positive (Up/Columnar) to Negative (Down/Weeping)
+    branchLength: number;  // Starting length of the trunk branch
     lengthDecay: number;   // How much shorter child branches are (e.g. 0.8)
     trunkLengthMultiplier: number; // Optional multiplier for the initial segment
     thickness: number;     // Starting radius of the trunk
     thicknessDecay: number; // Ratio for branch tapering (e.g. 0.7)
-    jitter: number;        // Organic randomness (degrees)
     leafColor: number;
-    leafStrategy: LeafStrategy;
-    interpretationStrategy: InterpretationStrategy;
+    leafKind: LeafKind;
+    treeShape: TreeShape;
 }
 
-interface LeafStrategy {
+const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
+    willow: {
+        axiom: "FX",
+        rules: [
+            {
+                levels: [0, 3],
+                successors: ["F[&&X]/[&&X]/[&&X]"],
+                weights: [1.0]
+            },
+            {
+                levels: [4, Infinity],
+                successors: ["FX", "L"],
+                weights: [0.9, 0.1]
+            }
+        ],
+        iterations: 8,
+        spread: 22.9,
+        jitter: 11.5,
+        gravity: -0.25,
+        branchLength: 3,
+        lengthDecay: 0.8,
+        trunkLengthMultiplier: 1.5,
+        thickness: 0.7,
+        thicknessDecay: 0.6,
+        leafColor: 0x41b98d,
+        leafKind: 'willow',
+        treeShape: 'default'
+    },
+    poplar: {
+        axiom: "X",
+        rules: [
+            {
+                levels: [0, Infinity],
+                successors: ["F[&X]/X"],
+                weights: [1.0]
+            }
+        ],
+        iterations: 7,
+        spread: 5.7,
+        jitter: 2.9,
+        gravity: 0.15,
+        branchLength: 2,
+        lengthDecay: 0.75,
+        trunkLengthMultiplier: 1.2,
+        thickness: 0.2,
+        thicknessDecay: 0.75,
+        leafColor: 0x3ea043,
+        leafKind: 'default',
+        treeShape: 'default'
+    },
+    oak: {
+        axiom: "FX",
+        rules: [
+            {
+                levels: [0, 2],
+                successors: ["F[&X]/[&X]", "F[&X]/[&X]/[&X]"],
+                weights: [0.5, 0.5]
+            },
+            {
+                levels: [3, Infinity],
+                successors: ["F[&X]/[&X]", "F[&X]/[&X]/[&X]", "L"],
+                weights: [0.4, 0.4, 0.2]
+            }
+        ],
+        iterations: 6,
+        spread: 63.0,
+        jitter: 17.2,
+        gravity: -0.05,
+        branchLength: 4.0,
+        lengthDecay: 0.8,
+        trunkLengthMultiplier: 1.5,
+        thickness: 0.9,
+        thicknessDecay: 0.75,
+        leafColor: 0x228B22,
+        leafKind: 'default',
+        treeShape: 'default'
+    },
+    elm: {
+        axiom: "X",
+        rules: [
+            {
+                levels: [0, Infinity],
+                successors: ["F[&X]/[&X]/[&X]", "F[&X]/[&X]"],
+                weights: [0.7, 0.3]
+            }
+        ],
+        iterations: 5,
+        spread: 34.4,
+        jitter: 5.7,
+        gravity: 0.0,
+        branchLength: 6,
+        lengthDecay: 0.7,
+        trunkLengthMultiplier: 1.5,
+        thickness: 0.8,
+        thicknessDecay: 0.7,
+        leafColor: 0x2e8b57,
+        leafKind: 'default',
+        treeShape: 'default'
+    },
+    umbrella: { // Stone Pine / Acacia style
+        axiom: "FFFX",
+        rules: [
+            {
+                levels: [0, Infinity],
+                successors: ["[&FFFX]/[&FFFX]/[&FFFX]"],
+                weights: [1.0]
+            }
+        ],
+        iterations: 5,
+        spread: 70,
+        jitter: 5,
+        gravity: 0,
+        branchLength: 1.5,
+        lengthDecay: 0.8,
+        trunkLengthMultiplier: 2.0,
+        thickness: 0.8,
+        thicknessDecay: 0.9,
+        leafColor: 0x1a4a1c,
+        leafKind: 'default',
+        treeShape: 'umbrella'
+    },
+    open: { // Japanese Maple / Birch style -- needs work
+        axiom: "X",
+        rules: [
+            {
+                levels: [0, Infinity],
+                successors: ["F[&X]/[&FL]", "F[&FL]/[&X]"],
+                weights: [0.5, 0.5]
+            }
+        ],
+        iterations: 5,
+        spread: 45.8,
+        jitter: 11.5,
+        gravity: 0,
+        branchLength: 1.5,
+        lengthDecay: 0.9,
+        trunkLengthMultiplier: 3.0,
+        thickness: 0.3,
+        thicknessDecay: 0.7,
+        leafColor: 0xa03e3e,
+        leafKind: 'default',
+        treeShape: 'default'
+    },
+    irregular: { // Monterey Cypress / Gnarled Oak style
+        axiom: "X",
+        rules: [
+            {
+                levels: [0, 2],
+                successors: ["F[&X]", "F/&X", "F[&X]/[&X]", "FX"],
+                weights: [0.15, 0.15, 0.65, 0.05]
+            },
+            {
+                levels: [3, Infinity],
+                successors: ["F[&X]", "F/&X", "F[&X]/[&X]", "L"],
+                weights: [0.1, 0.1, 0.7, 0.1]
+            }
+        ],
+        iterations: 8,
+        spread: 40.1,
+        jitter: 28.6,
+        gravity: 0.1,
+        branchLength: 2.5,
+        lengthDecay: 0.7,
+        trunkLengthMultiplier: 1.5,
+        thickness: 0.4,
+        thicknessDecay: 0.7,
+        leafColor: 0x2d5a27,
+        leafKind: 'default',
+        treeShape: 'default'
+    }
+};
+
+interface BranchData {
+    start: THREE.Vector3;
+    end: THREE.Vector3;
+    radiusStart: number;
+    radiusEnd: number;
+    level: number;
+}
+
+interface LeafData {
+    pos: THREE.Vector3;
+    dir: THREE.Vector3;
+}
+
+interface LeafGenerator {
     addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, params: TreeParams): void;
 }
 
-class DefaultLeafStrategy implements LeafStrategy {
+class DefaultLeafGenerator implements LeafGenerator {
     addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, params: TreeParams): void {
         const leafSize = 1.0 + Math.random() * 0.5;
         const geo = new THREE.IcosahedronGeometry(leafSize, 0);
@@ -74,7 +239,7 @@ class DefaultLeafStrategy implements LeafStrategy {
     }
 }
 
-class WillowLeafStrategy implements LeafStrategy {
+class WillowLeafGenerator implements LeafGenerator {
     addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, params: TreeParams): void {
         const strandCount = 2 + Math.floor(Math.random() * 3);
         const targetGroundClearance = 2.0;
@@ -131,191 +296,34 @@ class WillowLeafStrategy implements LeafStrategy {
     }
 }
 
-export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' | 'umbrella' | 'open' | 'irregular';
-
-const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
-    willow: {
-        axiom: "FX",
-        rules: [
-            {
-                levels: [0, 3],
-                successors: ["F[&&X]/[&&X]/[&&X]"],
-                weights: [1.0]
-            },
-            {
-                levels: [4, Infinity],
-                successors: ["FX", "L"],
-                weights: [0.9, 0.1]
-            }
-        ],
-        spread: 22.9,
-        gravity: -0.25,
-        iterations: 8,
-        branchLength: 3,
-        lengthDecay: 0.8,
-        trunkLengthMultiplier: 1.5,
-        thickness: 0.7,
-        thicknessDecay: 0.6,
-        jitter: 11.5,
-        leafColor: 0x41b98d,
-        leafStrategy: new WillowLeafStrategy(),
-        interpretationStrategy: new DefaultInterpretationStrategy()
-    },
-    poplar: {
-        axiom: "X",
-        rules: [
-            {
-                levels: [0, Infinity],
-                successors: ["F[&X]/X"],
-                weights: [1.0]
-            }
-        ],
-        spread: 5.7,
-        gravity: 0.15,
-        iterations: 7,
-        branchLength: 2,
-        lengthDecay: 0.75,
-        trunkLengthMultiplier: 1.2,
-        thickness: 0.2,
-        thicknessDecay: 0.75,
-        jitter: 2.9,
-        leafColor: 0x3ea043,
-        leafStrategy: new DefaultLeafStrategy(),
-        interpretationStrategy: new DefaultInterpretationStrategy()
-    },
-    oak: {
-        axiom: "FX",
-        rules: [
-            {
-                levels: [0, 2],
-                successors: ["F[&X]/[&X]", "F[&X]/[&X]/[&X]"],
-                weights: [0.5, 0.5]
-            },
-            {
-                levels: [3, Infinity],
-                successors: ["F[&X]/[&X]", "F[&X]/[&X]/[&X]", "L"],
-                weights: [0.4, 0.4, 0.2]
-            }
-        ],
-        spread: 63.0,
-        gravity: -0.05,
-        iterations: 6,
-        branchLength: 4.0,
-        lengthDecay: 0.8,
-        trunkLengthMultiplier: 1.5,
-        thickness: 0.9,
-        thicknessDecay: 0.75,
-        jitter: 17.2,
-        leafColor: 0x228B22,
-        leafStrategy: new DefaultLeafStrategy(),
-        interpretationStrategy: new DefaultInterpretationStrategy()
-    },
-    elm: {
-        axiom: "X",
-        rules: [
-            {
-                levels: [0, Infinity],
-                successors: ["F[&X]/[&X]/[&X]", "F[&X]/[&X]"],
-                weights: [0.7, 0.3]
-            }
-        ],
-        spread: 34.4,
-        gravity: 0.0,
-        iterations: 5,
-        branchLength: 6,
-        lengthDecay: 0.7,
-        trunkLengthMultiplier: 1.5,
-        thickness: 0.8,
-        thicknessDecay: 0.7,
-        jitter: 5.7,
-        leafColor: 0x2e8b57,
-        leafStrategy: new DefaultLeafStrategy(),
-        interpretationStrategy: new DefaultInterpretationStrategy()
-    },
-    umbrella: { // Stone Pine / Acacia style
-        axiom: "FFFX",
-        rules: [
-            {
-                levels: [0, Infinity],
-                successors: ["[&FFFX]/[&FFFX]/[&FFFX]"],
-                weights: [1.0]
-            }
-        ],
-        spread: 70,
-        gravity: 0,
-        iterations: 5,
-        branchLength: 1.5,
-        lengthDecay: 0.8,
-        trunkLengthMultiplier: 2.0,
-        thickness: 0.8,
-        thicknessDecay: 0.9,
-        jitter: 5,
-        leafColor: 0x1a4a1c,
-        leafStrategy: new DefaultLeafStrategy(),
-        interpretationStrategy: new UmbrellaInterpretationStrategy()
-    },
-    open: { // Japanese Maple / Birch style -- needs work
-        axiom: "X",
-        rules: [
-            {
-                levels: [0, Infinity],
-                successors: ["F[&X]/[&FL]", "F[&FL]/[&X]"],
-                weights: [0.5, 0.5]
-            }
-        ],
-        spread: 45.8,
-        gravity: 0,
-        iterations: 5,
-        branchLength: 1.5,
-        lengthDecay: 0.9,
-        trunkLengthMultiplier: 3.0,
-        thickness: 0.3,
-        thicknessDecay: 0.7,
-        jitter: 11.5,
-        leafColor: 0xa03e3e,
-        leafStrategy: new DefaultLeafStrategy(),
-        interpretationStrategy: new DefaultInterpretationStrategy()
-    },
-    irregular: { // Monterey Cypress / Gnarled Oak style
-        axiom: "X",
-        rules: [
-            {
-                levels: [0, 2],
-                successors: ["F[&X]", "F/&X", "F[&X]/[&X]", "FX"],
-                weights: [0.15, 0.15, 0.65, 0.05]
-            },
-            {
-                levels: [3, Infinity],
-                successors: ["F[&X]", "F/&X", "F[&X]/[&X]", "L"],
-                weights: [0.1, 0.1, 0.7, 0.1]
-            }
-        ],
-        spread: 40.1,
-        gravity: 0.1,
-        iterations: 8,
-        branchLength: 2.5,
-        lengthDecay: 0.7,
-        trunkLengthMultiplier: 1.5,
-        thickness: 0.4,
-        thicknessDecay: 0.7,
-        jitter: 28.6,
-        leafColor: 0x2d5a27,
-        leafStrategy: new DefaultLeafStrategy(),
-        interpretationStrategy: new DefaultInterpretationStrategy()
-    }
-};
-
-interface BranchData {
-    start: THREE.Vector3;
-    end: THREE.Vector3;
-    radiusStart: number;
-    radiusEnd: number;
-    level: number;
+interface TreeShapeStrategy {
+    applyOrientationInfluence(quat: THREE.Quaternion, params: TreeParams, level: number, currentDir: THREE.Vector3): void;
 }
 
-interface LeafData {
-    pos: THREE.Vector3;
-    dir: THREE.Vector3;
+class DefaultTreeShapeStrategy implements TreeShapeStrategy {
+    applyOrientationInfluence(quat: THREE.Quaternion, params: TreeParams, level: number, currentDir: THREE.Vector3): void {
+        if (params.gravity !== 0) {
+            const pullDir = params.gravity > 0 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, -1, 0);
+            const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), pullDir);
+            quat.slerp(targetQuat, Math.abs(params.gravity) * (level + 1) * 0.2);
+        }
+    }
+}
+
+class UmbrellaTreeShapeStrategy implements TreeShapeStrategy {
+    applyOrientationInfluence(quat: THREE.Quaternion, params: TreeParams, level: number, currentDir: THREE.Vector3): void {
+        if (level > 0) {
+            // Create a "Horizon Target" by stripping the Y (vertical) component
+            const horizonDir = new THREE.Vector3(currentDir.x, 0, currentDir.z).normalize();
+            if (horizonDir.lengthSq() > 0.001) {
+                // Create a Quaternion that represents facing that horizon
+                const horizonQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), horizonDir);
+                // Blend the current rotation toward the horizon
+                // higher strength makes the umbrella flatter
+                quat.slerp(horizonQuat, 0.5);
+            }
+        }
+    }
 }
 
 /**
@@ -395,6 +403,8 @@ class ProceduralTree {
     }
 
     private interpret(instructions: string, params: TreeParams) {
+        const treeShapeStrategy = this.createTreeShapeStrategy(params.treeShape);
+
         let stack: { pos: THREE.Vector3, quat: THREE.Quaternion, thick: number, level: number }[] = [];
         let currPos = new THREE.Vector3(0, 0, 0);
         let currQuat = new THREE.Quaternion();
@@ -411,7 +421,7 @@ class ProceduralTree {
                     }
                     const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(currQuat);
 
-                    params.interpretationStrategy.applyOrientationInfluence(currQuat, params, level, dir);
+                    treeShapeStrategy.applyOrientationInfluence(currQuat, params, level, dir);
 
                     const endPos = currPos.clone().add(dir.multiplyScalar(length));
                     const nextThick = currThick * params.thicknessDecay;
@@ -458,6 +468,16 @@ class ProceduralTree {
             }
         }
     }
+
+    private createTreeShapeStrategy(name: TreeShape): TreeShapeStrategy {
+        switch (name) {
+            case 'umbrella':
+                return new UmbrellaTreeShapeStrategy();
+            case 'default':
+            default:
+                return new DefaultTreeShapeStrategy();
+        }
+    }
 }
 
 interface TreeArchetype {
@@ -491,6 +511,7 @@ export class LSystemTreeFactory implements DecorationFactory {
     }
 
     private createArchetype(kind: LSystemTreeKind, variation: number, tree: ProceduralTree, params: TreeParams): TreeArchetype {
+        const leafGenerator = this.createLeafGenerator(params.leafKind);
         const woodGeos: THREE.BufferGeometry[] = [];
         const leafGeos: THREE.BufferGeometry[] = [];
 
@@ -508,7 +529,7 @@ export class LSystemTreeFactory implements DecorationFactory {
         }
 
         for (const leaf of tree.leaves) {
-            params.leafStrategy.addLeaves(leafGeos, leaf, params);
+            leafGenerator.addLeaves(leafGeos, leaf, params);
         }
 
         const mergedWood = this.mergeGeometries(woodGeos, `LSystemWood_${kind}_${variation}`);
@@ -518,6 +539,16 @@ export class LSystemTreeFactory implements DecorationFactory {
         leafGeos.forEach(g => g.dispose());
 
         return { woodGeo: mergedWood, leafGeo: mergedLeaves, kind, variation };
+    }
+
+    private createLeafGenerator(name: LeafKind): LeafGenerator {
+        switch (name) {
+            case 'willow':
+                return new WillowLeafGenerator();
+            case 'default':
+            default:
+                return new DefaultLeafGenerator();
+        }
     }
 
     private mergeGeometries(geos: THREE.BufferGeometry[], name: string): THREE.BufferGeometry {

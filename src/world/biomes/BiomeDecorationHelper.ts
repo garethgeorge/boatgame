@@ -20,7 +20,8 @@ export class BiomeDecorationHelper {
 
     public isValidDecorationPosition(
         context: DecorationContext,
-        position: { worldX: number; worldZ: number; height: number }
+        position: { worldX: number; worldZ: number; height: number },
+        minHeight: number = 2.0
     ): boolean {
         const riverWidth = context.riverSystem.getRiverWidth(position.worldZ);
         const riverCenter = context.riverSystem.getRiverCenter(position.worldZ);
@@ -36,7 +37,7 @@ export class BiomeDecorationHelper {
         }
 
         // Check minimum height
-        if (position.height < 2.0) return false;
+        if (position.height < minHeight) return false;
 
         // Check visibility
         if (!context.riverSystem.terrainGeometry.checkVisibility(position.worldX, position.height, position.worldZ)) {

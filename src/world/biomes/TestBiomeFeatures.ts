@@ -13,10 +13,14 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         return { r: 0x88 / 255, g: 0x88 / 255, b: 0x88 / 255 };
     }
 
+    public getAmplitudeMultiplier(): number {
+        return 0.0;
+    }
+
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         for (let i = 0; i < 15; ++i) {
             const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-            if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
+            if (!context.decoHelper.isValidDecorationPosition(context, position, 0.0)) continue;
 
             const variation = Math.random();
             const kinds: LSystemTreeKind[] = ['willow', 'poplar', 'oak', 'elm', 'umbrella', 'open', 'irregular'];
@@ -30,6 +34,6 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
         //await this.bottleSpawner.spawn(context, 4, zStart, zEnd);
-        await this.spawner.spawn(context, 2, zStart, zEnd);
+        //await this.spawner.spawn(context, 2, zStart, zEnd);
     }
 }
