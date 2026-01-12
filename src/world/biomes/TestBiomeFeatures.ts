@@ -20,7 +20,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
 
             const variation = Math.random();
             const kinds: LSystemTreeKind[] = ['willow', 'poplar', 'oak', 'elm', 'umbrella', 'open', 'irregular'];
-            const kind = 'irregular'; //kinds[i % kinds.length];
+            const kind = 'umbrella'; //kinds[i % kinds.length];
             const treeInstances = Decorations.getLSystemTreeInstance(kind, variation);
             context.decoHelper.addInstancedDecoration(context, treeInstances, position);
         }

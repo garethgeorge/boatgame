@@ -3,22 +3,57 @@ import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUti
 import { DecorationFactory, DecorationInstance } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
-export type TreeForm = 'standard' | 'umbrella' | 'open' | 'irregular';
+interface LSystemRuleGroup {
+    levels: [number, number]; // [min, max] levels (inclusive, use Infinity for no max)
+    successors: string[];     // Successor strings for 'X'
+    weights: number[];        // Probabilities for each successor
+}
+
+interface InterpretationStrategy {
+    applyOrientationInfluence(quat: THREE.Quaternion, params: TreeParams, level: number, currentDir: THREE.Vector3): void;
+}
+
+class DefaultInterpretationStrategy implements InterpretationStrategy {
+    applyOrientationInfluence(quat: THREE.Quaternion, params: TreeParams, level: number, currentDir: THREE.Vector3): void {
+        if (params.gravity !== 0) {
+            const pullDir = params.gravity > 0 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, -1, 0);
+            const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), pullDir);
+            quat.slerp(targetQuat, Math.abs(params.gravity) * (level + 1) * 0.2);
+        }
+    }
+}
+
+class UmbrellaInterpretationStrategy implements InterpretationStrategy {
+    applyOrientationInfluence(quat: THREE.Quaternion, params: TreeParams, level: number, currentDir: THREE.Vector3): void {
+        if (level > 0) {
+            // Create a "Horizon Target" by stripping the Y (vertical) component
+            const horizonDir = new THREE.Vector3(currentDir.x, 0, currentDir.z).normalize();
+            if (horizonDir.lengthSq() > 0.001) {
+                // Create a Quaternion that represents facing that horizon
+                const horizonQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), horizonDir);
+                // Blend the current rotation toward the horizon
+                // higher strength makes the umbrella flatter
+                quat.slerp(horizonQuat, 0.5);
+            }
+        }
+    }
+}
 
 interface TreeParams {
-    form: TreeForm;
-    spread: number;        // Base angle of branching (radians)
+    axiom: string;
+    rules: LSystemRuleGroup[];
+    spread: number;        // Base angle of branching (degrees)
     gravity: number;       // Positive (Up/Columnar) to Negative (Down/Weeping)
     iterations: number;    // Usually 2 or 3 for small trees
     branchLength: number;  // Length of the trunk
     lengthDecay: number;   // How much shorter child branches are (e.g. 0.8)
-    minExpansionLevel: number; // Minimum depth before pruning is allowed
     trunkLengthMultiplier: number; // Optional multiplier for the initial segment
     thickness: number;     // Starting radius of the trunk
     thicknessDecay: number; // Ratio for branch tapering (e.g. 0.7)
-    jitter: number;        // Organic randomness (0.0 to 0.5)
+    jitter: number;        // Organic randomness (degrees)
     leafColor: number;
     leafStrategy: LeafStrategy;
+    interpretationStrategy: InterpretationStrategy;
 }
 
 interface LeafStrategy {
@@ -100,109 +135,173 @@ export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' | 'umbrella' |
 
 const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
     willow: {
-        form: 'standard',
-        spread: 0.4,
+        axiom: "X",
+        rules: [
+            {
+                levels: [0, 1],
+                successors: ["F[&X]/[&X]/[&X]", "F[&X]/[&X]"],
+                weights: [0.7, 0.3]
+            },
+            {
+                levels: [2, Infinity],
+                successors: ["F[&X]/[&X]/[&X]", "F[&X]/[&X]", "L"],
+                weights: [0.5, 0.3, 0.2]
+            }
+        ],
+        spread: 22.9,
         gravity: -0.5,
         iterations: 5,
         branchLength: 3,
         lengthDecay: 0.8,
-        minExpansionLevel: 2,
         trunkLengthMultiplier: 1.5,
         thickness: 0.15,
         thicknessDecay: 0.7,
-        jitter: 0.2,
+        jitter: 11.5,
         leafColor: 0x41b98d,
-        leafStrategy: new WillowLeafStrategy()
+        leafStrategy: new WillowLeafStrategy(),
+        interpretationStrategy: new DefaultInterpretationStrategy()
     },
     poplar: {
-        form: 'standard',
-        spread: 0.1,
+        axiom: "X",
+        rules: [
+            {
+                levels: [0, Infinity],
+                successors: ["F[&X]/[&X]/[&X]", "F[&X]/[&X]"],
+                weights: [0.8, 0.2]
+            }
+        ],
+        spread: 5.7,
         gravity: 0.15,
         iterations: 3,
         branchLength: 3,
         lengthDecay: 0.75,
-        minExpansionLevel: 1,
         trunkLengthMultiplier: 1.2,
         thickness: 0.2,
         thicknessDecay: 0.75,
-        jitter: 0.05,
+        jitter: 2.9,
         leafColor: 0x3ea043,
-        leafStrategy: new DefaultLeafStrategy()
+        leafStrategy: new DefaultLeafStrategy(),
+        interpretationStrategy: new DefaultInterpretationStrategy()
     },
     oak: {
-        form: 'standard',
-        spread: 1.1,
+        axiom: "X",
+        rules: [
+            {
+                levels: [0, 2],
+                successors: ["F[&X]/[&X]", "F[&X]/[&X]/[&X]"],
+                weights: [0.5, 0.5]
+            },
+            {
+                levels: [3, Infinity],
+                successors: ["F[&X]/[&X]", "F[&X]/[&X]/[&X]", "L"],
+                weights: [0.4, 0.4, 0.2]
+            }
+        ],
+        spread: 63.0,
         gravity: -0.05,
         iterations: 5,
         branchLength: 2.5,
         lengthDecay: 0.8,
-        minExpansionLevel: 2,
         trunkLengthMultiplier: 3.0,
         thickness: 0.6,
         thicknessDecay: 0.6,
-        jitter: 0.3,
+        jitter: 17.2,
         leafColor: 0x228B22,
-        leafStrategy: new DefaultLeafStrategy()
+        leafStrategy: new DefaultLeafStrategy(),
+        interpretationStrategy: new DefaultInterpretationStrategy()
     },
     elm: {
-        form: 'standard',
-        spread: 0.6,
+        axiom: "X",
+        rules: [
+            {
+                levels: [0, Infinity],
+                successors: ["F[&X]/[&X]/[&X]", "F[&X]/[&X]"],
+                weights: [0.7, 0.3]
+            }
+        ],
+        spread: 34.4,
         gravity: 0.0,
         iterations: 5,
         branchLength: 4,
         lengthDecay: 0.7,
-        minExpansionLevel: 2,
         trunkLengthMultiplier: 1.5,
         thickness: 0.25,
         thicknessDecay: 0.7,
-        jitter: 0.1,
+        jitter: 5.7,
         leafColor: 0x2e8b57,
-        leafStrategy: new DefaultLeafStrategy()
+        leafStrategy: new DefaultLeafStrategy(),
+        interpretationStrategy: new DefaultInterpretationStrategy()
     },
     umbrella: { // Stone Pine / Acacia style
-        form: 'umbrella',
-        spread: 1.3,
-        gravity: -0.05,
-        iterations: 7,
-        branchLength: 3,
+        axiom: "FFFX",
+        rules: [
+            {
+                levels: [0, Infinity],
+                successors: ["[&FFFX]/[&FFFX]/[&FFFX]"],
+                weights: [1.0]
+            }
+        ],
+        spread: 70,
+        gravity: 0,
+        iterations: 5,
+        branchLength: 1.5,
         lengthDecay: 0.8,
-        minExpansionLevel: 3,
-        trunkLengthMultiplier: 1.5,
-        thickness: 0.4,
-        thicknessDecay: 0.7,
-        jitter: 0.1,
+        trunkLengthMultiplier: 2.0,
+        thickness: 0.8,
+        thicknessDecay: 0.9,
+        jitter: 5,
         leafColor: 0x1a4a1c,
-        leafStrategy: new DefaultLeafStrategy()
+        leafStrategy: new DefaultLeafStrategy(),
+        interpretationStrategy: new UmbrellaInterpretationStrategy()
     },
-    open: { // Japanese Maple / Birch style
-        form: 'open',
-        spread: 0.8,
+    open: { // Japanese Maple / Birch style -- needs work
+        axiom: "X",
+        rules: [
+            {
+                levels: [0, Infinity],
+                successors: ["F[&X]/[&FL]", "F[&FL]/[&X]"],
+                weights: [0.5, 0.5]
+            }
+        ],
+        spread: 45.8,
         gravity: 0,
         iterations: 5,
         branchLength: 1.5,
         lengthDecay: 0.9,
-        minExpansionLevel: 0,
         trunkLengthMultiplier: 3.0,
         thickness: 0.3,
         thicknessDecay: 0.7,
-        jitter: 0.2,
+        jitter: 11.5,
         leafColor: 0xa03e3e,
-        leafStrategy: new DefaultLeafStrategy()
+        leafStrategy: new DefaultLeafStrategy(),
+        interpretationStrategy: new DefaultInterpretationStrategy()
     },
     irregular: { // Monterey Cypress / Gnarled Oak style
-        form: 'irregular',
-        spread: 0.7,
+        axiom: "X",
+        rules: [
+            {
+                levels: [0, 2],
+                successors: ["F[&X]", "F/&X", "F[&X]/[&X]", "FX"],
+                weights: [0.15, 0.15, 0.65, 0.05]
+            },
+            {
+                levels: [3, Infinity],
+                successors: ["F[&X]", "F/&X", "F[&X]/[&X]", "L"],
+                weights: [0.1, 0.1, 0.7, 0.1]
+            }
+        ],
+        spread: 40.1,
         gravity: 0.1,
         iterations: 8,
         branchLength: 2.5,
         lengthDecay: 0.7,
-        minExpansionLevel: 4,
         trunkLengthMultiplier: 1.5,
         thickness: 0.4,
         thicknessDecay: 0.7,
-        jitter: 0.5,
+        jitter: 28.6,
         leafColor: 0x2d5a27,
-        leafStrategy: new DefaultLeafStrategy()
+        leafStrategy: new DefaultLeafStrategy(),
+        interpretationStrategy: new DefaultInterpretationStrategy()
     }
 };
 
@@ -248,7 +347,7 @@ class ProceduralTree {
         this.branches = [];
         this.leaves = [];
 
-        let axiom = "X";
+        let axiom = params.axiom;
         for (let i = 0; i < params.iterations; i++) {
             axiom = this.expand(params, axiom, i);
         }
@@ -259,6 +358,9 @@ class ProceduralTree {
     private expand(params: TreeParams, input: string, currentLevel: number): string {
         const isLast = currentLevel === params.iterations - 1;
 
+        // Find the rule group for this level
+        const group = params.rules.find(r => currentLevel >= r.levels[0] && currentLevel <= r.levels[1]);
+
         let result = "";
         for (const char of input) {
             if (char === 'X') {
@@ -267,37 +369,24 @@ class ProceduralTree {
                     continue;
                 }
 
-                const roll = Math.random();
-                const canPrune = currentLevel >= params.minExpansionLevel;
-
-                switch (params.form) {
-                    case 'umbrella':
-                        // Delayed branching: if not near last iteration, just grow trunk
-                        if (currentLevel < 2) {
-                            result += "FX";
-                        } else {
-                            result += "F[&X]/[&X]/[&X]";
-                        }
-                        break;
-                    case 'open':
-                        // Sparse branching
-                        result += (roll < 0.5) ? "F[&X]/[&FL]" : "F[&FL]/[&X]"; // Fixed symbol use for spare branching
-                        break;
-                    case 'irregular':
-                        // Asymmetrical/Gnarled
-                        if (roll < 0.15) result += "F[&X]";
-                        else if (roll < 0.3) result += "F/&X";
-                        else if (roll < 0.95) result += "F[&X]/[&X]";
-                        else if (canPrune) result += "L";
-                        else result += "FX";
-                        break;
-                    case 'standard':
-                    default:
-                        if (roll < 0.6) result += "F[&X]/[&X]/[&X]";
-                        else if (roll < 0.9 || !canPrune) result += "F[&X]/[&X]";
-                        else result += "L";
-                        break;
+                if (!group) {
+                    // Fallback to simple growth if no rule matches
+                    result += "F[&X]/[&X]/[&X]";
+                    continue;
                 }
+
+                const roll = Math.random();
+                let acc = 0;
+                let successor = group.successors[group.successors.length - 1]; // Default to last
+
+                for (let i = 0; i < group.successors.length; i++) {
+                    acc += group.weights[i];
+                    if (roll < acc) {
+                        successor = group.successors[i];
+                        break;
+                    }
+                }
+                result += successor;
             } else {
                 result += char;
             }
@@ -322,11 +411,7 @@ class ProceduralTree {
                     }
                     const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(currQuat);
 
-                    if (params.gravity !== 0) {
-                        const pullDir = params.gravity > 0 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, -1, 0);
-                        const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), pullDir);
-                        currQuat.slerp(targetQuat, Math.abs(params.gravity) * (level + 1) * 0.2);
-                    }
+                    params.interpretationStrategy.applyOrientationInfluence(currQuat, params, level, dir);
 
                     const endPos = currPos.clone().add(dir.multiplyScalar(length));
                     const nextThick = currThick * params.thicknessDecay;
@@ -357,13 +442,15 @@ class ProceduralTree {
                     level = prev.level;
                     break;
                 case '&': {
-                    const pitchAngle = params.spread + (Math.random() - 0.5) * params.jitter;
+                    const pitchAngle = THREE.MathUtils.degToRad(params.spread + (Math.random() - 0.5) * params.jitter);
                     const pitch = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), pitchAngle);
                     currQuat.multiply(pitch);
                     break;
                 }
                 case '/': {
-                    const yawAngle = ((Math.PI * 2) / 3) + (Math.random() - 0.5) * params.jitter;
+                    // const yawAngle = ((Math.PI * 2) / 3) + (Math.random() - 0.5) * params.jitter;
+                    const goldenAngle = 2.399;
+                    const yawAngle = goldenAngle + (Math.random() - 0.5) * THREE.MathUtils.degToRad(params.jitter);
                     const yaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yawAngle);
                     currQuat.multiply(yaw);
                     break;
