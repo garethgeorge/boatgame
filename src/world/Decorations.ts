@@ -12,8 +12,9 @@ import { RiverRockFactory } from './factories/RiverRockFactory';
 import { FlowerFactory } from './factories/FlowerFactory';
 import { DecorationInstance } from './factories/DecorationFactory';
 import { MangroveFactory } from './factories/MangroveFactory';
+import { LSystemTreeFactory, LSystemTreeKind } from './factories/LSystemTreeFactory';
 
-export type { DecorationInstance };
+export type { DecorationInstance, LSystemTreeKind };
 
 // Register factories
 DecorationRegistry.register('tree', new TreeFactory());
@@ -41,6 +42,7 @@ DecorationRegistry.register('brontosaurus', new GLTFModelFactory('assets/brontos
 DecorationRegistry.register('pterodactyl', new GLTFModelFactory('assets/pterodactyl-model-1.glb'));
 DecorationRegistry.register('dolphin', new GLTFModelFactory('assets/dolphin-model-1.glb'));
 DecorationRegistry.register('mangrove', new MangroveFactory());
+DecorationRegistry.register('lsystem-tree', new LSystemTreeFactory());
 
 
 
@@ -63,6 +65,11 @@ export class Decorations {
   static getTreeInstance(wetness: number, kind: TreeKind = 'round', isSnowy: boolean = false, isLeafless: boolean = false): DecorationInstance[] {
     const factory = DecorationRegistry.getFactory('tree') as TreeFactory;
     return factory.createInstance({ wetness, kind, isSnowy, isLeafless });
+  }
+
+  static getLSystemTreeInstance(kind: LSystemTreeKind, variation?: number): DecorationInstance[] {
+    const factory = DecorationRegistry.getFactory('lsystem-tree') as LSystemTreeFactory;
+    return factory.createInstance({ kind, variation });
   }
 
   static getBushInstance(wetness: number): DecorationInstance[] {

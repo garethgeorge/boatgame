@@ -4,6 +4,7 @@ import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/TerrainDecorator';
 import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
 import { MonkeySpawner } from '../../entities/spawners/MonkeySpawner';
+import { Decorations, LSystemTreeKind } from '../Decorations';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -13,12 +14,16 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
-        // for (let i = 0; i < 0; ++i) {
-        //     const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-        //     const cycad = Decorations.getTreeFern();
-        //     context.decoHelper.positionAndCollectGeometry(cycad, position, context);
-        //     GraphicsUtils.disposeObject(cycad);
-        // }
+        for (let i = 0; i < 15; ++i) {
+            const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
+            if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
+
+            const variation = Math.random();
+            const kinds: LSystemTreeKind[] = ['elm']; //['willow', 'poplar', 'oak', 'elm'];
+            const kind = kinds[i % kinds.length];
+            const treeInstances = Decorations.getLSystemTreeInstance(kind, variation);
+            context.decoHelper.addInstancedDecoration(context, treeInstances, position);
+        }
     }
 
     private spawner = new MonkeySpawner();
