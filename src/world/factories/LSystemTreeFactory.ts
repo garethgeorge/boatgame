@@ -149,8 +149,8 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         rules: [
             {   // trunk
                 levels: [0, 0],
-                successors: ["FFF[&X]/[&X]/[&X]"],
-                weights: [1.0]
+                successors: ["FFF[&X]/[&X]/[&X]", "FFF[&X]/[&X]/[&X]/[&X]"],
+                weights: [0.5, 0.5]
             },
             {   // arms
                 levels: [1, 1],
