@@ -12,9 +12,10 @@ import { RiverRockFactory } from './factories/RiverRockFactory';
 import { FlowerFactory } from './factories/FlowerFactory';
 import { DecorationInstance } from './factories/DecorationFactory';
 import { MangroveFactory } from './factories/MangroveFactory';
-import { LSystemTreeFactory, LSystemTreeKind } from './factories/LSystemTreeFactory';
+import { LSystemTreeFactory } from './factories/LSystemTreeFactory';
 
-export type { DecorationInstance, LSystemTreeKind };
+export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' | 'umbrella' | 'open' | 'irregular';
+export type { DecorationInstance };
 
 // Register factories
 DecorationRegistry.register('tree', new TreeFactory());

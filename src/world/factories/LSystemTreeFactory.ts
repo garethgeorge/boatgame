@@ -3,9 +3,10 @@ import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUti
 import { DecorationFactory, DecorationInstance } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
-export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm';
+export type TreeForm = 'standard' | 'umbrella' | 'open' | 'irregular';
 
 interface TreeParams {
+    form: TreeForm;
     spread: number;        // Base angle of branching (radians)
     gravity: number;       // Positive (Up/Columnar) to Negative (Down/Weeping)
     iterations: number;    // Usually 2 or 3 for small trees
@@ -95,8 +96,11 @@ class WillowLeafStrategy implements LeafStrategy {
     }
 }
 
+export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' | 'umbrella' | 'open' | 'irregular';
+
 const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
     willow: {
+        form: 'standard',
         spread: 0.4,
         gravity: -0.5,
         iterations: 5,
@@ -111,6 +115,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         leafStrategy: new WillowLeafStrategy()
     },
     poplar: {
+        form: 'standard',
         spread: 0.1,
         gravity: 0.15,
         iterations: 3,
@@ -125,6 +130,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         leafStrategy: new DefaultLeafStrategy()
     },
     oak: {
+        form: 'standard',
         spread: 1.1,
         gravity: -0.05,
         iterations: 5,
@@ -139,6 +145,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         leafStrategy: new DefaultLeafStrategy()
     },
     elm: {
+        form: 'standard',
         spread: 0.6,
         gravity: 0.0,
         iterations: 5,
@@ -151,13 +158,59 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         jitter: 0.1,
         leafColor: 0x2e8b57,
         leafStrategy: new DefaultLeafStrategy()
+    },
+    umbrella: { // Stone Pine / Acacia style
+        form: 'umbrella',
+        spread: 1.3,
+        gravity: -0.05,
+        iterations: 7,
+        branchLength: 3,
+        lengthDecay: 0.8,
+        minExpansionLevel: 3,
+        trunkLengthMultiplier: 1.5,
+        thickness: 0.4,
+        thicknessDecay: 0.7,
+        jitter: 0.1,
+        leafColor: 0x1a4a1c,
+        leafStrategy: new DefaultLeafStrategy()
+    },
+    open: { // Japanese Maple / Birch style
+        form: 'open',
+        spread: 0.8,
+        gravity: 0,
+        iterations: 5,
+        branchLength: 1.5,
+        lengthDecay: 0.9,
+        minExpansionLevel: 0,
+        trunkLengthMultiplier: 3.0,
+        thickness: 0.3,
+        thicknessDecay: 0.7,
+        jitter: 0.2,
+        leafColor: 0xa03e3e,
+        leafStrategy: new DefaultLeafStrategy()
+    },
+    irregular: { // Monterey Cypress / Gnarled Oak style
+        form: 'irregular',
+        spread: 0.7,
+        gravity: 0.1,
+        iterations: 8,
+        branchLength: 2.5,
+        lengthDecay: 0.7,
+        minExpansionLevel: 4,
+        trunkLengthMultiplier: 1.5,
+        thickness: 0.4,
+        thicknessDecay: 0.7,
+        jitter: 0.5,
+        leafColor: 0x2d5a27,
+        leafStrategy: new DefaultLeafStrategy()
     }
 };
 
 interface BranchData {
     start: THREE.Vector3;
     end: THREE.Vector3;
-    radius: number;
+    radiusStart: number;
+    radiusEnd: number;
     level: number;
 }
 
@@ -213,12 +266,38 @@ class ProceduralTree {
                     result += "L";
                     continue;
                 }
-                // Prune only allowed after enough iterations
+
                 const roll = Math.random();
                 const canPrune = currentLevel >= params.minExpansionLevel;
-                if (roll < 0.6) result += "F[&X]/[&X]/[&X]";
-                else if (roll < 0.9 || !canPrune) result += "F[&X]/[&X]";
-                else result += "L";
+
+                switch (params.form) {
+                    case 'umbrella':
+                        // Delayed branching: if not near last iteration, just grow trunk
+                        if (currentLevel < 2) {
+                            result += "FX";
+                        } else {
+                            result += "F[&X]/[&X]/[&X]";
+                        }
+                        break;
+                    case 'open':
+                        // Sparse branching
+                        result += (roll < 0.5) ? "F[&X]/[&FL]" : "F[&FL]/[&X]"; // Fixed symbol use for spare branching
+                        break;
+                    case 'irregular':
+                        // Asymmetrical/Gnarled
+                        if (roll < 0.15) result += "F[&X]";
+                        else if (roll < 0.3) result += "F/&X";
+                        else if (roll < 0.95) result += "F[&X]/[&X]";
+                        else if (canPrune) result += "L";
+                        else result += "FX";
+                        break;
+                    case 'standard':
+                    default:
+                        if (roll < 0.6) result += "F[&X]/[&X]/[&X]";
+                        else if (roll < 0.9 || !canPrune) result += "F[&X]/[&X]";
+                        else result += "L";
+                        break;
+                }
             } else {
                 result += char;
             }
@@ -250,18 +329,25 @@ class ProceduralTree {
                     }
 
                     const endPos = currPos.clone().add(dir.multiplyScalar(length));
-                    this.branches.push({ start: currPos.clone(), end: endPos.clone(), radius: currThick, level });
+                    const nextThick = currThick * params.thicknessDecay;
+                    this.branches.push({
+                        start: currPos.clone(),
+                        end: endPos.clone(),
+                        radiusStart: currThick,
+                        radiusEnd: nextThick,
+                        level
+                    });
 
                     if (symbol === 'L') {
                         this.leaves.push({ pos: endPos.clone(), dir: dir.clone() });
                     }
                     currPos.copy(endPos);
+                    currThick = nextThick;
                     break;
                 }
                 case '[':
                     stack.push({ pos: currPos.clone(), quat: currQuat.clone(), thick: currThick, level });
                     level++;
-                    currThick *= params.thicknessDecay;
                     break;
                 case ']':
                     const prev = stack.pop()!;
@@ -323,7 +409,7 @@ export class LSystemTreeFactory implements DecorationFactory {
 
         for (const branch of tree.branches) {
             const height = branch.start.distanceTo(branch.end);
-            const geo = new THREE.CylinderGeometry(branch.radius * 0.7, branch.radius, height, 6);
+            const geo = new THREE.CylinderGeometry(branch.radiusEnd, branch.radiusStart, height, 6);
 
             const midpoint = new THREE.Vector3().addVectors(branch.start, branch.end).multiplyScalar(0.5);
             const direction = new THREE.Vector3().subVectors(branch.end, branch.start).normalize();
