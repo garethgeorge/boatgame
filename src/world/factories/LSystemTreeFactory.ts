@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { DecorationFactory, DecorationInstance } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
+import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
 
 export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' | 'umbrella' | 'open' | 'irregular';
 
@@ -15,13 +16,19 @@ type TreeShape = 'default' | 'umbrella';
 interface DefaultTreeShapeParams { name: 'default', gravity: number };
 interface UmbrellaTreeShapeParams { name: 'umbrella', strength: number };
 
-type LeafKind = 'blob' | 'willow';
+type LeafKind = 'blob' | 'willow' | 'irregular' | 'cluster';
 interface BlobLeafKindParams {
     name: 'blob'; color: number; size: number; thickness: number;
 }
 interface WillowLeafKindParams {
     name: 'willow', color: number
 };
+interface IrregularLeafKindParams {
+    name: 'irregular', color: number; size: number; thickness: number;
+}
+interface ClusterLeafKindParams {
+    name: 'cluster', color: number; size: number; thickness: number; leaves: number;
+}
 
 interface TreeParams {
     // L-system string generation parameters. The starting axiom, derivation
@@ -39,7 +46,7 @@ interface TreeParams {
     trunkLengthMultiplier: number; // Optional multiplier for the initial segment
     thickness: number;     // Starting radius of the trunk
     thicknessDecay: number; // Ratio for branch tapering (e.g. 0.7)
-    leafKind: BlobLeafKindParams | WillowLeafKindParams;
+    leafKind: BlobLeafKindParams | WillowLeafKindParams | IrregularLeafKindParams | ClusterLeafKindParams;
     treeShape: DefaultTreeShapeParams | UmbrellaTreeShapeParams;
 }
 
@@ -111,7 +118,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         trunkLengthMultiplier: 1.5,
         thickness: 0.9,
         thicknessDecay: 0.75,
-        leafKind: { name: 'blob', color: 0x228B22, size: 1.2, thickness: 0.75 },
+        leafKind: { name: 'cluster', color: 0x228B22, size: 2.0, thickness: 0.2, leaves: 8 },
         treeShape: { name: 'default', gravity: -0.05 }
     },
     elm: {
@@ -245,6 +252,26 @@ class BlobLeafGenerator implements LeafGenerator {
     }
 }
 
+const getOffsetSpherePoint = (center: THREE.Vector3, baseRadius: number, jitter: number): THREE.Vector3 => {
+    // 1. Get a random point on a unit sphere (Direction)
+    const phi = Math.random() * Math.PI * 2;
+    const theta = Math.acos(2 * Math.random() - 1); // Corrects for pole clustering
+
+    const dir = new THREE.Vector3(
+        Math.sin(theta) * Math.cos(phi),
+        Math.sin(theta) * Math.sin(phi),
+        Math.cos(theta)
+    );
+
+    // 2. Randomize the distance (The "Offset")
+    // This pushes the point inside or outside the base shell
+    const offset = (Math.random() - 0.5) * 2 * jitter;
+    const finalRadius = baseRadius + offset;
+
+    // 3. Scale direction by radius and add to center
+    return dir.multiplyScalar(finalRadius).add(center);
+}
+
 class WillowLeafGenerator implements LeafGenerator {
     constructor(readonly params: WillowLeafKindParams) {
     }
@@ -301,6 +328,108 @@ class WillowLeafGenerator implements LeafGenerator {
         }
         positions.needsUpdate = true;
         geo.computeVertexNormals();
+    }
+}
+
+class IrregularLeafGenerator implements LeafGenerator {
+    constructor(readonly params: IrregularLeafKindParams) {
+    }
+
+    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData): void {
+        const baseRadius = (1.0 + Math.random() * 0.5) * this.params.size;
+        const jitter = baseRadius * 0.25;
+
+        // Generate a random point cloud
+        const points: THREE.Vector3[] = [];
+        const pointCount = 10;
+        const center = new THREE.Vector3(0, 0, 0);
+
+        for (let i = 0; i < pointCount; i++) {
+            points.push(getOffsetSpherePoint(center, baseRadius, jitter));
+        }
+
+        let geo: THREE.BufferGeometry = new ConvexGeometry(points);
+
+        // Convert to non-indexed and update normals
+        geo = geo.toNonIndexed();
+        geo.computeVertexNormals();
+
+        // thickness scaling (local Y before orientation)
+        geo.scale(1, this.params.thickness, 1);
+
+        // Transformation: Orient to face leafData.dir and translate to leafData.pos
+        const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), leafData.dir);
+        const matrix = new THREE.Matrix4().compose(leafData.pos, quat, new THREE.Vector3(1, 1, 1));
+        geo.applyMatrix4(matrix);
+
+        const color = new THREE.Color(this.params.color);
+        color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.1);
+        GraphicsUtils.addVertexColors(geo, color);
+
+        leafGeos.push(geo);
+    }
+}
+
+class ClusterLeafGenerator implements LeafGenerator {
+    constructor(readonly params: ClusterLeafKindParams) {
+    }
+
+    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData): void {
+        const baseRadius = (1.0 + Math.random() * 0.5) * this.params.size;
+        const jitter = baseRadius * 0.25;
+        const center = new THREE.Vector3(0, 0, 0);
+
+        const variation = 0.25;
+        const numTriangles = Math.max(1, Math.floor(this.params.leaves * (1 + (Math.random() - 0.5) * 2 * variation)));
+
+        const triangleGeos: THREE.BufferGeometry[] = [];
+
+        for (let i = 0; i < numTriangles; i++) {
+            // 1. Generate point P using spherical offset
+            const P = getOffsetSpherePoint(center, baseRadius, jitter);
+
+            // 2. Apply thickness scaling to the point P
+            P.y *= this.params.thickness;
+
+            // 3. Vector Vout from origin to P
+            const Vout = P.clone().normalize();
+
+            // 4. Create a triangle at P oriented to face Vout
+            // A simple triangle in the X-Z plane, then orient its normal (0, 1, 0) to Vout
+            const triSize = 0.8 * baseRadius;
+            const triGeo = new THREE.BufferGeometry();
+            const vertices = new Float32Array([
+                -triSize / 2, 0, -triSize / 2,
+                triSize / 2, 0, -triSize / 2,
+                0, 0, triSize / 2
+            ]);
+            triGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            triGeo.computeVertexNormals();
+
+            // Orient and translate
+            const triQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), Vout);
+            const triMatrix = new THREE.Matrix4().compose(P, triQuat, new THREE.Vector3(1, 1, 1));
+            triGeo.applyMatrix4(triMatrix);
+
+            // Per-triangle color jitter
+            const color = new THREE.Color(this.params.color);
+            color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.15);
+            GraphicsUtils.addVertexColors(triGeo, color);
+
+            triangleGeos.push(triGeo);
+        }
+
+        if (triangleGeos.length === 0) return;
+
+        let mergedTriangles = BufferGeometryUtils.mergeGeometries(triangleGeos);
+        if (!mergedTriangles) return;
+
+        // Transformation: Orient to face leafData.dir and translate to leafData.pos
+        const finalQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), leafData.dir);
+        const finalMatrix = new THREE.Matrix4().compose(leafData.pos, finalQuat, new THREE.Vector3(1, 1, 1));
+        mergedTriangles.applyMatrix4(finalMatrix);
+
+        leafGeos.push(mergedTriangles);
     }
 }
 
@@ -558,6 +687,10 @@ export class LSystemTreeFactory implements DecorationFactory {
         switch (params.leafKind.name) {
             case 'willow':
                 return new WillowLeafGenerator(params.leafKind);
+            case 'irregular':
+                return new IrregularLeafGenerator(params.leafKind);
+            case 'cluster':
+                return new ClusterLeafGenerator(params.leafKind);
             case 'blob':
             default:
                 return new BlobLeafGenerator(params.leafKind);
