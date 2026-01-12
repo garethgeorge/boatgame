@@ -78,7 +78,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                 'alligator_ambush': {
                     logic: 'scatter',
                     place: 'path',
-                    density: [0.1, 0.3],
+                    density: [0.2, 0.6],
                     types: ['alligator']
                 },
                 'grass_patches': {
@@ -248,8 +248,9 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                             }
                             case 'alligator': {
                                 const logic = 'ambush'; // Mainly ambush in swamp
+                                // Bias towards middle area: [-10, 10]
                                 await this.alligatorSpawner.spawnAnimalAbsolute(
-                                    context, sample, p.range, p.aggressiveness || 0.5, logic
+                                    context, sample, [-10, 10], p.aggressiveness || 0.5, logic
                                 );
                                 break;
                             }
