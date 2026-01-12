@@ -14,7 +14,7 @@ interface LSystemRuleGroup {
 
 type TreeShape = 'default' | 'umbrella';
 interface DefaultTreeShapeParams { name: 'default', gravity: number };
-interface UmbrellaTreeShapeParams { name: 'umbrella', strength: number };
+interface UmbrellaTreeShapeParams { name: 'umbrella', strength: number, minLevel: number };
 
 type LeafKind = 'blob' | 'willow' | 'irregular' | 'cluster' | 'umbrella';
 interface BlobLeafKindParams {
@@ -145,24 +145,34 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         treeShape: { name: 'default', gravity: 0.0 }
     },
     umbrella: { // Stone Pine / Acacia style
-        axiom: "FFFFFX",
+        axiom: "X",
         rules: [
-            {
-                levels: [0, Infinity],
-                successors: ["[&FFFX]/[&FFFX]/[&FFFX]"],
+            {   // trunk
+                levels: [0, 0],
+                successors: ["FFF[&X]/[&X]/[&X]"],
+                weights: [1.0]
+            },
+            {   // arms
+                levels: [1, 1],
+                successors: ["FFF[&X]/[&X]"],
+                weights: [1.0]
+            },
+            {   // canopy
+                levels: [2, Infinity],
+                successors: ["F[&X]/[&X]"],
                 weights: [1.0]
             }
         ],
-        iterations: 5,
-        spread: 70,
-        jitter: 10,
-        branchLength: 1.5,
-        lengthDecay: 0.8,
+        iterations: 6,
+        spread: 20,
+        jitter: 5,
+        branchLength: 2.0,
+        lengthDecay: 0.9,
         trunkLengthMultiplier: 2.0,
-        thickness: 0.8,
-        thicknessDecay: 0.9,
+        thickness: 0.6,
+        thicknessDecay: 0.8,
         leafKind: { name: 'umbrella', color: 0x1a4a1c, size: 2.0, leaves: 10, leafSize: 0.8 },
-        treeShape: { name: 'umbrella', strength: 0.5 }
+        treeShape: { name: 'umbrella', strength: 0.5, minLevel: 2 }
     },
     open: { // Japanese Maple / Birch style
         axiom: "FX",
@@ -543,7 +553,7 @@ class UmbrellaTreeShapeStrategy implements TreeShapeStrategy {
     constructor(readonly params: UmbrellaTreeShapeParams) {
     }
     applyOrientationInfluence(quat: THREE.Quaternion, level: number, currentDir: THREE.Vector3): void {
-        if (level > 0) {
+        if (level >= this.params.minLevel) {
             // Create a "Horizon Target" by stripping the Y (vertical) component
             const horizonDir = new THREE.Vector3(currentDir.x, 0, currentDir.z).normalize();
             if (horizonDir.lengthSq() > 0.001) {
