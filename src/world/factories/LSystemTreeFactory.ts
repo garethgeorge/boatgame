@@ -15,9 +15,13 @@ type TreeShape = 'default' | 'umbrella';
 interface DefaultTreeShapeParams { name: 'default', gravity: number };
 interface UmbrellaTreeShapeParams { name: 'umbrella', strength: number };
 
-type LeafKind = 'default' | 'willow';
-interface DefaultLeafKindParams { name: 'default', color: number };
-interface WillowLeafKindParams { name: 'willow', color: number };
+type LeafKind = 'blob' | 'willow';
+interface BlobLeafKindParams {
+    name: 'blob'; color: number; size: number; thickness: number;
+}
+interface WillowLeafKindParams {
+    name: 'willow', color: number
+};
 
 interface TreeParams {
     // L-system string generation parameters. The starting axiom, derivation
@@ -35,7 +39,7 @@ interface TreeParams {
     trunkLengthMultiplier: number; // Optional multiplier for the initial segment
     thickness: number;     // Starting radius of the trunk
     thicknessDecay: number; // Ratio for branch tapering (e.g. 0.7)
-    leafKind: DefaultLeafKindParams | WillowLeafKindParams;
+    leafKind: BlobLeafKindParams | WillowLeafKindParams;
     treeShape: DefaultTreeShapeParams | UmbrellaTreeShapeParams;
 }
 
@@ -82,7 +86,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         trunkLengthMultiplier: 1.2,
         thickness: 0.2,
         thicknessDecay: 0.75,
-        leafKind: { name: 'default', color: 0x3ea043 },
+        leafKind: { name: 'blob', color: 0x3ea043, size: 1.0, thickness: 2.5 },
         treeShape: { name: 'default', gravity: 0.15 }
     },
     oak: {
@@ -107,7 +111,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         trunkLengthMultiplier: 1.5,
         thickness: 0.9,
         thicknessDecay: 0.75,
-        leafKind: { name: 'default', color: 0x228B22 },
+        leafKind: { name: 'blob', color: 0x228B22, size: 1.2, thickness: 0.75 },
         treeShape: { name: 'default', gravity: -0.05 }
     },
     elm: {
@@ -127,7 +131,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         trunkLengthMultiplier: 1.5,
         thickness: 0.8,
         thicknessDecay: 0.7,
-        leafKind: { name: 'default', color: 0x2e8b57 },
+        leafKind: { name: 'blob', color: 0x2e8b57, size: 1.5, thickness: 1.0 },
         treeShape: { name: 'default', gravity: 0.0 }
     },
     umbrella: { // Stone Pine / Acacia style
@@ -147,7 +151,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         trunkLengthMultiplier: 2.0,
         thickness: 0.8,
         thicknessDecay: 0.9,
-        leafKind: { name: 'default', color: 0x1a4a1c },
+        leafKind: { name: 'blob', color: 0x1a4a1c, size: 2.0, thickness: 0.3 },
         treeShape: { name: 'umbrella', strength: 0.5 }
     },
     open: { // Japanese Maple / Birch style -- needs work
@@ -167,7 +171,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         trunkLengthMultiplier: 3.0,
         thickness: 0.3,
         thicknessDecay: 0.7,
-        leafKind: { name: 'default', color: 0xa03e3e },
+        leafKind: { name: 'blob', color: 0xa03e3e, size: 1.0, thickness: 1.0 },
         treeShape: { name: 'default', gravity: 0 }
     },
     irregular: { // Monterey Cypress / Gnarled Oak style
@@ -192,7 +196,7 @@ const ARCHETYPES: Record<LSystemTreeKind, TreeParams> = {
         trunkLengthMultiplier: 1.5,
         thickness: 0.4,
         thicknessDecay: 0.7,
-        leafKind: { name: 'default', color: 0x2d5a27 },
+        leafKind: { name: 'blob', color: 0x2d5a27, size: 1.0, thickness: 1.0 },
         treeShape: { name: 'default', gravity: 0.1 }
     }
 };
@@ -214,13 +218,24 @@ interface LeafGenerator {
     addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData): void;
 }
 
-class DefaultLeafGenerator implements LeafGenerator {
-    constructor(readonly params: DefaultLeafKindParams) {
+class BlobLeafGenerator implements LeafGenerator {
+    constructor(readonly params: BlobLeafKindParams) {
     }
     addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData): void {
-        const leafSize = 1.0 + Math.random() * 0.5;
-        const geo = new THREE.IcosahedronGeometry(leafSize, 0);
-        geo.applyMatrix4(new THREE.Matrix4().makeTranslation(leafData.pos.x, leafData.pos.y, leafData.pos.z));
+        const baseSize = (1.0 + Math.random() * 0.5) * this.params.size;
+        let geo: THREE.BufferGeometry = new THREE.IcosahedronGeometry(baseSize, 0);
+
+        // Convert to non-indexed to ensure flat shading catches the light correctly per-face
+        geo = geo.toNonIndexed();
+        geo.computeVertexNormals();
+
+        // thickness scaling (local Y before orientation)
+        geo.scale(1, this.params.thickness, 1);
+
+        // Transformation: Orient to face leafData.dir and translate to leafData.pos
+        const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), leafData.dir);
+        const matrix = new THREE.Matrix4().compose(leafData.pos, quat, new THREE.Vector3(1, 1, 1));
+        geo.applyMatrix4(matrix);
 
         const color = new THREE.Color(this.params.color);
         color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.1);
@@ -543,9 +558,9 @@ export class LSystemTreeFactory implements DecorationFactory {
         switch (params.leafKind.name) {
             case 'willow':
                 return new WillowLeafGenerator(params.leafKind);
-            case 'default':
+            case 'blob':
             default:
-                return new DefaultLeafGenerator(params.leafKind);
+                return new BlobLeafGenerator(params.leafKind);
         }
     }
 
