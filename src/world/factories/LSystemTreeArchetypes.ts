@@ -1,4 +1,5 @@
-export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' | 'umbrella' | 'open' | 'irregular';
+export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' |
+    'umbrella' | 'open' | 'irregular' | 'vase';
 
 export type TreeShape = 'default' | 'umbrella';
 export interface DefaultTreeShapeParams { gravity: number };
@@ -163,5 +164,29 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         branchLength: 2.5, trunkLengthMultiplier: 1.5, thickness: 0.4,
         leafKind: { name: 'cluster', params: { color: 0x2d5a27, size: 1.0, thickness: 0.1, leaves: 4, leafSize: 0.8 } },
         treeShape: { name: 'default', params: { gravity: 0.1 } }
+    },
+    vase: {
+        axiom: "tT",
+        rules: {
+            // trunk
+            'T': (i: number) => {
+                if (i < 1) return { successor: "FFT" };
+                return { successor: "vV" };
+            },
+            // fountain
+            'V': (i: number) => {
+                if (i < 4) return { successor: "[&V]/[&V]/[&V]/[&V]" };
+                return { successor: "B" };
+            },
+            // branch
+            'B': { successors: ["FLFB", "FFLB[&B]/[&B]"] }
+        },
+        interpreter: {
+        },
+        iterations: 8,
+        params: { spread: 25, jitter: 15, lengthDecay: 0.9, thicknessDecay: 0.8 },
+        branchLength: 1.0, trunkLengthMultiplier: 1.5, thickness: 0.3,
+        leafKind: { name: 'blob', params: { color: 0x2d5a27, size: 1.5, thickness: 0.5 } },
+        treeShape: { name: 'default', params: { gravity: 0.3 } }
     }
 };

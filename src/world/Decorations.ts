@@ -13,9 +13,9 @@ import { FlowerFactory } from './factories/FlowerFactory';
 import { DecorationInstance } from './factories/DecorationFactory';
 import { MangroveFactory } from './factories/MangroveFactory';
 import { LSystemTreeFactory } from './factories/LSystemTreeFactory';
+import { LSystemTreeKind } from './factories/LSystemTreeArchetypes';
 
-export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' | 'umbrella' | 'open' | 'irregular';
-export type { DecorationInstance };
+export type { DecorationInstance, LSystemTreeKind };
 
 // Register factories
 DecorationRegistry.register('tree', new TreeFactory());

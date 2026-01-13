@@ -42,7 +42,9 @@ class BlobLeafGenerator implements LeafGenerator {
         let geo: THREE.BufferGeometry = new THREE.IcosahedronGeometry(baseSize, 0);
 
         // Convert to non-indexed to ensure flat shading catches the light correctly per-face
-        geo = geo.toNonIndexed();
+        if (geo.index) {
+            geo = geo.toNonIndexed();
+        }
         geo.computeVertexNormals();
 
         // thickness scaling (local Y before orientation)
@@ -160,7 +162,9 @@ class IrregularLeafGenerator implements LeafGenerator {
         let geo: THREE.BufferGeometry = new ConvexGeometry(points);
 
         // Convert to non-indexed and update normals
-        geo = geo.toNonIndexed();
+        if (geo.index) {
+            geo = geo.toNonIndexed();
+        }
         geo.computeVertexNormals();
 
         // thickness scaling (local Y before orientation)
