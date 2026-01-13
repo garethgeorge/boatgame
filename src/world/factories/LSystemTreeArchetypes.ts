@@ -115,21 +115,29 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     },
 
     oak: {
-        axiom: "=X",
+        axiom: "T",
         rules: {
-            'X': (i: number) => {
-                if (i <= 2) return { successors: ["=[&X]/[&X]", "=[&X]/[&X]/[&X]"], weights: [0.5, 0.5] };
-                return { successors: ["=[&X]/[&X]", "=[&X]/[&X]/[&X]", "+"], weights: [0.4, 0.4, 0.2] };
-            }
+            // trunk
+            'T': { successors: ["==c[&C]/[&C]/[&C]"] },
+            // crown branching
+            'C': (i: number) => {
+                if (i < 2) return { successors: ["==[&C]/[&C]", "==[&C]/[&C]/[&C]"], weights: [0.5, 0.5] };
+                return { successor: "B" };
+            },
+            // final branching
+            'B': { successors: ["=[&B]/[&B]", "=[&B]/[&B]/[&B]", "+"], weights: [0.4, 0.4, 0.2] }
         },
-        iterations: 6,
+        interpreter: {
+            // update thickness, turn on gravity
+            'c': { params: { thickness: 0.7, thicknessDecay: 0.5, gravity: 0.05 } }
+        },
+        iterations: 7,
         params: {
             spread: 63.0, jitter: 17.2,
-            length: 4, lengthDecay: 0.8, thickness: 0.9, thicknessDecay: 0.75,
-            gravity: -0.05
+            length: 4, lengthDecay: 0.8, thickness: 0.8, thicknessDecay: 0.9,
         },
         trunkLengthMultiplier: 1.5,
-        leafKind: { kind: 'blob', color: 0x228B22, size: 1.8, thickness: 0.6 },
+        leafKind: { kind: 'blob', color: 0x228B22, size: 1.0, thickness: 0.6 },
     },
 
     elm: {
