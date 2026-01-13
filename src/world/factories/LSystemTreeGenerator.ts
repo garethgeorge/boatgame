@@ -9,6 +9,7 @@ export interface BranchData {
     end: THREE.Vector3;
     radiusStart: number;
     radiusEnd: number;
+    level: number;
 }
 
 export interface LeafData {
@@ -74,11 +75,14 @@ export class ProceduralTree {
         // --- DATA STRUCTURES ---
         class TreeNode {
             children: TreeNode[] = [];
+            leaves: LeafData[] = [];
             leafCount: number = 0;   // The "Pipe" value
             radius: number = 0;      // Calculated in Pass 2
 
-            constructor(public position: THREE.Vector3) {
-            }
+            constructor(
+                public position: THREE.Vector3,
+                public level: number
+            ) { }
         }
 
         interface TurtleState {
@@ -108,7 +112,7 @@ export class ProceduralTree {
         };
 
         // --- PASS 1: BUILD TOPOLOGY ---
-        const root = new TreeNode(new THREE.Vector3(0, 0, 0));
+        const root = new TreeNode(new THREE.Vector3(0, 0, 0), 0);
 
         const turtle: TurtleState = {
             pos: new THREE.Vector3(0, 0, 0),
@@ -146,7 +150,7 @@ export class ProceduralTree {
                     const endPos = turtle.pos.clone().add(dir.multiplyScalar(length));
 
                     // C. Create Graph Node
-                    const newNode = new TreeNode(endPos);
+                    const newNode = new TreeNode(endPos, stack.length);
                     turtle.node.children.push(newNode);
 
                     // D. Move turtle
@@ -161,7 +165,7 @@ export class ProceduralTree {
 
                     // Also store the visual leaf data for final rendering
                     const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
-                    this.leaves.push({ pos: turtle.pos.clone(), dir: dir });
+                    turtle.node.leaves.push({ pos: turtle.pos.clone(), dir: dir });
                     break;
                 }
                 case '[':
@@ -208,24 +212,19 @@ export class ProceduralTree {
                 node.leafCount += calculateLoad(child);
             }
             // Base Case: Tip with no leaves gets small value to ensure non-zero radius
-            if (node.leafCount === 0) node.leafCount = 0.5; // Tweaked param, was 0.1
+            if (node.leafCount === 0) node.leafCount = 0.5;
             return node.leafCount;
         };
         calculateLoad(root);
 
-        // 2b. Apply Radii (Area Preservation: r = base * load^0.5)
-        // The user specified that 'thickness' is the TRUNK thickness.
-        // So we calculate the scaler required to make the root node match that thickness.
+        // 2b. Apply Radii (Area Preservation)
         const trunkThickness = config.params.thickness || 1.0;
         const power = config.params.thicknessDecay || 0.5;
-
-        // We need the root load to normalize
         const rootLoad = root.leafCount;
         const scaler = rootLoad > 0 ? trunkThickness / Math.pow(rootLoad, power) : trunkThickness;
 
         const applyRadii = (node: TreeNode) => {
             node.radius = scaler * Math.pow(node.leafCount, power);
-
             for (let child of node.children) {
                 applyRadii(child);
             }
@@ -233,14 +232,66 @@ export class ProceduralTree {
         applyRadii(root);
 
 
-        // --- PASS 3: GEOMETRY GENERATION ---
+        // --- PASS 3: LENGTH ADJUSTMENT (Vigor) ---
+        const shiftSubtree = (node: TreeNode, offset: THREE.Vector3) => {
+            // Move node's leaves
+            for (const leaf of node.leaves) {
+                leaf.pos.add(offset);
+            }
+            // Move children and their subtrees
+            for (const child of node.children) {
+                child.position.add(offset);
+                shiftSubtree(child, offset);
+            }
+        };
+
+        const adjustNodesForLength = (node: TreeNode) => {
+            for (let child of node.children) {
+                // 1. Calculate relative vigor [0..1]
+                const vigor = node.leafCount > 0 ? child.leafCount / node.leafCount : 0;
+
+                // 2. Determine new length
+                const currentVec = new THREE.Vector3().subVectors(child.position, node.position);
+                const currentLen = currentVec.length();
+
+                const minLen = currentLen * 0.2;
+                const maxLen = currentLen * 1.2;
+
+                const stretch = Math.pow(vigor, 0.5);
+                const newLen = minLen + (maxLen - minLen) * stretch;
+
+                // 3. Move child
+                const direction = currentVec.normalize();
+                const newPos = node.position.clone().add(direction.multiplyScalar(newLen));
+
+                const offset = new THREE.Vector3().subVectors(newPos, child.position);
+                child.position.copy(newPos);
+
+                // 4. Shift Descendants
+                shiftSubtree(child, offset);
+
+                // 5. Recurse
+                adjustNodesForLength(child);
+            }
+        }
+        adjustNodesForLength(root);
+
+
+        // --- PASS 4: GEOMETRY AND LEAF COLLECTION ---
         const generateBranchList = (node: TreeNode) => {
+            // Collect leaves on this node
+            for (const leaf of node.leaves) {
+                this.leaves.push(leaf);
+            }
+
+            // Collect branches to children
             for (let child of node.children) {
                 this.branches.push({
                     start: node.position.clone(),
                     end: child.position.clone(),
                     radiusStart: node.radius,
-                    radiusEnd: child.radius
+                    radiusEnd: child.radius,
+                    level: child.level
                 });
                 generateBranchList(child);
             }
