@@ -47,7 +47,7 @@ export class ProceduralTree {
                     next += symbol;
                     continue;
                 } else if (isLast) {
-                    next += "L";
+                    next += "+";
                     continue;
                 }
 
@@ -83,12 +83,14 @@ export class ProceduralTree {
             pos: THREE.Vector3;
             quat: THREE.Quaternion;
             params: Required<TreeParams>;
+            dist: number;
         }
 
         const stack: TurtleState[] = [];
         const defaultParams = {
             spread: 45,
             jitter: 5,
+            length: 1.0,
             lengthDecay: 0.8,
             thickness: 1.0,
             thicknessDecay: 0.8,
@@ -104,6 +106,15 @@ export class ProceduralTree {
             pos: new THREE.Vector3(0, 0, 0),
             quat: new THREE.Quaternion(),
             params: { ...defaultParams, ...config.params } as Required<TreeParams>,
+            dist: 0,
+        };
+
+        const getScale = (dist: number, params: Required<TreeParams>) => {
+            const reference = params.length || 1;
+            return {
+                lengthScale: Math.pow(params.lengthDecay || 1, dist / reference),
+                thicknessScale: Math.pow(params.thicknessDecay || 1, dist / reference)
+            };
         };
 
         for (const symbol of instructions) {
@@ -116,9 +127,11 @@ export class ProceduralTree {
             }
 
             switch (symbol) {
-                case 'F': {
-                    let length = turtle.params.length;
-                    if (stack.length === 0 && config.trunkLengthMultiplier) {
+                case '=': {
+                    const scales = getScale(turtle.dist, turtle.params);
+                    let length = turtle.params.length * scales.lengthScale;
+
+                    if (turtle.dist === 0 && config.trunkLengthMultiplier) {
                         length *= config.trunkLengthMultiplier;
                     }
 
@@ -128,23 +141,26 @@ export class ProceduralTree {
                     // B. Calculate end point
                     const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
                     const endPos = turtle.pos.clone().add(dir.multiplyScalar(length));
-                    const endThickness = turtle.params.thickness * (turtle.params.thicknessDecay || 1);
+
+                    const radiusStart = turtle.params.thickness * scales.thicknessScale;
+                    const endScales = getScale(turtle.dist + length, turtle.params);
+                    const radiusEnd = turtle.params.thickness * endScales.thicknessScale;
 
                     // C. Add branch
                     this.branches.push({
                         start: turtle.pos.clone(),
                         end: endPos.clone(),
-                        radiusStart: turtle.params.thickness,
-                        radiusEnd: endThickness,
+                        radiusStart: radiusStart,
+                        radiusEnd: radiusEnd,
                         level: stack.length
                     });
 
                     // D. Move turtle
                     turtle.pos.copy(endPos);
-                    turtle.params.thickness = endThickness;
+                    turtle.dist += length;
                     break;
                 }
-                case 'L': {
+                case '+': {
                     const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
                     this.leaves.push({ pos: turtle.pos.clone(), dir: dir });
                     break;
@@ -154,9 +170,8 @@ export class ProceduralTree {
                         pos: turtle.pos.clone(),
                         quat: turtle.quat.clone(),
                         params: { ...turtle.params },
+                        dist: turtle.dist,
                     });
-                    // Apply decay
-                    turtle.params.length *= turtle.params.lengthDecay || 1;
                     break;
                 case ']':
                     const prev = stack.pop();
@@ -164,6 +179,7 @@ export class ProceduralTree {
                         turtle.pos.copy(prev.pos);
                         turtle.quat.copy(prev.quat);
                         turtle.params = { ...prev.params };
+                        turtle.dist = prev.dist;
                     }
                     break;
                 case '&': {

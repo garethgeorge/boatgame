@@ -68,11 +68,11 @@ export interface TreeConfig {
 
 export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     willow: {
-        axiom: "FX",
+        axiom: "=X",
         rules: {
             'X': (i: number) => {
-                if (i <= 3) return { successor: "F[&&X]/[&&X]/[&&X]" };
-                return { successors: ["FX", "L"], weights: [0.9, 0.1] };
+                if (i <= 3) return { successor: "=[&&X]/[&&X]/[&&X]" };
+                return { successors: ["=X", "+"], weights: [0.9, 0.1] };
             }
         },
         iterations: 8,
@@ -87,7 +87,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     poplar: {
         axiom: "X",
         rules: {
-            'X': { successor: "F[&X]/X" }
+            'X': { successor: "=[&X]/X" }
         },
         iterations: 7,
         params: {
@@ -99,11 +99,11 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         leafKind: { kind: 'blob', color: 0x3ea043, size: 1.0, thickness: 2.5 },
     },
     oak: {
-        axiom: "FX",
+        axiom: "=X",
         rules: {
             'X': (i: number) => {
-                if (i <= 2) return { successors: ["F[&X]/[&X]", "F[&X]/[&X]/[&X]"], weights: [0.5, 0.5] };
-                return { successors: ["F[&X]/[&X]", "F[&X]/[&X]/[&X]", "L"], weights: [0.4, 0.4, 0.2] };
+                if (i <= 2) return { successors: ["=[&X]/[&X]", "=[&X]/[&X]/[&X]"], weights: [0.5, 0.5] };
+                return { successors: ["=[&X]/[&X]", "=[&X]/[&X]/[&X]", "+"], weights: [0.4, 0.4, 0.2] };
             }
         },
         iterations: 6,
@@ -118,7 +118,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     elm: {
         axiom: "X",
         rules: {
-            'X': { successors: ["F[&X]/[&X]/[&X]", "F[&X]/[&X]"], weights: [0.7, 0.3] }
+            'X': { successors: ["=[&X]/[&X]/[&X]", "=[&X]/[&X]"], weights: [0.7, 0.3] }
         },
         iterations: 6,
         params: {
@@ -133,11 +133,11 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         axiom: "T",
         rules: {
             // trunk
-            'T': { successors: ["FFF[&A]/[&A]/[&A]", "FFF[&A]/[&A]/[&A]/[&A]"] },
+            'T': { successors: ["===[&A]/[&A]/[&A]", "===[&A]/[&A]/[&A]/[&A]"] },
             // arms, transitions interpreter state
-            'A': { successor: "FFF[&cC]/[&cC]" },
+            'A': { successor: "===[&cC]/[&cC]" },
             // canopy
-            'C': { successor: "F[&C]/[&C]" }
+            'C': { successor: "=[&C]/[&C]" }
         },
         interpreter: {
             // force branches to the horizontal in the canopy
@@ -153,12 +153,12 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         leafKind: { kind: 'umbrella', color: 0x1a4a1c, size: 2.0, leaves: 10, leafSize: 0.8 },
     },
     open: { // Japanese Maple / Birch style
-        axiom: "FX",
+        axiom: "=X",
         rules: {
             'X': (i: number) => {
-                if (i === 0) return { successors: ["&F/&FX", "/&F/&FX"], weights: [0.5, 0.5] };
-                if (i <= 3) return { successors: ["F[&X]/[&X]", "F[&X]"], weights: [0.8, 0.2] };
-                return { successors: ["F[&X]/[&FL]", "F[&FL]/[&X]"], weights: [0.5, 0.5] };
+                if (i === 0) return { successors: ["&=/&=X", "/&=/&=X"], weights: [0.5, 0.5] };
+                if (i <= 3) return { successors: ["=[&X]/[&X]", "=[&X]"], weights: [0.8, 0.2] };
+                return { successors: ["=[&X]/[&=+]", "=[&=+]/[&X]"], weights: [0.5, 0.5] };
             }
         },
         iterations: 6,
@@ -174,9 +174,9 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         axiom: "X",
         rules: {
             'X': (i: number) => {
-                if (i <= 2) return { successors: ["F[&X]", "F/&X", "F[&X]/[&X]"], weights: [0.2, 0.2, 0.6] };
-                if (i === 3) return { successor: "F[&X]/[&X]" };
-                return { successors: ["F[&X]", "F/&X", "F[&X]/[&X]", "L"], weights: [0.1, 0.1, 0.7, 0.1] };
+                if (i <= 2) return { successors: ["=[&X]", "=/&X", "=[&X]/[&X]"], weights: [0.2, 0.2, 0.6] };
+                if (i === 3) return { successor: "=[&X]/[&X]" };
+                return { successors: ["=[&X]", "=/&X", "=[&X]/[&X]", "+"], weights: [0.1, 0.1, 0.7, 0.1] };
             }
         },
         iterations: 12,
@@ -193,7 +193,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         rules: {
             // trunk
             'T': (i: number) => {
-                if (i < 1) return { successor: "FFT" };
+                if (i < 1) return { successor: "==T" };
                 return { successor: "vV" };
             },
             // fountain
@@ -202,7 +202,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
                 return { successor: "B" };
             },
             // branch
-            'B': { successors: ["FLFB", "FFLB[&B]/[&B]"] }
+            'B': { successors: ["=+=B", "==+=B[&B]/[&B]"] }
         },
         interpreter: {
         },
