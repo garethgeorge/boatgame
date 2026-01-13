@@ -8,10 +8,8 @@ import {
     IrregularLeafKindParams,
     ClusterLeafKindParams,
     UmbrellaLeafKindParams,
-    DefaultTreeShapeParams,
-    UmbrellaTreeShapeParams,
-    TreeShapeParams
 } from './LSystemTreeArchetypes';
+import { dirxml } from 'node:console';
 
 export interface BranchData {
     start: THREE.Vector3;
@@ -24,34 +22,6 @@ export interface BranchData {
 export interface LeafData {
     pos: THREE.Vector3;
     dir: THREE.Vector3;
-}
-
-export interface TreeShapeStrategy {
-    applyOrientationInfluence(quat: THREE.Quaternion, level: number, currentDir: THREE.Vector3, treeShape: any): void;
-}
-
-export class DefaultTreeShapeStrategy implements TreeShapeStrategy {
-    constructor(readonly params: DefaultTreeShapeParams) { }
-    applyOrientationInfluence(quat: THREE.Quaternion, level: number, currentDir: THREE.Vector3, treeShape: any): void {
-        const gravity = treeShape.gravity ?? this.params.gravity;
-        if (gravity !== 0) {
-            const pullDir = gravity > 0 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, -1, 0);
-            const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), pullDir);
-            quat.slerp(targetQuat, Math.abs(gravity) * (level + 1) * 0.2);
-        }
-    }
-}
-
-export class UmbrellaTreeShapeStrategy implements TreeShapeStrategy {
-    constructor(readonly params: UmbrellaTreeShapeParams) { }
-    applyOrientationInfluence(quat: THREE.Quaternion, level: number, currentDir: THREE.Vector3, treeShape: any): void {
-        const strength = treeShape.strength ?? this.params.strength;
-        const horizonDir = new THREE.Vector3(currentDir.x, 0, currentDir.z).normalize();
-        if (horizonDir.lengthSq() > 0.001) {
-            const horizonQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), horizonDir);
-            quat.slerp(horizonQuat, strength);
-        }
-    }
 }
 
 /**
@@ -108,25 +78,32 @@ export class ProceduralTree {
     }
 
     private interpret(instructions: string, config: TreeConfig) {
-        const treeShapeStrategy = this.createTreeShapeStrategy(config);
 
         interface TurtleState {
             pos: THREE.Vector3;
             quat: THREE.Quaternion;
-            thick: number;
-            level: number;
             params: Required<TreeParams>;
-            treeShape: any;
         }
 
         const stack: TurtleState[] = [];
+        const defaultParams = {
+            spread: 45,
+            jitter: 5,
+            lengthDecay: 0.8,
+            thickness: 1.0,
+            thicknessDecay: 0.8,
+
+            gravity: 0.0,
+            horizonBias: 0.0,
+            heliotropism: 0.0,
+            wind: new THREE.Vector3(0, 0, 0),
+            antiShadow: 0.0
+        };
+
         const turtle: TurtleState = {
             pos: new THREE.Vector3(0, 0, 0),
             quat: new THREE.Quaternion(),
-            thick: config.thickness,
-            level: 0,
-            params: { ...config.params } as Required<TreeParams>,
-            treeShape: { ...config.treeShape }
+            params: { ...defaultParams, ...config.params } as Required<TreeParams>,
         };
 
         for (const symbol of instructions) {
@@ -136,59 +113,57 @@ export class ProceduralTree {
                 if (result.params) {
                     turtle.params = { ...turtle.params, ...result.params };
                 }
-                if (result.shape) {
-                    turtle.treeShape = { ...turtle.treeShape, ...result.shape };
-                }
             }
 
             switch (symbol) {
-                case 'F':
-                case 'L': {
-                    let length = config.branchLength * Math.pow(turtle.params.lengthDecay || 1, turtle.level);
-                    if (turtle.level === 0 && config.trunkLengthMultiplier) {
+                case 'F': {
+                    let length = turtle.params.length;
+                    if (stack.length === 0 && config.trunkLengthMultiplier) {
                         length *= config.trunkLengthMultiplier;
                     }
+
+                    // A. Apply physical forces
+                    turtle.quat = this.applyTreeForces(turtle.quat, turtle.pos, turtle.params, stack.length);
+
+                    // B. Calculate end point
                     const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
-
-                    treeShapeStrategy.applyOrientationInfluence(turtle.quat, turtle.level, dir, turtle.treeShape);
-
                     const endPos = turtle.pos.clone().add(dir.multiplyScalar(length));
-                    const nextThick = turtle.thick * (turtle.params.thicknessDecay || 1);
+                    const endThickness = turtle.params.thickness * (turtle.params.thicknessDecay || 1);
+
+                    // C. Add branch
                     this.branches.push({
                         start: turtle.pos.clone(),
                         end: endPos.clone(),
-                        radiusStart: turtle.thick,
-                        radiusEnd: nextThick,
-                        level: turtle.level
+                        radiusStart: turtle.params.thickness,
+                        radiusEnd: endThickness,
+                        level: stack.length
                     });
 
-                    if (symbol === 'L') {
-                        this.leaves.push({ pos: endPos.clone(), dir: dir.clone() });
-                    }
+                    // D. Move turtle
                     turtle.pos.copy(endPos);
-                    turtle.thick = nextThick;
+                    turtle.params.thickness = endThickness;
+                    break;
+                }
+                case 'L': {
+                    const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
+                    this.leaves.push({ pos: turtle.pos.clone(), dir: dir });
                     break;
                 }
                 case '[':
                     stack.push({
                         pos: turtle.pos.clone(),
                         quat: turtle.quat.clone(),
-                        thick: turtle.thick,
-                        level: turtle.level,
                         params: { ...turtle.params },
-                        treeShape: { ...turtle.treeShape }
                     });
-                    turtle.level++;
+                    // Apply decay
+                    turtle.params.length *= turtle.params.lengthDecay || 1;
                     break;
                 case ']':
                     const prev = stack.pop();
                     if (prev) {
                         turtle.pos.copy(prev.pos);
                         turtle.quat.copy(prev.quat);
-                        turtle.thick = prev.thick;
-                        turtle.level = prev.level;
                         turtle.params = { ...prev.params };
-                        turtle.treeShape = { ...prev.treeShape };
                     }
                     break;
                 case '&': {
@@ -209,13 +184,71 @@ export class ProceduralTree {
         }
     }
 
-    private createTreeShapeStrategy(config: TreeConfig): TreeShapeStrategy {
-        switch (config.treeShape.kind) {
-            case 'umbrella':
-                return new UmbrellaTreeShapeStrategy(config.treeShape as UmbrellaTreeShapeParams);
-            case 'default':
-            default:
-                return new DefaultTreeShapeStrategy(config.treeShape as DefaultTreeShapeParams);
+    private applyTreeForces(
+        currentQuat: THREE.Quaternion,
+        currentPos: THREE.Vector3,
+        forces: TreeParams,
+        level: number
+    ) {
+        const currentDir = new THREE.Vector3(0, 1, 0).applyQuaternion(currentQuat);
+
+        // 1. FLEXIBILITY CURVE
+        // level 0 = 1.0 (stiff). Higher levels increase flexibility exponentially.
+        // 1.15 is a "stiffness" constant; higher = floppier twigs.
+        const flexibility = Math.pow(1.15, level);
+
+        // --- FORCE A: GRAVITY (Highly dependent on flexibility) ---
+        if (forces.gravity !== 0) {
+            const targetVec = new THREE.Vector3(0, forces.gravity > 0 ? -1 : 1, 0);
+            const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), targetVec);
+
+            // The further from the trunk, the more gravity wins
+            const strength = Math.min(0.95, Math.abs(forces.gravity) * flexibility);
+            currentQuat.slerp(targetQuat, strength);
         }
+
+        // --- FORCE B: WIND (Highly dependent on flexibility) ---
+        if (forces.wind.lengthSq() > 0) {
+            const windDir = forces.wind.clone().normalize();
+            const windQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), windDir);
+
+            // Wind affects thin branches much more than thick trunks
+            const strength = Math.min(0.8, forces.wind.length() * flexibility);
+            currentQuat.slerp(windQuat, strength);
+        }
+
+        // --- FORCE C: HELIOTROPISM (Seeking light) ---
+        if (forces.heliotropism !== 0) {
+            const skyQuat = new THREE.Quaternion(); // Identity = Up [0,1,0]
+
+            // Young shoots (high level) are more phototropic than old wood
+            const strength = Math.min(0.5, forces.heliotropism * flexibility);
+            currentQuat.slerp(skyQuat, strength);
+        }
+
+        // --- FORCE D: HORIZON BIAS (Growth Strategy) ---
+        // Note: We don't multiply by flexibility here because this is an 
+        // architectural "intent" of the tree stage (T, A, C), not a physical sag.
+        if (forces.horizonBias !== 0) {
+            const targetDir = forces.horizonBias > 0
+                ? new THREE.Vector3(currentDir.x, 0, currentDir.z).normalize()
+                : new THREE.Vector3(0, 1, 0);
+
+            if (targetDir.lengthSq() > 0) {
+                const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), targetDir);
+                currentQuat.slerp(targetQuat, Math.abs(forces.horizonBias));
+            }
+        }
+
+        // --- FORCE E: ANTI-SHADOWING (Growth Strategy) ---
+        if (forces.antiShadow !== 0) {
+            const awayFromCenter = new THREE.Vector3(currentPos.x, 0, currentPos.z).normalize();
+            if (awayFromCenter.lengthSq() > 0) {
+                const shadowQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), awayFromCenter);
+                currentQuat.slerp(shadowQuat, forces.antiShadow);
+            }
+        }
+
+        return currentQuat;
     }
 }

@@ -7,15 +7,11 @@ import {
     LSystemTreeKind,
     TreeConfig,
     ARCHETYPES,
-    TreeParams,
     BlobLeafKindParams,
     WillowLeafKindParams,
     IrregularLeafKindParams,
     ClusterLeafKindParams,
     UmbrellaLeafKindParams,
-    DefaultTreeShapeParams,
-    UmbrellaTreeShapeParams,
-    LeafKindParams
 } from './LSystemTreeArchetypes';
 
 import {
