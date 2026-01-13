@@ -70,29 +70,33 @@ export interface TreeConfig {
 
 export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     willow: {
-        axiom: "=U",
+        axiom: "=cC",
         rules: {
-            // upward section
-            'U': (i: number) => {
-                if (i <= 2) return { successor: "=[&&U]/[&&U]/[&&U]" };
+            // crown section
+            'C': (i: number) => {
+                if (i <= 2) return { successor: "[&&=C]/[&&=C]/[&&=C]" };
                 return { successor: "wW" };
             },
             // weeping
-            'W': { successors: ["=W", "+"], weights: [0.9, 0.1] }
+            'W': { successors: ["=W", "E"], weights: [0.8, 0.2] },
+            // final branches
+            'E': { successors: ["[&=+]/[&=+]/[&=+]", "[&=+]/[&=+]/[&=+]/[&=+]"] },
         },
         interpreter: {
+            // change thickness for crown
+            'c': { params: { thickness: 0.8, thicknessDecay: 0.4 } },
             // turn on gravity for weeping
             'w': { params: { gravity: 0.25 } }
         },
-        iterations: 7,
+        iterations: 5,
         params: {
             spread: 22.9, jitter: 11.5,
-            length: 3, lengthDecay: 0.9,
-            thickness: 0.7, thicknessDecay: 0.85, thicknessCurve: 2.0,
+            length: 3, lengthDecay: 0.85,
+            thickness: 0.6, thicknessDecay: 0.8,
             gravity: 0.0
         },
         trunkLengthMultiplier: 1.5,
-        leafKind: { kind: 'willow', color: 0x41b98d, strands: 1 },
+        leafKind: { kind: 'willow', color: 0x41b98d, strands: 3 },
     },
     poplar: {
         axiom: "X",

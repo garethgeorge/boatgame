@@ -83,7 +83,8 @@ export class ProceduralTree {
             pos: THREE.Vector3;
             quat: THREE.Quaternion;
             params: Required<TreeParams>;
-            dist: number;
+            lenDist: number;
+            thicknessDist: number;
         }
 
         const stack: TurtleState[] = [];
@@ -108,17 +109,18 @@ export class ProceduralTree {
             pos: new THREE.Vector3(0, 0, 0),
             quat: new THREE.Quaternion(),
             params: { ...defaultParams, ...config.params } as Required<TreeParams>,
-            dist: 0,
+            lenDist: 0,
+            thicknessDist: 0,
         };
 
-        const getScale = (dist: number, params: Required<TreeParams>) => {
+        const getScale = (lenDist: number, thicknessDist: number, params: Required<TreeParams>) => {
             const lCurve = params.lengthCurve || 1.0;
             const tCurve = params.thicknessCurve || 1.0;
             const reference = params.length || 1.0;
 
             return {
-                lengthScale: Math.pow(params.lengthDecay || 1, Math.pow(dist / reference, lCurve)),
-                thicknessScale: Math.pow(params.thicknessDecay || 1, Math.pow(dist / reference, tCurve))
+                lengthScale: Math.pow(params.lengthDecay || 1, Math.pow(lenDist / reference, lCurve)),
+                thicknessScale: Math.pow(params.thicknessDecay || 1, Math.pow(thicknessDist / reference, tCurve))
             };
         };
 
@@ -127,16 +129,38 @@ export class ProceduralTree {
             if (rule) {
                 const result = typeof rule === 'function' ? rule(stack.length) : rule;
                 if (result.params) {
-                    turtle.params = { ...turtle.params, ...result.params };
+                    const newParams = { ...result.params };
+                    const scales = getScale(turtle.lenDist, turtle.thicknessDist, turtle.params);
+
+                    // special handling for length/lengthDecay, both reset the
+                    // base length
+                    if ('length' in newParams) {
+                        newParams.length = (turtle.params.length * scales.lengthScale) * newParams.length;
+                        turtle.lenDist = 0;
+                    } else if ('lengthDecay' in newParams) {
+                        newParams.length = turtle.params.length * scales.lengthScale;
+                        turtle.lenDist = 0;
+                    }
+
+                    // special handling for thickness/thicknessDecay, both reset the
+                    // base thickness
+                    if ('thickness' in newParams) {
+                        newParams.thickness = (turtle.params.thickness * scales.thicknessScale) * newParams.thickness;
+                        turtle.thicknessDist = 0;
+                    } else if ('thicknessDecay' in newParams) {
+                        newParams.thickness = turtle.params.thickness * scales.thicknessScale;
+                        turtle.thicknessDist = 0;
+                    }
+                    turtle.params = { ...turtle.params, ...newParams };
                 }
             }
 
             switch (symbol) {
                 case '=': {
-                    const scales = getScale(turtle.dist, turtle.params);
+                    const scales = getScale(turtle.lenDist, turtle.thicknessDist, turtle.params);
                     let length = turtle.params.length * scales.lengthScale;
 
-                    if (turtle.dist === 0 && config.trunkLengthMultiplier) {
+                    if (turtle.lenDist === 0 && stack.length === 0 && config.trunkLengthMultiplier) {
                         length *= config.trunkLengthMultiplier;
                     }
 
@@ -148,7 +172,7 @@ export class ProceduralTree {
                     const endPos = turtle.pos.clone().add(dir.multiplyScalar(length));
 
                     const radiusStart = turtle.params.thickness * scales.thicknessScale;
-                    const endScales = getScale(turtle.dist + length, turtle.params);
+                    const endScales = getScale(turtle.lenDist + length, turtle.thicknessDist + length, turtle.params);
                     const radiusEnd = turtle.params.thickness * endScales.thicknessScale;
 
                     // C. Add branch
@@ -162,7 +186,8 @@ export class ProceduralTree {
 
                     // D. Move turtle
                     turtle.pos.copy(endPos);
-                    turtle.dist += length;
+                    turtle.lenDist += length;
+                    turtle.thicknessDist += length;
                     break;
                 }
                 case '+': {
@@ -175,7 +200,8 @@ export class ProceduralTree {
                         pos: turtle.pos.clone(),
                         quat: turtle.quat.clone(),
                         params: { ...turtle.params },
-                        dist: turtle.dist,
+                        lenDist: turtle.lenDist,
+                        thicknessDist: turtle.thicknessDist,
                     });
                     break;
                 case ']':
@@ -184,7 +210,8 @@ export class ProceduralTree {
                         turtle.pos.copy(prev.pos);
                         turtle.quat.copy(prev.quat);
                         turtle.params = { ...prev.params };
-                        turtle.dist = prev.dist;
+                        turtle.lenDist = prev.lenDist;
+                        turtle.thicknessDist = prev.thicknessDist;
                     }
                     break;
                 case '&': {
