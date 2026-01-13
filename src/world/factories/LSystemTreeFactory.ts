@@ -335,16 +335,13 @@ class UmbrellaTreeShapeStrategy implements TreeShapeStrategy {
     }
     applyOrientationInfluence(quat: THREE.Quaternion, level: number, currentDir: THREE.Vector3, treeShape: any): void {
         const strength = treeShape.strength ?? this.params.strength;
-        const minLevel = treeShape.minLevel ?? this.params.minLevel;
-        if (level >= minLevel) {
-            // Create a "Horizon Target" by stripping the Y (vertical) component
-            const horizonDir = new THREE.Vector3(currentDir.x, 0, currentDir.z).normalize();
-            if (horizonDir.lengthSq() > 0.001) {
-                // Create a Quaternion that represents facing that horizon
-                const horizonQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), horizonDir);
-                // Blend the current rotation toward the horizon
-                quat.slerp(horizonQuat, strength);
-            }
+        // Create a "Horizon Target" by stripping the Y (vertical) component
+        const horizonDir = new THREE.Vector3(currentDir.x, 0, currentDir.z).normalize();
+        if (horizonDir.lengthSq() > 0.001) {
+            // Create a Quaternion that represents facing that horizon
+            const horizonQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), horizonDir);
+            // Blend the current rotation toward the horizon
+            quat.slerp(horizonQuat, strength);
         }
     }
 }
@@ -454,8 +451,8 @@ class ProceduralTree {
                 if (result.params) {
                     turtle.params = { ...turtle.params, ...result.params };
                 }
-                if (result.treeShape) {
-                    turtle.treeShape = { ...turtle.treeShape, ...result.treeShape };
+                if (result.shape) {
+                    turtle.treeShape = { ...turtle.treeShape, ...result.shape };
                 }
             }
 
@@ -531,10 +528,10 @@ class ProceduralTree {
     private createTreeShapeStrategy(config: TreeConfig): TreeShapeStrategy {
         switch (config.treeShape.name) {
             case 'umbrella':
-                return new UmbrellaTreeShapeStrategy(config.treeShape);
+                return new UmbrellaTreeShapeStrategy(config.treeShape.params as UmbrellaTreeShapeParams);
             case 'default':
             default:
-                return new DefaultTreeShapeStrategy(config.treeShape);
+                return new DefaultTreeShapeStrategy(config.treeShape.params as DefaultTreeShapeParams);
         }
     }
 }
@@ -604,16 +601,16 @@ export class LSystemTreeFactory implements DecorationFactory {
     private createLeafGenerator(params: TreeConfig): LeafGenerator {
         switch (params.leafKind.name) {
             case 'willow':
-                return new WillowLeafGenerator(params.leafKind);
+                return new WillowLeafGenerator(params.leafKind.params as WillowLeafKindParams);
             case 'irregular':
-                return new IrregularLeafGenerator(params.leafKind);
+                return new IrregularLeafGenerator(params.leafKind.params as IrregularLeafKindParams);
             case 'cluster':
-                return new ClusterLeafGenerator(params.leafKind);
+                return new ClusterLeafGenerator(params.leafKind.params as ClusterLeafKindParams);
             case 'umbrella':
-                return new UmbrellaLeafGenerator(params.leafKind);
+                return new UmbrellaLeafGenerator(params.leafKind.params as UmbrellaLeafKindParams);
             case 'blob':
             default:
-                return new BlobLeafGenerator(params.leafKind);
+                return new BlobLeafGenerator(params.leafKind.params as BlobLeafKindParams);
         }
     }
 
