@@ -291,15 +291,30 @@ export class LSystemTreeFactory implements DecorationFactory {
 
         const treeGen = new ProceduralTree();
 
+        console.log("--- Tree Archetype Triangle Counts ---");
         for (const kind of Object.keys(ARCHETYPES) as LSystemTreeKind[]) {
             const params = ARCHETYPES[kind];
             const list: TreeArchetype[] = [];
+            let totalTriangles = 0;
+            let minTriangles = Infinity;
+            let maxTriangles = -Infinity;
+
             for (let i = 0; i < 10; i++) {
                 treeGen.generate(params);
-                list.push(this.createArchetype(kind, i / 10, treeGen, params));
+                const archetype = this.createArchetype(kind, i / 10, treeGen, params);
+                list.push(archetype);
+
+                const triCount = this.getTriangleCount(archetype.woodGeo) + this.getTriangleCount(archetype.leafGeo);
+                totalTriangles += triCount;
+                minTriangles = Math.min(minTriangles, triCount);
+                maxTriangles = Math.max(maxTriangles, triCount);
             }
             this.archetypes.set(kind, list);
+
+            const avg = totalTriangles / 10;
+            console.log(`[${kind.toUpperCase()}] Avg: ${avg.toFixed(0)}, Min: ${minTriangles}, Max: ${maxTriangles}`);
         }
+        console.log("---------------------------------------");
     }
 
     private createArchetype(kind: LSystemTreeKind, variation: number, tree: ProceduralTree, params: TreeConfig): TreeArchetype {
@@ -331,6 +346,13 @@ export class LSystemTreeFactory implements DecorationFactory {
         leafGeos.forEach(g => g.dispose());
 
         return { woodGeo: mergedWood, leafGeo: mergedLeaves, kind, variation };
+    }
+
+    private getTriangleCount(geo: THREE.BufferGeometry): number {
+        if (geo.index) {
+            return geo.index.count / 3;
+        }
+        return geo.attributes.position ? geo.attributes.position.count / 3 : 0;
     }
 
     private createLeafGenerator(params: TreeConfig): LeafGenerator {

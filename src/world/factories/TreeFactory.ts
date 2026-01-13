@@ -287,7 +287,7 @@ export class TreeFactory implements DecorationFactory {
         });
         this.archetypes.clear();
 
-        console.log("Generating Tree Archetypes...");
+        console.log("--- Tree Archetype Triangle Counts ---");
 
         const configs: TreeConfig[] = [
             new RoundTreeConfig(),
@@ -296,12 +296,26 @@ export class TreeFactory implements DecorationFactory {
         ];
         for (const config of configs) {
             const list: TreeArchetype[] = [];
+            let totalTriangles = 0;
+            let minTriangles = Infinity;
+            let maxTriangles = -Infinity;
+
             for (let i = 0; i < 20; i++) {
                 const wetness = i / 20;
-                list.push(this.generateArchetype(wetness, config));
+                const archetype = this.generateArchetype(wetness, config);
+                list.push(archetype);
+
+                const triCount = this.getTriangleCount(archetype.woodGeo) + this.getTriangleCount(archetype.leafGeo);
+                totalTriangles += triCount;
+                minTriangles = Math.min(minTriangles, triCount);
+                maxTriangles = Math.max(maxTriangles, triCount);
             }
             this.archetypes.set(config.kind, list);
+
+            const avg = totalTriangles / 20;
+            console.log(`[${config.kind.toUpperCase()}] Avg: ${avg.toFixed(0)}, Min: ${minTriangles}, Max: ${maxTriangles}`);
         }
+        console.log("---------------------------------------");
     }
 
     private generateArchetype(wetness: number, config: TreeConfig): TreeArchetype {
@@ -506,6 +520,13 @@ export class TreeFactory implements DecorationFactory {
         merged.name = name;
         GraphicsUtils.registerObject(merged);
         return merged;
+    }
+
+    private getTriangleCount(geo: THREE.BufferGeometry): number {
+        if (geo.index) {
+            return geo.index.count / 3;
+        }
+        return geo.attributes.position ? geo.attributes.position.count / 3 : 0;
     }
 
     private lerpAngle(a: number, b: number, t: number): number {
