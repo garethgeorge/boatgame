@@ -18,15 +18,15 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
-        for (let i = 0; i < 15; ++i) {
+        for (let i = 0; i < 60; ++i) {
             const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
             if (!context.decoHelper.isValidDecorationPosition(context, position, 0.0)) continue;
 
             const variation = Math.random();
             const kinds: LSystemTreeKind[] = ['willow', 'poplar', 'oak', 'elm',
                 'umbrella', 'open', 'irregular', 'vase'];
-            // const kind = kinds[i % kinds.length];
-            const kind = 'vase';
+            const kind = kinds[i % kinds.length];
+            // const kind = 'vase';
             const treeInstances = Decorations.getLSystemTreeInstance(kind, variation);
             context.decoHelper.addInstancedDecoration(context, treeInstances, position);
         }
