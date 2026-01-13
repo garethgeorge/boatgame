@@ -141,18 +141,40 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     },
 
     elm: {
-        axiom: "X",
+        axiom: "T",
         rules: {
-            'X': { successors: ["=[&X]/[&X]/[&X]", "=[&X]/[&X]"], weights: [0.7, 0.3] }
+            // trunk
+            'T': { successors: ["====c[fF]A", "===[cfF]===[cfG]A"] },
+            // fountain bursts
+            'F': { successor: "[&A]/[&A]/[&A]/[&A]/[&A]" },
+            'G': { successor: "[&A]/[&A]/[&A]" },
+            // long arching stems
+            'A': { successor: "=====B" },
+            // terminal branches
+            'B': { successors: ["[&==+]/[&==+]", "[&==+]/[&==+]/[&==+]"] }
         },
-        iterations: 6,
+        interpreter: {
+            // crown parameters for thickness
+            'c': {
+                params: {
+                    thickness: 0.7, thicknessDecay: 0.8,
+                }
+            },
+            // fountain parameters for arching 
+            'f': {
+                params: {
+                    gravity: 0.06//, heliotropism: 0.1
+                }
+            }
+        },
+        iterations: 10,
         params: {
-            spread: 34.4, jitter: 5.7,
-            length: 6, lengthDecay: 0.7, thickness: 0.8, thicknessDecay: 0.7,
+            spread: 30, jitter: 5,
+            length: 1, lengthDecay: 1, thickness: 0.6, thicknessDecay: 0.95,
             gravity: 0.0
         },
         trunkLengthMultiplier: 1.5,
-        leafKind: { kind: 'cluster', color: 0x2e8b57, size: 1.0, thickness: 0.3, leaves: 4, leafSize: 0.8 },
+        leafKind: { kind: 'cluster', color: 0x2e8b57, size: 2.0, thickness: 0.3, leaves: 20, leafSize: 0.5 },
     },
 
     umbrella: { // Stone Pine / Acacia style
