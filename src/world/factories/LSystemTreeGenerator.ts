@@ -1,22 +1,14 @@
 import * as THREE from 'three';
-import { GraphicsUtils } from '../../core/GraphicsUtils';
 import {
     TreeConfig,
     TreeParams,
-    BlobLeafKindParams,
-    WillowLeafKindParams,
-    IrregularLeafKindParams,
-    ClusterLeafKindParams,
-    UmbrellaLeafKindParams,
 } from './LSystemTreeArchetypes';
-import { dirxml } from 'node:console';
 
 export interface BranchData {
     start: THREE.Vector3;
     end: THREE.Vector3;
     radiusStart: number;
     radiusEnd: number;
-    level: number;
 }
 
 export interface LeafData {
@@ -79,15 +71,25 @@ export class ProceduralTree {
 
     private interpret(instructions: string, config: TreeConfig) {
 
+        // --- DATA STRUCTURES ---
+        class TreeNode {
+            children: TreeNode[] = [];
+            leafCount: number = 0;   // The "Pipe" value
+            radius: number = 0;      // Calculated in Pass 2
+
+            constructor(public position: THREE.Vector3) {
+            }
+        }
+
         interface TurtleState {
             pos: THREE.Vector3;
             quat: THREE.Quaternion;
             params: Required<TreeParams>;
             lenDist: number;
-            thicknessDist: number;
+            // thickness params are tracked for scope but ignored for calculation
+            node: TreeNode;
         }
 
-        const stack: TurtleState[] = [];
         const defaultParams = {
             spread: 45,
             jitter: 5,
@@ -105,60 +107,32 @@ export class ProceduralTree {
             antiShadow: 0.0
         };
 
+        // --- PASS 1: BUILD TOPOLOGY ---
+        const root = new TreeNode(new THREE.Vector3(0, 0, 0));
+
         const turtle: TurtleState = {
             pos: new THREE.Vector3(0, 0, 0),
             quat: new THREE.Quaternion(),
             params: { ...defaultParams, ...config.params } as Required<TreeParams>,
             lenDist: 0,
-            thicknessDist: 0,
+            node: root
         };
 
-        const getScale = (lenDist: number, thicknessDist: number, params: Required<TreeParams>) => {
-            const lCurve = params.lengthCurve || 1.0;
-            const tCurve = params.thicknessCurve || 1.0;
-            const reference = params.length || 1.0;
-
-            return {
-                lengthScale: Math.pow(params.lengthDecay || 1, Math.pow(lenDist / reference, lCurve)),
-                thicknessScale: Math.pow(params.thicknessDecay || 1, Math.pow(thicknessDist / reference, tCurve))
-            };
-        };
+        const stack: TurtleState[] = [];
 
         for (const symbol of instructions) {
             const rule = config.interpreter?.[symbol];
             if (rule) {
                 const result = typeof rule === 'function' ? rule(stack.length) : rule;
                 if (result.params) {
-                    const newParams = { ...result.params };
-                    const scales = getScale(turtle.lenDist, turtle.thicknessDist, turtle.params);
-
-                    // special handling for length/lengthDecay, both reset the
-                    // base length
-                    if ('length' in newParams) {
-                        newParams.length = (turtle.params.length * scales.lengthScale) * newParams.length;
-                        turtle.lenDist = 0;
-                    } else if ('lengthDecay' in newParams) {
-                        newParams.length = turtle.params.length * scales.lengthScale;
-                        turtle.lenDist = 0;
-                    }
-
-                    // special handling for thickness/thicknessDecay, both reset the
-                    // base thickness
-                    if ('thickness' in newParams) {
-                        newParams.thickness = (turtle.params.thickness * scales.thicknessScale) * newParams.thickness;
-                        turtle.thicknessDist = 0;
-                    } else if ('thicknessDecay' in newParams) {
-                        newParams.thickness = turtle.params.thickness * scales.thicknessScale;
-                        turtle.thicknessDist = 0;
-                    }
-                    turtle.params = { ...turtle.params, ...newParams };
+                    turtle.params = { ...turtle.params, ...result.params };
                 }
             }
 
             switch (symbol) {
                 case '=': {
-                    const scales = getScale(turtle.lenDist, turtle.thicknessDist, turtle.params);
-                    let length = turtle.params.length * scales.lengthScale;
+                    const lengthScale = Math.pow(turtle.params.lengthDecay, stack.length);
+                    let length = turtle.params.length * lengthScale;
 
                     if (turtle.lenDist === 0 && stack.length === 0 && config.trunkLengthMultiplier) {
                         length *= config.trunkLengthMultiplier;
@@ -171,26 +145,21 @@ export class ProceduralTree {
                     const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
                     const endPos = turtle.pos.clone().add(dir.multiplyScalar(length));
 
-                    const radiusStart = turtle.params.thickness * scales.thicknessScale;
-                    const endScales = getScale(turtle.lenDist + length, turtle.thicknessDist + length, turtle.params);
-                    const radiusEnd = turtle.params.thickness * endScales.thicknessScale;
-
-                    // C. Add branch
-                    this.branches.push({
-                        start: turtle.pos.clone(),
-                        end: endPos.clone(),
-                        radiusStart: radiusStart,
-                        radiusEnd: radiusEnd,
-                        level: stack.length
-                    });
+                    // C. Create Graph Node
+                    const newNode = new TreeNode(endPos);
+                    turtle.node.children.push(newNode);
 
                     // D. Move turtle
-                    turtle.pos.copy(endPos);
+                    turtle.node = newNode; // Move logical turtle
+                    turtle.pos.copy(endPos); // Move physical turtle
                     turtle.lenDist += length;
-                    turtle.thicknessDist += length;
                     break;
                 }
                 case '+': {
+                    // This node supports a leaf
+                    turtle.node.leafCount += 1;
+
+                    // Also store the visual leaf data for final rendering
                     const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
                     this.leaves.push({ pos: turtle.pos.clone(), dir: dir });
                     break;
@@ -201,7 +170,7 @@ export class ProceduralTree {
                         quat: turtle.quat.clone(),
                         params: { ...turtle.params },
                         lenDist: turtle.lenDist,
-                        thicknessDist: turtle.thicknessDist,
+                        node: turtle.node // Save junction point in graph
                     });
                     break;
                 case ']':
@@ -211,7 +180,7 @@ export class ProceduralTree {
                         turtle.quat.copy(prev.quat);
                         turtle.params = { ...prev.params };
                         turtle.lenDist = prev.lenDist;
-                        turtle.thicknessDist = prev.thicknessDist;
+                        turtle.node = prev.node; // Return to junction point
                     }
                     break;
                 case '&': {
@@ -230,6 +199,53 @@ export class ProceduralTree {
                 }
             }
         }
+
+        // --- PASS 2: CALCULATE RADII (Back-Propagation) ---
+
+        // 2a. Calculate Load (Leaf Counts)
+        const calculateLoad = (node: TreeNode): number => {
+            for (let child of node.children) {
+                node.leafCount += calculateLoad(child);
+            }
+            // Base Case: Tip with no leaves gets small value to ensure non-zero radius
+            if (node.leafCount === 0) node.leafCount = 0.5; // Tweaked param, was 0.1
+            return node.leafCount;
+        };
+        calculateLoad(root);
+
+        // 2b. Apply Radii (Area Preservation: r = base * load^0.5)
+        // The user specified that 'thickness' is the TRUNK thickness.
+        // So we calculate the scaler required to make the root node match that thickness.
+        const trunkThickness = config.params.thickness || 1.0;
+        const power = config.params.thicknessDecay || 0.5;
+
+        // We need the root load to normalize
+        const rootLoad = root.leafCount;
+        const scaler = rootLoad > 0 ? trunkThickness / Math.pow(rootLoad, power) : trunkThickness;
+
+        const applyRadii = (node: TreeNode) => {
+            node.radius = scaler * Math.pow(node.leafCount, power);
+
+            for (let child of node.children) {
+                applyRadii(child);
+            }
+        };
+        applyRadii(root);
+
+
+        // --- PASS 3: GEOMETRY GENERATION ---
+        const generateBranchList = (node: TreeNode) => {
+            for (let child of node.children) {
+                this.branches.push({
+                    start: node.position.clone(),
+                    end: child.position.clone(),
+                    radiusStart: node.radius,
+                    radiusEnd: child.radius
+                });
+                generateBranchList(child);
+            }
+        };
+        generateBranchList(root);
     }
 
     private applyTreeForces(

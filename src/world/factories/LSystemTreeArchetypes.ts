@@ -27,10 +27,8 @@ export interface TreeParams {
     jitter?: number;            // jitter for angle to parent and angle around parent (degrees)
     length?: number;            // base length for branches
     lengthDecay?: number;       // length decay factor
-    lengthCurve?: number;       // curve for length decay (1.0 = exponential, >1.0 = trunk-heavy)
-    thickness?: number;         // base thickness for branches
-    thicknessDecay?: number;    // thickness decay factor
-    thicknessCurve?: number;    // curve for thickness decay (1.0 = exponential, >1.0 = trunk-heavy)
+    thickness?: number;         // base thickness for the trunk
+    thicknessDecay?: number;    // thickness decay factor (typically 0.5 to 1.0)
 
     // shaping parameters
     gravity?: number;           // pulls branches to ground or pushes to sky
@@ -83,8 +81,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             'E': { successors: ["[&=+]/[&=+]/[&=+]", "[&=+]/[&=+]/[&=+]/[&=+]"] },
         },
         interpreter: {
-            // change thickness for crown
-            'c': { params: { thickness: 0.8, thicknessDecay: 0.4 } },
             // turn on gravity for weeping
             'w': { params: { gravity: 0.25 } }
         },
@@ -92,7 +88,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         params: {
             spread: 22.9, jitter: 11.5,
             length: 3, lengthDecay: 0.85,
-            thickness: 0.6, thicknessDecay: 0.8,
+            thickness: 0.5, thicknessDecay: 0.7,
             gravity: 0.0
         },
         trunkLengthMultiplier: 1.5,
@@ -102,13 +98,13 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     poplar: {
         axiom: "==X",
         rules: {
-            'X': { successors: ["[&B]==/X", "=+"], weights: [0.95, 0.05] },
+            'X': { successors: ["[&B]==[/X]", "=+"], weights: [0.95, 0.05] },
             'B': { successors: ["=+", "=B"], weights: [0.7, 0.3] }
         },
         iterations: 7,
         params: {
             spread: 15.0, jitter: 5.0,
-            length: 2, lengthDecay: 0.9, thickness: 0.3, thicknessDecay: 0.9,
+            length: 2, lengthDecay: 0.9, thickness: 0.3, thicknessDecay: 0.7,
             gravity: -0.15
         },
         leafKind: { kind: 'blob', color: 0x3ea043, size: 1.0, thickness: 2.5 },
@@ -121,20 +117,20 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             'T': { successors: ["==c[&C]/[&C]/[&C]"] },
             // crown branching
             'C': (i: number) => {
-                if (i < 2) return { successors: ["==[&C]/[&C]", "==[&C]/[&C]/[&C]"], weights: [0.5, 0.5] };
+                if (i < 2) return { successors: ["=[&C]/[&C]", "=[&C]/[&C]/[&C]"], weights: [0.5, 0.5] };
                 return { successor: "B" };
             },
             // final branching
             'B': { successors: ["=[&B]/[&B]", "=[&B]/[&B]/[&B]", "+"], weights: [0.4, 0.4, 0.2] }
         },
         interpreter: {
-            // update thickness, turn on gravity
-            'c': { params: { thickness: 0.7, thicknessDecay: 0.5, gravity: 0.05 } }
+            // turn on gravity
+            'c': { params: { gravity: 0.05 } }
         },
         iterations: 7,
         params: {
             spread: 63.0, jitter: 17.2,
-            length: 4, lengthDecay: 0.8, thickness: 0.8, thicknessDecay: 0.9,
+            length: 4, lengthDecay: 0.8, thickness: 0.7, thicknessDecay: 0.7,
         },
         trunkLengthMultiplier: 1.5,
         leafKind: { kind: 'blob', color: 0x228B22, size: 1.0, thickness: 0.6 },
@@ -154,12 +150,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             'B': { successors: ["[&==+]/[&==+]", "[&==+]/[&==+]/[&==+]"] }
         },
         interpreter: {
-            // crown parameters for thickness
-            'c': {
-                params: {
-                    thickness: 0.7, thicknessDecay: 0.8,
-                }
-            },
             // fountain parameters for arching 
             'f': {
                 params: {
@@ -170,7 +160,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         iterations: 10,
         params: {
             spread: 30, jitter: 5,
-            length: 1, lengthDecay: 1, thickness: 0.6, thicknessDecay: 0.95,
+            length: 1, lengthDecay: 1, thickness: 0.6, thicknessDecay: 0.5,
             gravity: 0.0
         },
         trunkLengthMultiplier: 1.5,
@@ -194,7 +184,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         iterations: 6,
         params: {
             spread: 15, jitter: 5,
-            length: 2, lengthDecay: 0.9, thickness: 0.6, thicknessDecay: 0.8,
+            length: 2, lengthDecay: 0.9, thickness: 0.5, thicknessDecay: 0.6,
             horizonBias: 0.0
         },
         trunkLengthMultiplier: 2.0,
@@ -213,7 +203,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         iterations: 6,
         params: {
             spread: 40, jitter: 10,
-            length: 1.5, lengthDecay: 0.9, thickness: 0.3, thicknessDecay: 0.7,
+            length: 1.5, lengthDecay: 0.9, thickness: 0.2, thicknessDecay: 0.5,
             gravity: 0.0
         },
         trunkLengthMultiplier: 1.0,
@@ -232,7 +222,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         iterations: 12,
         params: {
             spread: 40.1, jitter: 28.6,
-            length: 2.5, lengthDecay: 0.7, thickness: 0.4, thicknessDecay: 0.7,
+            length: 2.5, lengthDecay: 0.7, thickness: 0.4, thicknessDecay: 0.5,
             gravity: 0.1
         },
         trunkLengthMultiplier: 1.5,
@@ -260,7 +250,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         iterations: 8,
         params: {
             spread: 25, jitter: 15,
-            length: 1, lengthDecay: 0.9, thickness: 0.3, thicknessDecay: 0.8,
+            length: 1, lengthDecay: 0.9, thickness: 0.3, thicknessDecay: 0.5,
             gravity: 0.3
         },
         trunkLengthMultiplier: 1.5,
