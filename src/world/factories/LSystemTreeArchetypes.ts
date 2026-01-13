@@ -61,7 +61,7 @@ export interface TreeConfig {
 
     // parameters set only once
     iterations: number;
-    trunkLengthMultiplier: number;
+    trunkLengthMultiplier?: number;
     leafKind: LeafKindParams;
 
     // defaults for per rule parameters
@@ -98,20 +98,22 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         trunkLengthMultiplier: 1.5,
         leafKind: { kind: 'willow', color: 0x41b98d, strands: 3 },
     },
+
     poplar: {
-        axiom: "X",
+        axiom: "==X",
         rules: {
-            'X': { successor: "=[&X]/X" }
+            'X': { successors: ["[&B]==/X", "=+"], weights: [0.95, 0.05] },
+            'B': { successors: ["=+", "=B"], weights: [0.7, 0.3] }
         },
         iterations: 7,
         params: {
-            spread: 5.7, jitter: 2.9,
-            length: 2, lengthDecay: 0.75, thickness: 0.5, thicknessDecay: 0.75,
-            gravity: 0.15
+            spread: 15.0, jitter: 5.0,
+            length: 2, lengthDecay: 0.9, thickness: 0.3, thicknessDecay: 0.9,
+            gravity: -0.15
         },
-        trunkLengthMultiplier: 1.2,
         leafKind: { kind: 'blob', color: 0x3ea043, size: 1.0, thickness: 2.5 },
     },
+
     oak: {
         axiom: "=X",
         rules: {
@@ -129,6 +131,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         trunkLengthMultiplier: 1.5,
         leafKind: { kind: 'blob', color: 0x228B22, size: 1.8, thickness: 0.6 },
     },
+
     elm: {
         axiom: "X",
         rules: {
@@ -143,6 +146,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         trunkLengthMultiplier: 1.5,
         leafKind: { kind: 'cluster', color: 0x2e8b57, size: 1.0, thickness: 0.3, leaves: 4, leafSize: 0.8 },
     },
+
     umbrella: { // Stone Pine / Acacia style
         axiom: "T",
         rules: {
@@ -166,6 +170,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         trunkLengthMultiplier: 2.0,
         leafKind: { kind: 'umbrella', color: 0x1a4a1c, size: 2.0, leaves: 10, leafSize: 0.8 },
     },
+
     open: { // Japanese Maple / Birch style
         axiom: "=X",
         rules: {
@@ -184,6 +189,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         trunkLengthMultiplier: 1.0,
         leafKind: { kind: 'cluster', color: 0xa03e3e, size: 1.0, thickness: 0.3, leaves: 20, leafSize: 0.6 },
     },
+
     irregular: { // Monterey Cypress / Gnarled Oak style
         axiom: "X",
         rules: {
@@ -202,6 +208,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         trunkLengthMultiplier: 1.5,
         leafKind: { kind: 'cluster', color: 0x2d5a27, size: 1.0, thickness: 0.1, leaves: 4, leafSize: 0.8 },
     },
+
     vase: {
         axiom: "tT",
         rules: {
