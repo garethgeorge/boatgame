@@ -68,7 +68,7 @@ export class BlobLeafGenerator implements LeafGenerator {
 export class WillowLeafGenerator implements LeafGenerator {
     constructor(readonly params: WillowLeafKindParams) { }
     addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData): void {
-        const strandCount = 2 + Math.floor(Math.random() * 3);
+        const strandCount = this.params.strands;
         const targetGroundClearance = 2.0;
 
         for (let i = 0; i < strandCount; i++) {
@@ -320,7 +320,11 @@ export class LSystemTreeFactory implements DecorationFactory {
 
         for (const branch of tree.branches) {
             const height = branch.start.distanceTo(branch.end);
-            const geo = new THREE.CylinderGeometry(branch.radiusEnd, branch.radiusStart, height, 6);
+            // Map radius to 3-6 segments. 
+            // 0.4+ -> 6 segments, 0.2- -> 3 segments
+            const t = Math.max(0.0, Math.min((branch.radiusStart - 0.2) / 0.2, 1.0));
+            const radialSegments = Math.floor(3 + 3 * t);
+            const geo = new THREE.CylinderGeometry(branch.radiusEnd, branch.radiusStart, height, radialSegments);
 
             const midpoint = new THREE.Vector3().addVectors(branch.start, branch.end).multiplyScalar(0.5);
             const direction = new THREE.Vector3().subVectors(branch.end, branch.start).normalize();

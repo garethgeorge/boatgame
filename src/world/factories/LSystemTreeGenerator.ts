@@ -92,8 +92,10 @@ export class ProceduralTree {
             jitter: 5,
             length: 1.0,
             lengthDecay: 0.8,
+            lengthCurve: 1.0,
             thickness: 1.0,
             thicknessDecay: 0.8,
+            thicknessCurve: 1.0,
 
             gravity: 0.0,
             horizonBias: 0.0,
@@ -110,10 +112,13 @@ export class ProceduralTree {
         };
 
         const getScale = (dist: number, params: Required<TreeParams>) => {
-            const reference = params.length || 1;
+            const lCurve = params.lengthCurve || 1.0;
+            const tCurve = params.thicknessCurve || 1.0;
+            const reference = params.length || 1.0;
+
             return {
-                lengthScale: Math.pow(params.lengthDecay || 1, dist / reference),
-                thicknessScale: Math.pow(params.thicknessDecay || 1, dist / reference)
+                lengthScale: Math.pow(params.lengthDecay || 1, Math.pow(dist / reference, lCurve)),
+                thicknessScale: Math.pow(params.thicknessDecay || 1, Math.pow(dist / reference, tCurve))
             };
         };
 

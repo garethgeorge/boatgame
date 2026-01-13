@@ -8,7 +8,7 @@ export interface BlobLeafKindParams {
     kind: 'blob'; color: number; size: number; thickness: number;
 }
 export interface WillowLeafKindParams {
-    kind: 'willow'; color: number;
+    kind: 'willow'; color: number; strands: number;
 };
 export interface IrregularLeafKindParams {
     kind: 'irregular'; color: number; size: number; thickness: number;
@@ -23,18 +23,20 @@ export type LeafKindParams = BlobLeafKindParams | WillowLeafKindParams |
     IrregularLeafKindParams | ClusterLeafKindParams | UmbrellaLeafKindParams;
 
 export interface TreeParams {
-    spread?: number;
-    jitter?: number;
-    length?: number;
-    lengthDecay?: number;
-    thickness?: number;
-    thicknessDecay?: number;
+    spread?: number;            // default angle of branch to parent (degrees)
+    jitter?: number;            // jitter for angle to parent and angle around parent (degrees)
+    length?: number;            // base length for branches
+    lengthDecay?: number;       // length decay factor
+    lengthCurve?: number;       // curve for length decay (1.0 = exponential, >1.0 = trunk-heavy)
+    thickness?: number;         // base thickness for branches
+    thicknessDecay?: number;    // thickness decay factor
+    thicknessCurve?: number;    // curve for thickness decay (1.0 = exponential, >1.0 = trunk-heavy)
 
     // shaping parameters
-    gravity?: number;
-    horizonBias?: number;
+    gravity?: number;           // pulls branches to ground or pushes to sky
+    horizonBias?: number;       // pull toward or push away from horizon
     heliotropism?: number;
-    wind?: THREE.Vector3;
+    wind?: THREE.Vector3;       // push branches in wind direction
     antiShadow?: number;
 }
 
@@ -68,21 +70,29 @@ export interface TreeConfig {
 
 export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     willow: {
-        axiom: "=X",
+        axiom: "=U",
         rules: {
-            'X': (i: number) => {
-                if (i <= 3) return { successor: "=[&&X]/[&&X]/[&&X]" };
-                return { successors: ["=X", "+"], weights: [0.9, 0.1] };
-            }
+            // upward section
+            'U': (i: number) => {
+                if (i <= 2) return { successor: "=[&&U]/[&&U]/[&&U]" };
+                return { successor: "wW" };
+            },
+            // weeping
+            'W': { successors: ["=W", "+"], weights: [0.9, 0.1] }
         },
-        iterations: 8,
+        interpreter: {
+            // turn on gravity for weeping
+            'w': { params: { gravity: 0.25 } }
+        },
+        iterations: 7,
         params: {
             spread: 22.9, jitter: 11.5,
-            length: 3, lengthDecay: 0.8, thickness: 0.7, thicknessDecay: 0.6,
-            gravity: -0.25
+            length: 3, lengthDecay: 0.9,
+            thickness: 0.7, thicknessDecay: 0.85, thicknessCurve: 2.0,
+            gravity: 0.0
         },
         trunkLengthMultiplier: 1.5,
-        leafKind: { kind: 'willow', color: 0x41b98d },
+        leafKind: { kind: 'willow', color: 0x41b98d, strands: 1 },
     },
     poplar: {
         axiom: "X",
