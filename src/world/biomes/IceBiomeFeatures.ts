@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/TerrainDecorator';
-import { Decorations } from '../Decorations';
+import { Decorations, LSystemTreeKind } from '../Decorations';
 import { IcebergSpawner } from '../../entities/spawners/IcebergSpawner';
 import { PolarBearSpawner } from '../../entities/spawners/PolarBearSpawner';
 import { PenguinKayakSpawner } from '../../entities/spawners/PenguinKayakSpawner';
@@ -44,7 +44,17 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
 
             if (Math.random() > 0.8) {
                 const isLeafless = Math.random() > 0.5;
-                const treeInstances = Decorations.getTreeInstance(Math.random(), 'round', !isLeafless, isLeafless);
+                const kinds: LSystemTreeKind[] = ['oak', 'elm'];
+                const kind = kinds[Math.floor(Math.random() * kinds.length)];
+                const scale = 0.8 + Math.random() * 0.4;
+
+                const treeInstances = Decorations.getLSystemTreeInstance({
+                    kind,
+                    variation: Math.random(),
+                    isLeafLess: isLeafless,
+                    isSnowy: true, // Snowy for the ice biome
+                    scale
+                });
                 context.decoHelper.addInstancedDecoration(context, treeInstances, position);
             } else if (Math.random() > 0.9) {
                 const rockInstances = Decorations.getRockInstance(this.id, Math.random());
