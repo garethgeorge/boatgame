@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' |
-    'umbrella' | 'open' | 'irregular' | 'vase';
+    'umbrella' | 'open' | 'irregular' | 'vase' | 'birch' | 'elder';
 
 export type LeafKind = 'blob' | 'willow' | 'irregular' | 'cluster' | 'umbrella';
 export interface BlobLeafKindParams {
@@ -29,6 +29,7 @@ export interface TreeParams {
     thickness: number;          // base thickness for the trunk
     thicknessDecay: number;     // thickness decay factor (typically 0.5 to 1.0)
     leafKind: LeafKindParams;
+    trunkColor?: number;        // Optional override for trunk color
 }
 
 export interface BranchParams {
@@ -56,13 +57,19 @@ export type ExpansionRuleDefinition = ExpansionRuleResult | ((val: number) => Ex
 export type BranchRuleDefinition = BranchParams | ((val: number) => BranchParams);
 
 export interface TreeConfig {
+    // starting string
     axiom: string;
+    // grammar substitution rules
     rules: Record<string, ExpansionRuleDefinition>;
+    // final substitution applied to all non-terminals
+    finalRule?: string;
+    // maps branch terminal symbols to parameters
     branches: Record<string, BranchRuleDefinition>;
 
     // parameters for the tree
     params: TreeParams;
     defaults: {
+        // default parameters for branches
         branch: BranchParams;
     }
 }
@@ -294,5 +301,73 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
                 spread: 45, jitter: 5,
             },
         }
+    },
+
+    elder: {
+        // "Mother of the Forest" - Ancient, massive, and distinct
+        axiom: "T",
+        rules: {
+            // twisted trunk
+            'T': { successors: ["###[&C]/[&C]/[&C]"] },
+            // massive crown
+            'C': (i: number) => {
+                if (i < 3) return { successors: ["=[&C]/[&C]", "=[&C]/[&C]"], weights: [0.6, 0.4] };
+                return { successor: "B" };
+            },
+            // gnarly branches
+            'B': { successors: ["==[&B]/[&B]", "+[&B]"], weights: [0.7, 0.3] }
+        },
+        finalRule: "$", // Use $ as final production rule for upward leaves 
+
+        branches: {
+            '#': { gravity: 0.02 },
+            '=': {},
+        },
+        params: {
+            iterations: 8, // More iterations for detail
+            length: 8.0, lengthDecay: 0.85, // Huge starting length
+            thickness: 3.0, thicknessDecay: 0.6, // Massive trunk
+            leafKind: { kind: 'blob', color: 0x1d3618, size: 3.5, thickness: 0.4 }, // Flattened horizontal pads
+            trunkColor: 0x3d3226 // Ancient dark wood
+        },
+        defaults: {
+            branch: {
+                spread: 60.0, jitter: 25.0, gravity: 0.15
+            },
+        }
+    },
+
+    birch: {
+        // Based on Oak, but with adjustments for a birch feel
+        axiom: "T",
+        rules: {
+            // trunk
+            'T': { successors: ["##[&C]/[&C]/[&C]"] },
+            // crown branching
+            'C': (i: number) => {
+                if (i < 2) return { successors: ["=[&C]/[&C]", "=[&C]/[&C]/[&C]"], weights: [0.5, 0.5] };
+                return { successor: "B" };
+            },
+            // final branching
+            'B': { successors: ["=[&B]/[&B]", "=[&B]/[&B]/[&B]", "+"], weights: [0.4, 0.4, 0.2] }
+        },
+
+        branches: {
+            '#': { scale: 1.2, gravity: 0.05 },
+            '=': { gravity: 0.05 },
+        },
+        params: {
+            iterations: 7,
+            length: 3.5, lengthDecay: 0.85,
+            thickness: 0.6, thicknessDecay: 0.7, // Slightly thinner than oak
+            leafKind: { kind: 'blob', color: 0x86bf5e, size: 1.0, thickness: 0.6 }, // Light green leaves
+            trunkColor: 0xe3e3e3 // White/Pale trunk
+        },
+        defaults: {
+            branch: {
+                spread: 50.0, jitter: 15.0
+            },
+        }
     }
 };
+

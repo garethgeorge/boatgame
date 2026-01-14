@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/TerrainDecorator';
-import { Decorations } from '../Decorations';
+import { Decorations, LSystemTreeKind } from '../Decorations';
 import { BrownBearSpawner } from '../../entities/spawners/BrownBearSpawner';
 import { MooseSpawner } from '../../entities/spawners/MooseSpawner';
 import { DucklingSpawner } from '../../entities/spawners/DucklingSpawner';
@@ -118,16 +118,44 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         const length = zEnd - zStart;
-        const count = Math.floor(length * 16);
+        // Forest is denser than Happy biome (1.0), but L-system trees are heavier than simple ones.
+        // We'll use a moderate density.
+        const count = Math.floor(length * 4);
 
         for (let i = 0; i < count; i++) {
             const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
             if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
 
-            if (Math.random() > 0.8) {
-                const treeInstances = Decorations.getTreeInstance(Math.random(), 'round', false, false);
+            if (Math.random() > 0.2) { // 80% trees
+                // Consistent local type logic:
+                // Use a low-frequency sine wave on Z to transition between forest types.
+                // Add some noise to blend the edges.
+                const zone = Math.sin(position.worldZ * 0.005) + (Math.random() * 0.4 - 0.2);
+                
+                let kind: LSystemTreeKind;
+
+                // Check for Elder Tree spawn (Mother of the Forest)
+                // Needs to be far from the bank and rare
+                const riverWidth = context.riverSystem.getRiverWidth(position.worldZ);
+                const riverCenter = context.riverSystem.getRiverCenter(position.worldZ);
+                const distFromCenter = Math.abs(position.worldX - riverCenter);
+                const distFromBank = distFromCenter - riverWidth / 2;
+
+                if (distFromBank > 30 && Math.random() < 0.02) {
+                    kind = 'elder';
+                } else {
+                    if (zone > 0) {
+                        kind = 'birch';
+                    } else {
+                        kind = 'oak';
+                    }
+                }
+
+                // Variation is just random for now
+                const variation = Math.random();
+                const treeInstances = Decorations.getLSystemTreeInstance(kind, variation);
                 context.decoHelper.addInstancedDecoration(context, treeInstances, position);
-            } else if (Math.random() > 0.95) {
+            } else if (Math.random() > 0.5) { // Remaining 20% split between rocks and empty
                 const rockInstances = Decorations.getRockInstance(this.id, Math.random());
                 context.decoHelper.addInstancedDecoration(context, rockInstances, position);
             }

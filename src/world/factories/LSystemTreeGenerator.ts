@@ -40,7 +40,7 @@ export class ProceduralTree {
                     next += symbol;
                     continue;
                 } else if (isLast) {
-                    next += "+";
+                    next += (config.finalRule || "+");
                     continue;
                 }
 
@@ -156,6 +156,13 @@ export class ProceduralTree {
                     // Also store the visual leaf data for final rendering
                     const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
                     turtle.node.leaves.push({ pos: turtle.pos.clone(), dir: dir });
+                    break;
+                }
+                case '$': {
+                    // Like '+', but forces the leaf direction to be absolute UP (0,1,0)
+                    // This creates horizontal pads/canopies regardless of branch orientation
+                    turtle.node.leafCount += 1;
+                    turtle.node.leaves.push({ pos: turtle.pos.clone(), dir: new THREE.Vector3(0, 1, 0) });
                     break;
                 }
                 case '[':
