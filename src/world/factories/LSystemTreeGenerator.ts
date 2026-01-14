@@ -108,6 +108,7 @@ export class ProceduralTree {
             horizonBias: 0.0,
             heliotropism: 0.0,
             wind: new THREE.Vector3(0, 0, 0),
+            windForce: 0,
             antiShadow: 0.0
         };
 
@@ -323,12 +324,12 @@ export class ProceduralTree {
         }
 
         // --- FORCE B: WIND (Highly dependent on flexibility) ---
-        if (forces.wind.lengthSq() > 0) {
+        if (forces.windForce > 0 && forces.wind.lengthSq() > 0) {
             const windDir = forces.wind.clone().normalize();
             const windQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), windDir);
 
             // Wind affects thin branches much more than thick trunks
-            const strength = Math.min(0.8, forces.wind.length() * flexibility);
+            const strength = Math.min(0.8, forces.windForce * flexibility);
             currentQuat.slerp(windQuat, strength);
         }
 

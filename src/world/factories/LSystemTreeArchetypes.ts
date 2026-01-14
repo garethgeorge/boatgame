@@ -35,6 +35,7 @@ export interface TreeParams {
     horizonBias?: number;       // pull toward or push away from horizon
     heliotropism?: number;
     wind?: THREE.Vector3;       // push branches in wind direction
+    windForce?: number;
     antiShadow?: number;
 }
 
@@ -211,49 +212,50 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     },
 
     irregular: { // Monterey Cypress / Gnarled Oak style
-        axiom: "X",
+        axiom: "tX",
         rules: {
-            'X': (i: number) => {
-                if (i <= 2) return { successors: ["=[&X]", "=/&X", "=[&X]/[&X]"], weights: [0.2, 0.2, 0.6] };
-                if (i === 3) return { successor: "=[&X]/[&X]" };
-                return { successors: ["=[&X]", "=/&X", "=[&X]/[&X]", "+"], weights: [0.1, 0.1, 0.7, 0.1] };
+            'X': (level: number) => {
+                if (level < 2) return { successor: "==[&X][X]" };
+                if (level < 3) return { successor: "v===[&&X]/[&&X]" };
+                if (level < 4) return { successor: "v==[&&X]/[&&X]" };
+                return { successor: "c==[&+]/[&+]" };
             }
+        },
+        interpreter: {
+            't': { params: { windForce: 0.05 } },
+            'v': { params: { windForce: 0.1, gravity: 0.05 } },
+            'c': { params: { windForce: 0.2, heliotropism: 1.0 } },
         },
         iterations: 12,
         params: {
-            spread: 40.1, jitter: 28.6,
-            length: 2.5, lengthDecay: 0.7, thickness: 0.4, thicknessDecay: 0.5,
-            gravity: 0.1
+            spread: 30, jitter: 10,
+            length: 1.0, lengthDecay: 0.9, thickness: 0.3, thicknessDecay: 0.6,
+            wind: new THREE.Vector3(-0.6, 0.1, 0)
         },
-        trunkLengthMultiplier: 1.5,
-        leafKind: { kind: 'cluster', color: 0x2d5a27, size: 1.0, thickness: 0.1, leaves: 4, leafSize: 0.8 },
+        leafKind: { kind: 'blob', color: 0x228B22, size: 1.0, thickness: 0.3 },
     },
 
     vase: {
-        axiom: "tT",
+        axiom: "T",
         rules: {
             // trunk
-            'T': (i: number) => {
-                if (i < 1) return { successor: "==T" };
-                return { successor: "vV" };
-            },
+            'T': { successor: "====vV" },
             // fountain
-            'V': (i: number) => {
-                if (i < 4) return { successor: "[&V]/[&V]/[&V]/[&V]" };
-                return { successor: "B" };
-            },
+            'V': { successor: "[&W]/[&W]/[&W]" },
+            'W': { successors: ["+====+[&B]/[&B]/[&B]", "=+==+[&B]/[&B]"], weights: [0.5, 0.5] },
             // branch
-            'B': { successors: ["=+=B", "==+=B[&B]/[&B]"] }
+            'B': { successors: ["L", "[&L]/[&L]"] },
+            // leaf
+            'L': { successor: "===+" }
         },
         interpreter: {
+            'v': { params: { heliotropism: 0.2 } }
         },
         iterations: 8,
         params: {
-            spread: 25, jitter: 15,
-            length: 1, lengthDecay: 0.9, thickness: 0.3, thicknessDecay: 0.5,
-            gravity: 0.3
+            spread: 45, jitter: 5,
+            length: 0.75, lengthDecay: 0.9, thickness: 0.3, thicknessDecay: 0.5,
         },
-        trunkLengthMultiplier: 1.5,
-        leafKind: { kind: 'blob', color: 0x2d5a27, size: 1.5, thickness: 0.5 },
+        leafKind: { kind: 'blob', color: 0x2d5a27, size: 1.0, thickness: 0.5 },
     }
 };
