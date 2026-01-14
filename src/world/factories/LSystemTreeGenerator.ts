@@ -40,7 +40,7 @@ export class ProceduralTree {
                     next += symbol;
                     continue;
                 } else if (isLast) {
-                    next += "+";
+                    next += (config.terminalSymbol || "+");
                     continue;
                 }
 
@@ -158,6 +158,13 @@ export class ProceduralTree {
                     turtle.node = newNode; // Move logical turtle
                     turtle.pos.copy(endPos); // Move physical turtle
                     turtle.lenDist += length;
+                    break;
+                }
+                case '$': {
+                    // Like '+', but forces the leaf direction to be absolute UP (0,1,0)
+                    // This creates horizontal pads/canopies regardless of branch orientation
+                    turtle.node.leafCount += 1;
+                    turtle.node.leaves.push({ pos: turtle.pos.clone(), dir: new THREE.Vector3(0, 1, 0) });
                     break;
                 }
                 case '+': {

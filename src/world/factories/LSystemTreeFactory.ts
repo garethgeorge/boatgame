@@ -54,6 +54,7 @@ export class BlobLeafGenerator implements LeafGenerator {
         geo.scale(1, this.params.thickness, 1);
 
         const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), leafData.dir);
+
         const matrix = new THREE.Matrix4().compose(leafData.pos, quat, new THREE.Vector3(1, 1, 1));
         geo.applyMatrix4(matrix);
 
@@ -399,12 +400,19 @@ export class LSystemTreeFactory implements DecorationFactory {
             }
         }
 
+        const woodInstance: DecorationInstance = {
+            geometry: best.woodGeo,
+            material: LSystemTreeFactory.woodMaterial,
+            matrix: new THREE.Matrix4()
+        };
+
+        const config = ARCHETYPES[kind];
+        if (config && config.trunkColor !== undefined) {
+             woodInstance.color = new THREE.Color(config.trunkColor);
+        }
+
         return [
-            {
-                geometry: best.woodGeo,
-                material: LSystemTreeFactory.woodMaterial,
-                matrix: new THREE.Matrix4()
-            },
+            woodInstance,
             {
                 geometry: best.leafGeo,
                 material: LSystemTreeFactory.leafMaterial,
