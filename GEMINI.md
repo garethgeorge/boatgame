@@ -239,8 +239,9 @@ The generator follows a 4-pass process to create a complete tree mesh:
 1.  **Topology Pass (Turtle Graphics)**:
     -   Interprets the L-System string (axiom + iterations).
     -   Uses "Turtle" logic to build a topological graph of `TreeNode`s.
-    -   Handles branching `[` `]`, rotation `&` `/`, and growth `=`.
-    -   Applies physical modifiers like `gravity`, `wind`, and `heliotropism`.
+    -   Handles state management `[` `]`, rotation `&` `/`, and leaf placement `+` `$`.
+    -   Processes terminal symbols defined in the `branches` registry to create branch segments.
+    -   Applies physical modifiers like `gravity`, `wind`, and `heliotropism` based on the active branch parameters.
 2.  **Radii Pass (Pipe Model)**:
     -   Calculates branch thickness using the "Pipe Model" theory.
     -   Back-propagates "leaf load" from tips to root.
@@ -260,28 +261,32 @@ Trees are defined by `TreeConfig` objects in the `ARCHETYPES` registry.
     -   **Simple**: `'A': { successor: "AB" }`
     -   **Stochastic**: `'A': { successors: ["A", "B"], weights: [0.8, 0.2] }`
     -   **Parametric**: `'A': (i) => { return ... }` (Rules can change based on iteration count).
+-   **Branches**: A dictionary mapping terminal symbols to `BranchParams`.
+    -   **Example**: `'=': { gravity: 0.1 }`
 
 #### B. Symbols
--   `=` : **Draw Branch**. Advances turtle and creates geometry.
--   `[` : **Push State**. Start a new branch.
--   `]` : **Pop State**. End current branch and return to parent.
--   `&` : **Pitch**. Rotate around the local X axis (controlled by `spread`).
--   `/` : **Yaw**. Rotate around the local Y axis (golden angle).
--   `+` : **Leaf Placement**. Marks a node as having a leaf.
--   `A-Z`: **Non-terminal symbols**. Used for logic and structure (e.g., `'T'` for Trunk, `'C'` for Crown).
+-   **Terminal Symbols (Branching)**: Any symbol present in the `branches` record (e.g., `=`, `#`, `-`) will trigger the creation of a branch segment and move the turtle forward. These can be defined with custom `BranchParams`.
+-   **Built-in Graphics Symbols**:
+    -   `[` : **Push State**. Start a new branch junction.
+    -   `]` : **Pop State**. End current branch and return to parent junction.
+    -   `&` : **Pitch**. Rotate around the local X axis (controlled by `spread`).
+    -   `/` : **Yaw**. Rotate around the local Y axis (golden angle).
+    -   `+` : **Standard Leaf**. Marks a node as having a leaf oriented along the branch.
+    -   `$` : **Upright Leaf**. Marks a node as having a leaf oriented vertically (up).
+-   **Non-terminal symbols**: Any other symbol (typically `A-Z`) used for expansion logic.
 
-#### C. Interpreter & Parameters
-The `interpreter` map links symbols to physical parameters.
--   **Example**: `interpreter: { 'w': { params: { gravity: 0.25 } } }`
-    -   When the turtle encounters `'w'`, it updates its internal state to have `gravity: 0.25`.
--   **Available Parameters**:
-    -   `spread`: Branching angle.
-    -   `length`, `lengthDecay`: Base length and per-iteration scaling.
-    -   `thickness`, `thicknessDecay`: Base thickness and pipe-model exponent.
+#### C. Branch Parameters
+Each symbol in the `branches` registry is associated with `BranchParams` that define its physical behavior:
+-   **Geometric**:
+    -   `scale`: Multiplier for the branch length.
+    -   `spread`: Local branching angle (degrees).
+    -   `jitter`: Random variation in branching angles.
+-   **Physical Forces**:
     -   `gravity`: Pulls branches down (+ve) or up (-ve).
-    -   `wind`: Directional force vector.
+    -   `wind`, `windForce`: Directional force affecting branch orientation.
     -   `heliotropism`: Bias towards the vertical (up).
     -   `horizonBias`: Bias towards the horizontal plane.
+    -   `antiShadow`: Push growth away from the center of the tree.
 
 ### 3. Leaf Generation
 Leaves are generated separately using strategies defined in `LeafKind`.
