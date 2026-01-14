@@ -39,47 +39,16 @@ export class WaterGrass extends Entity {
                 `
                 #include <begin_vertex>
                 
-                // Calculate distance in World Space (XZ plane)
-                // We need world position of the vertex
-                // transforms are: modelMatrix * vec4(position, 1.0)
-                
                 vec4 worldPos = modelMatrix * vec4(transformed, 1.0);
                 
-                // Simple circular interaction radius around player
                 float dist = distance(worldPos.xz, uPlayerPosition.xz);
                 
-                // Boat is approx 2.4m wide, 6m long. Let's say radius 2.5m safe zone.
                 float radius = 1.6;
                 float falloff = 2.0;
                 
                 if (dist < radius + falloff) {
-                    // Calculate depression factor (0.0 = full depression, 1.0 = normal)
-                    // If dist < radius, full squash
-                    // If dist > radius, ramp up to 1.0
-                    
                     float t = smoothstep(radius, radius + falloff, dist);
-                    
-                    // Squash Y towards a target depth (e.g. -1.0)
-                    // Or just scale Y down to 0?
-                    // Let's squash it down.
-                    // Assuming grass base is at Y ~ -0.2 (from constructor)
-                    // We want to push top vertices down.
-                    
-                    // Only squash if vertex is above a certain height? 
-                    // Or just squash everything? Squashing everything is easier.
-                    
-                    // Interpolate Current Y towards Squashed Y (-2.5 to be under hull)
                     float squashedY = -2.5;
-                    
-                    // We only modify 'transformed' (Object Space). 
-                    // But we used World Space for distance.
-                    // To modify transformed correctly based on world proximity, we can't easily undo the world transform here without inverse?
-                    // Actually, 'transformed' is the variable we write to.
-                    // If we want to set World Y, we have to adjust Object Y.
-                    // Object Y = World Y (if matrix is identity rotation/scale for Y... roughly true for grass patches usually unless rotated on X/Z)
-                    // WaterGrassMesh is translated to (x, 0, z) and rotated Y.
-                    // So Object Y maps directly to World Y.
-                    
                     transformed.y = mix(squashedY, transformed.y, t);
                 }
                 `
@@ -95,7 +64,6 @@ export class WaterGrass extends Entity {
     constructor(x: number, y: number, width: number, length: number, rotation: number, physicsEngine: PhysicsEngine) {
         super();
         this.width = width;
-        // Density of wisps per unit area
         this.density = 2.0;
 
         // Visuals
@@ -247,7 +215,7 @@ export class WaterGrass extends Entity {
             const mesh = GraphicsUtils.createMesh(merged, this.material, 'WaterGrassPatch');
             mesh.receiveShadow = false;
             
-            // To be "under water surface", y should be slightly negative?
+            // To be "under water surfacefo", y should be slightly negative?
             // Water usually is at y=0 or y=-0.5?
             // "visible under the water surface"
             // Let's push them down a bit.
