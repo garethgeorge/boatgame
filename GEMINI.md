@@ -228,6 +228,66 @@ The `BoatPathLayoutStrategy.createLayout()` follows a deterministic multi-step p
 - Avoid casting to any in typescript except where there is no reasonable alternative or it is being done for performance reasons.
 - Don't remove comments in the code unless they are no longer applicable.
 
-## 13. Verification
+## 13. Procedural Tree System (L-Systems)
+**Files**: `src/world/factories/LSystemTreeGenerator.ts`, `src/world/factories/LSystemTreeArchetypes.ts`
+
+The vegetation system uses a Lindenmayer System (L-System) to generate procedural tree geometries. This allows for defining complex, organic tree structures using simple string-based production rules and parameters.
+
+### 1. Generation Pipeline (`LSystemTreeGenerator.ts`)
+The generator follows a 4-pass process to create a complete tree mesh:
+
+1.  **Topology Pass (Turtle Graphics)**:
+    -   Interprets the L-System string (axiom + iterations).
+    -   Uses "Turtle" logic to build a topological graph of `TreeNode`s.
+    -   Handles branching `[` `]`, rotation `&` `/`, and growth `=`.
+    -   Applies physical modifiers like `gravity`, `wind`, and `heliotropism`.
+2.  **Radii Pass (Pipe Model)**:
+    -   Calculates branch thickness using the "Pipe Model" theory.
+    -   Back-propagates "leaf load" from tips to root.
+    -   `radius = thickness * (leafCount ^ thicknessDecay)`.
+3.  **Vigor Pass (Length Adjustment)**:
+    -   Adjusts branch lengths based on "vigor" (ratio of child load to parent load).
+    -   Vigorous branches (more leaves) grow longer; weak branches receive less resources and stay shorter.
+4.  **Geometry Pass**:
+    -   Converts the adjusted node graph into `CylinderGeometry` for branches and instanced meshes for leaves.
+
+### 2. Defining Trees (`LSystemTreeArchetypes.ts`)
+Trees are defined by `TreeConfig` objects in the `ARCHETYPES` registry.
+
+#### A. Grammar & Rules
+-   **Axiom**: The starting string (e.g., `"X"`).
+-   **Rules**: String replacements applied each iteration.
+    -   **Simple**: `'A': { successor: "AB" }`
+    -   **Stochastic**: `'A': { successors: ["A", "B"], weights: [0.8, 0.2] }`
+    -   **Parametric**: `'A': (i) => { return ... }` (Rules can change based on iteration count).
+
+#### B. Symbols
+-   `=` : **Draw Branch**. Advances turtle and creates geometry.
+-   `[` : **Push State**. Start a new branch.
+-   `]` : **Pop State**. End current branch and return to parent.
+-   `&` : **Pitch**. Rotate around the local X axis (controlled by `spread`).
+-   `/` : **Yaw**. Rotate around the local Y axis (golden angle).
+-   `+` : **Leaf Placement**. Marks a node as having a leaf.
+-   `A-Z`: **Non-terminal symbols**. Used for logic and structure (e.g., `'T'` for Trunk, `'C'` for Crown).
+
+#### C. Interpreter & Parameters
+The `interpreter` map links symbols to physical parameters.
+-   **Example**: `interpreter: { 'w': { params: { gravity: 0.25 } } }`
+    -   When the turtle encounters `'w'`, it updates its internal state to have `gravity: 0.25`.
+-   **Available Parameters**:
+    -   `spread`: Branching angle.
+    -   `length`, `lengthDecay`: Base length and per-iteration scaling.
+    -   `thickness`, `thicknessDecay`: Base thickness and pipe-model exponent.
+    -   `gravity`: Pulls branches down (+ve) or up (-ve).
+    -   `wind`: Directional force vector.
+    -   `heliotropism`: Bias towards the vertical (up).
+    -   `horizonBias`: Bias towards the horizontal plane.
+
+### 3. Leaf Generation
+Leaves are generated separately using strategies defined in `LeafKind`.
+-   **Types**: `blob`, `willow`, `irregular`, `cluster`, `umbrella`.
+-   **Configuration**: Color, size, thickness, and count per attachment point.
+
+## 14. Verification
 
 Use `npx tsc --noEmit` to verify that the code passes typescript checks.
