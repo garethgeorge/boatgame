@@ -33,6 +33,7 @@ export interface LSystemTreeInstanceOptions {
 
 export interface LeafGenerator {
     addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, variation: { h: number, s: number, l: number }): void;
+    readonly canCull: boolean;
 }
 
 export const getOffsetSpherePoint = (center: THREE.Vector3, baseRadius: number, jitter: number): THREE.Vector3 => {
@@ -52,6 +53,7 @@ export const getOffsetSpherePoint = (center: THREE.Vector3, baseRadius: number, 
 }
 
 export class BlobLeafGenerator implements LeafGenerator {
+    readonly canCull = true;
     constructor(readonly params: BlobLeafKindParams) { }
     addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, variation: { h: number, s: number, l: number }): void {
         const baseSize = (1.0 + Math.random() * 0.5) * this.params.size;
@@ -81,6 +83,7 @@ export class BlobLeafGenerator implements LeafGenerator {
 }
 
 export class WillowLeafGenerator implements LeafGenerator {
+    readonly canCull = true;
     constructor(readonly params: WillowLeafKindParams) { }
     addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, variation: { h: number, s: number, l: number }): void {
         const strandCount = this.params.strands;
@@ -138,6 +141,7 @@ export class WillowLeafGenerator implements LeafGenerator {
 }
 
 export class IrregularLeafGenerator implements LeafGenerator {
+    readonly canCull = true;
     constructor(readonly params: IrregularLeafKindParams) { }
 
     addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, variation: { h: number, s: number, l: number }): void {
@@ -177,6 +181,7 @@ export class IrregularLeafGenerator implements LeafGenerator {
 }
 
 export class ClusterLeafGenerator implements LeafGenerator {
+    readonly canCull = false;
     constructor(readonly params: ClusterLeafKindParams) { }
 
     addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, variation: { h: number, s: number, l: number }): void {
@@ -231,6 +236,7 @@ export class ClusterLeafGenerator implements LeafGenerator {
 }
 
 export class UmbrellaLeafGenerator implements LeafGenerator {
+    readonly canCull = false;
     constructor(readonly params: UmbrellaLeafKindParams) { }
 
     addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, variation: { h: number, s: number, l: number }): void {
@@ -300,15 +306,20 @@ interface TreeArchetype {
     leafColor?: number;
     kind: LSystemTreeKind;
     variation: number; // 0 to 1
+    canCullLeaves: boolean;
 }
 
 export class LSystemTreeFactory implements DecorationFactory {
-    private static readonly woodMaterial = new THREE.MeshToonMaterial({ color: 0x4b3621, name: 'LSystemTree - Wood' });
+    private static readonly woodMaterial = new THREE.MeshToonMaterial({
+        color: 0x4b3621,
+        name: 'LSystemTree - Wood',
+        side: THREE.FrontSide
+    });
     private static readonly leafMaterial = new THREE.ShaderMaterial({
         ...LeafShader,
         name: 'LSystemTree - Leaf',
         vertexColors: false,
-        side: THREE.DoubleSide,
+        side: THREE.FrontSide, // Default to back-face culling for performance
         lights: true,
         fog: true
     });
@@ -385,7 +396,8 @@ export class LSystemTreeFactory implements DecorationFactory {
         return {
             woodGeo: mergedWood, woodColor: params.params.woodColor,
             leafGeo: mergedLeaves, leafColor: params.params.leafColor,
-            kind, variation
+            kind, variation,
+            canCullLeaves: leafGenerator.canCull
         };
     }
 
@@ -440,16 +452,17 @@ export class LSystemTreeFactory implements DecorationFactory {
         return cloned;
     }
 
-    private getLeafMaterial(color?: number, isSnowy: boolean = false): THREE.ShaderMaterial {
+    private getLeafMaterial(color?: number, isSnowy: boolean = false, side: THREE.Side = THREE.FrontSide): THREE.ShaderMaterial {
         const colorVal = color ?? 0xffffff;
-        const key = `${colorVal}_${isSnowy}`;
+        const key = `${colorVal}_${isSnowy}_${side}`;
         const cached = this.leafMaterialCache.get(key);
         if (cached) return cached;
 
         const cloned = LSystemTreeFactory.leafMaterial.clone() as THREE.ShaderMaterial;
         cloned.uniforms.diffuse.value = new THREE.Color(colorVal); // 'diffuse' is the standard color uniform in Three.js
         cloned.uniforms.uSnowFactor.value = isSnowy ? 1.0 : 0.0;
-        cloned.name = `LSystemTree - Leaf (${colorVal.toString(16)})${isSnowy ? ' [Snowy]' : ''}`;
+        cloned.side = side;
+        cloned.name = `LSystemTree - Leaf (${colorVal.toString(16)})${isSnowy ? ' [Snowy]' : ''}${side === THREE.DoubleSide ? ' [DoubleSide]' : ''}`;
         GraphicsUtils.registerObject(cloned);
         this.leafMaterialCache.set(key, cloned);
         return cloned;
@@ -483,9 +496,11 @@ export class LSystemTreeFactory implements DecorationFactory {
         ];
 
         if (!isLeafLess) {
+            const side = best.canCullLeaves ? THREE.FrontSide : THREE.DoubleSide;
+
             result.push({
                 geometry: best.leafGeo,
-                material: this.getLeafMaterial(leafColor ?? best.leafColor, isSnowy),
+                material: this.getLeafMaterial(leafColor ?? best.leafColor, isSnowy, side),
                 matrix: matrix.clone()
             });
         }
