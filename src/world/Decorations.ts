@@ -12,10 +12,10 @@ import { RiverRockFactory } from './factories/RiverRockFactory';
 import { FlowerFactory } from './factories/FlowerFactory';
 import { DecorationInstance } from './factories/DecorationFactory';
 import { MangroveFactory } from './factories/MangroveFactory';
-import { LSystemTreeFactory } from './factories/LSystemTreeFactory';
+import { LSystemTreeFactory, LSystemTreeInstanceOptions } from './factories/LSystemTreeFactory';
 import { LSystemTreeKind } from './factories/LSystemTreeArchetypes';
 
-export type { DecorationInstance, LSystemTreeKind };
+export type { DecorationInstance, LSystemTreeKind, LSystemTreeInstanceOptions };
 
 // Register factories
 DecorationRegistry.register('tree', new TreeFactory());
@@ -68,9 +68,9 @@ export class Decorations {
     return factory.createInstance({ wetness, kind, isSnowy, isLeafless });
   }
 
-  static getLSystemTreeInstance(kind: LSystemTreeKind, variation?: number): DecorationInstance[] {
+  static getLSystemTreeInstance(options: LSystemTreeInstanceOptions): DecorationInstance[] {
     const factory = DecorationRegistry.getFactory('lsystem-tree') as LSystemTreeFactory;
-    return factory.createInstance({ kind, variation });
+    return factory.createInstance(options);
   }
 
   static getBushInstance(wetness: number): DecorationInstance[] {

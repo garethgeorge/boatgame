@@ -21,6 +21,16 @@ import {
 
 import { LeafShader } from '../../shaders/LeafShader';
 
+export interface LSystemTreeInstanceOptions {
+    kind: LSystemTreeKind;
+    variation?: number;
+    isSnowy?: boolean;
+    leafColor?: number;
+    woodColor?: number;
+    scale?: number;
+    isLeafLess?: boolean;
+}
+
 export interface LeafGenerator {
     addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, variation: { h: number, s: number, l: number }): void;
 }
@@ -445,8 +455,8 @@ export class LSystemTreeFactory implements DecorationFactory {
         return cloned;
     }
 
-    createInstance(options: { kind: LSystemTreeKind, variation?: number, isSnowy?: boolean, leafColor?: number, woodColor?: number }): DecorationInstance[] {
-        const { kind, variation = Math.random(), isSnowy = false, leafColor, woodColor } = options;
+    createInstance(options: LSystemTreeInstanceOptions): DecorationInstance[] {
+        const { kind, variation = Math.random(), isSnowy = false, leafColor, woodColor, scale = 1.0, isLeafLess = false } = options;
         const list = this.archetypes.get(kind) || this.archetypes.get('oak')!;
 
         let best = list[0];
@@ -459,17 +469,27 @@ export class LSystemTreeFactory implements DecorationFactory {
             }
         }
 
-        return [
+        const matrix = new THREE.Matrix4();
+        if (scale !== 1.0) {
+            matrix.makeScale(scale, scale, scale);
+        }
+
+        const result: DecorationInstance[] = [
             {
                 geometry: best.woodGeo,
                 material: this.getWoodMaterial(woodColor ?? best.woodColor),
-                matrix: new THREE.Matrix4()
-            },
-            {
-                geometry: best.leafGeo,
-                material: this.getLeafMaterial(leafColor ?? best.leafColor, isSnowy),
-                matrix: new THREE.Matrix4()
+                matrix: matrix.clone()
             }
         ];
+
+        if (!isLeafLess) {
+            result.push({
+                geometry: best.leafGeo,
+                material: this.getLeafMaterial(leafColor ?? best.leafColor, isSnowy),
+                matrix: matrix.clone()
+            });
+        }
+
+        return result;
     }
 }

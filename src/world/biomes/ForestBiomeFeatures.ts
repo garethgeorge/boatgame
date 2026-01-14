@@ -131,7 +131,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                 // Use a low-frequency sine wave on Z to transition between forest types.
                 // Add some noise to blend the edges.
                 const zone = Math.sin(position.worldZ * 0.005) + (Math.random() * 0.4 - 0.2);
-                
+
                 let kind: LSystemTreeKind;
 
                 // Check for Elder Tree spawn (Mother of the Forest)
@@ -153,7 +153,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
 
                 // Variation is just random for now
                 const variation = Math.random();
-                const treeInstances = Decorations.getLSystemTreeInstance(kind, variation);
+                const treeInstances = Decorations.getLSystemTreeInstance({ kind, variation });
                 context.decoHelper.addInstancedDecoration(context, treeInstances, position);
             } else if (Math.random() > 0.5) { // Remaining 20% split between rocks and empty
                 const rockInstances = Decorations.getRockInstance(this.id, Math.random());

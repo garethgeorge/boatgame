@@ -8,8 +8,6 @@ import { DolphinSpawner } from '../../entities/spawners/DolphinSpawner';
 import { RiverGeometry } from '../RiverGeometry';
 import { FlowerDecorator } from '../decorators/FlowerDecorator';
 import { Decorations, LSystemTreeKind } from '../Decorations';
-import { TreeDecorator } from '../decorators/TreeDecorator';
-import { TreeKind } from '../factories/TreeFactory';
 
 type HappyEntityType = 'dolphin' | 'bottle';
 
@@ -84,7 +82,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             const kinds: LSystemTreeKind[] = ['willow', 'poplar', 'oak', 'elm',
                 'umbrella', 'open', 'irregular', 'vase'];
             const kind = kinds[i % kinds.length];
-            const treeInstances = Decorations.getLSystemTreeInstance(kind, variation);
+            const treeInstances = Decorations.getLSystemTreeInstance({ kind, variation });
             context.decoHelper.addInstancedDecoration(context, treeInstances, position);
         }
     }
