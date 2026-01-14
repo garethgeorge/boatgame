@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { DecorationContext } from '../decorators/TerrainDecorator';
+import { DecorationContext } from '../decorators/DecorationContext';
 import { DecorationInstance } from '../factories/DecorationFactory';
 import { TerrainChunk } from '../TerrainChunk';
 import { GraphicsUtils } from '../../core/GraphicsUtils';

@@ -1,7 +1,7 @@
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
-import { DecorationContext } from '../decorators/TerrainDecorator';
+import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations } from '../Decorations';
 import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
 import { HippoSpawner } from '../../entities/spawners/HippoSpawner';

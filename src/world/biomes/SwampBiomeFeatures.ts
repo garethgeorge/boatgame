@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
-import { DecorationContext } from '../decorators/TerrainDecorator';
+import { DecorationContext } from '../decorators/DecorationContext';
 import { MangroveSpawner } from '../../entities/spawners/MangroveSpawner';
 import { Decorations } from '../Decorations';
 import { LogSpawner } from '../../entities/spawners/LogSpawner';
@@ -173,20 +173,20 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
             const z = zStart + Math.random() * length;
             const riverWidth = context.riverSystem.getRiverWidth(z);
             const riverCenter = context.riverSystem.getRiverCenter(z);
-            
+
             // Pick side
             const side = Math.random() > 0.5 ? 1 : -1;
-            
+
             // Distance from bank: 5m to 140m
             // Avoid immediate bank to reduce clip with gameplay elements, spread far out
             const distFromBank = 5 + Math.random() * 50;
-            
+
             const x = riverCenter + side * (riverWidth / 2 + distFromBank);
-            
+
             const height = context.riverSystem.terrainGeometry.calculateHeight(x, z);
 
             const mangrove = Decorations.getMangrove(1.0 + Math.random() * 0.5);
-            
+
             context.decoHelper.positionAndCollectGeometry(mangrove, { worldX: x, worldZ: z, height }, context);
         }
     }

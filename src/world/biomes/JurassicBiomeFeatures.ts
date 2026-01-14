@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
-import { DecorationContext } from '../decorators/TerrainDecorator';
+import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations } from '../Decorations';
 import { TRexSpawner } from '../../entities/spawners/TRexSpawner';
 import { TriceratopsSpawner } from '../../entities/spawners/TriceratopsSpawner';

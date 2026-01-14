@@ -3,7 +3,7 @@ import { GraphicsEngine } from '../core/GraphicsEngine';
 import { RiverSystem } from './RiverSystem';
 import { Profiler } from '../core/Profiler';
 import { WaterShader } from '../shaders/WaterShader';
-import { DecorationContext } from './decorators/TerrainDecorator';
+import { DecorationContext } from './decorators/DecorationContext';
 import { GraphicsUtils } from '../core/GraphicsUtils';
 import { BiomeDecorationHelper } from './biomes/BiomeDecorationHelper';
 

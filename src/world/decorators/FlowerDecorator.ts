@@ -1,9 +1,8 @@
 import * as THREE from 'three';
-import { BaseDecorator } from './BaseDecorator';
-import { DecorationContext } from './TerrainDecorator';
+import { DecorationContext } from './DecorationContext';
 import { Decorations, DecorationInstance } from '../Decorations';
 
-export class FlowerDecorator extends BaseDecorator {
+export class FlowerDecorator {
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
         // Number of flowers per chunk segment
         const count = 300 * ((zEnd - zStart) / 62.5);
@@ -19,11 +18,11 @@ export class FlowerDecorator extends BaseDecorator {
             let patchCenter;
             let attempts = 0;
             while (attempts < 10) {
-                patchCenter = this.generateRandomPositionInRange(context, zStart, zEnd);
-                if (this.isValidDecorationPosition(context, patchCenter)) break;
+                patchCenter = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
+                if (context.decoHelper.isValidDecorationPosition(context, patchCenter)) break;
                 attempts++;
             }
-            if (!patchCenter || !this.isValidDecorationPosition(context, patchCenter)) continue;
+            if (!patchCenter || !context.decoHelper.isValidDecorationPosition(context, patchCenter)) continue;
 
             const patchRadius = 5 + Math.random() * 10;
 
@@ -39,7 +38,7 @@ export class FlowerDecorator extends BaseDecorator {
                 const height = context.riverSystem.terrainGeometry.calculateHeight(wx, wz);
 
                 const pos = { worldX: wx, worldZ: wz, height };
-                if (!this.isValidDecorationPosition(context, pos)) continue;
+                if (!context.decoHelper.isValidDecorationPosition(context, pos)) continue;
 
                 // Get flower instances from Decorations
                 const flowerInstances = Decorations.getFlowerInstance();
