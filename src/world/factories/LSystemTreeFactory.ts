@@ -355,8 +355,8 @@ export class LSystemTreeFactory implements DecorationFactory {
         return geo.attributes.position ? geo.attributes.position.count / 3 : 0;
     }
 
-    private createLeafGenerator(params: TreeConfig): LeafGenerator {
-        const leafKind = params.leafKind;
+    private createLeafGenerator(config: TreeConfig): LeafGenerator {
+        const leafKind = config.params.leafKind;
         switch (leafKind.kind) {
             case 'willow':
                 return new WillowLeafGenerator(leafKind);
@@ -387,7 +387,7 @@ export class LSystemTreeFactory implements DecorationFactory {
 
     createInstance(options: { kind: LSystemTreeKind, variation?: number }): DecorationInstance[] {
         const { kind, variation = Math.random() } = options;
-        const list = this.archetypes.get(kind) || this.archetypes.get('oak')!;
+        const list = this.archetypes.get(kind) || this.archetypes.get('willow')!;
 
         let best = list[0];
         let minDist = Infinity;

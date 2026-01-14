@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
+    BranchParams,
     TreeConfig,
-    TreeParams,
 } from './LSystemTreeArchetypes';
 
 export interface BranchData {
@@ -30,8 +30,8 @@ export class ProceduralTree {
 
         let current = config.axiom;
 
-        for (let i = 0; i < config.iterations; i++) {
-            const isLast = i === config.iterations - 1;
+        for (let i = 0; i < config.params.iterations; i++) {
+            const isLast = i === config.params.iterations - 1;
             let next = "";
             for (const symbol of current) {
                 const rule = config.rules[symbol];
@@ -88,28 +88,24 @@ export class ProceduralTree {
         interface TurtleState {
             pos: THREE.Vector3;
             quat: THREE.Quaternion;
-            params: Required<TreeParams>;
-            lenDist: number;
-            // thickness params are tracked for scope but ignored for calculation
+            branch: Required<BranchParams>;
             node: TreeNode;
         }
 
-        const defaultParams = {
+        // Default parameters for all branches
+        const defaultBranch: Required<BranchParams> = {
             spread: 45,
             jitter: 5,
-            length: 1.0,
-            lengthDecay: 0.8,
-            lengthCurve: 1.0,
-            thickness: 1.0,
-            thicknessDecay: 0.8,
-            thicknessCurve: 1.0,
+            scale: 1.0,
 
             gravity: 0.0,
             horizonBias: 0.0,
             heliotropism: 0.0,
             wind: new THREE.Vector3(0, 0, 0),
             windForce: 0,
-            antiShadow: 0.0
+            antiShadow: 0.0,
+
+            ...config.defaults.branch
         };
 
         // --- PASS 1: BUILD TOPOLOGY ---
@@ -118,48 +114,41 @@ export class ProceduralTree {
         const turtle: TurtleState = {
             pos: new THREE.Vector3(0, 0, 0),
             quat: new THREE.Quaternion(),
-            params: { ...defaultParams, ...config.params } as Required<TreeParams>,
-            lenDist: 0,
+            branch: defaultBranch,
             node: root
         };
 
         const stack: TurtleState[] = [];
 
         for (const symbol of instructions) {
-            const rule = config.interpreter?.[symbol];
-            if (rule) {
-                const result = typeof rule === 'function' ? rule(stack.length) : rule;
-                if (result.params) {
-                    turtle.params = { ...turtle.params, ...result.params };
-                }
+
+            // is symbol a branch?
+            const branchParams = config.branches?.[symbol];
+            if (branchParams) {
+                turtle.branch = { ...defaultBranch, ...branchParams };
+
+                const lengthScale = Math.pow(config.params.lengthDecay, stack.length);
+                const length = config.params.length * turtle.branch.scale * lengthScale;
+
+                // A. Apply physical forces
+                turtle.quat = this.applyTreeForces(turtle.quat, turtle.pos, turtle.branch, stack.length);
+
+                // B. Calculate end point
+                const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
+                const endPos = turtle.pos.clone().add(dir.multiplyScalar(length));
+
+                // C. Create Graph Node
+                const newNode = new TreeNode(endPos, stack.length);
+                turtle.node.children.push(newNode);
+
+                // D. Move turtle
+                turtle.node = newNode; // Move logical turtle
+                turtle.pos.copy(endPos); // Move physical turtle
+                continue;
             }
 
+            // handle built-ins
             switch (symbol) {
-                case '=': {
-                    const lengthScale = Math.pow(turtle.params.lengthDecay, stack.length);
-                    let length = turtle.params.length * lengthScale;
-
-                    if (turtle.lenDist === 0 && stack.length === 0 && config.trunkLengthMultiplier) {
-                        length *= config.trunkLengthMultiplier;
-                    }
-
-                    // A. Apply physical forces
-                    turtle.quat = this.applyTreeForces(turtle.quat, turtle.pos, turtle.params, stack.length);
-
-                    // B. Calculate end point
-                    const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
-                    const endPos = turtle.pos.clone().add(dir.multiplyScalar(length));
-
-                    // C. Create Graph Node
-                    const newNode = new TreeNode(endPos, stack.length);
-                    turtle.node.children.push(newNode);
-
-                    // D. Move turtle
-                    turtle.node = newNode; // Move logical turtle
-                    turtle.pos.copy(endPos); // Move physical turtle
-                    turtle.lenDist += length;
-                    break;
-                }
                 case '+': {
                     // This node supports a leaf
                     turtle.node.leafCount += 1;
@@ -173,8 +162,7 @@ export class ProceduralTree {
                     stack.push({
                         pos: turtle.pos.clone(),
                         quat: turtle.quat.clone(),
-                        params: { ...turtle.params },
-                        lenDist: turtle.lenDist,
+                        branch: { ...turtle.branch },
                         node: turtle.node // Save junction point in graph
                     });
                     break;
@@ -183,21 +171,20 @@ export class ProceduralTree {
                     if (prev) {
                         turtle.pos.copy(prev.pos);
                         turtle.quat.copy(prev.quat);
-                        turtle.params = { ...prev.params };
-                        turtle.lenDist = prev.lenDist;
+                        turtle.branch = { ...prev.branch };
                         turtle.node = prev.node; // Return to junction point
                     }
                     break;
                 case '&': {
-                    const spread = turtle.params.spread || 0;
-                    const pitchAngle = THREE.MathUtils.degToRad(spread + (Math.random() - 0.5) * (turtle.params.jitter || 0));
+                    const spread = turtle.branch.spread || 0;
+                    const pitchAngle = THREE.MathUtils.degToRad(spread + (Math.random() - 0.5) * (turtle.branch.jitter || 0));
                     const pitch = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), pitchAngle);
                     turtle.quat.multiply(pitch);
                     break;
                 }
                 case '/': {
                     const goldenAngle = 2.399;
-                    const yawAngle = goldenAngle + (Math.random() - 0.5) * THREE.MathUtils.degToRad(turtle.params.jitter || 0);
+                    const yawAngle = goldenAngle + (Math.random() - 0.5) * THREE.MathUtils.degToRad(turtle.branch.jitter || 0);
                     const yaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yawAngle);
                     turtle.quat.multiply(yaw);
                     break;
@@ -303,7 +290,7 @@ export class ProceduralTree {
     private applyTreeForces(
         currentQuat: THREE.Quaternion,
         currentPos: THREE.Vector3,
-        forces: TreeParams,
+        forces: BranchParams,
         level: number
     ) {
         const currentDir = new THREE.Vector3(0, 1, 0).applyQuaternion(currentQuat);
