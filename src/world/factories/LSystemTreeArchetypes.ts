@@ -29,7 +29,7 @@ export interface TreeParams {
     thickness: number;          // base thickness for the trunk
     thicknessDecay: number;     // thickness decay factor (typically 0.5 to 1.0)
     leafKind: LeafKindParams;
-    trunkColor?: number;        // Optional override for trunk color
+    woodColor?: number;         // Optional override for wood color
 }
 
 export interface BranchParams {
@@ -328,7 +328,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             length: 8.0, lengthDecay: 0.85, // Huge starting length
             thickness: 3.0, thicknessDecay: 0.6, // Massive trunk
             leafKind: { kind: 'blob', color: 0x1d3618, size: 3.5, thickness: 0.4 }, // Flattened horizontal pads
-            trunkColor: 0x3d3226 // Ancient dark wood
+            woodColor: 0x3d3226 // Ancient dark wood
         },
         defaults: {
             branch: {
@@ -361,7 +361,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             length: 3.5, lengthDecay: 0.85,
             thickness: 0.6, thicknessDecay: 0.7, // Slightly thinner than oak
             leafKind: { kind: 'blob', color: 0x86bf5e, size: 1.0, thickness: 0.6 }, // Light green leaves
-            trunkColor: 0xe3e3e3 // White/Pale trunk
+            woodColor: 0xe3e3e3 // White/Pale trunk
         },
         defaults: {
             branch: {

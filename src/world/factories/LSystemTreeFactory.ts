@@ -282,6 +282,7 @@ export class LSystemTreeFactory implements DecorationFactory {
     private static readonly leafMaterial = new THREE.MeshToonMaterial({ color: 0xffffff, name: 'LSystemTree - Leaf', vertexColors: true, side: THREE.DoubleSide });
 
     private archetypes: Map<LSystemTreeKind, TreeArchetype[]> = new Map();
+    private materialCache: Map<number, THREE.MeshToonMaterial> = new Map();
 
     async load(): Promise<void> {
         GraphicsUtils.registerObject(LSystemTreeFactory.woodMaterial);
@@ -348,7 +349,7 @@ export class LSystemTreeFactory implements DecorationFactory {
         leafGeos.forEach(g => g.dispose());
 
         return {
-            woodGeo: mergedWood, woodColor: params.params.trunkColor,
+            woodGeo: mergedWood, woodColor: params.params.woodColor,
             leafGeo: mergedLeaves,
             kind, variation
         };
@@ -391,6 +392,20 @@ export class LSystemTreeFactory implements DecorationFactory {
         return merged;
     }
 
+    private getWoodMaterial(color?: number): THREE.MeshToonMaterial {
+        if (color === undefined) return LSystemTreeFactory.woodMaterial;
+
+        const cached = this.materialCache.get(color);
+        if (cached) return cached;
+
+        const cloned = LSystemTreeFactory.woodMaterial.clone();
+        cloned.color.set(color);
+        cloned.name = `LSystemTree - Wood (${color.toString(16)})`;
+        GraphicsUtils.registerObject(cloned);
+        this.materialCache.set(color, cloned);
+        return cloned;
+    }
+
     createInstance(options: { kind: LSystemTreeKind, variation?: number }): DecorationInstance[] {
         const { kind, variation = Math.random() } = options;
         const list = this.archetypes.get(kind) || this.archetypes.get('oak')!;
@@ -405,17 +420,12 @@ export class LSystemTreeFactory implements DecorationFactory {
             }
         }
 
-        const woodInstance: DecorationInstance = {
-            geometry: best.woodGeo,
-            material: LSystemTreeFactory.woodMaterial,
-            matrix: new THREE.Matrix4()
-        };
-        if (best.woodColor !== undefined) {
-            woodInstance.color = new THREE.Color(best.woodColor);
-        }
-
         return [
-            woodInstance,
+            {
+                geometry: best.woodGeo,
+                material: this.getWoodMaterial(best.woodColor),
+                matrix: new THREE.Matrix4()
+            },
             {
                 geometry: best.leafGeo,
                 material: LSystemTreeFactory.leafMaterial,
