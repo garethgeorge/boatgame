@@ -251,9 +251,10 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
                 if (level < 2) return { successor: "##[&X][X]" };
                 if (level < 3) return { successor: "===[&&X]/[&&X]" };
                 if (level < 4) return { successor: "==[&&X]/[&&X]" };
-                return { successor: "--[&+]/[&+]" };
+                return { successor: "--[^+]/[^+]" };
             }
         },
+        finalRule: "[^+]",
         branches: {
             '#': { windForce: 0.05 },
             '=': { windForce: 0.1, gravity: 0.05 },
@@ -317,11 +318,13 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             // gnarly branches
             'B': { successors: ["==[&B]/[&B]", "+[&B]"], weights: [0.7, 0.3] }
         },
-        finalRule: "$", // Use $ as final production rule for upward leaves 
+        finalRule: "[.^+]", // Use ^+ for upright leaves
 
         branches: {
             '#': { gravity: 0.02 },
             '=': {},
+            // this is a pseudo branch for attaching leaves
+            '.': { scale: 0, jitter: 5 },
         },
         params: {
             iterations: 8, // More iterations for detail

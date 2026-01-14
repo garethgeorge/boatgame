@@ -133,6 +133,11 @@ export class ProceduralTree {
                 // A. Apply physical forces
                 turtle.quat = this.applyTreeForces(turtle.quat, turtle.pos, turtle.branch, stack.length);
 
+                // This is a pseudo-branch used to set parameters but having no length
+                if (length <= 0) {
+                    continue;
+                }
+
                 // B. Calculate end point
                 const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
                 const endPos = turtle.pos.clone().add(dir.multiplyScalar(length));
@@ -158,11 +163,23 @@ export class ProceduralTree {
                     turtle.node.leaves.push({ pos: turtle.pos.clone(), dir: dir });
                     break;
                 }
-                case '$': {
-                    // Like '+', but forces the leaf direction to be absolute UP (0,1,0)
-                    // This creates horizontal pads/canopies regardless of branch orientation
-                    turtle.node.leafCount += 1;
-                    turtle.node.leaves.push({ pos: turtle.pos.clone(), dir: new THREE.Vector3(0, 1, 0) });
+                case '^': {
+                    // Orient Upright with Jitter
+                    // Resets the turtle to point upwards (0,1,0), perturbed by jitter.
+                    turtle.quat.set(0, 0, 0, 1); // Identity points UP in our coordinate system
+
+                    const jitter = turtle.branch.jitter || 0;
+                    if (jitter > 0) {
+                        const jitterRad = THREE.MathUtils.degToRad(jitter);
+                        const randomQuat = new THREE.Quaternion().setFromEuler(
+                            new THREE.Euler(
+                                (Math.random() - 0.5) * jitterRad,
+                                (Math.random() - 0.5) * jitterRad,
+                                (Math.random() - 0.5) * jitterRad
+                            )
+                        );
+                        turtle.quat.multiply(randomQuat);
+                    }
                     break;
                 }
                 case '[':

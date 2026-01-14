@@ -263,16 +263,17 @@ Trees are defined by `TreeConfig` objects in the `ARCHETYPES` registry.
     -   **Parametric**: `'A': (i) => { return ... }` (Rules can change based on iteration count).
 -   **Branches**: A dictionary mapping terminal symbols to `BranchParams`.
     -   **Example**: `'=': { gravity: 0.1 }`
+-   **FinalRule**: All non-terminal symbols are replaced with this in the final iteration.
 
 #### B. Symbols
--   **Terminal Symbols (Branching)**: Any symbol present in the `branches` record (e.g., `=`, `#`, `-`) will trigger the creation of a branch segment and move the turtle forward. These can be defined with custom `BranchParams`.
+-   **Terminal Symbols (Branching)**: Any symbol present in the `branches` record (e.g., `=`, `#`, `-`) will trigger the creation of a branch segment and move the turtle forward. These can be defined with custom `BranchParams`. A pseudo-branch can be created by setting its scale to 0. No branch is created but parameters can then be defined for the & etc operators that attach things to the branch.
 -   **Built-in Graphics Symbols**:
     -   `[` : **Push State**. Start a new branch junction.
     -   `]` : **Pop State**. End current branch and return to parent junction.
     -   `&` : **Pitch**. Rotate around the local X axis (controlled by `spread`).
     -   `/` : **Yaw**. Rotate around the local Y axis (golden angle).
     -   `+` : **Standard Leaf**. Marks a node as having a leaf oriented along the branch.
-    -   `$` : **Upright Leaf**. Marks a node as having a leaf oriented vertically (up).
+    -   `^` : **Orient Upright (with jitter)**. Resets the turtle to point upwards (0,1,0), perturbed by the current branch's jitter.
 -   **Non-terminal symbols**: Any other symbol (typically `A-Z`) used for expansion logic.
 
 #### C. Branch Parameters
