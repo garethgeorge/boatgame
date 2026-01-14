@@ -7,7 +7,7 @@ import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy
 import { DolphinSpawner } from '../../entities/spawners/DolphinSpawner';
 import { RiverGeometry } from '../RiverGeometry';
 import { FlowerDecorator } from '../decorators/FlowerDecorator';
-import { Decorations } from '../Decorations';
+import { Decorations, LSystemTreeKind } from '../Decorations';
 import { TreeDecorator } from '../decorators/TreeDecorator';
 import { TreeKind } from '../factories/TreeFactory';
 
@@ -78,11 +78,13 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
 
         for (let i = 0; i < count; i++) {
             const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-            if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
+            if (!context.decoHelper.isValidDecorationPosition(context, position, 1.0)) continue;
 
-            const wetness = Math.random();
-            const kind: TreeKind = Math.random() < 0.8 ? 'round' : 'weeping';
-            const treeInstances = Decorations.getTreeInstance(wetness, kind, false, false);
+            const variation = Math.random();
+            const kinds: LSystemTreeKind[] = ['willow', 'poplar', 'oak', 'elm',
+                'umbrella', 'open', 'irregular', 'vase'];
+            const kind = kinds[i % kinds.length];
+            const treeInstances = Decorations.getLSystemTreeInstance(kind, variation);
             context.decoHelper.addInstancedDecoration(context, treeInstances, position);
         }
     }
