@@ -274,19 +274,26 @@ export class GraphicsUtils {
     }
 
     /**
+     * Fills a geometry with a single vertex value for a given attribute.
+     */
+    public static addVertexAttribute(geo: THREE.BufferGeometry, name: string, r: number, g: number, b: number) {
+        const count = geo.attributes.position.count;
+        const data = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+            data[i * 3] = r;
+            data[i * 3 + 1] = g;
+            data[i * 3 + 2] = b;
+        }
+        geo.setAttribute(name, new THREE.BufferAttribute(data, 3));
+    }
+
+    /**
      * Fills a geometry with a single vertex color.
      * This is useful for assigning per-mesh colors before merging
      * into a single BufferGeometry, allowing multiplicative tinting
      * if vertexColors is enabled on the material.
      */
     public static addVertexColors(geo: THREE.BufferGeometry, color: THREE.Color) {
-        const count = geo.attributes.position.count;
-        const colors = new Float32Array(count * 3);
-        for (let i = 0; i < count; i++) {
-            colors[i * 3] = color.r;
-            colors[i * 3 + 1] = color.g;
-            colors[i * 3 + 2] = color.b;
-        }
-        geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        this.addVertexAttribute(geo, 'color', color.r, color.g, color.b);
     }
 }

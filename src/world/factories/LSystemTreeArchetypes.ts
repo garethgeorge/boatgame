@@ -5,19 +5,19 @@ export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' |
 
 export type LeafKind = 'blob' | 'willow' | 'irregular' | 'cluster' | 'umbrella';
 export interface BlobLeafKindParams {
-    kind: 'blob'; color: number; size: number; thickness: number;
+    kind: 'blob'; size: number; thickness: number;
 }
 export interface WillowLeafKindParams {
-    kind: 'willow'; color: number; strands: number;
+    kind: 'willow'; strands: number;
 };
 export interface IrregularLeafKindParams {
-    kind: 'irregular'; color: number; size: number; thickness: number;
+    kind: 'irregular'; size: number; thickness: number;
 }
 export interface ClusterLeafKindParams {
-    kind: 'cluster'; color: number; size: number; thickness: number; leaves: number; leafSize: number;
+    kind: 'cluster'; size: number; thickness: number; leaves: number; leafSize: number;
 }
 export interface UmbrellaLeafKindParams {
-    kind: 'umbrella'; color: number; size: number; leaves: number; leafSize: number;
+    kind: 'umbrella'; size: number; leaves: number; leafSize: number;
 }
 export type LeafKindParams = BlobLeafKindParams | WillowLeafKindParams |
     IrregularLeafKindParams | ClusterLeafKindParams | UmbrellaLeafKindParams;
@@ -29,6 +29,8 @@ export interface TreeParams {
     thickness: number;          // base thickness for the trunk
     thicknessDecay: number;     // thickness decay factor (typically 0.5 to 1.0)
     leafKind: LeafKindParams;
+    leafColor?: number;         // Base color for leaves
+    leafVariation?: { h: number, s: number, l: number }; // HSL variation range
     woodColor?: number;         // Optional override for wood color
 }
 
@@ -96,7 +98,9 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 5,
             length: 3, lengthDecay: 0.85,
             thickness: 0.5, thicknessDecay: 0.7,
-            leafKind: { kind: 'willow', color: 0x41b98d, strands: 3 },
+            leafKind: { kind: 'willow', strands: 3 },
+            leafColor: 0x41b98d,
+            leafVariation: { h: 0.05, s: 0.1, l: 0.1 }
         },
         defaults: {
             branch: {
@@ -119,7 +123,9 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 7,
             length: 2, lengthDecay: 0.8,
             thickness: 0.3, thicknessDecay: 0.7,
-            leafKind: { kind: 'blob', color: 0x3ea043, size: 1.0, thickness: 2.5 },
+            leafKind: { kind: 'blob', size: 1.0, thickness: 2.5 },
+            leafColor: 0x3ea043,
+            leafVariation: { h: 0.02, s: 0.05, l: 0.1 }
         },
         defaults: {
             branch: {
@@ -149,7 +155,9 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 7,
             length: 4, lengthDecay: 0.8,
             thickness: 0.7, thicknessDecay: 0.7,
-            leafKind: { kind: 'blob', color: 0x228B22, size: 1.0, thickness: 0.6 },
+            leafKind: { kind: 'blob', size: 1.0, thickness: 0.6 },
+            leafColor: 0x228B22,
+            leafVariation: { h: 0.03, s: 0.1, l: 0.15 }
         },
         defaults: {
             branch: {
@@ -182,7 +190,9 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 10,
             length: 1, lengthDecay: 1,
             thickness: 0.6, thicknessDecay: 0.5,
-            leafKind: { kind: 'cluster', color: 0x2e8b57, size: 2.0, thickness: 0.3, leaves: 20, leafSize: 0.5 },
+            leafKind: { kind: 'cluster', size: 2.0, thickness: 0.3, leaves: 20, leafSize: 0.5 },
+            leafColor: 0x2e8b57,
+            leafVariation: { h: 0.05, s: 0.15, l: 0.2 }
         },
         defaults: {
             branch: {
@@ -210,7 +220,9 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 6,
             length: 2, lengthDecay: 0.9,
             thickness: 0.5, thicknessDecay: 0.6,
-            leafKind: { kind: 'umbrella', color: 0x1a4a1c, size: 2.0, leaves: 10, leafSize: 0.8 },
+            leafKind: { kind: 'umbrella', size: 2.0, leaves: 10, leafSize: 0.8 },
+            leafColor: 0x1a4a1c,
+            leafVariation: { h: 0.02, s: 0.05, l: 0.05 }
         },
         defaults: {
             branch: {
@@ -235,7 +247,9 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 6,
             length: 1.5, lengthDecay: 0.9,
             thickness: 0.2, thicknessDecay: 0.5,
-            leafKind: { kind: 'cluster', color: 0xa03e3e, size: 1.0, thickness: 0.3, leaves: 20, leafSize: 0.6 },
+            leafKind: { kind: 'cluster', size: 1.0, thickness: 0.3, leaves: 20, leafSize: 0.6 },
+            leafColor: 0xa03e3e,
+            leafVariation: { h: 0.08, s: 0.2, l: 0.1 }
         },
         defaults: {
             branch: {
@@ -264,7 +278,9 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 12,
             length: 1.0, lengthDecay: 0.9,
             thickness: 0.3, thicknessDecay: 0.6,
-            leafKind: { kind: 'blob', color: 0x228B22, size: 1.0, thickness: 0.3 },
+            leafKind: { kind: 'blob', size: 1.0, thickness: 0.3 },
+            leafColor: 0x228B22,
+            leafVariation: { h: 0.05, s: 0.1, l: 0.1 }
         },
         defaults: {
             branch: {
@@ -295,7 +311,9 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 8,
             length: 0.75, lengthDecay: 0.9,
             thickness: 0.3, thicknessDecay: 0.5,
-            leafKind: { kind: 'blob', color: 0x2d5a27, size: 1.0, thickness: 0.5 },
+            leafKind: { kind: 'blob', size: 1.0, thickness: 0.5 },
+            leafColor: 0x2d5a27,
+            leafVariation: { h: 0.03, s: 0.05, l: 0.1 }
         },
         defaults: {
             branch: {
@@ -330,7 +348,9 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 8, // More iterations for detail
             length: 8.0, lengthDecay: 0.85, // Huge starting length
             thickness: 3.0, thicknessDecay: 0.6, // Massive trunk
-            leafKind: { kind: 'blob', color: 0x1d3618, size: 3.5, thickness: 0.4 }, // Flattened horizontal pads
+            leafKind: { kind: 'blob', size: 3.5, thickness: 0.4 }, // Flattened horizontal pads
+            leafColor: 0x1d3618,
+            leafVariation: { h: 0.02, s: 0.05, l: 0.05 },
             woodColor: 0x3d3226 // Ancient dark wood
         },
         defaults: {
@@ -363,7 +383,9 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 7,
             length: 3.5, lengthDecay: 0.85,
             thickness: 0.6, thicknessDecay: 0.7, // Slightly thinner than oak
-            leafKind: { kind: 'blob', color: 0x86bf5e, size: 1.0, thickness: 0.6 }, // Light green leaves
+            leafKind: { kind: 'blob', size: 1.0, thickness: 0.6 }, // Light green leaves
+            leafColor: 0x86bf5e,
+            leafVariation: { h: 0.03, s: 0.1, l: 0.1 },
             woodColor: 0xe3e3e3 // White/Pale trunk
         },
         defaults: {

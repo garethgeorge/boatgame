@@ -16,12 +16,13 @@ import {
 
 import {
     ProceduralTree,
-    BranchData,
     LeafData,
 } from './LSystemTreeGenerator';
 
+import { LeafShader } from '../../shaders/LeafShader';
+
 export interface LeafGenerator {
-    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData): void;
+    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, variation: { h: number, s: number, l: number }): void;
 }
 
 export const getOffsetSpherePoint = (center: THREE.Vector3, baseRadius: number, jitter: number): THREE.Vector3 => {
@@ -42,7 +43,7 @@ export const getOffsetSpherePoint = (center: THREE.Vector3, baseRadius: number, 
 
 export class BlobLeafGenerator implements LeafGenerator {
     constructor(readonly params: BlobLeafKindParams) { }
-    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData): void {
+    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, variation: { h: number, s: number, l: number }): void {
         const baseSize = (1.0 + Math.random() * 0.5) * this.params.size;
         let geo: THREE.BufferGeometry = new THREE.IcosahedronGeometry(baseSize, 0);
 
@@ -58,9 +59,12 @@ export class BlobLeafGenerator implements LeafGenerator {
         const matrix = new THREE.Matrix4().compose(leafData.pos, quat, new THREE.Vector3(1, 1, 1));
         geo.applyMatrix4(matrix);
 
-        const color = new THREE.Color(this.params.color);
-        color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.1);
-        GraphicsUtils.addVertexColors(geo, color);
+        // Calculate HSL offsets
+        const h = (Math.random() - 0.5) * variation.h;
+        const s = (Math.random() - 0.5) * variation.s;
+        const l = (Math.random() - 0.5) * variation.l;
+
+        GraphicsUtils.addVertexAttribute(geo, 'hslOffset', h, s, l);
 
         leafGeos.push(geo);
     }
@@ -68,7 +72,7 @@ export class BlobLeafGenerator implements LeafGenerator {
 
 export class WillowLeafGenerator implements LeafGenerator {
     constructor(readonly params: WillowLeafKindParams) { }
-    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData): void {
+    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, variation: { h: number, s: number, l: number }): void {
         const strandCount = this.params.strands;
         const targetGroundClearance = 2.0;
 
@@ -93,9 +97,12 @@ export class WillowLeafGenerator implements LeafGenerator {
 
             strandGeo.applyMatrix4(matrix);
 
-            const color = new THREE.Color(this.params.color);
-            color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.1);
-            GraphicsUtils.addVertexColors(strandGeo, color);
+            // Calculate HSL offsets
+            const h = (Math.random() - 0.5) * variation.h;
+            const s = (Math.random() - 0.5) * variation.s;
+            const l = (Math.random() - 0.5) * variation.l;
+
+            GraphicsUtils.addVertexAttribute(strandGeo, 'hslOffset', h, s, l);
 
             leafGeos.push(strandGeo);
         }
@@ -123,7 +130,7 @@ export class WillowLeafGenerator implements LeafGenerator {
 export class IrregularLeafGenerator implements LeafGenerator {
     constructor(readonly params: IrregularLeafKindParams) { }
 
-    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData): void {
+    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, variation: { h: number, s: number, l: number }): void {
         const baseRadius = (1.0 + Math.random() * 0.5) * this.params.size;
         const jitter = baseRadius * 0.25;
 
@@ -148,9 +155,12 @@ export class IrregularLeafGenerator implements LeafGenerator {
         const matrix = new THREE.Matrix4().compose(leafData.pos, quat, new THREE.Vector3(1, 1, 1));
         geo.applyMatrix4(matrix);
 
-        const color = new THREE.Color(this.params.color);
-        color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.1);
-        GraphicsUtils.addVertexColors(geo, color);
+        // Calculate HSL offsets
+        const h = (Math.random() - 0.5) * variation.h;
+        const s = (Math.random() - 0.5) * variation.s;
+        const l = (Math.random() - 0.5) * variation.l;
+
+        GraphicsUtils.addVertexAttribute(geo, 'hslOffset', h, s, l);
 
         leafGeos.push(geo);
     }
@@ -159,13 +169,13 @@ export class IrregularLeafGenerator implements LeafGenerator {
 export class ClusterLeafGenerator implements LeafGenerator {
     constructor(readonly params: ClusterLeafKindParams) { }
 
-    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData): void {
+    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, variation: { h: number, s: number, l: number }): void {
         const baseRadius = (1.0 + Math.random() * 0.5) * this.params.size;
         const jitter = baseRadius * 0.25;
         const center = new THREE.Vector3(0, 0, 0);
 
-        const variation = 0.25;
-        const numTriangles = Math.max(1, Math.floor(this.params.leaves * (1 + (Math.random() - 0.5) * 2 * variation)));
+        const countVariation = 0.25;
+        const numTriangles = Math.max(1, Math.floor(this.params.leaves * (1 + (Math.random() - 0.5) * 2 * countVariation)));
 
         const triangleGeos: THREE.BufferGeometry[] = [];
 
@@ -188,9 +198,11 @@ export class ClusterLeafGenerator implements LeafGenerator {
             const triMatrix = new THREE.Matrix4().compose(P, triQuat, new THREE.Vector3(1, 1, 1));
             triGeo.applyMatrix4(triMatrix);
 
-            const color = new THREE.Color(this.params.color);
-            color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.15);
-            GraphicsUtils.addVertexColors(triGeo, color);
+            const h = (Math.random() - 0.5) * variation.h;
+            const s = (Math.random() - 0.5) * variation.s;
+            const l = (Math.random() - 0.5) * variation.l;
+
+            GraphicsUtils.addVertexAttribute(triGeo, 'hslOffset', h, s, l);
 
             triangleGeos.push(triGeo);
         }
@@ -211,10 +223,10 @@ export class ClusterLeafGenerator implements LeafGenerator {
 export class UmbrellaLeafGenerator implements LeafGenerator {
     constructor(readonly params: UmbrellaLeafKindParams) { }
 
-    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData): void {
+    addLeaves(leafGeos: THREE.BufferGeometry[], leafData: LeafData, variation: { h: number, s: number, l: number }): void {
         const radius = this.params.size;
-        const variation = 0.25;
-        const numTriangles = Math.max(1, Math.floor(this.params.leaves * (1 + (Math.random() - 0.5) * 2 * variation)));
+        const countVariation = 0.25;
+        const numTriangles = Math.max(1, Math.floor(this.params.leaves * (1 + (Math.random() - 0.5) * 2 * countVariation)));
 
         const triangleGeos: THREE.BufferGeometry[] = [];
         const center = new THREE.Vector3(0, 0, 0);
@@ -249,9 +261,11 @@ export class UmbrellaLeafGenerator implements LeafGenerator {
             const matrix = new THREE.Matrix4().compose(pos, quat, new THREE.Vector3(1, 1, 1));
             triGeo.applyMatrix4(matrix);
 
-            const color = new THREE.Color(this.params.color);
-            color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.15);
-            GraphicsUtils.addVertexColors(triGeo, color);
+            const h = (Math.random() - 0.5) * variation.h;
+            const s = (Math.random() - 0.5) * variation.s;
+            const l = (Math.random() - 0.5) * variation.l;
+
+            GraphicsUtils.addVertexAttribute(triGeo, 'hslOffset', h, s, l);
 
             triangleGeos.push(triGeo);
         }
@@ -273,16 +287,25 @@ interface TreeArchetype {
     woodGeo: THREE.BufferGeometry;
     woodColor?: number;
     leafGeo: THREE.BufferGeometry;
+    leafColor?: number;
     kind: LSystemTreeKind;
     variation: number; // 0 to 1
 }
 
 export class LSystemTreeFactory implements DecorationFactory {
     private static readonly woodMaterial = new THREE.MeshToonMaterial({ color: 0x4b3621, name: 'LSystemTree - Wood' });
-    private static readonly leafMaterial = new THREE.MeshToonMaterial({ color: 0xffffff, name: 'LSystemTree - Leaf', vertexColors: true, side: THREE.DoubleSide });
+    private static readonly leafMaterial = new THREE.ShaderMaterial({
+        ...LeafShader,
+        name: 'LSystemTree - Leaf',
+        vertexColors: false,
+        side: THREE.DoubleSide,
+        lights: true,
+        fog: true
+    });
 
     private archetypes: Map<LSystemTreeKind, TreeArchetype[]> = new Map();
     private materialCache: Map<number, THREE.MeshToonMaterial> = new Map();
+    private leafMaterialCache: Map<string, THREE.ShaderMaterial> = new Map();
 
     async load(): Promise<void> {
         GraphicsUtils.registerObject(LSystemTreeFactory.woodMaterial);
@@ -339,7 +362,8 @@ export class LSystemTreeFactory implements DecorationFactory {
         }
 
         for (const leaf of tree.leaves) {
-            leafGenerator.addLeaves(leafGeos, leaf);
+            const variation = params.params.leafVariation || { h: 0, s: 0, l: 0 };
+            leafGenerator.addLeaves(leafGeos, leaf, variation);
         }
 
         const mergedWood = this.mergeGeometries(woodGeos, `LSystemWood_${kind}_${variation}`);
@@ -350,7 +374,7 @@ export class LSystemTreeFactory implements DecorationFactory {
 
         return {
             woodGeo: mergedWood, woodColor: params.params.woodColor,
-            leafGeo: mergedLeaves,
+            leafGeo: mergedLeaves, leafColor: params.params.leafColor,
             kind, variation
         };
     }
@@ -406,8 +430,23 @@ export class LSystemTreeFactory implements DecorationFactory {
         return cloned;
     }
 
-    createInstance(options: { kind: LSystemTreeKind, variation?: number }): DecorationInstance[] {
-        const { kind, variation = Math.random() } = options;
+    private getLeafMaterial(color?: number, isSnowy: boolean = false): THREE.ShaderMaterial {
+        const colorVal = color ?? 0xffffff;
+        const key = `${colorVal}_${isSnowy}`;
+        const cached = this.leafMaterialCache.get(key);
+        if (cached) return cached;
+
+        const cloned = LSystemTreeFactory.leafMaterial.clone() as THREE.ShaderMaterial;
+        cloned.uniforms.diffuse.value = new THREE.Color(colorVal); // 'diffuse' is the standard color uniform in Three.js
+        cloned.uniforms.uSnowFactor.value = isSnowy ? 1.0 : 0.0;
+        cloned.name = `LSystemTree - Leaf (${colorVal.toString(16)})${isSnowy ? ' [Snowy]' : ''}`;
+        GraphicsUtils.registerObject(cloned);
+        this.leafMaterialCache.set(key, cloned);
+        return cloned;
+    }
+
+    createInstance(options: { kind: LSystemTreeKind, variation?: number, isSnowy?: boolean, leafColor?: number, woodColor?: number }): DecorationInstance[] {
+        const { kind, variation = Math.random(), isSnowy = false, leafColor, woodColor } = options;
         const list = this.archetypes.get(kind) || this.archetypes.get('oak')!;
 
         let best = list[0];
@@ -423,12 +462,12 @@ export class LSystemTreeFactory implements DecorationFactory {
         return [
             {
                 geometry: best.woodGeo,
-                material: this.getWoodMaterial(best.woodColor),
+                material: this.getWoodMaterial(woodColor ?? best.woodColor),
                 matrix: new THREE.Matrix4()
             },
             {
                 geometry: best.leafGeo,
-                material: LSystemTreeFactory.leafMaterial,
+                material: this.getLeafMaterial(leafColor ?? best.leafColor, isSnowy),
                 matrix: new THREE.Matrix4()
             }
         ];
