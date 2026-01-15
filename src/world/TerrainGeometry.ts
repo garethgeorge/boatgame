@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { SimplexNoise } from './SimplexNoise';
 import { RiverSystem } from './RiverSystem';
+import { MathUtils } from '../core/MathUtils';
 
 export class TerrainGeometry {
     private noise: SimplexNoise;
@@ -59,7 +60,7 @@ export class TerrainGeometry {
 
         // Apply Bank Taper: Force land height to 0 at the river edge
         // Smoothly ramp up over 15 units
-        const bankTaper = this.smoothstep(0, 15, distFromBank);
+        const bankTaper = MathUtils.smoothstep(0, 15, distFromBank);
         rawLandHeight = rawLandHeight * bankTaper;
 
         return rawLandHeight;
@@ -110,7 +111,7 @@ export class TerrainGeometry {
         // 2. Blend Land and River
         // We blend over a small zone around the edge to avoid hard creases
         const transitionWidth = 8.0; // Slightly wider transition for smoother visuals
-        const mixFactor = this.smoothstep(riverEdge - transitionWidth / 2, riverEdge + transitionWidth / 2, distFromCenter);
+        const mixFactor = MathUtils.smoothstep(riverEdge - transitionWidth / 2, riverEdge + transitionWidth / 2, distFromCenter);
 
         // mixFactor is 0 inside river (bed), 1 outside (land)
         return (1 - mixFactor) * rawRiverHeight + mixFactor * rawLandHeight;
@@ -172,10 +173,5 @@ export class TerrainGeometry {
         }
 
         return true;
-    }
-
-    private smoothstep(edge0: number, edge1: number, x: number): number {
-        const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
-        return t * t * (3 - 2 * t);
     }
 }

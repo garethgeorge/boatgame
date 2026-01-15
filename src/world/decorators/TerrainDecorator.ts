@@ -17,9 +17,10 @@ export class TerrainDecorator {
     public static generate(
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
+        gridSize: number,
         seed: number = 0
     ): PlacementManifest[] {
-        return this.instance().generate(rules, region, seed);
+        return this.instance().generate(rules, region, gridSize, seed);
     }
 
     constructor() {
@@ -31,6 +32,7 @@ export class TerrainDecorator {
     private generate(
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
+        gridSize: number,
         seed: number = 0
     ): PlacementManifest[] {
 
@@ -45,8 +47,8 @@ export class TerrainDecorator {
             const riverWidth = this.riverSystem.getRiverWidth(z);
             const distToRiver = distToCenter - riverWidth / 2;
 
-            // Slope calculation
-            const slope = 1.0 - Math.abs(normal.y);
+            // Slope calculation (angle in radians)
+            const slope = Math.acos(Math.max(-1, Math.min(1, normal.y)));
 
             return { height, slope, distToRiver };
         };
@@ -62,6 +64,7 @@ export class TerrainDecorator {
         return this.strategy.generate(
             rules,
             region,
+            gridSize,
             terrainProvider,
             biomeProgressProvider,
             seed

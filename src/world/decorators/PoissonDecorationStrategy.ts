@@ -16,22 +16,19 @@ export interface WorldContext {
 // 2. The Decoration Result (The Manifest Output)
 export interface PlacementManifest {
     position: THREE.Vector3;
-    scale: number;
-    options?: any; // type specific
-    radius: number; // Stored for collision checks
+    options?: any; // type specific - should include scale if needed
+    radius: number; // Stored for collision checks (includes spacing adjustments)
     fitness: number; // Stored to optimize local growth
 }
 
 // 3. The Declarative Rule
 export interface DecorationRule {
-    baseRadius: number; // Radius at scale 1.0
-
     // Placement: Returns 0 to 1 (0 = Impossible, 1 = Perfect)
     fitness: (ctx: WorldContext) => number;
 
     // Attributes: Generates the specific look
     generate: (ctx: WorldContext) => {
-        scale: number;
+        radius: number; // The physical radius of this specific instance
         options: any;
     };
 }
@@ -46,27 +43,24 @@ export class PoissonDecorationStrategy {
     public generate(
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
+        gridSize: number,
         terrainProvider: (x: number, z: number) => { height: number, slope: number, distToRiver: number },
         biomeProgressProvider: (z: number) => number,
         seed: number = 0
     ): PlacementManifest[] {
         const manifests: PlacementManifest[] = [];
-        const spatialGrid = new SpatialGrid(Math.max(...rules.map(r => r.baseRadius)) * 2);
+        const spatialGrid = new SpatialGrid(gridSize);
 
-        // Sort rules by base radius (Descending) - Hierarchical Priority Queue
-        // We want to place large objects first.
-        const sortedRules = [...rules].sort((a, b) => b.baseRadius - a.baseRadius);
+        const sortedRules = rules;
 
         const width = region.xMax - region.xMin;
         const depth = region.zMax - region.zMin;
-        const area = width * depth;
 
         // Bridson's algorithm constants (approximate for multi-class)
         const maxK = 30; // Max attempts per active sample (simplified here to attempts per unit area)
 
         for (const rule of sortedRules) {
             const activeList: PlacementManifest[] = [];
-            const radius = rule.baseRadius;
 
             // Phase 1: Seeding
             // We attempt to plant initial seeds to handle disconnected valid areas.
@@ -98,15 +92,15 @@ export class PoissonDecorationStrategy {
                 // Scale k: High fitness = 30 tries, Low fitness = fewer tries (Natural Thinning)
                 const dynamicK = Math.max(1, Math.floor(maxK * parentFitness));
 
+                // dynamicR is the spacing radius (includes fitness-based thinning)
+                const dynamicR = parent.radius;
+
                 let found = false;
 
                 for (let i = 0; i < dynamicK; i++) {
                     const angle = Math.random() * Math.PI * 2;
-                    // Annulus: 2r to 4r (r = baseRadius)
-                    // Bridson's original is r to 2r where r is the search radius.
-                    // Here radius is the object radius, and collision is r1 + r2.
-                    // If r1=r2, distance must be > 2r.
-                    const dist = (radius * 2) + Math.random() * (radius * 2);
+                    // Annulus: [r_min, 2 * r_min] where r_min = 2 * dynamicR
+                    const dist = 2 * dynamicR + Math.random() * 2 * dynamicR;
 
                     const cx = parent.position.x + Math.cos(angle) * dist;
                     const cz = parent.position.z + Math.sin(angle) * dist;
@@ -134,6 +128,23 @@ export class PoissonDecorationStrategy {
         }
 
         return manifests;
+    }
+
+    /**
+     * Variable radius is used to thin trees based on local fitness
+     */
+    private getVariableRadius(fitness: number, minRadius: number): number {
+        // using hard coded max of 4
+        const maxRadius = minRadius * 4.0;
+
+        // We invert the fitness: 
+        // If fitness is 1, radius is minRadius. 
+        // If fitness is 0, radius is effectively infinite (or maxRadius).
+        if (fitness <= 0) return Infinity;
+
+        // Using a power curve here helps the "thinning" look more natural
+        const t = 1 - Math.pow(fitness, 2);
+        return minRadius + (maxRadius - minRadius) * t;
     }
 
     private tryPlace(
@@ -165,19 +176,17 @@ export class PoissonDecorationStrategy {
 
         // 4. Parameter Baking
         const params = rule.generate(ctx);
-        const scale = params.scale;
-        const instanceRadius = rule.baseRadius * scale;
+        const spacingRadius = this.getVariableRadius(f, params.radius);
 
         // 5. Proximity Check
-        if (spatialGrid.checkCollision(x, z, instanceRadius)) {
+        if (spatialGrid.checkCollision(x, z, spacingRadius)) {
             return null;
         }
 
         return {
             position: new THREE.Vector3(x, terrain.height, z),
-            scale: scale,
             options: params.options,
-            radius: instanceRadius,
+            radius: spacingRadius, // Store spacing radius for collision checks
             fitness: f
         };
     }
@@ -185,6 +194,7 @@ export class PoissonDecorationStrategy {
 
 class SpatialGrid {
     private cellSize: number;
+    private maxRadius: number = 0;
     private grid: Map<string, PlacementManifest[]> = new Map();
 
     constructor(cellSize: number) {
@@ -198,6 +208,7 @@ class SpatialGrid {
     }
 
     insert(x: number, y: number, radius: number, item: PlacementManifest) {
+        this.maxRadius = Math.max(this.maxRadius, radius);
         const key = this.getKey(x, y);
         if (!this.grid.has(key)) {
             this.grid.set(key, []);
@@ -209,9 +220,12 @@ class SpatialGrid {
         const cx = Math.floor(x / this.cellSize);
         const cy = Math.floor(y / this.cellSize);
 
-        // Check 3x3 neighbors
-        for (let i = -1; i <= 1; i++) {
-            for (let j = -1; j <= 1; j++) {
+        // Calculate search range based on radius + maxRadius in grid
+        const searchRange = radius + this.maxRadius;
+        const cellRange = Math.ceil(searchRange / this.cellSize);
+
+        for (let i = -cellRange; i <= cellRange; i++) {
+            for (let j = -cellRange; j <= cellRange; j++) {
                 const key = `${cx + i},${cy + j}`;
                 const cellItems = this.grid.get(key);
                 if (cellItems) {

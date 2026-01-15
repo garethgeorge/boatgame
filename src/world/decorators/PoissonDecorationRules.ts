@@ -1,3 +1,4 @@
+import { MathUtils } from "../../core/MathUtils";
 import { DecorationRule, PlacementManifest, WorldContext } from "./PoissonDecorationStrategy";
 
 
@@ -5,17 +6,54 @@ export const Signal = {
     constant: (fitness: number) => (ctx: WorldContext) =>
         fitness,
 
-    // Steepness: 1 at flat, 0 at cliff
-    flatness: (threshold = 0.5) => (ctx: WorldContext) =>
-        Math.max(0, 1 - (ctx.slope / threshold)),
+    distanceToRiver: (ctx: WorldContext) =>
+        ctx.distanceToRiver,
 
-    // Distance: from river 0 or 1
-    riverRange: (minDist: number, maxDist: number = Infinity) => (ctx: WorldContext) =>
-        minDist <= ctx.distanceToRiver && ctx.distanceToRiver <= maxDist ? 1 : 0,
+    elevation: (ctx: WorldContext) =>
+        ctx.elevation,
 
-    // Height: 0 or 1
-    heightRange: (minHeight: number, maxHeight: number = Infinity) => (ctx: WorldContext) =>
-        minHeight <= ctx.elevation && ctx.elevation <= maxHeight ? 1 : 0,
+    slope: (ctx: WorldContext) =>
+        ctx.slope * 180 / Math.PI,
+
+    inRange: (
+        f: (ctx: WorldContext) => number,
+        min: number, max: number
+    ) => (ctx: WorldContext) => {
+        const v = f(ctx);
+        return min <= v && v <= max ? 1 : 0;
+    },
+
+    linearRange: (
+        f: (ctx: WorldContext) => number,
+        min0: number, min1: number, max1: number = Infinity, max0: number = Infinity
+    ) => (ctx: WorldContext) => {
+        const v = f(ctx);
+        if (v <= min0 || v >= max0) return 0;
+        if (v >= min1 && v <= max1) return 1;
+        if (v < min1) {
+            return MathUtils.linearstep(min0, min1, v);
+        }
+        if (v > max1) {
+            return MathUtils.linearstep(max1, max0, v);
+        }
+        return v;
+    },
+
+    smoothRange: (
+        f: (ctx: WorldContext) => number,
+        min0: number, min1: number, max1: number = Infinity, max0: number = Infinity
+    ) => (ctx: WorldContext) => {
+        const v = f(ctx);
+        if (v <= min0 || v >= max0) return 0;
+        if (v >= min1 && v <= max1) return 1;
+        if (v < min1) {
+            return MathUtils.smoothstep(min0, min1, v);
+        }
+        if (v > max1) {
+            return MathUtils.smoothstep(max1, max0, v);
+        }
+        return v;
+    },
 
     // Noise: 0 to 1 organic clumps
     clumps: (scale: number, seed: number) => (ctx: WorldContext) =>
@@ -37,20 +75,17 @@ export const Combine = {
 
 export interface Species {
     id: string;
-    radius: number;
     // This defines BOTH where it can live and its selection probability
     preference: (ctx: WorldContext) => number;
     // Return placement manifest for an instance
-    params: (ctx: WorldContext) => { scale: number, options: any };
+    params: (ctx: WorldContext) => { radius: number, options: any };
 }
 
 // A "Tier" groups similarly sized species
 export class TierRule implements DecorationRule {
-    public baseRadius: number;
     public species: Species[];
 
-    constructor(options: { baseRadius: number, species: Species[] }) {
-        this.baseRadius = options.baseRadius;
+    constructor(options: { species: Species[] }) {
         this.species = options.species;
     }
 
@@ -60,7 +95,7 @@ export class TierRule implements DecorationRule {
     }
 
     // Pick the winner based on relative preference
-    generate(ctx: WorldContext): { scale: number, options: any } {
+    generate(ctx: WorldContext): { radius: number, options: any } {
         const scored = this.species.map(s => ({ s, p: s.preference(ctx) }));
         const winner = scored.reduce((a, b) => a.p > b.p ? a : b).s;
         return winner.params(ctx);
