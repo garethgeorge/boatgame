@@ -218,17 +218,70 @@ The `BoatPathLayoutStrategy.createLayout()` follows a deterministic multi-step p
 - **Adding Pattern Logics**: Implement the logic in `populatePlacements()` to calculate `pathIndex` and pass hints to `applyIndividualPlacement()`.
 - **Adding Placement Types**: Update `placementRange()` to define how the lateral `[min, max]` range is calculated relative to the boat path and river banks.
 
-## 11. Documentation Maintenance
+## 11. Procedural Decoration Placement System
+**Files**: `src/world/decorators/PoissonDecorationStrategy.ts`, `src/world/decorators/PoissonDecorationRules.ts`, `src/world/decorators/TerrainDecorator.ts`
+
+This system uses **Poisson Disk Sampling** with variable radii to place static decorations (trees, rocks, flowers) across the terrain. Position fitness and object spacing are controlled by declarative rules and environmental signals.
+
+### 1. Core Architecture
+-   **`PoissonDecorationStrategy`**: The engine implementing Bridson's algorithm. It uses a fitness value (0-1) to determine both the probability of placement and the required spacing (thinning placement in low-fitness areas).
+-   **`TerrainDecorator`**: A high-level facade that connects the strategy to the `RiverSystem` (for terrain data) and the `Decorations` registry (for asset creation).
+-   **`WorldContext`**: A data object passed to rules containing local environmental data: elevation, slope (degrees), distance to river, and biome progress.
+
+### 2. Client Usage (Constructing a Biome)
+To populate a biome, define a set of `DecorationRule`s and call `TerrainDecorator.decorate`.
+
+**Example (Simplified `HappyBiomeFeatures.ts`)**:
+```typescript
+private decorationRules: DecorationRule[] = [
+    new TierRule({
+        species: [
+            {
+                id: 'oak_tree',
+                preference: Combine.all(
+                    Signal.constant(1.0),
+                    Signal.linearRange(Signal.distanceToRiver, 5, 50), // Prefer away from river
+                    Signal.inRange(Signal.slope, 0, 30) // Only on flat/low slope
+                ),
+                params: (ctx) => {
+                    const scale = 0.8 + ctx.random() * 0.4;
+                    return {
+                        radius: SpeciesHelpers.attenuate(ctx, 12 * scale),
+                        options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
+                    };
+                }
+            }
+        ]
+    })
+];
+
+async decorate(context: DecorationContext, zStart: number, zEnd: number) {
+    TerrainDecorator.decorate(context, this.decorationRules, region, 20);
+}
+```
+
+**Key Concepts for Clients**:
+-   **Signals**: Functional helpers to extract or transform environmental data (e.g., `Signal.elevation`, `Signal.inRange`). Slope is measured in degrees.
+-   **Composition**: Use `Combine.all` (AND logic/multiplication) or `Combine.any` (OR logic/max) to build complex fitness functions.
+-   **Tiers**: `TierRule` groups species and selects a single winner from its members based on the highest local preference.
+-   **Variable Radius**: The `radius` returned by `params` is the "spacing requirement". High fitness results in dense placement (at `radius`), while low fitness increases spacing (up to 4x).
+
+### 3. Extension & Internals
+-   **Spatial Grid**: `SpatialGrid` handles collision detection. Similarly to the L-System, it uses a grid but dynamically tracks the maximum radius of any placed object to calculate the necessary search neighborhood. This ensures large spacing requirements are respected without a massive grid cell size.
+-   **Fitness-Based Thinning**: `getVariableRadius` inverts the fitness value using a power curve. If `fitness` is 1.0, spacing is exactly `radius`. As `fitness` approaches 0, spacing increases significantly.
+-   **Growth Phase**: Candidates are generated in an annulus around parent samples. The search distance is randomly selected between `2*r` and `4*r` where `r` is the variable radius, ensuring a high-quality distribution.
+
+## 12. Documentation Maintenance
 **Rule**: This file (`GEMINI.md`) serves as the architectural source of truth. When implementing new features or refactoring existing systems:
 1.  **Check this file** to ensure your changes align with established patterns.
 2.  **Update this file** if you introduce new patterns, subsystems, or change the architecture. Keep it living and accurate.
 
-## 12. Code Style and Standards
+## 13. Code Style and Standards
 **Rule**
 - Avoid casting to any in typescript except where there is no reasonable alternative or it is being done for performance reasons.
 - Don't remove comments in the code unless they are no longer applicable.
 
-## 13. Procedural Tree System (L-Systems)
+## 14. Procedural Tree System (L-Systems)
 **Files**: `src/world/factories/LSystemTreeGenerator.ts`, `src/world/factories/LSystemTreeArchetypes.ts`
 
 The vegetation system uses a Lindenmayer System (L-System) to generate procedural tree geometries. This allows for defining complex, organic tree structures using simple string-based production rules and parameters.
@@ -294,6 +347,6 @@ Leaves are generated separately using strategies defined in `LeafKind`.
 -   **Types**: `blob`, `willow`, `irregular`, `cluster`, `umbrella`.
 -   **Configuration**: Color, size, thickness, and count per attachment point.
 
-## 14. Verification
+## 15. Verification
 
 Use `npx tsc --noEmit` to verify that the code passes typescript checks.
