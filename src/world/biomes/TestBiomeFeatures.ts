@@ -4,16 +4,9 @@ import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
 import { MonkeySpawner } from '../../entities/spawners/MonkeySpawner';
-import { Decorations, LSystemTreeKind } from '../Decorations';
-import { DecorationRule, PlacementManifest } from '../decorators/PoissonDecorationStrategy';
+import { DecorationRule } from '../decorators/PoissonDecorationStrategy';
 import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/PoissonDecorationRules';
 import { TerrainDecorator } from '../decorators/TerrainDecorator';
-
-interface TestDecorationOptions {
-    kind: 'nothing' | 'willow' | 'oak' | 'flower';
-    rotation: number;
-    scale: number;
-}
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
