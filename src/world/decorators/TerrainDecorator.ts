@@ -2,6 +2,14 @@ import { PoissonDecorationStrategy, DecorationRule, PlacementManifest } from './
 export type { DecorationRule, PlacementManifest };
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../SimplexNoise';
+import { DecorationContext } from './DecorationContext';
+import { Decorations } from '../Decorations';
+
+export interface DecorationOptions {
+    kind: 'oak' | 'willow' | 'poplar' | 'flower' | 'rock';
+    rotation: number;
+    scale: number;
+}
 
 export class TerrainDecorator {
     private static _instance: TerrainDecorator;
@@ -14,6 +22,17 @@ export class TerrainDecorator {
         return this._instance;
     }
 
+    public static decorate(
+        context: DecorationContext,
+        rules: DecorationRule[],
+        region: { xMin: number, xMax: number, zMin: number, zMax: number },
+        gridSize: number,
+        seed: number = 0
+    ) {
+        const placements = this.generate(rules, region, gridSize, seed);
+        this.populate(context, placements, region);
+    }
+
     public static generate(
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
@@ -21,6 +40,13 @@ export class TerrainDecorator {
         seed: number = 0
     ): PlacementManifest[] {
         return this.instance().generate(rules, region, gridSize, seed);
+    }
+
+    public static populate(
+        context: DecorationContext, decorations: PlacementManifest[],
+        region: { xMin: number, xMax: number, zMin: number, zMax: number },
+    ) {
+        this.instance().populate(context, decorations, region);
     }
 
     constructor() {
@@ -69,5 +95,51 @@ export class TerrainDecorator {
             biomeProgressProvider,
             seed
         );
+    }
+
+    private populate(
+        context: DecorationContext, decorations: PlacementManifest[],
+        region: { xMin: number, xMax: number, zMin: number, zMax: number },
+    ) {
+        for (const manifest of decorations) {
+            if (!(region.xMin <= manifest.position.x && manifest.position.x < region.xMax)) continue;
+            if (!(region.zMin <= manifest.position.z && manifest.position.z < region.zMax)) continue;
+
+            const pos = {
+                worldX: manifest.position.x,
+                worldZ: manifest.position.z,
+                height: manifest.position.y
+            };
+
+            const opts: DecorationOptions = manifest.options as DecorationOptions;
+
+            switch (opts.kind) {
+                case 'oak': {
+                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'oak' });
+                    context.decoHelper.addInstancedDecoration(context, treeInstances, pos, opts.rotation, opts.scale);
+                    break;
+                }
+                case 'willow': {
+                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'willow' });
+                    context.decoHelper.addInstancedDecoration(context, treeInstances, pos, opts.rotation, opts.scale);
+                    break;
+                }
+                case 'poplar': {
+                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'poplar' });
+                    context.decoHelper.addInstancedDecoration(context, treeInstances, pos, opts.rotation, opts.scale);
+                    break;
+                }
+                case 'flower': {
+                    const flowerInstances = Decorations.getFlowerInstance();
+                    context.decoHelper.addInstancedDecoration(context, flowerInstances, pos, opts.rotation, opts.scale);
+                    break;
+                }
+                case 'rock': {
+                    const rockInstances = Decorations.getRockInstance('happy', opts.scale);
+                    context.decoHelper.addInstancedDecoration(context, rockInstances, pos, opts.rotation, opts.scale);
+                    break;
+                }
+            }
+        }
     }
 }

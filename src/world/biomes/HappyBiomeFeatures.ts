@@ -13,12 +13,6 @@ import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/Poisson
 
 type HappyEntityType = 'dolphin' | 'bottle';
 
-interface HappyDecorationOptions {
-    kind: 'oak' | 'willow' | 'poplar' | 'flower' | 'rock';
-    rotation: number;
-    scale: number;
-}
-
 /**
  * Happy Biome: A beautiful spring-like day with lush green fields.
  * Uses Context-Aware Archetypes for procedural placement.
@@ -175,55 +169,13 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
-
-        const decorations = TerrainDecorator.generate(
+        TerrainDecorator.decorate(
+            context,
             this.decorationRules,
             { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
             20,
             12345 // Fixed seed for now
         );
-
-        for (const manifest of decorations) {
-            // Check z range. Manifests are global for the whole layout call, 
-            // but we are only decorating a chunk segment here.
-            if (!(zStart <= manifest.position.z && manifest.position.z < zEnd)) continue;
-
-            const pos = {
-                worldX: manifest.position.x,
-                worldZ: manifest.position.z,
-                height: manifest.position.y
-            };
-
-            const opts: HappyDecorationOptions = manifest.options as HappyDecorationOptions;
-
-            switch (opts.kind) {
-                case 'oak': {
-                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'oak' });
-                    context.decoHelper.addInstancedDecoration(context, treeInstances, pos, opts.rotation, opts.scale);
-                    break;
-                }
-                case 'willow': {
-                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'willow' });
-                    context.decoHelper.addInstancedDecoration(context, treeInstances, pos, opts.rotation, opts.scale);
-                    break;
-                }
-                case 'poplar': {
-                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'poplar' });
-                    context.decoHelper.addInstancedDecoration(context, treeInstances, pos, opts.rotation, opts.scale);
-                    break;
-                }
-                case 'flower': {
-                    const flowerInstances = Decorations.getFlowerInstance();
-                    context.decoHelper.addInstancedDecoration(context, flowerInstances, pos, opts.rotation, opts.scale);
-                    break;
-                }
-                case 'rock': {
-                    const rockInstances = Decorations.getRockInstance('happy', opts.scale);
-                    context.decoHelper.addInstancedDecoration(context, rockInstances, pos, opts.rotation, opts.scale);
-                    break;
-                }
-            }
-        }
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {

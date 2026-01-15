@@ -18,7 +18,7 @@ interface TestDecorationOptions {
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
 
-    private rules: DecorationRule[] = [
+    private decorationRules: DecorationRule[] = [
         new TierRule({
             species: [
                 {
@@ -89,48 +89,13 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
-
-        const placements = TerrainDecorator.generate(
-            this.rules,
+        TerrainDecorator.decorate(
+            context,
+            this.decorationRules,
             { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
             20,
             12345 // Fixed seed for now
         );
-
-        for (const manifest of placements) {
-            // Check z range. Manifests are global for the whole layout call, 
-            // but we are only decorating a chunk segment here.
-            if (!(zStart <= manifest.position.z && manifest.position.z < zEnd)) continue;
-
-            const pos = {
-                worldX: manifest.position.x,
-                worldZ: manifest.position.z,
-                height: manifest.position.y
-            };
-
-            const opts = manifest.options as TestDecorationOptions;
-
-            switch (opts.kind) {
-                case 'nothing': {
-                    break;
-                }
-                case 'willow': {
-                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'willow' });
-                    context.decoHelper.addInstancedDecoration(context, treeInstances, pos, opts.rotation, opts.scale);
-                    break;
-                }
-                case 'oak': {
-                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'oak' });
-                    context.decoHelper.addInstancedDecoration(context, treeInstances, pos, opts.rotation, opts.scale);
-                    break;
-                }
-                case 'flower': {
-                    const flowerInstances = Decorations.getFlowerInstance();
-                    context.decoHelper.addInstancedDecoration(context, flowerInstances, pos, opts.rotation, opts.scale);
-                    break;
-                }
-            }
-        }
     }
 
     private spawner = new MonkeySpawner();
