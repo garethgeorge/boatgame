@@ -13,6 +13,8 @@ export interface DecorationContext {
     geometriesByMaterial: Map<THREE.Material, THREE.BufferGeometry[]>;
     // Output for instanced data. Map<Geometry, Map<Material, { matrix: THREE.Matrix4, color?: THREE.Color }[]>>
     instancedData: Map<THREE.BufferGeometry, Map<THREE.Material, { matrix: THREE.Matrix4, color?: THREE.Color }[]>>;
+    // Layout data for the current biome segment (contains boat path and static decoration manifests)
+    layout?: any;
     // Output for geometries that can't be grouped by material.
     geometryGroup: THREE.Group;
     // Output for animation mixers

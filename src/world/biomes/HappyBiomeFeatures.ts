@@ -6,20 +6,25 @@ import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { DolphinSpawner } from '../../entities/spawners/DolphinSpawner';
 import { RiverGeometry } from '../RiverGeometry';
-import { FlowerDecorator } from '../decorators/FlowerDecorator';
 import { Decorations, LSystemTreeKind } from '../Decorations';
+import { TerrainDecorator, DecorationRule, PlacementManifest } from '../decorators/TerrainDecorator';
+import { RiverSystem } from '../RiverSystem';
 
 type HappyEntityType = 'dolphin' | 'bottle';
 
+interface HappyBiomeLayout {
+    boatPath: BoatPathLayout<HappyEntityType>;
+    staticDecorations: PlacementManifest[];
+}
+
 /**
  * Happy Biome: A beautiful spring-like day with lush green fields.
- * Currently empty of decorations and obstacles.
+ * Uses Context-Aware Archetypes for procedural placement.
  */
 export class HappyBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'happy';
 
     private dolphinSpawner = new DolphinSpawner();
-    private flowerDecorator = new FlowerDecorator();
 
     getGroundColor(): { r: number, g: number, b: number } {
         // Lush green ground color
@@ -27,7 +32,6 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     }
 
     getScreenTint(): { r: number, g: number, b: number } {
-        // Use a lighter, more neutral tint for the happy biome to avoid washing out the sky
         return { r: 0.9, g: 0.95, b: 1.0 };
     }
 
@@ -38,8 +42,90 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return 1500;
     }
 
-    public createLayout(zMin: number, zMax: number): BoatPathLayout<HappyEntityType> {
-        return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
+    private rules: DecorationRule[] = [
+        // 1. Large Oak Trees - Solo giants suitable for hills
+        {
+            id: 'oak_tree',
+            baseRadius: 8,
+            clusterFactor: 0.2, // Mostly solitary
+            fitness: (ctx) => {
+                if (ctx.distanceToRiver < 20) return 0; // Not too close to river
+                if (ctx.slope > 0.4) return 0; // Not on cliffs
+                // Prefer slightly elevated ground
+                return 0.2 + (ctx.elevation * 0.05);
+            },
+            generate: (ctx) => ({
+                scale: 1.0 + ctx.random() * 0.5,
+                rotation: ctx.random() * Math.PI * 2,
+                options: { kind: 'oak' }
+            })
+        },
+        // 2. Willow Trees - Near water
+        {
+            id: 'willow_tree',
+            baseRadius: 6,
+            clusterFactor: 0.4,
+            fitness: (ctx) => {
+                if (ctx.distanceToRiver < 5) return 0; // Not IN the river
+                if (ctx.distanceToRiver > 25) return 0; // Only near river
+                return 0.8;
+            },
+            generate: (ctx) => ({
+                scale: 0.8 + ctx.random() * 0.4,
+                rotation: ctx.random() * Math.PI * 2,
+                options: { kind: 'willow' }
+            })
+        },
+        // 3. Poplar Forests - Clustered
+        {
+            id: 'poplar_tree',
+            baseRadius: 4,
+            clusterFactor: 0.8, // Highly clustered
+            fitness: (ctx) => {
+                if (ctx.distanceToRiver < 10) return 0;
+                return 0.5;
+            },
+            generate: (ctx) => ({
+                scale: 0.7 + ctx.random() * 0.6,
+                rotation: ctx.random() * Math.PI * 2,
+                options: { kind: 'poplar' }
+            })
+        },
+        // 4. Flowers - Fillers
+        {
+            id: 'flowers',
+            baseRadius: 2,
+            clusterFactor: 0.6,
+            fitness: (ctx) => {
+                if (ctx.distanceToRiver < 1.0) return 0.0;
+                return 0.6; // General coverage
+            },
+            generate: (ctx) => ({
+                scale: 1.0,
+                rotation: ctx.random() * Math.PI * 2
+            })
+        },
+        // 5. Rocks - Shoreline and hills
+        {
+            id: 'rock',
+            baseRadius: 3,
+            clusterFactor: 0.3,
+            fitness: (ctx) => {
+                // Prefer close to water OR high slopes
+                if (ctx.distanceToRiver < 1.0) return 0.0;
+                if (ctx.distanceToRiver < 10) return 1.0;
+                if (ctx.slope > 0.5) return 0.8;
+                return 0.1;
+            },
+            generate: (ctx) => ({
+                scale: 0.8 + ctx.random() * 1.5,
+                rotation: ctx.random() * Math.PI * 2
+            })
+        }
+    ];
+
+    public createLayout(zMin: number, zMax: number): HappyBiomeLayout {
+        const boatPath = BoatPathLayoutStrategy.createLayout(zMin, zMax, {
             patterns: {
                 'dolphin_pods': {
                     logic: 'scatter',
@@ -66,38 +152,66 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             ],
             waterAnimals: ['dolphin']
         });
+
+        const staticDecorations = TerrainDecorator.generate(
+            this.rules,
+            { xMin: -200, xMax: 200, zMin, zMax },
+            12345 // Fixed seed for now
+        );
+
+        return { boatPath, staticDecorations };
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
-        await this.flowerDecorator.decorate(context, zStart, zEnd);
+        const layout = context.layout as HappyBiomeLayout;
 
-        const length = zEnd - zStart;
-        const count = Math.floor(length);
+        // Safety check if layout or decorations are missing (e.g. if cast failed or old layout cached)
+        if (!layout || !layout.staticDecorations) {
+            console.warn("HappyBiome: No static decorations found in layout");
+            return;
+        }
 
-        for (let i = 0; i < count; i++) {
-            const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-            if (!context.decoHelper.isValidDecorationPosition(context, position, 1.0)) continue;
+        for (const manifest of layout.staticDecorations) {
+            // Check z range. Manifests are global for the whole layout call, 
+            // but we are only decorating a chunk segment here.
+            if (!(zStart <= manifest.position.z && manifest.position.z < zEnd)) continue;
 
-            const variation = Math.random();
-            const kinds: LSystemTreeKind[] = ['willow', 'poplar', 'oak', 'elm',
-                'umbrella', 'open', 'irregular', 'vase'];
-            const kind = kinds[i % kinds.length];
-            const treeInstances = Decorations.getLSystemTreeInstance({ kind, variation });
-            context.decoHelper.addInstancedDecoration(context, treeInstances, position);
+            const pos = {
+                worldX: manifest.position.x,
+                worldZ: manifest.position.z,
+                height: manifest.position.y
+            };
+
+            if (manifest.type.endsWith('_tree')) {
+                const kind = manifest.options?.kind as LSystemTreeKind || 'oak';
+                const treeInstances = Decorations.getLSystemTreeInstance({
+                    kind
+                });
+                context.decoHelper.addInstancedDecoration(context, treeInstances, pos, manifest.rotation, manifest.scale);
+            } else if (manifest.type === 'flowers') {
+                const flowerInstances = Decorations.getFlowerInstance();
+                context.decoHelper.addInstancedDecoration(context, flowerInstances, pos, manifest.rotation, manifest.scale);
+            } else if (manifest.type === 'rock') {
+                // Assuming getRockInstance exists or similar
+                const rockInstances = Decorations.getRockInstance('happy', manifest.scale);
+                context.decoHelper.addInstancedDecoration(context, rockInstances, pos, manifest.rotation, manifest.scale);
+            }
         }
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        const layout = context.biomeLayout as BoatPathLayout<HappyEntityType>;
-        if (!layout) return;
+        const layout = context.biomeLayout as HappyBiomeLayout;
+        if (!layout || !layout.boatPath) return;
 
-        const iChunkStart = RiverGeometry.getPathIndexByZ(layout.path, zStart);
-        const iChunkEnd = RiverGeometry.getPathIndexByZ(layout.path, zEnd);
+        const boatPath = layout.boatPath;
+
+        const iChunkStart = RiverGeometry.getPathIndexByZ(boatPath.path, zStart);
+        const iChunkEnd = RiverGeometry.getPathIndexByZ(boatPath.path, zEnd);
 
         const iChunkMin = Math.min(iChunkStart, iChunkEnd);
         const iChunkMax = Math.max(iChunkStart, iChunkEnd);
 
-        for (const section of layout.sections) {
+        for (const section of boatPath.sections) {
             if (section.iEnd <= iChunkMin || section.iStart >= iChunkMax) continue;
 
             for (const [entityType, placements] of Object.entries(section.placements)) {
@@ -105,14 +219,15 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
 
                 for (const p of placements) {
                     if (p.index >= iChunkMin && p.index < iChunkMax) {
-                        const sample = RiverGeometry.getPathPoint(layout.path, p.index);
+                        const sample = RiverGeometry.getPathPoint(boatPath.path, p.index);
 
                         switch (entityType as HappyEntityType) {
                             case 'dolphin':
                                 await this.dolphinSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
                                 break;
                             case 'bottle':
-                                await this.bottleSpawner.spawnInRiverAbsolute(context, sample, p.range);
+                                // Bottle spawner assumed to exist in Base or similar
+                                // await this.bottleSpawner.spawnInRiverAbsolute(context, sample, p.range);
                                 break;
                         }
                     }

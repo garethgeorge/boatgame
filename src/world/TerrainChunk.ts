@@ -111,6 +111,8 @@ export class TerrainChunk {
     for (const segment of segments) {
       context.biomeZStart = segment.biomeZStart;
       context.biomeZEnd = segment.biomeZEnd;
+      context.layout = this.riverSystem.biomeManager.getLayoutForBiome(segment.biomeIndex, segment.biomeZStart, segment.biomeZEnd);
+
       const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
       await features.decorate(context, segment.zStart, segment.zEnd);
       Profiler.pause('GenDecoBatch');
