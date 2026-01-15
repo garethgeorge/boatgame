@@ -100,13 +100,20 @@ export class SkyManager {
     }
 
     private updateSkyAndFog(boatZ: number, dayness: number, cameraPosition: THREE.Vector3) {
-
         const biomeSkyGradient = RiverSystem.getInstance().biomeManager.getBiomeSkyGradient(boatZ, dayness);
         const biomeFogDensity = RiverSystem.getInstance().biomeManager.getBiomeFogDensity(boatZ);
         const biomeScreenTint = RiverSystem.getInstance().biomeManager.getBiomeScreenTint(boatZ);
 
-        // Screen overlay
-        this.screenOverlay.update(biomeScreenTint, biomeFogDensity * 0.75);
+        // Height-based scaling logic
+        // Birds view is at y=40, BirdsFar is at y=300
+        // We start scaling at y=50 and reach maximum clear at y=250
+        const MIN_HEIGHT = 50;
+        const MAX_HEIGHT = 250;
+        const heightFactor = Math.min(1.0, Math.max(0.0, (cameraPosition.y - MIN_HEIGHT) / (MAX_HEIGHT - MIN_HEIGHT)));
+
+        // Screen overlay: Reduce desaturation and tint as we go higher
+        const overlayIntensity = 1.0 - heightFactor * 0.8; // Don't clear completely, but reduce significantly
+        this.screenOverlay.update(biomeScreenTint, biomeFogDensity * 0.75 * overlayIntensity);
 
         // Sky gradient
         this.skybox.update(cameraPosition, biomeSkyGradient.top, biomeSkyGradient.bottom);
@@ -116,11 +123,15 @@ export class SkyManager {
             this.scene.fog.color.copy(biomeSkyGradient.bottom);
         }
 
-        // Update Fog Density based on biome
+        // Update Fog Density based on biome and height
         if (this.scene.fog instanceof THREE.Fog) {
             const fogRange = RiverSystem.getInstance().biomeManager.getBiomeFogRange(boatZ);
-            this.scene.fog.near = fogRange.near;
-            this.scene.fog.far = fogRange.far;
+
+            // Push fog further away as we go higher
+            // At MAX_HEIGHT, push 'far' to something very large and 'near' as well
+            const fogPushFactor = heightFactor * 10.0;
+            this.scene.fog.near = fogRange.near + (fogRange.far - fogRange.near) * fogPushFactor;
+            this.scene.fog.far = fogRange.far * (1.0 + fogPushFactor);
         }
     }
 
