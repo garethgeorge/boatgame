@@ -105,10 +105,20 @@ export class TerrainDecorator {
             if (!(region.xMin <= manifest.position.x && manifest.position.x < region.xMax)) continue;
             if (!(region.zMin <= manifest.position.z && manifest.position.z < region.zMax)) continue;
 
+            const wx = manifest.position.x;
+            const wz = manifest.position.z;
+            const height = manifest.position.y;
+
+            // Visibility Check: Only instantiate if visible from the river
+            const visibilitySteps = 8;
+            if (!this.riverSystem.terrainGeometry.checkVisibility(wx, height, wz, visibilitySteps)) {
+                continue;
+            }
+
             const pos = {
-                worldX: manifest.position.x,
-                worldZ: manifest.position.z,
-                height: manifest.position.y
+                worldX: wx,
+                worldZ: wz,
+                height: height
             };
 
             const opts: DecorationOptions = manifest.options as DecorationOptions;

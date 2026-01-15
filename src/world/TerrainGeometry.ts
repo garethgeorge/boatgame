@@ -147,7 +147,9 @@ export class TerrainGeometry {
         return normal;
     }
 
-    public checkVisibility(targetWorldX: number, targetHeight: number, worldZ: number): boolean {
+    public checkVisibility(
+        targetWorldX: number, targetHeight: number, worldZ: number,
+        steps: number = 4): boolean {
         // Ray start: River center (world coordinates), slightly above water (y = 2)
         const riverCenter = this.riverSystem.getRiverCenter(worldZ);
         const startX = riverCenter;
@@ -155,8 +157,6 @@ export class TerrainGeometry {
 
         const endX = targetWorldX;
         const endY = targetHeight;
-
-        const steps = 4; // Number of checks along the ray
 
         for (let i = 1; i < steps; i++) {
             const t = i / steps;
