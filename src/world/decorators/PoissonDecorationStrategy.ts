@@ -8,45 +8,40 @@ export interface WorldContext {
     slope: number;
     distanceToRiver: number;
     biomeProgress: number; // 0.0 (Start) to 1.0 (End of river)
-    // Helper to access random values cleanly
+    // Helpers to access random values cleanly
     random: () => number;
+    noise2D: (x: number, y: number) => number;
 }
 
 // 2. The Decoration Result (The Manifest Output)
 export interface PlacementManifest {
-    type: string;
     position: THREE.Vector3;
     scale: number;
-    rotation: number;
     options?: any; // type specific
     radius: number; // Stored for collision checks
-    fitness?: number; // Stored to optimize local growth
+    fitness: number; // Stored to optimize local growth
 }
 
 // 3. The Declarative Rule
 export interface DecorationRule {
-    id: string;
     baseRadius: number; // Radius at scale 1.0
 
     // Placement: Returns 0 to 1 (0 = Impossible, 1 = Perfect)
     fitness: (ctx: WorldContext) => number;
 
-    // Clustering: Boosts fitness based on noise (0 to 1)
-    // Higher value = more localized "patches"
-    clusterFactor: number;
-
     // Attributes: Generates the specific look
     generate: (ctx: WorldContext) => {
         scale: number;
-        rotation?: number;
-        options?: any;
+        options: any;
     };
 }
 
 export class PoissonDecorationStrategy {
-    private simplex = new SimplexNoise();
+    private noise2D: SimplexNoise;
 
-    constructor() { }
+    constructor(noise2D: SimplexNoise) {
+        this.noise2D = noise2D;
+    }
 
     public generate(
         rules: DecorationRule[],
@@ -69,8 +64,6 @@ export class PoissonDecorationStrategy {
         // Bridson's algorithm constants (approximate for multi-class)
         const maxK = 30; // Max attempts per active sample (simplified here to attempts per unit area)
 
-        this.simplex = new SimplexNoise(seed);
-
         for (const rule of sortedRules) {
             const activeList: PlacementManifest[] = [];
             const radius = rule.baseRadius;
@@ -78,7 +71,7 @@ export class PoissonDecorationStrategy {
             // Phase 1: Seeding
             // We attempt to plant initial seeds to handle disconnected valid areas.
             // Heuristic: scale number of seeds with area, but clamp it.
-            const seedAttempts = 50;
+            const seedAttempts = 100; // Increased from 50
 
             for (let i = 0; i < seedAttempts; i++) {
                 // Pick random point
@@ -103,14 +96,17 @@ export class PoissonDecorationStrategy {
                 const parentFitness = parent.fitness || 0;
 
                 // Scale k: High fitness = 30 tries, Low fitness = fewer tries (Natural Thinning)
-                const dynamicK = maxK; Math.max(1, Math.floor(maxK * parentFitness));
+                const dynamicK = Math.max(1, Math.floor(maxK * parentFitness));
 
                 let found = false;
 
                 for (let i = 0; i < dynamicK; i++) {
                     const angle = Math.random() * Math.PI * 2;
-                    // Annulus: r to 2r
-                    const dist = radius + Math.random() * radius;
+                    // Annulus: 2r to 4r (r = baseRadius)
+                    // Bridson's original is r to 2r where r is the search radius.
+                    // Here radius is the object radius, and collision is r1 + r2.
+                    // If r1=r2, distance must be > 2r.
+                    const dist = (radius * 2) + Math.random() * (radius * 2);
 
                     const cx = parent.position.x + Math.cos(angle) * dist;
                     const cz = parent.position.z + Math.sin(angle) * dist;
@@ -158,17 +154,11 @@ export class PoissonDecorationStrategy {
             slope: terrain.slope,
             distanceToRiver: terrain.distToRiver,
             biomeProgress,
-            random: Math.random
+            random: Math.random,
+            noise2D: (x, y) => (this.noise2D.noise2D(x, y))
         };
 
         let f = rule.fitness(ctx);
-
-        if (rule.clusterFactor > 0) {
-            const noiseScale = 0.05;
-            const noiseVal = (this.simplex.noise2D(x * noiseScale, z * noiseScale) + 1) * 0.5;
-            f *= (1 - rule.clusterFactor) + (rule.clusterFactor * noiseVal * 2.0);
-        }
-
         if (f > 1) f = 1;
         if (f <= 0) return null;
         if (Math.random() > f) return null;
@@ -184,10 +174,8 @@ export class PoissonDecorationStrategy {
         }
 
         return {
-            type: rule.id,
             position: new THREE.Vector3(x, terrain.height, z),
             scale: scale,
-            rotation: params.rotation || 0,
             options: params.options,
             radius: instanceRadius,
             fitness: f

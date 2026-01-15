@@ -47,7 +47,7 @@ export class Game {
 
     // Game State
     isPaused: boolean = false;
-    viewMode: 'close' | 'far' | 'birds' = 'close';
+    viewMode: 'close' | 'far' | 'birds' | 'birdsFar' = 'close';
 
     // Collision Handling
     pendingContacts: Map<Entity, { type: string, subtype: any, boatPart: string }> = new Map();
@@ -321,6 +321,8 @@ export class Game {
                 this.viewMode = 'far';
             } else if (this.viewMode === 'far') {
                 this.viewMode = 'birds';
+            } else if (this.viewMode === 'birds') {
+                this.viewMode = 'birdsFar';
             } else {
                 this.viewMode = 'close';
             }
@@ -404,6 +406,9 @@ export class Game {
             } else if (this.viewMode === 'birds') {
                 offsetDistance = 0.5; // Small offset so lookAt orient correctly 
                 offsetHeight = 40;
+            } else if (this.viewMode === 'birdsFar') {
+                offsetDistance = 0.5;
+                offsetHeight = 300;
             }
 
             // Calculate offset vector based on rotation

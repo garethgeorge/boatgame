@@ -1,14 +1,17 @@
 import { PoissonDecorationStrategy, DecorationRule, PlacementManifest } from './PoissonDecorationStrategy';
 export type { DecorationRule, PlacementManifest };
 import { RiverSystem } from '../RiverSystem';
+import { SimplexNoise } from '../SimplexNoise';
 
 export class TerrainDecorator {
+    private static _instance: TerrainDecorator;
+
     private strategy: PoissonDecorationStrategy;
     private riverSystem: RiverSystem;
 
-    constructor() {
-        this.strategy = new PoissonDecorationStrategy();
-        this.riverSystem = RiverSystem.getInstance();
+    public static instance(): TerrainDecorator {
+        if (!this._instance) this._instance = new TerrainDecorator;
+        return this._instance;
     }
 
     public static generate(
@@ -16,8 +19,13 @@ export class TerrainDecorator {
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
         seed: number = 0
     ): PlacementManifest[] {
-        const decorator = new TerrainDecorator();
-        return decorator.generate(rules, region, seed);
+        return this.instance().generate(rules, region, seed);
+    }
+
+    constructor() {
+        const noise2D = new SimplexNoise();
+        this.strategy = new PoissonDecorationStrategy(noise2D);
+        this.riverSystem = RiverSystem.getInstance();
     }
 
     private generate(
@@ -35,7 +43,7 @@ export class TerrainDecorator {
             const riverCenter = this.riverSystem.getRiverCenter(z);
             const distToCenter = Math.abs(x - riverCenter);
             const riverWidth = this.riverSystem.getRiverWidth(z);
-            const distToRiver = Math.max(0, distToCenter - riverWidth / 2);
+            const distToRiver = distToCenter - riverWidth / 2;
 
             // Slope calculation
             const slope = 1.0 - Math.abs(normal.y);

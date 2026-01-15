@@ -17,6 +17,11 @@ interface HappyBiomeLayout {
     staticDecorations: PlacementManifest[];
 }
 
+interface HappyDecorationOptions {
+    kind: 'oak' | 'willow' | 'poplar' | 'flower' | 'rock';
+    rotation: number;
+}
+
 /**
  * Happy Biome: A beautiful spring-like day with lush green fields.
  * Uses Context-Aware Archetypes for procedural placement.
@@ -45,9 +50,8 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     private rules: DecorationRule[] = [
         // 1. Large Oak Trees - Solo giants suitable for hills
         {
-            id: 'oak_tree',
             baseRadius: 8,
-            clusterFactor: 0.2, // Mostly solitary
+            //clusterFactor: 0.2, // Mostly solitary
             fitness: (ctx) => {
                 if (ctx.distanceToRiver < 20) return 0; // Not too close to river
                 if (ctx.slope > 0.4) return 0; // Not on cliffs
@@ -56,15 +60,13 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             },
             generate: (ctx) => ({
                 scale: 1.0 + ctx.random() * 0.5,
-                rotation: ctx.random() * Math.PI * 2,
-                options: { kind: 'oak' }
+                options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2 }
             })
         },
         // 2. Willow Trees - Near water
         {
-            id: 'willow_tree',
             baseRadius: 6,
-            clusterFactor: 0.4,
+            //clusterFactor: 0.4,
             fitness: (ctx) => {
                 if (ctx.distanceToRiver < 5) return 0; // Not IN the river
                 if (ctx.distanceToRiver > 25) return 0; // Only near river
@@ -72,44 +74,39 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             },
             generate: (ctx) => ({
                 scale: 0.8 + ctx.random() * 0.4,
-                rotation: ctx.random() * Math.PI * 2,
-                options: { kind: 'willow' }
+                options: { kind: 'willow', rotation: ctx.random() * Math.PI * 2, }
             })
         },
         // 3. Poplar Forests - Clustered
         {
-            id: 'poplar_tree',
             baseRadius: 4,
-            clusterFactor: 0.8, // Highly clustered
+            //clusterFactor: 0.8, // Highly clustered
             fitness: (ctx) => {
                 if (ctx.distanceToRiver < 10) return 0;
                 return 0.5;
             },
             generate: (ctx) => ({
                 scale: 0.7 + ctx.random() * 0.6,
-                rotation: ctx.random() * Math.PI * 2,
-                options: { kind: 'poplar' }
+                options: { kind: 'poplar', rotation: ctx.random() * Math.PI * 2, }
             })
         },
         // 4. Flowers - Fillers
         {
-            id: 'flowers',
             baseRadius: 2,
-            clusterFactor: 0.6,
+            //clusterFactor: 0.6,
             fitness: (ctx) => {
                 if (ctx.distanceToRiver < 1.0) return 0.0;
                 return 0.6; // General coverage
             },
             generate: (ctx) => ({
                 scale: 1.0,
-                rotation: ctx.random() * Math.PI * 2
+                options: { kind: 'flower', rotation: ctx.random() * Math.PI * 2 }
             })
         },
         // 5. Rocks - Shoreline and hills
         {
-            id: 'rock',
             baseRadius: 3,
-            clusterFactor: 0.3,
+            //clusterFactor: 0.3,
             fitness: (ctx) => {
                 // Prefer close to water OR high slopes
                 if (ctx.distanceToRiver < 1.0) return 0.0;
@@ -119,7 +116,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             },
             generate: (ctx) => ({
                 scale: 0.8 + ctx.random() * 1.5,
-                rotation: ctx.random() * Math.PI * 2
+                options: { kind: 'rock', rotation: ctx.random() * Math.PI * 2 }
             })
         }
     ];
@@ -182,19 +179,34 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                 height: manifest.position.y
             };
 
-            if (manifest.type.endsWith('_tree')) {
-                const kind = manifest.options?.kind as LSystemTreeKind || 'oak';
-                const treeInstances = Decorations.getLSystemTreeInstance({
-                    kind
-                });
-                context.decoHelper.addInstancedDecoration(context, treeInstances, pos, manifest.rotation, manifest.scale);
-            } else if (manifest.type === 'flowers') {
-                const flowerInstances = Decorations.getFlowerInstance();
-                context.decoHelper.addInstancedDecoration(context, flowerInstances, pos, manifest.rotation, manifest.scale);
-            } else if (manifest.type === 'rock') {
-                // Assuming getRockInstance exists or similar
-                const rockInstances = Decorations.getRockInstance('happy', manifest.scale);
-                context.decoHelper.addInstancedDecoration(context, rockInstances, pos, manifest.rotation, manifest.scale);
+            const opts: HappyDecorationOptions = manifest.options as HappyDecorationOptions;
+
+            switch (opts.kind) {
+                case 'oak': {
+                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'oak' });
+                    context.decoHelper.addInstancedDecoration(context, treeInstances, pos, opts.rotation, manifest.scale);
+                    break;
+                }
+                case 'willow': {
+                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'willow' });
+                    context.decoHelper.addInstancedDecoration(context, treeInstances, pos, opts.rotation, manifest.scale);
+                    break;
+                }
+                case 'poplar': {
+                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'poplar' });
+                    context.decoHelper.addInstancedDecoration(context, treeInstances, pos, opts.rotation, manifest.scale);
+                    break;
+                }
+                case 'flower': {
+                    const flowerInstances = Decorations.getFlowerInstance();
+                    context.decoHelper.addInstancedDecoration(context, flowerInstances, pos, opts.rotation, manifest.scale);
+                    break;
+                }
+                case 'rock': {
+                    const rockInstances = Decorations.getRockInstance('happy', manifest.scale);
+                    context.decoHelper.addInstancedDecoration(context, rockInstances, pos, opts.rotation, manifest.scale);
+                    break;
+                }
             }
         }
     }
