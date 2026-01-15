@@ -9,13 +9,9 @@ import { RiverGeometry } from '../RiverGeometry';
 import { Decorations, LSystemTreeKind } from '../Decorations';
 import { TerrainDecorator, DecorationRule, PlacementManifest } from '../decorators/TerrainDecorator';
 import { RiverSystem } from '../RiverSystem';
+import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/PoissonDecorationRules';
 
 type HappyEntityType = 'dolphin' | 'bottle';
-
-interface HappyBiomeLayout {
-    boatPath: BoatPathLayout<HappyEntityType>;
-    staticDecorations: PlacementManifest[];
-}
 
 interface HappyDecorationOptions {
     kind: 'oak' | 'willow' | 'poplar' | 'flower' | 'rock';
@@ -48,83 +44,105 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return 1500;
     }
 
-    private rules: DecorationRule[] = [
-        // 1. Large Oak Trees - Solo giants suitable for hills
-        {
-            fitness: (ctx) => {
-                if (ctx.distanceToRiver < 20) return 0; // Not too close to river
-                if (ctx.slope > 0.93) return 0; // Not on cliffs (> ~53 degrees)
-                // Prefer slightly elevated ground
-                return 0.2 + (ctx.elevation * 0.05);
-            },
-            generate: (ctx) => {
-                const scale = 1.0 + ctx.random() * 0.5;
-                return {
-                    radius: 8 * scale,
-                    options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
-                };
-            }
-        },
-        // 2. Willow Trees - Near water
-        {
-            fitness: (ctx) => {
-                if (ctx.distanceToRiver < 5) return 0; // Not IN the river
-                if (ctx.distanceToRiver > 25) return 0; // Only near river
-                return 0.8;
-            },
-            generate: (ctx) => {
-                const scale = 0.8 + ctx.random() * 0.4;
-                return {
-                    radius: 6 * scale,
-                    options: { kind: 'willow', rotation: ctx.random() * Math.PI * 2, scale }
-                };
-            }
-        },
-        // 3. Poplar Forests - Clustered
-        {
-            fitness: (ctx) => {
-                if (ctx.distanceToRiver < 10) return 0;
-                return 0.5;
-            },
-            generate: (ctx) => {
-                const scale = 0.7 + ctx.random() * 0.6;
-                return {
-                    radius: 4 * scale,
-                    options: { kind: 'poplar', rotation: ctx.random() * Math.PI * 2, scale }
-                };
-            }
-        },
-        // 4. Flowers - Fillers
-        {
-            fitness: (ctx) => {
-                if (ctx.distanceToRiver < 1.0) return 0.0;
-                return 0.6; // General coverage
-            },
-            generate: (ctx) => ({
-                radius: 2,
-                options: { kind: 'flower', rotation: ctx.random() * Math.PI * 2, scale: 1.0 }
-            })
-        },
-        // 5. Rocks - Shoreline and hills
-        {
-            fitness: (ctx) => {
-                // Prefer close to water OR high slopes
-                if (ctx.distanceToRiver < 1.0) return 0.0;
-                if (ctx.distanceToRiver < 10) return 1.0;
-                if (ctx.slope > 1.05) return 0.8; // High slopes (> ~60 degrees)
-                return 0.1;
-            },
-            generate: (ctx) => {
-                const scale = 0.8 + ctx.random() * 1.5;
-                return {
-                    radius: 3 * scale,
-                    options: { kind: 'rock', rotation: ctx.random() * Math.PI * 2, scale }
-                };
-            }
-        }
+    private decorationRules: DecorationRule[] = [
+        new TierRule({
+            species: [
+                {
+                    id: 'willow_tree',
+                    preference: Combine.all(
+                        Signal.constant(1.0),
+                        Signal.inRange(Signal.distanceToRiver, 5, 25),
+                        Signal.inRange(Signal.elevation, 1.0, 5.0),
+                        Signal.inRange(Signal.slope, 0, 15)
+                    ),
+                    params: (ctx) => {
+                        const scale = 0.8 + ctx.random() * 0.4;
+                        return {
+                            radius: 8 * scale,
+                            options: { kind: 'willow', rotation: ctx.random() * Math.PI * 2, scale }
+                        };
+                    }
+                },
+                {
+                    id: 'oak_tree',
+                    preference: Combine.all(
+                        Signal.constant(1.0),
+                        Signal.linearRange(Signal.distanceToRiver, 5, 50),
+                        Signal.inRange(Signal.elevation, 3.0, 20.0),
+                        Signal.inRange(Signal.slope, 0, 50)
+                    ),
+                    params: (ctx) => {
+                        const scale = 0.8 + ctx.random() * 0.4;
+                        return {
+                            radius: SpeciesHelpers.attenuate(ctx, 12 * scale),
+                            options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
+                        };
+                    }
+                }
+            ]
+        }),
+        new TierRule({
+            species: [
+                {
+                    id: 'poplar',
+                    preference: Combine.all(
+                        Signal.step(Signal.noise2D(500.0, 250.0), 0.7),
+                        Signal.inRange(Signal.distanceToRiver, 5, 40),
+                        Signal.inRange(Signal.slope, 0, 15)
+                    ),
+                    params: (ctx) => {
+                        const scale = 0.7 + ctx.random() * 0.6;
+                        return {
+                            radius: 4 * scale,
+                            options: { kind: 'poplar', rotation: ctx.random() * Math.PI * 2, scale }
+                        }
+                    }
+                },
+            ]
+        }),
+        new TierRule({
+            species: [
+                {
+                    id: 'rock',
+                    preference: Combine.all(
+                        Signal.constant(1.0),
+                        Signal.inRange(Signal.distanceToRiver, 3, 20),
+                        Signal.inRange(Signal.elevation, 6.0),
+                        Signal.inRange(Signal.slope, 50)
+                    ),
+                    params: (ctx) => {
+                        const scale = 0.8 + ctx.random() * 0.8;
+                        return {
+                            radius: 10.0 * scale,
+                            options: { kind: 'rock', rotation: ctx.random() * Math.PI * 2, scale }
+                        };
+                    }
+                },
+            ]
+        }),
+        new TierRule({
+            species: [
+                {
+                    id: 'flower',
+                    preference: Combine.all(
+                        Signal.constant(1.0),
+                        Signal.inRange(Signal.distanceToRiver, 5, 25),
+                        Signal.inRange(Signal.elevation, 1.0, 5.0),
+                        Signal.inRange(Signal.slope, 0, 15)
+                    ),
+                    params: (ctx) => {
+                        const scale = 0.8 + ctx.random() * 0.4;
+                        return {
+                            radius: 1.0 * scale,
+                            options: { kind: 'flower', rotation: ctx.random() * Math.PI * 2, scale }
+                        };
+                    }
+                },
+            ]
+        })
     ];
 
-    public createLayout(zMin: number, zMax: number): HappyBiomeLayout {
+    public createLayout(zMin: number, zMax: number): BoatPathLayout<HappyEntityType> {
         const boatPath = BoatPathLayoutStrategy.createLayout(zMin, zMax, {
             patterns: {
                 'dolphin_pods': {
@@ -153,26 +171,19 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             waterAnimals: ['dolphin']
         });
 
-        const staticDecorations = TerrainDecorator.generate(
-            this.rules,
-            { xMin: -200, xMax: 200, zMin, zMax },
+        return boatPath;
+    }
+
+    async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
+
+        const decorations = TerrainDecorator.generate(
+            this.decorationRules,
+            { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
             20,
             12345 // Fixed seed for now
         );
 
-        return { boatPath, staticDecorations };
-    }
-
-    async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
-        const layout = context.layout as HappyBiomeLayout;
-
-        // Safety check if layout or decorations are missing (e.g. if cast failed or old layout cached)
-        if (!layout || !layout.staticDecorations) {
-            console.warn("HappyBiome: No static decorations found in layout");
-            return;
-        }
-
-        for (const manifest of layout.staticDecorations) {
+        for (const manifest of decorations) {
             // Check z range. Manifests are global for the whole layout call, 
             // but we are only decorating a chunk segment here.
             if (!(zStart <= manifest.position.z && manifest.position.z < zEnd)) continue;
@@ -216,10 +227,8 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        const layout = context.biomeLayout as HappyBiomeLayout;
-        if (!layout || !layout.boatPath) return;
-
-        const boatPath = layout.boatPath;
+        const boatPath = context.biomeLayout as BoatPathLayout<HappyEntityType>;
+        if (!boatPath) return;
 
         const iChunkStart = RiverGeometry.getPathIndexByZ(boatPath.path, zStart);
         const iChunkEnd = RiverGeometry.getPathIndexByZ(boatPath.path, zEnd);

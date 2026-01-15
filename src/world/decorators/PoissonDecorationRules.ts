@@ -1,10 +1,13 @@
 import { MathUtils } from "../../core/MathUtils";
 import { DecorationRule, PlacementManifest, WorldContext } from "./PoissonDecorationStrategy";
 
-
 export const Signal = {
     constant: (fitness: number) => (ctx: WorldContext) =>
         fitness,
+
+    // Scaled to [0,1]
+    noise2D: (sx: number, sy: number) => (ctx: WorldContext) =>
+        (ctx.noise2D(ctx.pos.x * sx, ctx.pos.y * sy) + 1) / 2.0,
 
     distanceToRiver: (ctx: WorldContext) =>
         ctx.distanceToRiver,
@@ -17,10 +20,18 @@ export const Signal = {
 
     inRange: (
         f: (ctx: WorldContext) => number,
-        min: number, max: number
+        min: number, max: number = Infinity
     ) => (ctx: WorldContext) => {
         const v = f(ctx);
         return min <= v && v <= max ? 1 : 0;
+    },
+
+    step: (
+        f: (ctx: WorldContext) => number,
+        threshold: number
+    ) => (ctx: WorldContext) => {
+        const v = f(ctx);
+        return v < threshold ? 0.0 : 1.0;
     },
 
     linearRange: (
@@ -73,6 +84,15 @@ export const Combine = {
     lerp: (a: number, b: number, t: number) => a + (b - a) * t
 };
 
+export class SpeciesHelpers {
+    // Increases spacing with distance from river to attenuate species placement
+    public static attenuate(ctx: WorldContext, radius: number): number {
+        if (ctx.distanceToRiver > 50)
+            radius *= 1 + (ctx.distanceToRiver - 50) / 50;
+        return radius;
+    }
+}
+
 export interface Species {
     id: string;
     // This defines BOTH where it can live and its selection probability
@@ -98,6 +118,7 @@ export class TierRule implements DecorationRule {
     generate(ctx: WorldContext): { radius: number, options: any } {
         const scored = this.species.map(s => ({ s, p: s.preference(ctx) }));
         const winner = scored.reduce((a, b) => a.p > b.p ? a : b).s;
-        return winner.params(ctx);
+        let params = winner.params(ctx);
+        return params;
     }
 }
