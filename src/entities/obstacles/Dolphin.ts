@@ -89,7 +89,7 @@ export class Dolphin extends Entity implements AnyAnimal {
             const state = event.animationState || 'ACTIVE';
             const isFleeing = state === DefaultSwimAwayLogic.ANIM_FLEEING;
             const animName = isFleeing ? 'swim' : 'idle';
-            const timeScale = isFleeing ? 2.5 : 1.0;
+            const timeScale = isFleeing ? 1.5 : 1.0;
             this.player?.play({ name: animName, state: state, timeScale: timeScale, randomizeLength: 0.1, startTime: -1.0 });
         }
     }
