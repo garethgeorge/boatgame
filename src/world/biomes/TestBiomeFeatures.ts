@@ -3,7 +3,7 @@ import { EntityIds } from '../../entities/EntityIds';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
+import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { DecorationRule } from '../decorators/PoissonDecorationStrategy';
 import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/PoissonDecorationRules';
 import { TerrainDecorator } from '../decorators/TerrainDecorator';
@@ -93,7 +93,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
 
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        //await this.bottleSpawner.spawn(context, 4, zStart, zEnd);
-        //await AttackAnimalSpawnerRegistry.getInstance().getSpawner(EntityIds.MONKEY)!.spawn(context, 2, zStart, zEnd);
+        // await EntitySpawners.getInstance().messageInABottle().spawn(context, 4, zStart, zEnd);
+        // await EntitySpawners.getInstance().attackAnimal(EntityIds.MONKEY)!.spawn(context, 2, zStart, zEnd);
     }
 }

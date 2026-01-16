@@ -9,10 +9,8 @@ import { GraphicsUtils } from '../../core/GraphicsUtils';
 import Delaunator from 'delaunator';
 
 
-import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
-import { IcebergSpawner } from '../../entities/spawners/IcebergSpawner';
+import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { EntityIds } from '../../entities/EntityIds';
-import { PenguinKayakSpawner } from '../../entities/spawners/PenguinKayakSpawner';
 import { FracturedIceberg } from '../../entities/obstacles/FracturedIceberg';
 
 interface Point {
@@ -34,8 +32,6 @@ interface BiomeLayout {
 export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'fractured_ice' as BiomeType;
 
-    private penguinKayakSpawner = new PenguinKayakSpawner();
-    private icebergSpawner = new IcebergSpawner();
 
     // Cache the material
     private static iceMaterial: THREE.Material | null = null;
@@ -378,19 +374,19 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         const startOverlapStart = Math.max(zStart, context.biomeZStart);
         const startOverlapEnd = Math.min(zEnd, fracturedStart);
         if (startOverlapStart < startOverlapEnd) {
-            await this.icebergSpawner.spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd);
+            await EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd);
         }
 
         // End Boundary
         const endOverlapStart = Math.max(zStart, fracturedEnd);
         const endOverlapEnd = Math.min(zEnd, context.biomeZEnd);
         if (endOverlapStart < endOverlapEnd) {
-            await this.icebergSpawner.spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd);
+            await EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd);
         }
 
         // 3. Spawn bears/penguins
-        await this.spawnObstacle(this.penguinKayakSpawner, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(AttackAnimalSpawnerRegistry.getInstance().getSpawner(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(EntitySpawners.getInstance().penguinKayak(), context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(EntitySpawners.getInstance().attackAnimal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
     }
 
     private nextHalfedge(e: number): number {

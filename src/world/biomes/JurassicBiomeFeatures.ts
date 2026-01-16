@@ -4,9 +4,7 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations } from '../Decorations';
-import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
-import { FlyingAnimalSpawnerRegistry } from '../../entities/spawners/FlyingAnimalSpawnerRegistry';
-import { WaterGrassSpawner } from '../../entities/spawners/WaterGrassSpawner';
+import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { RiverGeometry } from '../RiverGeometry';
 import { EntityIds } from '../../entities/EntityIds';
@@ -16,7 +14,6 @@ type JurassicEntityType = EntityIds.LOG | EntityIds.ROCK | EntityIds.BOTTLE | En
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'jurassic';
 
-    private waterGrassSpawner = new WaterGrassSpawner();
 
 
     getGroundColor(): { r: number, g: number, b: number } {
@@ -177,24 +174,24 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
 
                         switch (entityType as JurassicEntityType) {
                             case EntityIds.LOG:
-                                await this.logSpawner.spawnInRiverAbsolute(context, sample, p.range);
+                                await EntitySpawners.getInstance().log().spawnInRiverAbsolute(context, sample, p.range);
                                 break;
                             case EntityIds.ROCK:
-                                await this.rockSpawner.spawnInRiverAbsolute(context, sample, false, 'jurassic', p.range);
+                                await EntitySpawners.getInstance().rock().spawnInRiverAbsolute(context, sample, false, 'jurassic', p.range);
                                 break;
                             case EntityIds.BOTTLE:
-                                await this.bottleSpawner.spawnInRiverAbsolute(context, sample, p.range);
+                                await EntitySpawners.getInstance().messageInABottle().spawnInRiverAbsolute(context, sample, p.range);
                                 break;
                             case EntityIds.TREX:
                             case EntityIds.TRICERATOPS:
                             case EntityIds.BRONTOSAURUS:
-                                await AttackAnimalSpawnerRegistry.getInstance().getSpawner(entityType as EntityIds)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
+                                await EntitySpawners.getInstance().attackAnimal(entityType as EntityIds)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
                                 break;
                             case EntityIds.PTERODACTYL:
-                                await FlyingAnimalSpawnerRegistry.getInstance().getSpawner(EntityIds.PTERODACTYL)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
+                                await EntitySpawners.getInstance().flyingAnimal(EntityIds.PTERODACTYL)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
                                 break;
                             case EntityIds.WATER_GRASS:
-                                await this.waterGrassSpawner.spawnInRiverAbsolute(context, sample, p.range);
+                                await EntitySpawners.getInstance().waterGrass().spawnInRiverAbsolute(context, sample, p.range);
                                 break;
                         }
                     }

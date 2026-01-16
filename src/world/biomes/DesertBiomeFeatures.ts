@@ -3,7 +3,7 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations } from '../Decorations';
-import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
+import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { RiverGeometry } from '../RiverGeometry';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
@@ -164,13 +164,13 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                         switch (entityType as DesertEntityType) {
                             case EntityIds.ROCK: {
                                 const pillars = Math.random() < 0.3;
-                                await this.rockSpawner.spawnInRiverAbsolute(
+                                await EntitySpawners.getInstance().rock().spawnInRiverAbsolute(
                                     context, sample, pillars, 'desert', p.range
                                 );
                                 break;
                             }
                             case EntityIds.BOTTLE: {
-                                await this.bottleSpawner.spawnInRiverAbsolute(
+                                await EntitySpawners.getInstance().messageInABottle().spawnInRiverAbsolute(
                                     context, sample, p.range
                                 );
                                 break;
@@ -179,13 +179,13 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                             case EntityIds.MONKEY:
                             case EntityIds.HIPPO: {
                                 const logic = Math.random() < 0.5 ? 'wolf' : 'ambush';
-                                await AttackAnimalSpawnerRegistry.getInstance().getSpawner(entityType as EntityIds)!.spawnAnimalAbsolute(
+                                await EntitySpawners.getInstance().attackAnimal(entityType as EntityIds)!.spawnAnimalAbsolute(
                                     context, sample, p.range, p.aggressiveness || 0.5, logic
                                 );
                                 break;
                             }
                             case EntityIds.PIER: {
-                                await this.pierSpawner.spawnAt(
+                                await EntitySpawners.getInstance().pier().spawnAt(
                                     context, sample.centerPos.z, true);
                                 break;
                             }

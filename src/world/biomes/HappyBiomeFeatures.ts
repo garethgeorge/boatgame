@@ -4,8 +4,7 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
-import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
-import { FlyingAnimalSpawnerRegistry } from '../../entities/spawners/FlyingAnimalSpawnerRegistry';
+import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { RiverGeometry } from '../RiverGeometry';
 import { EntityIds } from '../../entities/EntityIds';
 import { TerrainDecorator, DecorationRule, PlacementManifest } from '../decorators/TerrainDecorator';
@@ -219,14 +218,13 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
 
                         switch (entityType as HappyEntityType) {
                             case EntityIds.DOLPHIN:
-                                await AttackAnimalSpawnerRegistry.getInstance().getSpawner(EntityIds.DOLPHIN)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
+                                await EntitySpawners.getInstance().attackAnimal(EntityIds.DOLPHIN)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
                                 break;
                             case EntityIds.BUTTERFLY:
-                                await FlyingAnimalSpawnerRegistry.getInstance().getSpawner(EntityIds.BUTTERFLY)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
+                                await EntitySpawners.getInstance().flyingAnimal(EntityIds.BUTTERFLY)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
                                 break;
                             case EntityIds.BOTTLE:
-                                // Bottle spawner assumed to exist in Base or similar
-                                // await this.bottleSpawner.spawnInRiverAbsolute(context, sample, p.range);
+                                await EntitySpawners.getInstance().messageInABottle().spawnInRiverAbsolute(context, sample, p.range);
                                 break;
                         }
                     }

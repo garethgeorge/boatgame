@@ -3,12 +3,9 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { MangroveSpawner } from '../../entities/spawners/MangroveSpawner';
+import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { Decorations } from '../Decorations';
-import { LogSpawner } from '../../entities/spawners/LogSpawner';
-import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
-import { WaterGrassSpawner } from '../../entities/spawners/WaterGrassSpawner';
 import { RiverGeometry } from '../RiverGeometry';
 import { EntityIds } from '../../entities/EntityIds';
 
@@ -17,9 +14,6 @@ type SwampEntityType = EntityIds.MANGROVE | EntityIds.LOG | EntityIds.BOTTLE | E
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
 
-    protected mangroveSpawner = new MangroveSpawner();
-    protected logSpawner = new LogSpawner(0.003 * 5);
-    protected waterGrassSpawner = new WaterGrassSpawner();
 
     getGroundColor(): { r: number, g: number, b: number } {
         return { r: 0x2B / 255, g: 0x24 / 255, b: 0x1C / 255 }; // Muddy Dark Brown
@@ -195,7 +189,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         const layout = context.biomeLayout as BoatPathLayout<SwampEntityType>;
         if (!layout) {
             // Fallback to legacy spawning if no layout
-            await this.spawnObstacle(this.mangroveSpawner, context, difficulty, zStart, zEnd);
+            await this.spawnObstacle(EntitySpawners.getInstance().mangrove(), context, difficulty, zStart, zEnd);
             return;
         }
 
@@ -227,7 +221,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                                 // The point is center + normal * offset. 
                                 // offset is uniform random in [p.range[0], p.range[1]]
                                 const offset = p.range[0] + Math.random() * (p.range[1] - p.range[0]);
-                                await this.mangroveSpawner.spawnAbsolute(
+                                await EntitySpawners.getInstance().mangrove().spawnAbsolute(
                                     context,
                                     sample.centerPos.x + sample.normal.x * offset,
                                     sample.centerPos.z + sample.normal.z * offset
@@ -235,13 +229,13 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                                 break;
                             }
                             case EntityIds.LOG: {
-                                await this.logSpawner.spawnInRiverAbsolute(
+                                await EntitySpawners.getInstance().log().spawnInRiverAbsolute(
                                     context, sample, p.range
                                 );
                                 break;
                             }
                             case EntityIds.BOTTLE: {
-                                await this.bottleSpawner.spawnInRiverAbsolute(
+                                await EntitySpawners.getInstance().messageInABottle().spawnInRiverAbsolute(
                                     context, sample, p.range
                                 );
                                 break;
@@ -249,13 +243,13 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                             case EntityIds.ALLIGATOR: {
                                 const logic = 'ambush'; // Mainly ambush in swamp
                                 // Bias towards middle area: [-10, 10]
-                                await AttackAnimalSpawnerRegistry.getInstance().getSpawner(EntityIds.ALLIGATOR)!.spawnAnimalAbsolute(
+                                await EntitySpawners.getInstance().attackAnimal(EntityIds.ALLIGATOR)!.spawnAnimalAbsolute(
                                     context, sample, [-10, 10], p.aggressiveness || 0.5, logic
                                 );
                                 break;
                             }
                             case EntityIds.WATER_GRASS: {
-                                await this.waterGrassSpawner.spawnInRiverAbsolute(
+                                await EntitySpawners.getInstance().waterGrass().spawnInRiverAbsolute(
                                     context, sample, p.range
                                 );
                                 break;

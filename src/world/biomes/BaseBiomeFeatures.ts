@@ -1,25 +1,13 @@
 import * as THREE from 'three';
 import { BiomeFeatures } from './BiomeFeatures';
-import { SpawnContext } from '../../entities/Spawnable';
+import { Spawnable, SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations } from '../Decorations';
-import { LogSpawner } from '../../entities/spawners/LogSpawner';
-import { RockSpawner } from '../../entities/spawners/RockSpawner';
-import { BuoySpawner } from '../../entities/spawners/BuoySpawner';
-import { MessageInABottleSpawner } from '../../entities/spawners/MessageInABottleSpawner';
-import { PierSpawner } from '../../entities/spawners/PierSpawner';
-import { Spawnable } from '../../entities/Spawnable'
+import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 
 export abstract class BaseBiomeFeatures implements BiomeFeatures {
     abstract id: BiomeType;
-
-    // Common Spawners
-    protected logSpawner = new LogSpawner();
-    protected rockSpawner = new RockSpawner();
-    protected buoySpawner = new BuoySpawner();
-    protected bottleSpawner = new MessageInABottleSpawner();
-    protected pierSpawner = new PierSpawner();
 
     abstract decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void>;
     abstract spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void>;

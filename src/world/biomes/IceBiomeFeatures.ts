@@ -4,16 +4,12 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations, LSystemTreeKind } from '../Decorations';
-import { IcebergSpawner } from '../../entities/spawners/IcebergSpawner';
-import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
-import { PenguinKayakSpawner } from '../../entities/spawners/PenguinKayakSpawner';
+import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { EntityIds } from '../../entities/EntityIds';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'ice';
 
-    private icebergSpawner = new IcebergSpawner();
-    private penguinKayakSpawner = new PenguinKayakSpawner();
 
     getGroundColor(): { r: number, g: number, b: number } {
         return { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 };
@@ -64,11 +60,11 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        await this.spawnObstacle(this.buoySpawner, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(this.bottleSpawner, context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(EntitySpawners.getInstance().buoy(), context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(EntitySpawners.getInstance().messageInABottle(), context, difficulty, zStart, zEnd);
 
-        await this.spawnObstacle(this.icebergSpawner, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(this.penguinKayakSpawner, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(AttackAnimalSpawnerRegistry.getInstance().getSpawner(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(EntitySpawners.getInstance().iceBerg(), context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(EntitySpawners.getInstance().penguinKayak(), context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(EntitySpawners.getInstance().attackAnimal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
     }
 }

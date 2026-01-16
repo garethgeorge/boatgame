@@ -1,4 +1,5 @@
 import { AttackAnimalSpawnConfig, AttackAnimalSpawner } from './AttackAnimalSpawner';
+import { FlyingAnimalSpawnConfig, FlyingAnimalSpawner } from './FlyingAnimalSpawner';
 import { EntityIds } from '../EntityIds';
 import { Alligator } from '../obstacles/Alligator';
 import { Brontosaurus } from '../obstacles/Brontosaurus';
@@ -11,12 +12,36 @@ import { Moose } from '../obstacles/Moose';
 import { Triceratops } from '../obstacles/Triceratops';
 import { Dolphin } from '../obstacles/Dolphin';
 import { Duckling } from '../obstacles/Duckling';
+import { Butterfly } from '../obstacles/Butterfly';
+import { Pterodactyl } from '../obstacles/Pterodactyl';
 
-export class AttackAnimalSpawnerRegistry {
-    private static instance: AttackAnimalSpawnerRegistry;
-    private spawners: Map<string, AttackAnimalSpawner> = new Map();
+import { BuoySpawner } from './BuoySpawner';
+import { IcebergSpawner } from './IcebergSpawner';
+import { LogSpawner } from './LogSpawner';
+import { MangroveSpawner } from './MangroveSpawner';
+import { MessageInABottleSpawner } from './MessageInABottleSpawner';
+import { PenguinKayakSpawner } from './PenguinKayakSpawner';
+import { PierSpawner } from './PierSpawner';
+import { RockSpawner } from './RockSpawner';
+import { WaterGrassSpawner } from './WaterGrassSpawner';
 
-    private configs: AttackAnimalSpawnConfig[] = [
+export class EntitySpawners {
+    private static instance: EntitySpawners;
+
+    private attackAnimalSpawners: Map<string, AttackAnimalSpawner> = new Map();
+    private flyingAnimalSpawners: Map<string, FlyingAnimalSpawner> = new Map();
+
+    private _buoy: BuoySpawner = new BuoySpawner();
+    private _iceBerg: IcebergSpawner = new IcebergSpawner();
+    private _log: LogSpawner = new LogSpawner();
+    private _mangrove: MangroveSpawner = new MangroveSpawner();
+    private _messageInABottle: MessageInABottleSpawner = new MessageInABottleSpawner();
+    private _penguinKayak: PenguinKayakSpawner = new PenguinKayakSpawner();
+    private _pier: PierSpawner = new PierSpawner();
+    private _rock: RockSpawner = new RockSpawner();
+    private _waterGrass: WaterGrassSpawner = new WaterGrassSpawner();
+
+    private attackConfigs: AttackAnimalSpawnConfig[] = [
         {
             id: EntityIds.ALLIGATOR,
             getDensity: (difficulty, zStart) => {
@@ -120,24 +145,51 @@ export class AttackAnimalSpawnerRegistry {
         }
     ];
 
+    private flyingConfigs: FlyingAnimalSpawnConfig[] = [
+        {
+            id: EntityIds.BUTTERFLY,
+            getDensity: () => 0.5 / 20,
+            factory: (physicsEngine, options) => new Butterfly(physicsEngine, options),
+            entityRadius: 0.5
+        },
+        {
+            id: EntityIds.PTERODACTYL,
+            getDensity: () => 0.1 / 20,
+            factory: (physicsEngine, options) => new Pterodactyl(physicsEngine, options)
+        }
+    ];
+
     private constructor() {
-        for (const config of this.configs) {
-            this.spawners.set(config.id, new AttackAnimalSpawner(config));
+        for (const config of this.attackConfigs) {
+            this.attackAnimalSpawners.set(config.id, new AttackAnimalSpawner(config));
+        }
+        for (const config of this.flyingConfigs) {
+            this.flyingAnimalSpawners.set(config.id, new FlyingAnimalSpawner(config));
         }
     }
 
-    public static getInstance(): AttackAnimalSpawnerRegistry {
-        if (!AttackAnimalSpawnerRegistry.instance) {
-            AttackAnimalSpawnerRegistry.instance = new AttackAnimalSpawnerRegistry();
+    public static getInstance(): EntitySpawners {
+        if (!EntitySpawners.instance) {
+            EntitySpawners.instance = new EntitySpawners();
         }
-        return AttackAnimalSpawnerRegistry.instance;
+        return EntitySpawners.instance;
     }
 
-    public getSpawner(id: string): AttackAnimalSpawner | undefined {
-        return this.spawners.get(id);
+    public attackAnimal(id: string): AttackAnimalSpawner | undefined {
+        return this.attackAnimalSpawners.get(id);
     }
 
-    public getAllSpawners(): AttackAnimalSpawner[] {
-        return Array.from(this.spawners.values());
+    public flyingAnimal(id: string): FlyingAnimalSpawner | undefined {
+        return this.flyingAnimalSpawners.get(id);
     }
+
+    public buoy(): BuoySpawner { return this._buoy; }
+    public iceBerg(): IcebergSpawner { return this._iceBerg; }
+    public log(): LogSpawner { return this._log; }
+    public mangrove(): MangroveSpawner { return this._mangrove; }
+    public messageInABottle(): MessageInABottleSpawner { return this._messageInABottle; }
+    public penguinKayak(): PenguinKayakSpawner { return this._penguinKayak; }
+    public pier(): PierSpawner { return this._pier; }
+    public rock(): RockSpawner { return this._rock; }
+    public waterGrass(): WaterGrassSpawner { return this._waterGrass; }
 }
