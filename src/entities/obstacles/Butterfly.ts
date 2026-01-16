@@ -3,33 +3,34 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { FlyingAnimal, FlyingAnimalOptions, AnimationConfig } from './FlyingAnimal';
 
-export class Pterodactyl extends FlyingAnimal {
+export class Butterfly extends FlyingAnimal {
 
     constructor(
         physicsEngine: PhysicsEngine,
         options: FlyingAnimalOptions
     ) {
-        super(physicsEngine, 'pterodactyl', options, {
-            halfWidth: 1.5,
-            halfLength: 1.5,
-            density: 1.0,
+        super(physicsEngine, 'butterfly', options, {
+            halfWidth: 1.0,
+            halfLength: 1.0,
+            density: 0.1,
             friction: 0.1
         });
     }
 
     protected getModelData() {
-        return Decorations.getPterodactyl();
+        return Decorations.getButterfly();
     }
 
     protected setupModel(model: THREE.Group): void {
-        model.scale.set(3.0, 3.0, 3.0);
+        model.scale.set(1, 1, 1);
+        model.rotation.y = Math.PI / 2;
     }
 
     protected getIdleAnimationName(): AnimationConfig {
-        return { name: 'standing' };
+        return { name: 'idle', timeScale: 1.0 };
     }
 
     protected getFlightAnimationName(): AnimationConfig {
-        return { name: 'flying' };
+        return { name: 'fly', timeScale: 10.0 };
     }
 }

@@ -11,6 +11,11 @@ import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogic';
 import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
 
+export interface AnimationConfig {
+    name: string;
+    timeScale?: number;
+}
+
 export interface FlyingAnimalOptions {
     x: number;
     y: number;
@@ -116,39 +121,42 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
 
     protected abstract setupModel(model: THREE.Group): void;
 
-    protected abstract getIdleAnimationName(): string;
+    protected abstract getIdleAnimationName(): AnimationConfig;
 
-    protected abstract getFlightAnimationName(): string;
+    protected abstract getFlightAnimationName(): AnimationConfig;
 
-    protected getWalkingAnimationName(): string {
-        return 'walking';
+    protected getWalkingAnimationName(): AnimationConfig {
+        return { name: 'walking' };
     }
 
     protected playIdleAnimation() {
+        const config = this.getIdleAnimationName();
         this.player?.play({
-            name: this.getIdleAnimationName(),
+            name: config.name,
             state: 'IDLE',
-            timeScale: 1.0,
+            timeScale: config.timeScale ?? 1.0,
             randomizeLength: 0.2,
             startTime: -1
         });
     }
 
     protected playFlightAnimation() {
+        const config = this.getFlightAnimationName();
         this.player?.play({
-            name: this.getFlightAnimationName(),
+            name: config.name,
             state: DefaultFlightLogic.ANIM_FLYING,
-            timeScale: 1.0,
+            timeScale: config.timeScale ?? 1.0,
             randomizeLength: 0.2,
             startTime: -1
         });
     }
 
     protected playWalkingAnimation() {
+        const config = this.getWalkingAnimationName();
         this.player?.play({
-            name: this.getWalkingAnimationName(),
+            name: config.name,
             state: DefaultFlightLogic.ANIM_WALKING,
-            timeScale: 1.0,
+            timeScale: config.timeScale ?? 1.0,
             randomizeLength: 0.2,
             startTime: -1
         });

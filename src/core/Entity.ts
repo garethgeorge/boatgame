@@ -80,17 +80,21 @@ export abstract class Entity {
   // By default, syncs the first mesh with the first body
   // Subclasses can override or call this manually for specific pairs
   sync(alpha: number = 1.0) {
+    let yPos = 0;
     if (this.physicsBodies.length > 0 && this.meshes.length > 0) {
       const body = this.physicsBodies[0];
       const mesh = this.meshes[0];
       this.syncBodyMesh(body, mesh, alpha);
+      yPos = mesh.position.y;
     }
 
     // Sync debug meshes - assuming 1:1 mapping if they exist, or just rebuild them?
     // Actually, ensureDebugMeshes creates a group for each body usually?
     // Let's iterate if counts match
     for (let i = 0; i < Math.min(this.physicsBodies.length, this.debugMeshes.length); i++) {
-      this.syncBodyMesh(this.physicsBodies[i], this.debugMeshes[i], alpha);
+      const debugMesh = this.debugMeshes[i];
+      this.syncBodyMesh(this.physicsBodies[i], debugMesh, alpha);
+      debugMesh.position.y = yPos + 1.0;
     }
   }
 
@@ -187,6 +191,11 @@ export abstract class Entity {
 
       // Initial sync
       this.syncBodyMesh(body, group, 1.0);
+      if (this.meshes.length > 0) {
+        group.position.y = this.meshes[0].position.y + 1.0;
+      } else {
+        group.position.y = 1.0;
+      }
       this.debugMeshes.push(group);
     }
 

@@ -41,6 +41,7 @@ DecorationRegistry.register('trex', new GLTFModelFactory('assets/t-rex-model-1.g
 DecorationRegistry.register('triceratops', new GLTFModelFactory('assets/triceratops-model-1.glb'));
 DecorationRegistry.register('brontosaurus', new GLTFModelFactory('assets/brontosaurus-model-1.glb'));
 DecorationRegistry.register('pterodactyl', new GLTFModelFactory('assets/pterodactyl-model-1.glb'));
+DecorationRegistry.register('butterfly', new GLTFModelFactory('assets/butterfly-model-1.glb'));
 DecorationRegistry.register('dolphin', new GLTFModelFactory('assets/dolphin-model-1.glb'));
 DecorationRegistry.register('mangrove', new MangroveFactory());
 DecorationRegistry.register('lsystem-tree', new LSystemTreeFactory());
@@ -153,6 +154,7 @@ export class Decorations {
   static getTriceratops() { return this.getModelAndAnimations('triceratops'); }
   static getBrontosaurus() { return this.getModelAndAnimations('brontosaurus'); }
   static getPterodactyl() { return this.getModelAndAnimations('pterodactyl'); }
+  static getButterfly() { return this.getModelAndAnimations('butterfly'); }
   static getDolphin() { return this.getModelAndAnimations('dolphin'); }
 
   private static getModelAndAnimations(name: string): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {

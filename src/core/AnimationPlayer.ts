@@ -25,6 +25,7 @@ export class AnimationPlayer {
     private currentAction: THREE.AnimationAction | null = null;
     private sequence: AnimationParameters[] | null = null;
     private sequenceIndex: number = 0;
+    private stateRandomFactors: Map<string, number> = new Map();
 
     constructor(group: THREE.Group, animations: THREE.AnimationClip[]) {
         this.mixer = new THREE.AnimationMixer(group);
@@ -101,33 +102,46 @@ export class AnimationPlayer {
 
         let { name, state = null, startTime = 0.0, timeScale = 1.0, duration = undefined, randomizeLength = undefined } = options;
 
-        if (state !== null && state === this.currentAnimationState) {
-            return true;
-        }
-
         const action = this.actions.get(name);
         if (!action) {
             return false;
         }
 
-        if (startTime < 0) {
-            action.time = Math.random() * action.getClip().duration;
-        } else {
-            action.time = startTime;
+        const isSameStateFullMatch = state !== null && state === this.currentAnimationState && action.isRunning();
+
+        let randomFactor = 1.0;
+        if (state !== null) {
+            if (this.currentAnimationState !== state) {
+                randomFactor = 1.0 + (Math.random() * 2 - 1) * (randomizeLength ?? 0);
+                this.stateRandomFactors.set(state, randomFactor);
+            } else {
+                randomFactor = this.stateRandomFactors.get(state) ?? 1.0;
+            }
+        } else if (randomizeLength !== undefined) {
+            randomFactor = 1.0 + (Math.random() * 2 - 1) * randomizeLength;
         }
 
+        let finalTimeScale = timeScale;
         if (duration !== undefined) {
-            timeScale = action.getClip().duration / duration;
+            finalTimeScale = action.getClip().duration / duration;
+        }
+        finalTimeScale /= randomFactor;
+
+        // If we are in the same state, check if we just need to update parameters
+        if (isSameStateFullMatch) {
+            if (Math.abs(action.timeScale - finalTimeScale) > 0.001 || action.loop !== mode) {
+                // Update parameters without resetting the animation
+                action.timeScale = finalTimeScale;
+                action.setLoop(mode, repetitions);
+            }
+            return true;
         }
 
-        if (randomizeLength !== undefined) {
-            timeScale = timeScale + 2.0 * (Math.random() - 0.5) * randomizeLength;
-        }
-
+        // If action is current and already has correct parameters, just return
         if (this.currentAction === action &&
             action.isRunning() &&
             action.loop === mode &&
-            action.timeScale === timeScale) {
+            Math.abs(action.timeScale - finalTimeScale) < 0.001) {
             this.currentAnimationState = state;
             return true;
         }
@@ -135,7 +149,14 @@ export class AnimationPlayer {
         action.reset();
         action.setLoop(mode, repetitions);
         action.clampWhenFinished = true;
-        action.timeScale = timeScale;
+        action.timeScale = finalTimeScale;
+
+        if (startTime < 0) {
+            action.time = Math.random() * action.getClip().duration;
+        } else {
+            action.time = startTime;
+        }
+
         action.play();
 
         if (this.currentAction && this.currentAction !== action) {

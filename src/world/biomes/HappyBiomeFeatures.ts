@@ -5,13 +5,12 @@ import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { DolphinSpawner } from '../../entities/spawners/DolphinSpawner';
+import { ButterflySpawner } from '../../entities/spawners/ButterflySpawner';
 import { RiverGeometry } from '../RiverGeometry';
-import { Decorations, LSystemTreeKind } from '../Decorations';
 import { TerrainDecorator, DecorationRule, PlacementManifest } from '../decorators/TerrainDecorator';
-import { RiverSystem } from '../RiverSystem';
 import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/PoissonDecorationRules';
 
-type HappyEntityType = 'dolphin' | 'bottle';
+type HappyEntityType = 'dolphin' | 'butterfly' | 'bottle';
 
 /**
  * Happy Biome: A beautiful spring-like day with lush green fields.
@@ -21,6 +20,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'happy';
 
     private dolphinSpawner = new DolphinSpawner();
+    private butterflySpawner = new ButterflySpawner();
 
     getGroundColor(): { r: number, g: number, b: number } {
         // Lush green ground color
@@ -144,6 +144,12 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                     place: 'slalom',
                     density: [1.0, 2.0],
                     types: ['dolphin']
+                },
+                'butterfly_swarms': {
+                    logic: 'scatter',
+                    place: 'shore',
+                    density: [3.0, 5.0],
+                    types: ['butterfly']
                 }
             },
             tracks: [
@@ -156,6 +162,20 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                             patterns: [
                                 [
                                     { pattern: 'dolphin_pods', weight: 1.0 }
+                                ]
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: 'butterflies',
+                    stages: [
+                        {
+                            name: 'butterfly_meadows',
+                            progress: [0, 1.0],
+                            patterns: [
+                                [
+                                    { pattern: 'butterfly_swarms', weight: 1.0 }
                                 ]
                             ]
                         }
@@ -201,6 +221,9 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                         switch (entityType as HappyEntityType) {
                             case 'dolphin':
                                 await this.dolphinSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
+                                break;
+                            case 'butterfly':
+                                await this.butterflySpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
                                 break;
                             case 'bottle':
                                 // Bottle spawner assumed to exist in Base or similar
