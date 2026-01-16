@@ -8,5 +8,6 @@ export { Iceberg } from './Iceberg';
 export { Hippo } from './Hippo';
 export { BrownBear } from './BrownBear';
 export { Butterfly } from './Butterfly';
+export { Bluebird } from './Bluebird';
 
 

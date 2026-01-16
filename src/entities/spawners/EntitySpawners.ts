@@ -24,6 +24,7 @@ import { PenguinKayakSpawner } from './PenguinKayakSpawner';
 import { PierSpawner } from './PierSpawner';
 import { RockSpawner } from './RockSpawner';
 import { WaterGrassSpawner } from './WaterGrassSpawner';
+import { Bluebird } from '../obstacles';
 
 export class EntitySpawners {
     private static instance: EntitySpawners;
@@ -146,6 +147,12 @@ export class EntitySpawners {
     ];
 
     private flyingConfigs: FlyingAnimalSpawnConfig[] = [
+        {
+            id: EntityIds.BLUEBIRD,
+            getDensity: () => 0.5 / 20,
+            factory: (physicsEngine, options) => new Bluebird(physicsEngine, options),
+            entityRadius: 1.5
+        },
         {
             id: EntityIds.BUTTERFLY,
             getDensity: () => 0.5 / 20,

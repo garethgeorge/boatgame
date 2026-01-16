@@ -13,6 +13,7 @@ export enum EntityIds {
     DUCKLING = 'duckling',
     BUTTERFLY = 'butterfly',
     PTERODACTYL = 'pterodactyl',
+    BLUEBIRD = 'bluebird',
 
     // Obstacles & Others
     LOG = 'log',

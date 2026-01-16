@@ -66,6 +66,8 @@ export interface PatternConfig {
     maxCount?: number;
 }
 
+export type PatternConfigs = Record<string, PatternConfig>;
+
 export interface PatternChoice {
     pattern: string; // Name of the pattern
     weight: number;
@@ -114,7 +116,7 @@ export interface TrackConfig {
  */
 export interface BoatPathLayoutConfig {
     /** Record of all named pattern configurations available in this biome */
-    patterns: Record<string, PatternConfig>;
+    patterns: PatternConfigs;
     /** Array of tracks. Each track generates stages independently to fill the biome. */
     tracks: TrackConfig[];
     /** List of entity types that are considered 'water animals' for shore placement refinement */

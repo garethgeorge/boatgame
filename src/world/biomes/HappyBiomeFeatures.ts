@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, PatternConfigs, TrackConfig } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { TerrainDecorator, DecorationRule, PlacementManifest } from '../decorators/TerrainDecorator';
@@ -131,52 +131,83 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     ];
 
     public createLayout(zMin: number, zMax: number): BoatPathLayout {
-        const boatPath = BoatPathLayoutStrategy.createLayout(zMin, zMax, {
-            patterns: {
-                'dolphin_pods': {
-                    logic: 'scatter',
-                    place: 'slalom',
-                    density: [1.0, 2.0],
-                    types: [EntityIds.DOLPHIN]
-                },
-                'butterfly_swarms': {
-                    logic: 'scatter',
-                    place: 'shore',
-                    density: [3.0, 5.0],
-                    types: [EntityIds.BUTTERFLY]
-                }
+        const waterAnimals = [EntityIds.DOLPHIN];
+        const patterns: PatternConfigs = {
+            'dolphin_pods': {
+                logic: 'scatter',
+                place: 'slalom',
+                density: [1.0, 2.0],
+                types: [EntityIds.DOLPHIN]
             },
-            tracks: [
+            'butterfly_swarms': {
+                logic: 'scatter',
+                place: 'shore',
+                density: [3.0, 5.0],
+                types: [EntityIds.BUTTERFLY]
+            },
+            'bluebird_flocks': {
+                logic: 'scatter',
+                place: 'shore',
+                density: [2.0, 4.0],
+                types: [EntityIds.BLUEBIRD]
+            }
+        };
+        const riverTrack: TrackConfig = {
+            name: 'animals',
+            stages: [
                 {
-                    name: 'animals',
-                    stages: [
-                        {
-                            name: 'dolphin_waters',
-                            progress: [0, 1.0],
-                            patterns: [
-                                [
-                                    { pattern: 'dolphin_pods', weight: 1.0 }
-                                ]
-                            ]
-                        }
-                    ]
-                },
-                {
-                    name: 'butterflies',
-                    stages: [
-                        {
-                            name: 'butterfly_meadows',
-                            progress: [0, 1.0],
-                            patterns: [
-                                [
-                                    { pattern: 'butterfly_swarms', weight: 1.0 }
-                                ]
-                            ]
-                        }
+                    name: 'dolphin_waters',
+                    progress: [0, 1.0],
+                    patterns: [
+                        [
+                            { pattern: 'dolphin_pods', weight: 1.0 }
+                        ]
                     ]
                 }
+            ]
+        };
+
+        const randomChoice = Math.random();
+        let flyingAnimalTrack: TrackConfig;
+
+        if (randomChoice < 0.5) {
+            flyingAnimalTrack = {
+                name: 'butterflies',
+                stages: [
+                    {
+                        name: 'butterfly_meadows',
+                        progress: [0, 1.0],
+                        patterns: [
+                            [
+                                { pattern: 'butterfly_swarms', weight: 1.0 }
+                            ]
+                        ]
+                    }
+                ]
+            };
+        } else {
+            flyingAnimalTrack = {
+                name: 'bluebirds',
+                stages: [
+                    {
+                        name: 'bluebird_skies',
+                        progress: [0, 1.0],
+                        patterns: [
+                            [
+                                { pattern: 'bluebird_flocks', weight: 1.0 }
+                            ]
+                        ]
+                    }
+                ]
+            };
+        }
+
+        const boatPath = BoatPathLayoutStrategy.createLayout(zMin, zMax, {
+            patterns: patterns,
+            tracks: [
+                riverTrack, flyingAnimalTrack
             ],
-            waterAnimals: [EntityIds.DOLPHIN]
+            waterAnimals
         });
 
         return boatPath;

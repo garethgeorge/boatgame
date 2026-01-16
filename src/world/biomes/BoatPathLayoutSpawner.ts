@@ -128,7 +128,8 @@ export class BoatPathLayoutSpawner {
                             }
 
                             case EntityIds.BUTTERFLY:
-                            case EntityIds.PTERODACTYL: {
+                            case EntityIds.PTERODACTYL:
+                            case EntityIds.BLUEBIRD: {
                                 const spawner = spawners.flyingAnimal(entityType);
                                 if (spawner) {
                                     await spawner.spawnAnimalAbsolute(
