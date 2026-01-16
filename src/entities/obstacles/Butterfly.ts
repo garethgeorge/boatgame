@@ -9,7 +9,11 @@ export class Butterfly extends FlyingAnimal {
         physicsEngine: PhysicsEngine,
         options: FlyingAnimalOptions
     ) {
-        super(physicsEngine, 'butterfly', options, {
+        const opts = {
+            flightSpeed: 20.0,
+            ...options
+        };
+        super(physicsEngine, 'butterfly', opts, {
             halfWidth: 1.0,
             halfLength: 1.0,
             density: 0.1,
@@ -23,7 +27,7 @@ export class Butterfly extends FlyingAnimal {
 
     protected setupModel(model: THREE.Group): void {
         model.scale.set(1, 1, 1);
-        model.rotation.y = Math.PI / 2;
+        model.rotation.y = 0;
     }
 
     protected getIdleAnimationName(): AnimationConfig {

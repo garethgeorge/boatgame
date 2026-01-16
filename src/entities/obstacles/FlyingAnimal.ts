@@ -23,6 +23,7 @@ export interface FlyingAnimalOptions {
     angle?: number;
     terrainNormal?: THREE.Vector3;
     aggressiveness?: number;
+    flightSpeed?: number;
 }
 
 export interface FlyingAnimalPhysicsOptions {
@@ -54,6 +55,7 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
             height,
             angle = 0,
             terrainNormal,
+            flightSpeed = 1.0
         } = options;
 
         const {
@@ -104,7 +106,10 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
             params: {
                 minNoticeDistance: 200.0,
                 ignoreBottles: true,
-                nextLogicConfig: { name: DefaultFlightLogic.NAME }
+                nextLogicConfig: {
+                    name: DefaultFlightLogic.NAME,
+                    params: { flightSpeed }
+                }
             }
         };
         this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, idleConfig);

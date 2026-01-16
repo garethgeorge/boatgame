@@ -9,7 +9,11 @@ export class Pterodactyl extends FlyingAnimal {
         physicsEngine: PhysicsEngine,
         options: FlyingAnimalOptions
     ) {
-        super(physicsEngine, 'pterodactyl', options, {
+        const opts = {
+            flightSpeed: 30.0,
+            ...options
+        };
+        super(physicsEngine, 'pterodactyl', opts, {
             halfWidth: 1.5,
             halfLength: 1.5,
             density: 1.0,

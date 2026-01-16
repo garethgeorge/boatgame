@@ -14,7 +14,7 @@ export class AnimalLogicRegistry {
         this.register(WolfAttackLogic.NAME, () => new WolfAttackLogic());
         this.register(AmbushAttackLogic.NAME, () => new AmbushAttackLogic());
         this.register(DefaultSwimAwayLogic.NAME, () => new DefaultSwimAwayLogic());
-        this.register(DefaultFlightLogic.NAME, () => new DefaultFlightLogic());
+        this.register(DefaultFlightLogic.NAME, (params) => new DefaultFlightLogic(params as any));
         this.register(EnteringWaterLogic.NAME, (params) => new EnteringWaterLogic(params as any));
         this.register(ShoreIdleLogic.NAME, (params) => new ShoreIdleLogic(params as any));
         this.register(ShoreWalkLogic.NAME, (params) => new ShoreWalkLogic(params as any));
