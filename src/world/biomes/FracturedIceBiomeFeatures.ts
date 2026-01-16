@@ -385,8 +385,8 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         }
 
         // 3. Spawn bears/penguins
-        await this.spawnObstacle(EntitySpawners.getInstance().penguinKayak(), context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(EntitySpawners.getInstance().attackAnimal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK)!, context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(EntitySpawners.getInstance().animal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
     }
 
     private nextHalfedge(e: number): number {

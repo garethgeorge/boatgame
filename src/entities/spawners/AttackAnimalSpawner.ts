@@ -6,7 +6,7 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
 import { Entity } from '../../core/Entity';
 import { RiverPlacementOptions, ShorePlacementOptions } from '../../managers/PlacementHelper';
-import { BaseSpawner } from './BaseSpawner';
+import { AnimalSpawner } from './AnimalSpawner';
 
 export interface AttackAnimalSpawnConfig {
     id: string;
@@ -19,7 +19,7 @@ export interface AttackAnimalSpawnConfig {
     shorePlacement?: ShorePlacementOptions;
 }
 
-export class AttackAnimalSpawner extends BaseSpawner {
+export class AttackAnimalSpawner extends AnimalSpawner {
     private config: AttackAnimalSpawnConfig;
 
     constructor(config: AttackAnimalSpawnConfig) {
@@ -86,7 +86,7 @@ export class AttackAnimalSpawner extends BaseSpawner {
         sample: RiverGeometrySample,
         distanceRange: [number, number],
         aggressiveness: number,
-        attackLogicName?: string
+        logic?: string
     ): Promise<boolean> {
         let placement: any = null;
 
@@ -142,7 +142,7 @@ export class AttackAnimalSpawner extends BaseSpawner {
                 onShore,
                 stayOnShore,
                 aggressiveness,
-                attackLogicName
+                attackLogicName: logic
             });
             if (entity) {
                 context.entityManager.add(entity);

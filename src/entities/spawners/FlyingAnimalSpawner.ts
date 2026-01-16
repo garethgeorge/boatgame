@@ -4,7 +4,7 @@ import { RiverGeometrySample } from '../../world/RiverGeometry';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Entity } from '../../core/Entity';
 import { ShorePlacementOptions } from '../../managers/PlacementHelper';
-import { BaseSpawner } from './BaseSpawner';
+import { AnimalSpawner } from './AnimalSpawner';
 import { FlyingAnimalOptions } from '../obstacles/FlyingAnimal';
 
 export interface FlyingAnimalSpawnConfig {
@@ -15,7 +15,7 @@ export interface FlyingAnimalSpawnConfig {
     shorePlacement?: ShorePlacementOptions;
 }
 
-export class FlyingAnimalSpawner extends BaseSpawner {
+export class FlyingAnimalSpawner extends AnimalSpawner {
     private config: FlyingAnimalSpawnConfig;
 
     constructor(config: FlyingAnimalSpawnConfig) {
@@ -55,7 +55,8 @@ export class FlyingAnimalSpawner extends BaseSpawner {
         context: SpawnContext,
         sample: RiverGeometrySample,
         distanceRange: [number, number],
-        aggressiveness: number
+        aggressiveness: number,
+        logic?: string
     ): Promise<boolean> {
         const radius = this.entityRadius;
         const minSpacing = 2.0; // Default
@@ -88,7 +89,7 @@ export class FlyingAnimalSpawner extends BaseSpawner {
         return false;
     }
 
-    async spawnOnShore(context: SpawnContext, z: number,
+    private async spawnOnShore(context: SpawnContext, z: number,
         options: ShorePlacementOptions): Promise<boolean> {
 
         const opts = {

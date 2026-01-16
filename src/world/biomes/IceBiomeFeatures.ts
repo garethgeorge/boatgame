@@ -64,7 +64,7 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         await this.spawnObstacle(EntitySpawners.getInstance().messageInABottle(), context, difficulty, zStart, zEnd);
 
         await this.spawnObstacle(EntitySpawners.getInstance().iceBerg(), context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(EntitySpawners.getInstance().penguinKayak(), context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(EntitySpawners.getInstance().attackAnimal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK)!, context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(EntitySpawners.getInstance().animal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
     }
 }

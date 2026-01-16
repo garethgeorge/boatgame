@@ -105,9 +105,13 @@ export class BoatPathLayoutSpawner {
                             case EntityIds.BRONTOSAURUS:
                             case EntityIds.MOOSE:
                             case EntityIds.BROWN_BEAR:
+                            case EntityIds.POLAR_BEAR:
                             case EntityIds.DUCKLING:
                             case EntityIds.DOLPHIN:
-                            case EntityIds.POLAR_BEAR: {
+                            case EntityIds.PENGUIN_KAYAK:
+                            case EntityIds.BUTTERFLY:
+                            case EntityIds.PTERODACTYL:
+                            case EntityIds.BLUEBIRD: {
                                 let logic: string | undefined = undefined;
                                 let range = p.range;
 
@@ -118,22 +122,10 @@ export class BoatPathLayoutSpawner {
                                     range = [-10, 10];
                                 }
 
-                                const spawner = spawners.attackAnimal(entityType);
+                                const spawner = spawners.animal(entityType);
                                 if (spawner) {
                                     await spawner.spawnAnimalAbsolute(
                                         context, sample, range, p.aggressiveness || 0.5, logic
-                                    );
-                                }
-                                break;
-                            }
-
-                            case EntityIds.BUTTERFLY:
-                            case EntityIds.PTERODACTYL:
-                            case EntityIds.BLUEBIRD: {
-                                const spawner = spawners.flyingAnimal(entityType);
-                                if (spawner) {
-                                    await spawner.spawnAnimalAbsolute(
-                                        context, sample, p.range, p.aggressiveness || 0.5
                                     );
                                 }
                                 break;

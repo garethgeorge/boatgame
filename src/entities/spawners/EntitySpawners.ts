@@ -1,5 +1,7 @@
 import { AttackAnimalSpawnConfig, AttackAnimalSpawner } from './AttackAnimalSpawner';
 import { FlyingAnimalSpawnConfig, FlyingAnimalSpawner } from './FlyingAnimalSpawner';
+import { AnimalSpawner } from './AnimalSpawner';
+import { SwimAwayAnimalSpawnConfig, SwimAwayAnimalSpawner } from './SwimAwayAnimalSpawner';
 import { EntityIds } from '../EntityIds';
 import { Alligator } from '../obstacles/Alligator';
 import { Brontosaurus } from '../obstacles/Brontosaurus';
@@ -12,6 +14,7 @@ import { Moose } from '../obstacles/Moose';
 import { Triceratops } from '../obstacles/Triceratops';
 import { Dolphin } from '../obstacles/Dolphin';
 import { Duckling } from '../obstacles/Duckling';
+import { PenguinKayak } from '../obstacles/PenguinKayak';
 import { Butterfly } from '../obstacles/Butterfly';
 import { Pterodactyl } from '../obstacles/Pterodactyl';
 
@@ -20,7 +23,6 @@ import { IcebergSpawner } from './IcebergSpawner';
 import { LogSpawner } from './LogSpawner';
 import { MangroveSpawner } from './MangroveSpawner';
 import { MessageInABottleSpawner } from './MessageInABottleSpawner';
-import { PenguinKayakSpawner } from './PenguinKayakSpawner';
 import { PierSpawner } from './PierSpawner';
 import { RockSpawner } from './RockSpawner';
 import { WaterGrassSpawner } from './WaterGrassSpawner';
@@ -29,15 +31,13 @@ import { Bluebird } from '../obstacles';
 export class EntitySpawners {
     private static instance: EntitySpawners;
 
-    private attackAnimalSpawners: Map<string, AttackAnimalSpawner> = new Map();
-    private flyingAnimalSpawners: Map<string, FlyingAnimalSpawner> = new Map();
+    private animalSpawners: Map<string, AnimalSpawner> = new Map();
 
     private _buoy: BuoySpawner = new BuoySpawner();
     private _iceBerg: IcebergSpawner = new IcebergSpawner();
     private _log: LogSpawner = new LogSpawner();
     private _mangrove: MangroveSpawner = new MangroveSpawner();
     private _messageInABottle: MessageInABottleSpawner = new MessageInABottleSpawner();
-    private _penguinKayak: PenguinKayakSpawner = new PenguinKayakSpawner();
     private _pier: PierSpawner = new PierSpawner();
     private _rock: RockSpawner = new RockSpawner();
     private _waterGrass: WaterGrassSpawner = new WaterGrassSpawner();
@@ -130,20 +130,6 @@ export class EntitySpawners {
             shorePlacement: { minDistFromBank: 3.0, maxDistFromBank: 6.0 },
             waterPlacement: { minDistFromBank: 3.0 }
         },
-        {
-            id: EntityIds.DOLPHIN,
-            getDensity: () => 0.01,
-            factory: (physicsEngine, options) => new Dolphin(options.x, options.y, physicsEngine, options.angle || 0),
-            entityRadius: 2.0,
-            waterPlacement: { minDistFromBank: 2.0 }
-        },
-        {
-            id: EntityIds.DUCKLING,
-            getDensity: () => 0.05,
-            factory: (physicsEngine, options) => new Duckling(options.x, options.y, physicsEngine, options.angle || 0),
-            entityRadius: 1.5,
-            waterPlacement: { minDistFromBank: 2.0 }
-        }
     ];
 
     private flyingConfigs: FlyingAnimalSpawnConfig[] = [
@@ -166,13 +152,43 @@ export class EntitySpawners {
         }
     ];
 
+    private swimAwayConfigs: SwimAwayAnimalSpawnConfig[] = [
+        {
+            id: EntityIds.DOLPHIN,
+            getDensity: () => 0.01,
+            factory: (physicsEngine, options) => new Dolphin(options.x, options.y, physicsEngine, options.angle || 0),
+            entityRadius: 2.0,
+            waterPlacement: { minDistFromBank: 2.0 }
+        },
+        {
+            id: EntityIds.DUCKLING,
+            getDensity: () => 0.05,
+            factory: (physicsEngine, options) => new Duckling(options.x, options.y, physicsEngine, options.angle || 0),
+            entityRadius: 1.5,
+            waterPlacement: { minDistFromBank: 2.0 }
+        },
+        {
+            id: EntityIds.PENGUIN_KAYAK,
+            getDensity: () => 0.01,
+            factory: (physicsEngine, options) => new PenguinKayak(options.x, options.y, physicsEngine, options.angle || 0),
+            entityRadius: 1.5,
+            waterPlacement: { minDistFromBank: 1.0 }
+        }
+    ];
+
     private constructor() {
-        for (const config of this.attackConfigs) {
-            this.attackAnimalSpawners.set(config.id, new AttackAnimalSpawner(config));
-        }
-        for (const config of this.flyingConfigs) {
-            this.flyingAnimalSpawners.set(config.id, new FlyingAnimalSpawner(config));
-        }
+        // Create Animal Spawners
+        this.attackConfigs.forEach(config => {
+            this.animalSpawners.set(config.id, new AttackAnimalSpawner(config));
+        });
+
+        this.flyingConfigs.forEach(config => {
+            this.animalSpawners.set(config.id, new FlyingAnimalSpawner(config));
+        });
+
+        this.swimAwayConfigs.forEach(config => {
+            this.animalSpawners.set(config.id, new SwimAwayAnimalSpawner(config));
+        });
     }
 
     public static getInstance(): EntitySpawners {
@@ -182,12 +198,8 @@ export class EntitySpawners {
         return EntitySpawners.instance;
     }
 
-    public attackAnimal(id: string): AttackAnimalSpawner | undefined {
-        return this.attackAnimalSpawners.get(id);
-    }
-
-    public flyingAnimal(id: string): FlyingAnimalSpawner | undefined {
-        return this.flyingAnimalSpawners.get(id);
+    public animal(id: string): AnimalSpawner | undefined {
+        return this.animalSpawners.get(id);
     }
 
     public buoy(): BuoySpawner { return this._buoy; }
@@ -195,7 +207,6 @@ export class EntitySpawners {
     public log(): LogSpawner { return this._log; }
     public mangrove(): MangroveSpawner { return this._mangrove; }
     public messageInABottle(): MessageInABottleSpawner { return this._messageInABottle; }
-    public penguinKayak(): PenguinKayakSpawner { return this._penguinKayak; }
     public pier(): PierSpawner { return this._pier; }
     public rock(): RockSpawner { return this._rock; }
     public waterGrass(): WaterGrassSpawner { return this._waterGrass; }
