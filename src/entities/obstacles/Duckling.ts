@@ -1,106 +1,39 @@
-import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AnimationPlayer } from '../../core/AnimationPlayer';
-import { EntityBehavior } from '../behaviors/EntityBehavior';
-import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
-import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
-import { AnyAnimal, AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
-import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogic';
 import { DefaultSwimAwayLogic } from '../behaviors/logic/DefaultSwimAwayLogic';
+import { SwimAwayAnimal, SwimmerAnimationConfig } from './SwimAwayAnimal';
 
-export class Duckling extends Entity implements AnyAnimal {
+export class Duckling extends SwimAwayAnimal {
 
-    private aggressiveness: number = 1.0;
-    private player: AnimationPlayer | null = null;
-    private behavior: EntityBehavior | null = null;
+    constructor(x: number, y: number, physicsEngine: PhysicsEngine, angle: number = 0) {
+        super(
+            physicsEngine,
+            'duckling',
+            Entity.TYPE_COLLECTABLE,
+            { x, y, height: 0.5, angle },
+            { halfWidth: 1.5, halfLength: 3.0 }
+        );
+    }
 
-    private applyModel(model: THREE.Group, animations: THREE.AnimationClip[]) {
-        // Apply model transformations
+    protected getModelData() {
+        return Decorations.getDuckling();
+    }
+
+    protected setupModel(model: THREE.Group) {
         model.scale.set(1.0, 1.0, 1.0);
         model.rotation.y = Math.PI;
         model.position.y = -1.25;
-
-        if (this.meshes.length > 0) {
-            this.meshes[0].add(model);
-        }
-
-        this.player = new AnimationPlayer(model, animations);
-        // Randomize speed between 1.8 and 2.2
-        const timeScale = 1.8 + Math.random() * 0.4;
     }
 
-    constructor(x: number, y: number, physicsEngine: PhysicsEngine, angle: number = 0) {
-        super();
-
-        // Physics
-        const physicsBody = physicsEngine.world.createBody({
-            type: 'dynamic',
-            position: planck.Vec2(x, y),
-            angle: angle,
-            linearDamping: 2.0,
-            angularDamping: 1.0
-        });
-        this.physicsBodies.push(physicsBody);
-
-        physicsBody.createFixture({
-            shape: planck.Box(1.5, 3.0), // Similar to hippo/alligator
-            density: 5.0,
-            friction: 0.1,
-            restitution: 0.0
-        });
-
-        physicsBody.setUserData({ type: Entity.TYPE_COLLECTABLE, subtype: 'duckling', entity: this });
-
-        // Graphics
-        const mesh = new THREE.Group();
-        this.meshes.push(mesh);
-
-        mesh.position.y = 0.5; // Raised by ~15% of model height
-
-        const ducklingData = Decorations.getDuckling();
-        if (ducklingData) {
-            this.applyModel(ducklingData.model, ducklingData.animations);
-        }
-
-        this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, { name: 'swimaway' });
-        this.player.play({ name: 'bob', timeScale: 2.0, randomizeLength: 0.2, startTime: -1.0 });
+    protected getAnimationConfig(state: string): SwimmerAnimationConfig {
+        const timeScale = state === DefaultSwimAwayLogic.ANIM_FLEEING ? 3.0 : 2.0;
+        return {
+            name: 'bob',
+            timeScale: timeScale,
+            randomizeLength: 0.2,
+            startTime: -1.0
+        };
     }
-
-    getPhysicsBody(): planck.Body | null {
-        return this.physicsBodies.length > 0 ? this.physicsBodies[0] : null;
-    }
-
-    getHeight(): number {
-        return this.meshes[0].position.y;
-    }
-
-    wasHitByPlayer() {
-        this.destroyPhysicsBodies();
-        this.behavior = new ObstacleHitBehavior(this.meshes, () => {
-            this.shouldRemove = true;
-        }, { duration: 0.5, rotateSpeed: 25, targetHeightOffset: 5 });
-    }
-
-    handleBehaviorEvent(event: AnimalBehaviorEvent): void {
-        if (event.type === 'COMPLETED') {
-            this.behavior = null;
-        } else if (event.type === 'ACTIVE_TICK') {
-            const state = event.animationState || 'ACTIVE';
-            const timeScale = state === DefaultSwimAwayLogic.ANIM_FLEEING ? 3.0 : 2.0;
-            this.player?.play({ name: 'bob', state: state, timeScale: timeScale, randomizeLength: 0.2, startTime: -1.0 });
-        }
-    }
-
-    update(dt: number) {
-        if (this.player) {
-            this.player.update(dt);
-        }
-        if (this.behavior) {
-            this.behavior.update(dt);
-        }
-    }
-
 }
