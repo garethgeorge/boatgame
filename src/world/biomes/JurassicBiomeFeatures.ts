@@ -4,23 +4,18 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations } from '../Decorations';
-import { TRexSpawner } from '../../entities/spawners/TRexSpawner';
-import { TriceratopsSpawner } from '../../entities/spawners/TriceratopsSpawner';
-import { BrontosaurusSpawner } from '../../entities/spawners/BrontosaurusSpawner';
-import { PterodactylSpawner } from '../../entities/spawners/PterodactylSpawner';
+import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
+import { FlyingAnimalSpawnerRegistry } from '../../entities/spawners/FlyingAnimalSpawnerRegistry';
 import { WaterGrassSpawner } from '../../entities/spawners/WaterGrassSpawner';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { RiverGeometry } from '../RiverGeometry';
+import { EntityIds } from '../../entities/EntityIds';
 
-type JurassicEntityType = 'log' | 'rock' | 'bottle' | 'trex' | 'triceratops' | 'bronto' | 'pterodactyl' | 'water_grass';
+type JurassicEntityType = EntityIds.LOG | EntityIds.ROCK | EntityIds.BOTTLE | EntityIds.TREX | EntityIds.TRICERATOPS | EntityIds.BRONTOSAURUS | EntityIds.PTERODACTYL | EntityIds.WATER_GRASS;
 
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'jurassic';
 
-    private trexSpawner = new TRexSpawner();
-    private triceratopsSpawner = new TriceratopsSpawner();
-    private brontoSpawner = new BrontosaurusSpawner();
-    private pterodactylSpawner = new PterodactylSpawner();
     private waterGrassSpawner = new WaterGrassSpawner();
 
 
@@ -54,44 +49,44 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                     logic: 'scatter',
                     place: 'slalom',
                     density: [1.0, 3.0],
-                    types: ['rock']
+                    types: [EntityIds.ROCK]
                 },
                 'staggered_logs': {
                     logic: 'staggered',
                     place: 'slalom',
                     density: [0.5, 1.5],
-                    types: ['log'],
+                    types: [EntityIds.LOG],
                     minCount: 4
                 },
                 'dino_scatter': {
                     logic: 'scatter',
                     place: 'shore',
                     density: [0.5, 1.5],
-                    types: ['trex', 'triceratops']
+                    types: [EntityIds.TREX, EntityIds.TRICERATOPS]
                 },
                 'ptero_scatter': {
                     logic: 'scatter',
                     place: 'shore',
                     density: [0.5, 1.5],
-                    types: ['pterodactyl']
+                    types: [EntityIds.PTERODACTYL]
                 },
                 'bronto_migration': {
                     logic: 'sequence',
                     place: 'shore',
                     density: [0.4, 0.4],
-                    types: ['bronto']
+                    types: [EntityIds.BRONTOSAURUS]
                 },
                 'bottle_hunt': {
                     logic: 'scatter',
                     place: 'path',
                     density: [0.25, 0.5],
-                    types: ['bottle']
+                    types: [EntityIds.BOTTLE]
                 },
                 'grass_patches': {
                     logic: 'scatter',
                     place: 'shore',
                     density: [1.5, 3.0],
-                    types: ['water_grass']
+                    types: [EntityIds.WATER_GRASS]
                 }
             },
             tracks: [
@@ -133,7 +128,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                     ]
                 }
             ],
-            waterAnimals: ['bronto']
+            waterAnimals: [EntityIds.BRONTOSAURUS]
         });
     }
 
@@ -181,28 +176,24 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                         const sample = RiverGeometry.getPathPoint(layout.path, p.index);
 
                         switch (entityType as JurassicEntityType) {
-                            case 'log':
+                            case EntityIds.LOG:
                                 await this.logSpawner.spawnInRiverAbsolute(context, sample, p.range);
                                 break;
-                            case 'rock':
+                            case EntityIds.ROCK:
                                 await this.rockSpawner.spawnInRiverAbsolute(context, sample, false, 'jurassic', p.range);
                                 break;
-                            case 'bottle':
+                            case EntityIds.BOTTLE:
                                 await this.bottleSpawner.spawnInRiverAbsolute(context, sample, p.range);
                                 break;
-                            case 'trex':
-                                await this.trexSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
+                            case EntityIds.TREX:
+                            case EntityIds.TRICERATOPS:
+                            case EntityIds.BRONTOSAURUS:
+                                await AttackAnimalSpawnerRegistry.getInstance().getSpawner(entityType as EntityIds)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
                                 break;
-                            case 'triceratops':
-                                await this.triceratopsSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
+                            case EntityIds.PTERODACTYL:
+                                await FlyingAnimalSpawnerRegistry.getInstance().getSpawner(EntityIds.PTERODACTYL)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
                                 break;
-                            case 'bronto':
-                                await this.brontoSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
-                                break;
-                            case 'pterodactyl':
-                                await this.pterodactylSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
-                                break;
-                            case 'water_grass':
+                            case EntityIds.WATER_GRASS:
                                 await this.waterGrassSpawner.spawnInRiverAbsolute(context, sample, p.range);
                                 break;
                         }

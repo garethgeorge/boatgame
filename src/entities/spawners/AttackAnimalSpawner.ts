@@ -8,29 +8,54 @@ import { Entity } from '../../core/Entity';
 import { RiverPlacementOptions, ShorePlacementOptions } from '../../managers/PlacementHelper';
 import { BaseSpawner } from './BaseSpawner';
 
-export abstract class AttackAnimalSpawner extends BaseSpawner {
+export interface AttackAnimalSpawnConfig {
+    id: string;
+    getDensity: (difficulty: number, zStart: number) => number;
+    factory: (physicsEngine: PhysicsEngine, options: AttackAnimalOptions) => Entity;
+    shoreProbability?: number;
+    entityRadius?: number;
+    heightInWater?: number;
+    waterPlacement?: RiverPlacementOptions;
+    shorePlacement?: ShorePlacementOptions;
+}
+
+export class AttackAnimalSpawner extends BaseSpawner {
+    private config: AttackAnimalSpawnConfig;
+
+    constructor(config: AttackAnimalSpawnConfig) {
+        super();
+        this.config = config;
+    }
+
+    get id(): string {
+        return this.config.id;
+    }
 
     protected get shoreProbability(): number {
-        return 0.0;
+        return this.config.shoreProbability ?? 0.0;
     }
     protected get entityRadius(): number {
-        return 5.0;
+        return this.config.entityRadius ?? 5.0;
     }
     protected get heightInWater(): number {
-        return 0.0;
+        return this.config.heightInWater ?? 0.0;
     }
     protected get shorePlacement(): ShorePlacementOptions {
-        return { minDistFromBank: 3.0, maxDistFromBank: 6.0 };
+        return this.config.shorePlacement ?? { minDistFromBank: 3.0, maxDistFromBank: 6.0 };
     }
     protected get waterPlacement(): RiverPlacementOptions {
-        return {};
+        return this.config.waterPlacement ?? {};
     }
 
-    protected abstract spawnEntity(physicsEngine: PhysicsEngine,
-        options: AttackAnimalOptions): Entity;
+    protected getDensity(difficulty: number, zStart: number): number {
+        return this.config.getDensity(difficulty, zStart);
+    }
+
+    protected spawnEntity(physicsEngine: PhysicsEngine, options: AttackAnimalOptions): Entity {
+        return this.config.factory(physicsEngine, options);
+    }
 
     async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
-
         const riverSystem = RiverSystem.getInstance();
         const sample = RiverGeometry.getRiverGeometrySample(riverSystem, z);
 
@@ -39,11 +64,10 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
 
         if (isShore) {
             const shorePlace = this.shorePlacement;
-            const stayOnShore = Math.random() > 0.5;
             const left = Math.random() < 0.5;
             const range: [number, number] = left ?
-                [-sample.bankDist - shorePlace.maxDistFromBank, -sample.bankDist] :
-                [sample.bankDist, sample.bankDist + shorePlace.maxDistFromBank];
+                [-sample.bankDist - (shorePlace.maxDistFromBank || 6.0), -sample.bankDist] :
+                [sample.bankDist, sample.bankDist + (shorePlace.maxDistFromBank || 6.0)];
             return this.spawnAnimalAbsolute(context, sample, range, aggro);
 
         } else {
@@ -128,3 +152,4 @@ export abstract class AttackAnimalSpawner extends BaseSpawner {
         return false;
     }
 }
+

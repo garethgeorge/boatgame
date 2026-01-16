@@ -4,21 +4,17 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations, LSystemTreeKind } from '../Decorations';
-import { BrownBearSpawner } from '../../entities/spawners/BrownBearSpawner';
-import { MooseSpawner } from '../../entities/spawners/MooseSpawner';
-import { DucklingSpawner } from '../../entities/spawners/DucklingSpawner';
+import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { WaterGrassSpawner } from '../../entities/spawners/WaterGrassSpawner';
 import { RiverGeometry } from '../RiverGeometry';
+import { EntityIds } from '../../entities/EntityIds';
 
-type ForestEntityType = 'log' | 'rock' | 'buoy' | 'bear' | 'moose' | 'duckling' | 'pier' | 'water_grass';
+type ForestEntityType = EntityIds.LOG | EntityIds.ROCK | EntityIds.BUOY | EntityIds.BROWN_BEAR | EntityIds.MOOSE | EntityIds.DUCKLING | EntityIds.PIER | EntityIds.WATER_GRASS;
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';
 
-    private bearSpawner = new BrownBearSpawner();
-    private mooseSpawner = new MooseSpawner();
-    private ducklingSpawner = new DucklingSpawner();
     private waterGrassSpawner = new WaterGrassSpawner();
 
 
@@ -40,40 +36,40 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                     logic: 'scatter',
                     place: 'slalom',
                     density: [1.0, 2.0],
-                    types: ['log', 'rock', 'buoy']
+                    types: [EntityIds.LOG, EntityIds.ROCK, EntityIds.BUOY]
                 },
                 'rock_gates': {
                     logic: 'gate',
                     place: 'slalom',
                     density: [1.0, 2.0],
-                    types: ['rock'],
+                    types: [EntityIds.ROCK],
                     minCount: 2
                 },
                 'piers': {
                     logic: 'staggered',
                     place: 'slalom',
                     density: [0.3, 0.9],
-                    types: ['pier'],
+                    types: [EntityIds.PIER],
                     minCount: 2
                 },
                 'forest_animals': {
                     logic: 'scatter',
                     place: 'shore',
                     density: [0.8, 2.5],
-                    types: ['bear', 'moose']
+                    types: [EntityIds.BROWN_BEAR, EntityIds.MOOSE]
                 },
                 'duckling_train': {
                     logic: 'sequence',
                     place: 'path',
                     density: [0.5, 1.5],
-                    types: ['duckling'],
+                    types: [EntityIds.DUCKLING],
                     minCount: 3
                 },
                 'grass_patches': {
                     logic: 'scatter',
                     place: 'shore',
                     density: [1.0, 2.0],
-                    types: ['water_grass']
+                    types: [EntityIds.WATER_GRASS]
                 }
             },
             tracks: [
@@ -112,7 +108,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                     ]
                 }
             ],
-            waterAnimals: ['duckling']
+            waterAnimals: [EntityIds.DUCKLING]
         });
     }
 
@@ -184,29 +180,25 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                         const sample = RiverGeometry.getPathPoint(layout.path, p.index);
 
                         switch (entityType as ForestEntityType) {
-                            case 'log':
+                            case EntityIds.LOG:
                                 await this.logSpawner.spawnInRiverAbsolute(context, sample, p.range);
                                 break;
-                            case 'rock':
+                            case EntityIds.ROCK:
                                 await this.rockSpawner.spawnInRiverAbsolute(context, sample, false, 'forest', p.range);
                                 break;
-                            case 'buoy':
+                            case EntityIds.BUOY:
                                 await this.buoySpawner.spawnInRiverAbsolute(context, sample, p.range);
                                 break;
-                            case 'pier':
+                            case EntityIds.PIER:
                                 // For the forest, we can just spawn piers as slalom obstacles on the banks
                                 await this.pierSpawner.spawnAt(context, sample.centerPos.z, Math.random() < 0.5);
                                 break;
-                            case 'moose':
-                                await this.mooseSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
+                            case EntityIds.MOOSE:
+                            case EntityIds.BROWN_BEAR:
+                            case EntityIds.DUCKLING:
+                                await AttackAnimalSpawnerRegistry.getInstance().getSpawner(entityType as EntityIds)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
                                 break;
-                            case 'bear':
-                                await this.bearSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
-                                break;
-                            case 'duckling':
-                                await this.ducklingSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
-                                break;
-                            case 'water_grass':
+                            case EntityIds.WATER_GRASS:
                                 await this.waterGrassSpawner.spawnInRiverAbsolute(context, sample, p.range);
                                 break;
                         }

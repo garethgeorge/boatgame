@@ -9,8 +9,9 @@ import { GraphicsUtils } from '../../core/GraphicsUtils';
 import Delaunator from 'delaunator';
 
 
-import { PolarBearSpawner } from '../../entities/spawners/PolarBearSpawner';
+import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
 import { IcebergSpawner } from '../../entities/spawners/IcebergSpawner';
+import { EntityIds } from '../../entities/EntityIds';
 import { PenguinKayakSpawner } from '../../entities/spawners/PenguinKayakSpawner';
 import { FracturedIceberg } from '../../entities/obstacles/FracturedIceberg';
 
@@ -33,7 +34,6 @@ interface BiomeLayout {
 export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'fractured_ice' as BiomeType;
 
-    private polarBearSpawner = new PolarBearSpawner();
     private penguinKayakSpawner = new PenguinKayakSpawner();
     private icebergSpawner = new IcebergSpawner();
 
@@ -390,7 +390,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
         // 3. Spawn bears/penguins
         await this.spawnObstacle(this.penguinKayakSpawner, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(this.polarBearSpawner, context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(AttackAnimalSpawnerRegistry.getInstance().getSpawner(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
     }
 
     private nextHalfedge(e: number): number {

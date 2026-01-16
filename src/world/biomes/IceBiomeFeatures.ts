@@ -5,14 +5,14 @@ import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations, LSystemTreeKind } from '../Decorations';
 import { IcebergSpawner } from '../../entities/spawners/IcebergSpawner';
-import { PolarBearSpawner } from '../../entities/spawners/PolarBearSpawner';
+import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
 import { PenguinKayakSpawner } from '../../entities/spawners/PenguinKayakSpawner';
+import { EntityIds } from '../../entities/EntityIds';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'ice';
 
     private icebergSpawner = new IcebergSpawner();
-    private polarBearSpawner = new PolarBearSpawner();
     private penguinKayakSpawner = new PenguinKayakSpawner();
 
     getGroundColor(): { r: number, g: number, b: number } {
@@ -69,6 +69,6 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
 
         await this.spawnObstacle(this.icebergSpawner, context, difficulty, zStart, zEnd);
         await this.spawnObstacle(this.penguinKayakSpawner, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(this.polarBearSpawner, context, difficulty, zStart, zEnd);
+        await this.spawnObstacle(AttackAnimalSpawnerRegistry.getInstance().getSpawner(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
     }
 }

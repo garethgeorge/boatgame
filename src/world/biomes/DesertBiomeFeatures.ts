@@ -3,20 +3,15 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations } from '../Decorations';
-import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
-import { HippoSpawner } from '../../entities/spawners/HippoSpawner';
-import { MonkeySpawner } from '../../entities/spawners/MonkeySpawner';
+import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
 import { RiverGeometry } from '../RiverGeometry';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
+import { EntityIds } from '../../entities/EntityIds';
 
-type DesertEntityType = 'rock' | 'bottle' | 'monkey' | 'gator' | 'hippo' | 'dock';
+type DesertEntityType = EntityIds.ROCK | EntityIds.BOTTLE | EntityIds.MONKEY | EntityIds.ALLIGATOR | EntityIds.HIPPO | EntityIds.PIER;
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';
-
-    private alligatorSpawner = new AlligatorSpawner();
-    private hippoSpawner = new HippoSpawner();
-    private monkeySpawner = new MonkeySpawner();
 
     getGroundColor(): { r: number, g: number, b: number } {
         return { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 };
@@ -36,33 +31,33 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                     logic: 'sequence',
                     place: 'shore',
                     density: [0.5, 4.0],
-                    types: ['gator', 'monkey']
+                    types: [EntityIds.ALLIGATOR, EntityIds.MONKEY]
                 },
                 'hippo_pod': {
                     logic: 'cluster',
                     place: 'shore',
                     density: [0.3, 2.0],
-                    types: ['hippo'],
+                    types: [EntityIds.HIPPO],
                     minCount: 2
                 },
                 'rocky_slalom': {
                     logic: 'sequence',
                     place: 'slalom',
                     density: [0.5, 2.0],
-                    types: ['rock']
+                    types: [EntityIds.ROCK]
                 },
                 'rock_stagger': {
                     logic: 'staggered',
                     place: 'slalom',
                     density: [0.5, 2.0],
-                    types: ['rock'],
+                    types: [EntityIds.ROCK],
                     minCount: 3
                 },
                 'bottle_cluster': {
                     logic: 'cluster',
                     place: 'path',
                     density: [1.5, 0.5],
-                    types: ['bottle'],
+                    types: [EntityIds.BOTTLE],
                     minCount: 3
                 }
             },
@@ -99,7 +94,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 {
                     name: 'unique_elements',
                     placements: [
-                        { name: 'dock', place: 'shore', at: 0.95, type: 'dock' }
+                        { name: 'dock', place: 'shore', at: 0.95, type: EntityIds.PIER }
                     ]
                 },
                 {
@@ -117,7 +112,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                     ]
                 }
             ],
-            waterAnimals: ['hippo']
+            waterAnimals: [EntityIds.HIPPO]
         });
     }
 
@@ -167,41 +162,29 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                         const sample = RiverGeometry.getPathPoint(layout.path, p.index);
 
                         switch (entityType as DesertEntityType) {
-                            case 'rock': {
+                            case EntityIds.ROCK: {
                                 const pillars = Math.random() < 0.3;
                                 await this.rockSpawner.spawnInRiverAbsolute(
                                     context, sample, pillars, 'desert', p.range
                                 );
                                 break;
                             }
-                            case 'bottle': {
+                            case EntityIds.BOTTLE: {
                                 await this.bottleSpawner.spawnInRiverAbsolute(
                                     context, sample, p.range
                                 );
                                 break;
                             }
-                            case 'gator': {
+                            case EntityIds.ALLIGATOR:
+                            case EntityIds.MONKEY:
+                            case EntityIds.HIPPO: {
                                 const logic = Math.random() < 0.5 ? 'wolf' : 'ambush';
-                                await this.alligatorSpawner.spawnAnimalAbsolute(
+                                await AttackAnimalSpawnerRegistry.getInstance().getSpawner(entityType as EntityIds)!.spawnAnimalAbsolute(
                                     context, sample, p.range, p.aggressiveness || 0.5, logic
                                 );
                                 break;
                             }
-                            case 'monkey': {
-                                const logic = Math.random() < 0.5 ? 'wolf' : 'ambush';
-                                await this.monkeySpawner.spawnAnimalAbsolute(
-                                    context, sample, p.range, p.aggressiveness || 0.5, logic
-                                );
-                                break;
-                            }
-                            case 'hippo': {
-                                const logic = Math.random() < 0.5 ? 'wolf' : 'ambush';
-                                await this.hippoSpawner.spawnAnimalAbsolute(
-                                    context, sample, p.range, p.aggressiveness || 0.5, logic
-                                );
-                                break;
-                            }
-                            case 'dock': {
+                            case EntityIds.PIER: {
                                 await this.pierSpawner.spawnAt(
                                     context, sample.centerPos.z, true);
                                 break;

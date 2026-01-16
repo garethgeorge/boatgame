@@ -6,19 +6,19 @@ import { DecorationContext } from '../decorators/DecorationContext';
 import { MangroveSpawner } from '../../entities/spawners/MangroveSpawner';
 import { Decorations } from '../Decorations';
 import { LogSpawner } from '../../entities/spawners/LogSpawner';
-import { AlligatorSpawner } from '../../entities/spawners/AlligatorSpawner';
+import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { WaterGrassSpawner } from '../../entities/spawners/WaterGrassSpawner';
 import { RiverGeometry } from '../RiverGeometry';
+import { EntityIds } from '../../entities/EntityIds';
 
-type SwampEntityType = 'mangrove' | 'log' | 'bottle' | 'alligator' | 'water_grass';
+type SwampEntityType = EntityIds.MANGROVE | EntityIds.LOG | EntityIds.BOTTLE | EntityIds.ALLIGATOR | EntityIds.WATER_GRASS;
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
 
     protected mangroveSpawner = new MangroveSpawner();
     protected logSpawner = new LogSpawner(0.003 * 5);
-    protected alligatorSpawner = new AlligatorSpawner(0.009);
     protected waterGrassSpawner = new WaterGrassSpawner();
 
     getGroundColor(): { r: number, g: number, b: number } {
@@ -60,32 +60,32 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     logic: 'scatter',
                     place: 'shore',
                     density: [20, 40],
-                    types: ['mangrove'],
+                    types: [EntityIds.MANGROVE],
                     minCount: 15
                 },
                 'clear_channel_bottles': {
                     logic: 'sequence',
                     place: 'path',
                     density: [0.5, 0.5],
-                    types: ['bottle']
+                    types: [EntityIds.BOTTLE]
                 },
                 'log_scatter': {
                     logic: 'scatter',
                     place: 'slalom',
                     density: [0.5, 2.0],
-                    types: ['log']
+                    types: [EntityIds.LOG]
                 },
                 'alligator_ambush': {
                     logic: 'scatter',
                     place: 'path',
                     density: [0.2, 0.6],
-                    types: ['alligator']
+                    types: [EntityIds.ALLIGATOR]
                 },
                 'grass_patches': {
                     logic: 'scatter',
                     place: 'shore',
                     density: [1.5, 3.0],
-                    types: ['water_grass']
+                    types: [EntityIds.WATER_GRASS]
                 }
             },
             tracks: [
@@ -156,7 +156,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     ]
                 }
             ],
-            waterAnimals: ['alligator']
+            waterAnimals: [EntityIds.ALLIGATOR]
         });
     }
 
@@ -222,7 +222,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                         const sample = RiverGeometry.getPathPoint(layout.path, p.index);
 
                         switch (entityType as SwampEntityType) {
-                            case 'mangrove': {
+                            case EntityIds.MANGROVE: {
                                 // spawnAbsolute takes (x, z). 
                                 // The point is center + normal * offset. 
                                 // offset is uniform random in [p.range[0], p.range[1]]
@@ -234,27 +234,27 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                                 );
                                 break;
                             }
-                            case 'log': {
+                            case EntityIds.LOG: {
                                 await this.logSpawner.spawnInRiverAbsolute(
                                     context, sample, p.range
                                 );
                                 break;
                             }
-                            case 'bottle': {
+                            case EntityIds.BOTTLE: {
                                 await this.bottleSpawner.spawnInRiverAbsolute(
                                     context, sample, p.range
                                 );
                                 break;
                             }
-                            case 'alligator': {
+                            case EntityIds.ALLIGATOR: {
                                 const logic = 'ambush'; // Mainly ambush in swamp
                                 // Bias towards middle area: [-10, 10]
-                                await this.alligatorSpawner.spawnAnimalAbsolute(
+                                await AttackAnimalSpawnerRegistry.getInstance().getSpawner(EntityIds.ALLIGATOR)!.spawnAnimalAbsolute(
                                     context, sample, [-10, 10], p.aggressiveness || 0.5, logic
                                 );
                                 break;
                             }
-                            case 'water_grass': {
+                            case EntityIds.WATER_GRASS: {
                                 await this.waterGrassSpawner.spawnInRiverAbsolute(
                                     context, sample, p.range
                                 );

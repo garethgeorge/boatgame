@@ -4,13 +4,15 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
-import { DolphinSpawner } from '../../entities/spawners/DolphinSpawner';
-import { ButterflySpawner } from '../../entities/spawners/ButterflySpawner';
+import { AttackAnimalSpawnerRegistry } from '../../entities/spawners/AttackAnimalSpawnerRegistry';
+import { FlyingAnimalSpawnerRegistry } from '../../entities/spawners/FlyingAnimalSpawnerRegistry';
 import { RiverGeometry } from '../RiverGeometry';
+import { EntityIds } from '../../entities/EntityIds';
 import { TerrainDecorator, DecorationRule, PlacementManifest } from '../decorators/TerrainDecorator';
 import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/PoissonDecorationRules';
 
-type HappyEntityType = 'dolphin' | 'butterfly' | 'bottle';
+
+type HappyEntityType = EntityIds.DOLPHIN | EntityIds.BUTTERFLY | EntityIds.BOTTLE;
 
 /**
  * Happy Biome: A beautiful spring-like day with lush green fields.
@@ -18,9 +20,6 @@ type HappyEntityType = 'dolphin' | 'butterfly' | 'bottle';
  */
 export class HappyBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'happy';
-
-    private dolphinSpawner = new DolphinSpawner();
-    private butterflySpawner = new ButterflySpawner();
 
     getGroundColor(): { r: number, g: number, b: number } {
         // Lush green ground color
@@ -143,13 +142,13 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                     logic: 'scatter',
                     place: 'slalom',
                     density: [1.0, 2.0],
-                    types: ['dolphin']
+                    types: [EntityIds.DOLPHIN]
                 },
                 'butterfly_swarms': {
                     logic: 'scatter',
                     place: 'shore',
                     density: [3.0, 5.0],
-                    types: ['butterfly']
+                    types: [EntityIds.BUTTERFLY]
                 }
             },
             tracks: [
@@ -182,7 +181,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                     ]
                 }
             ],
-            waterAnimals: ['dolphin']
+            waterAnimals: [EntityIds.DOLPHIN]
         });
 
         return boatPath;
@@ -219,13 +218,13 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                         const sample = RiverGeometry.getPathPoint(boatPath.path, p.index);
 
                         switch (entityType as HappyEntityType) {
-                            case 'dolphin':
-                                await this.dolphinSpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
+                            case EntityIds.DOLPHIN:
+                                await AttackAnimalSpawnerRegistry.getInstance().getSpawner(EntityIds.DOLPHIN)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
                                 break;
-                            case 'butterfly':
-                                await this.butterflySpawner.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
+                            case EntityIds.BUTTERFLY:
+                                await FlyingAnimalSpawnerRegistry.getInstance().getSpawner(EntityIds.BUTTERFLY)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
                                 break;
-                            case 'bottle':
+                            case EntityIds.BOTTLE:
                                 // Bottle spawner assumed to exist in Base or similar
                                 // await this.bottleSpawner.spawnInRiverAbsolute(context, sample, p.range);
                                 break;
