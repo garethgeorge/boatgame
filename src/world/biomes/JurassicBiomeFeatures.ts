@@ -4,12 +4,9 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations } from '../Decorations';
-import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
-import { RiverGeometry } from '../RiverGeometry';
 import { EntityIds } from '../../entities/EntityIds';
-
-type JurassicEntityType = EntityIds.LOG | EntityIds.ROCK | EntityIds.BOTTLE | EntityIds.TREX | EntityIds.TRICERATOPS | EntityIds.BRONTOSAURUS | EntityIds.PTERODACTYL | EntityIds.WATER_GRASS;
+import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'jurassic';
@@ -39,7 +36,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         return 2000;
     }
 
-    public createLayout(zMin: number, zMax: number): BoatPathLayout<JurassicEntityType> {
+    public createLayout(zMin: number, zMax: number): BoatPathLayout {
         return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
             patterns: {
                 'scattered_rocks': {
@@ -152,51 +149,6 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        const layout = context.biomeLayout as BoatPathLayout<JurassicEntityType>;
-        if (!layout) return;
-
-        // Map world Z range to path indices
-        const iChunkStart = RiverGeometry.getPathIndexByZ(layout.path, zStart);
-        const iChunkEnd = RiverGeometry.getPathIndexByZ(layout.path, zEnd);
-
-        const iChunkMin = Math.min(iChunkStart, iChunkEnd);
-        const iChunkMax = Math.max(iChunkStart, iChunkEnd);
-
-        for (const section of layout.sections) {
-            if (section.iEnd <= iChunkMin || section.iStart >= iChunkMax) continue;
-
-            for (const [entityType, placements] of Object.entries(section.placements)) {
-                if (!placements) continue;
-
-                for (const p of placements) {
-                    if (p.index >= iChunkMin && p.index < iChunkMax) {
-                        const sample = RiverGeometry.getPathPoint(layout.path, p.index);
-
-                        switch (entityType as JurassicEntityType) {
-                            case EntityIds.LOG:
-                                await EntitySpawners.getInstance().log().spawnInRiverAbsolute(context, sample, p.range);
-                                break;
-                            case EntityIds.ROCK:
-                                await EntitySpawners.getInstance().rock().spawnInRiverAbsolute(context, sample, false, 'jurassic', p.range);
-                                break;
-                            case EntityIds.BOTTLE:
-                                await EntitySpawners.getInstance().messageInABottle().spawnInRiverAbsolute(context, sample, p.range);
-                                break;
-                            case EntityIds.TREX:
-                            case EntityIds.TRICERATOPS:
-                            case EntityIds.BRONTOSAURUS:
-                                await EntitySpawners.getInstance().attackAnimal(entityType as EntityIds)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
-                                break;
-                            case EntityIds.PTERODACTYL:
-                                await EntitySpawners.getInstance().flyingAnimal(EntityIds.PTERODACTYL)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
-                                break;
-                            case EntityIds.WATER_GRASS:
-                                await EntitySpawners.getInstance().waterGrass().spawnInRiverAbsolute(context, sample, p.range);
-                                break;
-                        }
-                    }
-                }
-            }
-        }
+        await BoatPathLayoutSpawner.getInstance().spawn(context, context.biomeLayout, this.id, zStart, zEnd);
     }
 }

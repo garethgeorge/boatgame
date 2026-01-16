@@ -1,3 +1,4 @@
+import { EntityIds } from '../../entities/EntityIds';
 import { RiverGeometry, RiverGeometrySample } from '../RiverGeometry';
 import { RiverSystem } from '../RiverSystem';
 
@@ -25,23 +26,23 @@ export interface ObstaclePlacement {
 /**
  * A block of the layout, grouping multiple path segments (sub-sections).
  */
-export interface LayoutBlock<T extends string> {
+export interface LayoutBlock {
     /** Starting global path index of this block */
     iStart: number;
     /** Ending global path index of this block */
     iEnd: number;
     /** Map of entity types to their specific placements within this block */
-    placements: Partial<Record<T, ObstaclePlacement[]>>;
+    placements: Partial<Record<EntityIds, ObstaclePlacement[]>>;
 }
 
 /**
  * The final generated boat path and its associated obstacle layout sections.
  */
-export interface BoatPathLayout<T extends string> {
+export interface BoatPathLayout {
     /** Array of geometry and boat offset samples */
     path: PathPoint[];
     /** Sequential blocks of placements */
-    sections: LayoutBlock<T>[];
+    sections: LayoutBlock[];
 }
 
 export type PatternLogic = 'scatter' | 'sequence' | 'gate' | 'staggered' | 'cluster';
@@ -50,7 +51,7 @@ export type PlacementType = 'path' | 'slalom' | 'shore';
 /**
  * Configuration for a single behavioral pattern of obstacle placement.
  */
-export interface PatternConfig<T extends string> {
+export interface PatternConfig {
     /** Distribution logic (scattered, ordered, etc.) */
     logic: PatternLogic;
     /** Target area (near path, across river, or on shore) */
@@ -58,14 +59,14 @@ export interface PatternConfig<T extends string> {
     /** Min and Max density in instances per 100m. Scales from start to end of biome. */
     density?: [number, number];
     /** Candidate obstacle types for this pattern */
-    types: T[];
+    types: EntityIds[];
     /** Minimum required instances */
     minCount?: number;
     /** Maximum allowed instances */
     maxCount?: number;
 }
 
-export interface PatternChoice<T extends string> {
+export interface PatternChoice {
     pattern: string; // Name of the pattern
     weight: number;
     at?: number[]; // Explicit progress locations [0-1]
@@ -74,18 +75,18 @@ export interface PatternChoice<T extends string> {
 /**
  * Defines a segment of a track where certain patterns apply.
  */
-export interface StageConfig<T extends string> {
+export interface StageConfig {
     name: string;
     /** The progress range [0.0, 1.0] within the biome where this stage can be selected */
     progress: [number, number];
     /** A set of pattern choices. One pattern is chosen from each inner array at random based on weights. */
-    patterns: PatternChoice<T>[][];
+    patterns: PatternChoice[][];
 }
 
 /**
  * Configuration for a specific, non-procedural placement on a track.
  */
-export interface ExplicitPlacementConfig<T extends string> {
+export interface ExplicitPlacementConfig {
     /** Unique name for this placement */
     name: string;
     /** Area for placement (path, slalom, shore) */
@@ -93,36 +94,36 @@ export interface ExplicitPlacementConfig<T extends string> {
     /** Progress [0-1] along the biome length */
     at: number;
     /** The obstacle type to spawn */
-    type: T;
+    type: EntityIds;
 }
 
 /**
  * Defines a track which can either be a sequence of procedural stages
  * or a collection of explicit, unique placements.
  */
-export interface TrackConfig<T extends string> {
+export interface TrackConfig {
     name: string;
     /** Procedural stages that fill the biome length (optional if placements is used) */
-    stages?: StageConfig<T>[];
+    stages?: StageConfig[];
     /** Explicit, unique placements at specific progress points (optional if stages is used) */
-    placements?: ExplicitPlacementConfig<T>[];
+    placements?: ExplicitPlacementConfig[];
 }
 
 /**
  * Top-level configuration for the BoatPathLayoutStrategy and Biome features.
  */
-export interface BoatPathLayoutConfig<T extends string> {
+export interface BoatPathLayoutConfig {
     /** Record of all named pattern configurations available in this biome */
-    patterns: Record<string, PatternConfig<T>>;
+    patterns: Record<string, PatternConfig>;
     /** Array of tracks. Each track generates stages independently to fill the biome. */
-    tracks: TrackConfig<T>[];
+    tracks: TrackConfig[];
     /** List of entity types that are considered 'water animals' for shore placement refinement */
-    waterAnimals: T[];
+    waterAnimals: EntityIds[];
 }
 
-interface CalculatedStage<T extends string> {
-    config: StageConfig<T>;
-    patterns: PatternConfig<T>[];
+interface CalculatedStage {
+    config: StageConfig;
+    patterns: PatternConfig[];
     patternAts: (number[] | undefined)[];
     pStart: number;
     pEnd: number;
@@ -140,11 +141,11 @@ export class BoatPathLayoutStrategy {
      * 3. Generates a sinusoidal weaving boat path based on the primary track's boundaries.
      * 4. Merges all track placements into layout blocks.
      */
-    public static createLayout<T extends string>(
+    public static createLayout(
         zMin: number,
         zMax: number,
-        config: BoatPathLayoutConfig<T>
-    ): BoatPathLayout<T> {
+        config: BoatPathLayoutConfig
+    ): BoatPathLayout {
         const riverSystem = RiverSystem.getInstance();
 
         // Direction of travel is -ve z
@@ -161,7 +162,7 @@ export class BoatPathLayoutStrategy {
         const totalArcLength = path[path.length - 1].arcLength;
 
         // 2. Generate tracks independently
-        const trackPlacements: { trackName: string, stages: CalculatedStage<T>[] }[] = [];
+        const trackPlacements: { trackName: string, stages: CalculatedStage[] }[] = [];
         for (const track of config.tracks) {
             const stages = this.generateTrackStages(track, config, totalArcLength);
             trackPlacements.push({ trackName: track.name, stages });
@@ -203,7 +204,7 @@ export class BoatPathLayoutStrategy {
         }
 
         // 5. Form LayoutBlocks by merging all track placements
-        const blocks: LayoutBlock<T>[] = [];
+        const blocks: LayoutBlock[] = [];
 
         // For simplicity, we create one block per track stage if they don't overlap too much,
         // but since tracks are independent, it's better to just collect all placements.
@@ -219,7 +220,7 @@ export class BoatPathLayoutStrategy {
             const iStart = Math.floor(pStart * (path.length - 1));
             const iEnd = Math.floor(pEnd * (path.length - 1));
 
-            const block: LayoutBlock<T> = {
+            const block: LayoutBlock = {
                 iStart,
                 iEnd,
                 placements: {}
@@ -269,12 +270,12 @@ export class BoatPathLayoutStrategy {
      * Each stage is randomly chosen from applicable stage configs and scaled
      * so it reaches the end of the biome.
      */
-    private static generateTrackStages<T extends string>(
-        track: TrackConfig<T>,
-        config: BoatPathLayoutConfig<T>,
+    private static generateTrackStages(
+        track: TrackConfig,
+        config: BoatPathLayoutConfig,
         totalArcLength: number
-    ): CalculatedStage<T>[] {
-        const stages: CalculatedStage<T>[] = [];
+    ): CalculatedStage[] {
+        const stages: CalculatedStage[] = [];
         if (!track.stages) return stages;
 
         let currentProgress = 0;
@@ -297,7 +298,7 @@ export class BoatPathLayoutStrategy {
             const stageConfig = applicableStages[Math.floor(Math.random() * applicableStages.length)];
 
             // 3. Choose one pattern from each set
-            const chosenPatterns: PatternConfig<T>[] = [];
+            const chosenPatterns: PatternConfig[] = [];
             const chosenAts: (number[] | undefined)[] = [];
 
             for (const set of stageConfig.patterns) {
@@ -359,7 +360,7 @@ export class BoatPathLayoutStrategy {
         return stages;
     }
 
-    private static weightedPickFromArray<T>(choices: ({ weight: number } & T)[]): T {
+    private static weightedPickFromArray(choices: PatternChoice[]): PatternChoice {
         const totalWeight = choices.reduce((sum, c) => sum + c.weight, 0);
         let r = Math.random() * totalWeight;
         for (const c of choices) {
@@ -373,11 +374,11 @@ export class BoatPathLayoutStrategy {
      * Populates a layout block with placements generated for a specific track stage.
      * Handles pattern logic (scatter, sequence, etc.) and density-based counts.
      */
-    private static populatePlacements<T extends string>(
+    private static populatePlacements(
         path: PathPoint[],
-        block: LayoutBlock<T>,
-        stage: CalculatedStage<T>,
-        config: BoatPathLayoutConfig<T>,
+        block: LayoutBlock,
+        stage: CalculatedStage,
+        config: BoatPathLayoutConfig,
         totalArcLength: number
     ) {
         const stageProgress = (stage.pStart + stage.pEnd) / 2;
@@ -499,13 +500,13 @@ export class BoatPathLayoutStrategy {
      * Resolves the side (left/right) relative to the boat path and pattern logic.
      * Picks a random obstacle type from the pattern.
      */
-    private static applyIndividualPlacement<T extends string>(
+    private static applyIndividualPlacement(
         path: PathPoint[],
-        block: LayoutBlock<T>,
-        type: T,
+        block: LayoutBlock,
+        type: EntityIds,
         place: PlacementType,
         pathIndex: number,
-        config: BoatPathLayoutConfig<T>,
+        config: BoatPathLayoutConfig,
         state: { lastStaggerSide: 'left' | 'right' },
         progress: number,
         logic?: PatternLogic,
@@ -544,12 +545,12 @@ export class BoatPathLayoutStrategy {
      * Calculates the world-coordinate offset range along the normal vector
      * for a given placement type and side.
      */
-    private static placementRange<T extends string>(
+    private static placementRange(
         pathPoint: PathPoint,
-        type: T,
+        type: EntityIds,
         side: 'left' | 'right',
         place: PlacementType,
-        config: BoatPathLayoutConfig<T>
+        config: BoatPathLayoutConfig
     ): [number, number] {
         if (place === 'slalom') {
             return side === 'right' ?
@@ -572,7 +573,7 @@ export class BoatPathLayoutStrategy {
         }
     }
 
-    private static getDensity<T extends string>(pattern: PatternConfig<T>, progress: number): number {
+    private static getDensity(pattern: PatternConfig, progress: number): number {
         if (pattern.density === undefined) return 1.0;
         return pattern.density[0] + progress * (pattern.density[1] - pattern.density[0]);
     }

@@ -4,14 +4,10 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
-import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
-import { RiverGeometry } from '../RiverGeometry';
 import { EntityIds } from '../../entities/EntityIds';
+import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { TerrainDecorator, DecorationRule, PlacementManifest } from '../decorators/TerrainDecorator';
 import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/PoissonDecorationRules';
-
-
-type HappyEntityType = EntityIds.DOLPHIN | EntityIds.BUTTERFLY | EntityIds.BOTTLE;
 
 /**
  * Happy Biome: A beautiful spring-like day with lush green fields.
@@ -134,7 +130,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         })
     ];
 
-    public createLayout(zMin: number, zMax: number): BoatPathLayout<HappyEntityType> {
+    public createLayout(zMin: number, zMax: number): BoatPathLayout {
         const boatPath = BoatPathLayoutStrategy.createLayout(zMin, zMax, {
             patterns: {
                 'dolphin_pods': {
@@ -197,39 +193,6 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        const boatPath = context.biomeLayout as BoatPathLayout<HappyEntityType>;
-        if (!boatPath) return;
-
-        const iChunkStart = RiverGeometry.getPathIndexByZ(boatPath.path, zStart);
-        const iChunkEnd = RiverGeometry.getPathIndexByZ(boatPath.path, zEnd);
-
-        const iChunkMin = Math.min(iChunkStart, iChunkEnd);
-        const iChunkMax = Math.max(iChunkStart, iChunkEnd);
-
-        for (const section of boatPath.sections) {
-            if (section.iEnd <= iChunkMin || section.iStart >= iChunkMax) continue;
-
-            for (const [entityType, placements] of Object.entries(section.placements)) {
-                if (!placements) continue;
-
-                for (const p of placements) {
-                    if (p.index >= iChunkMin && p.index < iChunkMax) {
-                        const sample = RiverGeometry.getPathPoint(boatPath.path, p.index);
-
-                        switch (entityType as HappyEntityType) {
-                            case EntityIds.DOLPHIN:
-                                await EntitySpawners.getInstance().attackAnimal(EntityIds.DOLPHIN)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
-                                break;
-                            case EntityIds.BUTTERFLY:
-                                await EntitySpawners.getInstance().flyingAnimal(EntityIds.BUTTERFLY)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
-                                break;
-                            case EntityIds.BOTTLE:
-                                await EntitySpawners.getInstance().messageInABottle().spawnInRiverAbsolute(context, sample, p.range);
-                                break;
-                        }
-                    }
-                }
-            }
-        }
+        await BoatPathLayoutSpawner.getInstance().spawn(context, context.biomeLayout, this.id, zStart, zEnd);
     }
 }

@@ -8,8 +8,7 @@ import { Decorations } from '../Decorations';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { RiverGeometry } from '../RiverGeometry';
 import { EntityIds } from '../../entities/EntityIds';
-
-type SwampEntityType = EntityIds.MANGROVE | EntityIds.LOG | EntityIds.BOTTLE | EntityIds.ALLIGATOR | EntityIds.WATER_GRASS;
+import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
@@ -47,7 +46,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         return 1600;
     }
 
-    public createLayout(zMin: number, zMax: number): BoatPathLayout<SwampEntityType> {
+    public createLayout(zMin: number, zMax: number): BoatPathLayout {
         return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
             patterns: {
                 'dense_shore_mangroves': {
@@ -186,79 +185,8 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        const layout = context.biomeLayout as BoatPathLayout<SwampEntityType>;
-        if (!layout) {
-            // Fallback to legacy spawning if no layout
-            await this.spawnObstacle(EntitySpawners.getInstance().mangrove(), context, difficulty, zStart, zEnd);
-            return;
-        }
-
-        // Map world Z range to path indices
-        const iChunkStart = RiverGeometry.getPathIndexByZ(layout.path, zStart);
-        const iChunkEnd = RiverGeometry.getPathIndexByZ(layout.path, zEnd);
-
-        const iChunkMin = Math.min(iChunkStart, iChunkEnd);
-        const iChunkMax = Math.max(iChunkStart, iChunkEnd);
-
-        for (const section of layout.sections) {
-            // Check if section overlaps with current segment arc length range
-            if (section.iEnd <= iChunkMin || section.iStart >= iChunkMax) {
-                continue;
-            }
-
-            // Iterate through each entity type in the section
-            for (const [entityType, placements] of Object.entries(section.placements)) {
-                if (!placements) continue;
-
-                for (const p of placements) {
-                    // Check if placement is within current segment
-                    if (p.index >= iChunkMin && p.index < iChunkMax) {
-                        const sample = RiverGeometry.getPathPoint(layout.path, p.index);
-
-                        switch (entityType as SwampEntityType) {
-                            case EntityIds.MANGROVE: {
-                                // spawnAbsolute takes (x, z). 
-                                // The point is center + normal * offset. 
-                                // offset is uniform random in [p.range[0], p.range[1]]
-                                const offset = p.range[0] + Math.random() * (p.range[1] - p.range[0]);
-                                await EntitySpawners.getInstance().mangrove().spawnAbsolute(
-                                    context,
-                                    sample.centerPos.x + sample.normal.x * offset,
-                                    sample.centerPos.z + sample.normal.z * offset
-                                );
-                                break;
-                            }
-                            case EntityIds.LOG: {
-                                await EntitySpawners.getInstance().log().spawnInRiverAbsolute(
-                                    context, sample, p.range
-                                );
-                                break;
-                            }
-                            case EntityIds.BOTTLE: {
-                                await EntitySpawners.getInstance().messageInABottle().spawnInRiverAbsolute(
-                                    context, sample, p.range
-                                );
-                                break;
-                            }
-                            case EntityIds.ALLIGATOR: {
-                                const logic = 'ambush'; // Mainly ambush in swamp
-                                // Bias towards middle area: [-10, 10]
-                                await EntitySpawners.getInstance().attackAnimal(EntityIds.ALLIGATOR)!.spawnAnimalAbsolute(
-                                    context, sample, [-10, 10], p.aggressiveness || 0.5, logic
-                                );
-                                break;
-                            }
-                            case EntityIds.WATER_GRASS: {
-                                await EntitySpawners.getInstance().waterGrass().spawnInRiverAbsolute(
-                                    context, sample, p.range
-                                );
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        const layout = context.biomeLayout as BoatPathLayout;
+        await BoatPathLayoutSpawner.getInstance().spawn(context, layout, this.id, zStart, zEnd);
     }
 }
 

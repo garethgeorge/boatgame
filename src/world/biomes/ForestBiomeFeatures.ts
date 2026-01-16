@@ -4,12 +4,9 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations, LSystemTreeKind } from '../Decorations';
-import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
-import { RiverGeometry } from '../RiverGeometry';
 import { EntityIds } from '../../entities/EntityIds';
-
-type ForestEntityType = EntityIds.LOG | EntityIds.ROCK | EntityIds.BUOY | EntityIds.BROWN_BEAR | EntityIds.MOOSE | EntityIds.DUCKLING | EntityIds.PIER | EntityIds.WATER_GRASS;
+import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';
@@ -25,7 +22,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
         return 2000;
     }
 
-    public createLayout(zMin: number, zMax: number): BoatPathLayout<ForestEntityType> {
+    public createLayout(zMin: number, zMax: number): BoatPathLayout {
         return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
             patterns: {
                 'forest_slalom': {
@@ -155,52 +152,6 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        const layout = context.biomeLayout as BoatPathLayout<ForestEntityType>;
-        if (!layout) return;
-
-        // Map world Z range to path indices
-        const iChunkStart = RiverGeometry.getPathIndexByZ(layout.path, zStart);
-        const iChunkEnd = RiverGeometry.getPathIndexByZ(layout.path, zEnd);
-
-        const iChunkMin = Math.min(iChunkStart, iChunkEnd);
-        const iChunkMax = Math.max(iChunkStart, iChunkEnd);
-
-        for (const section of layout.sections) {
-            if (section.iEnd <= iChunkMin || section.iStart >= iChunkMax) continue;
-
-            for (const [entityType, placements] of Object.entries(section.placements)) {
-                if (!placements) continue;
-
-                for (const p of placements) {
-                    if (p.index >= iChunkMin && p.index < iChunkMax) {
-                        const sample = RiverGeometry.getPathPoint(layout.path, p.index);
-
-                        switch (entityType as ForestEntityType) {
-                            case EntityIds.LOG:
-                                await EntitySpawners.getInstance().log().spawnInRiverAbsolute(context, sample, p.range);
-                                break;
-                            case EntityIds.ROCK:
-                                await EntitySpawners.getInstance().rock().spawnInRiverAbsolute(context, sample, false, 'forest', p.range);
-                                break;
-                            case EntityIds.BUOY:
-                                await EntitySpawners.getInstance().buoy().spawnInRiverAbsolute(context, sample, p.range);
-                                break;
-                            case EntityIds.PIER:
-                                // For the forest, we can just spawn piers as slalom obstacles on the banks
-                                await EntitySpawners.getInstance().pier().spawnAt(context, sample.centerPos.z, Math.random() < 0.5);
-                                break;
-                            case EntityIds.MOOSE:
-                            case EntityIds.BROWN_BEAR:
-                            case EntityIds.DUCKLING:
-                                await EntitySpawners.getInstance().attackAnimal(entityType as EntityIds)!.spawnAnimalAbsolute(context, sample, p.range, p.aggressiveness || 0.5);
-                                break;
-                            case EntityIds.WATER_GRASS:
-                                await EntitySpawners.getInstance().waterGrass().spawnInRiverAbsolute(context, sample, p.range);
-                                break;
-                        }
-                    }
-                }
-            }
-        }
+        await BoatPathLayoutSpawner.getInstance().spawn(context, context.biomeLayout, this.id, zStart, zEnd);
     }
 }
