@@ -422,7 +422,8 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             branch: {
                 spread: 50.0, jitter: 15.0
             },
-        }
+        },
+        scaleVariation: createNormalDistributionScaler(0.9, 0.3, 0.6, 1.8)
     }
 };
 
