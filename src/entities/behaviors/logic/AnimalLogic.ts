@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { AnimalPathResult } from './AnimalPathStrategy';
+import { AnimalSteering } from './AnimalPathStrategy';
 import { AnimalBehaviorEvent } from '../AnimalBehavior';
 import { AnimalStrategyContext } from './AnimalPathStrategy';
 
@@ -28,7 +28,7 @@ export interface AnimalLogicContext extends AnimalStrategyContext {
  */
 export interface AnimalLogicPathResult {
     // Composition: Holds the physical path result (Steering or Explicit)
-    path: AnimalPathResult;
+    path: AnimalSteering;
 
     // The physics model to use for this frame
     locomotionType: LocomotionType;
@@ -51,10 +51,9 @@ export interface AnimalLogic {
     readonly name: string;
 
     /**
-     * Is the logic applicable or not?
+     * Is the logic applicable?
      */
     shouldActivate(context: AnimalLogicContext): boolean;
-    shouldDeactivate(context: AnimalLogicContext): boolean;
 
     /**
      * ??

@@ -3,7 +3,7 @@ import * as planck from 'planck';
 /**
  * Result of any path strategy calculation.
  */
-export type AnimalPathResult =
+export type AnimalSteering =
     | { kind: 'STEERING'; data: SteeringParams }
     | { kind: 'EXPLICIT'; data: ExplicitParams };
 
@@ -57,14 +57,5 @@ export abstract class AnimalPathStrategy {
     /** 
      * Calculate the point that the animal should steer toward.
      */
-    abstract update(context: AnimalStrategyContext): AnimalPathResult;
-
-    /**
-     * If true the strategy is "finished" e.g because the animal is behind
-     * the boat.
-     */
-    shouldAbort(context: AnimalStrategyContext): boolean {
-        // Default: Don't abort
-        return false;
-    }
+    abstract update(context: AnimalStrategyContext): AnimalSteering;
 }

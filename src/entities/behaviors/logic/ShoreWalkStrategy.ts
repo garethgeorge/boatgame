@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import { RiverSystem } from '../../../world/RiverSystem';
-import { AnimalPathStrategy, AnimalStrategyContext, AnimalPathResult } from './AnimalPathStrategy';
+import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
 
 export class ShoreWalkStrategy extends AnimalPathStrategy {
     readonly name = 'ShoreWalk';
@@ -47,7 +47,7 @@ export class ShoreWalkStrategy extends AnimalPathStrategy {
         return Math.atan2(1.0 * this.directionSign, dxdz * this.directionSign) + Math.PI / 2;
     }
 
-    update(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalSteering {
         const currentPos = context.originPos;
 
         // Default to not moving if no target

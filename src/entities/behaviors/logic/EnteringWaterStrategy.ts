@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../../../world/RiverSystem';
-import { AnimalPathStrategy, AnimalStrategyContext, AnimalPathResult } from './AnimalPathStrategy';
+import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
 
 /**
  * ENTERING WATER (Land/Transition)
@@ -38,12 +38,8 @@ export class EnteringWaterStrategy extends AnimalPathStrategy {
         return this.totalEntryDistance;
     }
 
-    update(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalSteering {
         const riverSystem = RiverSystem.getInstance();
-
-        if (this.entryStartPosition === null) {
-            this.initialize(context.originPos, context.physicsBody.getAngle());
-        }
 
         const moveSpeed = 8.0 * (1 + 3 * context.aggressiveness);
         const targetWorldPos = this.getTargetPos();

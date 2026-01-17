@@ -39,10 +39,6 @@ export class ShoreWalkLogic implements AnimalLogic {
         return true;
     }
 
-    shouldDeactivate(context: AnimalLogicContext): boolean {
-        return false;
-    }
-
     activate(context: AnimalLogicContext) {
         this.startPosition = context.originPos.clone();
         this.startAngle = context.physicsBody.getAngle();
@@ -127,11 +123,11 @@ export class ShoreWalkLogic implements AnimalLogic {
         this.strategy.setTargetZ(targetZ);
 
         // Get base path from strategy
-        const result = this.strategy.update(context);
+        const steering = this.strategy.update(context);
 
         // Apply state-specific overrides (Manual Override of Steering)
-        if (result.kind === 'STEERING') {
-            const steeringData: SteeringParams = result.data;
+        if (steering.kind === 'STEERING') {
+            const steeringData: SteeringParams = steering.data;
             if (this.state === 'ROTATING_OUT') {
                 steeringData.facing = { angle: Math.PI / 2, normal: steeringData.facing?.normal }; // Face River
             } else if (this.state === 'ROTATING_IN') {
@@ -143,7 +139,7 @@ export class ShoreWalkLogic implements AnimalLogic {
         }
 
         return {
-            path: result,
+            path: steering,
             locomotionType: 'LAND',
             animationState: (this.state === 'WALKING_OUT' || this.state === 'WALKING_IN')
                 ? ShoreWalkLogic.ANIM_WALK

@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult } from './AnimalLogic';
-import { AnimalPathResult, AnimalPathStrategy } from './AnimalPathStrategy';
+import { AnimalPathStrategy } from './AnimalPathStrategy';
 import { BuzzTargetStrategy, FleeRiverStrategy, LandingStrategy } from './FlightPathStrategies';
 import { RiverSystem } from '../../../world/RiverSystem';
 
@@ -30,10 +30,6 @@ export class DefaultFlightLogic implements AnimalLogic {
         return true;
     }
 
-    shouldDeactivate(context: AnimalLogicContext): boolean {
-        return false;
-    }
-
     activate(context: AnimalLogicContext): void {
     }
 
@@ -53,23 +49,20 @@ export class DefaultFlightLogic implements AnimalLogic {
             }
         }
 
-        // Have we landed?
-        const isFinished = this.isFinished(context);
-
         // Update strategy
-        const result = this.strategy.update(context);
+        const steering = this.strategy.update(context);
 
         // Get result
         const anim = this.state === 'LANDING' ? DefaultFlightLogic.ANIM_WALKING : DefaultFlightLogic.ANIM_FLYING;
         return {
-            path: result,
+            path: steering,
             locomotionType: 'FLIGHT',
             animationState: anim,
-            isFinished
+            isFinished: this.hasLanded(context)
         };
     }
 
-    private isFinished(context: AnimalLogicContext): boolean {
+    private hasLanded(context: AnimalLogicContext): boolean {
         if (this.state !== 'LANDING') return false;
         const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(context.originPos.x, context.originPos.y);
         const currentAltitude = Math.max(0, context.currentHeight - terrainHeight);

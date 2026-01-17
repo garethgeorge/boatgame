@@ -2,17 +2,17 @@ import * as planck from 'planck';
 import { Boat } from '../../Boat';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 import { RiverSystem } from '../../../world/RiverSystem';
-import { AnimalPathStrategy, AnimalStrategyContext, AnimalPathResult } from './AnimalPathStrategy';
+import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
 
 /**
  * STERN INTERCEPT (Water)
- * Heads toward the stern
+ * Heads toward the stern. Finshes on falling behind the boat.
  */
 export class SternInterceptStrategy extends AnimalPathStrategy {
     readonly name = 'SternIntercept';
     constructor(private interceptFactor: number = 0.5) { super(); }
 
-    update(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalSteering {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
         const localAttackPos = context.targetBody.getLocalPoint(context.snoutPos);
         const sternLocalY = (Boat.STERN_Y * 0.7 + Boat.FRONT_ZONE_END_Y * 0.3);
@@ -52,18 +52,11 @@ export class SternInterceptStrategy extends AnimalPathStrategy {
             }
         };
     }
-
-    override shouldAbort(context: AnimalStrategyContext): boolean {
-        const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
-        const boatSpeed = context.targetBody.getLinearVelocity().length();
-        const localPos = context.targetBody.getLocalPoint(context.snoutPos);
-        return localPos.y > Boat.STERN_Y && boatSpeed > 0.5 * params.attackSpeed;
-    }
 }
 
 /**
  * CIRCLE FLANK (Water)
- * Heads to a point on one side of the boat
+ * Heads to a point on one side of the boat. Finishes if too far behind.
  */
 export class CircleFlankStrategy extends AnimalPathStrategy {
     readonly name = 'Flanking';
@@ -76,7 +69,7 @@ export class CircleFlankStrategy extends AnimalPathStrategy {
         this.flankOffsetMultiplier = 3.0 + Math.random() * 2.0;
     }
 
-    update(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalSteering {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
         const localPos = context.targetBody.getLocalPoint(context.snoutPos);
         if (localPos.x > 1.0) this.side = 1;
@@ -93,21 +86,16 @@ export class CircleFlankStrategy extends AnimalPathStrategy {
             }
         };
     }
-
-    override shouldAbort(context: AnimalStrategyContext): boolean {
-        const localPos = context.targetBody.getLocalPoint(context.snoutPos);
-        return localPos.y > Boat.STERN_Y + 4.0;
-    }
 }
 
 /**
  * VULNERABLE CHARGE (Water)
- * Charges directly toward stern
+ * Charges directly toward stern. Finishes if too far behind.
  */
 export class VulnerableChargeStrategy extends AnimalPathStrategy {
     readonly name = 'Charging';
     constructor() { super(); }
-    update(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalSteering {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
         return {
             kind: 'STEERING',
@@ -119,11 +107,6 @@ export class VulnerableChargeStrategy extends AnimalPathStrategy {
             }
         };
     }
-
-    override shouldAbort(context: AnimalStrategyContext): boolean {
-        const localPos = context.targetBody.getLocalPoint(context.snoutPos);
-        return localPos.y > Boat.STERN_Y + 4.0;
-    }
 }
 
 /**
@@ -133,7 +116,7 @@ export class VulnerableChargeStrategy extends AnimalPathStrategy {
 export class ShoreHuggingStrategy extends AnimalPathStrategy {
     readonly name = 'ShoreHugging';
     constructor() { super(); }
-    update(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalSteering {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
         const boatPos = context.targetBody.getPosition();
         const riverSystem = RiverSystem.getInstance();
@@ -158,12 +141,12 @@ export class ShoreHuggingStrategy extends AnimalPathStrategy {
 
 /**
  * LURKING (Water)
- * Turns to face boat
+ * Turns to face boat. Never finishes.
  */
 export class LurkingStrategy extends AnimalPathStrategy {
     readonly name = 'Lurking';
     constructor() { super(); }
-    update(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalSteering {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
         return {
             kind: 'STEERING',

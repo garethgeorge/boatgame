@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
-import { AnimalPathStrategy, AnimalStrategyContext, AnimalPathResult } from './AnimalPathStrategy';
+import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
 
 /**
  * FLEE PATH (Water/Prey)
@@ -12,7 +12,7 @@ export class FleePathStrategy extends AnimalPathStrategy {
 
     constructor() { super(); }
 
-    update(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalSteering {
 
         // Decide whether to change angle
         this.timeSinceLastAngleChange += context.dt;

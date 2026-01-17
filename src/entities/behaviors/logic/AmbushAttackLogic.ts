@@ -32,16 +32,6 @@ export class AmbushAttackLogic implements AnimalLogic {
         return planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < params.startAttackDistance;
     }
 
-    shouldDeactivate(context: AnimalLogicContext): boolean {
-        if (context.bottles <= 0) return true;
-        if (this.state === 'STRIKING') {
-            const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
-            if (planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) > params.endAttackDistance) return true;
-            return this.currentStrategy.shouldAbort(context);
-        }
-        return context.targetBody.getLocalPoint(context.snoutPos).y > Boat.STERN_Y + 15.0;
-    }
-
     activate(context: AnimalLogicContext): void {
     }
 
@@ -53,12 +43,12 @@ export class AmbushAttackLogic implements AnimalLogic {
             this.currentStrategy = new SternInterceptStrategy(0.4 + (context.aggressiveness * 0.6));
         }
 
-        const result = this.currentStrategy.update(context);
+        const steering = this.currentStrategy.update(context);
 
         // Decide if preparatory phase is done
         if (this.state === 'PREPARING') {
-            if (result.kind !== 'STEERING') return; // Ambush only uses steering strategies
-            const diff = result.data.target.clone().sub(context.originPos);
+            if (steering.kind !== 'STEERING') return; // Ambush only uses steering strategies
+            const diff = steering.data.target.clone().sub(context.originPos);
             const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
             let angleDiff = desiredAngle - context.physicsBody.getAngle();
             while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
@@ -67,6 +57,22 @@ export class AmbushAttackLogic implements AnimalLogic {
         }
 
         const anim = this.state === 'STRIKING' ? AmbushAttackLogic.ANIM_ATTACKING : (this.state === 'PREPARING' ? AmbushAttackLogic.ANIM_PREPARING : AmbushAttackLogic.ANIM_IDLE);
-        return { path: result, locomotionType: 'WATER', animationState: anim };
+        return {
+            path: steering,
+            locomotionType: 'WATER',
+            animationState: anim,
+            isFinished: this.shouldDisengage(context)
+        };
+    }
+
+    shouldDisengage(context: AnimalLogicContext): boolean {
+        if (context.bottles <= 0) return true;
+        const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
+
+        if (planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) > params.endAttackDistance) return true;
+
+        const boatSpeed = context.targetBody.getLinearVelocity().length();
+        const localPos = context.targetBody.getLocalPoint(context.snoutPos);
+        return localPos.y > Boat.STERN_Y && boatSpeed > 0.5 * params.attackSpeed;
     }
 }

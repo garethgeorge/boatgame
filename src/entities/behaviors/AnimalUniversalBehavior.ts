@@ -85,44 +85,38 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     }
 
     private updateActive(context: AnimalLogicContext) {
-        // 1. Broad deactivation check (distance, etc)
-        if (this.logic.shouldDeactivate(context)) {
-            this.deactivate(context);
-            return;
-        }
-
-        // 2. Calculate Path based on fresh state
+        // 1. Calculate Path based on fresh state
         let result = this.logic.update(context);
 
-        // 3. Handle Logic Chaining
-        if (result.nextLogicConfig) {
-            // Transfer to next logic
-            const nextLogic = AnimalLogicRegistry.create(result.nextLogicConfig);
-
+        // 2. Handle Logic Chaining
+        while (result.nextLogicConfig) {
             // Notify completion of previous logic
             this.entity.handleBehaviorEvent?.({
                 type: 'LOGIC_COMPLETED', logicName: this.logic.name
             });
 
-            this.logic = nextLogic;
+            // Transfer to next logic
+            this.logic = AnimalLogicRegistry.create(result.nextLogicConfig);
 
             // Update immediately with new logic to avoid stutter
             this.logic.activate(context);
             result = this.logic.update(context);
+
+            // Notify of logic start
             const duration = this.logic.getEstimatedDuration?.(context);
             this.entity.handleBehaviorEvent?.({
                 type: 'LOGIC_STARTING', logicName: this.logic.name, duration
             });
         }
 
-        // 4. Check for logic-driven completion
+        // 3. Check for logic-driven completion
         if (result.isFinished) {
             this.deactivate(context);
             return;
         }
 
         // 5. Animations
-        this.handleAnimations(context, result);
+        this.dispatchTickEvent(context, result);
 
         // 6. Locomotion
         switch (result.locomotionType) {
@@ -147,7 +141,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         this.entity.handleBehaviorEvent?.({ type: 'COMPLETED' });
     }
 
-    private handleAnimations(context: AnimalLogicContext, result: AnimalLogicPathResult) {
+    private dispatchTickEvent(context: AnimalLogicContext, result: AnimalLogicPathResult) {
         const state = result.animationState;
 
         if (this.logic.isPreparing?.()) {

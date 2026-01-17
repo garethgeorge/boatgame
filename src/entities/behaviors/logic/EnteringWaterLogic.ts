@@ -27,10 +27,6 @@ export class EnteringWaterLogic implements AnimalLogic {
         return true;
     }
 
-    shouldDeactivate(context: AnimalLogicContext): boolean {
-        return false;
-    }
-
     activate(context: AnimalLogicContext) {
         const totalDistance = this.strategy.initialize(context.originPos, context.physicsBody.getAngle());
 
@@ -43,7 +39,7 @@ export class EnteringWaterLogic implements AnimalLogic {
     }
 
     update(context: AnimalLogicContext): AnimalLogicPathResult {
-        const result = this.strategy.update(context);
+        const steering = this.strategy.update(context);
 
         // Check if fully in water
         const pos = context.originPos;
@@ -58,14 +54,14 @@ export class EnteringWaterLogic implements AnimalLogic {
         // Move to next logic once in water
         if (distIntoWater >= margin || progress >= 1.0) {
             return {
-                path: result,
+                path: steering,
                 locomotionType: 'WATER',
                 nextLogicConfig: this.nextLogicConfig,
                 isFinished: true
             };
         } else {
             return {
-                path: result,
+                path: steering,
                 locomotionType: 'LAND'
             };
         }

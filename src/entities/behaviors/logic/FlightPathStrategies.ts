@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import { RiverSystem } from '../../../world/RiverSystem';
-import { AnimalPathStrategy, AnimalStrategyContext, AnimalPathResult } from './AnimalPathStrategy';
+import { AnimalPathStrategy, AnimalSteering, AnimalStrategyContext } from './AnimalPathStrategy';
 
 /**
  * BUZZ TARGET (Flight)
@@ -20,7 +20,7 @@ export class BuzzTargetStrategy extends AnimalPathStrategy {
         super();
     }
 
-    update(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalSteering {
         this.flightTime += context.dt;
 
         const boatPos = context.targetBody.getPosition();
@@ -56,7 +56,7 @@ export class FleeRiverStrategy extends AnimalPathStrategy {
 
     constructor(private maxHeight: number, private horizSpeed: number) { super(); }
 
-    update(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalSteering {
         this.flightTime += context.dt;
 
         if (this.flightTime - this.lastDirectionUpdateTime > 1.0) {
@@ -88,7 +88,7 @@ export class LandingStrategy extends AnimalPathStrategy {
 
     constructor(private horizSpeed: number) { super(); }
 
-    update(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalSteering {
         const groundHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(context.originPos.x, context.originPos.y);
         const currentAltitude = Math.max(0, context.currentHeight - groundHeight);
 

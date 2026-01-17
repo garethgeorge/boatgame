@@ -36,16 +36,6 @@ export class WolfAttackLogic implements AnimalLogic {
         return planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < params.startAttackDistance;
     }
 
-    /**
-     * Deactivate when boat is out of range
-     */
-    shouldDeactivate(context: AnimalLogicContext): boolean {
-        if (context.bottles <= 0) return true;
-        const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
-        if (planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) > params.endAttackDistance) return true;
-        return this.currentStrategy.shouldAbort(context);
-    }
-
     activate(context: AnimalLogicContext): void {
     }
 
@@ -69,13 +59,13 @@ export class WolfAttackLogic implements AnimalLogic {
         }
 
         // Get the current steering
-        const result = this.currentStrategy.update(context);
+        const steering = this.currentStrategy.update(context);
 
         // See if the angle to the desired angle is such that the attack is
         // no longer preparing
         if (this.state === 'PREPARING') {
-            if (result.kind !== 'STEERING') return; // Wolf only uses steering strategies
-            const diff = result.data.target.clone().sub(context.originPos);
+            if (steering.kind !== 'STEERING') return; // Wolf only uses steering strategies
+            const diff = steering.data.target.clone().sub(context.originPos);
             const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
             let angleDiff = desiredAngle - context.physicsBody.getAngle();
             while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
@@ -84,9 +74,21 @@ export class WolfAttackLogic implements AnimalLogic {
         }
 
         return {
-            path: result,
+            path: steering,
             locomotionType: 'WATER',
-            animationState: this.isPreparing() ? WolfAttackLogic.ANIM_PREPARING : WolfAttackLogic.ANIM_ATTACKING
+            animationState: this.isPreparing() ? WolfAttackLogic.ANIM_PREPARING : WolfAttackLogic.ANIM_ATTACKING,
+            isFinished: this.shouldDisengage(context)
         };
+    }
+
+    shouldDisengage(context: AnimalLogicContext): boolean {
+        if (context.bottles <= 0) return true;
+        const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
+
+        if (planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) > params.endAttackDistance) return true;
+
+        const boatSpeed = context.targetBody.getLinearVelocity().length();
+        const localPos = context.targetBody.getLocalPoint(context.snoutPos);
+        return localPos.y > Boat.STERN_Y && boatSpeed > 0.5 * params.attackSpeed;
     }
 }
