@@ -324,21 +324,8 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
 
     elder: {
         // "Mother of the Forest" - Ancient, massive, and distinct
-        axiom: "[R]T",
+        axiom: "T",
         rules: {
-            // Roots: Spreads out radially.
-            // Using / (yaw) to rotate around the trunk axis.
-            'R': { successor: "[&r][//&r][////&r][//////&r][////////&r][//////////&r]" },
-            
-            // Root branch: Grows down/out significantly.
-            // Terminates in 'L' (Load Sink) which mimics a massive amount of downstream foliage
-            'r': { successor: "==L" },
-            
-            // Load Sink: Hidden underground.
-            // The high count of '+' symbols artificially inflates the thickness calculation (Pass 2 of Generator)
-            // for all parent branches (the roots and the base of the trunk).
-            'L': { successor: "++++++++++++++++++++++++++++++++++++++++" },
-
             // Twisted trunk
             'T': { successors: ["###[&C]/[&C]/[&C]"] },
             
@@ -357,11 +344,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             '#': {},
             '=': {},
             
-            // Root attributes:
-            // spread: High angle to angle them out from the trunk
-            // gravity: Positive gravity pulls them down into the earth
-            'r': { spread: 80, gravity: 1.5, scale: 0.8 }, 
-
             // Pseudo branch for attaching leaves
             '.': { scale: 0, jitter: 5 },
         },

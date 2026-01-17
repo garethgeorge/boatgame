@@ -21,7 +21,8 @@ export class BiomeDecorationHelper {
     public isValidDecorationPosition(
         context: DecorationContext,
         position: { worldX: number; worldZ: number; height: number },
-        minHeight: number = 2.0
+        minHeight: number = 2.0,
+        objectHeight: number = 10.0 // Default to a reasonable tree height
     ): boolean {
         const riverWidth = context.riverSystem.getRiverWidth(position.worldZ);
         const riverCenter = context.riverSystem.getRiverCenter(position.worldZ);
@@ -40,7 +41,9 @@ export class BiomeDecorationHelper {
         if (position.height < minHeight) return false;
 
         // Check visibility
-        if (!context.riverSystem.terrainGeometry.checkVisibility(position.worldX, position.height, position.worldZ)) {
+        // Query at 1.5x the object height to be permissive for large objects behind hills
+        const queryHeight = position.height + (objectHeight * 1.5);
+        if (!context.riverSystem.terrainGeometry.checkVisibility(position.worldX, queryHeight, position.worldZ)) {
             return false;
         }
 
