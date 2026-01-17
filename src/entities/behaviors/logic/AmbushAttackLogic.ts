@@ -47,8 +47,7 @@ export class AmbushAttackLogic implements AnimalLogic {
 
         // Decide if preparatory phase is done
         if (this.state === 'PREPARING') {
-            if (steering.kind !== 'STEERING') return; // Ambush only uses steering strategies
-            const diff = steering.data.target.clone().sub(context.originPos);
+            const diff = steering.target.clone().sub(context.originPos);
             const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
             let angleDiff = desiredAngle - context.physicsBody.getAngle();
             while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;

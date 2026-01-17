@@ -173,8 +173,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     private executeWaterLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
         this.setPhysicsMode(context.physicsBody, false);
 
-        if (result.path.kind !== 'STEERING') return; // Only support steering for water physics
-        const steering = result.path.data;
+        const steering = result.path;
 
         const { physicsBody, originPos, dt } = context;
         const targetWorldPos = steering.target;
@@ -221,17 +220,8 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         this.setPhysicsMode(context.physicsBody, true);
         const { dt, physicsBody, originPos } = context;
 
-        // Handle Explicit Path (Teleportation)
-        if (result.path.kind === 'EXPLICIT') {
-            const explicit = result.path.data;
-            if (explicit.position) {
-                // TODO: Map THREE vector to planck if needed, derived from usage
-            }
-            return;
-        }
-
         // Handle Steering Path (Kinematic Movement)
-        const steering = result.path.data;
+        const steering = result.path;
         const targetWorldPos = steering.target;
         const desiredSpeed = steering.speed;
 
@@ -273,8 +263,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     private executeFlightLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
         this.setPhysicsMode(context.physicsBody, true);
 
-        if (result.path.kind !== 'STEERING') return; // Flight assumes steering
-        const steering = result.path.data;
+        const steering = result.path;
 
         const { dt, physicsBody, originPos } = context;
         const targetWorldPos = steering.target;

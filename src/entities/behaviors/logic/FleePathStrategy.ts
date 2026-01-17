@@ -27,13 +27,10 @@ export class FleePathStrategy extends AnimalPathStrategy {
         const params = AnimalBehaviorUtils.evaluateSwimAwayParams(context.aggressiveness, context.bottles);
         const targetWorldPos = context.originPos.clone().add(planck.Vec2(Math.sin(this.fleeAngle), -Math.cos(this.fleeAngle)).mul(10));
         return {
-            kind: 'STEERING',
-            data: {
-                target: targetWorldPos,
-                speed: params.fleeSpeed,
-                turningSpeed: params.turningSpeed,
-                turningSmoothing: params.turningSmoothing
-            }
+            target: targetWorldPos,
+            speed: params.fleeSpeed,
+            turningSpeed: params.turningSpeed,
+            turningSmoothing: params.turningSmoothing
         };
     }
 

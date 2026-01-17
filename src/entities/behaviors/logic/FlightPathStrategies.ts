@@ -35,12 +35,9 @@ export class BuzzTargetStrategy extends AnimalPathStrategy {
 
         const flightDir = planck.Vec2(Math.sin(this.targetAngle), -Math.cos(this.targetAngle));
         return {
-            kind: 'STEERING',
-            data: {
-                target: context.originPos.clone().add(flightDir.mul(10)),
-                speed: this.horizSpeed,
-                height: distToBoat > 50.0 ? this.maxHeight : this.buzzHeight
-            }
+            target: context.originPos.clone().add(flightDir.mul(10)),
+            speed: this.horizSpeed,
+            height: distToBoat > 50.0 ? this.maxHeight : this.buzzHeight
         };
     }
 }
@@ -68,12 +65,9 @@ export class FleeRiverStrategy extends AnimalPathStrategy {
 
         const flightDir = planck.Vec2(Math.sin(this.targetAngle), -Math.cos(this.targetAngle));
         return {
-            kind: 'STEERING',
-            data: {
-                target: context.originPos.clone().add(flightDir.mul(10)),
-                speed: this.horizSpeed,
-                height: this.maxHeight
-            }
+            target: context.originPos.clone().add(flightDir.mul(10)),
+            speed: this.horizSpeed,
+            height: this.maxHeight
         };
     }
 }
@@ -101,12 +95,9 @@ export class LandingStrategy extends AnimalPathStrategy {
         const speedFactor = Math.max(0, Math.min(1, currentAltitude / Math.max(0.1, this.landingStartAltitude)));
         const flightDir = planck.Vec2(Math.sin(this.landingAngle), -Math.cos(this.landingAngle));
         return {
-            kind: 'STEERING',
-            data: {
-                target: context.originPos.clone().add(flightDir.mul(10)),
-                speed: this.horizSpeed * speedFactor,
-                height: 0
-            }
+            target: context.originPos.clone().add(flightDir.mul(10)),
+            speed: this.horizSpeed * speedFactor,
+            height: 0
         };
     }
 }

@@ -1,7 +1,7 @@
 import * as planck from 'planck';
+import * as THREE from 'three';
 import { RiverSystem } from '../../../world/RiverSystem';
 import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
-import { dir, log } from 'node:console';
 
 /**
  * 0: Face Toward river
@@ -67,15 +67,12 @@ export class ShoreTurnStrategy extends AnimalPathStrategy {
         }
 
         return {
-            kind: 'STEERING',
-            data: {
-                target: context.originPos, // Stay in place
-                speed: 0,
-                turningSpeed: this.rotationSpeed,
-                facing: {
-                    angle: this.targetAngle, // Let physics/sync handle the rotation
-                    normal: new planck.Vec2(0, 1) // Default up normal
-                }
+            target: context.originPos, // Stay in place
+            speed: 0,
+            turningSpeed: this.rotationSpeed,
+            facing: {
+                angle: this.targetAngle, // Let physics/sync handle the rotation
+                normal: new THREE.Vector3(0, 1, 0) // Default up normal
             }
         };
     }
@@ -147,14 +144,11 @@ export class ShoreWalkStrategy extends AnimalPathStrategy {
         const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(currentPos.x, currentPos.y);
 
         return {
-            kind: 'STEERING',
-            data: {
-                target: targetWorldPos,
-                speed: this.speed,
-                height: terrainHeight,
-                facing: {
-                    angle: desiredAngle
-                }
+            target: targetWorldPos,
+            speed: this.speed,
+            height: terrainHeight,
+            facing: {
+                angle: desiredAngle
             }
         };
     }

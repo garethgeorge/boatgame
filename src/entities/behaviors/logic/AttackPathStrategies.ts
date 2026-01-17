@@ -43,13 +43,10 @@ export class SternInterceptStrategy extends AnimalPathStrategy {
         );
 
         return {
-            kind: 'STEERING',
-            data: {
-                target: targetWorldPos,
-                speed: params.attackSpeed,
-                turningSpeed: params.turningSpeed,
-                turningSmoothing: params.turningSmoothing
-            }
+            target: targetWorldPos,
+            speed: params.attackSpeed,
+            turningSpeed: params.turningSpeed,
+            turningSmoothing: params.turningSmoothing
         };
     }
 }
@@ -77,13 +74,10 @@ export class CircleFlankStrategy extends AnimalPathStrategy {
         const flankLocal = planck.Vec2(this.side * Boat.WIDTH * this.flankOffsetMultiplier, Boat.STERN_Y * 0.2);
 
         return {
-            kind: 'STEERING',
-            data: {
-                target: context.targetBody.getWorldPoint(flankLocal),
-                speed: params.attackSpeed,
-                turningSpeed: params.turningSpeed,
-                turningSmoothing: params.turningSmoothing
-            }
+            target: context.targetBody.getWorldPoint(flankLocal),
+            speed: params.attackSpeed,
+            turningSpeed: params.turningSpeed,
+            turningSmoothing: params.turningSmoothing
         };
     }
 }
@@ -98,13 +92,10 @@ export class VulnerableChargeStrategy extends AnimalPathStrategy {
     update(context: AnimalStrategyContext): AnimalSteering {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
         return {
-            kind: 'STEERING',
-            data: {
-                target: context.targetBody.getWorldPoint(planck.Vec2(0, Boat.STERN_Y)),
-                speed: params.attackSpeed,
-                turningSpeed: params.turningSpeed,
-                turningSmoothing: params.turningSmoothing
-            }
+            target: context.targetBody.getWorldPoint(planck.Vec2(0, Boat.STERN_Y)),
+            speed: params.attackSpeed,
+            turningSpeed: params.turningSpeed,
+            turningSmoothing: params.turningSmoothing
         };
     }
 }
@@ -128,13 +119,10 @@ export class ShoreHuggingStrategy extends AnimalPathStrategy {
         const targetX = distToLeft < distToRight ? banks.left + distToLeft : banks.right - distToRight;
 
         return {
-            kind: 'STEERING',
-            data: {
-                target: planck.Vec2(targetX, targetY),
-                speed: params.attackSpeed * 0.5,
-                turningSpeed: params.turningSpeed,
-                turningSmoothing: params.turningSmoothing
-            }
+            target: planck.Vec2(targetX, targetY),
+            speed: params.attackSpeed * 0.5,
+            turningSpeed: params.turningSpeed,
+            turningSmoothing: params.turningSmoothing
         };
     }
 }
@@ -149,13 +137,10 @@ export class LurkingStrategy extends AnimalPathStrategy {
     update(context: AnimalStrategyContext): AnimalSteering {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
         return {
-            kind: 'STEERING',
-            data: {
-                target: context.targetBody.getPosition(),
-                speed: 0,
-                turningSpeed: params.turningSpeed,
-                turningSmoothing: params.turningSmoothing
-            }
+            target: context.targetBody.getPosition(),
+            speed: 0,
+            turningSpeed: params.turningSpeed,
+            turningSmoothing: params.turningSmoothing
         };
     }
 }

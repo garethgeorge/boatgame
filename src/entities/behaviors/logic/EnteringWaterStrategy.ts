@@ -81,14 +81,11 @@ export class EnteringWaterStrategy extends AnimalPathStrategy {
         explicitHeight += jumpHeight;
 
         return {
-            kind: 'STEERING',
-            data: {
-                target: targetWorldPos,
-                speed: moveSpeed,
-                height: explicitHeight,
-                facing: {
-                    normal: explicitNormal
-                }
+            target: targetWorldPos,
+            speed: moveSpeed,
+            height: explicitHeight,
+            facing: {
+                normal: explicitNormal
             }
         };
     }

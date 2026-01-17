@@ -71,11 +71,8 @@ export class ShoreIdleLogic implements AnimalLogic {
 
         return {
             path: {
-                kind: 'STEERING',
-                data: {
-                    target: context.originPos,
-                    speed: 0
-                }
+                target: context.originPos,
+                speed: 0
             },
             locomotionType: 'LAND',
             nextLogicConfig: nextLogicConfig,

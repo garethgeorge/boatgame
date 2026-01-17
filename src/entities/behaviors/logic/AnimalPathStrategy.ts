@@ -1,13 +1,10 @@
 import * as planck from 'planck';
+import * as THREE from 'three';
 
 /**
  * Result of any path strategy calculation.
  */
-export type AnimalSteering =
-    | { kind: 'STEERING'; data: SteeringParams }
-    | { kind: 'EXPLICIT'; data: ExplicitParams };
-
-export interface SteeringParams {
+export interface AnimalSteering {
     // 2D Target (XZ plane)
     target: planck.Vec2;
     speed: number;
@@ -20,17 +17,12 @@ export interface SteeringParams {
     // If undefined -> faces movement direction
     facing?: {
         angle?: number;      // Absolute Y-axis rotation
-        normal?: any;        // Surface normal alignment (THREE.Vector3)
+        normal?: THREE.Vector3;        // Surface normal alignment (THREE.Vector3)
     };
 
     // Dynamics (Water mainly)
     turningSpeed?: number;
     turningSmoothing?: number;
-}
-
-export interface ExplicitParams {
-    position: any; // THREE.Vector3 - Absolute position
-    rotation: any; // THREE.Euler/Quat - Absolute rotation
 }
 
 /**
