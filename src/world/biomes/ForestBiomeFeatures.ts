@@ -113,7 +113,6 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
 
         for (let i = 0; i < count; i++) {
             const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-            if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
 
             if (Math.random() > 0.2) { // 80% trees
                 // Consistent local type logic:
@@ -143,14 +142,25 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                 // Variation is just random for now
                 const variation = Math.random();
                 const treeInstances = Decorations.getLSystemTreeInstance({ kind, variation });
-                context.decoHelper.addInstancedDecoration(context, treeInstances, position);
+                
+                // Calculate height of the generated tree
+                const objectHeight = context.decoHelper.calculateHeight(treeInstances);
+
+                // Now validate position with the specific object height
+                if (context.decoHelper.isValidDecorationPosition(context, position, 2.0, objectHeight)) {
+                    context.decoHelper.addInstancedDecoration(context, treeInstances, position);
+                }
+
             } else if (Math.random() > 0.5) { // Remaining 20% split between rocks and empty
                 const rockInstances = Decorations.getRockInstance(this.id, Math.random());
-                context.decoHelper.addInstancedDecoration(context, rockInstances, position);
+                const objectHeight = context.decoHelper.calculateHeight(rockInstances);
+
+                if (context.decoHelper.isValidDecorationPosition(context, position, 2.0, objectHeight)) {
+                    context.decoHelper.addInstancedDecoration(context, rockInstances, position);
+                }
             }
         }
     }
-
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
         await BoatPathLayoutSpawner.getInstance().spawn(context, context.biomeLayout, this.id, zStart, zEnd);
     }

@@ -31,7 +31,7 @@ export class BiomeDecorationHelper {
 
         // Apply distance-based probability bias
         if (distFromBank > 0) {
-            const biasDistance = 80;
+            const biasDistance = 240; // Tripled from 80 per user request
             const normalizedDist = Math.min(1.0, distFromBank / biasDistance);
             const probability = Math.pow(1.0 - normalizedDist, 2);
             if (Math.random() > probability) return false;
@@ -42,7 +42,7 @@ export class BiomeDecorationHelper {
 
         // Check visibility
         // Query at 1.5x the object height to be permissive for large objects behind hills
-        const queryHeight = position.height + (objectHeight * 1.5);
+        const queryHeight = position.height + (objectHeight * 1.2);
         if (!context.riverSystem.terrainGeometry.checkVisibility(position.worldX, queryHeight, position.worldZ)) {
             return false;
         }
@@ -175,5 +175,25 @@ export class BiomeDecorationHelper {
             const finalMatrix = instance.matrix.clone().premultiply(worldMatrix);
             this.addInstance(context, instance.geometry, instance.material, finalMatrix, instance.color);
         }
+    }
+    
+    public calculateHeight(instances: DecorationInstance[]): number {
+        let maxHeight = 0;
+        for (const instance of instances) {
+            if (!instance.geometry.boundingBox) {
+                instance.geometry.computeBoundingBox();
+            }
+            if (instance.geometry.boundingBox) {
+                // Apply the matrix scale/rotation to the bounding box Y if needed, 
+                // but usually trees are upright. The matrix has the local transform.
+                // Simplified: use the generic bounding box max Y * scale from matrix.
+                // Extract scale from matrix column 1 (y-axis) length.
+                const elements = instance.matrix.elements;
+                const sy = Math.sqrt(elements[4] * elements[4] + elements[5] * elements[5] + elements[6] * elements[6]);
+                
+                maxHeight = Math.max(maxHeight, instance.geometry.boundingBox.max.y * sy);
+            }
+        }
+        return maxHeight;
     }
 }
