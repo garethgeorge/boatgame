@@ -141,7 +141,14 @@ export abstract class SwimAwayAnimal extends Entity implements AnyAnimal {
 
     handleBehaviorEvent(event: AnimalBehaviorEvent): void {
         if (event.type === 'COMPLETED') {
-            this.behavior = null;
+            const anim = this.getAnimationConfig('IDLE');
+            this.player?.play({
+                name: anim.name,
+                state: 'IDLE',
+                timeScale: anim.timeScale ?? 1.0,
+                randomizeLength: anim.randomizeLength ?? 0.2,
+                startTime: anim.startTime ?? -1.0
+            });
         } else if (event.type === 'ACTIVE_TICK') {
             const state = event.animationState || 'ACTIVE';
             const anim = this.getAnimationConfig(state);

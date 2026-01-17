@@ -6,7 +6,7 @@ import * as THREE from 'three';
  * PREPARING_TICK - logic active and in a preparing state
  * ACTIVE_TICK - logic active
  * LOGIC_STARTING - about to start a logic stage
- * LOGIC_COMPLETED - finished a logic stage
+ * LOGIC_COMPLETED - finished a logic stage, moving onto another
  * COMPLETED - returned to idle because logic deactivated or finished
  */
 export type AnimalBehaviorEvent =

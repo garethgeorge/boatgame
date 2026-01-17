@@ -193,7 +193,6 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
 
     handleBehaviorEvent(event: AnimalBehaviorEvent): void {
         if (event.type === 'COMPLETED') {
-            this.behavior = null;
             this.playIdleAnimation();
         } else if (event.type === 'ACTIVE_TICK') {
             const state = event.animationState || DefaultFlightLogic.ANIM_FLYING;

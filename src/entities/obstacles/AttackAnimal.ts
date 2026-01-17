@@ -239,7 +239,6 @@ export abstract class AttackAnimal extends Entity implements AnyAnimal {
 
     handleBehaviorEvent(event: AnimalBehaviorEvent): void {
         if (event.type === 'COMPLETED') {
-            this.behavior = null;
             this.playIdleAnimation();
         } else if (event.type === 'LOGIC_STARTING') {
             if (event.logicName === EnteringWaterLogic.NAME) {

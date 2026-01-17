@@ -144,13 +144,10 @@ export class AnimalUniversalBehavior implements EntityBehavior {
 
     private deactivate(context: AnimalLogicContext) {
         this.state = 'IDLE';
-        const wasKinematic = this.isKinematic;
         this.setPhysicsMode(context.physicsBody, false);
         context.physicsBody.setLinearVelocity(context.physicsBody.getLinearVelocity().mul(0.95));
 
-        if (wasKinematic) {
-            this.entity.handleBehaviorEvent?.({ type: 'COMPLETED' });
-        }
+        this.entity.handleBehaviorEvent?.({ type: 'COMPLETED' });
     }
 
     private handleAnimations(context: AnimalLogicContext, result: AnimalLogicPathResult) {

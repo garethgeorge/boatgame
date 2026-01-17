@@ -136,25 +136,25 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             'dolphin_pods': {
                 logic: 'scatter',
                 place: 'slalom',
-                density: [1.0, 2.0],
+                density: [0.5, 1.0],
                 types: [EntityIds.DOLPHIN]
             },
             'swan_bevies': {
                 logic: 'scatter',
                 place: 'slalom',
-                density: [1.0, 2.0],
+                density: [0.5, 1.0],
                 types: [EntityIds.SWAN]
             },
             'butterfly_swarms': {
                 logic: 'scatter',
                 place: 'shore',
-                density: [3.0, 5.0],
+                density: [1.5, 3.0],
                 types: [EntityIds.BUTTERFLY]
             },
             'bluebird_flocks': {
                 logic: 'scatter',
                 place: 'shore',
-                density: [2.0, 4.0],
+                density: [1.5, 3.0],
                 types: [EntityIds.BLUEBIRD]
             }
         };
