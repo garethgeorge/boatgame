@@ -397,7 +397,7 @@ export class Game {
             // Offset: Behind (positive Z relative to boat facing -Z) and Up (positive Y)
             // If boat faces -Z, "behind" is +Z.
 
-            let offsetDistance = 7;
+            let offsetDistance = 14;
             let offsetHeight = 3;
 
             if (this.viewMode === 'far') {
