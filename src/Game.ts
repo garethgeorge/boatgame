@@ -17,6 +17,7 @@ import { Profiler } from './core/Profiler';
 import { Entity } from './core/Entity';
 import { MessageInABottle } from './entities/obstacles/MessageInABottle';
 import { Fixture } from 'planck';
+import * as planck from 'planck';
 import { GraphicsUtils } from './core/GraphicsUtils';
 import { BaseMangrove } from './entities/obstacles/Mangrove';
 import { DebugConsole } from './core/DebugConsole';
@@ -425,6 +426,47 @@ export class Game {
                 boatPos.y + offsetHeight,
                 boatPos.z + offsetZ
             );
+
+            // Camera Collision Detection (Physics Raycast)
+            const p1 = planck.Vec2(boatPos.x, boatPos.z);
+            const p2 = planck.Vec2(idealPosition.x, idealPosition.z);
+
+            let fraction = 1.0;
+
+            this.physicsEngine.world.rayCast(p1, p2, (fixture, point, normal, fraction) => {
+                const body = fixture.getBody();
+                // Check if it's a static body (terrain) and not a sensor
+                if (body.isStatic() && !fixture.isSensor()) {
+                    // Update fraction to the closest hit
+                    return fraction;
+                }
+                return -1.0; // Ignore this fixture and continue
+            });
+
+            let minFraction = 1.0;
+            this.physicsEngine.world.rayCast(p1, p2, (fixture, point, normal, f) => {
+                const body = fixture.getBody();
+                const userData = fixture.getUserData() as any;
+                if (body.isStatic() && !fixture.isSensor()) {
+                    minFraction = f;
+                    return f; 
+                }
+                return -1.0;
+            });
+
+            if (minFraction < 1.0) {
+                const buffer = 0.9; // Keep 90% of the distance to the wall (or fixed unit buffer?)
+                const fullDist = planck.Vec2.distance(p1, p2); // Planck distance
+                if (fullDist > 0) {
+                     const hitDist = fullDist * minFraction;
+                     const targetDist = Math.max(0, hitDist - 2.0); // 2.0 unit buffer from wall
+                     const adjustedFraction = targetDist / fullDist;
+                     minFraction = adjustedFraction;
+                }
+
+                idealPosition.lerp(new THREE.Vector3(boatPos.x, idealPosition.y, boatPos.z), 1.0 - minFraction);
+            }
+
 
             // Smoothly interpolate current camera position to ideal position (Spring effect)
             // Lower factor = looser spring, Higher factor = tighter spring
