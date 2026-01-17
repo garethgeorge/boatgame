@@ -324,38 +324,61 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
 
     elder: {
         // "Mother of the Forest" - Ancient, massive, and distinct
-        axiom: "T",
+        axiom: "[R]T",
         rules: {
-            // twisted trunk
+            // Roots: Spreads out radially.
+            // Using / (yaw) to rotate around the trunk axis.
+            'R': { successor: "[&r][//&r][////&r][//////&r][////////&r][//////////&r]" },
+            
+            // Root branch: Grows down/out significantly.
+            // Terminates in 'L' (Load Sink) which mimics a massive amount of downstream foliage
+            'r': { successor: "==L" },
+            
+            // Load Sink: Hidden underground.
+            // The high count of '+' symbols artificially inflates the thickness calculation (Pass 2 of Generator)
+            // for all parent branches (the roots and the base of the trunk).
+            'L': { successor: "++++++++++++++++++++++++++++++++++++++++" },
+
+            // Twisted trunk
             'T': { successors: ["###[&C]/[&C]/[&C]"] },
-            // massive crown
+            
+            // Massive crown
             'C': (i: number) => {
                 if (i < 3) return { successors: ["=[&C]/[&C]", "=[&C]/[&C]"], weights: [0.6, 0.4] };
                 return { successor: "B" };
             },
-            // gnarly branches
+            
+            // Gnarly branches
             'B': { successors: ["==[&B]/[&B]", "+[&B]"], weights: [0.7, 0.3] }
         },
         finalRule: "[.^+]", // Use ^+ for upright leaves
 
         branches: {
-            '#': { gravity: 0.02 },
+            '#': {},
             '=': {},
-            // this is a pseudo branch for attaching leaves
+            
+            // Root attributes:
+            // spread: High angle to angle them out from the trunk
+            // gravity: Positive gravity pulls them down into the earth
+            'r': { spread: 80, gravity: 1.5, scale: 0.8 }, 
+
+            // Pseudo branch for attaching leaves
             '.': { scale: 0, jitter: 5 },
         },
         params: {
-            iterations: 8, // More iterations for detail
-            length: 8.0, lengthDecay: 0.85, // Huge starting length
-            thickness: 3.0, thicknessDecay: 0.6, // Massive trunk
-            leafKind: { kind: 'blob', size: 3.5, thickness: 0.4 }, // Flattened horizontal pads
-            leafColor: 0x1d3618,
-            leafVariation: { h: 0.02, s: 0.05, l: 0.05 },
-            woodColor: 0x3d3226 // Ancient dark wood
+            iterations: 9, // One more iteration for the extra size
+            length: 10.0, lengthDecay: 0.82, // Significantly longer base
+            thickness: 6.0, thicknessDecay: 0.6, // Massive trunk
+            leafKind: { kind: 'blob', size: 4.5, thickness: 0.4 }, 
+            
+            // Updated colors per user request
+            leafColor: 0x2d5a27, // Lush forest green
+            leafVariation: { h: 0.04, s: 0.1, l: 0.1 },
+            woodColor: 0x4a2511 // Rich Mahogany
         },
         defaults: {
             branch: {
-                spread: 60.0, jitter: 25.0, gravity: 0.15
+                spread: 75.0, jitter: 25.0, gravity: -0.05, heliotropism: 0.15
             },
         }
     },

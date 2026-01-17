@@ -130,7 +130,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                 const distFromCenter = Math.abs(position.worldX - riverCenter);
                 const distFromBank = distFromCenter - riverWidth / 2;
 
-                if (distFromBank > 30 && Math.random() < 0.02) {
+                if (distFromBank > 60 && Math.random() < 0.20) {
                     kind = 'elder';
                 } else {
                     if (zone > 0) {
