@@ -68,6 +68,8 @@ export interface TreeConfig {
     // maps branch terminal symbols to parameters
     branches: Record<string, BranchRuleDefinition>;
 
+    scaleVariation?: (i: number) => number; // Function to return scale factor for variation i
+    
     // parameters for the tree
     params: TreeParams;
     defaults: {
@@ -75,6 +77,28 @@ export interface TreeConfig {
         branch: BranchParams;
     }
 }
+
+export const createNormalDistributionScaler = (
+    mean: number,
+    stdDev: number,
+    min: number,
+    max: number,
+    seedOffset: number = 0
+) => {
+    return (i: number) => {
+        // Box-Muller transform for normal distribution
+        // Use pseudo-random seeded by i
+        const seed = (i * 123.45) + seedOffset;
+        const u1 = Math.abs(Math.sin(seed));
+        const u2 = Math.abs(Math.cos(seed * 2.1));
+        
+        const z0 = Math.sqrt(-2.0 * Math.log(u1 + 0.0001)) * Math.cos(2.0 * Math.PI * u2);
+        
+        // Apply distribution parameters
+        const val = mean + (z0 * stdDev); 
+        return Math.max(min, Math.min(max, val));
+    };
+};
 
 export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     willow: {
@@ -86,7 +110,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             // weeping
             'W': { successors: ["--W", "E"], weights: [0.7, 0.3] },
             // final branches
-            'E': { successors: ["[&--+]/[&--+]/[&--+]", "[&--+]/[&--+]/[&--+]/[&--+]"] },
+            'E': { successors: ["[&--+]/[&--+]/[&--+]", "[&--+]/[&--+]/[&--+]"] },
         },
         branches: {
             '#': { scale: 1.5 },
@@ -163,7 +187,8 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             branch: {
                 spread: 63.0, jitter: 17.2,
             },
-        }
+        },
+        scaleVariation: createNormalDistributionScaler(1.0, 0.5, 0.8, 3.0)
     },
 
     elm: {
