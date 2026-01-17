@@ -4,6 +4,7 @@ import { TerrainGeometry } from './TerrainGeometry';
 import { RiverGeometrySample } from './RiverGeometry';
 
 export class RiverSystem {
+  private static readonly MAKE_STRAIGHT_RIVER = false;
   private static instance: RiverSystem;
 
   private noise: SimplexNoise;
@@ -37,6 +38,7 @@ export class RiverSystem {
    * Returns the X coordinate of the river center at a given Z position.
    */
   public getRiverCenter(worldZ: number): number {
+    if (RiverSystem.MAKE_STRAIGHT_RIVER) return 0;
     return this.noise.noise2D(0, worldZ * this.PATH_SCALE) * this.PATH_AMPLITUDE;
   }
 
@@ -55,6 +57,8 @@ export class RiverSystem {
    * Returns the width of the river at a given Z position.
    */
   public getRiverWidth(worldZ: number): number {
+    if (RiverSystem.MAKE_STRAIGHT_RIVER) return 15;
+
     // 1. Biome Noise: Determines if we are in a wide or narrow section
     // Normalized to 0..1
     const biomeNoise = (this.noise.noise2D(100, worldZ * this.WIDTH_SCALE) + 1) / 2;

@@ -82,18 +82,19 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
-        TerrainDecorator.decorate(
-            context,
-            this.decorationRules,
-            { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
-            20,
-            12345 // Fixed seed for now
-        );
+        // TerrainDecorator.decorate(
+        //     context,
+        //     this.decorationRules,
+        //     { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
+        //     20,
+        //     12345 // Fixed seed for now
+        // );
     }
 
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
         // await EntitySpawners.getInstance().messageInABottle().spawn(context, 4, zStart, zEnd);
         // await EntitySpawners.getInstance().attackAnimal(EntityIds.MONKEY)!.spawn(context, 2, zStart, zEnd);
+        await EntitySpawners.getInstance().animal(EntityIds.MONKEY)!.spawn(context, 1, zStart, zEnd);
     }
 }
