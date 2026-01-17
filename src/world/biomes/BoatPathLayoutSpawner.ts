@@ -108,6 +108,7 @@ export class BoatPathLayoutSpawner {
                             case EntityIds.POLAR_BEAR:
                             case EntityIds.DUCKLING:
                             case EntityIds.DOLPHIN:
+                            case EntityIds.SWAN:
                             case EntityIds.PENGUIN_KAYAK:
                             case EntityIds.BUTTERFLY:
                             case EntityIds.PTERODACTYL:

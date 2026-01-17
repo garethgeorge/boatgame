@@ -26,7 +26,8 @@ import { MessageInABottleSpawner } from './MessageInABottleSpawner';
 import { PierSpawner } from './PierSpawner';
 import { RockSpawner } from './RockSpawner';
 import { WaterGrassSpawner } from './WaterGrassSpawner';
-import { Bluebird } from '../obstacles';
+import { Bluebird } from '../obstacles/Bluebird';
+import { Swan } from '../obstacles/Swan';
 
 export class EntitySpawners {
     private static instance: EntitySpawners;
@@ -173,6 +174,13 @@ export class EntitySpawners {
             factory: (physicsEngine, options) => new PenguinKayak(options.x, options.y, physicsEngine, options.angle || 0),
             entityRadius: 1.5,
             waterPlacement: { minDistFromBank: 1.0 }
+        },
+        {
+            id: EntityIds.SWAN,
+            getDensity: () => 0.01,
+            factory: (physicsEngine, options) => new Swan(options.x, options.y, physicsEngine, options.angle || 0),
+            entityRadius: 2.0,
+            waterPlacement: { minDistFromBank: 2.0 }
         }
     ];
 

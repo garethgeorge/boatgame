@@ -131,13 +131,19 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     ];
 
     public createLayout(zMin: number, zMax: number): BoatPathLayout {
-        const waterAnimals = [EntityIds.DOLPHIN];
+        const waterAnimals = [EntityIds.DOLPHIN, EntityIds.SWAN];
         const patterns: PatternConfigs = {
             'dolphin_pods': {
                 logic: 'scatter',
                 place: 'slalom',
                 density: [1.0, 2.0],
                 types: [EntityIds.DOLPHIN]
+            },
+            'swan_bevies': {
+                logic: 'scatter',
+                place: 'slalom',
+                density: [1.0, 2.0],
+                types: [EntityIds.SWAN]
             },
             'butterfly_swarms': {
                 logic: 'scatter',
@@ -152,15 +158,19 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                 types: [EntityIds.BLUEBIRD]
             }
         };
+
         const riverTrack: TrackConfig = {
             name: 'animals',
             stages: [
                 {
-                    name: 'dolphin_waters',
+                    name: 'river_animals',
                     progress: [0, 1.0],
                     patterns: [
                         [
                             { pattern: 'dolphin_pods', weight: 1.0 }
+                        ],
+                        [
+                            { pattern: 'swan_bevies', weight: 1.0 }
                         ]
                     ]
                 }
