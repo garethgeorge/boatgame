@@ -3,10 +3,11 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { Decorations, LSystemTreeKind } from '../Decorations';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
+import { TerrainDecorator, DecorationRule } from '../decorators/TerrainDecorator';
+import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/PoissonDecorationRules';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';
@@ -21,6 +22,83 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     public getBiomeLength(): number {
         return 2000;
     }
+
+    private decorationRules: DecorationRule[] = [
+        new TierRule({
+            species: [
+                {
+                    id: 'elder_tree',
+                    preference: Combine.all(
+                        Signal.constant(1.0),
+                        // Only spawn far from river
+                        Signal.stepLinear(Signal.distanceToRiver, 60, 70), 
+                        // Rare spawn chance (4%) implemented via noise gating
+                        Signal.step(Signal.noise2D(123.4, 123.4), 0.96) 
+                    ),
+                    params: (ctx) => {
+                        const scale = 2.0 + ctx.random() * 0.5; // Large scale
+                        return {
+                            radius: 6.0, // Decreased radius to increase density (~4x)
+                            options: { kind: 'elder', rotation: ctx.random() * Math.PI * 2, scale }
+                        };
+                    }
+                },
+                {
+                    id: 'birch_tree',
+                    preference: Combine.all(
+                        Signal.constant(1.0),
+                        // Use organic perlin noise clumps instead of sine stripes
+                        Signal.step(Signal.noise2D(0.02, 0.02), 0.5),
+                        // Avoid river
+                        Signal.inRange(Signal.distanceToRiver, 5, 200)
+                    ),
+                    params: (ctx) => {
+                        const scale = 0.8 + ctx.random() * 0.4;
+                        return {
+                            radius: SpeciesHelpers.attenuate(ctx, 2.2 * scale), // Decreased radius to increase density (~4x)
+                            options: { kind: 'birch', rotation: ctx.random() * Math.PI * 2, scale }
+                        };
+                    }
+                },
+                {
+                    id: 'oak_tree',
+                    preference: Combine.all(
+                        Signal.constant(0.9), // 0.9 allows Birch (1.0) to win in its clumps, but Oak wins otherwise
+                        Signal.inRange(Signal.distanceToRiver, 5, 200)
+                    ),
+                    params: (ctx) => {
+                        const scale = 0.8 + ctx.random() * 0.4;
+                        return {
+                            radius: SpeciesHelpers.attenuate(ctx, 2.7 * scale), // Decreased radius to increase density (~4x)
+                            options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
+                        };
+                    }
+                }
+            ]
+        }),
+        new TierRule({
+            species: [
+                {
+                    id: 'rock',
+                    preference: Combine.all(
+                        Signal.constant(0.2), // Low probability everywhere
+                         // Higher prob near shore?
+                        Signal.max(
+                            Signal.constant(0.1),
+                            Signal.inRange(Signal.distanceToRiver, 2, 10) // Shore rocks
+                        )
+                    ),
+                    params: (ctx) => {
+                        const scale = 0.7 + ctx.random() * 0.8;
+                        return {
+                            radius: 5.0 * scale,
+                            options: { kind: 'rock', rotation: ctx.random() * Math.PI * 2, scale }
+                        };
+                    }
+                }
+            ]
+        })
+    ];
 
     public createLayout(zMin: number, zMax: number): BoatPathLayout {
         return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
@@ -106,61 +184,15 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
-        const length = zEnd - zStart;
-        // Forest is denser than Happy biome (1.0), but L-system trees are heavier than simple ones.
-        // We'll use a moderate density.
-        const count = Math.floor(length * 4);
-
-        for (let i = 0; i < count; i++) {
-            const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-
-            if (Math.random() > 0.2) { // 80% trees
-                // Consistent local type logic:
-                // Use a low-frequency sine wave on Z to transition between forest types.
-                // Add some noise to blend the edges.
-                const zone = Math.sin(position.worldZ * 0.005) + (Math.random() * 0.4 - 0.2);
-
-                let kind: LSystemTreeKind;
-
-                // Check for Elder Tree spawn (Mother of the Forest)
-                // Needs to be far from the bank and rare
-                const riverWidth = context.riverSystem.getRiverWidth(position.worldZ);
-                const riverCenter = context.riverSystem.getRiverCenter(position.worldZ);
-                const distFromCenter = Math.abs(position.worldX - riverCenter);
-                const distFromBank = distFromCenter - riverWidth / 2;
-
-                if (distFromBank > 60 && Math.random() < 0.04) {
-                    kind = 'elder';
-                } else {
-                    if (zone > 0) {
-                        kind = 'birch';
-                    } else {
-                        kind = 'oak';
-                    }
-                }
-
-                // Variation is just random for now
-                const variation = Math.random();
-                const treeInstances = Decorations.getLSystemTreeInstance({ kind, variation });
-                
-                // Calculate height of the generated tree
-                const objectHeight = context.decoHelper.calculateHeight(treeInstances);
-
-                // Now validate position with the specific object height
-                if (context.decoHelper.isValidDecorationPosition(context, position, 2.0, objectHeight)) {
-                    context.decoHelper.addInstancedDecoration(context, treeInstances, position);
-                }
-
-            } else if (Math.random() > 0.5) { // Remaining 20% split between rocks and empty
-                const rockInstances = Decorations.getRockInstance(this.id, Math.random());
-                const objectHeight = context.decoHelper.calculateHeight(rockInstances);
-
-                if (context.decoHelper.isValidDecorationPosition(context, position, 2.0, objectHeight)) {
-                    context.decoHelper.addInstancedDecoration(context, rockInstances, position);
-                }
-            }
-        }
+        TerrainDecorator.decorate(
+            context,
+            this.decorationRules,
+            { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
+            20,
+            12345 + zStart // Seed variation
+        );
     }
+
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
         await BoatPathLayoutSpawner.getInstance().spawn(context, context.biomeLayout, this.id, zStart, zEnd);
     }

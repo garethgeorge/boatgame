@@ -34,6 +34,22 @@ export const Signal = {
         return v < threshold ? 0.0 : 1.0;
     },
 
+    stepLinear: (
+        f: (ctx: WorldContext) => number,
+        min: number, 
+        max: number
+    ) => (ctx: WorldContext) => {
+        const v = f(ctx);
+        if (v < min || v > max) return 0.0;
+        return 1.0;
+    },
+
+    sin: (freq: number) => (ctx: WorldContext) => 
+        Math.sin(ctx.pos.y * freq),
+
+    max: (a: (ctx: WorldContext) => number, b: (ctx: WorldContext) => number) => (ctx: WorldContext) =>
+        Math.max(a(ctx), b(ctx)),
+
     linearRange: (
         f: (ctx: WorldContext) => number,
         min0: number, min1: number, max1: number = Infinity, max0: number = Infinity
