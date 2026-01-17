@@ -1,11 +1,15 @@
 import * as planck from 'planck';
 import { RiverSystem } from '../../../world/RiverSystem';
-import { AnimalStrategyContext } from './AnimalPathStrategy';
+import { AnimalPathStrategy, AnimalStrategyContext, AnimalPathResult } from './AnimalPathStrategy';
 
-export class ShoreWalkStrategy {
-    private isOnLeftBank: boolean = true;
+export class ShoreWalkStrategy extends AnimalPathStrategy {
+    readonly name = 'ShoreWalk';
+
+    public isOnLeftBank: boolean = true;
     private bankDistance: number = 0;
     private directionSign: number = 1;
+    private targetZ: number | null = null;
+    private speed: number = 0;
 
     initialize(originPos: planck.Vec2): void {
         const banks = RiverSystem.getInstance().getBankPositions(originPos.y);
@@ -24,6 +28,14 @@ export class ShoreWalkStrategy {
         this.directionSign = Math.random() < 0.5 ? 1 : -1;
     }
 
+    setTargetZ(z: number): void {
+        this.targetZ = z;
+    }
+
+    setSpeed(speed: number): void {
+        this.speed = speed;
+    }
+
     public get walkDirection(): number {
         return this.directionSign;
     }
@@ -35,14 +47,40 @@ export class ShoreWalkStrategy {
         return Math.atan2(1.0 * this.directionSign, dxdz * this.directionSign) + Math.PI / 2;
     }
 
-    calculateTargetPosition(currentZ: number, targetDistance: number): planck.Vec2 {
-        const targetZ = currentZ + this.directionSign * targetDistance;
-        const targetBanks = RiverSystem.getInstance().getBankPositions(targetZ);
-        const targetX = this.isOnLeftBank
-            ? targetBanks.left - this.bankDistance
-            : targetBanks.right + this.bankDistance;
+    update(context: AnimalStrategyContext): AnimalPathResult {
+        const currentPos = context.originPos;
 
-        return planck.Vec2(targetX, targetZ);
+        // Default to not moving if no target
+        if (this.targetZ === null) {
+            return {
+                kind: 'STEERING',
+                data: {
+                    target: currentPos,
+                    speed: 0
+                }
+            };
+        }
+
+        const targetX = this.getConstrainedX(this.targetZ);
+        const targetWorldPos = planck.Vec2(targetX, this.targetZ);
+
+        // Calculate rotation based on river flow derivative
+        const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(currentPos.x, currentPos.y);
+        const terrainNormal = RiverSystem.getInstance().terrainGeometry.calculateNormal(currentPos.x, currentPos.y);
+        const desiredAngle = this.calculateWalkAngle(currentPos.y);
+
+        return {
+            kind: 'STEERING',
+            data: {
+                target: targetWorldPos,
+                speed: this.speed,
+                height: terrainHeight,
+                facing: {
+                    angle: desiredAngle,
+                    normal: terrainNormal
+                }
+            }
+        };
     }
 
     getConstrainedX(z: number): number {

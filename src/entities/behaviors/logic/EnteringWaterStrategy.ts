@@ -1,4 +1,5 @@
 import * as planck from 'planck';
+import * as THREE from 'three';
 import { RiverSystem } from '../../../world/RiverSystem';
 import { AnimalPathStrategy, AnimalStrategyContext, AnimalPathResult } from './AnimalPathStrategy';
 
@@ -11,23 +12,14 @@ export class EnteringWaterStrategy extends AnimalPathStrategy {
     private totalEntryDistance: number = 0;
     private facingAngle: number | null = null;
 
-    calculatePath(context: AnimalStrategyContext): AnimalPathResult {
-        const riverSystem = RiverSystem.getInstance();
-        if (!riverSystem) {
-            return { targetWorldPos: context.originPos.clone(), desiredSpeed: 0 };
-        }
+    // Configuration
+    private jump: boolean = false;
+    private targetWaterHeight: number = 0;
 
-        if (this.entryStartPosition === null) {
-            this.initialize(context.originPos, context.physicsBody.getAngle());
-        }
-
-        const moveSpeed = 8.0 * (1 + 3 * context.aggressiveness);
-        const targetWorldPos = this.getTargetPos();
-
-        return {
-            targetWorldPos,
-            desiredSpeed: moveSpeed
-        };
+    constructor(jump: boolean, targetWaterHeight: number) {
+        super();
+        this.jump = jump;
+        this.targetWaterHeight = targetWaterHeight;
     }
 
     /**
@@ -44,6 +36,65 @@ export class EnteringWaterStrategy extends AnimalPathStrategy {
         const margin = 2.0;
         this.totalEntryDistance = distanceToWater + margin;
         return this.totalEntryDistance;
+    }
+
+    update(context: AnimalStrategyContext): AnimalPathResult {
+        const riverSystem = RiverSystem.getInstance();
+
+        if (this.entryStartPosition === null) {
+            this.initialize(context.originPos, context.physicsBody.getAngle());
+        }
+
+        const moveSpeed = 8.0 * (1 + 3 * context.aggressiveness);
+        const targetWorldPos = this.getTargetPos();
+
+        // Calculate height and normal
+        const pos = context.originPos;
+        const progress = this.getEntryProgress(pos);
+
+        const banks = riverSystem.getBankPositions(pos.y);
+        const margin = 2.0;
+        const distFromLeft = pos.x - banks.left;
+        const distFromRight = banks.right - pos.x;
+        const distIntoWater = Math.min(distFromLeft, distFromRight);
+
+        // Determine locomotion type and positioning (Land/Transition)
+        const terrainHeight = riverSystem.terrainGeometry.calculateHeight(pos.x, pos.y);
+        const terrainNormal = riverSystem.terrainGeometry.calculateNormal(pos.x, pos.y);
+
+        let jumpHeight = 0.0;
+        if (this.jump) {
+            // Apply jump curve
+            const t = Math.max(0, Math.min(progress, 1));
+            const curve = 4 * t * (1.0 - t);
+            jumpHeight = 2.0 * curve;
+        }
+
+        let explicitHeight = terrainHeight;
+        let explicitNormal = terrainNormal; // Default to terrain normal
+
+        if (distIntoWater > 0) {
+            // Transition zone - interpolate height and normal
+            const lerpT = Math.min(1.0, distIntoWater / margin);
+            const targetNormal = new THREE.Vector3(0, 1, 0);
+
+            explicitHeight = THREE.MathUtils.lerp(terrainHeight, this.targetWaterHeight, lerpT);
+            explicitNormal = terrainNormal.clone().lerp(targetNormal, lerpT).normalize();
+        }
+
+        explicitHeight += jumpHeight;
+
+        return {
+            kind: 'STEERING',
+            data: {
+                target: targetWorldPos,
+                speed: moveSpeed,
+                height: explicitHeight,
+                facing: {
+                    normal: explicitNormal
+                }
+            }
+        };
     }
 
     getEntryProgress(currentPos: planck.Vec2): number {

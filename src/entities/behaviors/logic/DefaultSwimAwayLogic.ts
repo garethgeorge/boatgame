@@ -16,21 +16,34 @@ export class DefaultSwimAwayLogic implements AnimalLogic {
         this.strategy = new FleePathStrategy();
     }
 
+    /**
+     * Start when boat is within distance
+     */
     shouldActivate(context: AnimalLogicContext): boolean {
         const params = AnimalBehaviorUtils.evaluateSwimAwayParams(context.aggressiveness, context.bottles);
         return planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < params.startFleeDistance;
     }
 
+    /**
+     * Stop when boat too far away or not heading toward animal
+     */
     shouldDeactivate(context: AnimalLogicContext): boolean {
-        return this.strategy.shouldAbort(context);
+        const params = AnimalBehaviorUtils.evaluateSwimAwayParams(context.aggressiveness, context.bottles);
+        const boatToAnimal = context.originPos.clone().sub(context.targetBody.getPosition());
+        const isMovingTowards = planck.Vec2.dot(context.targetBody.getLinearVelocity(), boatToAnimal) > 0;
+        return boatToAnimal.length() > params.stopFleeDistance ||
+            (context.targetBody.getLinearVelocity().length() > 0.5 && !isMovingTowards);
     }
 
-    update(context: AnimalLogicContext): void {
-        this.strategy.update(context);
+    activate(context: AnimalLogicContext): void {
     }
 
-    calculatePath(context: AnimalLogicContext): AnimalLogicPathResult {
-        const result = this.strategy.calculatePath(context);
-        return { ...result, locomotionType: 'WATER', animationState: DefaultSwimAwayLogic.ANIM_FLEEING };
+    update(context: AnimalLogicContext): AnimalLogicPathResult {
+        const result = this.strategy.update(context);
+        return {
+            path: result,
+            locomotionType: 'WATER',
+            animationState: DefaultSwimAwayLogic.ANIM_FLEEING
+        };
     }
 }

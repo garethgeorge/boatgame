@@ -6,12 +6,13 @@ import { AnimalPathStrategy, AnimalStrategyContext, AnimalPathResult } from './A
 
 /**
  * STERN INTERCEPT (Water)
+ * Heads toward the stern
  */
 export class SternInterceptStrategy extends AnimalPathStrategy {
     readonly name = 'SternIntercept';
     constructor(private interceptFactor: number = 0.5) { super(); }
 
-    calculatePath(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalPathResult {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
         const localAttackPos = context.targetBody.getLocalPoint(context.snoutPos);
         const sternLocalY = (Boat.STERN_Y * 0.7 + Boat.FRONT_ZONE_END_Y * 0.3);
@@ -41,7 +42,15 @@ export class SternInterceptStrategy extends AnimalPathStrategy {
             sternWorldPos.y + (context.snoutPos.y + steeringDir.y - sternWorldPos.y) * this.interceptFactor
         );
 
-        return { targetWorldPos, desiredSpeed: params.attackSpeed, turningSpeed: params.turningSpeed, turningSmoothing: params.turningSmoothing };
+        return {
+            kind: 'STEERING',
+            data: {
+                target: targetWorldPos,
+                speed: params.attackSpeed,
+                turningSpeed: params.turningSpeed,
+                turningSmoothing: params.turningSmoothing
+            }
+        };
     }
 
     override shouldAbort(context: AnimalStrategyContext): boolean {
@@ -54,6 +63,7 @@ export class SternInterceptStrategy extends AnimalPathStrategy {
 
 /**
  * CIRCLE FLANK (Water)
+ * Heads to a point on one side of the boat
  */
 export class CircleFlankStrategy extends AnimalPathStrategy {
     readonly name = 'Flanking';
@@ -66,14 +76,22 @@ export class CircleFlankStrategy extends AnimalPathStrategy {
         this.flankOffsetMultiplier = 3.0 + Math.random() * 2.0;
     }
 
-    calculatePath(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalPathResult {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
         const localPos = context.targetBody.getLocalPoint(context.snoutPos);
         if (localPos.x > 1.0) this.side = 1;
         else if (localPos.x < -1.0) this.side = -1;
         const flankLocal = planck.Vec2(this.side * Boat.WIDTH * this.flankOffsetMultiplier, Boat.STERN_Y * 0.2);
 
-        return { targetWorldPos: context.targetBody.getWorldPoint(flankLocal), desiredSpeed: params.attackSpeed, turningSpeed: params.turningSpeed, turningSmoothing: params.turningSmoothing };
+        return {
+            kind: 'STEERING',
+            data: {
+                target: context.targetBody.getWorldPoint(flankLocal),
+                speed: params.attackSpeed,
+                turningSpeed: params.turningSpeed,
+                turningSmoothing: params.turningSmoothing
+            }
+        };
     }
 
     override shouldAbort(context: AnimalStrategyContext): boolean {
@@ -84,27 +102,41 @@ export class CircleFlankStrategy extends AnimalPathStrategy {
 
 /**
  * VULNERABLE CHARGE (Water)
+ * Charges directly toward stern
  */
 export class VulnerableChargeStrategy extends AnimalPathStrategy {
     readonly name = 'Charging';
     constructor() { super(); }
-    calculatePath(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalPathResult {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
-        return { targetWorldPos: context.targetBody.getWorldPoint(planck.Vec2(0, Boat.STERN_Y)), desiredSpeed: params.attackSpeed, turningSpeed: params.turningSpeed, turningSmoothing: params.turningSmoothing };
+        return {
+            kind: 'STEERING',
+            data: {
+                target: context.targetBody.getWorldPoint(planck.Vec2(0, Boat.STERN_Y)),
+                speed: params.attackSpeed,
+                turningSpeed: params.turningSpeed,
+                turningSmoothing: params.turningSmoothing
+            }
+        };
+    }
+
+    override shouldAbort(context: AnimalStrategyContext): boolean {
+        const localPos = context.targetBody.getLocalPoint(context.snoutPos);
+        return localPos.y > Boat.STERN_Y + 4.0;
     }
 }
 
 /**
  * SHORE HUGGING (Water/Stalking)
+ * Moves toward boat maintaining distance from shore
  */
 export class ShoreHuggingStrategy extends AnimalPathStrategy {
     readonly name = 'ShoreHugging';
     constructor() { super(); }
-    calculatePath(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalPathResult {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
         const boatPos = context.targetBody.getPosition();
         const riverSystem = RiverSystem.getInstance();
-        if (!riverSystem) return { targetWorldPos: boatPos.clone(), desiredSpeed: params.attackSpeed };
 
         const targetY = context.originPos.y < boatPos.y ? context.originPos.y + 1.0 : context.originPos.y - 1.0;
         const banks = riverSystem.getBankPositions(targetY);
@@ -112,18 +144,35 @@ export class ShoreHuggingStrategy extends AnimalPathStrategy {
         const distToRight = Math.abs(context.originPos.x - banks.right);
         const targetX = distToLeft < distToRight ? banks.left + distToLeft : banks.right - distToRight;
 
-        return { targetWorldPos: planck.Vec2(targetX, targetY), desiredSpeed: params.attackSpeed * 0.5, turningSpeed: params.turningSpeed, turningSmoothing: params.turningSmoothing };
+        return {
+            kind: 'STEERING',
+            data: {
+                target: planck.Vec2(targetX, targetY),
+                speed: params.attackSpeed * 0.5,
+                turningSpeed: params.turningSpeed,
+                turningSmoothing: params.turningSmoothing
+            }
+        };
     }
 }
 
 /**
  * LURKING (Water)
+ * Turns to face boat
  */
 export class LurkingStrategy extends AnimalPathStrategy {
     readonly name = 'Lurking';
     constructor() { super(); }
-    calculatePath(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalPathResult {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
-        return { targetWorldPos: context.targetBody.getPosition(), desiredSpeed: 0, turningSpeed: params.turningSpeed, turningSmoothing: params.turningSmoothing };
+        return {
+            kind: 'STEERING',
+            data: {
+                target: context.targetBody.getPosition(),
+                speed: 0,
+                turningSpeed: params.turningSpeed,
+                turningSmoothing: params.turningSmoothing
+            }
+        };
     }
 }

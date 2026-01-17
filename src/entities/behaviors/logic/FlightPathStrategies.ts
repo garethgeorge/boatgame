@@ -11,9 +11,18 @@ export class BuzzTargetStrategy extends AnimalPathStrategy {
     private targetAngle: number = 0;
     private flightTime: number = 0;
 
-    constructor(private maxHeight: number, private buzzHeight: number, private lockOnDistance: number, private horizSpeed: number) { super(); }
+    constructor(
+        private maxHeight: number,
+        private buzzHeight: number,
+        private lockOnDistance: number,
+        private horizSpeed: number
+    ) {
+        super();
+    }
 
-    calculatePath(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalPathResult {
+        this.flightTime += context.dt;
+
         const boatPos = context.targetBody.getPosition();
         const distToBoat = planck.Vec2.distance(context.originPos, boatPos);
 
@@ -25,10 +34,15 @@ export class BuzzTargetStrategy extends AnimalPathStrategy {
         }
 
         const flightDir = planck.Vec2(Math.sin(this.targetAngle), -Math.cos(this.targetAngle));
-        return { targetWorldPos: context.originPos.clone().add(flightDir.mul(10)), desiredHeight: distToBoat > 50.0 ? this.maxHeight : this.buzzHeight, desiredSpeed: this.horizSpeed };
+        return {
+            kind: 'STEERING',
+            data: {
+                target: context.originPos.clone().add(flightDir.mul(10)),
+                speed: this.horizSpeed,
+                height: distToBoat > 50.0 ? this.maxHeight : this.buzzHeight
+            }
+        };
     }
-
-    override update(context: AnimalStrategyContext) { this.flightTime += context.dt; }
 }
 
 /**
@@ -42,18 +56,26 @@ export class FleeRiverStrategy extends AnimalPathStrategy {
 
     constructor(private maxHeight: number, private horizSpeed: number) { super(); }
 
-    calculatePath(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalPathResult {
+        this.flightTime += context.dt;
+
         if (this.flightTime - this.lastDirectionUpdateTime > 1.0) {
             const boatAngle = context.targetBody.getAngle();
             const offsetDeg = 30 + Math.random() * 20;
             this.targetAngle = boatAngle + (Math.random() < 0.5 ? -1 : 1) * (offsetDeg * Math.PI / 180.0);
             this.lastDirectionUpdateTime = this.flightTime;
         }
-        const flightDir = planck.Vec2(Math.sin(this.targetAngle), -Math.cos(this.targetAngle));
-        return { targetWorldPos: context.originPos.clone().add(flightDir.mul(10)), desiredHeight: this.maxHeight, desiredSpeed: this.horizSpeed };
-    }
 
-    override update(context: AnimalStrategyContext) { this.flightTime += context.dt; }
+        const flightDir = planck.Vec2(Math.sin(this.targetAngle), -Math.cos(this.targetAngle));
+        return {
+            kind: 'STEERING',
+            data: {
+                target: context.originPos.clone().add(flightDir.mul(10)),
+                speed: this.horizSpeed,
+                height: this.maxHeight
+            }
+        };
+    }
 }
 
 /**
@@ -66,7 +88,7 @@ export class LandingStrategy extends AnimalPathStrategy {
 
     constructor(private horizSpeed: number) { super(); }
 
-    calculatePath(context: AnimalStrategyContext): AnimalPathResult {
+    update(context: AnimalStrategyContext): AnimalPathResult {
         const groundHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(context.originPos.x, context.originPos.y);
         const currentAltitude = Math.max(0, context.currentHeight - groundHeight);
 
@@ -78,6 +100,13 @@ export class LandingStrategy extends AnimalPathStrategy {
 
         const speedFactor = Math.max(0, Math.min(1, currentAltitude / Math.max(0.1, this.landingStartAltitude)));
         const flightDir = planck.Vec2(Math.sin(this.landingAngle), -Math.cos(this.landingAngle));
-        return { targetWorldPos: context.originPos.clone().add(flightDir.mul(10)), desiredHeight: 0, desiredSpeed: this.horizSpeed * speedFactor };
+        return {
+            kind: 'STEERING',
+            data: {
+                target: context.originPos.clone().add(flightDir.mul(10)),
+                speed: this.horizSpeed * speedFactor,
+                height: 0
+            }
+        };
     }
 }

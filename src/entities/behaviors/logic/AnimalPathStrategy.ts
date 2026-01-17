@@ -3,12 +3,34 @@ import * as planck from 'planck';
 /**
  * Result of any path strategy calculation.
  */
-export interface AnimalPathResult {
-    targetWorldPos: planck.Vec2;
-    desiredSpeed: number;
-    desiredHeight?: number;
+export type AnimalPathResult =
+    | { kind: 'STEERING'; data: SteeringParams }
+    | { kind: 'EXPLICIT'; data: ExplicitParams };
+
+export interface SteeringParams {
+    // 2D Target (XZ plane)
+    target: planck.Vec2;
+    speed: number;
+
+    // Optional Vertical Target (Y axis)
+    // If undefined -> defaults to Ground/Water level
+    height?: number;
+
+    // Optional Orientation Target
+    // If undefined -> faces movement direction
+    facing?: {
+        angle?: number;      // Absolute Y-axis rotation
+        normal?: any;        // Surface normal alignment (THREE.Vector3)
+    };
+
+    // Dynamics (Water mainly)
     turningSpeed?: number;
     turningSmoothing?: number;
+}
+
+export interface ExplicitParams {
+    position: any; // THREE.Vector3 - Absolute position
+    rotation: any; // THREE.Euler/Quat - Absolute rotation
 }
 
 /**
@@ -32,15 +54,15 @@ export interface AnimalStrategyContext {
 export abstract class AnimalPathStrategy {
     abstract readonly name: string;
 
-    /** Update strategy state prior to calculating path. */
-    update(context: AnimalStrategyContext): void {
-        // Default: No-op
-    }
+    /** 
+     * Calculate the point that the animal should steer toward.
+     */
+    abstract update(context: AnimalStrategyContext): AnimalPathResult;
 
-    /** Calculate the point that the animal should steer toward. */
-    abstract calculatePath(context: AnimalStrategyContext): AnimalPathResult;
-
-    /** Should this strategy be aborted because it no longer applies? */
+    /**
+     * If true the strategy is "finished" e.g because the animal is behind
+     * the boat.
+     */
     shouldAbort(context: AnimalStrategyContext): boolean {
         // Default: Don't abort
         return false;

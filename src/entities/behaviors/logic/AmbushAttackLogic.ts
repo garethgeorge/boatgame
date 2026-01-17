@@ -42,29 +42,31 @@ export class AmbushAttackLogic implements AnimalLogic {
         return context.targetBody.getLocalPoint(context.snoutPos).y > Boat.STERN_Y + 15.0;
     }
 
-    update(context: AnimalLogicContext) {
-        this.currentStrategy.update(context);
-        if (this.state === 'PREPARING') {
-            const result = this.currentStrategy.calculatePath(context);
-            const diff = result.targetWorldPos.clone().sub(context.originPos);
-            const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
-            let angleDiff = desiredAngle - context.physicsBody.getAngle();
-            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-            if (Math.abs(angleDiff) < 0.45) this.state = 'STALKING';
-            return;
-        }
+    activate(context: AnimalLogicContext): void {
+    }
 
+    update(context: AnimalLogicContext): AnimalLogicPathResult {
+        // See if it is time to switch to a new strategy
         const relVelLong = context.targetBody.getLocalVector(context.physicsBody.getLinearVelocity().clone().sub(context.targetBody.getLinearVelocity())).y;
         if (this.state === 'STALKING' && context.targetBody.getLocalPoint(context.snoutPos).y > Boat.BOW_Y - relVelLong * 0.25) {
             this.state = 'STRIKING';
             this.currentStrategy = new SternInterceptStrategy(0.4 + (context.aggressiveness * 0.6));
         }
-    }
 
-    calculatePath(context: AnimalLogicContext): AnimalLogicPathResult {
-        const result = this.currentStrategy.calculatePath(context);
+        const result = this.currentStrategy.update(context);
+
+        // Decide if preparatory phase is done
+        if (this.state === 'PREPARING') {
+            if (result.kind !== 'STEERING') return; // Ambush only uses steering strategies
+            const diff = result.data.target.clone().sub(context.originPos);
+            const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
+            let angleDiff = desiredAngle - context.physicsBody.getAngle();
+            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+            if (Math.abs(angleDiff) < 0.45) this.state = 'STALKING';
+        }
+
         const anim = this.state === 'STRIKING' ? AmbushAttackLogic.ANIM_ATTACKING : (this.state === 'PREPARING' ? AmbushAttackLogic.ANIM_PREPARING : AmbushAttackLogic.ANIM_IDLE);
-        return { ...result, locomotionType: 'WATER', animationState: anim };
+        return { path: result, locomotionType: 'WATER', animationState: anim };
     }
 }

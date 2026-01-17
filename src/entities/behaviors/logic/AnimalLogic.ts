@@ -1,5 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
+import { AnimalPathResult } from './AnimalPathStrategy';
+import { AnimalBehaviorEvent } from '../AnimalBehavior';
 import { AnimalStrategyContext } from './AnimalPathStrategy';
 
 /**
@@ -25,27 +27,11 @@ export interface AnimalLogicContext extends AnimalStrategyContext {
  * Standardized result from any animal logic calculation.
  */
 export interface AnimalLogicPathResult {
-    // Basic locomotion targets
-    targetWorldPos: planck.Vec2;
-    desiredSpeed: number;
+    // Composition: Holds the physical path result (Steering or Explicit)
+    path: AnimalPathResult;
 
     // The physics model to use for this frame
     locomotionType: LocomotionType;
-
-    // --- LAND Locomotion Properties ---
-    // Specifically for use when locomotionType is 'LAND'
-    explicitHeight?: number;
-    explicitNormal?: THREE.Vector3;
-    desiredAngle?: number;
-
-    // --- FLIGHT Locomotion Properties ---
-    // Specifically for use when locomotionType is 'FLIGHT'
-    desiredHeight?: number;
-
-    // --- WATER Locomotion Properties ---
-    // Specifically for use when locomotionType is 'WATER'
-    turningSpeed?: number;
-    turningSmoothing?: number;
 
     // Specifies the current visual phase of the logic
     animationState?: string;
@@ -64,17 +50,30 @@ export interface AnimalLogicPathResult {
 export interface AnimalLogic {
     readonly name: string;
 
-    update(context: AnimalLogicContext): void;
-    calculatePath(context: AnimalLogicContext): AnimalLogicPathResult;
-
+    /**
+     * Is the logic applicable or not?
+     */
     shouldActivate(context: AnimalLogicContext): boolean;
     shouldDeactivate(context: AnimalLogicContext): boolean;
+
+    /**
+     * ??
+     */
+    isPreparing?(): boolean;
+
+    /**
+     * Start this logic, do any initialization
+     */
+    activate(context: AnimalLogicContext): void;
+
+    /**
+     * Update logic and return new animal path to apply
+     */
+    update(context: AnimalLogicContext): AnimalLogicPathResult;
 
     /**
      * Optional: Get the estimated duration of the current logic block.
      * Useful for syncing animations or external logic.
      */
     getEstimatedDuration?(context: AnimalLogicContext): number | undefined;
-
-    isPreparing?(): boolean;
 }

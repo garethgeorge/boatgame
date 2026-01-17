@@ -26,6 +26,9 @@ export class WolfAttackLogic implements AnimalLogic {
         return this.state === 'PREPARING';
     }
 
+    /**
+     * Activate when boat is in range
+     */
     shouldActivate(context: AnimalLogicContext): boolean {
         if (context.bottles <= 0) return false;
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
@@ -33,6 +36,9 @@ export class WolfAttackLogic implements AnimalLogic {
         return planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < params.startAttackDistance;
     }
 
+    /**
+     * Deactivate when boat is out of range
+     */
     shouldDeactivate(context: AnimalLogicContext): boolean {
         if (context.bottles <= 0) return true;
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
@@ -40,38 +46,45 @@ export class WolfAttackLogic implements AnimalLogic {
         return this.currentStrategy.shouldAbort(context);
     }
 
-    update(context: AnimalLogicContext) {
-        this.currentStrategy.update(context);
-        if (this.state === 'PREPARING') {
-            const result = this.currentStrategy.calculatePath(context);
-            const diff = result.targetWorldPos.clone().sub(context.originPos);
-            const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
-            let angleDiff = desiredAngle - context.physicsBody.getAngle();
-            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-            if (Math.abs(angleDiff) < 0.45) this.state = 'ATTACKING';
-            return;
-        }
+    activate(context: AnimalLogicContext): void {
+    }
 
+    update(context: AnimalLogicContext): AnimalLogicPathResult {
+        // Check for time to change strategy
         this.strategyTimer -= context.dt;
         const relVelLong = context.targetBody.getLocalVector(context.physicsBody.getLinearVelocity().clone().sub(context.targetBody.getLinearVelocity())).y;
         const dynamicThreshold = Boat.BOW_Y - relVelLong * 0.25;
 
+        // Switch to intercept once we are getting close
+        // Otherwise randomly select between flanking and charging
         if (context.targetBody.getLocalPoint(context.snoutPos).y > dynamicThreshold) {
             if (this.currentStrategy.name !== 'SternIntercept') {
                 this.currentStrategy = new SternInterceptStrategy(0.2 + (context.aggressiveness * 0.8));
                 this.strategyTimer = 2.0;
+                this.state = 'ATTACKING';
             }
         } else if (this.strategyTimer < 0) {
             this.currentStrategy = Math.random() < 0.67 ? new CircleFlankStrategy() : new VulnerableChargeStrategy();
             this.strategyTimer = 1.5 + Math.random() * 2.0;
         }
-    }
 
-    calculatePath(context: AnimalLogicContext): AnimalLogicPathResult {
-        const result = this.currentStrategy.calculatePath(context);
+        // Get the current steering
+        const result = this.currentStrategy.update(context);
+
+        // See if the angle to the desired angle is such that the attack is
+        // no longer preparing
+        if (this.state === 'PREPARING') {
+            if (result.kind !== 'STEERING') return; // Wolf only uses steering strategies
+            const diff = result.data.target.clone().sub(context.originPos);
+            const desiredAngle = Math.atan2(diff.y, diff.x) + Math.PI / 2;
+            let angleDiff = desiredAngle - context.physicsBody.getAngle();
+            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+            if (Math.abs(angleDiff) < 0.45) this.state = 'ATTACKING';
+        }
+
         return {
-            ...result,
+            path: result,
             locomotionType: 'WATER',
             animationState: this.isPreparing() ? WolfAttackLogic.ANIM_PREPARING : WolfAttackLogic.ANIM_ATTACKING
         };

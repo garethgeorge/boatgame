@@ -33,11 +33,10 @@ export class ShoreIdleLogic implements AnimalLogic {
         return false;
     }
 
-    update(context: AnimalLogicContext): void {
-        // No per-frame update needed for idle
+    activate(context: AnimalLogicContext): void {
     }
 
-    calculatePath(context: AnimalLogicContext): AnimalLogicPathResult {
+    update(context: AnimalLogicContext): AnimalLogicPathResult {
         const bottles = this.ignoreBottles ? -1 : context.bottles;
         const noticeBoatDistance = AnimalBehaviorUtils.evaluateNoticeBoatDistance(
             context.aggressiveness,
@@ -47,6 +46,7 @@ export class ShoreIdleLogic implements AnimalLogic {
 
         let nextLogicConfig: AnimalLogicConfig | undefined = undefined;
 
+        // if boat in range switch to boat noticed logic
         if (noticeBoatDistance > 0) {
             const dist = planck.Vec2.distance(context.originPos, context.targetBody.getPosition());
             if (dist < noticeBoatDistance) {
@@ -58,8 +58,8 @@ export class ShoreIdleLogic implements AnimalLogic {
             }
         }
 
+        // if boat not noticed periodically switch to some other logic
         if (!nextLogicConfig) {
-            // Time-based probability for switching behavior (avg 5 seconds)
             const probability = context.dt / 5.0;
             if (Math.random() < probability) {
                 const config = this.maybeSwitchBehavior?.();
@@ -70,8 +70,13 @@ export class ShoreIdleLogic implements AnimalLogic {
         }
 
         return {
-            targetWorldPos: context.originPos, // Stay put
-            desiredSpeed: 0,
+            path: {
+                kind: 'STEERING',
+                data: {
+                    target: context.originPos,
+                    speed: 0
+                }
+            },
             locomotionType: 'LAND',
             nextLogicConfig: nextLogicConfig,
             isFinished: !!nextLogicConfig

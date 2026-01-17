@@ -76,6 +76,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         if (this.logic.shouldActivate(context)) {
             this.state = 'ACTIVE';
 
+            this.logic.activate(context);
             const duration = this.logic.getEstimatedDuration?.(context);
             this.entity.handleBehaviorEvent?.({
                 type: 'LOGIC_STARTING', logicName: this.logic.name, duration
@@ -90,13 +91,10 @@ export class AnimalUniversalBehavior implements EntityBehavior {
             return;
         }
 
-        // 2. Internal Logic Update (timers, state transitions)
-        this.logic.update(context);
+        // 2. Calculate Path based on fresh state
+        let result = this.logic.update(context);
 
-        // 3. Calculate Path based on fresh state
-        let result = this.logic.calculatePath(context);
-
-        // 4. Handle Logic Chaining
+        // 3. Handle Logic Chaining
         if (result.nextLogicConfig) {
             // Transfer to next logic
             const nextLogic = AnimalLogicRegistry.create(result.nextLogicConfig);
@@ -109,25 +107,24 @@ export class AnimalUniversalBehavior implements EntityBehavior {
             this.logic = nextLogic;
 
             // Update immediately with new logic to avoid stutter
-            this.logic.update(context);
-            result = this.logic.calculatePath(context);
-
+            this.logic.activate(context);
+            result = this.logic.update(context);
             const duration = this.logic.getEstimatedDuration?.(context);
             this.entity.handleBehaviorEvent?.({
                 type: 'LOGIC_STARTING', logicName: this.logic.name, duration
             });
         }
 
-        // 5. Check for logic-driven completion
+        // 4. Check for logic-driven completion
         if (result.isFinished) {
             this.deactivate(context);
             return;
         }
 
-        // 6. Animations
+        // 5. Animations
         this.handleAnimations(context, result);
 
-        // 7. Locomotion
+        // 6. Locomotion
         switch (result.locomotionType) {
             case 'FLIGHT':
                 this.executeFlightLocomotion(context, result);
@@ -179,12 +176,18 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         }
     }
 
-    private executeWaterLocomotion(context: AnimalLogicContext, path: AnimalLogicPathResult) {
+    private executeWaterLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
         this.setPhysicsMode(context.physicsBody, false);
+
+        if (result.path.kind !== 'STEERING') return; // Only support steering for water physics
+        const steering = result.path.data;
+
         const { physicsBody, originPos, dt } = context;
-        const { targetWorldPos, desiredSpeed } = path;
-        const turnSpeed = path.turningSpeed ?? Math.PI;
-        const turnSmoothing = path.turningSmoothing ?? 5.0;
+        const targetWorldPos = steering.target;
+        const desiredSpeed = steering.speed;
+
+        const turnSpeed = steering.turningSpeed ?? Math.PI;
+        const turnSmoothing = steering.turningSmoothing ?? 5.0;
 
         const originToTarget = targetWorldPos.clone().sub(originPos);
         const originToTargetDist = originToTarget.length();
@@ -220,10 +223,23 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         physicsBody.setLinearVelocity(nextVel);
     }
 
-    private executeLandLocomotion(context: AnimalLogicContext, path: AnimalLogicPathResult) {
+    private executeLandLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
         this.setPhysicsMode(context.physicsBody, true);
         const { dt, physicsBody, originPos } = context;
-        const { targetWorldPos, desiredSpeed, explicitHeight, explicitNormal } = path;
+
+        // Handle Explicit Path (Teleportation)
+        if (result.path.kind === 'EXPLICIT') {
+            const explicit = result.path.data;
+            if (explicit.position) {
+                // TODO: Map THREE vector to planck if needed, derived from usage
+            }
+            return;
+        }
+
+        // Handle Steering Path (Kinematic Movement)
+        const steering = result.path.data;
+        const targetWorldPos = steering.target;
+        const desiredSpeed = steering.speed;
 
         // --- Movement ---
         const originToTarget = targetWorldPos.clone().sub(originPos);
@@ -238,8 +254,8 @@ export class AnimalUniversalBehavior implements EntityBehavior {
 
         // --- Rotation ---
         let targetAngle = physicsBody.getAngle();
-        if (path.desiredAngle !== undefined) {
-            targetAngle = path.desiredAngle;
+        if (steering.facing?.angle !== undefined) {
+            targetAngle = steering.facing.angle;
         } else if (originToTargetDist > 0.1) {
             targetAngle = Math.atan2(originToTarget.y, originToTarget.x) + Math.PI / 2;
         }
@@ -255,15 +271,21 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         physicsBody.setAngle(currentAngle + rotation);
 
         // --- Precise Positioning (Height/Normal) ---
-        if (explicitHeight !== undefined && explicitNormal !== undefined) {
-            this.entity.setExplictPosition?.(explicitHeight, explicitNormal);
+        if (steering.height !== undefined && steering.facing?.normal !== undefined) {
+            this.entity.setExplictPosition?.(steering.height, steering.facing.normal);
         }
     }
 
-    private executeFlightLocomotion(context: AnimalLogicContext, path: AnimalLogicPathResult) {
+    private executeFlightLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
         this.setPhysicsMode(context.physicsBody, true);
+
+        if (result.path.kind !== 'STEERING') return; // Flight assumes steering
+        const steering = result.path.data;
+
         const { dt, physicsBody, originPos } = context;
-        const { targetWorldPos, desiredHeight, desiredSpeed } = path;
+        const targetWorldPos = steering.target;
+        const desiredSpeed = steering.speed;
+        const desiredHeight = steering.height ?? context.currentHeight;
 
         // --- Rotation and Banking ---
         const diffToTarget = targetWorldPos.clone().sub(originPos);

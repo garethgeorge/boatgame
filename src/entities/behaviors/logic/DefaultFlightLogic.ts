@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult } from './AnimalLogic';
-import { AnimalPathStrategy } from './AnimalPathStrategy';
+import { AnimalPathResult, AnimalPathStrategy } from './AnimalPathStrategy';
 import { BuzzTargetStrategy, FleeRiverStrategy, LandingStrategy } from './FlightPathStrategies';
 import { RiverSystem } from '../../../world/RiverSystem';
 
@@ -34,9 +34,12 @@ export class DefaultFlightLogic implements AnimalLogic {
         return false;
     }
 
-    update(context: AnimalLogicContext): void {
-        this.strategy.update(context);
+    activate(context: AnimalLogicContext): void {
+    }
 
+    update(context: AnimalLogicContext): AnimalLogicPathResult {
+
+        // Decide on current strategy
         if (this.state === 'TOWARD') {
             if (planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < 2.0) {
                 this.state = 'AWAY';
@@ -49,17 +52,27 @@ export class DefaultFlightLogic implements AnimalLogic {
                 this.strategy = new LandingStrategy(this.flightSpeed);
             }
         }
-    }
 
-    calculatePath(context: AnimalLogicContext): AnimalLogicPathResult {
-        const result = this.strategy.calculatePath(context);
+        // Have we landed?
+        const isFinished = this.isFinished(context);
+
+        // Update strategy
+        const result = this.strategy.update(context);
+
+        // Get result
         const anim = this.state === 'LANDING' ? DefaultFlightLogic.ANIM_WALKING : DefaultFlightLogic.ANIM_FLYING;
-        return { ...result, locomotionType: 'FLIGHT', animationState: anim, isFinished: this.isFinished(context) };
+        return {
+            path: result,
+            locomotionType: 'FLIGHT',
+            animationState: anim,
+            isFinished
+        };
     }
 
     private isFinished(context: AnimalLogicContext): boolean {
         if (this.state !== 'LANDING') return false;
-        const currentAltitude = Math.max(0, context.currentHeight - RiverSystem.getInstance().terrainGeometry.calculateHeight(context.originPos.x, context.originPos.y));
+        const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(context.originPos.x, context.originPos.y);
+        const currentAltitude = Math.max(0, context.currentHeight - terrainHeight);
         return currentAltitude < 0.1 && context.physicsBody.getLinearVelocity().length() < 1.0;
     }
 }
