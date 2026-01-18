@@ -2,8 +2,9 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalAnimations, AttackAnimalOptions } from './AttackAnimal';
+import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { AnimalAnimations } from './Animal';
 
 export class TRex extends AttackAnimal {
 
@@ -34,7 +35,7 @@ export class TRex extends AttackAnimal {
         model.rotation.y = Math.PI;
     }
 
-    private static readonly animations: AttackAnimalAnimations = {
+    private static readonly animations: AnimalAnimations = {
         default: AttackAnimal.play({
             name: 'standing', state: 'idle',
             timeScale: 1.0, startTime: -1, randomizeLength: 0.2
@@ -54,7 +55,7 @@ export class TRex extends AttackAnimal {
         ]
     }
 
-    protected getAnimations(): AttackAnimalAnimations {
+    protected getAnimations(): AnimalAnimations {
         return TRex.animations;
     }
 }

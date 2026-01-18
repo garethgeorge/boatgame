@@ -1,14 +1,12 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
-import { AnyAnimal, AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
+import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
-import { DefaultSwimAwayLogic } from '../behaviors/logic/DefaultSwimAwayLogic';
-import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { Animal } from './Animal';
 
 export interface SwimAwayAnimalOptions {
     x: number;
@@ -35,8 +33,7 @@ export interface SwimmerAnimationConfig {
     startTime?: number;
 }
 
-export abstract class SwimAwayAnimal extends Entity implements AnyAnimal {
-    protected player: AnimationPlayer | null = null;
+export abstract class SwimAwayAnimal extends Animal implements AnyAnimal {
     protected behavior: EntityBehavior | null = null;
     protected aggressiveness: number;
 
@@ -111,18 +108,8 @@ export abstract class SwimAwayAnimal extends Entity implements AnyAnimal {
 
     protected abstract setupModel(model: THREE.Group): void;
 
-    protected abstract getAnimationConfig(phase: AnimalLogicPhase): SwimmerAnimationConfig;
-
     protected getHitBehaviorOptions() {
         return { duration: 0.5, rotateSpeed: 25, targetHeightOffset: 5 };
-    }
-
-    getPhysicsBody(): planck.Body | null {
-        return this.physicsBodies.length > 0 ? this.physicsBodies[0] : null;
-    }
-
-    getHeight(): number {
-        return this.meshes[0].position.y;
     }
 
     update(dt: number) {
@@ -139,28 +126,5 @@ export abstract class SwimAwayAnimal extends Entity implements AnyAnimal {
         this.behavior = new ObstacleHitBehavior(this.meshes, () => {
             this.shouldRemove = true;
         }, this.getHitBehaviorOptions());
-    }
-
-    handleBehaviorEvent(event: AnimalBehaviorEvent): void {
-        switch (event.type) {
-            case 'LOGIC_STARTING': {
-                this.playAnimation(event.logicPhase);
-            }
-            case 'LOGIC_FINISHED': {
-                this.playAnimation(AnimalLogicPhase.IDLE_WATER);
-                break;
-            }
-        }
-    }
-
-    private playAnimation(phase: AnimalLogicPhase) {
-        const anim = this.getAnimationConfig(phase);
-        this.player?.play({
-            name: anim.name,
-            state: 'IDLE',
-            timeScale: anim.timeScale ?? 1.0,
-            randomizeLength: anim.randomizeLength ?? 0.2,
-            startTime: anim.startTime ?? -1.0
-        });
     }
 }

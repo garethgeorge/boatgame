@@ -1,15 +1,14 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
-import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { DefaultFlightLogic } from '../behaviors/logic/DefaultFlightLogic';
-import { AnimalBehaviorEvent, AnyAnimal } from '../behaviors/AnimalBehavior';
+import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
+import { Animal } from './Animal';
 
 export interface AnimationConfig {
     name: string;
@@ -36,8 +35,7 @@ export interface FlyingAnimalPhysicsOptions {
     angularDamping?: number;
 }
 
-export abstract class FlyingAnimal extends Entity implements AnyAnimal {
-    protected player: AnimationPlayer | null = null;
+export abstract class FlyingAnimal extends Animal implements AnyAnimal {
     protected behavior: EntityBehavior | null = null;
     protected aggressiveness: number;
 
@@ -113,7 +111,6 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
             }
         };
         this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, idleConfig);
-        this.playIdleAnimation();
     }
 
     private applyModelBase(mesh: THREE.Group, model: THREE.Group, animations: THREE.AnimationClip[]) {
@@ -126,32 +123,6 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
 
     protected abstract setupModel(model: THREE.Group): void;
 
-    protected abstract getIdleAnimationName(): AnimationConfig;
-
-    protected abstract getFlightAnimationName(): AnimationConfig;
-
-    protected playIdleAnimation() {
-        const config = this.getIdleAnimationName();
-        this.player?.play({
-            name: config.name,
-            state: 'IDLE',
-            timeScale: config.timeScale ?? 1.0,
-            randomizeLength: 0.2,
-            startTime: -1
-        });
-    }
-
-    protected playFlightAnimation() {
-        const config = this.getFlightAnimationName();
-        this.player?.play({
-            name: config.name,
-            state: AnimalLogicPhase.FLYING,
-            timeScale: config.timeScale ?? 1.0,
-            randomizeLength: 0.2,
-            startTime: -1
-        });
-    }
-
     update(dt: number) {
         if (this.player) {
             this.player.update(dt);
@@ -161,45 +132,11 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
         }
     }
 
-    getPhysicsBody(): planck.Body | null {
-        return this.physicsBodies.length > 0 ? this.physicsBodies[0] : null;
-    }
-
-    getHeight(): number {
-        return this.meshes[0].position.y;
-    }
-
     setExplictPosition(height: number, normal: THREE.Vector3): void {
         if (this.meshes.length > 0) {
             this.meshes[0].position.y = height;
         }
         this.normalVector.copy(normal);
-    }
-
-    handleBehaviorEvent(event: AnimalBehaviorEvent): void {
-        switch (event.type) {
-            case 'LOGIC_STARTING': {
-                switch (event.logicPhase) {
-                    case AnimalLogicPhase.FLYING: {
-                        this.playFlightAnimation();
-                        break;
-                    }
-                    case AnimalLogicPhase.PREPARING_ATTACK:
-                    case AnimalLogicPhase.ATTACKING: {
-                        this.playFlightAnimation();
-                        break;
-                    }
-                    default: {
-                        this.playIdleAnimation();
-                        break;
-                    }
-                }
-            }
-            case 'LOGIC_FINISHED': {
-                this.playIdleAnimation();
-                break;
-            }
-        }
     }
 
     wasHitByPlayer() {

@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { FlyingAnimal, FlyingAnimalOptions, AnimationConfig } from './FlyingAnimal';
+import { FlyingAnimal, FlyingAnimalOptions } from './FlyingAnimal';
+import { AnimalAnimations, Animal } from './Animal';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
 export class Butterfly extends FlyingAnimal {
 
@@ -30,11 +32,23 @@ export class Butterfly extends FlyingAnimal {
         model.rotation.y = 0;
     }
 
-    protected getIdleAnimationName(): AnimationConfig {
-        return { name: 'idle', timeScale: 1.0 };
-    }
-
-    protected getFlightAnimationName(): AnimationConfig {
-        return { name: 'fly', timeScale: 10.0 };
+    protected getAnimations(): AnimalAnimations {
+        return {
+            default: Animal.play({
+                name: 'idle', state: 'IDLE',
+                timeScale: 1.0, randomizeLength: 0.2, startTime: -1
+            }),
+            animations: [
+                {
+                    phases: [
+                        AnimalLogicPhase.FLYING,
+                    ],
+                    play: Animal.play({
+                        name: 'fly', state: 'FLYING',
+                        timeScale: 10.0, randomizeLength: 0.2, startTime: -1
+                    })
+                }
+            ]
+        };
     }
 }

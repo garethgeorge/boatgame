@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { FlyingAnimal, FlyingAnimalOptions, AnimationConfig } from './FlyingAnimal';
+import { FlyingAnimal, FlyingAnimalOptions } from './FlyingAnimal';
+import { AnimalAnimations, Animal } from './Animal';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
 export class Bluebird extends FlyingAnimal {
 
@@ -34,11 +36,25 @@ export class Bluebird extends FlyingAnimal {
         model.rotation.y = 0;
     }
 
-    protected getIdleAnimationName(): AnimationConfig {
-        return { name: 'idle', timeScale: 1.0 };
-    }
-
-    protected getFlightAnimationName(): AnimationConfig {
-        return { name: 'fly', timeScale: 6.0 };
+    protected getAnimations(): AnimalAnimations {
+        return {
+            default: Animal.play({
+                name: 'idle', state: 'IDLE',
+                timeScale: 1.0, randomizeLength: 0.2, startTime: -1
+            }),
+            animations: [
+                {
+                    phases: [
+                        AnimalLogicPhase.FLYING,
+                        AnimalLogicPhase.PREPARING_ATTACK,
+                        AnimalLogicPhase.ATTACKING
+                    ],
+                    play: Animal.play({
+                        name: 'fly', state: 'FLYING',
+                        timeScale: 6.0, randomizeLength: 0.2, startTime: -1
+                    })
+                }
+            ]
+        };
     }
 }

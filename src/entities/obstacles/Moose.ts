@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalAnimations, AttackAnimalOptions } from './AttackAnimal';
+import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 import { AnimalLogic, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
+import { AnimalAnimations } from './Animal';
 
 export class Moose extends AttackAnimal {
 
@@ -41,7 +42,7 @@ export class Moose extends AttackAnimal {
         model.rotation.y = Math.PI;
     }
 
-    private static readonly animations: AttackAnimalAnimations = {
+    private static readonly animations: AnimalAnimations = {
         default: AttackAnimal.play({
             name: 'idle', state: 'idle',
             timeScale: 1.0, startTime: -1, randomizeLength: 0.2
@@ -81,7 +82,7 @@ export class Moose extends AttackAnimal {
         ]
     }
 
-    protected getAnimations(): AttackAnimalAnimations {
+    protected getAnimations(): AnimalAnimations {
         return Moose.animations;
     }
 }

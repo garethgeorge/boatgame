@@ -12,6 +12,7 @@ import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
 import { AnimalLogic, AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
+import { Animal } from './Animal';
 
 export interface AttackAnimalOptions {
     x: number;
@@ -36,16 +37,7 @@ export interface AttackAnimalPhysicsOptions {
     angularDamping?: number;
 }
 
-export interface AttackAnimalAnimations {
-    default: (player: AnimationPlayer, logic: AnimalLogic) => void,
-    animations?: {
-        phases: AnimalLogicPhase[],
-        play: (player: AnimationPlayer, logic: AnimalLogic) => void
-    }[];
-}
-
-export abstract class AttackAnimal extends Entity implements AnyAnimal {
-    protected player: AnimationPlayer | null = null;
+export abstract class AttackAnimal extends Animal implements AnyAnimal {
     protected behavior: EntityBehavior | null = null;
     protected aggressiveness: number;
     protected attackLogicName: string | undefined;
@@ -148,25 +140,6 @@ export abstract class AttackAnimal extends Entity implements AnyAnimal {
     // e.g. derived class can scale and rotate model to desired size and facing
     protected abstract setupModel(model: THREE.Group): void;
 
-    protected static play(params: AnimationParameters):
-        (player: AnimationPlayer, logic: AnimalLogic) => void {
-        return (player: AnimationPlayer, logic: AnimalLogic) => {
-            player.play(params);
-        }
-    }
-
-    protected abstract getAnimations(): AttackAnimalAnimations;
-
-    protected playAnimation(logic: AnimalLogic, phase: AnimalLogicPhase) {
-        const config = this.getAnimations();
-        const playAnimation = config.animations?.find((animation) =>
-            animation.phases.includes(phase)
-        )?.play ?? config.default;
-        if (playAnimation) {
-            playAnimation(this.player, logic);
-        }
-    }
-
     update(dt: number) {
         if (this.player) {
             this.player.update(dt);
@@ -174,14 +147,6 @@ export abstract class AttackAnimal extends Entity implements AnyAnimal {
         if (this.behavior) {
             this.behavior.update(dt);
         }
-    }
-
-    getPhysicsBody(): planck.Body | null {
-        return this.physicsBodies.length > 0 ? this.physicsBodies[0] : null;
-    }
-
-    getHeight(): number {
-        return this.meshes[0].position.y;
     }
 
     setExplictPosition(height: number, normal: THREE.Vector3): void {
@@ -231,18 +196,5 @@ export abstract class AttackAnimal extends Entity implements AnyAnimal {
      */
     shoreIdleMaybeSwitchBehavior(): AnimalLogicConfig | null {
         return null; // Default: stay in idle
-    }
-
-    handleBehaviorEvent(event: AnimalBehaviorEvent): void {
-        switch (event.type) {
-            case 'LOGIC_STARTING': {
-                this.playAnimation(event.logic, event.logicPhase);
-                break;
-            }
-            case 'LOGIC_FINISHED': {
-                this.playAnimation(null, AnimalLogicPhase.NONE);
-                break;
-            }
-        }
     }
 }

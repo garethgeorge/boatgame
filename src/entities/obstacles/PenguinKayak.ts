@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { DefaultSwimAwayLogic } from '../behaviors/logic/DefaultSwimAwayLogic';
-import { SwimAwayAnimal, SwimmerAnimationConfig } from './SwimAwayAnimal';
+import { SwimAwayAnimal } from './SwimAwayAnimal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { AnimalAnimations, Animal } from './Animal';
 
 export class PenguinKayak extends SwimAwayAnimal {
 
@@ -28,13 +28,21 @@ export class PenguinKayak extends SwimAwayAnimal {
         model.position.y = -0.4;
     }
 
-    protected getAnimationConfig(phase: AnimalLogicPhase): SwimmerAnimationConfig {
-        const timeScale = phase === AnimalLogicPhase.SWIMING_AWAY ? 3.5 : 2.0;
+    protected getAnimations(): AnimalAnimations {
         return {
-            name: 'paddling',
-            timeScale: timeScale,
-            randomizeLength: 0.2,
-            startTime: -1.0
+            default: Animal.play({
+                name: 'paddling', state: 'IDLE',
+                timeScale: 2.0, randomizeLength: 0.2, startTime: -1.0
+            }),
+            animations: [
+                {
+                    phases: [AnimalLogicPhase.SWIMING_AWAY],
+                    play: Animal.play({
+                        name: 'paddling', state: 'SWIMING_AWAY',
+                        timeScale: 3.5, randomizeLength: 0.2, startTime: -1.0
+                    })
+                }
+            ]
         };
     }
 

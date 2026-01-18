@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { FlyingAnimal, FlyingAnimalOptions, AnimationConfig } from './FlyingAnimal';
+import { FlyingAnimal, FlyingAnimalOptions } from './FlyingAnimal';
+import { AnimalAnimations, Animal } from './Animal';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
 export class Pterodactyl extends FlyingAnimal {
 
@@ -29,11 +31,23 @@ export class Pterodactyl extends FlyingAnimal {
         model.scale.set(3.0, 3.0, 3.0);
     }
 
-    protected getIdleAnimationName(): AnimationConfig {
-        return { name: 'standing' };
-    }
-
-    protected getFlightAnimationName(): AnimationConfig {
-        return { name: 'flying' };
+    protected getAnimations(): AnimalAnimations {
+        return {
+            default: Animal.play({
+                name: 'standing', state: 'IDLE',
+                timeScale: 1.0, randomizeLength: 0.2, startTime: -1
+            }),
+            animations: [
+                {
+                    phases: [
+                        AnimalLogicPhase.FLYING,
+                    ],
+                    play: Animal.play({
+                        name: 'flying', state: 'FLYING',
+                        timeScale: 1.0, randomizeLength: 0.2, startTime: -1
+                    })
+                }
+            ]
+        };
     }
 }
