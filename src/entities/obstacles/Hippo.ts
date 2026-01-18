@@ -3,6 +3,7 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
 export class Hippo extends AttackAnimal {
 
@@ -61,7 +62,7 @@ export class Hippo extends AttackAnimal {
             mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, -0.5, event.dt * 2);
         } else if (event.type === 'LOGIC_TICK') {
             const phase = event.logicPhase;
-            if (phase === 'PREPARING') {
+            if (phase === AnimalLogicPhase.PREPARING) {
                 // Shake effect only, no tilt
                 mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, 0, event.dt * 10);
 

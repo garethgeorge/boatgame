@@ -4,6 +4,7 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { DefaultSwimAwayLogic } from '../behaviors/logic/DefaultSwimAwayLogic';
 import { SwimAwayAnimal, SwimmerAnimationConfig } from './SwimAwayAnimal';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
 export class PenguinKayak extends SwimAwayAnimal {
 
@@ -27,8 +28,8 @@ export class PenguinKayak extends SwimAwayAnimal {
         model.position.y = -0.4;
     }
 
-    protected getAnimationConfig(state: string): SwimmerAnimationConfig {
-        const timeScale = state === DefaultSwimAwayLogic.PHASE_FLEEING ? 3.5 : 2.0;
+    protected getAnimationConfig(state: AnimalLogicPhase): SwimmerAnimationConfig {
+        const timeScale = state === AnimalLogicPhase.FLEEING ? 3.5 : 2.0;
         return {
             name: 'paddling',
             timeScale: timeScale,

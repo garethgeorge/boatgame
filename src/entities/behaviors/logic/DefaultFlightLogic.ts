@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './AnimalPathStrategy';
 import { BuzzTargetStrategy, FleeRiverStrategy, LandingStrategy } from './FlightPathStrategies';
 import { RiverSystem } from '../../../world/RiverSystem';
@@ -11,11 +11,6 @@ export interface DefaultFlightParams {
 export class DefaultFlightLogic implements AnimalLogic {
     public static readonly NAME = 'flight';
     readonly name = DefaultFlightLogic.NAME;
-
-    /** Animal is in flight. */
-    public static readonly PHASE_FLYING = 'flying';
-    /** Animal is landing or on the ground. */
-    public static readonly PHASE_WALKING = 'walking';
 
     private flightSpeed: number;
     private state: 'TOWARD' | 'AWAY' | 'LANDING' = 'TOWARD';
@@ -53,7 +48,7 @@ export class DefaultFlightLogic implements AnimalLogic {
         const steering = this.strategy.update(context);
 
         // Get result
-        const phase = this.state === 'LANDING' ? DefaultFlightLogic.PHASE_WALKING : DefaultFlightLogic.PHASE_FLYING;
+        const phase = this.state === 'LANDING' ? AnimalLogicPhase.WALKING : AnimalLogicPhase.FLYING;
         return {
             path: steering,
             locomotionType: 'FLIGHT',

@@ -1,18 +1,13 @@
 import * as planck from 'planck';
 import { Boat } from '../../Boat';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './AnimalPathStrategy';
 import { CircleFlankStrategy, SternInterceptStrategy, VulnerableChargeStrategy } from './AttackPathStrategies';
 
 export class WolfAttackLogic implements AnimalLogic {
     public static readonly NAME = 'wolf';
     readonly name = WolfAttackLogic.NAME;
-
-    /** Animal is orienting towards the target. */
-    public static readonly PHASE_PREPARING = 'PREPARING';
-    /** Animal is actively pursuing or flanking the target. */
-    public static readonly PHASE_ATTACKING = 'ATTACKING';
 
     private currentStrategy: AnimalPathStrategy;
     private strategyTimer: number = 0;
@@ -71,7 +66,7 @@ export class WolfAttackLogic implements AnimalLogic {
         return {
             path: steering,
             locomotionType: 'WATER',
-            logicPhase: this.state === 'PREPARING' ? WolfAttackLogic.PHASE_PREPARING : WolfAttackLogic.PHASE_ATTACKING,
+            logicPhase: this.state === 'PREPARING' ? AnimalLogicPhase.PREPARING : AnimalLogicPhase.ATTACKING,
             isFinished: this.shouldDisengage(context)
         };
     }

@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './AnimalPathStrategy';
 import { ShoreWalkStrategy, ShoreTurnStrategy } from './ShoreWalkStrategy';
 
@@ -13,8 +13,6 @@ type ShoreWalkState = 'START' | 'OUTBOUND' | 'TURN' | 'INBOUND' | 'END' | 'FINIS
 
 export class ShoreWalkLogic implements AnimalLogic {
     public static readonly NAME = 'shorewalk';
-    public static readonly PHASE_WALK = 'WALK';
-    public static readonly PHASE_IDLE = 'IDLE';
 
     readonly name = ShoreWalkLogic.NAME;
 
@@ -119,7 +117,7 @@ export class ShoreWalkLogic implements AnimalLogic {
             return {
                 path: { target: currentPos, speed: 0 },
                 locomotionType: 'LAND',
-                logicPhase: ShoreWalkLogic.PHASE_IDLE,
+                logicPhase: AnimalLogicPhase.IDLE,
                 nextLogicConfig: this.nextLogicConfig,
                 isFinished: true
             };
@@ -130,7 +128,7 @@ export class ShoreWalkLogic implements AnimalLogic {
         return {
             path: steering,
             locomotionType: 'LAND',
-            logicPhase: ShoreWalkLogic.PHASE_WALK,
+            logicPhase: AnimalLogicPhase.WALKING,
             isFinished: false
         };
     }

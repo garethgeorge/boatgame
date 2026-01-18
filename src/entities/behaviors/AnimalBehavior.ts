@@ -1,5 +1,6 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
+import { AnimalLogicPhase } from './logic/AnimalLogic';
 
 /**
  * IDLE_TICK - called while behavior is not running logic
@@ -10,7 +11,7 @@ import * as THREE from 'three';
  */
 export type AnimalBehaviorEvent =
     | { type: 'IDLE_TICK', dt: number }
-    | { type: 'LOGIC_TICK', dt: number, logicPhase?: string }
+    | { type: 'LOGIC_TICK', dt: number, logicPhase?: AnimalLogicPhase }
     | { type: 'LOGIC_STARTING', logicName: string, duration?: number }
     | { type: 'LOGIC_COMPLETED', logicName: string }
     | { type: 'COMPLETED' };

@@ -8,7 +8,7 @@ import { DefaultFlightLogic } from '../behaviors/logic/DefaultFlightLogic';
 import { AnimalBehaviorEvent, AnyAnimal } from '../behaviors/AnimalBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
-import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogic';
+import { AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
 
 export interface AnimationConfig {
@@ -149,7 +149,7 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
         const config = this.getFlightAnimationName();
         this.player?.play({
             name: config.name,
-            state: DefaultFlightLogic.PHASE_FLYING,
+            state: AnimalLogicPhase.FLYING,
             timeScale: config.timeScale ?? 1.0,
             randomizeLength: 0.2,
             startTime: -1
@@ -160,7 +160,7 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
         const config = this.getWalkingAnimationName();
         this.player?.play({
             name: config.name,
-            state: DefaultFlightLogic.PHASE_WALKING,
+            state: AnimalLogicPhase.WALKING,
             timeScale: config.timeScale ?? 1.0,
             randomizeLength: 0.2,
             startTime: -1
@@ -195,11 +195,11 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
         if (event.type === 'COMPLETED') {
             this.playIdleAnimation();
         } else if (event.type === 'LOGIC_TICK') {
-            const state = event.logicPhase || DefaultFlightLogic.PHASE_FLYING;
+            const state = event.logicPhase || AnimalLogicPhase.FLYING;
 
-            if (state === DefaultFlightLogic.PHASE_WALKING) {
+            if (state === AnimalLogicPhase.WALKING) {
                 this.playWalkingAnimation();
-            } else if (state === DefaultFlightLogic.PHASE_FLYING) {
+            } else if (state === AnimalLogicPhase.FLYING) {
                 this.playFlightAnimation();
             }
         }

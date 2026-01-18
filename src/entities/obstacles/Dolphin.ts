@@ -4,6 +4,7 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { DefaultSwimAwayLogic } from '../behaviors/logic/DefaultSwimAwayLogic';
 import { SwimAwayAnimal, SwimmerAnimationConfig } from './SwimAwayAnimal';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
 export class Dolphin extends SwimAwayAnimal {
 
@@ -25,8 +26,8 @@ export class Dolphin extends SwimAwayAnimal {
         model.scale.set(4.0, 4.0, 4.0);
     }
 
-    protected getAnimationConfig(state: string): SwimmerAnimationConfig {
-        const isFleeing = state === DefaultSwimAwayLogic.PHASE_FLEEING;
+    protected getAnimationConfig(state: AnimalLogicPhase): SwimmerAnimationConfig {
+        const isFleeing = state === AnimalLogicPhase.FLEEING;
         return {
             name: isFleeing ? 'swim' : 'idle',
             timeScale: isFleeing ? 1.5 : 1.0,

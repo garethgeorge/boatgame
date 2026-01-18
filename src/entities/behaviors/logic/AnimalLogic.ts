@@ -10,6 +10,18 @@ import { AnimalStrategyContext } from './AnimalPathStrategy';
 export type LocomotionType = 'WATER' | 'LAND' | 'FLIGHT';
 
 /**
+ * Phases that any animal logic can be in.
+ */
+export enum AnimalLogicPhase {
+    IDLE = 'IDLE',
+    PREPARING = 'PREPARING',
+    ATTACKING = 'ATTACKING',
+    FLEEING = 'FLEEING',
+    WALKING = 'WALKING',
+    FLYING = 'FLYING'
+}
+
+/**
  * Configuration for any animal behavioral logic.
  */
 export interface AnimalLogicConfig {
@@ -34,7 +46,7 @@ export interface AnimalLogicPathResult {
     locomotionType: LocomotionType;
 
     // Specifies the current phase of the logic if it has them
-    logicPhase?: string;
+    logicPhase?: AnimalLogicPhase;
 
     // --- Logic Chaining ---
     // Transition to a new logic if specified

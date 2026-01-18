@@ -8,6 +8,7 @@ import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AnyAnimal, AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { DefaultSwimAwayLogic } from '../behaviors/logic/DefaultSwimAwayLogic';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
 export interface SwimAwayAnimalOptions {
     x: number;
@@ -99,7 +100,7 @@ export abstract class SwimAwayAnimal extends Entity implements AnyAnimal {
 
         this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, { name: 'swimaway' });
 
-        const initialAnim = this.getAnimationConfig('IDLE');
+        const initialAnim = this.getAnimationConfig(AnimalLogicPhase.IDLE);
         this.player?.play({
             name: initialAnim.name,
             timeScale: initialAnim.timeScale ?? 1.0,
@@ -118,7 +119,7 @@ export abstract class SwimAwayAnimal extends Entity implements AnyAnimal {
 
     protected abstract setupModel(model: THREE.Group): void;
 
-    protected abstract getAnimationConfig(state: string): SwimmerAnimationConfig;
+    protected abstract getAnimationConfig(state: AnimalLogicPhase): SwimmerAnimationConfig;
 
     getPhysicsBody(): planck.Body | null {
         return this.physicsBodies.length > 0 ? this.physicsBodies[0] : null;
@@ -141,7 +142,7 @@ export abstract class SwimAwayAnimal extends Entity implements AnyAnimal {
 
     handleBehaviorEvent(event: AnimalBehaviorEvent): void {
         if (event.type === 'COMPLETED') {
-            const anim = this.getAnimationConfig('IDLE');
+            const anim = this.getAnimationConfig(AnimalLogicPhase.IDLE);
             this.player?.play({
                 name: anim.name,
                 state: 'IDLE',
@@ -150,7 +151,7 @@ export abstract class SwimAwayAnimal extends Entity implements AnyAnimal {
                 startTime: anim.startTime ?? -1.0
             });
         } else if (event.type === 'LOGIC_TICK') {
-            const state = event.logicPhase || 'ACTIVE';
+            const state = event.logicPhase || AnimalLogicPhase.FLEEING;
             const anim = this.getAnimationConfig(state);
             this.player?.play({
                 name: anim.name,

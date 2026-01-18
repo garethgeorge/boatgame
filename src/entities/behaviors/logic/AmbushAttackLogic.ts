@@ -1,20 +1,13 @@
 import * as planck from 'planck';
 import { Boat } from '../../Boat';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './AnimalPathStrategy';
 import { ShoreHuggingStrategy, SternInterceptStrategy } from './AttackPathStrategies';
 
 export class AmbushAttackLogic implements AnimalLogic {
     public static readonly NAME = 'ambush';
     readonly name = AmbushAttackLogic.NAME;
-
-    /** Animal is orienting towards the target. */
-    public static readonly PHASE_PREPARING = 'PREPARING';
-    /** Animal is stalking or waiting in ambush. */
-    public static readonly PHASE_IDLE = 'IDLE';
-    /** Animal is striking or charging. */
-    public static readonly PHASE_ATTACKING = 'ATTACKING';
 
     private currentStrategy: AnimalPathStrategy;
     private state: 'PREPARING' | 'STALKING' | 'STRIKING' = 'PREPARING';
@@ -53,7 +46,7 @@ export class AmbushAttackLogic implements AnimalLogic {
             if (Math.abs(angleDiff) < 0.45) this.state = 'STALKING';
         }
 
-        const phase = this.state === 'STRIKING' ? AmbushAttackLogic.PHASE_ATTACKING : (this.state === 'PREPARING' ? AmbushAttackLogic.PHASE_PREPARING : AmbushAttackLogic.PHASE_IDLE);
+        const phase = this.state === 'STRIKING' ? AnimalLogicPhase.ATTACKING : (this.state === 'PREPARING' ? AnimalLogicPhase.PREPARING : AnimalLogicPhase.IDLE);
         return {
             path: steering,
             locomotionType: 'WATER',
