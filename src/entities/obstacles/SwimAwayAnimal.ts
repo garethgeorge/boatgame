@@ -3,7 +3,9 @@ import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { ObstacleHitBehavior, ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
-import { Animal, AnimalPhysicsOptions } from './Animal';
+import { Animal, AnimalLogicOrchestrator, AnimalPhysicsOptions } from './Animal';
+import { DefaultSwimAwayLogic } from '../behaviors/logic/DefaultSwimAwayLogic';
+import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogic';
 
 export interface SwimAwayAnimalOptions {
     x: number;
@@ -13,6 +15,13 @@ export interface SwimAwayAnimalOptions {
     aggressiveness?: number;
 }
 
+
+export class SwimAwayLogicOrchestrator implements AnimalLogicOrchestrator {
+    getLogicConfig(): AnimalLogicConfig {
+        return { name: DefaultSwimAwayLogic.NAME };
+    }
+}
+
 export abstract class SwimAwayAnimal extends Animal implements AnyAnimal {
 
     constructor(
@@ -20,7 +29,8 @@ export abstract class SwimAwayAnimal extends Animal implements AnyAnimal {
         subtype: string,
         entityType: string,
         options: SwimAwayAnimalOptions,
-        physicsOptions: AnimalPhysicsOptions
+        physicsOptions: AnimalPhysicsOptions,
+        orchestrator: AnimalLogicOrchestrator
     ) {
         super();
 
@@ -38,10 +48,10 @@ export abstract class SwimAwayAnimal extends Animal implements AnyAnimal {
         this.setupModelMesh(height);
 
         const aggressiveness = (options.aggressiveness !== undefined) ? options.aggressiveness : 1.0;
-        this.setupBehavior({ name: 'swimaway' }, aggressiveness);
+        this.setupBehavior(orchestrator, aggressiveness);
     }
 
-    getHitBehaviorParams(): ObstacleHitBehaviorParams {
+    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
         return { duration: 0.5, rotateSpeed: 25, targetHeightOffset: 5 };
     }
 }

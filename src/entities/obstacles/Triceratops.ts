@@ -2,17 +2,13 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
+import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './AttackAnimal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations } from './Animal';
 
 export class Triceratops extends AttackAnimal {
 
     public static readonly HEIGHT_IN_WATER: number = -1.5;
-
-    protected get heightInWater(): number {
-        return Triceratops.HEIGHT_IN_WATER;
-    }
 
     constructor(
         physicsEngine: PhysicsEngine,
@@ -25,7 +21,14 @@ export class Triceratops extends AttackAnimal {
             friction: 0.3,
             linearDamping: 3.0,
             angularDamping: 2.0
-        });
+        },
+            new AttackLogicOrchestrator({
+                attackLogicName: options.attackLogicName,
+                heightInWater: Triceratops.HEIGHT_IN_WATER,
+                onShore: options.onShore,
+                stayOnShore: options.stayOnShore
+            })
+        );
     }
 
     protected getModelData() {

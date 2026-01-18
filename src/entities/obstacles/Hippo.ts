@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
+import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './AttackAnimal';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations } from './Animal';
@@ -10,22 +10,26 @@ export class Hippo extends AttackAnimal {
 
     public static readonly HEIGHT_IN_WATER: number = -0.5;
 
-    protected get heightInWater(): number {
-        return Hippo.HEIGHT_IN_WATER;
-    }
-
     constructor(
         physicsEngine: PhysicsEngine,
         options: AttackAnimalOptions
     ) {
-        super(physicsEngine, 'hippo', options, {
-            halfWidth: 1.5,
-            halfLength: 3.0,
-            density: 5.0,
-            friction: 0.1,
-            linearDamping: 2.0,
-            angularDamping: 1.0
-        });
+        super(physicsEngine, 'hippo', options,
+            {
+                halfWidth: 1.5,
+                halfLength: 3.0,
+                density: 5.0,
+                friction: 0.1,
+                linearDamping: 2.0,
+                angularDamping: 1.0
+            },
+            new AttackLogicOrchestrator({
+                attackLogicName: options.attackLogicName,
+                heightInWater: Hippo.HEIGHT_IN_WATER,
+                onShore: options.onShore,
+                stayOnShore: options.stayOnShore
+            })
+        );
     }
 
     protected getModelData() {

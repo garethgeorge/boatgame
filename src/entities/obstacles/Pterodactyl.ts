@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { FlyingAnimal, FlyingAnimalOptions } from './FlyingAnimal';
+import { FlyingAnimal, FlyingAnimalOptions, FlyingLogicOrchestrator } from './FlyingAnimal';
 import { AnimalAnimations, Animal } from './Animal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
@@ -20,7 +20,7 @@ export class Pterodactyl extends FlyingAnimal {
             halfLength: 1.5,
             density: 1.0,
             friction: 0.1
-        });
+        }, new FlyingLogicOrchestrator({ flightSpeed: opts.flightSpeed }));
     }
 
     protected getModelData() {

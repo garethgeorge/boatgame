@@ -28,7 +28,12 @@ export interface AnimalAnimations {
     }[];
 }
 
+export interface AnimalLogicOrchestrator {
+    getLogicConfig(): AnimalLogicConfig;
+}
+
 export abstract class Animal extends Entity implements AnyAnimal {
+    private orchestrator: AnimalLogicOrchestrator;
     private behavior: EntityBehavior | null = null;
     private player: AnimationPlayer | null = null;
 
@@ -98,14 +103,14 @@ export abstract class Animal extends Entity implements AnyAnimal {
 
     //--- Animation functions
 
-    protected static play(params: AnimationParameters):
+    public static play(params: AnimationParameters):
         (player: AnimationPlayer, logic: AnimalLogic) => void {
         return (player: AnimationPlayer, logic: AnimalLogic) => {
             player.play(params);
         }
     }
 
-    protected static stop():
+    public static stop():
         (player: AnimationPlayer, logic: AnimalLogic) => void {
         return (player: AnimationPlayer, logic: AnimalLogic) => {
             player.stopAll();
@@ -114,11 +119,11 @@ export abstract class Animal extends Entity implements AnyAnimal {
 
     protected abstract getAnimations(): AnimalAnimations;
 
-    protected playAnimation(params: AnimationParameters) {
+    public playAnimation(params: AnimationParameters) {
         this.player.play(params);
     }
 
-    private playAnimationForPhase(logic: AnimalLogic, phase: AnimalLogicPhase) {
+    public playAnimationForPhase(logic: AnimalLogic, phase: AnimalLogicPhase) {
         const config = this.getAnimations();
         const playAnimation = config.animations?.find((animation) =>
             animation.phases.includes(phase)
@@ -131,11 +136,16 @@ export abstract class Animal extends Entity implements AnyAnimal {
     //--- behavior
 
     protected setupBehavior(
-        logicConfig: AnimalLogicConfig,
+        orchestrator: AnimalLogicOrchestrator,
         aggressiveness: number,
         snoutOffset?: planck.Vec2
     ) {
-        this.behavior = new AnimalUniversalBehavior(this, aggressiveness, logicConfig, snoutOffset);
+        const logicConfig = orchestrator.getLogicConfig();
+        if (logicConfig) {
+            this.behavior = new AnimalUniversalBehavior(this, aggressiveness, logicConfig, snoutOffset);
+        } else {
+            this.playAnimationForPhase(null, AnimalLogicPhase.NONE);
+        }
     }
 
     //--- Entity
@@ -149,7 +159,7 @@ export abstract class Animal extends Entity implements AnyAnimal {
         }
     }
 
-    abstract getHitBehaviorParams(): ObstacleHitBehaviorParams;
+    protected abstract getHitBehaviorParams(): ObstacleHitBehaviorParams;
 
     wasHitByPlayer() {
         const params = this.getHitBehaviorParams();

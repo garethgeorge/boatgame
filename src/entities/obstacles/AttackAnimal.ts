@@ -2,17 +2,13 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { AnimationParameters, AnimationPlayer } from '../../core/AnimationPlayer';
-import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
-import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { WolfAttackLogic } from '../behaviors/logic/WolfAttackLogic';
 import { EnteringWaterLogic } from '../behaviors/logic/EnteringWaterLogic';
 import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
-import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
-import { AnimalLogic, AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
-import { ObstacleHitBehavior, ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
-import { Animal, AnimalPhysicsOptions } from './Animal';
+import { AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
+import { Animal, AnimalLogicOrchestrator, AnimalPhysicsOptions } from './Animal';
 
 export interface AttackAnimalOptions {
     x: number;
@@ -27,61 +23,32 @@ export interface AttackAnimalOptions {
     attackOffset?: planck.Vec2;
 }
 
-export abstract class AttackAnimal extends Animal implements AnyAnimal {
-    protected attackLogicName: string | undefined;
-    protected attackOffset: planck.Vec2;
+export class AttackLogicOrchestrator implements AnimalLogicOrchestrator {
+    private attackLogicName: string;
+    private heightInWater: number;
+    private jumpsIntoWater: boolean;
+    private onShore: boolean;
+    private stayOnShore: boolean;
 
     constructor(
-        physicsEngine: PhysicsEngine,
-        subtype: string,
-        options: AttackAnimalOptions,
-        physicsOptions: AnimalPhysicsOptions
-    ) {
-        super();
-
-        const {
-            x,
-            y,
-            height,
-            angle = 0,
-            terrainNormal,
-            onShore = false,
-            stayOnShore = false,
-        } = options;
-
-        this.attackLogicName = options.attackLogicName;
-        this.attackOffset = options.attackOffset || planck.Vec2(0, -physicsOptions.halfLength);
-        this.canCausePenalty = true;
-
-        this.setupPhysicsBody(physicsEngine, subtype, Entity.TYPE_OBSTACLE, x, y, -angle, physicsOptions);
-
-        this.setupModelMesh(height);
-
-        if (terrainNormal)
-            this.normalVector = terrainNormal.clone();
-        else
-            this.normalVector = new THREE.Vector3(0, 1, 0);
-
-        const aggressiveness = (options.aggressiveness !== undefined) ? options.aggressiveness : Math.random();
-        const logicConfig = this.getLogicConfig(aggressiveness, onShore, stayOnShore);
-        if (logicConfig) {
-            this.setupBehavior(logicConfig, aggressiveness, this.attackOffset);
-        } else {
-            this.playAnimation(null, AnimalLogicPhase.NONE);
+        params: {
+            attackLogicName: string,
+            heightInWater: number,
+            jumpsIntoWater?: boolean,
+            onShore?: boolean,
+            stayOnShore?: boolean
         }
+    ) {
+        this.attackLogicName = params.attackLogicName;
+        this.heightInWater = params.heightInWater;
+        this.jumpsIntoWater = params.jumpsIntoWater ?? false;
+        this.onShore = params.onShore ?? false;
+        this.stayOnShore = params.stayOnShore ?? false;
     }
 
-    // The height for the model when in water
-    protected abstract get heightInWater(): number;
-
-    // Does the animal jump into the water?
-    protected get jumpsIntoWater(): boolean {
-        return false;
-    }
-
-    getLogicConfig(aggressiveness: number, onShore: boolean, stayOnShore: boolean): AnimalLogicConfig {
-        if (onShore) {
-            if (!stayOnShore) {
+    getLogicConfig(): AnimalLogicConfig {
+        if (this.onShore) {
+            if (!this.stayOnShore) {
                 return this.getOnShoreConfig();
             } else {
                 return null;
@@ -89,7 +56,6 @@ export abstract class AttackAnimal extends Animal implements AnyAnimal {
         } else {
             return this.getInWaterConfig();
         }
-
     }
 
     getOnShoreConfig(): AnimalLogicConfig {
@@ -126,8 +92,44 @@ export abstract class AttackAnimal extends Animal implements AnyAnimal {
     shoreIdleMaybeSwitchBehavior(): AnimalLogicConfig | null {
         return null; // Default: stay in idle
     }
+}
 
-    getHitBehaviorParams(): ObstacleHitBehaviorParams {
+export abstract class AttackAnimal extends Animal implements AnyAnimal {
+
+    constructor(
+        physicsEngine: PhysicsEngine,
+        subtype: string,
+        options: AttackAnimalOptions,
+        physicsOptions: AnimalPhysicsOptions,
+        orchestrator: AnimalLogicOrchestrator
+    ) {
+        super();
+
+        const {
+            x,
+            y,
+            height,
+            angle = 0,
+            terrainNormal,
+        } = options;
+
+        this.canCausePenalty = true;
+
+        this.setupPhysicsBody(physicsEngine, subtype, Entity.TYPE_OBSTACLE, x, y, -angle, physicsOptions);
+
+        this.setupModelMesh(height);
+
+        if (terrainNormal)
+            this.normalVector = terrainNormal.clone();
+        else
+            this.normalVector = new THREE.Vector3(0, 1, 0);
+
+        const aggressiveness = options.aggressiveness ?? Math.random();
+        const attackOffset = options.attackOffset ?? planck.Vec2(0, -physicsOptions.halfLength);
+        this.setupBehavior(orchestrator, aggressiveness, attackOffset);
+    }
+
+    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
         return { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 };
     }
 }

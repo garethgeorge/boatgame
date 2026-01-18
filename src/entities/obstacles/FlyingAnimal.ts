@@ -8,8 +8,9 @@ import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
-import { Animal, AnimalPhysicsOptions } from './Animal';
+import { Animal, AnimalLogicOrchestrator, AnimalPhysicsOptions } from './Animal';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
+import { Entity } from '../../core/Entity';
 
 export interface FlyingAnimalOptions {
     x: number;
@@ -21,13 +22,36 @@ export interface FlyingAnimalOptions {
     flightSpeed?: number;
 }
 
+export class FlyingLogicOrchestrator implements AnimalLogicOrchestrator {
+    private flightSpeed: number;
+
+    constructor(params: { flightSpeed?: number }) {
+        this.flightSpeed = params.flightSpeed ?? 1.0;
+    }
+
+    getLogicConfig(): AnimalLogicConfig {
+        return {
+            name: ShoreIdleLogic.NAME,
+            params: {
+                minNoticeDistance: 200.0,
+                ignoreBottles: true,
+                nextLogicConfig: {
+                    name: DefaultFlightLogic.NAME,
+                    params: { flightSpeed: this.flightSpeed }
+                }
+            }
+        };
+    }
+}
+
 export abstract class FlyingAnimal extends Animal implements AnyAnimal {
 
     constructor(
         physicsEngine: PhysicsEngine,
         subtype: string,
         options: FlyingAnimalOptions,
-        physicsOptions: AnimalPhysicsOptions
+        physicsOptions: AnimalPhysicsOptions,
+        orchestrator: AnimalLogicOrchestrator
     ) {
         super();
 
@@ -37,11 +61,10 @@ export abstract class FlyingAnimal extends Animal implements AnyAnimal {
             height,
             angle = 0,
             terrainNormal,
-            flightSpeed = 1.0
         } = options;
 
 
-        this.setupPhysicsBody(physicsEngine, subtype, 'obstacle', x, y, angle, physicsOptions);
+        this.setupPhysicsBody(physicsEngine, subtype, Entity.TYPE_OBSTACLE, x, y, angle, physicsOptions);
 
         this.setupModelMesh(height);
 
@@ -50,22 +73,11 @@ export abstract class FlyingAnimal extends Animal implements AnyAnimal {
         else
             this.normalVector = new THREE.Vector3(0, 1, 0);
 
-        const logicConfig: AnimalLogicConfig = {
-            name: ShoreIdleLogic.NAME,
-            params: {
-                minNoticeDistance: 200.0,
-                ignoreBottles: true,
-                nextLogicConfig: {
-                    name: DefaultFlightLogic.NAME,
-                    params: { flightSpeed }
-                }
-            }
-        };
         const aggressiveness = (options.aggressiveness !== undefined) ? options.aggressiveness : Math.random();
-        this.setupBehavior(logicConfig, aggressiveness);
+        this.setupBehavior(orchestrator, aggressiveness);
     }
 
-    getHitBehaviorParams(): ObstacleHitBehaviorParams {
+    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
         return null;
     }
 }

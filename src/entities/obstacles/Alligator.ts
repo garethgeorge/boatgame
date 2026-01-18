@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
+import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './AttackAnimal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations } from './Animal';
 
@@ -10,22 +10,26 @@ export class Alligator extends AttackAnimal {
 
     public static readonly HEIGHT_IN_WATER: number = -1.0;
 
-    protected get heightInWater(): number {
-        return Alligator.HEIGHT_IN_WATER;
-    }
-
     constructor(
         physicsEngine: PhysicsEngine,
         options: AttackAnimalOptions
     ) {
-        super(physicsEngine, 'alligator', options, {
-            halfWidth: 1.0,
-            halfLength: 3.0,
-            density: 5.0,
-            friction: 0.1,
-            linearDamping: 2.0,
-            angularDamping: 1.0
-        });
+        super(physicsEngine, 'alligator', options,
+            {
+                halfWidth: 1.0,
+                halfLength: 3.0,
+                density: 5.0,
+                friction: 0.1,
+                linearDamping: 2.0,
+                angularDamping: 1.0
+            },
+            new AttackLogicOrchestrator({
+                attackLogicName: options.attackLogicName,
+                heightInWater: Alligator.HEIGHT_IN_WATER,
+                onShore: options.onShore,
+                stayOnShore: options.stayOnShore
+            })
+        );
     }
 
     protected getModelData() {
