@@ -1,17 +1,10 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
-import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AnimationParameters, AnimationPlayer } from '../../core/AnimationPlayer';
-import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
-import { EntityBehavior } from '../behaviors/EntityBehavior';
-import { WolfAttackLogic } from '../behaviors/logic/WolfAttackLogic';
-import { EnteringWaterLogic } from '../behaviors/logic/EnteringWaterLogic';
-import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
 import { AnimalLogic, AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
-import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 
 export interface AnimalAnimations {
     default: (player: AnimationPlayer, logic: AnimalLogic) => void,

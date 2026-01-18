@@ -192,6 +192,12 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const nextVel = currentVel.clone().add(targetVel.clone().sub(currentVel).mul(Math.min(1.0, 5.0 * dt)));
 
         physicsBody.setLinearVelocity(nextVel);
+
+        // --- Precise Positioning (Height/Normal) ---
+        if (steering.height !== undefined) {
+            const normal = steering.facing?.normal ?? new THREE.Vector3(0, 1, 0);
+            this.entity.setExplictPosition?.(steering.height, normal);
+        }
     }
 
     private executeLandLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
