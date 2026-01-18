@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { AnimationPlayer } from '../../core/AnimationPlayer';
+import { AnimationParameters, AnimationPlayer } from '../../core/AnimationPlayer';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { WolfAttackLogic } from '../behaviors/logic/WolfAttackLogic';
@@ -10,10 +10,8 @@ import { EnteringWaterLogic } from '../behaviors/logic/EnteringWaterLogic';
 import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
-import { AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { AnimalLogic, AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
-import { GraphicsUtils } from '../../core/GraphicsUtils';
-import { ShoreWalkLogic } from '../behaviors/logic/ShoreWalkLogic';
 
 export interface AttackAnimalOptions {
     x: number;
@@ -36,6 +34,14 @@ export interface AttackAnimalPhysicsOptions {
     restitution?: number;
     linearDamping?: number;
     angularDamping?: number;
+}
+
+export interface AttackAnimalAnimations {
+    default: (player: AnimationPlayer, logic: AnimalLogic) => void,
+    animations?: {
+        phases: AnimalLogicPhase[],
+        play: (player: AnimationPlayer, logic: AnimalLogic) => void
+    }[];
 }
 
 export abstract class AttackAnimal extends Entity implements AnyAnimal {
@@ -113,12 +119,12 @@ export abstract class AttackAnimal extends Entity implements AnyAnimal {
             if (!stayOnShore) {
                 const idleConfig = this.getOnShoreConfig();
                 this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, idleConfig, this.attackOffset);
+            } else {
+                this.playAnimation(null, AnimalLogicPhase.NONE);
             }
-            this.playIdleAnimation();
         } else {
             const waterConfig = this.getInWaterConfig();
             this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, waterConfig, this.attackOffset);
-            this.playSwimmingAnimation();
         }
     }
 
@@ -142,33 +148,23 @@ export abstract class AttackAnimal extends Entity implements AnyAnimal {
     // e.g. derived class can scale and rotate model to desired size and facing
     protected abstract setupModel(model: THREE.Group): void;
 
-    // For scaling animations to nominal speed
-    protected getAnimationTimeScale(): number {
-        return 1.0;
+    protected static play(params: AnimationParameters):
+        (player: AnimationPlayer, logic: AnimalLogic) => void {
+        return (player: AnimationPlayer, logic: AnimalLogic) => {
+            player.play(params);
+        }
     }
 
-    protected getIdleAnimationName(): string {
-        return 'standing';
-    }
+    protected abstract getAnimations(): AttackAnimalAnimations;
 
-    protected getWalkingAnimationName(): string {
-        return 'walking';
-    }
-
-    protected getSwimmingAnimationName(): string {
-        return this.getWalkingAnimationName();
-    }
-
-    protected playIdleAnimation() {
-        this.player?.play({ name: this.getIdleAnimationName(), timeScale: this.getAnimationTimeScale(), randomizeLength: 0.2, startTime: -1 });
-    }
-
-    protected playWalkingAnimation(duration: number) {
-        this.player?.play({ name: this.getWalkingAnimationName(), timeScale: this.getAnimationTimeScale(), randomizeLength: 0.2, startTime: -1 });
-    }
-
-    protected playSwimmingAnimation() {
-        this.player?.play({ name: this.getSwimmingAnimationName(), timeScale: this.getAnimationTimeScale(), randomizeLength: 0.2, startTime: -1 });
+    protected playAnimation(logic: AnimalLogic, phase: AnimalLogicPhase) {
+        const config = this.getAnimations();
+        const playAnimation = config.animations?.find((animation) =>
+            animation.phases.includes(phase)
+        )?.play ?? config.default;
+        if (playAnimation) {
+            playAnimation(this.player, logic);
+        }
     }
 
     update(dt: number) {
@@ -240,26 +236,11 @@ export abstract class AttackAnimal extends Entity implements AnyAnimal {
     handleBehaviorEvent(event: AnimalBehaviorEvent): void {
         switch (event.type) {
             case 'LOGIC_STARTING': {
-                switch (event.logicPhase) {
-                    case AnimalLogicPhase.WALKING:
-                    case AnimalLogicPhase.ENTERING_WATER: {
-                        const duration = event.logic.getDuration?.() ?? 1.0;
-                        this.playWalkingAnimation(duration);
-                        break;
-                    }
-                    case AnimalLogicPhase.PREPARING_ATTACK:
-                    case AnimalLogicPhase.ATTACKING: {
-                        this.playSwimmingAnimation();
-                        break;
-                    }
-                    default: {
-                        this.playIdleAnimation();
-                        break;
-                    }
-                }
+                this.playAnimation(event.logic, event.logicPhase);
+                break;
             }
             case 'LOGIC_FINISHED': {
-                this.playIdleAnimation();
+                this.playAnimation(null, AnimalLogicPhase.NONE);
                 break;
             }
         }

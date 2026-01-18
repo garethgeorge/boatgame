@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
-import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogic';
+import { AttackAnimal, AttackAnimalAnimations, AttackAnimalOptions } from './AttackAnimal';
+import { AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { ShoreWalkLogic } from '../behaviors/logic/ShoreWalkLogic';
 
 export class Monkey extends AttackAnimal {
@@ -36,24 +36,38 @@ export class Monkey extends AttackAnimal {
         model.rotation.y = Math.PI;
     }
 
-    protected getIdleAnimationName(): string {
-        return 'idle';
+    private static readonly animations: AttackAnimalAnimations = {
+        default: AttackAnimal.play({
+            name: 'idle', state: 'idle',
+            timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+        }),
+        animations: [
+            {
+                phases: [
+                    AnimalLogicPhase.WALKING,
+                    AnimalLogicPhase.ENTERING_WATER,
+                ],
+                play: AttackAnimal.play({
+                    name: 'walk', state: 'walking',
+                    timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+                })
+            },
+            {
+                phases: [
+                    AnimalLogicPhase.IDLE_WATER,
+                    AnimalLogicPhase.PREPARING_ATTACK,
+                    AnimalLogicPhase.ATTACKING,
+                ],
+                play: AttackAnimal.play({
+                    name: 'swim', state: 'swimming',
+                    timeScale: 2.5, startTime: -1, randomizeLength: 0.2
+                })
+            },
+        ]
     }
 
-    protected getWalkingAnimationName(): string {
-        return 'walk';
-    }
-
-    protected getSwimmingAnimationName(): string {
-        return 'swim';
-    }
-
-    protected getAnimationTimeScale(): number {
-        return 1.0;
-    }
-
-    protected playSwimmingAnimation(): void {
-        this.player?.play({ name: this.getSwimmingAnimationName(), timeScale: 2.5, randomizeLength: 0.2, startTime: -1 });
+    protected getAnimations(): AttackAnimalAnimations {
+        return Monkey.animations;
     }
 
     shoreIdleMaybeSwitchBehavior(): AnimalLogicConfig | null {

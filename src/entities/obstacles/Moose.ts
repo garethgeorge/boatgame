@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
+import { AttackAnimal, AttackAnimalAnimations, AttackAnimalOptions } from './AttackAnimal';
+import { AnimalLogic, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { AnimationPlayer } from '../../core/AnimationPlayer';
 
 export class Moose extends AttackAnimal {
 
@@ -39,31 +41,47 @@ export class Moose extends AttackAnimal {
         model.rotation.y = Math.PI;
     }
 
-    protected getIdleAnimationName(): string {
-        return 'idle';
+    private static readonly animations: AttackAnimalAnimations = {
+        default: AttackAnimal.play({
+            name: 'idle', state: 'idle',
+            timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+        }),
+        animations: [
+            {
+                phases: [
+                    AnimalLogicPhase.ENTERING_WATER,
+                ],
+                play: (player: AnimationPlayer, logic: AnimalLogic) => {
+                    const duration = logic?.getDuration() ?? 1.0;
+                    if (duration > 0.5) {
+                        const startTimeScale = 0.5;
+                        const endTimeScale = 0.5;
+                        const fallDuration = duration - startTimeScale - endTimeScale;
+
+                        player.playSequence([
+                            { name: 'jump_start', duration: startTimeScale },
+                            { name: 'jump_fall', duration: fallDuration },
+                            { name: 'jump_end', duration: endTimeScale }
+                        ]);
+                    } else {
+                        player.play({ name: 'walk', startTime: -1 });
+                    }
+                }
+            },
+            {
+                phases: [
+                    AnimalLogicPhase.PREPARING_ATTACK,
+                    AnimalLogicPhase.ATTACKING,
+                ],
+                play: AttackAnimal.play({
+                    name: 'walk', state: 'swimming',
+                    timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+                })
+            },
+        ]
     }
 
-    protected getWalkingAnimationName(): string {
-        return 'walk';
-    }
-
-    protected playWalkingAnimation(duration: number): void {
-        if (!this.player) {
-            return;
-        }
-
-        if (duration > 0.5) {
-            const startTimeScale = 0.5;
-            const endTimeScale = 0.5;
-            const fallDuration = duration - startTimeScale - endTimeScale;
-
-            this.player.playSequence([
-                { name: 'jump_start', duration: startTimeScale },
-                { name: 'jump_fall', duration: fallDuration },
-                { name: 'jump_end', duration: endTimeScale }
-            ]);
-        } else {
-            this.player.play({ name: 'walk', startTime: -1 });
-        }
+    protected getAnimations(): AttackAnimalAnimations {
+        return Moose.animations;
     }
 }

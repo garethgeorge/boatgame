@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
+import { AttackAnimal, AttackAnimalAnimations, AttackAnimalOptions } from './AttackAnimal';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
@@ -37,16 +37,28 @@ export class Hippo extends AttackAnimal {
         model.position.y = -0.2;
     }
 
-    protected getSwimmingAnimationName(): string {
-        return 'swimming';
+    private static readonly animations: AttackAnimalAnimations = {
+        default: AttackAnimal.play({
+            name: 'swimming', state: 'idle',
+            timeScale: 2.0, startTime: -1, randomizeLength: 0.2
+        }),
+        animations: [
+            {
+                phases: [
+                    AnimalLogicPhase.ENTERING_WATER,
+                    AnimalLogicPhase.PREPARING_ATTACK,
+                    AnimalLogicPhase.ATTACKING,
+                ],
+                play: AttackAnimal.play({
+                    name: 'swimming', state: 'walking',
+                    timeScale: 2.0, startTime: -1, randomizeLength: 0.2
+                })
+            },
+        ]
     }
 
-    protected getWalkingAnimationName(): string {
-        return this.getSwimmingAnimationName();
-    }
-
-    protected getAnimationTimeScale(): number {
-        return 2.0;
+    protected getAnimations(): AttackAnimalAnimations {
+        return Hippo.animations;
     }
 
     handleBehaviorEvent(event: AnimalBehaviorEvent): void {

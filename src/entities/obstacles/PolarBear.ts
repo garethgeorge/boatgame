@@ -2,7 +2,8 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions } from './AttackAnimal';
+import { AttackAnimal, AttackAnimalAnimations, AttackAnimalOptions } from './AttackAnimal';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
 export class PolarBear extends AttackAnimal {
 
@@ -35,11 +36,27 @@ export class PolarBear extends AttackAnimal {
         model.rotation.y = Math.PI;
     }
 
-    protected getIdleAnimationName(): string {
-        return 'Rearing';
+    private static readonly animations: AttackAnimalAnimations = {
+        default: AttackAnimal.play({
+            name: 'Rearing', state: 'idle',
+            timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+        }),
+        animations: [
+            {
+                phases: [
+                    AnimalLogicPhase.ENTERING_WATER,
+                    AnimalLogicPhase.PREPARING_ATTACK,
+                    AnimalLogicPhase.ATTACKING,
+                ],
+                play: AttackAnimal.play({
+                    name: 'Walking', state: 'walking',
+                    timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+                })
+            },
+        ]
     }
 
-    protected getWalkingAnimationName(): string {
-        return 'Walking';
+    protected getAnimations(): AttackAnimalAnimations {
+        return PolarBear.animations;
     }
 }
