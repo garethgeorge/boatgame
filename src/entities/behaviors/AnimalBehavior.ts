@@ -1,20 +1,16 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { AnimalLogicPhase } from './logic/AnimalLogic';
+import { AnimalLogic, AnimalLogicPhase } from './logic/AnimalLogic';
 
 /**
- * IDLE_TICK - called while behavior is not running logic
- * LOGIC_TICK - logic active
  * LOGIC_STARTING - about to start a logic stage
- * LOGIC_COMPLETED - finished a logic stage, moving onto another
- * COMPLETED - returned to idle because logic deactivated or finished
+ * LOGIC_TICK - sent while logic is running
+ * LOGIC_FINISHED - all logic is complete
  */
 export type AnimalBehaviorEvent =
-    | { type: 'IDLE_TICK', dt: number }
-    | { type: 'LOGIC_TICK', dt: number, logicPhase?: AnimalLogicPhase }
-    | { type: 'LOGIC_STARTING', logicName: string, duration?: number }
-    | { type: 'LOGIC_COMPLETED', logicName: string }
-    | { type: 'COMPLETED' };
+    { type: 'LOGIC_STARTING', logic: AnimalLogic, logicPhase: AnimalLogicPhase }
+    | { type: 'LOGIC_TICK', dt: number, logic: AnimalLogic, logicPhase: AnimalLogicPhase }
+    | { type: 'LOGIC_FINISHED' }
 
 // Any animal must implement this interface to get behavior
 export interface AnyAnimal {

@@ -28,8 +28,8 @@ export class PenguinKayak extends SwimAwayAnimal {
         model.position.y = -0.4;
     }
 
-    protected getAnimationConfig(state: AnimalLogicPhase): SwimmerAnimationConfig {
-        const timeScale = state === AnimalLogicPhase.FLEEING ? 3.5 : 2.0;
+    protected getAnimationConfig(phase: AnimalLogicPhase): SwimmerAnimationConfig {
+        const timeScale = phase === AnimalLogicPhase.SWIMING_AWAY ? 3.5 : 2.0;
         return {
             name: 'paddling',
             timeScale: timeScale,

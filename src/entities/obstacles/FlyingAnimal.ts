@@ -130,10 +130,6 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
 
     protected abstract getFlightAnimationName(): AnimationConfig;
 
-    protected getWalkingAnimationName(): AnimationConfig {
-        return { name: 'walking' };
-    }
-
     protected playIdleAnimation() {
         const config = this.getIdleAnimationName();
         this.player?.play({
@@ -150,17 +146,6 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
         this.player?.play({
             name: config.name,
             state: AnimalLogicPhase.FLYING,
-            timeScale: config.timeScale ?? 1.0,
-            randomizeLength: 0.2,
-            startTime: -1
-        });
-    }
-
-    protected playWalkingAnimation() {
-        const config = this.getWalkingAnimationName();
-        this.player?.play({
-            name: config.name,
-            state: AnimalLogicPhase.WALKING,
             timeScale: config.timeScale ?? 1.0,
             randomizeLength: 0.2,
             startTime: -1
@@ -192,15 +177,27 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
     }
 
     handleBehaviorEvent(event: AnimalBehaviorEvent): void {
-        if (event.type === 'COMPLETED') {
-            this.playIdleAnimation();
-        } else if (event.type === 'LOGIC_TICK') {
-            const state = event.logicPhase || AnimalLogicPhase.FLYING;
-
-            if (state === AnimalLogicPhase.WALKING) {
-                this.playWalkingAnimation();
-            } else if (state === AnimalLogicPhase.FLYING) {
-                this.playFlightAnimation();
+        switch (event.type) {
+            case 'LOGIC_STARTING': {
+                switch (event.logicPhase) {
+                    case AnimalLogicPhase.FLYING: {
+                        this.playFlightAnimation();
+                        break;
+                    }
+                    case AnimalLogicPhase.PREPARING_ATTACK:
+                    case AnimalLogicPhase.ATTACKING: {
+                        this.playFlightAnimation();
+                        break;
+                    }
+                    default: {
+                        this.playIdleAnimation();
+                        break;
+                    }
+                }
+            }
+            case 'LOGIC_FINISHED': {
+                this.playIdleAnimation();
+                break;
             }
         }
     }

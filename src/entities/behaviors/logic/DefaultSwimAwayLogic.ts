@@ -3,35 +3,59 @@ import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { FleePathStrategy } from './FleePathStrategy';
 
+/**
+ * Swim away logic runs forever.
+ */
 export class DefaultSwimAwayLogic implements AnimalLogic {
     public static readonly NAME = 'swimaway';
     readonly name = DefaultSwimAwayLogic.NAME;
 
     private strategy: FleePathStrategy;
+    private state: 'IDLE' | 'FLEEING' = 'IDLE';
 
     constructor() {
         this.strategy = new FleePathStrategy();
-    }
-
-    /**
-     * Start when boat is within distance
-     */
-    shouldActivate(context: AnimalLogicContext): boolean {
-        const params = AnimalBehaviorUtils.evaluateSwimAwayParams(context.aggressiveness, context.bottles);
-        return planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < params.startFleeDistance;
     }
 
     activate(context: AnimalLogicContext): void {
     }
 
     update(context: AnimalLogicContext): AnimalLogicPathResult {
+        // See whether to engage/disengage attack
+        if (this.state == 'IDLE') {
+            if (this.shouldEngage(context)) {
+                this.state = 'FLEEING';
+            }
+        } else {
+            if (this.shouldDisengage(context)) {
+                this.state = 'IDLE';
+            }
+        }
+        if (this.state == 'IDLE') {
+            return {
+                path: {
+                    target: context.originPos,
+                    speed: 0
+                },
+                locomotionType: 'WATER',
+            }
+        }
+
         const steering = this.strategy.update(context);
         return {
             path: steering,
             locomotionType: 'WATER',
-            logicPhase: AnimalLogicPhase.FLEEING,
             isFinished: this.shouldDisengage(context)
         };
+    }
+
+    getPhase(): AnimalLogicPhase {
+        return this.state === 'IDLE' ? AnimalLogicPhase.IDLE_WATER : AnimalLogicPhase.SWIMING_AWAY;
+    }
+
+    shouldEngage(context: AnimalLogicContext): boolean {
+        const params = AnimalBehaviorUtils.evaluateSwimAwayParams(context.aggressiveness, context.bottles);
+        return planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < params.startFleeDistance;
     }
 
     shouldDisengage(context: AnimalLogicContext): boolean {

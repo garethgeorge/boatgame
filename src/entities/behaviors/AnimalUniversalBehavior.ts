@@ -4,16 +4,18 @@ import { Boat } from '../Boat';
 import { AnyAnimal } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
 import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig } from './logic/AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './logic/AnimalLogic';
 import { AnimalLogicRegistry } from './logic/AnimalLogicRegistry';
 import { AnimalBehaviorEvent } from './AnimalBehavior';
 
 export class AnimalUniversalBehavior implements EntityBehavior {
     private entity: AnyAnimal;
-    private logic: AnimalLogic;
-    private state: 'IDLE' | 'ACTIVE' = 'IDLE';
     private aggressiveness: number;
     private snoutOffset: planck.Vec2;
+
+    // Current logic
+    private logicPhase: AnimalLogicPhase = AnimalLogicPhase.NONE;
+    private logic: AnimalLogic = null;
 
     // Flight/Land state tracking
     private currentAngle: number = 0;
@@ -44,6 +46,8 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     }
 
     update(dt: number) {
+        if (!this.logic) return;
+
         const targetBody = Boat.getPlayerBody();
         const physicsBody = this.entity.getPhysicsBody();
         if (!targetBody || !physicsBody) return;
@@ -59,64 +63,38 @@ export class AnimalUniversalBehavior implements EntityBehavior {
             bottles: Boat.getBottleCount()
         };
 
-        switch (this.state) {
-            case 'IDLE':
-                this.updateIdle(context);
-                break;
-            case 'ACTIVE':
-                this.updateActive(context);
-                break;
-        }
-    }
-
-    private updateIdle(context: AnimalLogicContext) {
-        // Shared idle animation (if entity supports it)
-        this.entity.handleBehaviorEvent?.({ type: 'IDLE_TICK', dt: context.dt });
-
-        if (this.logic.shouldActivate(context)) {
-            this.state = 'ACTIVE';
-
+        // Activate the first logic if starting
+        if (this.logicPhase === AnimalLogicPhase.NONE) {
             this.logic.activate(context);
-            const duration = this.logic.getEstimatedDuration?.(context);
-            this.entity.handleBehaviorEvent?.({
-                type: 'LOGIC_STARTING', logicName: this.logic.name, duration
-            });
         }
+
+        // Update the logic
+        this.updateLogic(context);
     }
 
-    private updateActive(context: AnimalLogicContext) {
+    private updateLogic(context: AnimalLogicContext) {
         // 1. Calculate Path based on fresh state
         let result = this.logic.update(context);
 
         // 2. Handle Logic Chaining
         while (result.nextLogicConfig) {
-            // Notify completion of previous logic
-            this.entity.handleBehaviorEvent?.({
-                type: 'LOGIC_COMPLETED', logicName: this.logic.name
-            });
-
             // Transfer to next logic
             this.logic = AnimalLogicRegistry.create(result.nextLogicConfig);
 
             // Update immediately with new logic to avoid stutter
             this.logic.activate(context);
             result = this.logic.update(context);
-
-            // Notify of logic start
-            const duration = this.logic.getEstimatedDuration?.(context);
-            this.entity.handleBehaviorEvent?.({
-                type: 'LOGIC_STARTING', logicName: this.logic.name, duration
-            });
         }
 
-        // 3. Check for logic-driven completion
+        // 3. Check for all logic done
         if (result.isFinished) {
-            this.deactivate(context);
+            this.logic = null;
+            this.dispatchFinishedEvent();
             return;
         }
 
-        // 5. Animations
-        this.dispatchTickEvent(context, result);
+        // 5. Events
+        this.dispatchEvents(this.logic, context, result);
 
         // 6. Locomotion
         switch (result.locomotionType) {
@@ -133,20 +111,29 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         }
     }
 
-    private deactivate(context: AnimalLogicContext) {
-        this.state = 'IDLE';
-        this.setPhysicsMode(context.physicsBody, false);
-        context.physicsBody.setLinearVelocity(context.physicsBody.getLinearVelocity().mul(0.95));
-
-        this.entity.handleBehaviorEvent?.({ type: 'COMPLETED' });
-    }
-
-    private dispatchTickEvent(context: AnimalLogicContext, result: AnimalLogicPathResult) {
+    private dispatchEvents(logic: AnimalLogic, context: AnimalLogicContext, result: AnimalLogicPathResult) {
+        const logicPhase = logic.getPhase();
+        if (this.logicPhase !== logicPhase) {
+            this.entity.handleBehaviorEvent?.({
+                type: 'LOGIC_STARTING',
+                logic: logic,
+                logicPhase: logicPhase
+            });
+            this.logicPhase = logicPhase;
+        }
         this.entity.handleBehaviorEvent?.({
             type: 'LOGIC_TICK',
             dt: context.dt,
-            logicPhase: result.logicPhase
+            logic: logic,
+            logicPhase: logicPhase
         });
+    }
+
+    private dispatchFinishedEvent() {
+        this.entity.handleBehaviorEvent?.({
+            type: 'LOGIC_FINISHED'
+        });
+        this.logicPhase = AnimalLogicPhase.NONE;
     }
 
     private setPhysicsMode(body: planck.Body, kinematic: boolean) {

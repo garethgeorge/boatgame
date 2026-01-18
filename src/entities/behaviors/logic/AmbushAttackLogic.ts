@@ -5,35 +5,58 @@ import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhas
 import { AnimalPathStrategy } from './AnimalPathStrategy';
 import { ShoreHuggingStrategy, SternInterceptStrategy } from './AttackPathStrategies';
 
+/**
+ * Ambush logic runs forever.
+ */
 export class AmbushAttackLogic implements AnimalLogic {
     public static readonly NAME = 'ambush';
     readonly name = AmbushAttackLogic.NAME;
 
     private currentStrategy: AnimalPathStrategy;
-    private state: 'PREPARING' | 'STALKING' | 'STRIKING' = 'PREPARING';
+    private state: 'IDLE' | 'PREPARING' | 'STALKING' | 'STRIKING' = 'IDLE';
 
     constructor() {
         this.currentStrategy = new ShoreHuggingStrategy();
-    }
-
-    shouldActivate(context: AnimalLogicContext): boolean {
-        if (context.bottles <= 0) return false;
-        const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
-        if (context.targetBody.getLocalPoint(context.originPos).y > Boat.STERN_Y) return false;
-        return planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < params.startAttackDistance;
     }
 
     activate(context: AnimalLogicContext): void {
     }
 
     update(context: AnimalLogicContext): AnimalLogicPathResult {
-        // See if it is time to switch to a new strategy
-        const relVelLong = context.targetBody.getLocalVector(context.physicsBody.getLinearVelocity().clone().sub(context.targetBody.getLinearVelocity())).y;
-        if (this.state === 'STALKING' && context.targetBody.getLocalPoint(context.snoutPos).y > Boat.BOW_Y - relVelLong * 0.25) {
+
+        // See whether to engage/disengage attack
+        if (this.state == 'IDLE') {
+            if (this.shouldEngage(context)) {
+                this.state = 'PREPARING';
+            }
+        } else {
+            if (this.shouldDisengage(context)) {
+                this.state = 'IDLE';
+            }
+        }
+        if (this.state == 'IDLE') {
+            return {
+                path: {
+                    target: context.originPos,
+                    speed: 0
+                },
+                locomotionType: 'WATER',
+            }
+        }
+
+        // See if it is time to switch to a new strategy, switch to striking
+        // if gap to boat will close in less than 0.25 seconds
+        const relativeVelocity = context.targetBody.getLocalVector(
+            context.physicsBody.getLinearVelocity().clone().sub(
+                context.targetBody.getLinearVelocity()
+            )).y;
+        if (this.state === 'STALKING' &&
+            context.targetBody.getLocalPoint(context.snoutPos).y > Boat.BOW_Y - relativeVelocity * 0.25) {
             this.state = 'STRIKING';
             this.currentStrategy = new SternInterceptStrategy(0.4 + (context.aggressiveness * 0.6));
         }
 
+        // Determine the next target
         const steering = this.currentStrategy.update(context);
 
         // Decide if preparatory phase is done
@@ -46,13 +69,28 @@ export class AmbushAttackLogic implements AnimalLogic {
             if (Math.abs(angleDiff) < 0.45) this.state = 'STALKING';
         }
 
-        const phase = this.state === 'STRIKING' ? AnimalLogicPhase.ATTACKING : (this.state === 'PREPARING' ? AnimalLogicPhase.PREPARING : AnimalLogicPhase.IDLE);
         return {
             path: steering,
             locomotionType: 'WATER',
-            logicPhase: phase,
-            isFinished: this.shouldDisengage(context)
+            isFinished: false
         };
+    }
+
+    getPhase(): AnimalLogicPhase {
+        switch (this.state) {
+            case 'IDLE': return AnimalLogicPhase.IDLE_WATER;
+            case 'PREPARING': return AnimalLogicPhase.PREPARING_ATTACK;
+            case 'STALKING':
+            case 'STRIKING':
+            default: return AnimalLogicPhase.ATTACKING;
+        }
+    }
+
+    shouldEngage(context: AnimalLogicContext): boolean {
+        if (context.bottles <= 0) return false;
+        const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
+        if (context.targetBody.getLocalPoint(context.originPos).y > Boat.STERN_Y) return false;
+        return planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < params.startAttackDistance;
     }
 
     shouldDisengage(context: AnimalLogicContext): boolean {

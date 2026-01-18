@@ -28,8 +28,8 @@ export class Duckling extends SwimAwayAnimal {
         model.position.y = -1.25;
     }
 
-    protected getAnimationConfig(state: AnimalLogicPhase): SwimmerAnimationConfig {
-        const timeScale = state === AnimalLogicPhase.FLEEING ? 3.0 : 2.0;
+    protected getAnimationConfig(phase: AnimalLogicPhase): SwimmerAnimationConfig {
+        const timeScale = phase === AnimalLogicPhase.SWIMING_AWAY ? 3.0 : 2.0;
         return {
             name: 'bob',
             timeScale: timeScale,

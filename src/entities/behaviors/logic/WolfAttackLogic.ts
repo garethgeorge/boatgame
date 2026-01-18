@@ -5,32 +5,46 @@ import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhas
 import { AnimalPathStrategy } from './AnimalPathStrategy';
 import { CircleFlankStrategy, SternInterceptStrategy, VulnerableChargeStrategy } from './AttackPathStrategies';
 
+/**
+ * Wolf attack runs forever.
+ */
 export class WolfAttackLogic implements AnimalLogic {
     public static readonly NAME = 'wolf';
     readonly name = WolfAttackLogic.NAME;
 
     private currentStrategy: AnimalPathStrategy;
     private strategyTimer: number = 0;
-    private state: 'PREPARING' | 'ATTACKING' = 'PREPARING';
+    private state: 'IDLE' | 'PREPARING' | 'ATTACKING' = 'IDLE';
 
     constructor() {
         this.currentStrategy = new CircleFlankStrategy();
-    }
-
-    /**
-     * Activate when boat is in range
-     */
-    shouldActivate(context: AnimalLogicContext): boolean {
-        if (context.bottles <= 0) return false;
-        const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
-        if (context.targetBody.getLocalPoint(context.originPos).y > Boat.STERN_Y) return false;
-        return planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < params.startAttackDistance;
     }
 
     activate(context: AnimalLogicContext): void {
     }
 
     update(context: AnimalLogicContext): AnimalLogicPathResult {
+
+        // See whether to engage/disengage attack
+        if (this.state == 'IDLE') {
+            if (this.shouldEngage(context)) {
+                this.state = 'PREPARING';
+            }
+        } else {
+            if (this.shouldDisengage(context)) {
+                this.state = 'IDLE';
+            }
+        }
+        if (this.state == 'IDLE') {
+            return {
+                path: {
+                    target: context.originPos,
+                    speed: 0
+                },
+                locomotionType: 'WATER',
+            }
+        }
+
         // Check for time to change strategy
         this.strategyTimer -= context.dt;
         const relVelLong = context.targetBody.getLocalVector(context.physicsBody.getLinearVelocity().clone().sub(context.targetBody.getLinearVelocity())).y;
@@ -66,9 +80,23 @@ export class WolfAttackLogic implements AnimalLogic {
         return {
             path: steering,
             locomotionType: 'WATER',
-            logicPhase: this.state === 'PREPARING' ? AnimalLogicPhase.PREPARING : AnimalLogicPhase.ATTACKING,
-            isFinished: this.shouldDisengage(context)
+            isFinished: false
         };
+    }
+
+    getPhase(): AnimalLogicPhase {
+        switch (this.state) {
+            case 'IDLE': return AnimalLogicPhase.IDLE_WATER;
+            case 'PREPARING': return AnimalLogicPhase.PREPARING_ATTACK;
+            case 'ATTACKING': return AnimalLogicPhase.ATTACKING;
+        }
+    }
+
+    shouldEngage(context: AnimalLogicContext): boolean {
+        if (context.bottles <= 0) return false;
+        const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
+        if (context.targetBody.getLocalPoint(context.originPos).y > Boat.STERN_Y) return false;
+        return planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < params.startAttackDistance;
     }
 
     shouldDisengage(context: AnimalLogicContext): boolean {

@@ -8,6 +8,9 @@ export interface DefaultFlightParams {
     flightSpeed: number;
 }
 
+/**
+ * Flight logic runs until animal lands. Currently doesn't support a next logic.
+ */
 export class DefaultFlightLogic implements AnimalLogic {
     public static readonly NAME = 'flight';
     readonly name = DefaultFlightLogic.NAME;
@@ -19,10 +22,6 @@ export class DefaultFlightLogic implements AnimalLogic {
     constructor(params: DefaultFlightParams) {
         this.flightSpeed = params.flightSpeed;
         this.strategy = new BuzzTargetStrategy(15.0, 2.5, 75.0, this.flightSpeed);
-    }
-
-    shouldActivate(context: AnimalLogicContext): boolean {
-        return true;
     }
 
     activate(context: AnimalLogicContext): void {
@@ -48,13 +47,15 @@ export class DefaultFlightLogic implements AnimalLogic {
         const steering = this.strategy.update(context);
 
         // Get result
-        const phase = this.state === 'LANDING' ? AnimalLogicPhase.WALKING : AnimalLogicPhase.FLYING;
         return {
             path: steering,
             locomotionType: 'FLIGHT',
-            logicPhase: phase,
             isFinished: this.hasLanded(context)
         };
+    }
+
+    getPhase(): AnimalLogicPhase {
+        return AnimalLogicPhase.FLYING;
     }
 
     private hasLanded(context: AnimalLogicContext): boolean {

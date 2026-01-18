@@ -10,7 +10,7 @@ import { EnteringWaterLogic } from '../behaviors/logic/EnteringWaterLogic';
 import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
-import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogic';
+import { AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { ShoreWalkLogic } from '../behaviors/logic/ShoreWalkLogic';
@@ -238,22 +238,29 @@ export abstract class AttackAnimal extends Entity implements AnyAnimal {
     }
 
     handleBehaviorEvent(event: AnimalBehaviorEvent): void {
-        if (event.type === 'COMPLETED') {
-            this.playIdleAnimation();
-        } else if (event.type === 'LOGIC_STARTING') {
-            if (event.logicName === EnteringWaterLogic.NAME) {
-                const duration = event.duration === undefined ? 1.0 : event.duration;
-                this.playWalkingAnimation(duration);
-            } else if (event.logicName === ShoreWalkLogic.NAME) {
-                this.playWalkingAnimation(1.0);
-            } else if (event.logicName === (this.attackLogicName || WolfAttackLogic.NAME)) {
-                // just to be sure
-                if (this.meshes.length > 0) {
-                    this.meshes[0].position.y = this.heightInWater;
+        switch (event.type) {
+            case 'LOGIC_STARTING': {
+                switch (event.logicPhase) {
+                    case AnimalLogicPhase.WALKING:
+                    case AnimalLogicPhase.ENTERING_WATER: {
+                        const duration = event.logic.getDuration?.() ?? 1.0;
+                        this.playWalkingAnimation(duration);
+                        break;
+                    }
+                    case AnimalLogicPhase.PREPARING_ATTACK:
+                    case AnimalLogicPhase.ATTACKING: {
+                        this.playSwimmingAnimation();
+                        break;
+                    }
+                    default: {
+                        this.playIdleAnimation();
+                        break;
+                    }
                 }
-                this.playSwimmingAnimation();
-            } else {
+            }
+            case 'LOGIC_FINISHED': {
                 this.playIdleAnimation();
+                break;
             }
         }
     }

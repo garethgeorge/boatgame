@@ -99,14 +99,6 @@ export abstract class SwimAwayAnimal extends Entity implements AnyAnimal {
         }
 
         this.behavior = new AnimalUniversalBehavior(this, this.aggressiveness, { name: 'swimaway' });
-
-        const initialAnim = this.getAnimationConfig(AnimalLogicPhase.IDLE);
-        this.player?.play({
-            name: initialAnim.name,
-            timeScale: initialAnim.timeScale ?? 1.0,
-            randomizeLength: initialAnim.randomizeLength ?? 0.2,
-            startTime: initialAnim.startTime ?? -1.0
-        });
     }
 
     private applyModelBase(mesh: THREE.Group, model: THREE.Group, animations: THREE.AnimationClip[]) {
@@ -119,7 +111,11 @@ export abstract class SwimAwayAnimal extends Entity implements AnyAnimal {
 
     protected abstract setupModel(model: THREE.Group): void;
 
-    protected abstract getAnimationConfig(state: AnimalLogicPhase): SwimmerAnimationConfig;
+    protected abstract getAnimationConfig(phase: AnimalLogicPhase): SwimmerAnimationConfig;
+
+    protected getHitBehaviorOptions() {
+        return { duration: 0.5, rotateSpeed: 25, targetHeightOffset: 5 };
+    }
 
     getPhysicsBody(): planck.Body | null {
         return this.physicsBodies.length > 0 ? this.physicsBodies[0] : null;
@@ -129,40 +125,6 @@ export abstract class SwimAwayAnimal extends Entity implements AnyAnimal {
         return this.meshes[0].position.y;
     }
 
-    wasHitByPlayer() {
-        this.destroyPhysicsBodies();
-        this.behavior = new ObstacleHitBehavior(this.meshes, () => {
-            this.shouldRemove = true;
-        }, this.getHitBehaviorOptions());
-    }
-
-    protected getHitBehaviorOptions() {
-        return { duration: 0.5, rotateSpeed: 25, targetHeightOffset: 5 };
-    }
-
-    handleBehaviorEvent(event: AnimalBehaviorEvent): void {
-        if (event.type === 'COMPLETED') {
-            const anim = this.getAnimationConfig(AnimalLogicPhase.IDLE);
-            this.player?.play({
-                name: anim.name,
-                state: 'IDLE',
-                timeScale: anim.timeScale ?? 1.0,
-                randomizeLength: anim.randomizeLength ?? 0.2,
-                startTime: anim.startTime ?? -1.0
-            });
-        } else if (event.type === 'LOGIC_TICK') {
-            const state = event.logicPhase || AnimalLogicPhase.FLEEING;
-            const anim = this.getAnimationConfig(state);
-            this.player?.play({
-                name: anim.name,
-                state: state,
-                timeScale: anim.timeScale ?? 1.0,
-                randomizeLength: anim.randomizeLength ?? 0.2,
-                startTime: anim.startTime ?? -1.0
-            });
-        }
-    }
-
     update(dt: number) {
         if (this.player) {
             this.player.update(dt);
@@ -170,5 +132,35 @@ export abstract class SwimAwayAnimal extends Entity implements AnyAnimal {
         if (this.behavior) {
             this.behavior.update(dt);
         }
+    }
+
+    wasHitByPlayer() {
+        this.destroyPhysicsBodies();
+        this.behavior = new ObstacleHitBehavior(this.meshes, () => {
+            this.shouldRemove = true;
+        }, this.getHitBehaviorOptions());
+    }
+
+    handleBehaviorEvent(event: AnimalBehaviorEvent): void {
+        switch (event.type) {
+            case 'LOGIC_STARTING': {
+                this.playAnimation(event.logicPhase);
+            }
+            case 'LOGIC_FINISHED': {
+                this.playAnimation(AnimalLogicPhase.IDLE_WATER);
+                break;
+            }
+        }
+    }
+
+    private playAnimation(phase: AnimalLogicPhase) {
+        const anim = this.getAnimationConfig(phase);
+        this.player?.play({
+            name: anim.name,
+            state: 'IDLE',
+            timeScale: anim.timeScale ?? 1.0,
+            randomizeLength: anim.randomizeLength ?? 0.2,
+            startTime: anim.startTime ?? -1.0
+        });
     }
 }

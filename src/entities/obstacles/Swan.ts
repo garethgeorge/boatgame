@@ -27,8 +27,8 @@ export class Swan extends SwimAwayAnimal {
         //model.rotation.y = Math.PI;
     }
 
-    protected getAnimationConfig(state: AnimalLogicPhase): SwimmerAnimationConfig {
-        const isFleeing = state === AnimalLogicPhase.FLEEING;
+    protected getAnimationConfig(phase: AnimalLogicPhase): SwimmerAnimationConfig {
+        const isFleeing = phase === AnimalLogicPhase.SWIMING_AWAY;
         return {
             name: isFleeing ? 'swim' : 'idle',
             timeScale: isFleeing ? 1.5 : 1.0,

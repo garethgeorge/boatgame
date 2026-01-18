@@ -13,10 +13,13 @@ export type LocomotionType = 'WATER' | 'LAND' | 'FLIGHT';
  * Phases that any animal logic can be in.
  */
 export enum AnimalLogicPhase {
-    IDLE = 'IDLE',
-    PREPARING = 'PREPARING',
+    NONE = 'NONE',
+    IDLE_SHORE = 'IDLE_SHORE',
+    IDLE_WATER = 'IDLE_WATER',
+    ENTERING_WATER = 'ENTERING_WATER',
+    PREPARING_ATTACK = 'PREPARING_ATTACK',
     ATTACKING = 'ATTACKING',
-    FLEEING = 'FLEEING',
+    SWIMING_AWAY = 'SWIMING_AWAY',
     WALKING = 'WALKING',
     FLYING = 'FLYING'
 }
@@ -45,9 +48,6 @@ export interface AnimalLogicPathResult {
     // The physics model to use for this frame
     locomotionType: LocomotionType;
 
-    // Specifies the current phase of the logic if it has them
-    logicPhase?: AnimalLogicPhase;
-
     // --- Logic Chaining ---
     // Transition to a new logic if specified
     nextLogicConfig?: AnimalLogicConfig;
@@ -63,11 +63,6 @@ export interface AnimalLogic {
     readonly name: string;
 
     /**
-     * Is the logic applicable?
-     */
-    shouldActivate(context: AnimalLogicContext): boolean;
-
-    /**
      * Start this logic, do any initialization
      */
     activate(context: AnimalLogicContext): void;
@@ -78,8 +73,13 @@ export interface AnimalLogic {
     update(context: AnimalLogicContext): AnimalLogicPathResult;
 
     /**
-     * Optional: Get the estimated duration of the current logic block.
-     * Useful for syncing animations or external logic.
+     * Get the current logic phase. Only valid after logic is activated.
      */
-    getEstimatedDuration?(context: AnimalLogicContext): number | undefined;
+    getPhase(): AnimalLogicPhase;
+
+    /**
+     * Optional: Get the estimated duration of the current phase. Only
+     * valid after logic is activated. Useful for syncing animations.
+     */
+    getDuration?(): number | undefined;
 }

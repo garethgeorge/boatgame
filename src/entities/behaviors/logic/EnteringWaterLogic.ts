@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../../../world/RiverSystem';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './AnimalLogic';
 import { EnteringWaterStrategy } from './EnteringWaterStrategy';
 
 export interface EnteringWaterParams {
@@ -10,6 +10,9 @@ export interface EnteringWaterParams {
     nextLogicConfig: AnimalLogicConfig;
 }
 
+/**
+ * Entering water runs until animal is in the water. Returns next logic.
+ */
 export class EnteringWaterLogic implements AnimalLogic {
     public static readonly NAME = 'enteringwater';
     readonly name = EnteringWaterLogic.NAME;
@@ -23,19 +26,11 @@ export class EnteringWaterLogic implements AnimalLogic {
         this.nextLogicConfig = params.nextLogicConfig;
     }
 
-    shouldActivate(context: AnimalLogicContext): boolean {
-        return true;
-    }
-
     activate(context: AnimalLogicContext) {
         const totalDistance = this.strategy.initialize(context.originPos, context.physicsBody.getAngle());
 
         const moveSpeed = 8.0 * (1 + 3 * context.aggressiveness);
         this.duration = totalDistance / moveSpeed;
-    }
-
-    getEstimatedDuration(context: AnimalLogicContext): number | undefined {
-        return this.duration;
     }
 
     update(context: AnimalLogicContext): AnimalLogicPathResult {
@@ -66,4 +61,13 @@ export class EnteringWaterLogic implements AnimalLogic {
             };
         }
     }
+
+    getPhase(): AnimalLogicPhase {
+        return AnimalLogicPhase.ENTERING_WATER
+    }
+
+    getDuration(): number | undefined {
+        return this.duration;
+    }
+
 }

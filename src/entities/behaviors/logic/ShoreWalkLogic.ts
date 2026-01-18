@@ -11,6 +11,9 @@ export interface ShoreWalkParams {
 
 type ShoreWalkState = 'START' | 'OUTBOUND' | 'TURN' | 'INBOUND' | 'END' | 'FINISHED';
 
+/**
+ * Shore walk runs until walk completed then returns the next logic
+ */
 export class ShoreWalkLogic implements AnimalLogic {
     public static readonly NAME = 'shorewalk';
 
@@ -27,10 +30,6 @@ export class ShoreWalkLogic implements AnimalLogic {
         this.walkDistance = params.walkDistance;
         this.speed = params.speed;
         this.nextLogicConfig = params.nextLogicConfig;
-    }
-
-    shouldActivate(context: AnimalLogicContext): boolean {
-        return true;
     }
 
     activate(context: AnimalLogicContext) {
@@ -117,7 +116,6 @@ export class ShoreWalkLogic implements AnimalLogic {
             return {
                 path: { target: currentPos, speed: 0 },
                 locomotionType: 'LAND',
-                logicPhase: AnimalLogicPhase.IDLE,
                 nextLogicConfig: this.nextLogicConfig,
                 isFinished: true
             };
@@ -128,9 +126,12 @@ export class ShoreWalkLogic implements AnimalLogic {
         return {
             path: steering,
             locomotionType: 'LAND',
-            logicPhase: AnimalLogicPhase.WALKING,
             isFinished: false
         };
+    }
+
+    getPhase(): AnimalLogicPhase {
+        return AnimalLogicPhase.WALKING
     }
 }
 

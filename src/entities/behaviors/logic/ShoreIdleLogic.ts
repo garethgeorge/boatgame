@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
 export interface ShoreIdleParams {
@@ -9,6 +9,11 @@ export interface ShoreIdleParams {
     maybeSwitchBehavior?: () => AnimalLogicConfig | null;
 }
 
+/**
+ * Shore idle runs until:
+ * a) boat is noticed and returns next logic
+ * b) switch behavior function returns a new logic
+ */
 export class ShoreIdleLogic implements AnimalLogic {
     public static readonly NAME = 'shoreidle';
     readonly name = ShoreIdleLogic.NAME;
@@ -23,14 +28,6 @@ export class ShoreIdleLogic implements AnimalLogic {
         this.ignoreBottles = params.ignoreBottles ?? false;
         this.nextLogicConfig = params.nextLogicConfig;
         this.maybeSwitchBehavior = params.maybeSwitchBehavior;
-    }
-
-    shouldActivate(context: AnimalLogicContext): boolean {
-        return true;
-    }
-
-    shouldDeactivate(context: AnimalLogicContext): boolean {
-        return false;
     }
 
     activate(context: AnimalLogicContext): void {
@@ -78,5 +75,9 @@ export class ShoreIdleLogic implements AnimalLogic {
             nextLogicConfig: nextLogicConfig,
             isFinished: !!nextLogicConfig
         };
+    }
+
+    getPhase(): AnimalLogicPhase {
+        return AnimalLogicPhase.IDLE_SHORE
     }
 }
