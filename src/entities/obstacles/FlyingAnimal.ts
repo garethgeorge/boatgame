@@ -149,7 +149,7 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
         const config = this.getFlightAnimationName();
         this.player?.play({
             name: config.name,
-            state: DefaultFlightLogic.ANIM_FLYING,
+            state: DefaultFlightLogic.PHASE_FLYING,
             timeScale: config.timeScale ?? 1.0,
             randomizeLength: 0.2,
             startTime: -1
@@ -160,7 +160,7 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
         const config = this.getWalkingAnimationName();
         this.player?.play({
             name: config.name,
-            state: DefaultFlightLogic.ANIM_WALKING,
+            state: DefaultFlightLogic.PHASE_WALKING,
             timeScale: config.timeScale ?? 1.0,
             randomizeLength: 0.2,
             startTime: -1
@@ -194,12 +194,12 @@ export abstract class FlyingAnimal extends Entity implements AnyAnimal {
     handleBehaviorEvent(event: AnimalBehaviorEvent): void {
         if (event.type === 'COMPLETED') {
             this.playIdleAnimation();
-        } else if (event.type === 'ACTIVE_TICK') {
-            const state = event.animationState || DefaultFlightLogic.ANIM_FLYING;
+        } else if (event.type === 'LOGIC_TICK') {
+            const state = event.logicPhase || DefaultFlightLogic.PHASE_FLYING;
 
-            if (state === DefaultFlightLogic.ANIM_WALKING) {
+            if (state === DefaultFlightLogic.PHASE_WALKING) {
                 this.playWalkingAnimation();
-            } else if (state === DefaultFlightLogic.ANIM_FLYING) {
+            } else if (state === DefaultFlightLogic.PHASE_FLYING) {
                 this.playFlightAnimation();
             }
         }

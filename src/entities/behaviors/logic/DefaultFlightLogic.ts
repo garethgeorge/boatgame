@@ -13,9 +13,9 @@ export class DefaultFlightLogic implements AnimalLogic {
     readonly name = DefaultFlightLogic.NAME;
 
     /** Animal is in flight. */
-    public static readonly ANIM_FLYING = 'flying';
+    public static readonly PHASE_FLYING = 'flying';
     /** Animal is landing or on the ground. */
-    public static readonly ANIM_WALKING = 'walking';
+    public static readonly PHASE_WALKING = 'walking';
 
     private flightSpeed: number;
     private state: 'TOWARD' | 'AWAY' | 'LANDING' = 'TOWARD';
@@ -53,11 +53,11 @@ export class DefaultFlightLogic implements AnimalLogic {
         const steering = this.strategy.update(context);
 
         // Get result
-        const anim = this.state === 'LANDING' ? DefaultFlightLogic.ANIM_WALKING : DefaultFlightLogic.ANIM_FLYING;
+        const phase = this.state === 'LANDING' ? DefaultFlightLogic.PHASE_WALKING : DefaultFlightLogic.PHASE_FLYING;
         return {
             path: steering,
             locomotionType: 'FLIGHT',
-            animationState: anim,
+            logicPhase: phase,
             isFinished: this.hasLanded(context)
         };
     }

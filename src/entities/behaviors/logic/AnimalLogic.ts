@@ -33,8 +33,8 @@ export interface AnimalLogicPathResult {
     // The physics model to use for this frame
     locomotionType: LocomotionType;
 
-    // Specifies the current visual phase of the logic
-    animationState?: string;
+    // Specifies the current phase of the logic if it has them
+    logicPhase?: string;
 
     // --- Logic Chaining ---
     // Transition to a new logic if specified
@@ -54,11 +54,6 @@ export interface AnimalLogic {
      * Is the logic applicable?
      */
     shouldActivate(context: AnimalLogicContext): boolean;
-
-    /**
-     * ??
-     */
-    isPreparing?(): boolean;
 
     /**
      * Start this logic, do any initialization

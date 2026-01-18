@@ -59,22 +59,25 @@ export class Hippo extends AttackAnimal {
             mesh.rotation.z = THREE.MathUtils.lerp(mesh.rotation.z, 0, event.dt * 5);
             // Sit lower in water
             mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, -0.5, event.dt * 2);
-        } else if (event.type === 'PREPARING_TICK') {
-            // Shake effect only, no tilt
-            mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, 0, event.dt * 10);
+        } else if (event.type === 'LOGIC_TICK') {
+            const phase = event.logicPhase;
+            if (phase === 'PREPARING') {
+                // Shake effect only, no tilt
+                mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, 0, event.dt * 10);
 
-            // Smooth wobble instead of random shake
-            const time = Date.now() / 50; // Speed of wobble
-            const wobbleAmount = 0.05; // Amplitude
-            mesh.rotation.z = Math.sin(time) * wobbleAmount;
+                // Smooth wobble instead of random shake
+                const time = Date.now() / 50; // Speed of wobble
+                const wobbleAmount = 0.05; // Amplitude
+                mesh.rotation.z = Math.sin(time) * wobbleAmount;
 
-            // Float up to 0.8
-            mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, 0.8, event.dt * 2);
-        } else if (event.type === 'ACTIVE_TICK') {
-            mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, 0, event.dt * 10);
-            mesh.rotation.z = THREE.MathUtils.lerp(mesh.rotation.z, 0, event.dt * 10);
-            // Ensure at surface
-            mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, 0.8, event.dt * 5);
+                // Float up to 0.8
+                mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, 0.8, event.dt * 2);
+            } else {
+                mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, 0, event.dt * 10);
+                mesh.rotation.z = THREE.MathUtils.lerp(mesh.rotation.z, 0, event.dt * 10);
+                // Ensure at surface
+                mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, 0.8, event.dt * 5);
+            }
         }
     }
 }

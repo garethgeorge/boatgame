@@ -10,11 +10,11 @@ export class AmbushAttackLogic implements AnimalLogic {
     readonly name = AmbushAttackLogic.NAME;
 
     /** Animal is orienting towards the target. */
-    public static readonly ANIM_PREPARING = 'PREPARING';
+    public static readonly PHASE_PREPARING = 'PREPARING';
     /** Animal is stalking or waiting in ambush. */
-    public static readonly ANIM_IDLE = 'IDLE';
+    public static readonly PHASE_IDLE = 'IDLE';
     /** Animal is striking or charging. */
-    public static readonly ANIM_ATTACKING = 'ATTACKING';
+    public static readonly PHASE_ATTACKING = 'ATTACKING';
 
     private currentStrategy: AnimalPathStrategy;
     private state: 'PREPARING' | 'STALKING' | 'STRIKING' = 'PREPARING';
@@ -22,8 +22,6 @@ export class AmbushAttackLogic implements AnimalLogic {
     constructor() {
         this.currentStrategy = new ShoreHuggingStrategy();
     }
-
-    isPreparing(): boolean { return this.state === 'PREPARING'; }
 
     shouldActivate(context: AnimalLogicContext): boolean {
         if (context.bottles <= 0) return false;
@@ -55,11 +53,11 @@ export class AmbushAttackLogic implements AnimalLogic {
             if (Math.abs(angleDiff) < 0.45) this.state = 'STALKING';
         }
 
-        const anim = this.state === 'STRIKING' ? AmbushAttackLogic.ANIM_ATTACKING : (this.state === 'PREPARING' ? AmbushAttackLogic.ANIM_PREPARING : AmbushAttackLogic.ANIM_IDLE);
+        const phase = this.state === 'STRIKING' ? AmbushAttackLogic.PHASE_ATTACKING : (this.state === 'PREPARING' ? AmbushAttackLogic.PHASE_PREPARING : AmbushAttackLogic.PHASE_IDLE);
         return {
             path: steering,
             locomotionType: 'WATER',
-            animationState: anim,
+            logicPhase: phase,
             isFinished: this.shouldDisengage(context)
         };
     }

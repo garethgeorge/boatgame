@@ -3,16 +3,14 @@ import * as THREE from 'three';
 
 /**
  * IDLE_TICK - called while behavior is not running logic
- * PREPARING_TICK - logic active and in a preparing state
- * ACTIVE_TICK - logic active
+ * LOGIC_TICK - logic active
  * LOGIC_STARTING - about to start a logic stage
  * LOGIC_COMPLETED - finished a logic stage, moving onto another
  * COMPLETED - returned to idle because logic deactivated or finished
  */
 export type AnimalBehaviorEvent =
     | { type: 'IDLE_TICK', dt: number }
-    | { type: 'PREPARING_TICK', dt: number }
-    | { type: 'ACTIVE_TICK', dt: number, animationState?: string }
+    | { type: 'LOGIC_TICK', dt: number, logicPhase?: string }
     | { type: 'LOGIC_STARTING', logicName: string, duration?: number }
     | { type: 'LOGIC_COMPLETED', logicName: string }
     | { type: 'COMPLETED' };

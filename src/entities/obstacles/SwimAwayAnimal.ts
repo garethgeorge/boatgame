@@ -149,8 +149,8 @@ export abstract class SwimAwayAnimal extends Entity implements AnyAnimal {
                 randomizeLength: anim.randomizeLength ?? 0.2,
                 startTime: anim.startTime ?? -1.0
             });
-        } else if (event.type === 'ACTIVE_TICK') {
-            const state = event.animationState || 'ACTIVE';
+        } else if (event.type === 'LOGIC_TICK') {
+            const state = event.logicPhase || 'ACTIVE';
             const anim = this.getAnimationConfig(state);
             this.player?.play({
                 name: anim.name,

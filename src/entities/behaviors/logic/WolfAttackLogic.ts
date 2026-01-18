@@ -10,9 +10,9 @@ export class WolfAttackLogic implements AnimalLogic {
     readonly name = WolfAttackLogic.NAME;
 
     /** Animal is orienting towards the target. */
-    public static readonly ANIM_PREPARING = 'PREPARING';
+    public static readonly PHASE_PREPARING = 'PREPARING';
     /** Animal is actively pursuing or flanking the target. */
-    public static readonly ANIM_ATTACKING = 'ATTACKING';
+    public static readonly PHASE_ATTACKING = 'ATTACKING';
 
     private currentStrategy: AnimalPathStrategy;
     private strategyTimer: number = 0;
@@ -20,10 +20,6 @@ export class WolfAttackLogic implements AnimalLogic {
 
     constructor() {
         this.currentStrategy = new CircleFlankStrategy();
-    }
-
-    isPreparing(): boolean {
-        return this.state === 'PREPARING';
     }
 
     /**
@@ -75,7 +71,7 @@ export class WolfAttackLogic implements AnimalLogic {
         return {
             path: steering,
             locomotionType: 'WATER',
-            animationState: this.isPreparing() ? WolfAttackLogic.ANIM_PREPARING : WolfAttackLogic.ANIM_ATTACKING,
+            logicPhase: this.state === 'PREPARING' ? WolfAttackLogic.PHASE_PREPARING : WolfAttackLogic.PHASE_ATTACKING,
             isFinished: this.shouldDisengage(context)
         };
     }

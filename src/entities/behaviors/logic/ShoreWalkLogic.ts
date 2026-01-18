@@ -13,8 +13,8 @@ type ShoreWalkState = 'START' | 'OUTBOUND' | 'TURN' | 'INBOUND' | 'END' | 'FINIS
 
 export class ShoreWalkLogic implements AnimalLogic {
     public static readonly NAME = 'shorewalk';
-    public static readonly ANIM_WALK = 'WALK';
-    public static readonly ANIM_IDLE = 'IDLE';
+    public static readonly PHASE_WALK = 'WALK';
+    public static readonly PHASE_IDLE = 'IDLE';
 
     readonly name = ShoreWalkLogic.NAME;
 
@@ -119,7 +119,7 @@ export class ShoreWalkLogic implements AnimalLogic {
             return {
                 path: { target: currentPos, speed: 0 },
                 locomotionType: 'LAND',
-                animationState: ShoreWalkLogic.ANIM_IDLE,
+                logicPhase: ShoreWalkLogic.PHASE_IDLE,
                 nextLogicConfig: this.nextLogicConfig,
                 isFinished: true
             };
@@ -130,7 +130,7 @@ export class ShoreWalkLogic implements AnimalLogic {
         return {
             path: steering,
             locomotionType: 'LAND',
-            animationState: ShoreWalkLogic.ANIM_WALK,
+            logicPhase: ShoreWalkLogic.PHASE_WALK,
             isFinished: false
         };
     }

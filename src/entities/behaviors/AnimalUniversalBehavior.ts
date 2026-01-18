@@ -142,20 +142,11 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     }
 
     private dispatchTickEvent(context: AnimalLogicContext, result: AnimalLogicPathResult) {
-        const state = result.animationState;
-
-        if (this.logic.isPreparing?.()) {
-            this.entity.handleBehaviorEvent?.({
-                type: 'PREPARING_TICK',
-                dt: context.dt
-            });
-        } else {
-            this.entity.handleBehaviorEvent?.({
-                type: 'ACTIVE_TICK',
-                dt: context.dt,
-                animationState: state
-            });
-        }
+        this.entity.handleBehaviorEvent?.({
+            type: 'LOGIC_TICK',
+            dt: context.dt,
+            logicPhase: result.logicPhase
+        });
     }
 
     private setPhysicsMode(body: planck.Body, kinematic: boolean) {

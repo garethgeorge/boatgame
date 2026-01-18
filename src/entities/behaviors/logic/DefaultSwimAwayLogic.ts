@@ -8,7 +8,7 @@ export class DefaultSwimAwayLogic implements AnimalLogic {
     readonly name = DefaultSwimAwayLogic.NAME;
 
     /** Animal is swimming away. */
-    public static readonly ANIM_FLEEING = 'FLEEING';
+    public static readonly PHASE_FLEEING = 'FLEEING';
 
     private strategy: FleePathStrategy;
 
@@ -32,7 +32,7 @@ export class DefaultSwimAwayLogic implements AnimalLogic {
         return {
             path: steering,
             locomotionType: 'WATER',
-            animationState: DefaultSwimAwayLogic.ANIM_FLEEING,
+            logicPhase: DefaultSwimAwayLogic.PHASE_FLEEING,
             isFinished: this.shouldDisengage(context)
         };
     }

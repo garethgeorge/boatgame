@@ -27,7 +27,7 @@ export class Swan extends SwimAwayAnimal {
     }
 
     protected getAnimationConfig(state: string): SwimmerAnimationConfig {
-        const isFleeing = state === DefaultSwimAwayLogic.ANIM_FLEEING;
+        const isFleeing = state === DefaultSwimAwayLogic.PHASE_FLEEING;
         return {
             name: isFleeing ? 'swim' : 'idle',
             timeScale: isFleeing ? 1.5 : 1.0,
