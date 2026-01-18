@@ -88,10 +88,10 @@ export class Monkey extends AttackAnimal {
                 }
             };
         } else if (rand < 0.67) {
-            this.player?.play({ name: 'dance', timeScale: 1.0 });
+            this.playAnimation({ name: 'dance', timeScale: 1.0 });
             return null;
         } else {
-            this.player?.play({ name: 'idle', timeScale: 1.0 });
+            this.playAnimation({ name: 'idle', timeScale: 1.0 });
             return null;
         }
     }

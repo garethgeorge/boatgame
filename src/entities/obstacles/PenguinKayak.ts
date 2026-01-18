@@ -46,7 +46,7 @@ export class PenguinKayak extends SwimAwayAnimal {
         };
     }
 
-    protected override getHitBehaviorOptions() {
+    protected override getHitBehaviorParams() {
         return { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 };
     }
 }
