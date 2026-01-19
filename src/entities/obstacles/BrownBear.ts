@@ -45,8 +45,9 @@ export class BrownBear extends AttackAnimal {
 
     private static readonly animations: AnimalAnimations = {
         default: AttackAnimal.play({
-            name: 'Roaring', state: 'idle',
-            timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+            name: 'Roaring',
+            timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
+            repeat: Infinity
         }),
         animations: [
             {
@@ -56,8 +57,9 @@ export class BrownBear extends AttackAnimal {
                     AnimalLogicPhase.ATTACKING,
                 ],
                 play: AttackAnimal.play({
-                    name: 'Roar+Walk', state: 'walking',
-                    timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+                    name: 'Roar+Walk',
+                    timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
+                    repeat: Infinity
                 })
             },
         ]

@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { AnimationParameters, AnimationPlayer } from '../../core/AnimationPlayer';
+import { AnimationParameters, AnimationPlayer, AnimationScript } from '../../core/AnimationPlayer';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
 import { AnimalLogic, AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
@@ -150,10 +150,26 @@ export abstract class Animal extends Entity implements AnyAnimal {
 
     //--- Animation functions
 
-    public static play(params: AnimationParameters):
+    /**
+     * Returns a function to play the script
+     */
+    public static play(script: AnimationScript):
         (player: AnimationPlayer, logic: AnimalLogic) => void {
         return (player: AnimationPlayer, logic: AnimalLogic) => {
-            player.play(params);
+            player.play(script);
+        }
+    }
+
+    /**
+     * Returns a function that calls the supplied factory function passing
+     * it the logic phase duration.
+     */
+    public static playForDuration(factory: (duration: number) => AnimationScript):
+        (player: AnimationPlayer, logic: AnimalLogic) => void {
+        return (player: AnimationPlayer, logic: AnimalLogic) => {
+            const duration = logic?.getDuration() ?? 1.0;
+            const script = factory(duration);
+            player.play(script);
         }
     }
 

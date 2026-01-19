@@ -45,8 +45,9 @@ export class PolarBear extends AttackAnimal {
 
     private static readonly animations: AnimalAnimations = {
         default: AttackAnimal.play({
-            name: 'Rearing', state: 'idle',
-            timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+            name: 'Rearing',
+            timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
+            repeat: Infinity
         }),
         animations: [
             {
@@ -56,8 +57,9 @@ export class PolarBear extends AttackAnimal {
                     AnimalLogicPhase.ATTACKING,
                 ],
                 play: AttackAnimal.play({
-                    name: 'Walking', state: 'walking',
-                    timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+                    name: 'Walking',
+                    timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
+                    repeat: Infinity
                 })
             },
         ]

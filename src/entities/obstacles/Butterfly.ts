@@ -40,8 +40,9 @@ export class Butterfly extends FlyingAnimal {
     protected getAnimations(): AnimalAnimations {
         return {
             default: Animal.play({
-                name: 'idle', state: 'IDLE',
-                timeScale: 1.0, randomizeLength: 0.2, startTime: -1
+                name: 'idle',
+                timeScale: 1.0, randomizeLength: 0.2, startTime: -1,
+                repeat: Infinity
             }),
             animations: [
                 {
@@ -49,8 +50,9 @@ export class Butterfly extends FlyingAnimal {
                         AnimalLogicPhase.FLYING,
                     ],
                     play: Animal.play({
-                        name: 'fly', state: 'FLYING',
-                        timeScale: 10.0, randomizeLength: 0.2, startTime: -1
+                        name: 'fly',
+                        timeScale: 10.0, randomizeLength: 0.2, startTime: -1,
+                        repeat: Infinity
                     })
                 }
             ]

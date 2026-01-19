@@ -105,8 +105,10 @@ export abstract class Entity {
     let pos = currPos;
     let angle = currAngle;
 
-    // Interpolate if we have previous state
-    if (this.prevPos.has(body) && this.prevAngle.has(body)) {
+    // Interpolate if we have previous state AND NOT kinematic.
+    // Kinematic bodies are driven by logic every frame, so interpolation
+    // against the physics clock causes "beating" glitches/stutters.
+    if (body.getType() !== 'kinematic' && this.prevPos.has(body) && this.prevAngle.has(body)) {
       const prevPos = this.prevPos.get(body)!;
       const prevAngle = this.prevAngle.get(body)!;
 

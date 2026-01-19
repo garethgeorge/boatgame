@@ -98,7 +98,7 @@ export class MessageInABottle extends Entity {
 
             // Start fade Animation
             this.player = new AnimationPlayer(mesh as any as THREE.Group, [fadeClip]);
-            this.player.playOnce({ name: fadeClip.name, timeScale: 4.0 });
+            this.player.play({ name: fadeClip.name, timeScale: 4.0 });
         }
     }
 

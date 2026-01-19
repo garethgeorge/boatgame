@@ -3,10 +3,6 @@ import * as THREE from 'three';
 export interface AnimationParameters {
     name: string;
 
-    // Logical state name to identify what is playing (e.g. 'FLEEING', 'ATTACKING')
-    // If provided, the player will skip redundant play() calls if the state matches.
-    state?: string;
-
     // -1 => randomize the start time
     startTime?: number;
 
@@ -15,17 +11,32 @@ export interface AnimationParameters {
     timeScale?: number;
     duration?: number;
     randomizeLength?: number;
+
+    // Number of times to repeat. Defaults to 1. Use Infinity for looping.
+    repeat?: number;
+}
+
+export type AnimationScript = AnimationParameters | ((step: number) => AnimationScript | null);
+
+export class ScriptStep {
+    public static sequence(sequence: AnimationScript[]) {
+        return (step: number) => sequence[step] ?? null;
+    }
+}
+
+interface ScriptStackItem {
+    func: (step: number) => AnimationScript | null;
+    step: number;
 }
 
 export class AnimationPlayer {
 
-    public readonly mixer: THREE.AnimationMixer;
-    public currentAnimationState: string | null = null;
+    private readonly mixer: THREE.AnimationMixer;
     private readonly actions: Map<string, THREE.AnimationAction> = new Map();
+
+    private scriptStack: ScriptStackItem[] = [];
+
     private currentAction: THREE.AnimationAction | null = null;
-    private sequence: AnimationParameters[] | null = null;
-    private sequenceIndex: number = 0;
-    private stateRandomFactors: Map<string, number> = new Map();
 
     constructor(group: THREE.Group, animations: THREE.AnimationClip[]) {
         this.mixer = new THREE.AnimationMixer(group);
@@ -35,36 +46,26 @@ export class AnimationPlayer {
         }
 
         this.mixer.addEventListener('finished', () => {
-            if (this.sequence) {
-                this.playNextInSequence();
-            }
+            this.playNextScriptStep();
         });
     }
 
     public stopAll() {
         this.mixer.stopAllAction();
         this.currentAction = null;
-        this.currentAnimationState = null;
-        this.sequence = null;
+        this.scriptStack = [];
     }
 
-    public playSequence(sequence: AnimationParameters[]) {
-        this.stopAll();
-        this.sequence = sequence;
-        this.sequenceIndex = 0;
-        this.playNextInSequence();
-    }
+    public play(script: AnimationScript) {
+        // Discard currently running script
+        this.scriptStack = [];
 
-    public playOnce(options: AnimationParameters, isPlayingSequenceStep: boolean = false) {
-        if (!isPlayingSequenceStep) {
-            this.sequence = null;
+        if (typeof script === 'function') {
+            this.scriptStack.push({ func: script, step: 0 });
+            this.playNextScriptStep();
+        } else {
+            this.playAction(script);
         }
-        this.playAction(options, THREE.LoopOnce, 1);
-    }
-
-    public play(options: AnimationParameters) {
-        this.sequence = null;
-        this.playAction(options, THREE.LoopRepeat, Infinity);
     }
 
     public getDuration(name: string): number {
@@ -83,41 +84,52 @@ export class AnimationPlayer {
         this.mixer.update(dt);
     }
 
-    private playNextInSequence() {
-        if (!this.sequence || this.sequenceIndex >= this.sequence.length) {
-            this.sequence = null;
-            this.currentAnimationState = null;
-            return;
+    private playNextScriptStep() {
+        while (this.scriptStack.length > 0) {
+            const item = this.scriptStack[this.scriptStack.length - 1];
+            const result = item.func(item.step++);
+
+            if (result === null) {
+                this.scriptStack.pop();
+                continue;
+            }
+
+            if (typeof result === 'function') {
+                this.scriptStack.push({ func: result, step: 0 });
+                continue;
+            }
+
+            // result is AnimationParameters
+            if (this.playAction(result)) {
+                return;
+            } else {
+                // If it failed to play, try next step
+                continue;
+            }
         }
-
-        const step = this.sequence[this.sequenceIndex];
-        this.sequenceIndex++;
-
-        this.playAction(step, THREE.LoopOnce, 1);
     }
 
-    private playAction(options: AnimationParameters,
-        mode: THREE.AnimationActionLoopStyles,
-        repetitions: number): boolean {
+    private playAction(options: AnimationParameters): boolean {
 
-        let { name, state = null, startTime = 0.0, timeScale = 1.0, duration = undefined, randomizeLength = undefined } = options;
+        let {
+            name,
+            startTime = 0.0,
+            timeScale = 1.0,
+            duration = undefined,
+            randomizeLength = undefined,
+            repeat = 1
+        } = options;
 
         const action = this.actions.get(name);
         if (!action) {
             return false;
         }
 
-        const isSameStateFullMatch = state !== null && state === this.currentAnimationState && action.isRunning();
+        const mode = repeat === Infinity ? THREE.LoopRepeat : THREE.LoopOnce;
+        const repetitions = repeat;
 
         let randomFactor = 1.0;
-        if (state !== null) {
-            if (this.currentAnimationState !== state) {
-                randomFactor = 1.0 + (Math.random() * 2 - 1) * (randomizeLength ?? 0);
-                this.stateRandomFactors.set(state, randomFactor);
-            } else {
-                randomFactor = this.stateRandomFactors.get(state) ?? 1.0;
-            }
-        } else if (randomizeLength !== undefined) {
+        if (randomizeLength !== undefined) {
             randomFactor = 1.0 + (Math.random() * 2 - 1) * randomizeLength;
         }
 
@@ -127,22 +139,18 @@ export class AnimationPlayer {
         }
         finalTimeScale /= randomFactor;
 
-        // If we are in the same state, check if we just need to update parameters
-        if (isSameStateFullMatch) {
-            if (Math.abs(action.timeScale - finalTimeScale) > 0.001 || action.loop !== mode) {
-                // Update parameters without resetting the animation
-                action.timeScale = finalTimeScale;
-                action.setLoop(mode, repetitions);
-            }
-            return true;
-        }
-
         // If action is current and already has correct parameters, just return
         if (this.currentAction === action &&
             action.isRunning() &&
             action.loop === mode &&
             Math.abs(action.timeScale - finalTimeScale) < 0.001) {
-            this.currentAnimationState = state;
+            return true;
+        }
+
+        // Check if we just need to update parameters of the running action
+        if (this.currentAction === action && action.isRunning()) {
+            action.timeScale = finalTimeScale;
+            action.setLoop(mode, repetitions);
             return true;
         }
 
@@ -164,7 +172,6 @@ export class AnimationPlayer {
         }
 
         this.currentAction = action;
-        this.currentAnimationState = state;
         return true;
     }
 

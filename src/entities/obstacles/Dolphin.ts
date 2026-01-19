@@ -31,15 +31,17 @@ export class Dolphin extends SwimAwayAnimal {
     protected getAnimations(): AnimalAnimations {
         return {
             default: Animal.play({
-                name: 'idle', state: 'IDLE',
-                timeScale: 1.0, randomizeLength: 0.1, startTime: -1.0
+                name: 'idle',
+                timeScale: 1.0, randomizeLength: 0.1, startTime: -1.0,
+                repeat: Infinity
             }),
             animations: [
                 {
                     phases: [AnimalLogicPhase.SWIMING_AWAY],
                     play: Animal.play({
-                        name: 'swim', state: 'SWIMING_AWAY',
-                        timeScale: 1.5, randomizeLength: 0.1, startTime: -1.0
+                        name: 'swim',
+                        timeScale: 1.5, randomizeLength: 0.1, startTime: -1.0,
+                        repeat: Infinity
                     })
                 }
             ]

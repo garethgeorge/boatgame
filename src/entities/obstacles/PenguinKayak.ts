@@ -33,15 +33,17 @@ export class PenguinKayak extends SwimAwayAnimal {
     protected getAnimations(): AnimalAnimations {
         return {
             default: Animal.play({
-                name: 'paddling', state: 'IDLE',
-                timeScale: 2.0, randomizeLength: 0.2, startTime: -1.0
+                name: 'paddling',
+                timeScale: 2.0, randomizeLength: 0.2, startTime: -1.0,
+                repeat: Infinity
             }),
             animations: [
                 {
                     phases: [AnimalLogicPhase.SWIMING_AWAY],
                     play: Animal.play({
-                        name: 'paddling', state: 'SWIMING_AWAY',
-                        timeScale: 3.5, randomizeLength: 0.2, startTime: -1.0
+                        name: 'paddling',
+                        timeScale: 3.5, randomizeLength: 0.2, startTime: -1.0,
+                        repeat: Infinity
                     })
                 }
             ]

@@ -28,12 +28,6 @@ class MonkeyLogicOrchestrator extends AttackLogicOrchestrator {
                     nextLogicConfig: this.getOnShoreConfig()
                 }
             };
-        } else if (rand < 0.67) {
-            this.monkey.playAnimation({ name: 'dance', timeScale: 1.0 });
-            return null;
-        } else {
-            this.monkey.playAnimation({ name: 'idle', timeScale: 1.0 });
-            return null;
         }
     }
 }
@@ -79,9 +73,13 @@ export class Monkey extends AttackAnimal {
     }
 
     private static readonly animations: AnimalAnimations = {
-        default: AttackAnimal.play({
-            name: 'idle', state: 'idle',
-            timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+        default: AttackAnimal.play((step: number) => {
+            const rand = Math.random();
+            if (rand < 0.5) {
+                return { name: 'idle', timeScale: 1.0, repeat: 2 };
+            } else {
+                return { name: 'dance', timeScale: 1.0, repeat: 2 };
+            }
         }),
         animations: [
             {
@@ -90,8 +88,9 @@ export class Monkey extends AttackAnimal {
                     AnimalLogicPhase.ENTERING_WATER,
                 ],
                 play: AttackAnimal.play({
-                    name: 'walk', state: 'walking',
-                    timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+                    name: 'walk',
+                    timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
+                    repeat: Infinity
                 })
             },
             {
@@ -101,8 +100,9 @@ export class Monkey extends AttackAnimal {
                     AnimalLogicPhase.ATTACKING,
                 ],
                 play: AttackAnimal.play({
-                    name: 'swim', state: 'swimming',
-                    timeScale: 2.5, startTime: -1, randomizeLength: 0.2
+                    name: 'swim',
+                    timeScale: 2.5, startTime: -1, randomizeLength: 0.2,
+                    repeat: Infinity
                 })
             },
         ]

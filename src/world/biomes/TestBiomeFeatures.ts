@@ -139,7 +139,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                     distanceRange: left,
                     aggressiveness: 0.5,
                     disableLogic: true,
-                    //fixedAngle: 0,
+                    fixedAngle: 0,
                     fixedHeight: 3.0
                 });
             }
@@ -167,12 +167,12 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        if (zStart === 0) {
-            await this.spawnAllAnimals(context, -50);
-        }
+        // if (zStart === 0) {
+        //     await this.spawnAllAnimals(context, -50);
+        // }
 
         // await EntitySpawners.getInstance().messageInABottle().spawn(context, 4, zStart, zEnd);
-        //await EntitySpawners.getInstance().animal(EntityIds.MONKEY)!.spawn(context, 1, zStart, zEnd);
+        await EntitySpawners.getInstance().animal(EntityIds.MONKEY)!.spawn(context, 1, zStart, zEnd);
         // await EntitySpawners.getInstance().animal(EntityIds.ALLIGATOR).spawn(context, 1, zStart, zEnd);
         // await EntitySpawners.getInstance().animal(EntityIds.TRICERATOPS).spawn(context, 1, zStart, zEnd);
 

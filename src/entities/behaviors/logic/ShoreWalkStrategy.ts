@@ -148,7 +148,8 @@ export class ShoreWalkStrategy extends AnimalPathStrategy {
             speed: this.speed,
             height: terrainHeight,
             facing: {
-                angle: desiredAngle
+                angle: desiredAngle,
+                normal: new THREE.Vector3(0, 1, 0) // Default up normal
             }
         };
     }

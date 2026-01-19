@@ -46,8 +46,9 @@ export class Hippo extends AttackAnimal {
 
     private static readonly animations: AnimalAnimations = {
         default: AttackAnimal.play({
-            name: 'swimming', state: 'idle',
-            timeScale: 2.0, startTime: -1, randomizeLength: 0.2
+            name: 'swimming',
+            timeScale: 2.0, startTime: -1, randomizeLength: 0.2,
+            repeat: Infinity
         }),
         animations: [
             {
@@ -57,8 +58,9 @@ export class Hippo extends AttackAnimal {
                     AnimalLogicPhase.ATTACKING,
                 ],
                 play: AttackAnimal.play({
-                    name: 'swimming', state: 'walking',
-                    timeScale: 2.0, startTime: -1, randomizeLength: 0.2
+                    name: 'swimming',
+                    timeScale: 2.0, startTime: -1, randomizeLength: 0.2,
+                    repeat: Infinity
                 })
             },
         ]

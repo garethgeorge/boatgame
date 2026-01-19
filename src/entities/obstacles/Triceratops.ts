@@ -45,8 +45,9 @@ export class Triceratops extends AttackAnimal {
 
     private static readonly animations: AnimalAnimations = {
         default: AttackAnimal.play({
-            name: 'standing', state: 'idle',
-            timeScale: 0.5, startTime: -1, randomizeLength: 0.2
+            name: 'standing',
+            timeScale: 0.5, startTime: -1, randomizeLength: 0.2,
+            repeat: Infinity
         }),
         animations: [
             {
@@ -56,8 +57,9 @@ export class Triceratops extends AttackAnimal {
                     AnimalLogicPhase.ATTACKING,
                 ],
                 play: AttackAnimal.play({
-                    name: 'walking', state: 'walking',
-                    timeScale: 0.5, startTime: -1, randomizeLength: 0.2
+                    name: 'walking',
+                    timeScale: 0.5, startTime: -1, randomizeLength: 0.2,
+                    repeat: Infinity
                 })
             },
         ]

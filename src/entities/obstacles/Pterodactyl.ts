@@ -39,8 +39,9 @@ export class Pterodactyl extends FlyingAnimal {
     protected getAnimations(): AnimalAnimations {
         return {
             default: Animal.play({
-                name: 'standing', state: 'IDLE',
-                timeScale: 1.0, randomizeLength: 0.2, startTime: -1
+                name: 'standing',
+                timeScale: 1.0, randomizeLength: 0.2, startTime: -1,
+                repeat: Infinity
             }),
             animations: [
                 {
@@ -48,8 +49,9 @@ export class Pterodactyl extends FlyingAnimal {
                         AnimalLogicPhase.FLYING,
                     ],
                     play: Animal.play({
-                        name: 'flying', state: 'FLYING',
-                        timeScale: 1.0, randomizeLength: 0.2, startTime: -1
+                        name: 'flying',
+                        timeScale: 1.0, randomizeLength: 0.2, startTime: -1,
+                        repeat: Infinity
                     })
                 }
             ]

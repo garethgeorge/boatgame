@@ -44,8 +44,9 @@ export class Bluebird extends FlyingAnimal {
     protected getAnimations(): AnimalAnimations {
         return {
             default: Animal.play({
-                name: 'idle', state: 'IDLE',
-                timeScale: 1.0, randomizeLength: 0.2, startTime: -1
+                name: 'idle',
+                timeScale: 1.0, randomizeLength: 0.2, startTime: -1,
+                repeat: Infinity
             }),
             animations: [
                 {
@@ -55,8 +56,9 @@ export class Bluebird extends FlyingAnimal {
                         AnimalLogicPhase.ATTACKING
                     ],
                     play: Animal.play({
-                        name: 'fly', state: 'FLYING',
-                        timeScale: 6.0, randomizeLength: 0.2, startTime: -1
+                        name: 'fly',
+                        timeScale: 6.0, randomizeLength: 0.2, startTime: -1,
+                        repeat: Infinity
                     })
                 }
             ]

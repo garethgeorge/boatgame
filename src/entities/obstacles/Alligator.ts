@@ -54,8 +54,9 @@ export class Alligator extends AttackAnimal {
                     AnimalLogicPhase.ATTACKING,
                 ],
                 play: AttackAnimal.play({
-                    name: 'walking', state: 'walking',
-                    timeScale: 2.0, startTime: -1, randomizeLength: 0.2
+                    name: 'walking',
+                    timeScale: 2.0, startTime: -1, randomizeLength: 0.2,
+                    repeat: Infinity
                 })
             },
         ]

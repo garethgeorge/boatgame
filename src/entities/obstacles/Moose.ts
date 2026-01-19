@@ -3,8 +3,8 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './AttackAnimal';
 import { AnimalLogic, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
-import { AnimationPlayer } from '../../core/AnimationPlayer';
-import { AnimalAnimations } from './Animal';
+import { AnimationPlayer, ScriptStep } from '../../core/AnimationPlayer';
+import { Animal, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
 
 export class Moose extends AttackAnimal {
@@ -48,30 +48,30 @@ export class Moose extends AttackAnimal {
 
     private static readonly animations: AnimalAnimations = {
         default: AttackAnimal.play({
-            name: 'idle', state: 'idle',
-            timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+            name: 'idle',
+            timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
+            repeat: Infinity
         }),
         animations: [
             {
                 phases: [
                     AnimalLogicPhase.ENTERING_WATER,
                 ],
-                play: (player: AnimationPlayer, logic: AnimalLogic) => {
-                    const duration = logic?.getDuration() ?? 1.0;
+                play: Animal.playForDuration((duration: number) => {
                     if (duration > 0.5) {
                         const startTimeScale = 0.5;
                         const endTimeScale = 0.5;
                         const fallDuration = duration - startTimeScale - endTimeScale;
 
-                        player.playSequence([
+                        return ScriptStep.sequence([
                             { name: 'jump_start', duration: startTimeScale },
                             { name: 'jump_fall', duration: fallDuration },
                             { name: 'jump_end', duration: endTimeScale }
                         ]);
                     } else {
-                        player.play({ name: 'walk', startTime: -1 });
+                        return { name: 'walk', startTime: -1 };
                     }
-                }
+                })
             },
             {
                 phases: [
@@ -79,8 +79,9 @@ export class Moose extends AttackAnimal {
                     AnimalLogicPhase.ATTACKING,
                 ],
                 play: AttackAnimal.play({
-                    name: 'walk', state: 'swimming',
-                    timeScale: 1.0, startTime: -1, randomizeLength: 0.2
+                    name: 'walk',
+                    timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
+                    repeat: Infinity
                 })
             },
         ]

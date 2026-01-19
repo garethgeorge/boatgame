@@ -239,8 +239,8 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         physicsBody.setAngle(currentAngle + rotation);
 
         // --- Precise Positioning (Height/Normal) ---
-        if (steering.height !== undefined && steering.facing?.normal !== undefined) {
-            this.entity.setExplictPosition?.(steering.height, steering.facing.normal);
+        if (steering.height !== undefined) {
+            this.entity.setExplictPosition?.(steering.height, steering.facing?.normal ?? new THREE.Vector3(0, 1, 0));
         }
     }
 
