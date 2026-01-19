@@ -70,7 +70,7 @@ export abstract class Animal extends Entity implements AnyAnimal {
         this.canCausePenalty = canCausePenalty;
         this.orchestrator = orchestrator;
 
-        this.setupPhysicsBody(physicsEngine, subtype, Entity.TYPE_OBSTACLE, x, y, -angle, physicsOptions);
+        this.setupPhysicsBody(physicsEngine, subtype, entityType, x, y, -angle, physicsOptions);
 
         this.setupModelMesh(height);
 
@@ -80,7 +80,7 @@ export abstract class Animal extends Entity implements AnyAnimal {
             this.normalVector = new THREE.Vector3(0, 1, 0);
 
         if (orchestrator && !options.disableLogic) {
-            const aggressiveness = options.aggressiveness ?? Math.random();
+            const aggressiveness = options.aggressiveness ?? 0.5;
             const snoutOffset = orchestrator.getSnoutOffset?.(physicsOptions.halfLength) ?? planck.Vec2(0, 0);
             this.setupBehavior(orchestrator, aggressiveness, snoutOffset);
         } else {

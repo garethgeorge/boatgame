@@ -27,7 +27,7 @@ export class Duckling extends SwimAwayAnimal {
     protected setupModel(model: THREE.Group) {
         model.scale.set(1.0, 1.0, 1.0);
         model.rotation.y = Math.PI;
-        model.position.y = -1.25;
+        model.position.y = -0.75;
     }
 
     protected getAnimations(): AnimalAnimations {

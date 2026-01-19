@@ -74,16 +74,12 @@ export class AnimalBehaviorUtils {
      * Swim away parameters.
      */
     public static evaluateSwimAwayParams(aggressiveness: number,
-        numCollectables: number, minDistance: number = 20): AnimalSwimAwayParams {
+        numCollectables: number, minDistance: number = 40): AnimalSwimAwayParams {
         const aggro = this.effectiveAggressiveness(aggressiveness, numCollectables);
 
-        // Original: startFleeDistance = 20 + 40 * aggressiveness
         const startFleeDistance = minDistance + 2.0 * minDistance * aggro;
         const stopFleeDistance = startFleeDistance + 30;
-
-        // Original: speed = 1 + 3 * aggressiveness; Flee speed = 12.0 * this.speed
-        // This gives 12 to 48 m/s
-        const fleeSpeed = 12.0 * (1.0 + 3.0 * aggro);
+        const fleeSpeed = 18.0 * (1.0 + 3.0 * aggro);
 
         // Turning similar to attack but maybe a bit more frantic or slower?
         // Let's use similar turning speeds.
