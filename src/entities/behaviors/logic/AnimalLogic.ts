@@ -39,6 +39,15 @@ export interface AnimalLogicContext extends AnimalStrategyContext {
 }
 
 /**
+ * Standardized result state from any animal logic calculation.
+ */
+export enum AnimalLogicResultState {
+    CONTINUE = 'CONTINUE',   // Keep running the current logic
+    DISENGAGE = 'DISENGAGE', // Transition immediately to next logic (or hide)
+    FINISH = 'FINISH'        // Apply current steering then transition
+}
+
+/**
  * Standardized result from any animal logic calculation.
  */
 export interface AnimalLogicPathResult {
@@ -52,8 +61,8 @@ export interface AnimalLogicPathResult {
     // Transition to a new logic if specified
     nextLogicConfig?: AnimalLogicConfig;
 
-    // True if the current behavioral sequence is complete
-    isFinished?: boolean;
+    // The lifecycle state of the current behavioral sequence
+    resultState: AnimalLogicResultState;
 }
 
 /**

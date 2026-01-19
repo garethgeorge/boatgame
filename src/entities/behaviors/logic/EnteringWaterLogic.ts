@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../../../world/RiverSystem';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase, AnimalLogicResultState } from './AnimalLogic';
 import { EnteringWaterStrategy } from './EnteringWaterStrategy';
 
 export interface EnteringWaterParams {
@@ -52,12 +52,13 @@ export class EnteringWaterLogic implements AnimalLogic {
                 path: steering,
                 locomotionType: 'WATER',
                 nextLogicConfig: this.nextLogicConfig,
-                isFinished: true
+                resultState: AnimalLogicResultState.FINISH
             };
         } else {
             return {
                 path: steering,
-                locomotionType: 'LAND'
+                locomotionType: 'LAND',
+                resultState: AnimalLogicResultState.CONTINUE
             };
         }
     }

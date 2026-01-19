@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase, AnimalLogicResultState } from './AnimalLogic';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
 export interface ShoreIdleParams {
@@ -73,7 +73,7 @@ export class ShoreIdleLogic implements AnimalLogic {
             },
             locomotionType: 'LAND',
             nextLogicConfig: nextLogicConfig,
-            isFinished: !!nextLogicConfig
+            resultState: nextLogicConfig ? AnimalLogicResultState.DISENGAGE : AnimalLogicResultState.CONTINUE
         };
     }
 

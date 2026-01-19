@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase, AnimalLogicResultState } from './AnimalLogic';
 import { AnimalPathStrategy } from './AnimalPathStrategy';
 import { BuzzTargetStrategy, FleeRiverStrategy, LandingStrategy } from './FlightPathStrategies';
 import { RiverSystem } from '../../../world/RiverSystem';
@@ -50,7 +50,7 @@ export class DefaultFlightLogic implements AnimalLogic {
         return {
             path: steering,
             locomotionType: 'FLIGHT',
-            isFinished: this.hasLanded(context)
+            resultState: this.hasLanded(context) ? AnimalLogicResultState.FINISH : AnimalLogicResultState.CONTINUE
         };
     }
 

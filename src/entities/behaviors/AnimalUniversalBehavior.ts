@@ -4,7 +4,7 @@ import { Boat } from '../Boat';
 import { AnyAnimal } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
 import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './logic/AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase, AnimalLogicResultState } from './logic/AnimalLogic';
 import { AnimalLogicRegistry } from './logic/AnimalLogicRegistry';
 import { AnimalBehaviorEvent } from './AnimalBehavior';
 
@@ -76,27 +76,25 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         // 1. Calculate Path based on fresh state
         let result = this.logic.update(context);
 
-        // 2. Handle Logic Chaining
-        while (result.nextLogicConfig) {
-            // Transfer to next logic
-            this.logic = AnimalLogicRegistry.create(result.nextLogicConfig);
-
-            // Update immediately with new logic to avoid stutter
-            this.logic.activate(context);
-            result = this.logic.update(context);
+        // 2. Handle Immediate Logic Chaining
+        // DISENGAGE means switch immediately without applying current result
+        while (result.resultState === AnimalLogicResultState.DISENGAGE) {
+            if (result.nextLogicConfig) {
+                this.logic = AnimalLogicRegistry.create(result.nextLogicConfig);
+                this.logic.activate(context);
+                result = this.logic.update(context);
+            } else {
+                // Termination
+                this.logic = null;
+                this.dispatchFinishedEvent();
+                return;
+            }
         }
 
-        // 3. Check for all logic done
-        if (result.isFinished) {
-            this.logic = null;
-            this.dispatchFinishedEvent();
-            return;
-        }
-
-        // 5. Events
+        // 3. Events
         this.dispatchEvents(this.logic, context, result);
 
-        // 6. Locomotion
+        // 4. Locomotion
         switch (result.locomotionType) {
             case 'FLIGHT':
                 this.executeFlightLocomotion(context, result);
@@ -108,6 +106,19 @@ export class AnimalUniversalBehavior implements EntityBehavior {
             default:
                 this.executeWaterLocomotion(context, result);
                 break;
+        }
+
+        // 5. Handle Deferred Logic Chaining
+        // FINISH means switch after applying current locomotion results
+        if (result.resultState === AnimalLogicResultState.FINISH) {
+            if (result.nextLogicConfig) {
+                this.logic = AnimalLogicRegistry.create(result.nextLogicConfig);
+                this.logic.activate(context);
+            } else {
+                // Termination
+                this.logic = null;
+                this.dispatchFinishedEvent();
+            }
         }
     }
 
