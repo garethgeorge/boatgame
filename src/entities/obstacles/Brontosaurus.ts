@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './AttackAnimal';
+import { AttackAnimal, AttackAnimalOptions, AttackBehaviorFactory } from './AttackAnimal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
@@ -24,12 +24,12 @@ export class Brontosaurus extends AttackAnimal {
                 friction: 0.3,
                 linearDamping: 3.0,
                 angularDamping: 2.0
-            },
-            new AttackLogicOrchestrator({
-                attackLogicName: options.attackLogicName,
-                heightInWater: Brontosaurus.HEIGHT_IN_WATER,
-                onShore: options.onShore,
-                stayOnShore: options.stayOnShore
+            });
+
+        this.setBehavior(AttackBehaviorFactory.create(this,
+            {
+                ...options,
+                heightInWater: Brontosaurus.HEIGHT_IN_WATER
             })
         );
     }

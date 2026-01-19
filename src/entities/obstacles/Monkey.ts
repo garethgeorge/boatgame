@@ -1,11 +1,8 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './AttackAnimal';
-import { AnimalLogicConfig, AnimalLogicPhase, AnimalLogicScript } from '../behaviors/logic/AnimalLogic';
-import { ShoreWalkLogic } from '../behaviors/logic/ShoreWalkLogic';
-import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
-import { EnteringWaterLogic } from '../behaviors/logic/EnteringWaterLogic';
+import { AttackAnimal, AttackAnimalOptions, AttackBehaviorFactory } from './AttackAnimal';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
 
@@ -17,14 +14,6 @@ export class Monkey extends AttackAnimal {
         physicsEngine: PhysicsEngine,
         options: AttackAnimalOptions
     ) {
-        const orchestrator = new AttackLogicOrchestrator({
-            attackLogicName: options.attackLogicName,
-            heightInWater: Monkey.HEIGHT_IN_WATER,
-            onShore: options.onShore,
-            stayOnShore: options.stayOnShore,
-            walkabout: true
-        });
-
         super(physicsEngine, 'monkey', Entity.TYPE_OBSTACLE, true,
             options,
             {
@@ -34,11 +23,15 @@ export class Monkey extends AttackAnimal {
                 friction: 0.3,
                 linearDamping: 3.0,
                 angularDamping: 2.0
-            },
-            orchestrator
-        );
+            });
 
-        orchestrator.monkey = this;
+        this.setBehavior(AttackBehaviorFactory.create(this,
+            {
+                heightInWater: Monkey.HEIGHT_IN_WATER,
+                walkabout: true,
+                ...options,
+            })
+        );
     }
 
     protected getModelData() {

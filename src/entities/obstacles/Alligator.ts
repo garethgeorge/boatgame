@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './AttackAnimal';
+import { AttackAnimal, AttackAnimalOptions, AttackBehaviorFactory } from './AttackAnimal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
@@ -24,12 +24,12 @@ export class Alligator extends AttackAnimal {
                 friction: 0.1,
                 linearDamping: 2.0,
                 angularDamping: 1.0
-            },
-            new AttackLogicOrchestrator({
-                attackLogicName: options.attackLogicName,
+            });
+
+        this.setBehavior(
+            AttackBehaviorFactory.create(this, {
                 heightInWater: Alligator.HEIGHT_IN_WATER,
-                onShore: options.onShore,
-                stayOnShore: options.stayOnShore
+                ...options,
             })
         );
     }

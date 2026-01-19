@@ -38,13 +38,7 @@ export interface AnimalAnimations {
     }[];
 }
 
-export interface AnimalLogicOrchestrator {
-    getSnoutOffset?(halfLength: number): planck.Vec2;
-    getLogicScript(): AnimalLogicScript;
-}
-
 export abstract class Animal extends Entity implements AnyAnimal {
-    private orchestrator: AnimalLogicOrchestrator;
     private behavior: EntityBehavior | null = null;
     private player: AnimationPlayer | null = null;
 
@@ -54,8 +48,7 @@ export abstract class Animal extends Entity implements AnyAnimal {
         entityType: string,
         canCausePenalty: boolean,
         options: AnimalOptions,
-        physicsOptions: AnimalPhysicsOptions,
-        orchestrator: AnimalLogicOrchestrator
+        physicsOptions: AnimalPhysicsOptions
     ) {
         super();
 
@@ -68,7 +61,6 @@ export abstract class Animal extends Entity implements AnyAnimal {
         } = options;
 
         this.canCausePenalty = canCausePenalty;
-        this.orchestrator = orchestrator;
 
         this.setupPhysicsBody(physicsEngine, subtype, entityType, x, y, -angle, physicsOptions);
 
@@ -79,13 +71,7 @@ export abstract class Animal extends Entity implements AnyAnimal {
         else
             this.normalVector = new THREE.Vector3(0, 1, 0);
 
-        if (orchestrator && !options.disableLogic) {
-            const aggressiveness = options.aggressiveness ?? 0.5;
-            const snoutOffset = orchestrator.getSnoutOffset?.(physicsOptions.halfLength) ?? planck.Vec2(0, 0);
-            this.setupBehavior(orchestrator, aggressiveness, snoutOffset);
-        } else {
-            this.playAnimationForPhase(null, AnimalLogicPhase.NONE);
-        }
+        this.setBehavior(null);
     }
 
     protected setupPhysicsBody(
@@ -148,6 +134,14 @@ export abstract class Animal extends Entity implements AnyAnimal {
         mesh.position.y = height;
     }
 
+    //--- Behavior functions
+
+    public setBehavior(behavior: EntityBehavior) {
+        this.behavior = behavior;
+        if (!this.behavior)
+            this.playAnimationForPhase(null, AnimalLogicPhase.NONE);
+    }
+
     //--- Animation functions
 
     /**
@@ -196,21 +190,6 @@ export abstract class Animal extends Entity implements AnyAnimal {
         }
     }
 
-    //--- behavior
-
-    protected setupBehavior(
-        orchestrator: AnimalLogicOrchestrator,
-        aggressiveness: number,
-        snoutOffset?: planck.Vec2
-    ) {
-        const script = orchestrator.getLogicScript();
-        if (script) {
-            this.behavior = new AnimalUniversalBehavior(this, aggressiveness, script, snoutOffset);
-        } else {
-            this.playAnimationForPhase(null, AnimalLogicPhase.NONE);
-        }
-    }
-
     //--- Entity
 
     update(dt: number) {
@@ -228,10 +207,10 @@ export abstract class Animal extends Entity implements AnyAnimal {
         const params = this.getHitBehaviorParams();
         if (params) {
             this.destroyPhysicsBodies();
-            this.behavior = new ObstacleHitBehavior(
+            this.setBehavior(new ObstacleHitBehavior(
                 this.meshes,
                 () => { this.shouldRemove = true },
-                params);
+                params));
         }
     }
 

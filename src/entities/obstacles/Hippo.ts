@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './AttackAnimal';
+import { AttackAnimal, AttackAnimalOptions, AttackBehaviorFactory } from './AttackAnimal';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations } from './Animal';
@@ -24,12 +24,12 @@ export class Hippo extends AttackAnimal {
                 friction: 0.1,
                 linearDamping: 2.0,
                 angularDamping: 1.0
-            },
-            new AttackLogicOrchestrator({
-                attackLogicName: options.attackLogicName,
+            });
+
+        this.setBehavior(AttackBehaviorFactory.create(this,
+            {
                 heightInWater: Hippo.HEIGHT_IN_WATER,
-                onShore: options.onShore,
-                stayOnShore: options.stayOnShore
+                ...options,
             })
         );
     }

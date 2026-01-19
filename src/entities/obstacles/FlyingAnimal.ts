@@ -1,29 +1,42 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { DefaultFlightLogic } from '../behaviors/logic/DefaultFlightLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
-import { EntityBehavior } from '../behaviors/EntityBehavior';
-import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
-import { AnimalLogicConfig, AnimalLogicPhase, AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
+import { AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
 import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
-import { Animal, AnimalLogicOrchestrator, AnimalOptions, AnimalPhysicsOptions } from './Animal';
+import { Animal, AnimalOptions } from './Animal';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
-import { Entity } from '../../core/Entity';
+import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 
 export interface FlyingAnimalOptions extends AnimalOptions {
     flightSpeed?: number;
 }
 
-export class FlyingLogicOrchestrator implements AnimalLogicOrchestrator {
-    private flightSpeed: number;
+export class FlyingBehaviorFactory {
 
-    constructor(params: { flightSpeed?: number }) {
-        this.flightSpeed = params.flightSpeed ?? 1.0;
+    public static create(
+        animal: AnyAnimal,
+        params: {
+            flightSpeed?: number,
+            disableLogic?: boolean,
+            aggressiveness?: number,
+        }
+    ) {
+        const {
+            flightSpeed = 1.0,
+            disableLogic = false,
+            aggressiveness = 0.5,
+        } = params;
+        const script = disableLogic ? null : this.getLogicScript(flightSpeed);
+        if (script) {
+            return new AnimalUniversalBehavior(animal, aggressiveness, script);
+        } else {
+            return null;
+        }
     }
 
-    getLogicScript(): AnimalLogicScript {
+    private static getLogicScript(flightSpeed: number): AnimalLogicScript {
         return AnimalLogicStep.sequence([
             {
                 name: ShoreIdleLogic.NAME,
@@ -31,7 +44,7 @@ export class FlyingLogicOrchestrator implements AnimalLogicOrchestrator {
             },
             {
                 name: DefaultFlightLogic.NAME,
-                params: { flightSpeed: this.flightSpeed }
+                params: { flightSpeed: flightSpeed }
             }
         ]);
     }

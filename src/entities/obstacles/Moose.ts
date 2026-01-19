@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './AttackAnimal';
+import { AttackAnimal, AttackAnimalOptions, AttackBehaviorFactory } from './AttackAnimal';
 import { AnimalLogic, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimationPlayer, AnimationStep } from '../../core/AnimationPlayer';
 import { Animal, AnimalAnimations } from './Animal';
@@ -25,13 +25,13 @@ export class Moose extends AttackAnimal {
                 friction: 0.3,
                 linearDamping: 3.0,
                 angularDamping: 2.0
-            },
-            new AttackLogicOrchestrator({
-                attackLogicName: options.attackLogicName,
+            });
+
+        this.setBehavior(AttackBehaviorFactory.create(this,
+            {
                 heightInWater: Moose.HEIGHT_IN_WATER,
                 jumpsIntoWater: true,
-                onShore: options.onShore,
-                stayOnShore: options.stayOnShore
+                ...options,
             })
         );
     }

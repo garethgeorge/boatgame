@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { SwimAwayAnimal, SwimAwayLogicOrchestrator, SwimAwayAnimalOptions } from './SwimAwayAnimal';
+import { SwimAwayAnimal, SwimAwayAnimalOptions, SwimAwayBehaviorFactory } from './SwimAwayAnimal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations, Animal } from './Animal';
 
@@ -15,9 +15,12 @@ export class Swan extends SwimAwayAnimal {
             Entity.TYPE_OBSTACLE,
             false,
             { height: 0.2, ...options },
-            { halfWidth: 1.5, halfLength: 3.0 },
-            new SwimAwayLogicOrchestrator()
-        );
+            { halfWidth: 1.5, halfLength: 3.0 });
+
+        this.setBehavior(SwimAwayBehaviorFactory.create(
+            this,
+            options
+        ));
     }
 
     protected getModelData() {

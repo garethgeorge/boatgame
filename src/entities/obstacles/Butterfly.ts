@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { FlyingAnimal, FlyingAnimalOptions, FlyingLogicOrchestrator } from './FlyingAnimal';
+import { FlyingAnimal, FlyingAnimalOptions, FlyingBehaviorFactory } from './FlyingAnimal';
 import { AnimalAnimations, Animal } from './Animal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { Entity } from '../../core/Entity';
@@ -12,20 +12,22 @@ export class Butterfly extends FlyingAnimal {
         physicsEngine: PhysicsEngine,
         options: FlyingAnimalOptions
     ) {
-        const opts = {
-            flightSpeed: 20.0,
-            ...options
-        };
         super(physicsEngine, 'butterfly', Entity.TYPE_OBSTACLE, false,
-            opts,
+            options,
             {
                 halfWidth: 1.0,
                 halfLength: 1.0,
                 density: 0.1,
                 friction: 0.1
-            },
-            new FlyingLogicOrchestrator({ flightSpeed: opts.flightSpeed })
-        );
+            });
+
+        this.setBehavior(FlyingBehaviorFactory.create(
+            this,
+            {
+                flightSpeed: 20.0,
+                ...options,
+            }
+        ));
     }
 
     protected getModelData() {
