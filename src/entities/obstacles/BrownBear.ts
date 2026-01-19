@@ -5,6 +5,7 @@ import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './AttackAnimal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations } from './Animal';
+import { Entity } from '../../core/Entity';
 
 export class BrownBear extends AttackAnimal {
 
@@ -14,7 +15,8 @@ export class BrownBear extends AttackAnimal {
         physicsEngine: PhysicsEngine,
         options: AttackAnimalOptions
     ) {
-        super(physicsEngine, 'brownbear', options,
+        super(physicsEngine, 'brownbear', Entity.TYPE_OBSTACLE, true,
+            options,
             {
                 halfWidth: 1.5,
                 halfLength: 2.5,

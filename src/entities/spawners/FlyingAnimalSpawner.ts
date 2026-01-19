@@ -4,7 +4,7 @@ import { RiverGeometrySample } from '../../world/RiverGeometry';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Entity } from '../../core/Entity';
 import { ShorePlacementOptions } from '../../managers/PlacementHelper';
-import { AnimalSpawner } from './AnimalSpawner';
+import { AnimalSpawner, AnimalSpawnOptions } from './AnimalSpawner';
 import { FlyingAnimalOptions } from '../obstacles/FlyingAnimal';
 
 export interface FlyingAnimalSpawnConfig {
@@ -51,13 +51,17 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
     /**
      * Spawns a flying animal on shore near a given river sample.
      */
-    async spawnAnimalAbsolute(
-        context: SpawnContext,
-        sample: RiverGeometrySample,
-        distanceRange: [number, number],
-        aggressiveness: number,
-        logic?: string
-    ): Promise<boolean> {
+    async spawnAnimalAbsolute(options: AnimalSpawnOptions): Promise<boolean> {
+        const {
+            context,
+            sample,
+            distanceRange,
+            aggressiveness,
+            disableLogic,
+            fixedAngle,
+            fixedHeight
+        } = options;
+
         const radius = this.entityRadius;
         const minSpacing = 2.0; // Default
         const minShoreDist = this.shorePlacement.minDistFromBank || 2.0;
@@ -76,10 +80,11 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
             const entity = this.spawnEntity(context.physicsEngine, {
                 x: placement.worldX,
                 y: placement.worldZ,
-                angle: placement.rotation,
-                height: placement.height,
+                angle: fixedAngle !== undefined ? fixedAngle : placement.rotation,
+                height: fixedHeight !== undefined ? fixedHeight : placement.height,
                 terrainNormal: placement.normal,
                 aggressiveness,
+                disableLogic
             });
             if (entity) {
                 context.entityManager.add(entity);

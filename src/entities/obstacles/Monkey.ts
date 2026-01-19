@@ -5,6 +5,7 @@ import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './At
 import { AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { ShoreWalkLogic } from '../behaviors/logic/ShoreWalkLogic';
 import { AnimalAnimations } from './Animal';
+import { Entity } from '../../core/Entity';
 
 class MonkeyLogicOrchestrator extends AttackLogicOrchestrator {
     public monkey: Monkey;
@@ -52,7 +53,8 @@ export class Monkey extends AttackAnimal {
             stayOnShore: options.stayOnShore
         });
 
-        super(physicsEngine, 'monkey', options,
+        super(physicsEngine, 'monkey', Entity.TYPE_OBSTACLE, true,
+            options,
             {
                 halfWidth: 1.0,
                 halfLength: 1.0,

@@ -4,6 +4,7 @@ import { Decorations } from '../../world/Decorations';
 import { FlyingAnimal, FlyingAnimalOptions, FlyingLogicOrchestrator } from './FlyingAnimal';
 import { AnimalAnimations, Animal } from './Animal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { Entity } from '../../core/Entity';
 
 export class Butterfly extends FlyingAnimal {
 
@@ -15,12 +16,16 @@ export class Butterfly extends FlyingAnimal {
             flightSpeed: 20.0,
             ...options
         };
-        super(physicsEngine, 'butterfly', opts, {
-            halfWidth: 1.0,
-            halfLength: 1.0,
-            density: 0.1,
-            friction: 0.1
-        }, new FlyingLogicOrchestrator({ flightSpeed: opts.flightSpeed }));
+        super(physicsEngine, 'butterfly', Entity.TYPE_OBSTACLE, false,
+            opts,
+            {
+                halfWidth: 1.0,
+                halfLength: 1.0,
+                density: 0.1,
+                friction: 0.1
+            },
+            new FlyingLogicOrchestrator({ flightSpeed: opts.flightSpeed })
+        );
     }
 
     protected getModelData() {

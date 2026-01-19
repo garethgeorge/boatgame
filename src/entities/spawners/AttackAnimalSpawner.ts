@@ -6,7 +6,7 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
 import { Entity } from '../../core/Entity';
 import { RiverPlacementOptions, ShorePlacementOptions } from '../../managers/PlacementHelper';
-import { AnimalSpawner } from './AnimalSpawner';
+import { AnimalSpawner, AnimalSpawnOptions } from './AnimalSpawner';
 
 export interface AttackAnimalSpawnConfig {
     id: string;
@@ -68,11 +68,11 @@ export class AttackAnimalSpawner extends AnimalSpawner {
             const range: [number, number] = left ?
                 [-sample.bankDist - (shorePlace.maxDistFromBank || 6.0), -sample.bankDist] :
                 [sample.bankDist, sample.bankDist + (shorePlace.maxDistFromBank || 6.0)];
-            return this.spawnAnimalAbsolute(context, sample, range, aggro);
+            return this.spawnAnimalAbsolute({ context, sample, distanceRange: range, aggressiveness: aggro });
 
         } else {
             const range: [number, number] = [-sample.bankDist, sample.bankDist];
-            return this.spawnAnimalAbsolute(context, sample, range, aggro);
+            return this.spawnAnimalAbsolute({ context, sample, distanceRange: range, aggressiveness: aggro });
         }
     }
 
@@ -81,13 +81,18 @@ export class AttackAnimalSpawner extends AnimalSpawner {
      * If the range includes the shore prefers finding an on shore
      * position. 
      */
-    async spawnAnimalAbsolute(
-        context: SpawnContext,
-        sample: RiverGeometrySample,
-        distanceRange: [number, number],
-        aggressiveness: number,
-        logic?: string
-    ): Promise<boolean> {
+    async spawnAnimalAbsolute(options: AnimalSpawnOptions): Promise<boolean> {
+        const {
+            context,
+            sample,
+            distanceRange,
+            aggressiveness,
+            logic,
+            disableLogic,
+            fixedAngle,
+            fixedHeight
+        } = options;
+
         let placement: any = null;
 
         const stayOnShore = false;
@@ -136,13 +141,14 @@ export class AttackAnimalSpawner extends AnimalSpawner {
             const entity = this.spawnEntity(context.physicsEngine, {
                 x: placement.worldX,
                 y: placement.worldZ,
-                angle: placement.rotation,
-                height: placement.height,
+                angle: fixedAngle !== undefined ? fixedAngle : placement.rotation,
+                height: fixedHeight !== undefined ? fixedHeight : placement.height,
                 terrainNormal: placement.normal,
                 onShore,
                 stayOnShore,
                 aggressiveness,
-                attackLogicName: logic
+                attackLogicName: logic,
+                disableLogic
             });
             if (entity) {
                 context.entityManager.add(entity);

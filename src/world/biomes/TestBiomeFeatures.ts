@@ -7,6 +7,8 @@ import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { DecorationRule } from '../decorators/PoissonDecorationStrategy';
 import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/PoissonDecorationRules';
 import { TerrainDecorator } from '../decorators/TerrainDecorator';
+import { RiverSystem } from '../RiverSystem';
+import { RiverGeometry } from '../RiverGeometry';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -75,7 +77,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     public getAmplitudeMultiplier(): number {
-        return 1.0;
+        return 0.0;
     }
 
     public createLayout(zMin: number, zMax: number): any {
@@ -92,9 +94,95 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
 
+    /**
+     * This can be used to check the animal models
+     */
+    private async spawnAllAnimals(context: SpawnContext, z: number): Promise<void> {
+        const animalIds = [
+            EntityIds.ALLIGATOR,
+            EntityIds.BRONTOSAURUS,
+            EntityIds.TREX,
+            EntityIds.BROWN_BEAR,
+            EntityIds.POLAR_BEAR,
+            EntityIds.HIPPO,
+            EntityIds.MONKEY,
+            EntityIds.MOOSE,
+            EntityIds.TRICERATOPS,
+            EntityIds.BUTTERFLY,
+            EntityIds.PTERODACTYL,
+            EntityIds.BLUEBIRD,
+        ];
+        const waterIds = [
+            EntityIds.DOLPHIN,
+            EntityIds.DUCKLING,
+            EntityIds.PENGUIN_KAYAK,
+            EntityIds.SWAN
+        ];
+
+        let currentZ = z;
+        const spacing = 15;
+        const xOffset = 15; // Offset from river bank
+
+        for (const id of animalIds) {
+            const spawner = EntitySpawners.getInstance().animal(id);
+            if (spawner) {
+                // We use fixed sample to place them in a line
+                const riverSystem = RiverSystem.getInstance();
+                const sample = RiverGeometry.getRiverGeometrySample(riverSystem, currentZ);
+
+                // Place on bank
+                const right: [number, number] = [sample.bankDist + xOffset, sample.bankDist + xOffset + 5];
+                const left: [number, number] = [-sample.bankDist - xOffset - 5, -sample.bankDist - xOffset];
+                await spawner.spawnAnimalAbsolute({
+                    context,
+                    sample,
+                    distanceRange: left,
+                    aggressiveness: 0.5,
+                    disableLogic: true,
+                    //fixedAngle: 0,
+                    fixedHeight: 3.0
+                });
+            }
+            currentZ -= spacing;
+        }
+        for (const id of waterIds) {
+            const spawner = EntitySpawners.getInstance().animal(id);
+            if (spawner) {
+                // We use fixed sample to place them in a line
+                const riverSystem = RiverSystem.getInstance();
+                const sample = RiverGeometry.getRiverGeometrySample(riverSystem, currentZ);
+
+                await spawner.spawnAnimalAbsolute({
+                    context,
+                    sample,
+                    distanceRange: [-5, 5],
+                    aggressiveness: 0.5,
+                    disableLogic: true,
+                    //fixedAngle: 0,
+                    fixedHeight: 3.0
+                });
+            }
+            currentZ -= spacing;
+        }
+    }
+
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
+        if (zStart === 0) {
+            await this.spawnAllAnimals(context, -50);
+        }
+
         // await EntitySpawners.getInstance().messageInABottle().spawn(context, 4, zStart, zEnd);
-        // await EntitySpawners.getInstance().attackAnimal(EntityIds.MONKEY)!.spawn(context, 2, zStart, zEnd);
-        await EntitySpawners.getInstance().animal(EntityIds.MONKEY)!.spawn(context, 1, zStart, zEnd);
+        //await EntitySpawners.getInstance().animal(EntityIds.MONKEY)!.spawn(context, 1, zStart, zEnd);
+        // await EntitySpawners.getInstance().animal(EntityIds.ALLIGATOR).spawn(context, 1, zStart, zEnd);
+        // await EntitySpawners.getInstance().animal(EntityIds.TRICERATOPS).spawn(context, 1, zStart, zEnd);
+
+        //await EntitySpawners.getInstance().animal(EntityIds.PTERODACTYL).spawn(context, 1, zStart, zEnd);
+        //await EntitySpawners.getInstance().animal(EntityIds.BUTTERFLY).spawn(context, 1, zStart, zEnd);
+        //await EntitySpawners.getInstance().animal(EntityIds.BLUEBIRD).spawn(context, 1, zStart, zEnd);
+
+        // await EntitySpawners.getInstance().animal(EntityIds.DUCKLING).spawn(context, 1, zStart, zEnd);
+        // await EntitySpawners.getInstance().animal(EntityIds.DOLPHIN).spawn(context, 1, zStart, zEnd);
+        // await EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK).spawn(context, 1, zStart, zEnd);
+        // await EntitySpawners.getInstance().animal(EntityIds.SWAN).spawn(context, 1, zStart, zEnd);
     }
 }

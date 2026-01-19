@@ -5,6 +5,7 @@ import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './At
 import { AnimalLogic, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { AnimalAnimations } from './Animal';
+import { Entity } from '../../core/Entity';
 
 export class Moose extends AttackAnimal {
 
@@ -15,7 +16,8 @@ export class Moose extends AttackAnimal {
         physicsEngine: PhysicsEngine,
         options: AttackAnimalOptions
     ) {
-        super(physicsEngine, 'moose', options,
+        super(physicsEngine, 'moose', Entity.TYPE_OBSTACLE, true,
+            options,
             {
                 halfWidth: 1.5,
                 halfLength: 2.5,

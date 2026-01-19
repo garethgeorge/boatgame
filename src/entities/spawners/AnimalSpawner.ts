@@ -2,6 +2,17 @@ import { SpawnContext } from '../Spawnable';
 import { RiverGeometrySample } from '../../world/RiverGeometry';
 import { BaseSpawner } from './BaseSpawner';
 
+export interface AnimalSpawnOptions {
+    context: SpawnContext;
+    sample: RiverGeometrySample;
+    distanceRange: [number, number];
+    aggressiveness: number;
+    logic?: string;
+    disableLogic?: boolean;
+    fixedAngle?: number;
+    fixedHeight?: number;
+}
+
 /**
  * Common base class for all animal-related spawners (Attack, Flying, SwimAway).
  * Provides a unified interface for absolute spawning.
@@ -9,16 +20,7 @@ import { BaseSpawner } from './BaseSpawner';
 export abstract class AnimalSpawner extends BaseSpawner {
     /**
      * Spawns an animal within a distance range from a river position.
-     * @param context The spawn context.
-     * @param sample The river geometry sample.
-     * @param distanceRange The range along the normal vector [min, max].
-     * @param aggressiveness The aggressiveness/difficulty factor [0-1].
+     * @param options The spawn options.
      */
-    abstract spawnAnimalAbsolute(
-        context: SpawnContext,
-        sample: RiverGeometrySample,
-        distanceRange: [number, number],
-        aggressiveness: number,
-        logic?: string
-    ): Promise<boolean>;
+    abstract spawnAnimalAbsolute(options: AnimalSpawnOptions): Promise<boolean>;
 }

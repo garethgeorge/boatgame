@@ -5,6 +5,7 @@ import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './At
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations } from './Animal';
+import { Entity } from '../../core/Entity';
 
 export class Hippo extends AttackAnimal {
 
@@ -14,7 +15,8 @@ export class Hippo extends AttackAnimal {
         physicsEngine: PhysicsEngine,
         options: AttackAnimalOptions
     ) {
-        super(physicsEngine, 'hippo', options,
+        super(physicsEngine, 'hippo', Entity.TYPE_OBSTACLE, true,
+            options,
             {
                 halfWidth: 1.5,
                 halfLength: 3.0,

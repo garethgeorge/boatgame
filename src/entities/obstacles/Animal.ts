@@ -10,6 +10,16 @@ import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { ObstacleHitBehavior, ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 
+export interface AnimalOptions {
+    x: number;
+    y: number;
+    height: number;
+    angle?: number;
+    terrainNormal?: THREE.Vector3;
+    aggressiveness?: number;
+    disableLogic?: boolean;
+}
+
 export interface AnimalPhysicsOptions {
     halfWidth: number;
     halfLength: number;
@@ -29,6 +39,7 @@ export interface AnimalAnimations {
 }
 
 export interface AnimalLogicOrchestrator {
+    getSnoutOffset?(halfLength: number): planck.Vec2;
     getLogicConfig(): AnimalLogicConfig;
 }
 
@@ -37,8 +48,44 @@ export abstract class Animal extends Entity implements AnyAnimal {
     private behavior: EntityBehavior | null = null;
     private player: AnimationPlayer | null = null;
 
-    constructor() {
+    constructor(
+        physicsEngine: PhysicsEngine,
+        subtype: string,
+        entityType: string,
+        canCausePenalty: boolean,
+        options: AnimalOptions,
+        physicsOptions: AnimalPhysicsOptions,
+        orchestrator: AnimalLogicOrchestrator
+    ) {
         super();
+
+        const {
+            x,
+            y,
+            height,
+            angle = 0,
+            terrainNormal,
+        } = options;
+
+        this.canCausePenalty = canCausePenalty;
+        this.orchestrator = orchestrator;
+
+        this.setupPhysicsBody(physicsEngine, subtype, Entity.TYPE_OBSTACLE, x, y, -angle, physicsOptions);
+
+        this.setupModelMesh(height);
+
+        if (terrainNormal)
+            this.normalVector = terrainNormal.clone();
+        else
+            this.normalVector = new THREE.Vector3(0, 1, 0);
+
+        if (orchestrator && !options.disableLogic) {
+            const aggressiveness = options.aggressiveness ?? Math.random();
+            const snoutOffset = orchestrator.getSnoutOffset?.(physicsOptions.halfLength) ?? planck.Vec2(0, 0);
+            this.setupBehavior(orchestrator, aggressiveness, snoutOffset);
+        } else {
+            this.playAnimationForPhase(null, AnimalLogicPhase.NONE);
+        }
     }
 
     protected setupPhysicsBody(

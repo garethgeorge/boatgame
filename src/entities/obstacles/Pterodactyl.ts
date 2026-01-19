@@ -4,6 +4,7 @@ import { Decorations } from '../../world/Decorations';
 import { FlyingAnimal, FlyingAnimalOptions, FlyingLogicOrchestrator } from './FlyingAnimal';
 import { AnimalAnimations, Animal } from './Animal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { Entity } from '../../core/Entity';
 
 export class Pterodactyl extends FlyingAnimal {
 
@@ -15,12 +16,16 @@ export class Pterodactyl extends FlyingAnimal {
             flightSpeed: 30.0,
             ...options
         };
-        super(physicsEngine, 'pterodactyl', opts, {
-            halfWidth: 1.5,
-            halfLength: 1.5,
-            density: 1.0,
-            friction: 0.1
-        }, new FlyingLogicOrchestrator({ flightSpeed: opts.flightSpeed }));
+        super(physicsEngine, 'pterodactyl', Entity.TYPE_OBSTACLE, false,
+            opts,
+            {
+                halfWidth: 1.5,
+                halfLength: 1.5,
+                density: 1.0,
+                friction: 0.1
+            },
+            new FlyingLogicOrchestrator({ flightSpeed: opts.flightSpeed })
+        );
     }
 
     protected getModelData() {

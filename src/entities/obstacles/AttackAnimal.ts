@@ -8,19 +8,12 @@ import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
-import { Animal, AnimalLogicOrchestrator, AnimalPhysicsOptions } from './Animal';
+import { Animal, AnimalLogicOrchestrator, AnimalOptions, AnimalPhysicsOptions } from './Animal';
 
-export interface AttackAnimalOptions {
-    x: number;
-    y: number;
-    height: number;
-    angle?: number;
-    terrainNormal?: THREE.Vector3;
+export interface AttackAnimalOptions extends AnimalOptions {
     onShore?: boolean;
     stayOnShore?: boolean;
-    aggressiveness?: number;
     attackLogicName?: string;
-    attackOffset?: planck.Vec2;
 }
 
 export class AttackLogicOrchestrator implements AnimalLogicOrchestrator {
@@ -44,6 +37,11 @@ export class AttackLogicOrchestrator implements AnimalLogicOrchestrator {
         this.jumpsIntoWater = params.jumpsIntoWater ?? false;
         this.onShore = params.onShore ?? false;
         this.stayOnShore = params.stayOnShore ?? false;
+    }
+
+    getSnoutOffset(halfLength: number): planck.Vec2 {
+        // assume snout is on -y axis
+        return planck.Vec2(0, -halfLength);
     }
 
     getLogicConfig(): AnimalLogicConfig {
@@ -95,39 +93,6 @@ export class AttackLogicOrchestrator implements AnimalLogicOrchestrator {
 }
 
 export abstract class AttackAnimal extends Animal implements AnyAnimal {
-
-    constructor(
-        physicsEngine: PhysicsEngine,
-        subtype: string,
-        options: AttackAnimalOptions,
-        physicsOptions: AnimalPhysicsOptions,
-        orchestrator: AnimalLogicOrchestrator
-    ) {
-        super();
-
-        const {
-            x,
-            y,
-            height,
-            angle = 0,
-            terrainNormal,
-        } = options;
-
-        this.canCausePenalty = true;
-
-        this.setupPhysicsBody(physicsEngine, subtype, Entity.TYPE_OBSTACLE, x, y, -angle, physicsOptions);
-
-        this.setupModelMesh(height);
-
-        if (terrainNormal)
-            this.normalVector = terrainNormal.clone();
-        else
-            this.normalVector = new THREE.Vector3(0, 1, 0);
-
-        const aggressiveness = options.aggressiveness ?? Math.random();
-        const attackOffset = options.attackOffset ?? planck.Vec2(0, -physicsOptions.halfLength);
-        this.setupBehavior(orchestrator, aggressiveness, attackOffset);
-    }
 
     protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
         return { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 };

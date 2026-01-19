@@ -5,6 +5,7 @@ import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './AttackAnimal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations } from './Animal';
+import { Entity } from '../../core/Entity';
 
 export class Alligator extends AttackAnimal {
 
@@ -14,7 +15,8 @@ export class Alligator extends AttackAnimal {
         physicsEngine: PhysicsEngine,
         options: AttackAnimalOptions
     ) {
-        super(physicsEngine, 'alligator', options,
+        super(physicsEngine, 'alligator', Entity.TYPE_OBSTACLE, true,
+            options,
             {
                 halfWidth: 1.0,
                 halfLength: 3.0,
@@ -38,6 +40,7 @@ export class Alligator extends AttackAnimal {
 
     protected setupModel(model: THREE.Group): void {
         model.scale.set(3.0, 3.0, 3.0);
+        // faces along -z axis
         model.rotation.y = Math.PI;
     }
 

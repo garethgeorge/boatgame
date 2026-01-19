@@ -57,7 +57,7 @@ export class RiverSystem {
    * Returns the width of the river at a given Z position.
    */
   public getRiverWidth(worldZ: number): number {
-    if (RiverSystem.MAKE_STRAIGHT_RIVER) return 15;
+    if (RiverSystem.MAKE_STRAIGHT_RIVER) return 45;
 
     // 1. Biome Noise: Determines if we are in a wide or narrow section
     // Normalized to 0..1

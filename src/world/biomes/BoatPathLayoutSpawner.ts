@@ -125,9 +125,13 @@ export class BoatPathLayoutSpawner {
 
                                 const spawner = spawners.animal(entityType);
                                 if (spawner) {
-                                    await spawner.spawnAnimalAbsolute(
-                                        context, sample, range, p.aggressiveness || 0.5, logic
-                                    );
+                                    await spawner.spawnAnimalAbsolute({
+                                        context,
+                                        sample,
+                                        distanceRange: range,
+                                        aggressiveness: p.aggressiveness || 0.5,
+                                        logic
+                                    });
                                 }
                                 break;
                             }
