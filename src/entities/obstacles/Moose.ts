@@ -3,7 +3,7 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './AttackAnimal';
 import { AnimalLogic, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
-import { AnimationPlayer, ScriptStep } from '../../core/AnimationPlayer';
+import { AnimationPlayer, AnimationStep } from '../../core/AnimationPlayer';
 import { Animal, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
 
@@ -63,7 +63,7 @@ export class Moose extends AttackAnimal {
                         const endTimeScale = 0.5;
                         const fallDuration = duration - startTimeScale - endTimeScale;
 
-                        return ScriptStep.sequence([
+                        return AnimationStep.sequence([
                             { name: 'jump_start', duration: startTimeScale },
                             { name: 'jump_fall', duration: fallDuration },
                             { name: 'jump_end', duration: endTimeScale }

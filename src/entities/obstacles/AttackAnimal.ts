@@ -6,9 +6,10 @@ import { WolfAttackLogic } from '../behaviors/logic/WolfAttackLogic';
 import { EnteringWaterLogic } from '../behaviors/logic/EnteringWaterLogic';
 import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
-import { AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { AnimalLogicConfig, AnimalLogicPhase, AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { Animal, AnimalLogicOrchestrator, AnimalOptions, AnimalPhysicsOptions } from './Animal';
+import { ShoreWalkLogic } from '../behaviors/logic/ShoreWalkLogic';
 
 export interface AttackAnimalOptions extends AnimalOptions {
     onShore?: boolean;
@@ -17,11 +18,12 @@ export interface AttackAnimalOptions extends AnimalOptions {
 }
 
 export class AttackLogicOrchestrator implements AnimalLogicOrchestrator {
-    private attackLogicName: string;
-    private heightInWater: number;
-    private jumpsIntoWater: boolean;
-    private onShore: boolean;
-    private stayOnShore: boolean;
+    protected attackLogicName: string;
+    protected heightInWater: number;
+    protected jumpsIntoWater: boolean;
+    protected onShore: boolean;
+    protected stayOnShore: boolean;
+    protected walkabout: boolean;
 
     constructor(
         params: {
@@ -29,7 +31,8 @@ export class AttackLogicOrchestrator implements AnimalLogicOrchestrator {
             heightInWater: number,
             jumpsIntoWater?: boolean,
             onShore?: boolean,
-            stayOnShore?: boolean
+            stayOnShore?: boolean,
+            walkabout?: boolean
         }
     ) {
         this.attackLogicName = params.attackLogicName;
@@ -37,6 +40,7 @@ export class AttackLogicOrchestrator implements AnimalLogicOrchestrator {
         this.jumpsIntoWater = params.jumpsIntoWater ?? false;
         this.onShore = params.onShore ?? false;
         this.stayOnShore = params.stayOnShore ?? false;
+        this.walkabout = params.walkabout ?? false;
     }
 
     getSnoutOffset(halfLength: number): planck.Vec2 {
@@ -44,51 +48,52 @@ export class AttackLogicOrchestrator implements AnimalLogicOrchestrator {
         return planck.Vec2(0, -halfLength);
     }
 
-    getLogicConfig(): AnimalLogicConfig {
-        if (this.onShore) {
-            if (!this.stayOnShore) {
-                return this.getOnShoreConfig();
+    getLogicScript(): AnimalLogicScript {
+        if (this.onShore && this.stayOnShore) {
+            return null;
+        } else if (this.onShore) {
+            if (!this.walkabout) {
+                return AnimalLogicStep.sequence([
+                    {
+                        name: ShoreIdleLogic.NAME,
+                    },
+                    {
+                        name: EnteringWaterLogic.NAME,
+                        params: { targetWaterHeight: this.heightInWater, jump: this.jumpsIntoWater }
+                    },
+                    {
+                        name: this.attackLogicName || WolfAttackLogic.NAME
+                    }
+                ]);
             } else {
-                return null;
+                return AnimalLogicStep.sequence([
+                    AnimalLogicStep.until('DONE',
+                        AnimalLogicStep.random([
+                            {
+                                name: ShoreIdleLogic.NAME,
+                                timeout: 5.0,
+                            },
+                            {
+                                name: ShoreWalkLogic.NAME,
+                                params: {
+                                    walkDistance: 10 + Math.random() * 10,
+                                    speed: 0.8 + Math.random() * 0.4
+                                }
+                            },
+                        ])
+                    ),
+                    {
+                        name: EnteringWaterLogic.NAME,
+                        params: { targetWaterHeight: this.heightInWater, jump: this.jumpsIntoWater }
+                    },
+                    {
+                        name: this.attackLogicName || WolfAttackLogic.NAME
+                    }
+                ]);
             }
         } else {
-            return this.getInWaterConfig();
+            return { name: this.attackLogicName || WolfAttackLogic.NAME };
         }
-    }
-
-    getOnShoreConfig(): AnimalLogicConfig {
-        const idleConfig: AnimalLogicConfig = {
-            name: ShoreIdleLogic.NAME,
-            params: {
-                nextLogicConfig: this.getEnterWaterConfig(),
-                maybeSwitchBehavior: () => this.shoreIdleMaybeSwitchBehavior()
-            }
-        };
-        return idleConfig;
-    }
-
-    getEnterWaterConfig(): AnimalLogicConfig {
-        // Create an entering water logic that chains into the final attack/flight logic
-        return {
-            name: EnteringWaterLogic.NAME,
-            params: {
-                targetWaterHeight: this.heightInWater,
-                jump: this.jumpsIntoWater,
-                nextLogicConfig: this.getInWaterConfig()
-            }
-        };
-    }
-
-    getInWaterConfig(): AnimalLogicConfig {
-        return { name: this.attackLogicName || WolfAttackLogic.NAME };
-    }
-
-    /**
-     * Can be overriden in derived classes to change behavior while
-     * idle.
-     */
-    shoreIdleMaybeSwitchBehavior(): AnimalLogicConfig | null {
-        return null; // Default: stay in idle
     }
 }
 

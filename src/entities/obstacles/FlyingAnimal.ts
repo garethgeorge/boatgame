@@ -6,7 +6,7 @@ import { DefaultFlightLogic } from '../behaviors/logic/DefaultFlightLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
-import { AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { AnimalLogicConfig, AnimalLogicPhase, AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
 import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
 import { Animal, AnimalLogicOrchestrator, AnimalOptions, AnimalPhysicsOptions } from './Animal';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
@@ -23,18 +23,17 @@ export class FlyingLogicOrchestrator implements AnimalLogicOrchestrator {
         this.flightSpeed = params.flightSpeed ?? 1.0;
     }
 
-    getLogicConfig(): AnimalLogicConfig {
-        return {
-            name: ShoreIdleLogic.NAME,
-            params: {
-                minNoticeDistance: 200.0,
-                ignoreBottles: true,
-                nextLogicConfig: {
-                    name: DefaultFlightLogic.NAME,
-                    params: { flightSpeed: this.flightSpeed }
-                }
+    getLogicScript(): AnimalLogicScript {
+        return AnimalLogicStep.sequence([
+            {
+                name: ShoreIdleLogic.NAME,
+                params: { minNoticeDistance: 200.0, ignoreBottles: true }
+            },
+            {
+                name: DefaultFlightLogic.NAME,
+                params: { flightSpeed: this.flightSpeed }
             }
-        };
+        ]);
     }
 }
 

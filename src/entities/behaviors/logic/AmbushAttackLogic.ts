@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import { Boat } from '../../Boat';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase, AnimalLogicResultState } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './AnimalPathStrategy';
 import { ShoreHuggingStrategy, SternInterceptStrategy } from './AttackPathStrategies';
 
@@ -41,7 +41,6 @@ export class AmbushAttackLogic implements AnimalLogic {
                     speed: 0
                 },
                 locomotionType: 'WATER',
-                resultState: AnimalLogicResultState.CONTINUE
             }
         }
 
@@ -73,7 +72,6 @@ export class AmbushAttackLogic implements AnimalLogic {
         return {
             path: steering,
             locomotionType: 'WATER',
-            resultState: AnimalLogicResultState.CONTINUE
         };
     }
 

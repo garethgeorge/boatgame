@@ -1,13 +1,12 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../../../world/RiverSystem';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase, AnimalLogicResultState } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './AnimalLogic';
 import { EnteringWaterStrategy } from './EnteringWaterStrategy';
 
 export interface EnteringWaterParams {
     targetWaterHeight: number;
     jump: boolean;
-    nextLogicConfig: AnimalLogicConfig;
 }
 
 /**
@@ -18,12 +17,10 @@ export class EnteringWaterLogic implements AnimalLogic {
     readonly name = EnteringWaterLogic.NAME;
 
     private strategy: EnteringWaterStrategy;
-    private nextLogicConfig: AnimalLogicConfig;
     private duration: number = 0;
 
     constructor(params: EnteringWaterParams) {
         this.strategy = new EnteringWaterStrategy(params.jump, params.targetWaterHeight);
-        this.nextLogicConfig = params.nextLogicConfig;
     }
 
     activate(context: AnimalLogicContext) {
@@ -51,14 +48,13 @@ export class EnteringWaterLogic implements AnimalLogic {
             return {
                 path: steering,
                 locomotionType: 'WATER',
-                nextLogicConfig: this.nextLogicConfig,
-                resultState: AnimalLogicResultState.FINISH
+                result: 'DONE',
+                finish: true
             };
         } else {
             return {
                 path: steering,
-                locomotionType: 'LAND',
-                resultState: AnimalLogicResultState.CONTINUE
+                locomotionType: 'LAND'
             };
         }
     }

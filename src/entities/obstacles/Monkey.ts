@@ -2,35 +2,12 @@ import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { AttackAnimal, AttackAnimalOptions, AttackLogicOrchestrator } from './AttackAnimal';
-import { AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { AnimalLogicConfig, AnimalLogicPhase, AnimalLogicScript } from '../behaviors/logic/AnimalLogic';
 import { ShoreWalkLogic } from '../behaviors/logic/ShoreWalkLogic';
+import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
+import { EnteringWaterLogic } from '../behaviors/logic/EnteringWaterLogic';
 import { AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
-
-class MonkeyLogicOrchestrator extends AttackLogicOrchestrator {
-    public monkey: Monkey;
-
-    /**
-     * Overrides base to switch behavior periodically when idle.
-     */
-    shoreIdleMaybeSwitchBehavior(): AnimalLogicConfig | null {
-        const rand = Math.random();
-        if (rand < 0.33) {
-            const walkDistance = 10 + Math.random() * 10;
-            const speed = 0.8 + Math.random() * 0.4;
-
-            // go for a walk then back to idle
-            return {
-                name: ShoreWalkLogic.NAME,
-                params: {
-                    walkDistance,
-                    speed,
-                    nextLogicConfig: this.getOnShoreConfig()
-                }
-            };
-        }
-    }
-}
 
 export class Monkey extends AttackAnimal {
 
@@ -40,11 +17,12 @@ export class Monkey extends AttackAnimal {
         physicsEngine: PhysicsEngine,
         options: AttackAnimalOptions
     ) {
-        const orchestrator = new MonkeyLogicOrchestrator({
+        const orchestrator = new AttackLogicOrchestrator({
             attackLogicName: options.attackLogicName,
             heightInWater: Monkey.HEIGHT_IN_WATER,
             onShore: options.onShore,
-            stayOnShore: options.stayOnShore
+            stayOnShore: options.stayOnShore,
+            walkabout: true
         });
 
         super(physicsEngine, 'monkey', Entity.TYPE_OBSTACLE, true,

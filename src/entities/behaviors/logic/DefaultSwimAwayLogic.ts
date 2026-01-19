@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase, AnimalLogicResultState } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { FleePathStrategy } from './FleePathStrategy';
 
 /**
@@ -12,25 +12,35 @@ export class DefaultSwimAwayLogic implements AnimalLogic {
 
     private strategy: FleePathStrategy;
     private state: 'IDLE' | 'FLEEING' = 'IDLE';
+    private sleepTime: number = 0;
 
     constructor() {
         this.strategy = new FleePathStrategy();
     }
 
     activate(context: AnimalLogicContext): void {
+        this.sleepTime = 0;
     }
 
     update(context: AnimalLogicContext): AnimalLogicPathResult {
-        // See whether to engage/disengage attack
-        if (this.state == 'IDLE') {
-            if (this.shouldEngage(context)) {
-                this.state = 'FLEEING';
-            }
-        } else {
-            if (this.shouldDisengage(context)) {
-                this.state = 'IDLE';
+        this.sleepTime -= context.dt;
+
+        // See whether to engage/disengage attack, sleep time helps
+        // debounce
+        if (this.sleepTime < 0) {
+            if (this.state == 'IDLE') {
+                if (this.shouldEngage(context)) {
+                    this.state = 'FLEEING';
+                    this.sleepTime = 0.5;
+                }
+            } else {
+                if (this.shouldDisengage(context)) {
+                    this.state = 'IDLE';
+                    this.sleepTime = 0.5;
+                }
             }
         }
+
         if (this.state == 'IDLE') {
             return {
                 path: {
@@ -38,7 +48,6 @@ export class DefaultSwimAwayLogic implements AnimalLogic {
                     speed: 0
                 },
                 locomotionType: 'WATER',
-                resultState: AnimalLogicResultState.CONTINUE
             }
         }
 
@@ -46,7 +55,6 @@ export class DefaultSwimAwayLogic implements AnimalLogic {
         return {
             path: steering,
             locomotionType: 'WATER',
-            resultState: AnimalLogicResultState.CONTINUE
         };
     }
 

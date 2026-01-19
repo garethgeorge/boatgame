@@ -5,13 +5,13 @@ import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { ObstacleHitBehavior, ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { Animal, AnimalLogicOrchestrator, AnimalOptions, AnimalPhysicsOptions } from './Animal';
 import { DefaultSwimAwayLogic } from '../behaviors/logic/DefaultSwimAwayLogic';
-import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogic';
+import { AnimalLogicConfig, AnimalLogicScript } from '../behaviors/logic/AnimalLogic';
 
 export interface SwimAwayAnimalOptions extends AnimalOptions {
 }
 
 export class SwimAwayLogicOrchestrator implements AnimalLogicOrchestrator {
-    getLogicConfig(): AnimalLogicConfig {
+    getLogicScript(): AnimalLogicScript {
         return { name: DefaultSwimAwayLogic.NAME };
     }
 }

@@ -29,6 +29,7 @@ export enum AnimalLogicPhase {
  */
 export interface AnimalLogicConfig {
     name: string;
+    timeout?: number;
     params?: Record<string, any>;
 }
 
@@ -39,12 +40,38 @@ export interface AnimalLogicContext extends AnimalStrategyContext {
 }
 
 /**
- * Standardized result state from any animal logic calculation.
+ * A script function that returns the next logic to run.
  */
-export enum AnimalLogicResultState {
-    CONTINUE = 'CONTINUE',   // Keep running the current logic
-    DISENGAGE = 'DISENGAGE', // Transition immediately to next logic (or hide)
-    FINISH = 'FINISH'        // Apply current steering then transition
+export type AnimalLogicScriptFn = (step: number, lastResult: string) => AnimalLogicScript | null;
+
+/**
+ * A script is either a single config (for simple behaviors) or a function
+ * that generates a sequence of behaviors.
+ */
+export type AnimalLogicScript = AnimalLogicConfig | AnimalLogicScriptFn;
+
+export class AnimalLogicStep {
+    /** Play each script in sequence */
+    public static sequence(sequence: AnimalLogicScript[]) {
+        return (step: number, lastResult: string) => sequence[step] ?? null;
+    }
+
+    /** Play script until it returns 'result' */
+    public static until(result: string, script: AnimalLogicScript) {
+        return (step: number, lastResult: string) => {
+            if (lastResult === result) return null;
+            return script;
+        }
+    }
+
+    /** Randomly choose a script */
+    public static random(choices: AnimalLogicScript[]) {
+        return (step: number, lastResult: string) => {
+            if (choices.length === 0) return null;
+            const index = Math.floor(Math.random() * choices.length);
+            return choices[index];
+        }
+    }
 }
 
 /**
@@ -57,12 +84,15 @@ export interface AnimalLogicPathResult {
     // The physics model to use for this frame
     locomotionType: LocomotionType;
 
-    // --- Logic Chaining ---
-    // Transition to a new logic if specified
-    nextLogicConfig?: AnimalLogicConfig;
+    // --- Result / Continuation ---
 
-    // The lifecycle state of the current behavioral sequence
-    resultState: AnimalLogicResultState;
+    // If set, the current logic is finished with this result string.
+    result?: string;
+
+    // If result is set, this flag controls transition behavior:
+    // - true: Apply the current frame's steering, then switch logic next frame.
+    // - false (undefined): Switch logic IMMEDIATELY (disengage), ignoring current steering.
+    finish?: boolean;
 }
 
 /**

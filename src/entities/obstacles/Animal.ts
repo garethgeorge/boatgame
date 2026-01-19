@@ -5,7 +5,7 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AnimationParameters, AnimationPlayer, AnimationScript } from '../../core/AnimationPlayer';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
-import { AnimalLogic, AnimalLogicConfig, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { AnimalLogic, AnimalLogicConfig, AnimalLogicPhase, AnimalLogicScript } from '../behaviors/logic/AnimalLogic';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { ObstacleHitBehavior, ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
@@ -40,7 +40,7 @@ export interface AnimalAnimations {
 
 export interface AnimalLogicOrchestrator {
     getSnoutOffset?(halfLength: number): planck.Vec2;
-    getLogicConfig(): AnimalLogicConfig;
+    getLogicScript(): AnimalLogicScript;
 }
 
 export abstract class Animal extends Entity implements AnyAnimal {
@@ -203,9 +203,9 @@ export abstract class Animal extends Entity implements AnyAnimal {
         aggressiveness: number,
         snoutOffset?: planck.Vec2
     ) {
-        const logicConfig = orchestrator.getLogicConfig();
-        if (logicConfig) {
-            this.behavior = new AnimalUniversalBehavior(this, aggressiveness, logicConfig, snoutOffset);
+        const script = orchestrator.getLogicScript();
+        if (script) {
+            this.behavior = new AnimalUniversalBehavior(this, aggressiveness, script, snoutOffset);
         } else {
             this.playAnimationForPhase(null, AnimalLogicPhase.NONE);
         }

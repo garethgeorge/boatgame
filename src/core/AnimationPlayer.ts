@@ -18,7 +18,7 @@ export interface AnimationParameters {
 
 export type AnimationScript = AnimationParameters | ((step: number) => AnimationScript | null);
 
-export class ScriptStep {
+export class AnimationStep {
     public static sequence(sequence: AnimationScript[]) {
         return (step: number) => sequence[step] ?? null;
     }

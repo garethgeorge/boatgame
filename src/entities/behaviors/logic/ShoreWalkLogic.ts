@@ -1,12 +1,11 @@
 import * as planck from 'planck';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase, AnimalLogicResultState } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './AnimalPathStrategy';
 import { ShoreWalkStrategy, ShoreTurnStrategy } from './ShoreWalkStrategy';
 
 export interface ShoreWalkParams {
     walkDistance: number;
     speed: number; // Walk speed
-    nextLogicConfig: AnimalLogicConfig;
 }
 
 type ShoreWalkState = 'START' | 'OUTBOUND' | 'TURN' | 'INBOUND' | 'END' | 'FINISHED';
@@ -22,14 +21,12 @@ export class ShoreWalkLogic implements AnimalLogic {
     private strategy: AnimalPathStrategy | null = null;
     private walkDistance: number;
     private speed: number;
-    private nextLogicConfig: AnimalLogicConfig;
 
     private state: ShoreWalkState = 'START';
 
     constructor(params: ShoreWalkParams) {
         this.walkDistance = params.walkDistance;
         this.speed = params.speed;
-        this.nextLogicConfig = params.nextLogicConfig;
     }
 
     activate(context: AnimalLogicContext) {
@@ -116,8 +113,8 @@ export class ShoreWalkLogic implements AnimalLogic {
             return {
                 path: { target: currentPos, speed: 0 },
                 locomotionType: 'LAND',
-                nextLogicConfig: this.nextLogicConfig,
-                resultState: AnimalLogicResultState.FINISH
+                result: 'DONE',
+                finish: true
             };
         }
 
@@ -125,8 +122,7 @@ export class ShoreWalkLogic implements AnimalLogic {
         const steering = this.strategy.update(context);
         return {
             path: steering,
-            locomotionType: 'LAND',
-            resultState: AnimalLogicResultState.CONTINUE
+            locomotionType: 'LAND'
         };
     }
 

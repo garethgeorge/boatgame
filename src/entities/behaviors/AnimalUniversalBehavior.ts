@@ -4,18 +4,27 @@ import { Boat } from '../Boat';
 import { AnyAnimal } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
 import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase, AnimalLogicResultState } from './logic/AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase, AnimalLogicScript, AnimalLogicScriptFn } from './logic/AnimalLogic';
 import { AnimalLogicRegistry } from './logic/AnimalLogicRegistry';
-import { AnimalBehaviorEvent } from './AnimalBehavior';
+
+interface ScriptStackEntry {
+    script: AnimalLogicScriptFn;
+    step: number;
+}
 
 export class AnimalUniversalBehavior implements EntityBehavior {
     private entity: AnyAnimal;
     private aggressiveness: number;
     private snoutOffset: planck.Vec2;
 
-    // Current logic
-    private logicPhase: AnimalLogicPhase = AnimalLogicPhase.NONE;
+    // Script execution
+    private scriptStack: ScriptStackEntry[] = [];
+    private nextLogicConfig: AnimalLogicConfig = null;
     private logic: AnimalLogic = null;
+    private logicTimeout: number | undefined = undefined;
+
+    // Logic State
+    private logicPhase: AnimalLogicPhase = AnimalLogicPhase.NONE;
 
     // Flight/Land state tracking
     private currentAngle: number = 0;
@@ -31,22 +40,68 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     constructor(
         entity: AnyAnimal,
         aggressiveness: number,
-        logicConfig: AnimalLogicConfig,
+        script: AnimalLogicScript,
         snoutOffset?: planck.Vec2
     ) {
         this.entity = entity;
         this.aggressiveness = aggressiveness;
-        this.logic = AnimalLogicRegistry.create(logicConfig);
         this.snoutOffset = snoutOffset || planck.Vec2(0, 0);
 
         const body = entity.getPhysicsBody();
         if (body) {
             this.currentAngle = body.getAngle();
         }
+
+        // Initialize script
+        this.nextLogicConfig = this.beginScript(script, '');
+    }
+
+    private beginScript(script: AnimalLogicScript, lastResult: string): AnimalLogicConfig {
+        if (!script) return null;
+
+        if (typeof script === 'function') {
+            this.scriptStack.push({ script, step: 0 });
+            return this.resolveNextLogic('');
+        } else {
+            // It's a single config, treat as immediate next logic
+            return script as AnimalLogicConfig;
+        }
+    }
+
+    /**
+     * Gets the next logic config to execute given the result from the last
+     * one. The result is propogate both up and down the stack.
+     */
+    private resolveNextLogic(lastResult: string): AnimalLogicConfig {
+        // Loop until we find a config or run out of stack
+        while (this.scriptStack.length > 0) {
+            const entry = this.scriptStack[this.scriptStack.length - 1];
+            const nextThing = entry.script(entry.step, lastResult);
+
+            if (!nextThing) {
+                this.scriptStack.pop();
+                continue;
+            }
+
+            // Increment step for next time
+            entry.step++;
+
+            if (typeof nextThing === 'function') {
+                // Nested script
+                this.scriptStack.push({ script: nextThing, step: 0 });
+                continue;
+            } else {
+                // Found a config
+                return nextThing as AnimalLogicConfig;
+            }
+        }
+
+        // If stack empty, no logic
+        return null;
     }
 
     update(dt: number) {
-        if (!this.logic) return;
+        if (!this.logic && !this.nextLogicConfig) return;
 
         const targetBody = Boat.getPlayerBody();
         const physicsBody = this.entity.getPhysicsBody();
@@ -63,38 +118,75 @@ export class AnimalUniversalBehavior implements EntityBehavior {
             bottles: Boat.getBottleCount()
         };
 
-        // Activate the first logic if starting
-        if (this.logicPhase === AnimalLogicPhase.NONE) {
-            this.logic.activate(context);
+        // Create and activate next logic if needed
+        if (this.nextLogicConfig) {
+            this.activateLogic(context, this.nextLogicConfig);
+            this.nextLogicConfig = null;
         }
 
-        // Update the logic
         this.updateLogic(context);
     }
 
+    private activateLogic(context: AnimalLogicContext, config: AnimalLogicConfig) {
+        if (!config) {
+            this.logic = null;
+            return;
+        }
+
+        this.logic = AnimalLogicRegistry.create(config);
+        if (!this.logic) return;
+
+        this.logic.activate(context);
+        this.logicTimeout = config.timeout;
+    }
+
     private updateLogic(context: AnimalLogicContext) {
-        // 1. Calculate Path based on fresh state
+        if (!this.logic) return;
+
+        // Update current logic
         let result = this.logic.update(context);
 
-        // 2. Handle Immediate Logic Chaining
-        // DISENGAGE means switch immediately without applying current result
-        while (result.resultState === AnimalLogicResultState.DISENGAGE) {
-            if (result.nextLogicConfig) {
-                this.logic = AnimalLogicRegistry.create(result.nextLogicConfig);
-                this.logic.activate(context);
+        // Check timeout
+        if (this.logicTimeout !== undefined) {
+            this.logicTimeout -= context.dt;
+            if (this.logicTimeout <= 0.0) {
+                result.result = 'TIMEOUT';
+                result.finish = false;
+            }
+        }
+
+        // Handle immediate chaining
+        while (result.result && (result.finish === undefined || !result.finish)) {
+            const nextConfig = this.resolveNextLogic(result.result);
+            this.activateLogic(context, nextConfig);
+            if (this.logic) {
                 result = this.logic.update(context);
             } else {
-                // Termination
-                this.logic = null;
                 this.dispatchFinishedEvent();
                 return;
             }
         }
 
-        // 3. Events
-        this.dispatchEvents(this.logic, context, result);
+        // Events relative to current (possibly new) logic
+        if (this.logic) {
+            this.dispatchEvents(this.logic, context);
+        }
 
-        // 4. Locomotion
+        // Locomotion
+        this.applyLocomotion(context, result);
+
+        // Handle deferred chaining
+        if (result.result && (result.finish !== undefined || result.finish)) {
+            this.nextLogicConfig = this.resolveNextLogic(result.result);
+            this.logic = null;
+            if (!this.nextLogicConfig) {
+                this.dispatchFinishedEvent();
+                return;
+            }
+        }
+    }
+
+    private applyLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
         switch (result.locomotionType) {
             case 'FLIGHT':
                 this.executeFlightLocomotion(context, result);
@@ -107,22 +199,9 @@ export class AnimalUniversalBehavior implements EntityBehavior {
                 this.executeWaterLocomotion(context, result);
                 break;
         }
-
-        // 5. Handle Deferred Logic Chaining
-        // FINISH means switch after applying current locomotion results
-        if (result.resultState === AnimalLogicResultState.FINISH) {
-            if (result.nextLogicConfig) {
-                this.logic = AnimalLogicRegistry.create(result.nextLogicConfig);
-                this.logic.activate(context);
-            } else {
-                // Termination
-                this.logic = null;
-                this.dispatchFinishedEvent();
-            }
-        }
     }
 
-    private dispatchEvents(logic: AnimalLogic, context: AnimalLogicContext, result: AnimalLogicPathResult) {
+    private dispatchEvents(logic: AnimalLogic, context: AnimalLogicContext) {
         const logicPhase = logic.getPhase();
         if (this.logicPhase !== logicPhase) {
             this.entity.handleBehaviorEvent?.({
