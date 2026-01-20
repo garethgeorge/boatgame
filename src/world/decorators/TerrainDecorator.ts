@@ -3,10 +3,10 @@ export type { DecorationRule, PlacementManifest };
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../SimplexNoise';
 import { DecorationContext } from './DecorationContext';
-import { DecorationInstance, Decorations } from '../Decorations';
+import { DecorationInstance, Decorations, LSystemTreeKind } from '../Decorations';
 
 export interface DecorationOptions {
-    kind: 'oak' | 'willow' | 'poplar' | 'flower' | 'rock';
+    kind: LSystemTreeKind | 'flower' | 'rock';
     rotation: number;
     scale: number;
 }
@@ -104,13 +104,13 @@ export class TerrainDecorator {
         const tryPlace = (instances: DecorationInstance[], pos: { worldX: number, worldZ: number, height: number }, opts: DecorationOptions) => {
             const height = context.decoHelper.calculateHeight(instances);
             const queryHeight = height + (height * 1.2);
-            
+
             if (!this.riverSystem.terrainGeometry.checkVisibility(pos.worldX, queryHeight, pos.worldZ, /* visibilitySteps=*/8)) {
                 return;
             }
             context.decoHelper.addInstancedDecoration(context, instances, pos, opts.rotation, opts.scale);
         }
-        
+
         for (const manifest of decorations) {
             if (!(region.xMin <= manifest.position.x && manifest.position.x < region.xMax)) continue;
             if (!(region.zMin <= manifest.position.z && manifest.position.z < region.zMax)) continue;
@@ -134,18 +134,17 @@ export class TerrainDecorator {
             const opts: DecorationOptions = manifest.options as DecorationOptions;
 
             switch (opts.kind) {
-                case 'oak': {
-                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'oak' });
-                    tryPlace(treeInstances, pos, opts);
-                    break;
-                }
-                case 'willow': {
-                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'willow' });
-                    tryPlace(treeInstances, pos, opts);
-                    break;
-                }
-                case 'poplar': {
-                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: 'poplar' });
+                case 'oak':
+                case 'willow':
+                case 'poplar':
+                case 'birch':
+                case 'elder':
+                case 'elm':
+                case 'umbrella':
+                case 'open':
+                case 'irregular':
+                case 'vase': {
+                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: opts.kind as any });
                     tryPlace(treeInstances, pos, opts);
                     break;
                 }
