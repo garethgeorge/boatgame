@@ -144,8 +144,7 @@ describe('GraphicsTracker', () => {
     });
 
     it('should identify leaked objects correctly', () => {
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
-        const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+        const consoleSpy = vi.spyOn(console, 'log');
         const now = 10000;
         vi.spyOn(performance, 'now').mockReturnValue(now);
 
@@ -201,8 +200,7 @@ describe('GraphicsTracker', () => {
     });
 
     it('should ignore objects marked as cache', () => {
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
-        const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+        const consoleSpy = vi.spyOn(console, 'log');
         const now = 10000;
         vi.spyOn(performance, 'now').mockReturnValue(now);
 
@@ -226,8 +224,7 @@ describe('GraphicsTracker', () => {
     });
 
     it('should ignore objects attached to scene root', () => {
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
-        const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+        const consoleSpy = vi.spyOn(console, 'log');
         const now = 10000;
         vi.spyOn(performance, 'now').mockReturnValue(now);
 
@@ -260,11 +257,8 @@ describe('GraphicsTracker', () => {
     });
 
     it('should identify untracked objects in the scene', () => {
-        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
-        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-        const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
-        const consoleGroupSpy = vi.spyOn(console, 'group').mockImplementation(() => { });
-        const consoleGroupEndSpy = vi.spyOn(console, 'groupEnd').mockImplementation(() => { });
+        const consoleSpy = vi.spyOn(console, 'warn');
+        const consoleErrorSpy = vi.spyOn(console, 'error');
         const now = 10000;
         vi.spyOn(performance, 'now').mockReturnValue(now);
 

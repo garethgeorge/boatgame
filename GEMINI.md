@@ -153,16 +153,16 @@ The animal behavior system uses a three-tier architecture to separate high-level
 
 ### Tier 1: `AnimalUniversalBehavior` (Orchestrator)
 The central component that interfaces with the `Entity` system. It manages:
-- **State Switching**: Transitions between `IDLE` and `ACTIVE` states based on `AnimalLogic.shouldActivate()`.
-- **Logic Execution**: Holds a reference to the current `AnimalLogic` and calls its `update()` and `calculatePath()` methods.
+- **Logic Script Execution**: Executes complex behavioral scripts using a logic stack. It calls the current logic's `update()` and `calculatePath()` methods.
 - **Locomotion Execution**: Based on the `LocomotionType` (WATER, LAND, FLIGHT) returned by the logic, it applies physics forces (velocities, angular velocities, or kinematic positioning).
-- **Logic Chaining**: Automatically replaces the current logic with a new one if `AnimalLogicPathResult.nextLogicConfig` is provided.
+- **Script Advancement**: When a logic component returns `finish: true`, the orchestrator uses the provided `result` string to determine the next step in the script.
+- **Event Dispatching**: Tracks changes in logic phase and dispatches events. The receiver can use this to update visuals such as animations.
 
 ### Tier 2: `AnimalLogic` (Goal Setting)
 Defines *what* the animal wants to do. Each logic class (e.g., `WolfAttackLogic`, `ShoreWalkLogic`) implements the `AnimalLogic` interface.
-- **Reference Implementation**: `WolfAttackLogic` is the gold standard for this tier.
 - **Responsibility**: Manages its own internal state (e.g., timers, strategy switching) and delegates pathfinding to one or more `AnimalPathStrategy` instances.
-- **Visual State**: Returns an `animationState` string (e.g., `'ATTACKING'`, `'PREPARING'`) which is passed to the entity's `AnimationPlayer`.
+- **Phase**: As the logic changes states it updates its current logic phase which can be queried.
+- **Return Values**: Returns `finish: true` when it has completed its goal, along with a `result` string (e.g., `ShoreIdleLogic.RESULT_NOTICED`) to signal its outcome to the scripting engine.
 
 ### Tier 3: `AnimalPathStrategy` (Movement Execution)
 Defines *how* the animal moves to achieve its goal.
@@ -175,10 +175,31 @@ Defines *how* the animal moves to achieve its goal.
     - **WATER**: Dynamic physics using `setLinearVelocity` and `setAngularVelocity`.
     - **LAND**: Kinematic physics for precise positioning on terrain (includes height/normal alignment).
     - **FLIGHT**: Kinematic physics with banking and height control.
-- **Logic Chaining**: Allows complex behavioral sequences (e.g., `ShoreIdleLogic` -> `EnteringWaterLogic` -> `WolfAttackLogic`).
+- **Scripted Behaviors**: Complex behaviors are defined using the `AnimalLogicStep` helpers:
+    - `sequence([...])`: Plays a list of scripts in order.
+    - `until(result, script)`: Loops a script until a specific result string is returned.
+    - `random([...])`: Picks a random script from a list.
 - **Logic Registry**: `AnimalLogicRegistry` is used to instantiate logic from configuration objects, enabling extensible behavior definitions in spawners.
 
-## 10. Declarative Biome Layout System
+## 10. Animation Scripting System
+**Files**: `src/core/AnimationPlayer.ts`
+
+The `AnimationPlayer` uses a similar stack-based scripting engine to manage complex animation sequences (e.g., a "jump" into water followed by a "swim" loop).
+
+### 1. Script Components
+- **`AnimationParameters`**: A static configuration specifying the animation name, `startTime`, `timeScale`, `duration`, and `repeat` count.
+- **`AnimationScript`**: A functional type `(step: number) => AnimationScript | null` that allows for procedural sequences.
+
+### 2. Scripting Helpers (`AnimationStep`)
+- **`sequence([...])`**: Executes a list of animation scripts in order.
+- **`random(repeat, weights, choices)`**: Randomly selects from a list of choices for a specified number of repetitions.
+
+### 3. Execution Model
+1. **Triggering**: A script is started via `player.play(script)`.
+2. **Stack Management**: Procedural scripts are pushed onto a stack. The player resolves the stack until a static `AnimationParameters` is found.
+3. **Event-Driven Advancement**: When an animation completes (or finishes its specified `repeat` count), the `THREE.AnimationMixer`'s `'finished'` event triggers the player to resolve the next step in the script.
+
+## 11. Declarative Biome Layout System
 **Files**: `src/world/biomes/BoatPathLayoutStrategy.ts`, `src/world/biomes/*BiomeFeatures.ts`
 
 The layout system uses a declarative approach to define the "intended path" for the boat and the distribution of obstacles and rewards.
@@ -218,7 +239,7 @@ The `BoatPathLayoutStrategy.createLayout()` follows a deterministic multi-step p
 - **Adding Pattern Logics**: Implement the logic in `populatePlacements()` to calculate `pathIndex` and pass hints to `applyIndividualPlacement()`.
 - **Adding Placement Types**: Update `placementRange()` to define how the lateral `[min, max]` range is calculated relative to the boat path and river banks.
 
-## 11. Procedural Decoration Placement System
+## 12. Procedural Decoration Placement System
 **Files**: `src/world/decorators/PoissonDecorationStrategy.ts`, `src/world/decorators/PoissonDecorationRules.ts`, `src/world/decorators/TerrainDecorator.ts`
 
 This system uses **Poisson Disk Sampling** with variable radii to place static decorations (trees, rocks, flowers) across the terrain. Position fitness and object spacing are controlled by declarative rules and environmental signals.
@@ -271,17 +292,17 @@ async decorate(context: DecorationContext, zStart: number, zEnd: number) {
 -   **Fitness-Based Thinning**: `getVariableRadius` inverts the fitness value using a power curve. If `fitness` is 1.0, spacing is exactly `radius`. As `fitness` approaches 0, spacing increases significantly.
 -   **Growth Phase**: Candidates are generated in an annulus around parent samples. The search distance is randomly selected between `2*r` and `4*r` where `r` is the variable radius, ensuring a high-quality distribution.
 
-## 12. Documentation Maintenance
+## 13. Documentation Maintenance
 **Rule**: This file (`GEMINI.md`) serves as the architectural source of truth. When implementing new features or refactoring existing systems:
 1.  **Check this file** to ensure your changes align with established patterns.
 2.  **Update this file** if you introduce new patterns, subsystems, or change the architecture. Keep it living and accurate.
 
-## 13. Code Style and Standards
+## 14. Code Style and Standards
 **Rule**
 - Avoid casting to any in typescript except where there is no reasonable alternative or it is being done for performance reasons.
 - Don't remove comments in the code unless they are no longer applicable.
 
-## 14. Procedural Tree System (L-Systems)
+## 15. Procedural Tree System (L-Systems)
 **Files**: `src/world/factories/LSystemTreeGenerator.ts`, `src/world/factories/LSystemTreeArchetypes.ts`
 
 The vegetation system uses a Lindenmayer System (L-System) to generate procedural tree geometries. This allows for defining complex, organic tree structures using simple string-based production rules and parameters.
@@ -347,6 +368,6 @@ Leaves are generated separately using strategies defined in `LeafKind`.
 -   **Types**: `blob`, `willow`, `irregular`, `cluster`, `umbrella`.
 -   **Configuration**: Color, size, thickness, and count per attachment point.
 
-## 15. Verification
+## 16. Verification
 
 Use `npx tsc --noEmit` to verify that the code passes typescript checks.
