@@ -15,6 +15,7 @@ type ShoreWalkState = 'START' | 'OUTBOUND' | 'TURN' | 'INBOUND' | 'END' | 'FINIS
  */
 export class ShoreWalkLogic implements AnimalLogic {
     public static readonly NAME = 'shorewalk';
+    public static readonly RESULT_FINISHED = 'shore_walk_finished';
 
     readonly name = ShoreWalkLogic.NAME;
 
@@ -113,7 +114,7 @@ export class ShoreWalkLogic implements AnimalLogic {
             return {
                 path: { target: currentPos, speed: 0 },
                 locomotionType: 'LAND',
-                result: 'DONE',
+                result: ShoreWalkLogic.RESULT_FINISHED,
                 finish: true
             };
         }

@@ -85,7 +85,7 @@ export class AttackBehaviorFactory {
                 ]);
             } else {
                 return AnimalLogicStep.sequence([
-                    AnimalLogicStep.until('DONE',
+                    AnimalLogicStep.until(ShoreIdleLogic.RESULT_NOTICED,
                         AnimalLogicStep.random([
                             {
                                 name: ShoreIdleLogic.NAME,

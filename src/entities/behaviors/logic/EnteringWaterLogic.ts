@@ -14,6 +14,7 @@ export interface EnteringWaterParams {
  */
 export class EnteringWaterLogic implements AnimalLogic {
     public static readonly NAME = 'enteringwater';
+    public static readonly RESULT_FINISHED = 'entering_water_finished';
     readonly name = EnteringWaterLogic.NAME;
 
     private strategy: EnteringWaterStrategy;
@@ -48,7 +49,7 @@ export class EnteringWaterLogic implements AnimalLogic {
             return {
                 path: steering,
                 locomotionType: 'WATER',
-                result: 'DONE',
+                result: EnteringWaterLogic.RESULT_FINISHED,
                 finish: true
             };
         } else {

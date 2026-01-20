@@ -67,7 +67,7 @@ export class AnimalLogicStep {
     /** Randomly choose a script */
     public static random(choices: AnimalLogicScript[]) {
         return (step: number, lastResult: string) => {
-            if (choices.length === 0) return null;
+            if (step > 0 || choices.length === 0) return null;
             const index = Math.floor(Math.random() * choices.length);
             return choices[index];
         }

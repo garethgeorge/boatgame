@@ -15,6 +15,7 @@ export interface ShoreIdleParams {
  */
 export class ShoreIdleLogic implements AnimalLogic {
     public static readonly NAME = 'shoreidle';
+    public static readonly RESULT_NOTICED = 'shore_idle_noticed';
     readonly name = ShoreIdleLogic.NAME;
 
     private minNoticeDistance: number;
@@ -42,7 +43,7 @@ export class ShoreIdleLogic implements AnimalLogic {
         if (noticeBoatDistance > 0) {
             const dist = planck.Vec2.distance(context.originPos, context.targetBody.getPosition());
             if (dist < noticeBoatDistance) {
-                result = 'DONE';
+                result = ShoreIdleLogic.RESULT_NOTICED;
             }
         }
 
