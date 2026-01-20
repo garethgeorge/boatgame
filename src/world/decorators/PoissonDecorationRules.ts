@@ -1,5 +1,5 @@
 import { MathUtils } from "../../core/MathUtils";
-import { DecorationRule, PlacementManifest, WorldContext } from "./PoissonDecorationStrategy";
+import { DecorationRule, WorldContext } from "./PoissonDecorationStrategy";
 
 export const Signal = {
     constant: (fitness: number) => (ctx: WorldContext) =>

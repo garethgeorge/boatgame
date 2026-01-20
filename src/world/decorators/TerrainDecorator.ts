@@ -1,4 +1,5 @@
-import { PoissonDecorationStrategy, DecorationRule, PlacementManifest } from './PoissonDecorationStrategy';
+import { PoissonDecorationStrategy, DecorationRule } from './PoissonDecorationStrategy';
+import { PlacementManifest } from './SpatialGrid';
 export type { DecorationRule, PlacementManifest };
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../SimplexNoise';
