@@ -112,7 +112,8 @@ export class EntitySpawners {
             factory: (physicsEngine, options) => new Monkey(physicsEngine, options),
             shoreProbability: 1.0,
             shorePlacement: { minDistFromBank: 0.5, maxDistFromBank: 3.0 },
-            heightInWater: Monkey.HEIGHT_IN_WATER
+            heightInWater: Monkey.HEIGHT_IN_WATER,
+            shoreBehavior: 'walk'
         },
         {
             id: EntityIds.MOOSE,

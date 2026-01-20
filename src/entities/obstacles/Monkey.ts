@@ -29,7 +29,6 @@ export class Monkey extends AttackAnimal {
         this.setBehavior(AttackBehaviorFactory.create(this,
             {
                 heightInWater: Monkey.HEIGHT_IN_WATER,
-                walkabout: true,
                 ...options,
             })
         );

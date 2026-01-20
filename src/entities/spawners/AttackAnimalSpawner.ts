@@ -3,7 +3,7 @@ import { Spawnable, SpawnContext } from '../Spawnable';
 import { RiverSystem } from '../../world/RiverSystem';
 import { RiverGeometry, RiverGeometrySample } from '../../world/RiverGeometry';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { AttackAnimalOptions } from '../obstacles/AttackAnimal';
+import { AttackAnimalBehavior, AttackAnimalOptions } from '../obstacles/AttackAnimal';
 import { Entity } from '../../core/Entity';
 import { RiverPlacementOptions, ShorePlacementOptions } from '../../managers/PlacementHelper';
 import { AnimalSpawner, AnimalSpawnOptions } from './AnimalSpawner';
@@ -17,6 +17,7 @@ export interface AttackAnimalSpawnConfig {
     heightInWater?: number;
     waterPlacement?: RiverPlacementOptions;
     shorePlacement?: ShorePlacementOptions;
+    shoreBehavior?: AttackAnimalBehavior;
 }
 
 export class AttackAnimalSpawner extends AnimalSpawner {
@@ -31,24 +32,29 @@ export class AttackAnimalSpawner extends AnimalSpawner {
         return this.config.id;
     }
 
-    protected get shoreProbability(): number {
-        return this.config.shoreProbability ?? 0.0;
+    protected getDensity(difficulty: number, zStart: number): number {
+        return this.config.getDensity(difficulty, zStart);
     }
+
     protected get entityRadius(): number {
         return this.config.entityRadius ?? 5.0;
     }
-    protected get heightInWater(): number {
-        return this.config.heightInWater ?? 0.0;
+
+    protected get shoreProbability(): number {
+        return this.config.shoreProbability ?? 0.0;
     }
     protected get shorePlacement(): ShorePlacementOptions {
         return this.config.shorePlacement ?? { minDistFromBank: 3.0, maxDistFromBank: 6.0 };
     }
+    protected get shoreBehavior(): AttackAnimalBehavior {
+        return this.config.shoreBehavior ?? 'wait';
+    };
+
+    protected get heightInWater(): number {
+        return this.config.heightInWater ?? 0.0;
+    }
     protected get waterPlacement(): RiverPlacementOptions {
         return this.config.waterPlacement ?? {};
-    }
-
-    protected getDensity(difficulty: number, zStart: number): number {
-        return this.config.getDensity(difficulty, zStart);
     }
 
     protected spawnEntity(physicsEngine: PhysicsEngine, options: AttackAnimalOptions): Entity {
@@ -95,7 +101,6 @@ export class AttackAnimalSpawner extends AnimalSpawner {
 
         let placement: any = null;
 
-        const stayOnShore = false;
         const radius = this.entityRadius;
         const minSpacing = this.waterPlacement.minDistFromOthers || 2.0;
         const minWaterDist = this.waterPlacement.minDistFromBank || 2.0;
@@ -105,7 +110,7 @@ export class AttackAnimalSpawner extends AnimalSpawner {
         // Check if range overlaps shore
         const overlapsShore = distanceRange[0] < -sample.bankDist - minShoreDist || distanceRange[1] > sample.bankDist + minShoreDist;
 
-        let onShore = true;
+        let behavior: AttackAnimalBehavior = this.shoreBehavior;
         if (overlapsShore) {
             placement = context.placementHelper.tryShorePlaceAbsolute(
                 sample,
@@ -118,7 +123,7 @@ export class AttackAnimalSpawner extends AnimalSpawner {
         }
 
         if (!placement) {
-            onShore = false;
+            behavior = 'attack';
             const riverPos = context.placementHelper.tryRiverPlaceAbsolute(
                 sample,
                 radius,
@@ -144,10 +149,9 @@ export class AttackAnimalSpawner extends AnimalSpawner {
                 angle: fixedAngle !== undefined ? fixedAngle : placement.rotation,
                 height: fixedHeight !== undefined ? fixedHeight : placement.height,
                 terrainNormal: placement.normal,
-                onShore,
-                stayOnShore,
                 aggressiveness,
                 attackLogicName: logic,
+                attackBehavior: behavior,
                 disableLogic
             });
             if (entity) {

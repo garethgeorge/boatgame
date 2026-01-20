@@ -10,43 +10,45 @@ import { Animal, AnimalOptions } from './Animal';
 import { ShoreWalkLogic } from '../behaviors/logic/ShoreWalkLogic';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 
+/**
+ * none - animal has no behavior, just stays put
+ * attack - for animals that are already in water, starts with attack logic
+ * wait - wait on land for boat, enter water, and attack
+ * wait - wait on land for boat periodically take a walk, enter water, and attack
+ */
+export type AttackAnimalBehavior = 'none' | 'attack' | 'wait' | 'walk';
+
 export interface AttackAnimalOptions extends AnimalOptions {
     attackLogicName?: string;
-    onShore?: boolean;
-    stayOnShore?: boolean;
+    attackBehavior?: AttackAnimalBehavior;
 }
 
 export class AttackBehaviorFactory {
-
     public static create(
         animal: AnyAnimal,
         params: {
             aggressiveness?: number;
             attackLogicName?: string,
+            attackBehavior?: AttackAnimalBehavior,
             disableLogic?: boolean,
-            onShore?: boolean,
-            stayOnShore?: boolean,
             heightInWater?: number,
             jumpsIntoWater?: boolean,
-            walkabout?: boolean,
             snoutOffset?: number
         }
     ) {
         const {
             aggressiveness = 0.5,
             attackLogicName = WolfAttackLogic.NAME,
+            attackBehavior = 'none',
             disableLogic = false,
-            onShore = false,
-            stayOnShore = false,
             heightInWater = 0,
             jumpsIntoWater = false,
-            walkabout = false,
             snoutOffset = 0
         } = params;
         const snoutVector = this.getSnoutVector(snoutOffset);
 
         const script = disableLogic ? null :
-            this.getLogicScript(attackLogicName, onShore, stayOnShore, walkabout, heightInWater, jumpsIntoWater);
+            this.getLogicScript(attackLogicName, attackBehavior, heightInWater, jumpsIntoWater);
         if (script) {
             return new AnimalUniversalBehavior(animal, aggressiveness, script, snoutVector);
         } else {
@@ -61,56 +63,52 @@ export class AttackBehaviorFactory {
 
     private static getLogicScript(
         attackLogicName: string,
-        onShore: boolean,
-        stayOnShore: boolean,
-        walkabout: boolean,
+        attackBehavior: AttackAnimalBehavior,
         heightInWater: number,
         jumpsIntoWater: boolean,
     ): AnimalLogicScript {
-        if (onShore && stayOnShore) {
+        if (attackBehavior === 'none') {
             return null;
-        } else if (onShore) {
-            if (!walkabout) {
-                return AnimalLogicStep.sequence([
-                    {
-                        name: ShoreIdleLogic.NAME,
-                    },
-                    {
-                        name: EnteringWaterLogic.NAME,
-                        params: { targetWaterHeight: heightInWater, jump: jumpsIntoWater }
-                    },
-                    {
-                        name: attackLogicName
-                    }
-                ]);
-            } else {
-                return AnimalLogicStep.sequence([
-                    AnimalLogicStep.until(ShoreIdleLogic.RESULT_NOTICED,
-                        AnimalLogicStep.random([
-                            {
-                                name: ShoreIdleLogic.NAME,
-                                timeout: 5.0,
-                            },
-                            {
-                                name: ShoreWalkLogic.NAME,
-                                params: {
-                                    walkDistance: 10 + Math.random() * 10,
-                                    speed: 0.8 + Math.random() * 0.4
-                                }
-                            },
-                        ])
-                    ),
-                    {
-                        name: EnteringWaterLogic.NAME,
-                        params: { targetWaterHeight: heightInWater, jump: jumpsIntoWater }
-                    },
-                    {
-                        name: attackLogicName
-                    }
-                ]);
-            }
-        } else {
+        } else if (attackBehavior === 'attack') {
             return { name: attackLogicName };
+        } else if (attackBehavior === 'wait') {
+            return AnimalLogicStep.sequence([
+                {
+                    name: ShoreIdleLogic.NAME,
+                },
+                {
+                    name: EnteringWaterLogic.NAME,
+                    params: { targetWaterHeight: heightInWater, jump: jumpsIntoWater }
+                },
+                {
+                    name: attackLogicName
+                }
+            ]);
+        } else if (attackBehavior === 'walk') {
+            return AnimalLogicStep.sequence([
+                AnimalLogicStep.until(ShoreIdleLogic.RESULT_NOTICED,
+                    AnimalLogicStep.random([
+                        {
+                            name: ShoreIdleLogic.NAME,
+                            timeout: 5.0,
+                        },
+                        {
+                            name: ShoreWalkLogic.NAME,
+                            params: {
+                                walkDistance: 10 + Math.random() * 10,
+                                speed: 0.8 + Math.random() * 0.4
+                            }
+                        },
+                    ])
+                ),
+                {
+                    name: EnteringWaterLogic.NAME,
+                    params: { targetWaterHeight: heightInWater, jump: jumpsIntoWater }
+                },
+                {
+                    name: attackLogicName
+                }
+            ]);
         }
     }
 }
