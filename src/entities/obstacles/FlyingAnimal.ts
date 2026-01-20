@@ -11,6 +11,7 @@ import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 
 export interface FlyingAnimalOptions extends AnimalOptions {
     flightSpeed?: number;
+    zRange?: [number, number];
 }
 
 export class FlyingBehaviorFactory {
@@ -21,14 +22,16 @@ export class FlyingBehaviorFactory {
             flightSpeed?: number,
             disableLogic?: boolean,
             aggressiveness?: number,
+            zRange?: [number, number],
         }
     ) {
         const {
             flightSpeed = 1.0,
             disableLogic = false,
             aggressiveness = 0.5,
+            zRange,
         } = params;
-        const script = disableLogic ? null : this.getLogicScript(flightSpeed);
+        const script = disableLogic ? null : this.getLogicScript(flightSpeed, zRange);
         if (script) {
             return new AnimalUniversalBehavior(animal, aggressiveness, script);
         } else {
@@ -36,7 +39,7 @@ export class FlyingBehaviorFactory {
         }
     }
 
-    private static getLogicScript(flightSpeed: number): AnimalLogicScript {
+    private static getLogicScript(flightSpeed: number, zRange?: [number, number]): AnimalLogicScript {
         return AnimalLogicStep.sequence([
             {
                 name: ShoreIdleLogic.NAME,
@@ -44,7 +47,7 @@ export class FlyingBehaviorFactory {
             },
             {
                 name: DefaultFlightLogic.NAME,
-                params: { flightSpeed: flightSpeed }
+                params: { flightSpeed: flightSpeed, zRange: zRange }
             }
         ]);
     }

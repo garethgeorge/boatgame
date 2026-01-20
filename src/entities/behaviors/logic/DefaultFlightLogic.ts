@@ -1,11 +1,12 @@
 import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './AnimalPathStrategy';
-import { BuzzTargetStrategy, FleeRiverStrategy, LandingStrategy } from './FlightPathStrategies';
+import { BuzzTargetStrategy, FleeRiverStrategy, FlyToShoreStrategy, LandingStrategy } from './FlightPathStrategies';
 import { RiverSystem } from '../../../world/RiverSystem';
 
 export interface DefaultFlightParams {
     flightSpeed: number;
+    zRange?: [number, number];
 }
 
 /**
@@ -16,12 +17,14 @@ export class DefaultFlightLogic implements AnimalLogic {
     readonly name = DefaultFlightLogic.NAME;
 
     private flightSpeed: number;
-    private state: 'TOWARD' | 'AWAY' | 'LANDING' = 'TOWARD';
+    private zRange?: [number, number];
+    private state: 'TOWARD' | 'AWAY' | 'TOSHORE' | 'LANDING' = 'TOWARD';
     private strategy: AnimalPathStrategy;
 
     constructor(params: DefaultFlightParams) {
         this.flightSpeed = params.flightSpeed;
         this.strategy = new BuzzTargetStrategy(15.0, 2.5, 75.0, this.flightSpeed);
+        this.zRange = params.zRange;
     }
 
     activate(context: AnimalLogicContext): void {
@@ -29,13 +32,23 @@ export class DefaultFlightLogic implements AnimalLogic {
 
     update(context: AnimalLogicContext): AnimalLogicPathResult {
 
-        // Decide on current strategy
+        // Switch to direct to shore flight if out of z range
+        if (this.state !== 'TOSHORE' && this.state !== 'LANDING' && this.zRange) {
+            const z = context.originPos.y; // Physics Y is World Z
+            if (z < this.zRange[0] || z > this.zRange[1]) {
+                this.state = 'TOSHORE';
+                this.strategy = new FlyToShoreStrategy(context.originPos, 15.0, this.flightSpeed, this.zRange);
+            }
+        }
+
+        // If flying toward boat see if close enough and switch to away
+        // If flying away or to shore and over the land switch to landing
         if (this.state === 'TOWARD') {
             if (planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < 2.0) {
                 this.state = 'AWAY';
                 this.strategy = new FleeRiverStrategy(15.0, this.flightSpeed);
             }
-        } else if (this.state === 'AWAY') {
+        } else if (this.state === 'AWAY' || this.state === 'TOSHORE') {
             const banks = RiverSystem.getInstance().getBankPositions(context.originPos.y);
             if (context.originPos.x < banks.left - 20.0 || context.originPos.x > banks.right + 20.0) {
                 this.state = 'LANDING';

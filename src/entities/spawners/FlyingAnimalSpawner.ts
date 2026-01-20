@@ -59,7 +59,8 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
             aggressiveness,
             disableLogic,
             fixedAngle,
-            fixedHeight
+            fixedHeight,
+            zRange
         } = options;
 
         const radius = this.entityRadius;
@@ -84,7 +85,8 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
                 height: fixedHeight !== undefined ? fixedHeight : placement.height,
                 terrainNormal: placement.normal,
                 aggressiveness,
-                disableLogic
+                disableLogic,
+                zRange
             });
             if (entity) {
                 context.entityManager.add(entity);
@@ -114,6 +116,7 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
                 angle: placement.rotation,
                 height: placement.height,
                 terrainNormal: placement.normal,
+                zRange: [context.biomeZStart, context.biomeZEnd]
             });
             if (entity) {
                 context.entityManager.add(entity);

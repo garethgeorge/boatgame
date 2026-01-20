@@ -73,6 +73,54 @@ export class FleeRiverStrategy extends AnimalPathStrategy {
 }
 
 /**
+ * FLY TO SHORE (Flight)
+ * Moves directly to the nearest shore.
+ */
+export class FlyToShoreStrategy extends AnimalPathStrategy {
+    readonly name = 'Flying to Shore';
+    private target: planck.Vec2;
+
+    constructor(
+        currentPos: planck.Vec2,
+        private maxHeight: number,
+        private horizSpeed: number,
+        private zRange: [number, number]
+    ) {
+        super();
+
+        const [zMin, zMax] = this.zRange;
+        const xMargin = 40.0;
+        const xMarginSize = 20.0;
+        const zMargin = 20.0;
+        const zMarginSize = 40.0;
+
+        const banks = RiverSystem.getInstance().getBankPositions(currentPos.y);
+
+        // Aim for a position well onto the closest shore
+        const isOnLeftSide = currentPos.x < (banks.left + banks.right) / 2;
+        const targetX = isOnLeftSide ?
+            banks.left - (xMargin + Math.random() * xMarginSize) :
+            banks.right + (xMargin + Math.random() * xMarginSize);
+
+        // Pick a point a little inside the z range
+        const isAtStart = currentPos.y < (zMin + zMax) / 2;
+        const targetZ = isAtStart ?
+            zMin + (zMargin + Math.random() * zMarginSize) :
+            zMax - (zMargin + Math.random() * zMarginSize);
+
+        this.target = new planck.Vec2(targetX, targetZ);
+    }
+
+    update(context: AnimalStrategyContext): AnimalSteering {
+        return {
+            target: this.target,
+            speed: this.horizSpeed,
+            height: this.maxHeight
+        };
+    }
+}
+
+/**
  * LANDING (Flight)
  */
 export class LandingStrategy extends AnimalPathStrategy {

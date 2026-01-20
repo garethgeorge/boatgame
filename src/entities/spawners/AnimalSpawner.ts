@@ -11,6 +11,7 @@ export interface AnimalSpawnOptions {
     disableLogic?: boolean;
     fixedAngle?: number;
     fixedHeight?: number;
+    zRange?: [number, number];
 }
 
 /**
