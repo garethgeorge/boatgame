@@ -6,8 +6,8 @@ export const Signal = {
         fitness,
 
     // Scaled to [0,1]
-    noise2D: (sx: number, sy: number) => (ctx: WorldContext) =>
-        (ctx.noise2D(ctx.pos.x * sx, ctx.pos.y * sy) + 1) / 2.0,
+    noise2D: (sx: number, sy: number, dx: number = 0, dy: number = 0) => (ctx: WorldContext) =>
+        (ctx.noise2D(ctx.pos.x * sx + dx, ctx.pos.y * sy + dy) + 1) / 2.0,
 
     distanceToRiver: (ctx: WorldContext) =>
         ctx.distanceToRiver,
@@ -36,7 +36,7 @@ export const Signal = {
 
     stepLinear: (
         f: (ctx: WorldContext) => number,
-        min: number, 
+        min: number,
         max: number
     ) => (ctx: WorldContext) => {
         const v = f(ctx);
@@ -44,7 +44,7 @@ export const Signal = {
         return 1.0;
     },
 
-    sin: (freq: number) => (ctx: WorldContext) => 
+    sin: (freq: number) => (ctx: WorldContext) =>
         Math.sin(ctx.pos.y * freq),
 
     max: (a: (ctx: WorldContext) => number, b: (ctx: WorldContext) => number) => (ctx: WorldContext) =>
@@ -103,9 +103,7 @@ export const Combine = {
 export class SpeciesHelpers {
     // Increases spacing with distance from river to attenuate species placement
     public static attenuate(ctx: WorldContext, radius: number): number {
-        if (ctx.distanceToRiver > 50)
-            radius *= 1 + (ctx.distanceToRiver - 50) / 50;
-        return radius;
+        return radius * (1 + MathUtils.smoothstep(75, 200, ctx.distanceToRiver) * 8.0);
     }
 }
 
@@ -114,7 +112,12 @@ export interface Species {
     // This defines BOTH where it can live and its selection probability
     preference: (ctx: WorldContext) => number;
     // Return placement manifest for an instance
-    params: (ctx: WorldContext) => { radius: number, options: any };
+    params: (ctx: WorldContext) => {
+        groundRadius: number,
+        canopyRadius?: number,
+        speciesRadius?: number,
+        options: any
+    };
 }
 
 // A "Tier" groups similarly sized species
@@ -131,10 +134,19 @@ export class TierRule implements DecorationRule {
     }
 
     // Pick the winner based on relative preference
-    generate(ctx: WorldContext): { radius: number, options: any } {
+    generate(ctx: WorldContext): {
+        speciesId: string,
+        groundRadius: number,
+        canopyRadius?: number,
+        speciesRadius?: number,
+        options: any
+    } {
         const scored = this.species.map(s => ({ s, p: s.preference(ctx) }));
         const winner = scored.reduce((a, b) => a.p > b.p ? a : b).s;
         let params = winner.params(ctx);
-        return params;
+        return {
+            speciesId: winner.id,
+            ...params
+        };
     }
 }

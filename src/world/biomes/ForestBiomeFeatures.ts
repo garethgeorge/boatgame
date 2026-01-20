@@ -23,6 +23,10 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
         return 2000;
     }
 
+    public override getAmplitudeMultiplier(): number {
+        return 1.0;
+    }
+
     private decorationRules: DecorationRule[] = [
         new TierRule({
             species: [
@@ -31,14 +35,16 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                     preference: Combine.all(
                         Signal.constant(1.0),
                         // Only spawn far from river
-                        Signal.stepLinear(Signal.distanceToRiver, 60, 70), 
-                        // Rare spawn chance (4%) implemented via noise gating
-                        Signal.step(Signal.noise2D(123.4, 123.4), 0.96) 
+                        Signal.stepLinear(Signal.distanceToRiver, 60, 70),
+                        // Rare spawn chance (5%) implemented via noise gating
+                        Signal.step(Signal.noise2D(123.4, 123.4), 0.95)
                     ),
                     params: (ctx) => {
                         const scale = 2.0 + ctx.random() * 0.5; // Large scale
                         return {
-                            radius: 6.0, // Decreased radius to increase density (~4x)
+                            groundRadius: 1.0 * scale,
+                            canopyRadius: 5.0 * scale,
+                            speciesRadius: 25.0 * scale,
                             options: { kind: 'elder', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }
@@ -55,7 +61,9 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                     params: (ctx) => {
                         const scale = 0.8 + ctx.random() * 0.4;
                         return {
-                            radius: SpeciesHelpers.attenuate(ctx, 2.2 * scale), // Decreased radius to increase density (~4x)
+                            groundRadius: 1.2 * scale,
+                            canopyRadius: 4.0 * scale,
+                            speciesRadius: SpeciesHelpers.attenuate(ctx, 4.0 * scale),
                             options: { kind: 'birch', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }
@@ -69,7 +77,9 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                     params: (ctx) => {
                         const scale = 0.8 + ctx.random() * 0.4;
                         return {
-                            radius: SpeciesHelpers.attenuate(ctx, 2.7 * scale), // Decreased radius to increase density (~4x)
+                            groundRadius: 1.5 * scale,
+                            canopyRadius: 5.0 * scale,
+                            speciesRadius: SpeciesHelpers.attenuate(ctx, 5.0 * scale),
                             options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }
@@ -82,7 +92,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                     id: 'rock',
                     preference: Combine.all(
                         Signal.constant(0.2), // Low probability everywhere
-                         // Higher prob near shore?
+                        // Higher prob near shore?
                         Signal.max(
                             Signal.constant(0.1),
                             Signal.inRange(Signal.distanceToRiver, 2, 10) // Shore rocks
@@ -91,7 +101,8 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                     params: (ctx) => {
                         const scale = 0.7 + ctx.random() * 0.8;
                         return {
-                            radius: 5.0 * scale,
+                            groundRadius: 2.5 * scale,
+                            speciesRadius: 5.0 * scale,
                             options: { kind: 'rock', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }

@@ -6,7 +6,6 @@ import { DecorationContext } from '../decorators/DecorationContext';
 import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { DecorationRule } from '../decorators/PoissonDecorationStrategy';
 import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/PoissonDecorationRules';
-import { TerrainDecorator } from '../decorators/TerrainDecorator';
 import { RiverSystem } from '../RiverSystem';
 import { RiverGeometry } from '../RiverGeometry';
 
@@ -27,7 +26,9 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                     params: (ctx) => {
                         const scale = 0.8 + ctx.random() * 0.4;
                         return {
-                            radius: 8 * scale,
+                            groundRadius: 2 * scale,
+                            canopyRadius: 8 * scale,
+                            speciesRadius: 10 * scale,
                             options: { kind: 'willow', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }
@@ -43,7 +44,9 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                     params: (ctx) => {
                         const scale = 0.8 + ctx.random() * 0.4;
                         return {
-                            radius: SpeciesHelpers.attenuate(ctx, 12 * scale),
+                            groundRadius: 3 * scale,
+                            canopyRadius: 12 * scale,
+                            speciesRadius: SpeciesHelpers.attenuate(ctx, 15 * scale),
                             options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }
@@ -63,7 +66,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                     params: (ctx) => {
                         const scale = 0.8 + ctx.random() * 0.4;
                         return {
-                            radius: 1.0 * scale,
+                            groundRadius: 1.0 * scale,
                             options: { kind: 'flower', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }

@@ -15,10 +15,13 @@ export interface WorldContext {
 
 // 2. The Decoration Result (The Manifest Output)
 export interface PlacementManifest {
+    speciesId: string;
     position: THREE.Vector3;
-    options?: any; // type specific - should include scale if needed
-    radius: number; // Stored for collision checks (includes spacing adjustments)
+    groundRadius: number; // Stored for collision checks (includes spacing adjustments)
+    canopyRadius: number;
+    speciesRadius: number;
     fitness: number; // Stored to optimize local growth
+    options?: any; // type specific - should include scale if needed
 }
 
 // 3. The Declarative Rule
@@ -28,7 +31,10 @@ export interface DecorationRule {
 
     // Attributes: Generates the specific look
     generate: (ctx: WorldContext) => {
-        radius: number; // The physical radius of this specific instance
+        speciesId: string;
+        groundRadius: number; // The physical radius of this specific instance
+        canopyRadius?: number; // Optional canopy radius
+        speciesRadius?: number; // Optional species-specific spacing
         options: any;
     };
 }
@@ -76,7 +82,7 @@ export class PoissonDecorationStrategy {
                 if (candidate) {
                     manifests.push(candidate);
                     activeList.push(candidate);
-                    spatialGrid.insert(candidate.position.x, candidate.position.z, candidate.radius, candidate);
+                    spatialGrid.insert(candidate);
                 }
             }
 
@@ -93,31 +99,46 @@ export class PoissonDecorationStrategy {
                 const dynamicK = Math.max(1, Math.floor(maxK * parentFitness));
 
                 // dynamicR is the spacing radius (includes fitness-based thinning)
-                const dynamicR = parent.radius;
+                // We use groundRadius for the organic growth step
+                const dynamicR = parent.groundRadius;
 
                 let found = false;
 
                 for (let i = 0; i < dynamicK; i++) {
                     const angle = Math.random() * Math.PI * 2;
-                    // Annulus: [r_min, 2 * r_min] where r_min = 2 * dynamicR
-                    const dist = 2 * dynamicR + Math.random() * 2 * dynamicR;
 
-                    const cx = parent.position.x + Math.cos(angle) * dist;
-                    const cz = parent.position.z + Math.sin(angle) * dist;
+                    // Generate up to three candidate distances
+                    const distances: number[] = [];
+                    // 1. Ground distance: Annulus [2r, 4r]
+                    distances.push(2 * parent.groundRadius + Math.random() * 2 * parent.groundRadius);
 
-                    if (cx < region.xMin || cx > region.xMax || cz < region.zMin || cz > region.zMax) continue;
-
-                    const candidate = this.tryPlace(cx, cz, rule, spatialGrid, terrainProvider, biomeProgressProvider);
-                    if (candidate) {
-                        manifests.push(candidate);
-                        activeList.push(candidate);
-                        spatialGrid.insert(
-                            candidate.position.x, candidate.position.z,
-                            candidate.radius, candidate
-                        );
-                        found = true;
-                        break;
+                    // 2. Canopy distance (if exists)
+                    if (parent.canopyRadius > 0) {
+                        distances.push(2 * parent.canopyRadius + Math.random() * 2 * parent.canopyRadius);
                     }
+
+                    // 3. Species distance (if exists)
+                    if (parent.speciesRadius > 0) {
+                        distances.push(2 * parent.speciesRadius + Math.random() * 2 * parent.speciesRadius);
+                    }
+
+                    for (const dist of distances) {
+                        const cx = parent.position.x + Math.cos(angle) * dist;
+                        const cz = parent.position.z + Math.sin(angle) * dist;
+
+                        if (cx < region.xMin || cx > region.xMax || cz < region.zMin || cz > region.zMax) continue;
+
+                        const candidate = this.tryPlace(cx, cz, rule, spatialGrid, terrainProvider, biomeProgressProvider);
+                        if (candidate) {
+                            manifests.push(candidate);
+                            activeList.push(candidate);
+                            spatialGrid.insert(candidate);
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (found) break;
                 }
 
                 if (!found) {
@@ -131,7 +152,8 @@ export class PoissonDecorationStrategy {
     }
 
     /**
-     * Variable radius is used to thin trees based on local fitness
+     * Variable radius is used to thin trees based on local fitness by adjusting
+     * species spacing
      */
     private getVariableRadius(fitness: number, minRadius: number): number {
         // using hard coded max of 4
@@ -176,17 +198,23 @@ export class PoissonDecorationStrategy {
 
         // 4. Parameter Baking
         const params = rule.generate(ctx);
-        const spacingRadius = this.getVariableRadius(f, params.radius);
+        const speciesId = params.speciesId;
+        const groundRadius = params.groundRadius;
+        const canopyRadius = params.canopyRadius ?? 0;
+        const speciesRadius = params.speciesRadius ? this.getVariableRadius(f, params.speciesRadius) : 0;
 
         // 5. Proximity Check
-        if (spatialGrid.checkCollision(x, z, spacingRadius)) {
+        if (spatialGrid.checkCollision(x, z, groundRadius, canopyRadius, speciesRadius, speciesId)) {
             return null;
         }
 
         return {
             position: new THREE.Vector3(x, terrain.height, z),
+            speciesId,
             options: params.options,
-            radius: spacingRadius, // Store spacing radius for collision checks
+            groundRadius,
+            canopyRadius,
+            speciesRadius,
             fitness: f
         };
     }
@@ -194,7 +222,7 @@ export class PoissonDecorationStrategy {
 
 class SpatialGrid {
     private cellSize: number;
-    private maxRadius: number = 0;
+    private maxSearchRadius: number = 0;
     private grid: Map<string, PlacementManifest[]> = new Map();
 
     constructor(cellSize: number) {
@@ -207,21 +235,23 @@ class SpatialGrid {
         return `${cx},${cy}`;
     }
 
-    insert(x: number, y: number, radius: number, item: PlacementManifest) {
-        this.maxRadius = Math.max(this.maxRadius, radius);
-        const key = this.getKey(x, y);
+    insert(item: PlacementManifest) {
+        const radius = Math.max(item.groundRadius, item.canopyRadius, item.speciesRadius);
+        this.maxSearchRadius = Math.max(this.maxSearchRadius, radius);
+        const key = this.getKey(item.position.x, item.position.z);
         if (!this.grid.has(key)) {
             this.grid.set(key, []);
         }
         this.grid.get(key)!.push(item);
     }
 
-    checkCollision(x: number, y: number, radius: number): boolean {
+    checkCollision(x: number, y: number, groundRadius: number, canopyRadius: number, speciesRadius: number, speciesId: string): boolean {
         const cx = Math.floor(x / this.cellSize);
         const cy = Math.floor(y / this.cellSize);
 
-        // Calculate search range based on radius + maxRadius in grid
-        const searchRange = radius + this.maxRadius;
+        // Calculate search range based on largest radius involved
+        const radius = Math.max(groundRadius, canopyRadius, speciesRadius);
+        const searchRange = radius + this.maxSearchRadius;
         const cellRange = Math.ceil(searchRange / this.cellSize);
 
         for (let i = -cellRange; i <= cellRange; i++) {
@@ -231,11 +261,29 @@ class SpatialGrid {
                 if (cellItems) {
                     for (const item of cellItems) {
                         const dx = x - item.position.x;
-                        const dy = y - item.position.z; // item.position is Vector3 (x, y=height, z)
+                        const dy = y - item.position.z;
                         const distSq = dx * dx + dy * dy;
-                        const minDist = radius + item.radius;
-                        if (distSq < minDist * minDist) {
+
+                        // Rule 1: Ground Overlap
+                        const groundDist = groundRadius + item.groundRadius;
+                        if (distSq < groundDist * groundDist) {
                             return true;
+                        }
+
+                        // Rule 2: Canopy Overlap
+                        if (canopyRadius > 0 && item.canopyRadius > 0) {
+                            const canopyDist = canopyRadius + item.canopyRadius;
+                            if (distSq < canopyDist * canopyDist) {
+                                return true;
+                            }
+                        }
+
+                        // Rule 3: Species Spacing
+                        if (speciesId === item.speciesId && speciesRadius > 0 && item.speciesRadius > 0) {
+                            const specDist = speciesRadius + item.speciesRadius;
+                            if (distSq < specDist * specDist) {
+                                return true;
+                            }
                         }
                     }
                 }

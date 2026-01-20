@@ -32,6 +32,10 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return 1500;
     }
 
+    public override getAmplitudeMultiplier(): number {
+        return 0.5;
+    }
+
     private decorationRules: DecorationRule[] = [
         new TierRule({
             species: [
@@ -39,6 +43,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                     id: 'willow_tree',
                     preference: Combine.all(
                         Signal.constant(1.0),
+                        Signal.step(Signal.noise2D(500.0, 250.0, 0.2, 0.3), 0.6),
                         Signal.inRange(Signal.distanceToRiver, 5, 25),
                         Signal.inRange(Signal.elevation, 1.0, 5.0),
                         Signal.inRange(Signal.slope, 0, 15)
@@ -46,7 +51,8 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                     params: (ctx) => {
                         const scale = 0.8 + ctx.random() * 0.4;
                         return {
-                            radius: 8 * scale,
+                            groundRadius: 2 * scale,
+                            canopyRadius: 5 * scale,
                             options: { kind: 'willow', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }
@@ -55,14 +61,16 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                     id: 'oak_tree',
                     preference: Combine.all(
                         Signal.constant(1.0),
-                        Signal.linearRange(Signal.distanceToRiver, 5, 50),
+                        Signal.linearRange(Signal.distanceToRiver, 20, 50),
                         Signal.inRange(Signal.elevation, 3.0, 20.0),
                         Signal.inRange(Signal.slope, 0, 50)
                     ),
                     params: (ctx) => {
                         const scale = 0.8 + ctx.random() * 0.4;
                         return {
-                            radius: SpeciesHelpers.attenuate(ctx, 12 * scale),
+                            groundRadius: 1.5 * scale,
+                            canopyRadius: 5.0 * scale,
+                            speciesRadius: SpeciesHelpers.attenuate(ctx, 5.0 * scale),
                             options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }
@@ -74,14 +82,16 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                 {
                     id: 'poplar',
                     preference: Combine.all(
-                        Signal.step(Signal.noise2D(500.0, 250.0), 0.7),
-                        Signal.inRange(Signal.distanceToRiver, 5, 40),
+                        Signal.step(Signal.noise2D(500.0, 250.0, 0.5, 0.1), 0.7),
+                        Signal.inRange(Signal.distanceToRiver, 20, 40),
                         Signal.inRange(Signal.slope, 0, 15)
                     ),
                     params: (ctx) => {
                         const scale = 0.7 + ctx.random() * 0.6;
                         return {
-                            radius: 4 * scale,
+                            groundRadius: 0.5 * scale,
+                            canopyRadius: 1.5 * scale,
+                            speciesRadius: 3 * scale,
                             options: { kind: 'poplar', rotation: ctx.random() * Math.PI * 2, scale }
                         }
                     }
@@ -101,7 +111,8 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                     params: (ctx) => {
                         const scale = 0.8 + ctx.random() * 0.8;
                         return {
-                            radius: 10.0 * scale,
+                            groundRadius: 5.0 * scale,
+                            speciesRadius: 10.0 * scale,
                             options: { kind: 'rock', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }
@@ -121,7 +132,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                     params: (ctx) => {
                         const scale = 0.8 + ctx.random() * 0.4;
                         return {
-                            radius: 1.0 * scale,
+                            groundRadius: 1.0 * scale,
                             options: { kind: 'flower', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }
