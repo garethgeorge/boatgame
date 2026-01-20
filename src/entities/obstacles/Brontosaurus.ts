@@ -28,8 +28,8 @@ export class Brontosaurus extends AttackAnimal {
 
         this.setBehavior(AttackBehaviorFactory.create(this,
             {
+                heightInWater: Brontosaurus.HEIGHT_IN_WATER,
                 ...options,
-                heightInWater: Brontosaurus.HEIGHT_IN_WATER
             })
         );
     }

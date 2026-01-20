@@ -5,6 +5,7 @@ import { AttackAnimal, AttackAnimalOptions, AttackBehaviorFactory } from './Atta
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
+import { AnimationStep } from '../../core/AnimationPlayer';
 
 export class Monkey extends AttackAnimal {
 
@@ -44,14 +45,12 @@ export class Monkey extends AttackAnimal {
     }
 
     private static readonly animations: AnimalAnimations = {
-        default: AttackAnimal.play((step: number) => {
-            const rand = Math.random();
-            if (rand < 0.5) {
-                return { name: 'idle', timeScale: 1.0, repeat: 2 };
-            } else {
-                return { name: 'dance', timeScale: 1.0, repeat: 2 };
-            }
-        }),
+        default: AttackAnimal.play(
+            AnimationStep.random(Infinity, [0.5, 0.5], [
+                { name: 'idle', timeScale: 1.0, repeat: 2 },
+                { name: 'dance', timeScale: 1.0, repeat: 2 },
+            ])
+        ),
         animations: [
             {
                 phases: [

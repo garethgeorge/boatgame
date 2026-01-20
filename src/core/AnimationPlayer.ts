@@ -22,6 +22,21 @@ export class AnimationStep {
     public static sequence(sequence: AnimationScript[]) {
         return (step: number) => sequence[step] ?? null;
     }
+
+    /** Randomly choose a script repeat times */
+    public static random(repeat: number, weights: number[], choices: AnimationScript[]) {
+        return (step: number, lastResult: string) => {
+            if (step >= repeat || choices.length === 0) return null;
+
+            let r = Math.random();
+            for (let i = 0; i < weights.length; i++) {
+                if (r < weights[i]) return choices[i];
+                r -= weights[i];
+            }
+
+            return choices[choices.length - 1];
+        }
+    }
 }
 
 interface ScriptStackItem {
@@ -125,7 +140,7 @@ export class AnimationPlayer {
             return false;
         }
 
-        const mode = repeat === Infinity ? THREE.LoopRepeat : THREE.LoopOnce;
+        const mode = (repeat === 1) ? THREE.LoopOnce : THREE.LoopRepeat;
         const repetitions = repeat;
 
         let randomFactor = 1.0;
@@ -168,7 +183,7 @@ export class AnimationPlayer {
         action.play();
 
         if (this.currentAction && this.currentAction !== action) {
-            this.currentAction.crossFadeTo(action, 0.25, true);
+            this.currentAction.crossFadeTo(action, 0.25, false);
         }
 
         this.currentAction = action;

@@ -5,6 +5,7 @@ import { Decorations } from '../../world/Decorations';
 import { SwimAwayAnimal, SwimAwayAnimalOptions, SwimAwayBehaviorFactory } from './SwimAwayAnimal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations, Animal } from './Animal';
+import { AnimationStep } from '../../core/AnimationPlayer';
 
 export class Swan extends SwimAwayAnimal {
 
@@ -34,11 +35,20 @@ export class Swan extends SwimAwayAnimal {
 
     protected getAnimations(): AnimalAnimations {
         return {
-            default: Animal.play({
-                name: 'idle',
-                timeScale: 1.0, randomizeLength: 0.1, startTime: -1.0,
-                repeat: Infinity
-            }),
+            default: Animal.play(
+                AnimationStep.random(Infinity, [0.7, 0.3], [
+                    {
+                        name: 'bob',
+                        timeScale: 0.5, randomizeLength: 0.0, startTime: 0,
+                        repeat: 3
+                    },
+                    {
+                        name: 'idle',
+                        timeScale: 1.0, randomizeLength: 0.0, startTime: 0,
+                        repeat: 1
+                    },
+                ])
+            ),
             animations: [
                 {
                     phases: [AnimalLogicPhase.SWIMING_AWAY],
