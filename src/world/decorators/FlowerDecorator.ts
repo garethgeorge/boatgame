@@ -4,6 +4,8 @@ import { Decorations, DecorationInstance } from '../Decorations';
 
 export class FlowerDecorator {
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
+        const riverSystem = context.chunk.riverSystem;
+
         // Number of flowers per chunk segment
         const count = 300 * ((zEnd - zStart) / 62.5);
         const worldPos = new THREE.Vector3();
@@ -35,7 +37,7 @@ export class FlowerDecorator {
 
                 const wx = patchCenter.worldX + offsetX;
                 const wz = patchCenter.worldZ + offsetZ;
-                const height = context.riverSystem.terrainGeometry.calculateHeight(wx, wz);
+                const height = riverSystem.terrainGeometry.calculateHeight(wx, wz);
 
                 const pos = { worldX: wx, worldZ: wz, height };
                 if (!context.decoHelper.isValidDecorationPosition(context, pos)) continue;

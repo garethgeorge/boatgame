@@ -2,8 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../world/RiverSystem';
 import { RiverGeometrySample } from '../world/RiverGeometry';
-
-
+import { SpatialGrid } from './SpatialGrid';
 
 export interface RiverPlacementOptions {
   minDistFromOthers?: number;
@@ -27,20 +26,15 @@ export interface ShorePlacement {
   normal: THREE.Vector3;
 }
 
-interface PlacedObject {
-  x: number;
-  z: number;
-  radius: number;
-}
-
 export class PlacementHelper {
-  private placedObjects: PlacedObject[] = [];
+  private spatialGrid: SpatialGrid;
   private riverSystem: RiverSystem;
   private world: planck.World;
 
-  constructor(world: planck.World) {
-    this.riverSystem = RiverSystem.getInstance();
+  constructor(world: planck.World, spatialGrid: SpatialGrid, riverSystem: RiverSystem) {
+    this.riverSystem = riverSystem;
     this.world = world;
+    this.spatialGrid = spatialGrid;
   }
 
   public tryPlace(
@@ -120,7 +114,7 @@ export class PlacementHelper {
       });
       if (!collision) {
         // Valid placement found
-        this.placedObjects.push({ x, z: worldZ, radius });
+        this.registerPlacement(x, worldZ, radius);
         return { x, z: worldZ };
       }
     }
@@ -133,7 +127,14 @@ export class PlacementHelper {
    * Register an object that was placed manually (e.g. chained buoys) so others avoid it.
    */
   public registerPlacement(x: number, z: number, radius: number) {
-    this.placedObjects.push({ x, z, radius });
+    this.spatialGrid.insert({
+      speciesId: 'spawned-entity',
+      position: new THREE.Vector3(x, 0, z),
+      groundRadius: radius,
+      canopyRadius: 0,
+      speciesRadius: 0,
+      fitness: 1,
+    });
   }
 
   public tryRiverPlaceAbsolute(
@@ -158,7 +159,7 @@ export class PlacementHelper {
 
       if (this.checkCollision(worldX, worldZ, radius, minSpacing)) continue;
 
-      this.placedObjects.push({ x: worldX, z: worldZ, radius });
+      this.registerPlacement(worldX, worldZ, radius);
       return { worldX, worldZ };
     }
 
@@ -212,7 +213,7 @@ export class PlacementHelper {
         rotation,
         normal
       };
-      this.placedObjects.push({ x: worldX, z: worldZ, radius });
+      this.registerPlacement(worldX, worldZ, radius);
       return placement;
     }
 
@@ -220,19 +221,12 @@ export class PlacementHelper {
   }
 
   private checkCollision(x: number, z: number, radius: number, minSpacing: number): boolean {
-    for (const obj of this.placedObjects) {
-      const dx = x - obj.x;
-      const dz = z - obj.z;
-      const distSq = dx * dx + dz * dz;
-      const minSep = radius + obj.radius + minSpacing;
-      if (distSq < minSep * minSep) return true;
-    }
-    return false;
+    return this.spatialGrid.checkGroundCollision(x, z, radius + minSpacing);
   }
 
   public findShorePlacement(
-    zStart: number,
-    zEnd: number,
+    zMin: number,
+    zMax: number,
     riverSystem: RiverSystem,
     options: ShorePlacementOptions
   ): ShorePlacement | null {
@@ -242,7 +236,7 @@ export class PlacementHelper {
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       // Random Z position in chunk
-      const worldZ = zStart + Math.random() * (zEnd - zStart);
+      const worldZ = zMin + Math.random() * (zMax - zMin);
 
       const riverWidth = riverSystem.getRiverWidth(worldZ);
       const riverCenter = riverSystem.getRiverCenter(worldZ);

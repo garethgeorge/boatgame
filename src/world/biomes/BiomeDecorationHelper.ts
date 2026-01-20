@@ -7,13 +7,14 @@ import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class BiomeDecorationHelper {
     public generateRandomPositionInRange(context: DecorationContext, zStart: number, zEnd: number): { worldX: number; worldZ: number; height: number } {
+        const riverSystem = context.chunk.riverSystem;
         const dz = Math.random() * (zEnd - zStart);
         const wz = zStart + dz;
         const u = Math.random() * 2 - 1;
         const dx = u * (TerrainChunk.CHUNK_WIDTH / 2);
-        const riverCenter = context.riverSystem.getRiverCenter(wz);
+        const riverCenter = riverSystem.getRiverCenter(wz);
         const wx = dx + riverCenter;
-        const height = context.riverSystem.terrainGeometry.calculateHeight(wx, wz);
+        const height = riverSystem.terrainGeometry.calculateHeight(wx, wz);
 
         return { worldX: wx, worldZ: wz, height };
     }
@@ -24,8 +25,9 @@ export class BiomeDecorationHelper {
         minHeight: number = 2.0,
         objectHeight: number = 10.0 // Default to a reasonable tree height
     ): boolean {
-        const riverWidth = context.riverSystem.getRiverWidth(position.worldZ);
-        const riverCenter = context.riverSystem.getRiverCenter(position.worldZ);
+        const riverSystem = context.chunk.riverSystem;
+        const riverWidth = riverSystem.getRiverWidth(position.worldZ);
+        const riverCenter = riverSystem.getRiverCenter(position.worldZ);
         const distFromCenter = Math.abs(position.worldX - riverCenter);
         const distFromBank = distFromCenter - riverWidth / 2;
 
@@ -43,7 +45,7 @@ export class BiomeDecorationHelper {
         // Check visibility
         // Query at 1.5x the object height to be permissive for large objects behind hills
         const queryHeight = position.height + (objectHeight * 1.2);
-        if (!context.riverSystem.terrainGeometry.checkVisibility(position.worldX, queryHeight, position.worldZ)) {
+        if (!riverSystem.terrainGeometry.checkVisibility(position.worldX, queryHeight, position.worldZ)) {
             return false;
         }
 
@@ -176,7 +178,7 @@ export class BiomeDecorationHelper {
             this.addInstance(context, instance.geometry, instance.material, finalMatrix, instance.color);
         }
     }
-    
+
     public calculateHeight(instances: DecorationInstance[]): number {
         let maxHeight = 0;
         for (const instance of instances) {
@@ -190,7 +192,7 @@ export class BiomeDecorationHelper {
                 // Extract scale from matrix column 1 (y-axis) length.
                 const elements = instance.matrix.elements;
                 const sy = Math.sqrt(elements[4] * elements[4] + elements[5] * elements[5] + elements[6] * elements[6]);
-                
+
                 maxHeight = Math.max(maxHeight, instance.geometry.boundingBox.max.y * sy);
             }
         }

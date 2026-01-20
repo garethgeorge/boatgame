@@ -8,6 +8,7 @@ import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { TerrainDecorator, DecorationRule } from '../decorators/TerrainDecorator';
 import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/PoissonDecorationRules';
+import { SpatialGrid } from '../../managers/SpatialGrid';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';
@@ -195,11 +196,12 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
+        const spatialGrid = context.chunk.spatialGrid;
         TerrainDecorator.decorate(
             context,
             this.decorationRules,
             { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
-            20,
+            spatialGrid,
             12345 + zStart // Seed variation
         );
     }

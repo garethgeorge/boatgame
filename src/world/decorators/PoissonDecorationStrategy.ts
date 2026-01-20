@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PlacementManifest, SpatialGrid } from './SpatialGrid';
+import { PlacementManifest, SpatialGrid } from '../../managers/SpatialGrid';
 import { SimplexNoise } from '../SimplexNoise';
 
 // 1. Environmental Context
@@ -39,13 +39,12 @@ export class PoissonDecorationStrategy {
     public generate(
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-        gridSize: number,
+        spatialGrid: SpatialGrid,
         terrainProvider: (x: number, z: number) => { height: number, slope: number, distToRiver: number },
         biomeProgressProvider: (z: number) => number,
         seed: number = 0
     ): PlacementManifest[] {
         const manifests: PlacementManifest[] = [];
-        const spatialGrid = new SpatialGrid(gridSize);
 
         const sortedRules = rules;
 

@@ -155,6 +155,8 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
 
 
     async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
+        const riverSystem = context.chunk.riverSystem;
+
         const length = zEnd - zStart;
         // Increase count to cover the wider area
         // River density is ~30 per 100m (concentrated).
@@ -164,8 +166,8 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
 
         for (let i = 0; i < count; i++) {
             const z = zStart + Math.random() * length;
-            const riverWidth = context.riverSystem.getRiverWidth(z);
-            const riverCenter = context.riverSystem.getRiverCenter(z);
+            const riverWidth = riverSystem.getRiverWidth(z);
+            const riverCenter = riverSystem.getRiverCenter(z);
 
             // Pick side
             const side = Math.random() > 0.5 ? 1 : -1;
@@ -176,7 +178,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
 
             const x = riverCenter + side * (riverWidth / 2 + distFromBank);
 
-            const height = context.riverSystem.terrainGeometry.calculateHeight(x, z);
+            const height = riverSystem.terrainGeometry.calculateHeight(x, z);
 
             const mangrove = Decorations.getMangrove(1.0 + Math.random() * 0.5);
 

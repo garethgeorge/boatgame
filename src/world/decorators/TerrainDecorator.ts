@@ -1,5 +1,5 @@
 import { PoissonDecorationStrategy, DecorationRule } from './PoissonDecorationStrategy';
-import { PlacementManifest } from './SpatialGrid';
+import { PlacementManifest, SpatialGrid } from '../../managers/SpatialGrid';
 export type { DecorationRule, PlacementManifest };
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../SimplexNoise';
@@ -27,20 +27,20 @@ export class TerrainDecorator {
         context: DecorationContext,
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-        gridSize: number,
+        spatialGrid: SpatialGrid,
         seed: number = 0
     ) {
-        const placements = this.generate(rules, region, gridSize, seed);
+        const placements = this.generate(rules, region, spatialGrid, seed);
         this.populate(context, placements, region);
     }
 
     public static generate(
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-        gridSize: number,
+        spatialGrid: SpatialGrid,
         seed: number = 0
     ): PlacementManifest[] {
-        return this.instance().generate(rules, region, gridSize, seed);
+        return this.instance().generate(rules, region, spatialGrid, seed);
     }
 
     public static populate(
@@ -59,7 +59,7 @@ export class TerrainDecorator {
     private generate(
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-        gridSize: number,
+        spatialGrid: SpatialGrid,
         seed: number = 0
     ): PlacementManifest[] {
 
@@ -91,7 +91,7 @@ export class TerrainDecorator {
         return this.strategy.generate(
             rules,
             region,
-            gridSize,
+            spatialGrid,
             terrainProvider,
             biomeProgressProvider,
             seed

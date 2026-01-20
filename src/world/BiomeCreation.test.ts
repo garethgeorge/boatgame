@@ -5,7 +5,7 @@ import * as planck from 'planck';
 import { TerrainManager } from './TerrainManager';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 import { GraphicsEngine } from '../core/GraphicsEngine';
-import { ObstacleManager } from '../managers/ObstacleManager';
+import { EntityManager } from '../core/EntityManager';
 import { RiverSystem } from './RiverSystem';
 
 // Mock dependencies
@@ -26,10 +26,9 @@ const mockGraphicsEngine = {
     remove: vi.fn(),
 } as unknown as GraphicsEngine;
 
-const mockObstacleManager = {
-    spawnObstaclesForChunk: vi.fn(),
-    removeInRange: vi.fn(),
-} as unknown as ObstacleManager;
+const mockEntityManager = {
+    removeEntitiesInRange: vi.fn(),
+} as unknown as EntityManager;
 
 describe('TerrainManager', () => {
     let terrainManager: TerrainManager;
@@ -39,7 +38,7 @@ describe('TerrainManager', () => {
         // Reset Singleton if possible or mock it. 
         // RiverSystem is a singleton, so we rely on its existing state or mock getInstance if it was DI.
         // For now, assuming RiverSystem works deterministically.
-        terrainManager = new TerrainManager(mockPhysicsEngine, mockGraphicsEngine, mockObstacleManager);
+        terrainManager = new TerrainManager(mockPhysicsEngine, mockGraphicsEngine, mockEntityManager);
     });
 
     it('should generate collision bodies around the boat Z position', () => {

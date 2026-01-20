@@ -6,16 +6,16 @@ import { WaterShader } from '../shaders/WaterShader';
 import { DecorationContext } from './decorators/DecorationContext';
 import { GraphicsUtils } from '../core/GraphicsUtils';
 import { BiomeDecorationHelper } from './biomes/BiomeDecorationHelper';
+import { SpatialGrid } from '../managers/SpatialGrid';
+import { PlacementHelper } from '../managers/PlacementHelper';
+import { SpawnContext } from '../entities/Spawnable';
+import { PhysicsEngine } from '../core/PhysicsEngine';
+import { EntityManager } from '../core/EntityManager';
 
 export class TerrainChunk {
 
   // Materials
   static waterMaterial: THREE.ShaderMaterial | null = null;
-
-  mesh: THREE.Mesh;
-  waterMesh: THREE.Mesh;
-  decorations: THREE.Group;
-  zOffset: number;
 
   // Config
   public static readonly CHUNK_SIZE = 62.5; // Size of chunk in Z (Reduced to 62.5 for incremental generation)
@@ -23,9 +23,15 @@ export class TerrainChunk {
   public static readonly RESOLUTION_X = 160; // Vertices along X
   public static readonly RESOLUTION_Z = 25; // Vertices along Z (Reduced to 25)
 
-  private riverSystem: RiverSystem;
+  public readonly zOffset: number;
+  public readonly riverSystem: RiverSystem;
+  public readonly spatialGrid: SpatialGrid;
+
   private graphicsEngine: GraphicsEngine;
-  private mixers: THREE.AnimationMixer[] = [];
+
+  private mesh: THREE.Mesh;
+  private waterMesh: THREE.Mesh;
+  private decorations: THREE.Group;
 
   public static async createAsync(
     zOffset: number,
@@ -51,12 +57,12 @@ export class TerrainChunk {
     this.mesh = GraphicsUtils.createMesh(undefined, undefined, 'TerrainChunkGround');
     this.waterMesh = GraphicsUtils.createMesh(undefined, undefined, 'TerrainChunkWater');
     this.decorations = new THREE.Group();
+
+    // For keeping track of static items
+    this.spatialGrid = new SpatialGrid(20);
   }
 
   public update(dt: number) {
-    for (const mixer of this.mixers) {
-      mixer.update(dt);
-    }
   }
 
   private async initAsync() {
@@ -95,26 +101,22 @@ export class TerrainChunk {
 
     const context: DecorationContext = {
       chunk: this,
-      riverSystem: this.riverSystem,
+      biomeZMin: 0,
+      biomeZMax: 0,
       geometriesByMaterial: geometriesByMaterial,
       instancedData: instancedData,
       geometryGroup: geometryGroup,
-      animationMixers: this.mixers,
-      zOffset: this.zOffset,
-      biomeZStart: 0,
-      biomeZEnd: 0,
       decoHelper: new BiomeDecorationHelper()
     };
 
     Profiler.start('GenDecoBatch');
 
     for (const segment of segments) {
-      context.biomeZStart = segment.biomeZStart;
-      context.biomeZEnd = segment.biomeZEnd;
-      context.layout = this.riverSystem.biomeManager.getLayoutForBiome(segment.biomeIndex, segment.biomeZStart, segment.biomeZEnd);
+      context.biomeZMin = segment.biomeZMin;
+      context.biomeZMax = segment.biomeZMax;
 
       const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
-      await features.decorate(context, segment.zStart, segment.zEnd);
+      await features.decorate(context, segment.zMin, segment.zMax);
       Profiler.pause('GenDecoBatch');
       await this.yieldToMain();
       Profiler.resume('GenDecoBatch');
@@ -125,6 +127,44 @@ export class TerrainChunk {
     context.decoHelper.mergeAndAddGeometries(context);
 
     return geometryGroup;
+  }
+
+  // Called by TerrainManager when a new chunk is created
+  public async spawnObstacles(physicsEngine: PhysicsEngine, entityManager: EntityManager) {
+    Profiler.start('SpawnObstacles');
+
+    const zMin = this.zOffset;
+    const zMax = zMin + TerrainChunk.CHUNK_SIZE
+
+    const placementHelper = new PlacementHelper(physicsEngine.world, this.spatialGrid, this.riverSystem);
+    const segments = this.riverSystem.biomeManager.getFeatureSegments(zMin, zMax);
+
+    // Calculate Difficulty
+    const centerZ = (zMin + zMax) / 2;
+    const distance = Math.abs(centerZ);
+    const difficulty = Math.min(distance / 7500, 1.0);
+
+    for (const segment of segments) {
+      const context: SpawnContext = {
+        entityManager: entityManager,
+        physicsEngine: physicsEngine,
+        placementHelper: placementHelper,
+        zMin: zMin,
+        zMax: zMax,
+        biomeZMin: segment.biomeZMin,
+        biomeZMax: segment.biomeZMax,
+        biomeLayout: this.riverSystem.biomeManager.getLayoutForBiome(
+          segment.biomeIndex,
+          segment.biomeZMin,
+          segment.biomeZMax
+        )
+      };
+
+      const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
+      await features.spawn(context, difficulty, segment.zMin, segment.zMax);
+    }
+
+    Profiler.end('SpawnObstacles');
   }
 
   private yieldToMain(): Promise<void> {
@@ -268,10 +308,6 @@ export class TerrainChunk {
     GraphicsUtils.disposeObject(this.mesh);
     GraphicsUtils.disposeObject(this.waterMesh);
     GraphicsUtils.disposeObject(this.decorations);
-
-    // Stop animations
-    this.mixers.forEach(mixer => mixer.stopAllAction());
-    this.mixers = [];
   }
 
   private generateWater(): THREE.Mesh {

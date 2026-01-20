@@ -131,7 +131,7 @@ export class BoatPathLayoutSpawner {
                                         distanceRange: range,
                                         aggressiveness: p.aggressiveness || 0.5,
                                         logic,
-                                        zRange: [context.biomeZStart, context.biomeZEnd]
+                                        zRange: [context.biomeZMin, context.biomeZMax]
                                     });
                                 }
                                 break;

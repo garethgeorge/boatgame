@@ -5,10 +5,10 @@ import { PhysicsEngine, CollisionCategories } from '../core/PhysicsEngine';
 import { GraphicsEngine } from '../core/GraphicsEngine';
 import { TerrainChunk } from './TerrainChunk';
 import { RiverSystem } from './RiverSystem';
-import { ObstacleManager } from '../managers/ObstacleManager';
 
 import { Boat } from '../entities/Boat';
 import { GraphicsUtils } from '../core/GraphicsUtils';
+import { EntityManager } from '../core/EntityManager';
 
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
@@ -26,7 +26,7 @@ export class TerrainManager {
   constructor(
     private physicsEngine: PhysicsEngine,
     private graphicsEngine: GraphicsEngine,
-    private obstacleManager: ObstacleManager
+    private entityManager: EntityManager
   ) {
     this.riverSystem = RiverSystem.getInstance();
   }
@@ -118,7 +118,7 @@ export class TerrainManager {
           this.loadingChunks.delete(index);
 
           // Spawn obstacles for this chunk
-          this.obstacleManager.spawnObstaclesForChunk(index, zOffset, zOffset + TerrainChunk.CHUNK_SIZE);
+          chunk.spawnObstacles(this.physicsEngine, this.entityManager);
           console.log(`[TerrainManager] Created chunk ${index}`);
         });
       }
@@ -154,7 +154,7 @@ export class TerrainManager {
           zMax = (index + 1) * TerrainChunk.CHUNK_SIZE + 1000; // Far enough
         }
 
-        this.obstacleManager.removeInRange(zMin, zMax);
+        this.entityManager.removeEntitiesInRange(zMin, zMax);
       }
     }
 

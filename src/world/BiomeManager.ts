@@ -14,8 +14,8 @@ import { BiomeType } from './biomes/BiomeType';
 interface BiomeInstance {
   type: BiomeType;
   length: number;
-  zStart: number;
-  zEnd: number;
+  zMin: number;
+  zMax: number;
 }
 
 export class BiomeManager {
@@ -77,8 +77,8 @@ export class BiomeManager {
       this.biomeInstances.push({
         type,
         length,
-        zStart: currentZ,
-        zEnd: currentZ + length
+        zMin: currentZ,
+        zMax: currentZ + length
       });
       currentZ += length;
     }
@@ -106,9 +106,9 @@ export class BiomeManager {
       const mid = Math.floor((low + high) / 2);
       const instance = this.biomeInstances[mid];
 
-      if (normalizedZ >= instance.zStart && normalizedZ < instance.zEnd) {
+      if (normalizedZ >= instance.zMin && normalizedZ < instance.zMax) {
         return mid;
-      } else if (normalizedZ < instance.zStart) {
+      } else if (normalizedZ < instance.zMin) {
         high = mid - 1;
       } else {
         low = mid + 1;
@@ -122,48 +122,48 @@ export class BiomeManager {
     return this.getBiomeInstanceAt(worldZ).type;
   }
 
-  public getBiomeBoundaries(worldZ: number): { zStart: number, zEnd: number } {
+  public getBiomeBoundaries(worldZ: number): { zMin: number, zMax: number } {
     const instance = this.getBiomeInstanceAt(worldZ);
     const numSequences = Math.floor(worldZ / this.totalSequenceLength);
     const sequenceOffset = numSequences * this.totalSequenceLength;
     return {
-      zStart: sequenceOffset + instance.zStart,
-      zEnd: sequenceOffset + instance.zEnd
+      zMin: sequenceOffset + instance.zMin,
+      zMax: sequenceOffset + instance.zMax
     };
   }
 
-  public getFeatureSegments(zStart: number, zEnd: number): Array<{
+  public getFeatureSegments(zMin: number, zMax: number): Array<{
     biome: BiomeType,
-    zStart: number, zEnd: number,
-    biomeZStart: number, biomeZEnd: number,
+    zMin: number, zMax: number,
+    biomeZMin: number, biomeZMax: number,
     biomeIndex: number
   }> {
 
-    const segments: Array<{ biome: BiomeType, zStart: number, zEnd: number, biomeZStart: number, biomeZEnd: number, biomeIndex: number }> = [];
-    let currentZ = zStart;
+    const segments: Array<{ biome: BiomeType, zMin: number, zMax: number, biomeZMin: number, biomeZMax: number, biomeIndex: number }> = [];
+    let currentZ = zMin;
 
-    while (currentZ < zEnd) {
+    while (currentZ < zMax) {
       const index = this.getBiomeInstanceIndexAt(currentZ);
       const instance = this.biomeInstances[index];
 
-      // We need to provide the "real" biomeZStart and biomeZEnd in world coordinates, 
+      // We need to provide the "real" biomeZMin and biomeZMax in world coordinates, 
       // not normalized sequence coordinates.
       // This is tricky because worldZ can be much larger than totalSequenceLength.
       const numSequences = Math.floor(currentZ / this.totalSequenceLength);
       const sequenceOffset = numSequences * this.totalSequenceLength;
 
-      const biomeZStart = sequenceOffset + instance.zStart;
-      const biomeZEnd = sequenceOffset + instance.zEnd;
+      const biomeZMin = sequenceOffset + instance.zMin;
+      const biomeZMax = sequenceOffset + instance.zMax;
 
       const biomeIndex = numSequences * this.biomeInstances.length + index;
 
-      const segmentEnd = Math.min(zEnd, biomeZEnd);
+      const segmentEnd = Math.min(zMax, biomeZMax);
       segments.push({
         biome: instance.type,
-        zStart: currentZ,
-        zEnd: segmentEnd,
-        biomeZStart,
-        biomeZEnd,
+        zMin: currentZ,
+        zMax: segmentEnd,
+        biomeZMin,
+        biomeZMax,
         biomeIndex
       });
       currentZ = segmentEnd;
@@ -176,14 +176,14 @@ export class BiomeManager {
     return this.features.get(biome)!;
   }
 
-  public getLayoutForBiome(biomeIndex: number, zStart: number, zEnd: number): any {
+  public getLayoutForBiome(biomeIndex: number, zMin: number, zMax: number): any {
     if (this.layoutCache.has(biomeIndex)) {
       return this.layoutCache.get(biomeIndex);
     }
 
     const localIndex = ((biomeIndex % this.biomeInstances.length) + this.biomeInstances.length) % this.biomeInstances.length;
     const instance = this.biomeInstances[localIndex];
-    const layout = this.getFeatures(instance.type).createLayout(zStart, zEnd);
+    const layout = this.getFeatures(instance.type).createLayout(zMin, zMax);
 
     // Basic cache management
     if (this.layoutCache.size >= this.MAX_LAYOUT_CACHE_SIZE) {
@@ -212,8 +212,8 @@ export class BiomeManager {
     let weight1 = 1.0;
     let weight2 = 0.0;
 
-    const distFromStart = normalizedZ - instance.zStart;
-    const distFromEnd = instance.zEnd - normalizedZ;
+    const distFromStart = normalizedZ - instance.zMin;
+    const distFromEnd = instance.zMax - normalizedZ;
 
     if (distFromStart < transitionWidth / 2) {
       // Transition from previous biome

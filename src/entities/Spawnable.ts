@@ -6,11 +6,10 @@ export interface SpawnContext {
   entityManager: EntityManager;
   physicsEngine: PhysicsEngine;
   placementHelper: PlacementHelper;
-  chunkIndex: number;
-  zStart: number;
-  zEnd: number;
-  biomeZStart: number;
-  biomeZEnd: number;
+  zMin: number;
+  zMax: number;
+  biomeZMin: number;
+  biomeZMax: number;
   biomeLayout?: any;
 }
 

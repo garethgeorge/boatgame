@@ -6,17 +6,11 @@ import { BiomeDecorationHelper } from '../biomes/BiomeDecorationHelper';
 export interface DecorationContext {
     // The chunk we are decorating
     chunk: TerrainChunk;
-    // The z offset of the chunk
-    zOffset: number;
-    // The start Z of the current biome
-    biomeZStart: number;
-    // The end Z of the current biome
-    biomeZEnd: number;
 
-    // The river system
-    riverSystem: RiverSystem;
-    // Layout data for the current biome segment (contains boat path and static decoration manifests)
-    layout?: any;
+    // The start Z of the current biome
+    biomeZMin: number;
+    // The end Z of the current biome
+    biomeZMax: number;
 
     // Helper for biome decorations
     decoHelper: BiomeDecorationHelper;
@@ -28,6 +22,4 @@ export interface DecorationContext {
     instancedData: Map<THREE.BufferGeometry, Map<THREE.Material, { matrix: THREE.Matrix4, color?: THREE.Color }[]>>;
     // Output for geometries that can't be grouped by material.
     geometryGroup: THREE.Group;
-    // Output for animation mixers
-    animationMixers: THREE.AnimationMixer[];
 }

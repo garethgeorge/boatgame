@@ -116,7 +116,7 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
                 angle: placement.rotation,
                 height: placement.height,
                 terrainNormal: placement.normal,
-                zRange: [context.biomeZStart, context.biomeZEnd]
+                zRange: [context.biomeZMin, context.biomeZMax]
             });
             if (entity) {
                 context.entityManager.add(entity);

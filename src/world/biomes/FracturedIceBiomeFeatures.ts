@@ -327,8 +327,8 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
     async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
         const boundarySize = 50.0;
 
-        const fracturedStart = context.biomeZStart + boundarySize;
-        const fracturedEnd = context.biomeZEnd - boundarySize;
+        const fracturedStart = context.biomeZMin + boundarySize;
+        const fracturedEnd = context.biomeZMax - boundarySize;
 
         // 1. Spawn dynamic icebergs from layout
         const layout = context.biomeLayout;
@@ -338,7 +338,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
             // AND are within the fractured ice region (fracturedStart, fracturedEnd)
 
             const cells = (layout.cells as VoronoiCell[]).filter(c => {
-                const worldZ = c.centroid.y + context.biomeZStart;
+                const worldZ = c.centroid.y + context.biomeZMin;
                 if (worldZ < zStart || worldZ >= zEnd) return false;
                 if (worldZ < fracturedStart || worldZ > fracturedEnd) return false;
                 return true;
@@ -362,7 +362,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
                 }
 
                 const worldX = cx;
-                const worldZ = cy + context.biomeZStart;
+                const worldZ = cy + context.biomeZMin;
 
                 const iceberg = new FracturedIceberg(worldX, worldZ, relativeVertices, context.physicsEngine);
                 context.entityManager.add(iceberg);
@@ -371,7 +371,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
         // 2. Spawn Standard Boundary Icebergs
         // Start Boundary
-        const startOverlapStart = Math.max(zStart, context.biomeZStart);
+        const startOverlapStart = Math.max(zStart, context.biomeZMin);
         const startOverlapEnd = Math.min(zEnd, fracturedStart);
         if (startOverlapStart < startOverlapEnd) {
             await EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd);
@@ -379,7 +379,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
         // End Boundary
         const endOverlapStart = Math.max(zStart, fracturedEnd);
-        const endOverlapEnd = Math.min(zEnd, context.biomeZEnd);
+        const endOverlapEnd = Math.min(zEnd, context.biomeZMax);
         if (endOverlapStart < endOverlapEnd) {
             await EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd);
         }

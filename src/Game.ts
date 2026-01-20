@@ -7,15 +7,11 @@ import { TerrainManager } from './world/TerrainManager';
 import { TerrainChunk } from './world/TerrainChunk';
 import { Decorations } from './world/Decorations';
 import { RiverSystem } from './world/RiverSystem';
-import { ObstacleManager } from './managers/ObstacleManager';
 import { Boat } from './entities/Boat';
-import { Alligator } from './entities/obstacles/Alligator';
-import { Hippo } from './entities/obstacles/Hippo';
 import { GameThrottle } from './GameThrottle';
 import { InputManager } from './managers/InputManager';
 import { Profiler } from './core/Profiler';
 import { Entity } from './core/Entity';
-import { MessageInABottle } from './entities/obstacles/MessageInABottle';
 import { Fixture } from 'planck';
 import * as planck from 'planck';
 import { GraphicsUtils } from './core/GraphicsUtils';
@@ -44,7 +40,6 @@ export class Game {
 
     boat!: Boat;
     terrainManager!: TerrainManager;
-    obstacleManager!: ObstacleManager;
 
     // Game State
     isPaused: boolean = false;
@@ -127,8 +122,7 @@ export class Game {
     init() {
         // Create World
         // ObstacleManager must be created before TerrainManager now
-        this.obstacleManager = new ObstacleManager(this.entityManager, this.physicsEngine);
-        this.terrainManager = new TerrainManager(this.physicsEngine, this.graphicsEngine, this.obstacleManager);
+        this.terrainManager = new TerrainManager(this.physicsEngine, this.graphicsEngine, this.entityManager);
 
         // Wire up interpolation
         this.physicsEngine.onStep = () => {
@@ -365,7 +359,6 @@ export class Game {
         if (this.boat.meshes.length > 0) {
             Profiler.start('Terrain');
             this.terrainManager.update(this.boat, dt);
-            // ObstacleManager update is now handled by TerrainManager events
             Profiler.end('Terrain');
         }
 
@@ -449,7 +442,7 @@ export class Game {
                 const userData = fixture.getUserData() as any;
                 if (body.isStatic() && !fixture.isSensor()) {
                     minFraction = f;
-                    return f; 
+                    return f;
                 }
                 return -1.0;
             });
@@ -458,10 +451,10 @@ export class Game {
                 const buffer = 0.9; // Keep 90% of the distance to the wall (or fixed unit buffer?)
                 const fullDist = planck.Vec2.distance(p1, p2); // Planck distance
                 if (fullDist > 0) {
-                     const hitDist = fullDist * minFraction;
-                     const targetDist = Math.max(0, hitDist - 2.0); // 2.0 unit buffer from wall
-                     const adjustedFraction = targetDist / fullDist;
-                     minFraction = adjustedFraction;
+                    const hitDist = fullDist * minFraction;
+                    const targetDist = Math.max(0, hitDist - 2.0); // 2.0 unit buffer from wall
+                    const adjustedFraction = targetDist / fullDist;
+                    minFraction = adjustedFraction;
                 }
 
                 idealPosition.lerp(new THREE.Vector3(boatPos.x, idealPosition.y, boatPos.z), 1.0 - minFraction);
@@ -526,7 +519,7 @@ export class Game {
         // We are moving in -Z direction.
         // Use a small offset so if we are exactly on boundary, we go to next.
         const boundaries = riverSystem.biomeManager.getBiomeBoundaries(currentZ - 1.0);
-        const nextZ = boundaries.zStart;
+        const nextZ = boundaries.zMin;
 
         // Get center of river at that location
         const nextX = riverSystem.getRiverCenter(nextZ);
