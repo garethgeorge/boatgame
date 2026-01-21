@@ -65,6 +65,15 @@ export abstract class Entity {
     this.physicsBodies = [];
   }
 
+  setVisible(visible: boolean) {
+    for (const mesh of this.meshes) {
+      mesh.visible = visible;
+    }
+    for (const debugMesh of this.debugMeshes) {
+      debugMesh.visible = visible;
+    }
+  }
+
   // Interpolation state
   private prevPos: Map<planck.Body, planck.Vec2> = new Map();
   private prevAngle: Map<planck.Body, number> = new Map();

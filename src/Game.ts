@@ -373,102 +373,9 @@ export class Game {
             this.gameThrottle.updateVisuals(this.boat.getThrottle());
         }
 
-        // Camera Follow
+        // Camera and Visibility
         if (this.boat.meshes.length > 0) {
-            // Calculate ideal camera position based on boat's rotation
-            // We want the camera behind and above the boat.
-            // Boat faces -Z (in model space) or whatever direction physics says.
-            // Physics angle 0 is usually "up" (-Y in 2D, -Z in 3D world).
-            // Let's use the mesh rotation to be safe as it's synced.
-
-            const boatMesh = this.boat.meshes[0];
-            const boatPos = boatMesh.position.clone();
-            const boatRot = boatMesh.rotation.y;
-
-            // Offset: Behind (positive Z relative to boat facing -Z) and Up (positive Y)
-            // If boat faces -Z, "behind" is +Z.
-
-            // Offset: Behind (positive Z relative to boat facing -Z) and Up (positive Y)
-            // If boat faces -Z, "behind" is +Z.
-
-            let offsetDistance = 14;
-            let offsetHeight = 3;
-
-            if (this.viewMode === 'far') {
-                offsetDistance = 20;
-                offsetHeight = 15;
-            } else if (this.viewMode === 'birds') {
-                offsetDistance = 0.5; // Small offset so lookAt orient correctly 
-                offsetHeight = 40;
-            } else if (this.viewMode === 'birdsFar') {
-                offsetDistance = 0.5;
-                offsetHeight = 300;
-            }
-
-            // Calculate offset vector based on rotation
-            // We want to be 'offsetDistance' units "behind" the boat.
-            // If boat rotation Y is 0 (facing -Z), we want to be at +Z.
-            // x = sin(angle) * dist
-            // z = cos(angle) * dist
-
-            const offsetX = Math.sin(boatRot) * offsetDistance;
-            const offsetZ = Math.cos(boatRot) * offsetDistance;
-
-            const idealPosition = new THREE.Vector3(
-                boatPos.x + offsetX,
-                boatPos.y + offsetHeight,
-                boatPos.z + offsetZ
-            );
-
-            // Camera Collision Detection (Physics Raycast)
-            const p1 = planck.Vec2(boatPos.x, boatPos.z);
-            const p2 = planck.Vec2(idealPosition.x, idealPosition.z);
-
-            let fraction = 1.0;
-
-            this.physicsEngine.world.rayCast(p1, p2, (fixture, point, normal, fraction) => {
-                const body = fixture.getBody();
-                // Check if it's a static body (terrain) and not a sensor
-                if (body.isStatic() && !fixture.isSensor()) {
-                    // Update fraction to the closest hit
-                    return fraction;
-                }
-                return -1.0; // Ignore this fixture and continue
-            });
-
-            let minFraction = 1.0;
-            this.physicsEngine.world.rayCast(p1, p2, (fixture, point, normal, f) => {
-                const body = fixture.getBody();
-                const userData = fixture.getUserData() as any;
-                if (body.isStatic() && !fixture.isSensor()) {
-                    minFraction = f;
-                    return f;
-                }
-                return -1.0;
-            });
-
-            if (minFraction < 1.0) {
-                const buffer = 0.9; // Keep 90% of the distance to the wall (or fixed unit buffer?)
-                const fullDist = planck.Vec2.distance(p1, p2); // Planck distance
-                if (fullDist > 0) {
-                    const hitDist = fullDist * minFraction;
-                    const targetDist = Math.max(0, hitDist - 2.0); // 2.0 unit buffer from wall
-                    const adjustedFraction = targetDist / fullDist;
-                    minFraction = adjustedFraction;
-                }
-
-                idealPosition.lerp(new THREE.Vector3(boatPos.x, idealPosition.y, boatPos.z), 1.0 - minFraction);
-            }
-
-
-            // Smoothly interpolate current camera position to ideal position (Spring effect)
-            // Lower factor = looser spring, Higher factor = tighter spring
-            const t = 1.0 - Math.pow(0.01, dt); // Time-independent lerp factor
-            this.graphicsEngine.camera.position.lerp(idealPosition, t * 2.0); // Adjust speed as needed
-
-            // Look at the boat (or slightly ahead)
-            const lookAtPos = boatPos.clone().add(new THREE.Vector3(0, 2, 0)); // Look slightly above center
-            this.graphicsEngine.camera.lookAt(lookAtPos);
+            this.updateCameraAndVisibility(dt);
         }
 
         // Update Sky
@@ -507,6 +414,78 @@ export class Game {
         this.graphicsEngine.updateDebugInfo();
 
         Profiler.endFrame();
+    }
+
+    private updateCameraAndVisibility(dt: number) {
+        const boatMesh = this.boat.meshes[0];
+        const boatPos = boatMesh.position.clone();
+        const boatRot = boatMesh.rotation.y;
+
+        let offsetDistance = 14;
+        let offsetHeight = 3;
+
+        if (this.viewMode === 'far') {
+            offsetDistance = 20;
+            offsetHeight = 15;
+        } else if (this.viewMode === 'birds') {
+            offsetDistance = 0.5;
+            offsetHeight = 40;
+        } else if (this.viewMode === 'birdsFar') {
+            offsetDistance = 0.5;
+            offsetHeight = 300;
+        }
+
+        const offsetX = Math.sin(boatRot) * offsetDistance;
+        const offsetZ = Math.cos(boatRot) * offsetDistance;
+
+        const idealPosition = new THREE.Vector3(
+            boatPos.x + offsetX,
+            boatPos.y + offsetHeight,
+            boatPos.z + offsetZ
+        );
+
+        // Camera Collision Detection (Physics Raycast)
+        const p1 = planck.Vec2(boatPos.x, boatPos.z);
+        const p2 = planck.Vec2(idealPosition.x, idealPosition.z);
+
+        let minFraction = 1.0;
+        this.physicsEngine.world.rayCast(p1, p2, (fixture, point, normal, f) => {
+            const body = fixture.getBody();
+            if (body.isStatic() && !fixture.isSensor()) {
+                minFraction = f;
+                return f;
+            }
+            return -1.0;
+        });
+
+        if (minFraction < 1.0) {
+            const fullDist = planck.Vec2.distance(p1, p2);
+            if (fullDist > 0) {
+                const hitDist = fullDist * minFraction;
+                const targetDist = Math.max(0, hitDist - 2.0);
+                const adjustedFraction = targetDist / fullDist;
+                minFraction = adjustedFraction;
+            }
+            idealPosition.lerp(new THREE.Vector3(boatPos.x, idealPosition.y, boatPos.z), 1.0 - minFraction);
+        }
+
+        const t = 1.0 - Math.pow(0.01, dt);
+        this.graphicsEngine.camera.position.lerp(idealPosition, t * 2.0);
+
+        const lookAtPos = boatPos.clone().add(new THREE.Vector3(0, 2, 0));
+        this.graphicsEngine.camera.lookAt(lookAtPos);
+
+        // Visibility Culling Context
+        // Always calculate visibility as if in 'close' view for verification
+        const closeDist = 14;
+        const closeHeight = 3;
+        const visPosX = boatPos.x + Math.sin(boatRot) * closeDist;
+        const visPosZ = boatPos.z + Math.cos(boatRot) * closeDist;
+        const visPos = new THREE.Vector3(visPosX, boatPos.y + closeHeight, visPosZ);
+        const visDir = lookAtPos.clone().sub(visPos).normalize();
+
+        this.terrainManager.updateVisibility(visPos, visDir);
+        this.entityManager.updateVisibility(visPos, visDir);
     }
 
     private skipToNextBiome() {

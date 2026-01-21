@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { Entity } from './Entity';
 import { PhysicsEngine } from './PhysicsEngine';
 import { GraphicsEngine } from './GraphicsEngine';
@@ -114,6 +115,35 @@ export class EntityManager {
 
       if (entity.shouldRemove) {
         this.remove(entity);
+      }
+    }
+  }
+
+  public updateVisibility(cameraPos: THREE.Vector3, cameraDir: THREE.Vector3) {
+    const visibilityRadius = 360;
+    const dotBuffer = -20; // Entities are small, smaller buffer than chunks
+
+    for (const entity of this.entities) {
+      if (entity.meshes.length === 0) continue;
+
+      const entityPos = entity.meshes[0].position;
+
+      // Distance check
+      const dist = cameraPos.distanceTo(entityPos);
+
+      if (dist > visibilityRadius) {
+        entity.setVisible(false);
+        continue;
+      }
+
+      // Direction check (dot product)
+      const toEntity = entityPos.clone().sub(cameraPos);
+      const dot = toEntity.dot(cameraDir);
+
+      if (dot < dotBuffer) {
+        entity.setVisible(false);
+      } else {
+        entity.setVisible(true);
       }
     }
   }

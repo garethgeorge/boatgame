@@ -162,6 +162,36 @@ export class TerrainManager {
     this.updateCollision(boatZ);
   }
 
+  public updateVisibility(cameraPos: THREE.Vector3, cameraDir: THREE.Vector3) {
+    const visibilityRadius = 360; // Matches Skybox radius
+    const dotBuffer = -100; // Allow chunks partially behind camera
+
+    for (const chunk of this.chunks.values()) {
+      // Chunk center for culling
+      const chunkZ = chunk.zOffset + TerrainChunk.CHUNK_SIZE / 2;
+      const chunkCenter = new THREE.Vector3(0, 0, chunkZ);
+
+      // Distance check
+      const dist = cameraPos.distanceTo(chunkCenter);
+
+      if (dist > visibilityRadius + TerrainChunk.CHUNK_SIZE) {
+        chunk.setVisible(false);
+        continue;
+      }
+
+      // Direction check (dot product)
+      const toChunk = chunkCenter.clone().sub(cameraPos);
+      const dot = toChunk.dot(cameraDir);
+
+      // If dot < dotBuffer, it's significantly behind the camera
+      if (dot < dotBuffer) {
+        chunk.setVisible(false);
+      } else {
+        chunk.setVisible(true);
+      }
+    }
+  }
+
   private debug: boolean = false;
 
   setDebug(enabled: boolean) {
