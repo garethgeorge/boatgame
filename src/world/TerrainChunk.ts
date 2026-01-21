@@ -300,6 +300,12 @@ export class TerrainChunk {
     return mesh;
   }
 
+  setVisible(visible: boolean) {
+    this.mesh.visible = visible;
+    this.waterMesh.visible = visible;
+    this.decorations.visible = visible;
+  }
+
   dispose() {
     this.graphicsEngine.remove(this.mesh);
     this.graphicsEngine.remove(this.waterMesh);

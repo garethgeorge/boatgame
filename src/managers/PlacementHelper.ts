@@ -27,14 +27,16 @@ export interface ShorePlacement {
 }
 
 export class PlacementHelper {
-  private spatialGrid: SpatialGrid;
+  private masterGrid: SpatialGrid;
+  private tempGrid: SpatialGrid;
   private riverSystem: RiverSystem;
   private world: planck.World;
 
-  constructor(world: planck.World, spatialGrid: SpatialGrid, riverSystem: RiverSystem) {
+  constructor(world: planck.World, masterGrid: SpatialGrid, riverSystem: RiverSystem) {
     this.riverSystem = riverSystem;
     this.world = world;
-    this.spatialGrid = spatialGrid;
+    this.masterGrid = masterGrid;
+    this.tempGrid = new SpatialGrid(masterGrid.getCellSize());
   }
 
   public tryPlace(
@@ -127,7 +129,7 @@ export class PlacementHelper {
    * Register an object that was placed manually (e.g. chained buoys) so others avoid it.
    */
   public registerPlacement(x: number, z: number, radius: number) {
-    this.spatialGrid.insert({
+    this.tempGrid.insert({
       speciesId: 'spawned-entity',
       position: new THREE.Vector3(x, 0, z),
       groundRadius: radius,
@@ -221,7 +223,9 @@ export class PlacementHelper {
   }
 
   private checkCollision(x: number, z: number, radius: number, minSpacing: number): boolean {
-    return this.spatialGrid.checkGroundCollision(x, z, radius + minSpacing);
+    const totalRadius = radius + minSpacing;
+    return this.masterGrid.checkGroundCollision(x, z, totalRadius) ||
+      this.tempGrid.checkGroundCollision(x, z, totalRadius);
   }
 
   public findShorePlacement(

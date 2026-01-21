@@ -221,4 +221,45 @@ describe('PlacementHelper', () => {
             expect(placement!.worldX).toBe(60);
         });
     });
+
+    describe('two-grid-collision', () => {
+        it('should collide with objects in masterGrid', () => {
+            const masterGrid = new SpatialGrid(20);
+            masterGrid.insert({
+                speciesId: 'tree',
+                position: new THREE.Vector3(10, 0, 100),
+                groundRadius: 5,
+                canopyRadius: 0,
+                speciesRadius: 0,
+                fitness: 1
+            });
+            const helper = new PlacementHelper({ queryAABB: vi.fn() } as any, masterGrid, mockRiverSystem);
+
+            // Should collide with tree in masterGrid (x=0 vs x=10, dist=10, radiusSum=10, minDist=2, 10 < 12)
+            const pos = helper.tryPlace(100, 100, 5, { range: [0, 0] });
+            expect(pos).toBeNull();
+        });
+
+        it('should collide with objects in tempGrid', () => {
+            const masterGrid = new SpatialGrid(20);
+            const helper = new PlacementHelper({ queryAABB: vi.fn() } as any, masterGrid, mockRiverSystem);
+
+            // Place something (goes into tempGrid)
+            helper.registerPlacement(10, 100, 5);
+
+            // Should collide with object in tempGrid
+            const pos = helper.tryPlace(100, 100, 5, { range: [0, 0] });
+            expect(pos).toBeNull();
+        });
+
+        it('should NOT add entity placements to masterGrid', () => {
+            const masterGrid = new SpatialGrid(20);
+            const helper = new PlacementHelper({ queryAABB: vi.fn() } as any, masterGrid, mockRiverSystem);
+
+            helper.registerPlacement(10, 100, 5);
+
+            // Verify masterGrid is still empty regarding this position
+            expect(masterGrid.checkGroundCollision(10, 100, 5)).toBe(false);
+        });
+    });
 });

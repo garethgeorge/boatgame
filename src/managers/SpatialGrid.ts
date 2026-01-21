@@ -22,6 +22,10 @@ export class SpatialGrid {
         this.cellSize = cellSize;
     }
 
+    public getCellSize(): number {
+        return this.cellSize;
+    }
+
     private getKey(x: number, y: number): string {
         const cx = Math.floor(x / this.cellSize);
         const cy = Math.floor(y / this.cellSize);
