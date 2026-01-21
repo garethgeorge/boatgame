@@ -109,9 +109,16 @@ export class EntityManager {
     const entitiesArray = Array.from(this.entities);
     for (let i = entitiesArray.length - 1; i >= 0; i--) {
       const entity = entitiesArray[i];
-      entity.update(dt);
 
-      entity.sync(alpha);
+      // Optimization: Skip update and sync if entity is not visible
+      // Always update player (Boat)
+      const isPlayer = entity.physicsBodies.length > 0 &&
+        (entity.physicsBodies[0].getUserData() as any)?.type === Entity.TYPE_PLAYER;
+
+      if (entity.isVisible || isPlayer) {
+        entity.update(dt);
+        entity.sync(alpha);
+      }
 
       if (entity.shouldRemove) {
         this.remove(entity);
@@ -124,9 +131,13 @@ export class EntityManager {
     const dotBuffer = -20; // Entities are small, smaller buffer than chunks
 
     for (const entity of this.entities) {
-      if (entity.meshes.length === 0) continue;
+      if (entity.physicsBodies.length === 0) continue;
 
-      const entityPos = entity.meshes[0].position;
+      // Use physics position instead of mesh position because sync() might be skipped
+      const bodyPos = entity.physicsBodies[0].getPosition();
+      const entityX = bodyPos.x;
+      const entityZ = bodyPos.y; // Physics Y is Graphics Z
+      const entityPos = new THREE.Vector3(entityX, 0, entityZ);
 
       // Distance check
       const dist = cameraPos.distanceTo(entityPos);

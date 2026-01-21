@@ -26,10 +26,10 @@ export abstract class Entity {
   // Set to true when this entity has caused a penalty to avoid repetition
   public hasCausedPenalty: boolean = false;
 
-  // Optional normal vector for terrain alignment
-  // If set, mesh will be tilted so its Y-axis aligns with this normal
   // while still following physics rotation around Y
   protected normalVector: THREE.Vector3 | null = null;
+
+  public isVisible: boolean = true;
 
   constructor() { }
 
@@ -66,6 +66,7 @@ export abstract class Entity {
   }
 
   setVisible(visible: boolean) {
+    this.isVisible = visible;
     for (const mesh of this.meshes) {
       mesh.visible = visible;
     }
