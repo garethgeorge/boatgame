@@ -109,9 +109,11 @@ export class GameEngine {
         Profiler.beginFrame();
         requestAnimationFrame(() => this.animate());
 
+        Profiler.start('Update');
         const dt = this.clock.getDelta();
         this.update(dt);
         if (this.onUpdate) this.onUpdate(dt);
+        Profiler.end('Update');
 
         Profiler.start('Render');
         this.graphicsEngine.render(dt);
