@@ -364,13 +364,6 @@ export class LSystemTreeFactory implements DecorationFactory {
                 treeGen.generate(params);
                 const archetype = this.createArchetype(kind, i / 10, treeGen, params);
 
-                // Apply dynamic scaling if defined in the archetype via matrix transform
-                if (params.scaleVariation) {
-                    const scale = params.scaleVariation(i);
-                    archetype.woodGeo.scale(scale, scale, scale);
-                    archetype.leafGeo.scale(scale, scale, scale);
-                }
-
                 list.push(archetype);
 
                 const triCount = this.getTriangleCount(archetype.woodGeo) + this.getTriangleCount(archetype.leafGeo);

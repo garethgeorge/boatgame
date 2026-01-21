@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PlacementManifest, SpatialGrid } from '../../managers/SpatialGrid';
 import { SimplexNoise } from '../SimplexNoise';
+import { MathUtils } from '../../core/MathUtils';
 
 // Environmental Context
 export interface WorldContext {
@@ -11,6 +12,7 @@ export interface WorldContext {
     biomeProgress: number; // 0.0 (Start) to 1.0 (End of river)
     // Helpers to access random values cleanly
     random: () => number;
+    gaussian: () => number;
     noise2D: (x: number, y: number) => number;
 }
 
@@ -152,6 +154,7 @@ export class PoissonDecorationStrategy {
             distanceToRiver: terrain.distToRiver,
             biomeProgress,
             random: Math.random,
+            gaussian: MathUtils.createGaussianRNG(Math.random),
             noise2D: (x, y) => (this.noise2D.noise2D(x, y))
         };
 

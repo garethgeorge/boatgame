@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { MathUtils } from '../../core/MathUtils';
 
 export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' |
     'umbrella' | 'open' | 'irregular' | 'vase' | 'birch' | 'elder';
@@ -68,8 +69,6 @@ export interface TreeConfig {
     // maps branch terminal symbols to parameters
     branches: Record<string, BranchRuleDefinition>;
 
-    scaleVariation?: (i: number) => number; // Function to return scale factor for variation i
-    
     // parameters for the tree
     params: TreeParams;
     defaults: {
@@ -77,28 +76,6 @@ export interface TreeConfig {
         branch: BranchParams;
     }
 }
-
-export const createNormalDistributionScaler = (
-    mean: number,
-    stdDev: number,
-    min: number,
-    max: number,
-    seedOffset: number = 0
-) => {
-    return (i: number) => {
-        // Box-Muller transform for normal distribution
-        // Use pseudo-random seeded by i
-        const seed = (i * 123.45) + seedOffset;
-        const u1 = Math.abs(Math.sin(seed));
-        const u2 = Math.abs(Math.cos(seed * 2.1));
-        
-        const z0 = Math.sqrt(-2.0 * Math.log(u1 + 0.0001)) * Math.cos(2.0 * Math.PI * u2);
-        
-        // Apply distribution parameters
-        const val = mean + (z0 * stdDev); 
-        return Math.max(min, Math.min(max, val));
-    };
-};
 
 export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     willow: {
@@ -188,7 +165,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
                 spread: 63.0, jitter: 17.2,
             },
         },
-        scaleVariation: createNormalDistributionScaler(1.0, 0.5, 0.8, 3.0)
     },
 
     elm: {
@@ -353,13 +329,13 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         rules: {
             // Twisted trunk
             'T': { successors: ["###[&C]/[&C]/[&C]"] },
-            
+
             // Massive crown
             'C': (i: number) => {
                 if (i < 3) return { successors: ["=[&C]/[&C]", "=[&C]/[&C]"], weights: [0.6, 0.4] };
                 return { successor: "B" };
             },
-            
+
             // Gnarly branches
             'B': { successors: ["==[&B]/[&B]", "+[&B]"], weights: [0.7, 0.3] }
         },
@@ -368,7 +344,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         branches: {
             '#': {},
             '=': {},
-            
+
             // Pseudo branch for attaching leaves
             '.': { scale: 0, jitter: 5 },
         },
@@ -376,8 +352,8 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 9, // One more iteration for the extra size
             length: 10.0, lengthDecay: 0.82, // Significantly longer base
             thickness: 6.0, thicknessDecay: 0.6, // Massive trunk
-            leafKind: { kind: 'blob', size: 4.5, thickness: 0.4 }, 
-            
+            leafKind: { kind: 'blob', size: 4.5, thickness: 0.4 },
+
             // Updated colors per user request
             leafColor: 0x2d5a27, // Lush forest green
             leafVariation: { h: 0.04, s: 0.1, l: 0.1 },
@@ -423,7 +399,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
                 spread: 50.0, jitter: 15.0
             },
         },
-        scaleVariation: createNormalDistributionScaler(0.9, 0.3, 0.6, 1.8)
     }
 };
 

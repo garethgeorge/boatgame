@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
+import { MathUtils } from '../../core/MathUtils';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
@@ -8,7 +9,6 @@ import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { TerrainDecorator, DecorationRule, PlacementManifest } from '../decorators/TerrainDecorator';
 import { Combine, Signal, TierRule } from '../decorators/PoissonDecorationRules';
-import { SpatialGrid } from '../../managers/SpatialGrid';
 
 /**
  * Happy Biome: A beautiful spring-like day with lush green fields.
@@ -67,7 +67,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                         Signal.inRange(Signal.slope, 0, 50)
                     ),
                     params: (ctx) => {
-                        const scale = 0.8 + ctx.random() * 0.4;
+                        const scale = MathUtils.clamp(0.8, 3.0, 1.0 + ctx.gaussian() * 0.5);
                         return {
                             groundRadius: 1.5 * scale,
                             canopyRadius: 5.0 * scale,

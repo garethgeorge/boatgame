@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
+import { MathUtils } from '../../core/MathUtils';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
@@ -60,7 +61,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                         Signal.inRange(Signal.distanceToRiver, 5, 200)
                     ),
                     params: (ctx) => {
-                        const scale = 0.8 + ctx.random() * 0.4;
+                        const scale = MathUtils.clamp(0.6, 1.8, 0.9 + ctx.gaussian() * 0.3);
                         return {
                             groundRadius: 1.2 * scale,
                             canopyRadius: 4.0 * scale,
@@ -75,7 +76,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                         Signal.inRange(Signal.distanceToRiver, 5, 200)
                     ),
                     params: (ctx) => {
-                        const scale = 0.8 + ctx.random() * 0.4;
+                        const scale = MathUtils.clamp(0.8, 3.0, 1.0 + ctx.gaussian() * 0.5);
                         return {
                             groundRadius: 1.5 * scale,
                             canopyRadius: 5.0 * scale,
