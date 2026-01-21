@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createNoise3D } from 'simplex-noise';
-import { DecorationFactory, DecorationInstance } from './DecorationFactory';
+import { DecorationFactory, DecorationInstance, NUM_DECORATION_ARCHETYPES } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
@@ -43,11 +43,11 @@ export class RockFactory implements DecorationFactory {
 
         console.log("Generating Rock Archetypes...");
         // Generate Standard Rocks
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
             this.archetypes.push(this.generateArchetype(false));
         }
         // Generate Icy Rocks
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
             this.archetypes.push(this.generateArchetype(true));
         }
     }

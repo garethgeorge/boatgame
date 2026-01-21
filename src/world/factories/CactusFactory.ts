@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { DecorationFactory, DecorationInstance } from './DecorationFactory';
+import { DecorationFactory, DecorationInstance, NUM_DECORATION_ARCHETYPES } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 interface CactusArchetype {
@@ -21,7 +21,7 @@ export class CactusFactory implements DecorationFactory {
         this.archetypes = [];
 
         console.log("Generating Cactus Archetypes...");
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
             this.archetypes.push(this.generateArchetype());
         }
     }

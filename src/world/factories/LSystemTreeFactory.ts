@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { DecorationFactory, DecorationInstance } from './DecorationFactory';
+import { DecorationFactory, DecorationInstance, NUM_DECORATION_ARCHETYPES } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
 import {
@@ -360,7 +360,7 @@ export class LSystemTreeFactory implements DecorationFactory {
             let minTriangles = Infinity;
             let maxTriangles = -Infinity;
 
-            for (let i = 0; i < 10; i++) {
+            for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
                 treeGen.generate(params);
                 const archetype = this.createArchetype(kind, i / 10, treeGen, params);
 

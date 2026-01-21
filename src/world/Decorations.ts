@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { DecorationRegistry } from './DecorationRegistry';
-import { TreeFactory, TreeKind } from './factories/TreeFactory';
 import { BushFactory } from './factories/BushFactory';
 import { CactusFactory } from './factories/CactusFactory';
 import { RockFactory } from './factories/RockFactory';
@@ -18,7 +17,6 @@ import { LSystemTreeKind } from './factories/LSystemTreeArchetypes';
 export type { DecorationInstance, LSystemTreeKind, LSystemTreeInstanceOptions };
 
 // Register factories
-DecorationRegistry.register('tree', new TreeFactory());
 DecorationRegistry.register('bush', new BushFactory());
 DecorationRegistry.register('cactus', new CactusFactory());
 DecorationRegistry.register('rock', new RockFactory());
@@ -66,11 +64,6 @@ export class Decorations {
   /**
    * Functions returning data to be used for instancing
    */
-  static getTreeInstance(wetness: number, kind: TreeKind = 'round', isSnowy: boolean = false, isLeafless: boolean = false): DecorationInstance[] {
-    const factory = DecorationRegistry.getFactory('tree') as TreeFactory;
-    return factory.createInstance({ wetness, kind, isSnowy, isLeafless });
-  }
-
   static getLSystemTreeInstance(options: LSystemTreeInstanceOptions): DecorationInstance[] {
     const factory = DecorationRegistry.getFactory('lsystem-tree') as LSystemTreeFactory;
     return factory.createInstance(options);

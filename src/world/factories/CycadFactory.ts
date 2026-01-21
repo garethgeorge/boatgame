@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { DecorationFactory, DecorationInstance } from './DecorationFactory';
+import { DecorationFactory, DecorationInstance, NUM_DECORATION_ARCHETYPES } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 interface CycadArchetype {
@@ -32,7 +32,7 @@ export class CycadFactory implements DecorationFactory {
 
         // Pre-generate cycad archetypes
         console.log("Generating Cycad Archetypes...");
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
             this.archetypes.push(this.generateArchetype());
         }
     }

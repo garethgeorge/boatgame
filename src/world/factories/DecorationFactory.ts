@@ -12,7 +12,10 @@ export interface DecorationInstance {
     color?: THREE.Color;
 }
 
+export const NUM_DECORATION_ARCHETYPES: number = 8;
+
 export interface DecorationFactory {
+
     // pre-load
     load(): Promise<void>;
 

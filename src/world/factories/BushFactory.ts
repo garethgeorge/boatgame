@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DecorationFactory, DecorationInstance } from './DecorationFactory';
+import { DecorationFactory, DecorationInstance, NUM_DECORATION_ARCHETYPES } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
@@ -25,11 +25,11 @@ export class BushFactory implements DecorationFactory {
 
         console.log("Generating Bush Archetypes...");
         // Generate Wet Bushes (Ferns)
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
             this.archetypes.push(this.generateArchetype(true));
         }
         // Generate Dry Bushes (Dead)
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
             this.archetypes.push(this.generateArchetype(false));
         }
     }
