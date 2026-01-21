@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 
+/**
+ * Note that the geometry and material here must not be a clone, It
+ * must be an archetype that is already owned by something so that
+ * it is ok to choose not to use the DecorationInstance.
+ */
 export interface DecorationInstance {
     geometry: THREE.BufferGeometry;
     material: THREE.Material;

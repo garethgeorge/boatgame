@@ -116,16 +116,18 @@ export class BiomeDecorationHelper {
             if (geometries.length === 0) continue;
 
             const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries);
-            mergedGeometry.name = 'Decorations - merged geom';
+            if (mergedGeometry) {
+                mergedGeometry.name = 'Decorations - merged geom';
 
-            const mesh = GraphicsUtils.createMesh(mergedGeometry, material, 'BiomeMergedDecoration');
-            // Material is shared from decorators, so we DON'T dispose it here
+                const mesh = GraphicsUtils.createMesh(mergedGeometry, material, 'BiomeMergedDecoration');
+                // Material is shared from decorators, so we DON'T dispose it here
 
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            group.add(mesh);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                group.add(mesh);
+            }
 
-            // Dispose of the source geometries (clones) now that they are merged
+            // Dispose of the source geometries (clones) now that they are merged (or if merge failed)
             for (const geometry of geometries) {
                 GraphicsUtils.disposeObject(geometry);
             }

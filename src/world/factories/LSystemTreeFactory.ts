@@ -218,6 +218,7 @@ export class ClusterLeafGenerator implements LeafGenerator {
             const l = (Math.random() - 0.5) * variation.l;
 
             GraphicsUtils.addVertexAttribute(triGeo, 'hslOffset', h, s, l);
+            GraphicsUtils.registerObject(triGeo);
 
             triangleGeos.push(triGeo);
         }
@@ -225,13 +226,21 @@ export class ClusterLeafGenerator implements LeafGenerator {
         if (triangleGeos.length === 0) return;
 
         let mergedTriangles = BufferGeometryUtils.mergeGeometries(triangleGeos);
-        if (!mergedTriangles) return;
+        if (!mergedTriangles) {
+            triangleGeos.forEach(g => GraphicsUtils.disposeObject(g));
+            return;
+        }
+        mergedTriangles.name = 'ClusterLeaf - merged';
+        GraphicsUtils.registerObject(mergedTriangles);
 
         const finalQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), leafData.dir);
         const finalMatrix = new THREE.Matrix4().compose(leafData.pos, finalQuat, new THREE.Vector3(1, 1, 1));
         mergedTriangles.applyMatrix4(finalMatrix);
 
         leafGeos.push(mergedTriangles);
+
+        // Dispose source triangles after merge
+        triangleGeos.forEach(g => GraphicsUtils.disposeObject(g));
     }
 }
 
@@ -282,6 +291,7 @@ export class UmbrellaLeafGenerator implements LeafGenerator {
             const l = (Math.random() - 0.5) * variation.l;
 
             GraphicsUtils.addVertexAttribute(triGeo, 'hslOffset', h, s, l);
+            GraphicsUtils.registerObject(triGeo);
 
             triangleGeos.push(triGeo);
         }
@@ -289,13 +299,21 @@ export class UmbrellaLeafGenerator implements LeafGenerator {
         if (triangleGeos.length === 0) return;
 
         let mergedTriangles = BufferGeometryUtils.mergeGeometries(triangleGeos);
-        if (!mergedTriangles) return;
+        if (!mergedTriangles) {
+            triangleGeos.forEach(g => GraphicsUtils.disposeObject(g));
+            return;
+        }
+        mergedTriangles.name = 'UmbrellaLeaf - merged';
+        GraphicsUtils.registerObject(mergedTriangles);
 
         const finalQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.random() * Math.PI * 2);
         const finalMatrix = new THREE.Matrix4().compose(leafData.pos, finalQuat, new THREE.Vector3(1, 1, 1));
         mergedTriangles.applyMatrix4(finalMatrix);
 
         leafGeos.push(mergedTriangles);
+
+        // Dispose source triangles after merge
+        triangleGeos.forEach(g => GraphicsUtils.disposeObject(g));
     }
 }
 
