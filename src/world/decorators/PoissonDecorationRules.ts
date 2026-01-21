@@ -95,7 +95,7 @@ export const Combine = {
     // Any can be true (Max)
     any: (...fns: Array<(ctx: WorldContext) => number>) => (ctx: WorldContext) =>
         Math.max(...fns.map(f => f(ctx))),
-;
+};
 
 export interface Species {
     id: string;

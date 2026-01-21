@@ -5,7 +5,7 @@ import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { DecorationRule } from '../decorators/PoissonDecorationStrategy';
-import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/PoissonDecorationRules';
+import { Combine, Signal, TierRule } from '../decorators/PoissonDecorationRules';
 import { RiverSystem } from '../RiverSystem';
 import { RiverGeometry } from '../RiverGeometry';
 

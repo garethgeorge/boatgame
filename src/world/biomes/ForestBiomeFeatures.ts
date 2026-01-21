@@ -7,7 +7,7 @@ import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { TerrainDecorator, DecorationRule } from '../decorators/TerrainDecorator';
-import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/PoissonDecorationRules';
+import { Combine, Signal, TierRule } from '../decorators/PoissonDecorationRules';
 import { SpatialGrid } from '../../managers/SpatialGrid';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {

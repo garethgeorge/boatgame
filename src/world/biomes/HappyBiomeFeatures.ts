@@ -7,7 +7,7 @@ import { BoatPathLayout, BoatPathLayoutStrategy, PatternConfigs, TrackConfig } f
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { TerrainDecorator, DecorationRule, PlacementManifest } from '../decorators/TerrainDecorator';
-import { Combine, Signal, SpeciesHelpers, TierRule } from '../decorators/PoissonDecorationRules';
+import { Combine, Signal, TierRule } from '../decorators/PoissonDecorationRules';
 import { SpatialGrid } from '../../managers/SpatialGrid';
 
 /**
