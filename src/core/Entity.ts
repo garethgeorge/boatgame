@@ -26,6 +26,8 @@ export abstract class Entity {
   // Set to true when this entity has caused a penalty to avoid repetition
   public hasCausedPenalty: boolean = false;
 
+  // Optional normal vector for terrain alignment
+  // If set, mesh will be tilted so its Y-axis aligns with this normal
   // while still following physics rotation around Y
   protected normalVector: THREE.Vector3 | null = null;
 
