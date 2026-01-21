@@ -245,7 +245,7 @@ The `BoatPathLayoutStrategy.createLayout()` follows a deterministic multi-step p
 This system uses **Poisson Disk Sampling** with variable radii to place static decorations (trees, rocks, flowers) across the terrain. Position fitness and object spacing are controlled by declarative rules and environmental signals.
 
 ### 1. Core Architecture
--   **`PoissonDecorationStrategy`**: The engine implementing Bridson's algorithm. It uses a fitness value (0-1) to determine both the probability of placement and the required spacing (thinning placement in low-fitness areas).
+-   **`PoissonDecorationStrategy`**: The engine implementing Bridson's algorithm. It uses a fitness value (0-1) to determine both the probability of placement. Objects define their radii at ground and canopy level. A spacing value can be given to force additional space around an object when it is placed.
 -   **`TerrainDecorator`**: A high-level facade that connects the strategy to the `RiverSystem` (for terrain data) and the `Decorations` registry (for asset creation).
 -   **`WorldContext`**: A data object passed to rules containing local environmental data: elevation, slope (degrees), distance to river, and biome progress.
 
@@ -267,7 +267,9 @@ private decorationRules: DecorationRule[] = [
                 params: (ctx) => {
                     const scale = 0.8 + ctx.random() * 0.4;
                     return {
-                        radius: SpeciesHelpers.attenuate(ctx, 12 * scale),
+                        groundRadius: 1 * scale,
+                        canopyRadius: 5 * scale,
+                        spacing: 1 * scale,
                         options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
                     };
                 }
@@ -284,13 +286,12 @@ async decorate(context: DecorationContext, zStart: number, zEnd: number) {
 **Key Concepts for Clients**:
 -   **Signals**: Functional helpers to extract or transform environmental data (e.g., `Signal.elevation`, `Signal.inRange`). Slope is measured in degrees.
 -   **Composition**: Use `Combine.all` (AND logic/multiplication) or `Combine.any` (OR logic/max) to build complex fitness functions.
--   **Tiers**: `TierRule` groups species and selects a single winner from its members based on the highest local preference.
--   **Variable Radius**: The `radius` returned by `params` is the "spacing requirement". High fitness results in dense placement (at `radius`), while low fitness increases spacing (up to 4x).
+-   **Tiers**: `TierRule` groups species and selects a single winner from its members based on the highest local preference. Species in a tier should have roughly similar radii and spacing and all either have or not have canopies.
 
 ### 3. Extension & Internals
 -   **Spatial Grid**: `SpatialGrid` handles collision detection. Similarly to the L-System, it uses a grid but dynamically tracks the maximum radius of any placed object to calculate the necessary search neighborhood. This ensures large spacing requirements are respected without a massive grid cell size.
--   **Fitness-Based Thinning**: `getVariableRadius` inverts the fitness value using a power curve. If `fitness` is 1.0, spacing is exactly `radius`. As `fitness` approaches 0, spacing increases significantly.
--   **Growth Phase**: Candidates are generated in an annulus around parent samples. The search distance is randomly selected between `2*r` and `4*r` where `r` is the variable radius, ensuring a high-quality distribution.
+-   **Growth Phase**: Candidates are generated in an annulus around parent samples. The search distance is randomly selected between `1.5*r` and `2.5*r` where `r` is the parent spacing, ensuring a high-quality distribution.
+-   **Thinning**: The placement calculation is "dense". These placements are filtered when instantiating to cull objects based on distance from river and visibility.
 
 ## 13. Documentation Maintenance
 **Rule**: This file (`GEMINI.md`) serves as the architectural source of truth. When implementing new features or refactoring existing systems:

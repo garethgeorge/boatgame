@@ -28,7 +28,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                         return {
                             groundRadius: 2 * scale,
                             canopyRadius: 8 * scale,
-                            speciesRadius: 10 * scale,
+                            spacing: 10 * scale,
                             options: { kind: 'willow', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }
@@ -46,7 +46,6 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                         return {
                             groundRadius: 3 * scale,
                             canopyRadius: 12 * scale,
-                            speciesRadius: SpeciesHelpers.attenuate(ctx, 15 * scale),
                             options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }

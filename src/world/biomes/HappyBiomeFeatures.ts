@@ -71,7 +71,6 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                         return {
                             groundRadius: 1.5 * scale,
                             canopyRadius: 5.0 * scale,
-                            speciesRadius: SpeciesHelpers.attenuate(ctx, 5.0 * scale),
                             options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }
@@ -92,7 +91,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                         return {
                             groundRadius: 0.5 * scale,
                             canopyRadius: 1.5 * scale,
-                            speciesRadius: 3 * scale,
+                            spacing: 2 * scale,
                             options: { kind: 'poplar', rotation: ctx.random() * Math.PI * 2, scale }
                         }
                     }
@@ -113,7 +112,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                         const scale = 0.8 + ctx.random() * 0.8;
                         return {
                             groundRadius: 5.0 * scale,
-                            speciesRadius: 10.0 * scale,
+                            spacing: 10.0 * scale,
                             options: { kind: 'rock', rotation: ctx.random() * Math.PI * 2, scale }
                         };
                     }

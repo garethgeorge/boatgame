@@ -95,17 +95,7 @@ export const Combine = {
     // Any can be true (Max)
     any: (...fns: Array<(ctx: WorldContext) => number>) => (ctx: WorldContext) =>
         Math.max(...fns.map(f => f(ctx))),
-
-    // Linear interpolation between two values (for transitions)
-    lerp: (a: number, b: number, t: number) => a + (b - a) * t
-};
-
-export class SpeciesHelpers {
-    // Increases spacing with distance from river to attenuate species placement
-    public static attenuate(ctx: WorldContext, radius: number): number {
-        return radius * (1 + MathUtils.smoothstep(75, 200, ctx.distanceToRiver) * 8.0);
-    }
-}
+;
 
 export interface Species {
     id: string;
@@ -115,7 +105,7 @@ export interface Species {
     params: (ctx: WorldContext) => {
         groundRadius: number,
         canopyRadius?: number,
-        speciesRadius?: number,
+        spacing?: number,
         options: any
     };
 }
@@ -135,17 +125,15 @@ export class TierRule implements DecorationRule {
 
     // Pick the winner based on relative preference
     generate(ctx: WorldContext): {
-        speciesId: string,
         groundRadius: number,
         canopyRadius?: number,
-        speciesRadius?: number,
+        spacing?: number,
         options: any
     } {
         const scored = this.species.map(s => ({ s, p: s.preference(ctx) }));
         const winner = scored.reduce((a, b) => a.p > b.p ? a : b).s;
         let params = winner.params(ctx);
         return {
-            speciesId: winner.id,
             ...params
         };
     }

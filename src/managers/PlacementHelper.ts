@@ -130,12 +130,9 @@ export class PlacementHelper {
    */
   public registerPlacement(x: number, z: number, radius: number) {
     this.tempGrid.insert({
-      speciesId: 'spawned-entity',
       position: new THREE.Vector3(x, 0, z),
       groundRadius: radius,
       canopyRadius: 0,
-      speciesRadius: 0,
-      fitness: 1,
     });
   }
 

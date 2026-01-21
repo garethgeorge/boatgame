@@ -2,20 +2,20 @@ import * as THREE from 'three';
 
 // A single placement
 export interface PlacementManifest {
-    speciesId: string;
     position: THREE.Vector3;
-    groundRadius: number; // Stored for collision checks (includes spacing adjustments)
+
+    // The "actual" radii at ground and canopy levels
+    groundRadius: number;
     canopyRadius: number;
-    speciesRadius: number;
-    fitness: number; // Stored to optimize local growth
-    options?: any; // type specific - should include scale if needed
+
+    // type specific options
+    options?: any;
 }
 
 export class SpatialGrid {
     private cellSize: number;
     private maxGroundRadius: number = 0;
     private maxCanopyRadius: number = 0;
-    private maxSpeciesRadius: number = 0;
     private grid: Map<string, PlacementManifest[]> = new Map();
 
     constructor(cellSize: number) {
@@ -35,7 +35,6 @@ export class SpatialGrid {
     insert(item: PlacementManifest) {
         this.maxGroundRadius = Math.max(this.maxGroundRadius, item.groundRadius);
         this.maxCanopyRadius = Math.max(this.maxCanopyRadius, item.canopyRadius);
-        this.maxSpeciesRadius = Math.max(this.maxSpeciesRadius, item.speciesRadius);
 
         const key = this.getKey(item.position.x, item.position.z);
         if (!this.grid.has(key)) {
@@ -44,27 +43,22 @@ export class SpatialGrid {
         this.grid.get(key)!.push(item);
     }
 
-    checkCollision(
-        x: number, y: number,
-        groundRadius: number,
-        canopyRadius: number,
-        speciesRadius: number,
-        speciesId: string
-    ): boolean {
-
-        // Working from smallest to largest radii
+    /**
+     * Check collision for an object with given clearance radii at ground and
+     * canopy levels.
+     */
+    checkCollision(x: number, y: number, groundRadius: number, canopyRadius: number): boolean {
         if (this.checkGroundCollision(x, y, groundRadius))
             return true;
-
-        if (canopyRadius > 0 && this.checkCanopyCollision(x, y, canopyRadius))
+        if (canopyRadius > 0.0 && this.checkCanopyCollision(x, y, canopyRadius))
             return true;
-
-        if (speciesRadius > 0 && this.checkSpeciesCollision(x, y, speciesRadius, speciesId))
-            return true;
-
         return false;
     }
 
+    /**
+     * Check whether there is a placement whose ground radius intersects the
+     * circle.
+     */
     checkGroundCollision(x: number, y: number, groundRadius: number): boolean {
         const searchRange = groundRadius + this.maxGroundRadius;
         return this.checkCollisionPredicate(
@@ -76,6 +70,10 @@ export class SpatialGrid {
         );
     }
 
+    /**
+     * Check whether there is a placement whose canopy radius intersects the
+     * circle.
+     */
     checkCanopyCollision(x: number, y: number, canopyRadius: number): boolean {
         const searchRange = canopyRadius + this.maxCanopyRadius;
         return this.checkCollisionPredicate(
@@ -84,18 +82,6 @@ export class SpatialGrid {
                 if (item.canopyRadius <= 0) return false;
                 const canopyDist = canopyRadius + item.canopyRadius;
                 return (distSq < canopyDist * canopyDist);
-            }
-        );
-    }
-
-    checkSpeciesCollision(x: number, y: number, speciesRadius: number, speciesId: string): boolean {
-        const searchRange = speciesRadius + this.maxSpeciesRadius;
-        return this.checkCollisionPredicate(
-            x, y, searchRange,
-            (item: PlacementManifest, distSq: number) => {
-                if (speciesId !== item.speciesId || item.speciesRadius <= 0) return false;
-                const specDist = speciesRadius + item.speciesRadius;
-                return (distSq < specDist * specDist);
             }
         );
     }

@@ -102,11 +102,28 @@ export class TerrainDecorator {
         context: DecorationContext, decorations: PlacementManifest[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
     ) {
+
+        // Similar logic to BiomeDecorationHelper, this instances with
+        // distance from river and a visibility check
         const tryPlace = (instances: DecorationInstance[], pos: { worldX: number, worldZ: number, height: number }, opts: DecorationOptions) => {
+            const riverSystem = this.riverSystem;
+            const riverWidth = riverSystem.getRiverWidth(pos.worldZ);
+            const riverCenter = riverSystem.getRiverCenter(pos.worldZ);
+            const distFromCenter = Math.abs(pos.worldX - riverCenter);
+            const distFromBank = distFromCenter - riverWidth / 2;
+
+            // Apply distance-based probability bias
+            if (distFromBank > 0) {
+                const biasDistance = 240; // Tripled from 80 per user request
+                const normalizedDist = Math.min(1.0, distFromBank / biasDistance);
+                const probability = Math.pow(1.0 - normalizedDist, 2);
+                if (Math.random() > probability) return false;
+            }
+
             const height = context.decoHelper.calculateHeight(instances);
             const queryHeight = height + (height * 1.2);
 
-            if (!this.riverSystem.terrainGeometry.checkVisibility(pos.worldX, queryHeight, pos.worldZ, /* visibilitySteps=*/8)) {
+            if (!riverSystem.terrainGeometry.checkVisibility(pos.worldX, queryHeight, pos.worldZ, /* visibilitySteps=*/8)) {
                 return;
             }
             context.decoHelper.addInstancedDecoration(context, instances, pos, opts.rotation, opts.scale);

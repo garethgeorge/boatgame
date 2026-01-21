@@ -226,12 +226,9 @@ describe('PlacementHelper', () => {
         it('should collide with objects in masterGrid', () => {
             const masterGrid = new SpatialGrid(20);
             masterGrid.insert({
-                speciesId: 'tree',
                 position: new THREE.Vector3(10, 0, 100),
                 groundRadius: 5,
                 canopyRadius: 0,
-                speciesRadius: 0,
-                fitness: 1
             });
             const helper = new PlacementHelper({ queryAABB: vi.fn() } as any, masterGrid, mockRiverSystem);
 
