@@ -5,7 +5,7 @@ import { DefaultSwimAwayLogic } from './DefaultSwimAwayLogic';
 import { ShoreLandingFlightLogic } from './ShoreLandingFlightLogic';
 import { WaterLandingFlightLogic } from './WaterLandingFlightLogic';
 import { EnteringWaterLogic } from './EnteringWaterLogic';
-import { ShoreIdleLogic } from './ShoreIdleLogic';
+import { WaitForBoatLogic } from './WaitForBoatLogic';
 import { ShoreWalkLogic } from './ShoreWalkLogic';
 
 export class AnimalLogicRegistry {
@@ -18,7 +18,7 @@ export class AnimalLogicRegistry {
         this.register(ShoreLandingFlightLogic.NAME, (params) => new ShoreLandingFlightLogic(params as any));
         this.register(WaterLandingFlightLogic.NAME, (params) => new WaterLandingFlightLogic(params as any));
         this.register(EnteringWaterLogic.NAME, (params) => new EnteringWaterLogic(params as any));
-        this.register(ShoreIdleLogic.NAME, (params) => new ShoreIdleLogic(params as any));
+        this.register(WaitForBoatLogic.NAME, (params) => new WaitForBoatLogic(params as any));
         this.register(ShoreWalkLogic.NAME, (params) => new ShoreWalkLogic(params as any));
     }
 

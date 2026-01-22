@@ -5,7 +5,7 @@ import { ShoreLandingFlightLogic } from '../behaviors/logic/ShoreLandingFlightLo
 import { WaterLandingFlightLogic } from '../behaviors/logic/WaterLandingFlightLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
-import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
+import { WaitForBoatLogic } from '../behaviors/logic/WaitForBoatLogic';
 import { Animal, AnimalOptions } from './Animal';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
@@ -61,7 +61,7 @@ export class FlyingBehaviorFactory {
 
         return AnimalLogicStep.sequence([
             {
-                name: ShoreIdleLogic.NAME,
+                name: WaitForBoatLogic.NAME,
                 params: { minNoticeDistance: minNoticeDistance, ignoreBottles: true }
             },
             {

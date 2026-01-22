@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { WolfAttackLogic } from '../behaviors/logic/WolfAttackLogic';
 import { EnteringWaterLogic } from '../behaviors/logic/EnteringWaterLogic';
-import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
+import { WaitForBoatLogic } from '../behaviors/logic/WaitForBoatLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
@@ -74,7 +74,7 @@ export class AttackBehaviorFactory {
         } else if (attackBehavior === 'wait') {
             return AnimalLogicStep.sequence([
                 {
-                    name: ShoreIdleLogic.NAME,
+                    name: WaitForBoatLogic.NAME,
                 },
                 {
                     name: EnteringWaterLogic.NAME,
@@ -86,10 +86,10 @@ export class AttackBehaviorFactory {
             ]);
         } else if (attackBehavior === 'walk') {
             return AnimalLogicStep.sequence([
-                AnimalLogicStep.until(ShoreIdleLogic.RESULT_NOTICED,
+                AnimalLogicStep.until(WaitForBoatLogic.RESULT_NOTICED,
                     AnimalLogicStep.random([
                         {
-                            name: ShoreIdleLogic.NAME,
+                            name: WaitForBoatLogic.NAME,
                             timeout: 5.0,
                         },
                         {
