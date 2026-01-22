@@ -21,7 +21,7 @@ export class Butterfly extends FlyingAnimal {
                 friction: 0.1
             });
 
-        this.setBehavior(FlyingBehaviorFactory.create(
+        this.setBehavior(FlyingBehaviorFactory.createShoreLanding(
             this,
             {
                 flightSpeed: 20.0,

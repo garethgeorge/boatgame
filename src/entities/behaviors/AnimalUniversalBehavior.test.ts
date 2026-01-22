@@ -105,7 +105,7 @@ describe('AnimalUniversalBehavior', () => {
 
     it('should handle loop termination with until', () => {
         const configA = { name: 'A' };
-        const script = AnimalLogicStep.until('MATCH', configA);
+        const script = AnimalLogicStep.until('MATCH', Infinity, configA);
 
         const behavior = new AnimalUniversalBehavior(mockEntity, 0.5, script);
 

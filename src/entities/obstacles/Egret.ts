@@ -23,12 +23,11 @@ export class Egret extends FlyingAnimal {
                 friction: 0.1
             });
 
-        this.setBehavior(FlyingBehaviorFactory.create(
+        this.setBehavior(FlyingBehaviorFactory.createWaterLanding(
             this,
             {
                 minNoticeDistance: 20.0,
                 flightSpeed: 25.0,
-                landingLogic: 'water',
                 landingHeight: Egret.HEIGHT_IN_WATER,
                 ...options,
             }

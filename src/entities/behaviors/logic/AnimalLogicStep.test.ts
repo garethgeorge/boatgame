@@ -23,7 +23,7 @@ describe('AnimalLogicStep', () => {
 
     describe('until', () => {
         it('should return the script until the result matches', () => {
-            const until = AnimalLogicStep.until('MATCH', configA);
+            const until = AnimalLogicStep.until('MATCH', Infinity, configA);
             expect(until(0, '')).toBe(configA);
             expect(until(1, 'BLAH')).toBe(configA);
             expect(until(2, 'MATCH')).toBe(null);
@@ -53,7 +53,7 @@ describe('AnimalLogicStep', () => {
     describe('nested logic', () => {
         it('should handle until wrapping a sequence', () => {
             const seq = AnimalLogicStep.sequence([configA, configB]);
-            const until = AnimalLogicStep.until('DONE', seq);
+            const until = AnimalLogicStep.until('DONE', Infinity, seq);
 
             // until doesn't care about step, it just returns the script it wraps
             expect(until(0, '')).toBe(seq);

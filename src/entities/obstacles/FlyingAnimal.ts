@@ -14,13 +14,11 @@ export interface FlyingAnimalOptions extends AnimalOptions {
     minNoticeDistance?: number,
     flightSpeed?: number;
     zRange?: [number, number];
-    landingLogic?: 'shore' | 'water';
-    landingHeight?: number;
 }
 
 export class FlyingBehaviorFactory {
 
-    public static create(
+    public static createShoreLanding(
         animal: AnyAnimal,
         params: {
             minNoticeDistance?: number,
@@ -28,8 +26,6 @@ export class FlyingBehaviorFactory {
             disableLogic?: boolean,
             aggressiveness?: number,
             zRange?: [number, number],
-            landingLogic?: 'shore' | 'water',
-            landingHeight?: number
         }
     ) {
         const {
@@ -38,37 +34,59 @@ export class FlyingBehaviorFactory {
             disableLogic = false,
             aggressiveness = 0.5,
             zRange,
-            landingLogic = 'shore',
-            landingHeight = 0.0
         } = params;
-        const script = disableLogic ? null : this.getLogicScript(minNoticeDistance, flightSpeed, landingLogic, zRange, landingHeight);
-        if (script) {
-            return new AnimalUniversalBehavior(animal, aggressiveness, script);
-        } else {
-            return null;
-        }
-    }
 
-    private static getLogicScript(
-        minNoticeDistance: number,
-        flightSpeed: number,
-        landingLogic: 'shore' | 'water',
-        zRange?: [number, number],
-        landingHeight: number = 0.0
-    ): AnimalLogicScript {
-        const flightLogicName = landingLogic === 'water' ? WaterLandingFlightLogic.NAME : ShoreLandingFlightLogic.NAME;
-        const flightParams = landingLogic === 'water' ? { flightSpeed, landingHeight } : { flightSpeed, zRange };
+        if (disableLogic) return null;
 
-        return AnimalLogicStep.sequence([
+        // One iteration of see boat, fly, and land
+        const script = AnimalLogicStep.sequence([
             {
                 name: WaitForBoatLogic.NAME,
                 params: { minNoticeDistance: minNoticeDistance, ignoreBottles: true }
             },
             {
-                name: flightLogicName,
-                params: flightParams
+                name: ShoreLandingFlightLogic.NAME,
+                params: { flightSpeed, zRange }
             }
-        ]);
+        ]
+        );
+        return new AnimalUniversalBehavior(animal, aggressiveness, script);
+    }
+
+    public static createWaterLanding(
+        animal: AnyAnimal,
+        params: {
+            minNoticeDistance?: number,
+            flightSpeed?: number,
+            disableLogic?: boolean,
+            aggressiveness?: number,
+            landingHeight?: number
+        }
+    ) {
+        const {
+            minNoticeDistance = 200.0,
+            flightSpeed = 1.0,
+            disableLogic = false,
+            aggressiveness = 0.5,
+            landingHeight = 0.0
+        } = params;
+
+        if (disableLogic) return null;
+
+        // Loop forever waiting for the boat and then flying
+        const script = AnimalLogicStep.until(null, Infinity,
+            AnimalLogicStep.sequence([
+                {
+                    name: WaitForBoatLogic.NAME,
+                    params: { minNoticeDistance: minNoticeDistance, ignoreBottles: true }
+                },
+                {
+                    name: WaterLandingFlightLogic.NAME,
+                    params: { flightSpeed, landingHeight }
+                }
+            ])
+        );
+        return new AnimalUniversalBehavior(animal, aggressiveness, script);
     }
 }
 

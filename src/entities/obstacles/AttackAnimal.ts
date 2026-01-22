@@ -86,7 +86,7 @@ export class AttackBehaviorFactory {
             ]);
         } else if (attackBehavior === 'walk') {
             return AnimalLogicStep.sequence([
-                AnimalLogicStep.until(WaitForBoatLogic.RESULT_NOTICED,
+                AnimalLogicStep.until(WaitForBoatLogic.RESULT_NOTICED, Infinity,
                     AnimalLogicStep.random([
                         {
                             name: WaitForBoatLogic.NAME,

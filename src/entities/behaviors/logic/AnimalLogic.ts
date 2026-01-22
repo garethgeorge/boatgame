@@ -56,10 +56,10 @@ export class AnimalLogicStep {
         return (step: number, lastResult: string) => sequence[step] ?? null;
     }
 
-    /** Play script until it returns 'result' */
-    public static until(result: string, script: AnimalLogicScript) {
+    /** Play script until it returns 'result' or maximum iteration count */
+    public static until(result: string | null, count: number, script: AnimalLogicScript) {
         return (step: number, lastResult: string) => {
-            if (lastResult === result) return null;
+            if (lastResult === result || step >= count) return null;
             return script;
         }
     }
