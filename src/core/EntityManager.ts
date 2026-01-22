@@ -39,6 +39,9 @@ export class EntityManager {
   add(entity: Entity) {
     this.entities.add(entity);
 
+    // Sync immediately so meshes are correctly positioned before being added to the scene
+    entity.sync(1.0);
+
     // Planck bodies are added to world upon creation, so no need to add here.
     for (const mesh of entity.meshes) {
       this.graphicsEngine.add(mesh);
