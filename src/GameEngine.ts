@@ -270,11 +270,21 @@ export class GameEngine {
         const lookAtPos = boatPos.clone().add(new THREE.Vector3(0, 2, 0));
         this.graphicsEngine.camera.lookAt(lookAtPos);
 
-        const closeDist = 14, closeHeight = 3;
-        const visPos = new THREE.Vector3(boatPos.x + Math.sin(boatRot) * closeDist, boatPos.y + closeHeight, boatPos.z + Math.cos(boatRot) * closeDist);
-        const visDir = lookAtPos.clone().sub(visPos).normalize();
-        this.terrainManager.updateVisibility(visPos, visDir);
-        this.entityManager.updateVisibility(visPos, visDir);
+        // Update visibility of entities and chunks, for the way up
+        // above view pretend the camera is behind the boat so the visibility
+        // logic behavior can be seen
+        if (this.viewMode != 'birdsFar') {
+            const visPos = this.graphicsEngine.camera.position;
+            const visDir = lookAtPos.clone().sub(visPos).normalize();
+            this.terrainManager.updateVisibility(visPos, visDir);
+            this.entityManager.updateVisibility(visPos, visDir);
+        } else {
+            const closeDist = 14, closeHeight = 3;
+            const visPos = new THREE.Vector3(boatPos.x + Math.sin(boatRot) * closeDist, boatPos.y + closeHeight, boatPos.z + Math.cos(boatRot) * closeDist);
+            const visDir = lookAtPos.clone().sub(visPos).normalize();
+            this.terrainManager.updateVisibility(visPos, visDir);
+            this.entityManager.updateVisibility(visPos, visDir);
+        }
     }
 
     private skipToNextBiome() {

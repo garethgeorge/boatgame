@@ -163,32 +163,56 @@ export class TerrainManager {
   }
 
   public updateVisibility(cameraPos: THREE.Vector3, cameraDir: THREE.Vector3) {
-    const visibilityRadius = 360; // Matches Skybox radius
-    const dotBuffer = -100; // Allow chunks partially behind camera
+    const visibilityRadiusSq = Math.pow(360 + TerrainChunk.CHUNK_SIZE, 2); // Squared radius for efficiency
+    const dotBuffer = -20; // Allow slight buffer behind camera plane
 
     for (const chunk of this.chunks.values()) {
-      // Chunk center for culling
-      const chunkZ = chunk.zOffset + TerrainChunk.CHUNK_SIZE / 2;
-      const chunkCenter = new THREE.Vector3(0, 0, chunkZ);
+      const z0 = chunk.zOffset;
+      const z1 = chunk.zOffset + TerrainChunk.CHUNK_SIZE;
 
-      // Distance check
-      const dist = cameraPos.distanceTo(chunkCenter);
+      // Calculate 4 corners of the chunk in world space
+      const halfWidth = TerrainChunk.CHUNK_WIDTH / 2;
+      const x0 = this.riverSystem.getRiverCenter(z0);
+      const x1 = this.riverSystem.getRiverCenter(z1);
 
-      if (dist > visibilityRadius + TerrainChunk.CHUNK_SIZE) {
+      const corners = [
+        new THREE.Vector3(x0 - halfWidth, 0, z0),
+        new THREE.Vector3(x0 + halfWidth, 0, z0),
+        new THREE.Vector3(x1 - halfWidth, 0, z1),
+        new THREE.Vector3(x1 + halfWidth, 0, z1)
+      ];
+
+      // 1. Distance check (rough culling)
+      // Check if any corner is within range, or if camera is within the chunk's Z range
+      let inRange = (cameraPos.z >= z0 && cameraPos.z <= z1);
+      if (!inRange) {
+        for (const corner of corners) {
+          if (cameraPos.distanceToSquared(corner) < visibilityRadiusSq) {
+            inRange = true;
+            break;
+          }
+        }
+      }
+
+      if (!inRange) {
         chunk.setVisible(false);
         continue;
       }
 
-      // Direction check (dot product)
-      const toChunk = chunkCenter.clone().sub(cameraPos);
-      const dot = toChunk.dot(cameraDir);
-
-      // If dot < dotBuffer, it's significantly behind the camera
-      if (dot < dotBuffer) {
-        chunk.setVisible(false);
-      } else {
-        chunk.setVisible(true);
+      // 2. Direction check (frustum-ish culling)
+      // Visible if ANY corner is in front of the camera plane, or if camera is inside chunk Z
+      let visible = (cameraPos.z >= z0 && cameraPos.z <= z1);
+      if (!visible) {
+        for (const corner of corners) {
+          const toCorner = corner.clone().sub(cameraPos);
+          if (toCorner.dot(cameraDir) > dotBuffer) {
+            visible = true;
+            break;
+          }
+        }
       }
+
+      chunk.setVisible(visible);
     }
   }
 
