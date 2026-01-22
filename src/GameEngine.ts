@@ -28,8 +28,7 @@ export class GameEngine {
     boat!: Boat;
     terrainManager!: TerrainManager;
 
-    isPlaying: boolean = false;
-    isPaused: boolean = false;
+    isPaused: boolean = true;
     viewMode: 'close' | 'far' | 'birds' | 'birdsFar' = 'close';
 
     pendingContacts: Map<Entity, { type: string, subtype: any, boatPart: string }> = new Map();
@@ -101,7 +100,7 @@ export class GameEngine {
 
     public start() {
         console.log('[DEBUG] GameEngine.start() called');
-        this.isPlaying = true;
+        this.isPaused = false;
         this.clock.start();
     }
 
@@ -168,20 +167,18 @@ export class GameEngine {
 
         Profiler.setVisibility(DebugSettings.profilerVisible);
 
-        if (!this.isPlaying) return;
+        if (!this.isPaused) {
+            this.processContacts();
 
-        this.processContacts();
+            Profiler.start('Physics');
+            this.physicsEngine.update(dt);
+            Profiler.end('Physics');
 
-        if (this.isPaused) return;
-
-        Profiler.start('Physics');
-        this.physicsEngine.update(dt);
-        Profiler.end('Physics');
-
-        Profiler.start('Entities');
-        this.boat.update(dt, this.inputManager);
-        this.entityManager.update(dt);
-        Profiler.end('Entities');
+            Profiler.start('Entities');
+            this.boat.update(dt, this.inputManager);
+            this.entityManager.update(dt);
+            Profiler.end('Entities');
+        }
 
         if (this.boat.meshes.length > 0) {
             Profiler.start('Terrain');
