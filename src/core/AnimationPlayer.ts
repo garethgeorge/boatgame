@@ -45,6 +45,7 @@ interface ScriptStackItem {
 }
 
 export class AnimationPlayer {
+    public static readonly NONE = 'none';
 
     private readonly mixer: THREE.AnimationMixer;
     private readonly actions: Map<string, THREE.AnimationAction> = new Map();
@@ -52,6 +53,7 @@ export class AnimationPlayer {
     private scriptStack: ScriptStackItem[] = [];
 
     private currentAction: THREE.AnimationAction | null = null;
+    private delayTimer: number = 0;
 
     constructor(group: THREE.Group, animations: THREE.AnimationClip[]) {
         this.mixer = new THREE.AnimationMixer(group);
@@ -69,11 +71,13 @@ export class AnimationPlayer {
         this.mixer.stopAllAction();
         this.currentAction = null;
         this.scriptStack = [];
+        this.delayTimer = 0;
     }
 
     public play(script: AnimationScript) {
         // Discard currently running script
         this.scriptStack = [];
+        this.delayTimer = 0;
 
         if (typeof script === 'function') {
             this.scriptStack.push({ func: script, step: 0 });
@@ -84,6 +88,8 @@ export class AnimationPlayer {
     }
 
     public getDuration(name: string): number {
+        if (name === AnimationPlayer.NONE) return 1.0;
+
         const action = this.actions.get(name);
         if (action) {
             return action.getClip().duration;
@@ -97,6 +103,13 @@ export class AnimationPlayer {
 
     public update(dt: number) {
         this.mixer.update(dt);
+        if (this.delayTimer > 0) {
+            this.delayTimer -= dt;
+            if (this.delayTimer <= 0) {
+                this.delayTimer = 0;
+                this.playNextScriptStep();
+            }
+        }
     }
 
     private playNextScriptStep() {
@@ -135,13 +148,16 @@ export class AnimationPlayer {
             repeat = 1
         } = options;
 
-        const action = this.actions.get(name);
-        if (!action) {
-            return false;
-        }
+        let action: THREE.AnimationAction | undefined = undefined;
+        let baseDuration = 1.0;
 
-        const mode = (repeat === 1) ? THREE.LoopOnce : THREE.LoopRepeat;
-        const repetitions = repeat;
+        if (name !== AnimationPlayer.NONE) {
+            action = this.actions.get(name);
+            if (!action) {
+                return false;
+            }
+            baseDuration = action.getClip().duration;
+        }
 
         let randomFactor = 1.0;
         if (randomizeLength !== undefined) {
@@ -150,16 +166,32 @@ export class AnimationPlayer {
 
         let finalTimeScale = timeScale;
         if (duration !== undefined) {
-            finalTimeScale = action.getClip().duration / duration;
+            finalTimeScale = baseDuration / duration;
         }
         finalTimeScale /= randomFactor;
 
-        // If action is current and already has correct parameters, just return
-        if (this.currentAction === action &&
-            action.isRunning() &&
-            action.loop === mode &&
-            Math.abs(action.timeScale - finalTimeScale) < 0.001) {
+        // Handle delay case
+        if (name === AnimationPlayer.NONE) {
+            const totalDuration = (baseDuration / finalTimeScale) * repeat;
+            this.delayTimer = totalDuration;
+
+            if (this.currentAction) {
+                this.currentAction.paused = true;
+            }
             return true;
+        }
+
+        const mode = (repeat === 1) ? THREE.LoopOnce : THREE.LoopRepeat;
+        const repetitions = repeat;
+
+        // If action is current and already has correct parameters, just return
+        if (this.currentAction === action) {
+            action.paused = false;
+            if (action.isRunning() &&
+                action.loop === mode &&
+                Math.abs(action.timeScale - finalTimeScale) < 0.001) {
+                return true;
+            }
         }
 
         // Check if we just need to update parameters of the running action

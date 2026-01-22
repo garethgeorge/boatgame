@@ -372,3 +372,39 @@ Leaves are generated separately using strategies defined in `LeafKind`.
 ## 16. Verification
 
 Use `npx tsc --noEmit` to verify that the code passes typescript checks.
+
+## 17. Adding New Animals
+
+Follow these steps to add a new animal species to the game:
+
+### 1. Define Entity ID
+Add a unique ID for the new animal to the `EntityIds` enum in `src/entities/EntityIds.ts`.
+
+### 2. Register Assets
+In `src/world/Decorations.ts`:
+-   Register the GLTF model path using `DecorationRegistry.register('id', new GLTFModelFactory('assets/model.glb'))`.
+-   Add a static helper method to the `Decorations` class:
+    ```typescript
+    static getMyAnimal() { return this.getModelAndAnimations('id'); }
+    ```
+
+### 3. Create Animal Entity Class
+Create a new file in `src/entities/obstacles/` (e.g., `MyAnimal.ts`) extending `AttackAnimal`, `FlyingAnimal`, or `SwimAwayAnimal`.
+-   **Model**: Override `getModelData()` to return your new `Decorations` getter.
+-   **Setup**: Implement `setupModel()` to set scale and orientation (usually `Math.PI` to face forward).
+-   **Animations**: Implement `getAnimations()` to map `AnimalLogicPhase` to `AnimationScript` (e.g., using `Animal.play()` or `AnimationStep.random()`).
+-   **Behavior**: In the constructor, call `this.setBehavior()` using the corresponding factory (`AttackBehaviorFactory`, `FlyingBehaviorFactory`, etc.).
+
+### 4. Register Spawner Configuration
+In `src/entities/spawners/EntitySpawners.ts`:
+-   Add an entry to the appropriate config array (`attackConfigs`, `flyingConfigs`, or `swimAwayConfigs`).
+-   Define `getDensity`, `factory`, and placement rules like `shoreProbability` or `waterPlacement`.
+
+### 5. Update Layout System
+In `src/world/biomes/BoatPathLayoutSpawner.ts`:
+-   Add your new `EntityIds` to the `switch` statement in `spawn()` to enable layout-based placement.
+
+### 6. Biome Integration
+In the target biome's features file (e.g., `SwampBiomeFeatures.ts`):
+-   Add the new ID to relevant `patterns` (e.g., a `threat` or `scatter` pattern).
+-   If the animal spawns in water, add it to the `waterAnimals` list in `createLayout()`.

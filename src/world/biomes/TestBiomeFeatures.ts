@@ -174,7 +174,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         // }
 
         // await EntitySpawners.getInstance().messageInABottle().spawn(context, 4, zStart, zEnd);
-        await EntitySpawners.getInstance().animal(EntityIds.MONKEY)!.spawn(context, 1, zStart, zEnd);
+        // await EntitySpawners.getInstance().animal(EntityIds.MONKEY)!.spawn(context, 1, zStart, zEnd);
         // await EntitySpawners.getInstance().animal(EntityIds.ALLIGATOR).spawn(context, 1, zStart, zEnd);
         // await EntitySpawners.getInstance().animal(EntityIds.TRICERATOPS).spawn(context, 1, zStart, zEnd);
 
@@ -186,5 +186,6 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         // await EntitySpawners.getInstance().animal(EntityIds.DOLPHIN).spawn(context, 1, zStart, zEnd);
         // await EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK).spawn(context, 1, zStart, zEnd);
         // await EntitySpawners.getInstance().animal(EntityIds.SWAN).spawn(context, 1, zStart, zEnd);
+        await EntitySpawners.getInstance().animal(EntityIds.EGRET).spawn(context, 2, zStart, zEnd);
     }
 }

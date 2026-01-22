@@ -1,18 +1,21 @@
 import { SpawnContext } from '../Spawnable';
 import { RiverSystem } from '../../world/RiverSystem';
-import { RiverGeometrySample } from '../../world/RiverGeometry';
+import { RiverGeometry, RiverGeometrySample } from '../../world/RiverGeometry';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Entity } from '../../core/Entity';
-import { ShorePlacementOptions } from '../../managers/PlacementHelper';
+import { RiverPlacementOptions, ShorePlacementOptions } from '../../managers/PlacementHelper';
 import { AnimalSpawner, AnimalSpawnOptions } from './AnimalSpawner';
 import { FlyingAnimalOptions } from '../obstacles/FlyingAnimal';
+import * as THREE from 'three';
 
 export interface FlyingAnimalSpawnConfig {
     id: string;
     getDensity: (difficulty: number, zStart: number) => number;
     factory: (physicsEngine: PhysicsEngine, options: FlyingAnimalOptions) => Entity;
     entityRadius?: number;
+    shoreProbability?: number;
     shorePlacement?: ShorePlacementOptions;
+    waterPlacement?: RiverPlacementOptions;
 }
 
 export class FlyingAnimalSpawner extends AnimalSpawner {
@@ -31,8 +34,16 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
         return this.config.entityRadius ?? 3.0;
     }
 
+    protected get shoreProbability(): number {
+        return this.config.shoreProbability ?? 1.0;
+    }
+
     protected get shorePlacement(): ShorePlacementOptions {
         return this.config.shorePlacement ?? { minDistFromBank: 2.0, maxDistFromBank: 8.0 };
+    }
+
+    protected get waterPlacement(): RiverPlacementOptions {
+        return this.config.waterPlacement ?? {};
     }
 
     protected getDensity(difficulty: number, zStart: number): number {
@@ -44,12 +55,29 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
     }
 
     async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
-        // For now, only spawn on shore
-        return this.spawnOnShore(context, z, {});
+        const riverSystem = RiverSystem.getInstance();
+        const sample = RiverGeometry.getRiverGeometrySample(riverSystem, z);
+
+        const isShore = Math.random() < this.shoreProbability;
+        const aggro = Math.random();
+
+        if (isShore) {
+            const shorePlace = this.shorePlacement;
+            const left = Math.random() < 0.5;
+            const range: [number, number] = left ?
+                [-sample.bankDist - (shorePlace.maxDistFromBank || 8.0), -sample.bankDist] :
+                [sample.bankDist, sample.bankDist + (shorePlace.maxDistFromBank || 8.0)];
+            return this.spawnAnimalAbsolute({ context, sample, distanceRange: range, aggressiveness: aggro });
+
+        } else {
+            const range: [number, number] = [-sample.bankDist, sample.bankDist];
+            return this.spawnAnimalAbsolute({ context, sample, distanceRange: range, aggressiveness: aggro });
+        }
     }
 
     /**
-     * Spawns a flying animal on shore near a given river sample.
+     * Spawns a flying animal within a distance range from a river position.
+     * Supports both shore and water placement.
      */
     async spawnAnimalAbsolute(options: AnimalSpawnOptions): Promise<boolean> {
         const {
@@ -63,19 +91,46 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
             zRange
         } = options;
 
+        let placement: any = null;
+
         const radius = this.entityRadius;
-        const minSpacing = 2.0; // Default
+        const minSpacing = this.waterPlacement.minDistFromOthers || 2.0;
+        const minWaterDist = this.waterPlacement.minDistFromBank || 2.0;
         const minShoreDist = this.shorePlacement.minDistFromBank || 2.0;
         const maxSlopeDegrees = this.shorePlacement.maxSlopeDegrees || 20.0;
 
-        const placement = context.placementHelper.tryShorePlaceAbsolute(
-            sample,
-            radius,
-            minSpacing,
-            minShoreDist,
-            distanceRange,
-            maxSlopeDegrees
-        );
+        // Check if range overlaps shore
+        const overlapsShore = distanceRange[0] < -sample.bankDist - minShoreDist || distanceRange[1] > sample.bankDist + minShoreDist;
+
+        if (overlapsShore) {
+            placement = context.placementHelper.tryShorePlaceAbsolute(
+                sample,
+                radius,
+                minSpacing,
+                minShoreDist,
+                distanceRange,
+                maxSlopeDegrees
+            );
+        }
+
+        if (!placement) {
+            const riverPos = context.placementHelper.tryRiverPlaceAbsolute(
+                sample,
+                radius,
+                minSpacing,
+                minWaterDist,
+                distanceRange
+            );
+            if (riverPos) {
+                placement = {
+                    worldX: riverPos.worldX,
+                    worldZ: riverPos.worldZ,
+                    height: 0, // In water
+                    rotation: Math.random() * Math.PI * 2,
+                    normal: new THREE.Vector3(0, 1, 0)
+                };
+            }
+        }
 
         if (placement) {
             const entity = this.spawnEntity(context.physicsEngine, {
@@ -86,37 +141,7 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
                 terrainNormal: placement.normal,
                 aggressiveness,
                 disableLogic,
-                zRange
-            });
-            if (entity) {
-                context.entityManager.add(entity);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private async spawnOnShore(context: SpawnContext, z: number,
-        options: ShorePlacementOptions): Promise<boolean> {
-
-        const opts = {
-            ...this.shorePlacement,
-            ...options
-        };
-
-        const riverSystem = RiverSystem.getInstance();
-        const placement = context.placementHelper.findShorePlacement(
-            z, z, riverSystem, opts
-        );
-
-        if (placement) {
-            const entity = this.spawnEntity(context.physicsEngine, {
-                x: placement.worldX,
-                y: placement.worldZ,
-                angle: placement.rotation,
-                height: placement.height,
-                terrainNormal: placement.normal,
-                zRange: [context.biomeZMin, context.biomeZMax]
+                zRange: zRange !== undefined ? zRange : [context.biomeZMin, context.biomeZMax]
             });
             if (entity) {
                 context.entityManager.add(entity);

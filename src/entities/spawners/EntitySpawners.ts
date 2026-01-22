@@ -27,6 +27,7 @@ import { PierSpawner } from './PierSpawner';
 import { RockSpawner } from './RockSpawner';
 import { WaterGrassSpawner } from './WaterGrassSpawner';
 import { Bluebird } from '../obstacles/Bluebird';
+import { Egret } from '../obstacles/Egret';
 import { Swan } from '../obstacles/Swan';
 
 export class EntitySpawners {
@@ -151,6 +152,13 @@ export class EntitySpawners {
             id: EntityIds.PTERODACTYL,
             getDensity: () => 0.1 / 20,
             factory: (physicsEngine, options) => new Pterodactyl(physicsEngine, options)
+        },
+        {
+            id: EntityIds.EGRET,
+            getDensity: () => 0.1 / 20,
+            factory: (physicsEngine, options) => new Egret(physicsEngine, options),
+            shoreProbability: 0.0,
+            entityRadius: 3.0
         }
     ];
 
