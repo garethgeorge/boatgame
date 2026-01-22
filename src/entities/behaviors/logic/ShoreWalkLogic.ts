@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './AnimalLogic';
-import { AnimalPathStrategy } from './AnimalPathStrategy';
-import { ShoreWalkStrategy, ShoreTurnStrategy } from './ShoreWalkStrategy';
+import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
+import { ShoreWalkStrategy, ShoreTurnStrategy } from './strategy/ShoreWalkStrategy';
 
 export interface ShoreWalkParams {
     walkDistance: number;

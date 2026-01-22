@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
-import { FleePathStrategy } from './FleePathStrategy';
+import { FleePathStrategy } from './strategy/FleePathStrategy';
 
 /**
  * Swim away logic runs forever.

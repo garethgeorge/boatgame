@@ -2,8 +2,8 @@ import * as planck from 'planck';
 import { Boat } from '../../Boat';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
-import { AnimalPathStrategy } from './AnimalPathStrategy';
-import { ShoreHuggingStrategy, SternInterceptStrategy } from './AttackPathStrategies';
+import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
+import { ShoreHuggingStrategy, SternInterceptStrategy } from './strategy/AttackPathStrategies';
 
 /**
  * Ambush logic runs forever.

@@ -2,8 +2,8 @@ import * as planck from 'planck';
 import { Boat } from '../../Boat';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
-import { AnimalPathStrategy } from './AnimalPathStrategy';
-import { CircleFlankStrategy, SternInterceptStrategy, VulnerableChargeStrategy } from './AttackPathStrategies';
+import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
+import { CircleFlankStrategy, SternInterceptStrategy, VulnerableChargeStrategy } from './strategy/AttackPathStrategies';
 
 /**
  * Wolf attack runs forever.

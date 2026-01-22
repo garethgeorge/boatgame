@@ -1,8 +1,8 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { AnimalSteering } from './AnimalPathStrategy';
+import { AnimalSteering } from './strategy/AnimalPathStrategy';
 import { AnimalBehaviorEvent } from '../AnimalBehavior';
-import { AnimalStrategyContext } from './AnimalPathStrategy';
+import { AnimalStrategyContext } from './strategy/AnimalPathStrategy';
 
 /**
  * Supported locomotion physics models.

@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../../../world/RiverSystem';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './AnimalLogic';
-import { EnteringWaterStrategy } from './EnteringWaterStrategy';
+import { EnteringWaterStrategy } from './strategy/EnteringWaterStrategy';
 
 export interface EnteringWaterParams {
     targetWaterHeight: number;

@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
-import { AnimalPathStrategy } from './AnimalPathStrategy';
-import { BuzzTargetStrategy, FleeRiverStrategy, FlyToShoreStrategy, LandingStrategy } from './FlightPathStrategies';
+import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
+import { BuzzTargetStrategy, FleeRiverStrategy, FlyToShoreStrategy, LandingStrategy } from './strategy/FlightPathStrategies';
 import { RiverSystem } from '../../../world/RiverSystem';
 
 export interface ShoreLandingFlightParams {
