@@ -8,6 +8,7 @@ import { Entity } from '../../core/Entity';
 import { AnimationPlayer, AnimationStep } from '../../core/AnimationPlayer';
 
 export class Egret extends FlyingAnimal {
+    public static readonly HEIGHT_IN_WATER = -0.2;
 
     constructor(
         physicsEngine: PhysicsEngine,
@@ -27,6 +28,8 @@ export class Egret extends FlyingAnimal {
             {
                 minNoticeDistance: 20.0,
                 flightSpeed: 25.0,
+                landingLogic: 'water',
+                landingHeight: Egret.HEIGHT_IN_WATER,
                 ...options,
             }
         ));
@@ -38,7 +41,7 @@ export class Egret extends FlyingAnimal {
 
     protected setupModel(model: THREE.Group): void {
         model.scale.set(3.0, 3.0, 3.0);
-        model.position.y = -0.2;
+        //model.position.y = -0.2;
     }
 
     protected getAnimations(): AnimalAnimations {

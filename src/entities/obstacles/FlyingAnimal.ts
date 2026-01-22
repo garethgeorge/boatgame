@@ -1,7 +1,8 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { DefaultFlightLogic } from '../behaviors/logic/DefaultFlightLogic';
+import { ShoreLandingFlightLogic } from '../behaviors/logic/ShoreLandingFlightLogic';
+import { WaterLandingFlightLogic } from '../behaviors/logic/WaterLandingFlightLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
 import { ShoreIdleLogic } from '../behaviors/logic/ShoreIdleLogic';
@@ -13,6 +14,8 @@ export interface FlyingAnimalOptions extends AnimalOptions {
     minNoticeDistance?: number,
     flightSpeed?: number;
     zRange?: [number, number];
+    landingLogic?: 'shore' | 'water';
+    landingHeight?: number;
 }
 
 export class FlyingBehaviorFactory {
@@ -25,6 +28,8 @@ export class FlyingBehaviorFactory {
             disableLogic?: boolean,
             aggressiveness?: number,
             zRange?: [number, number],
+            landingLogic?: 'shore' | 'water',
+            landingHeight?: number
         }
     ) {
         const {
@@ -33,8 +38,10 @@ export class FlyingBehaviorFactory {
             disableLogic = false,
             aggressiveness = 0.5,
             zRange,
+            landingLogic = 'shore',
+            landingHeight = 0.0
         } = params;
-        const script = disableLogic ? null : this.getLogicScript(minNoticeDistance, flightSpeed, zRange);
+        const script = disableLogic ? null : this.getLogicScript(minNoticeDistance, flightSpeed, landingLogic, zRange, landingHeight);
         if (script) {
             return new AnimalUniversalBehavior(animal, aggressiveness, script);
         } else {
@@ -45,16 +52,21 @@ export class FlyingBehaviorFactory {
     private static getLogicScript(
         minNoticeDistance: number,
         flightSpeed: number,
-        zRange?: [number, number]
+        landingLogic: 'shore' | 'water',
+        zRange?: [number, number],
+        landingHeight: number = 0.0
     ): AnimalLogicScript {
+        const flightLogicName = landingLogic === 'water' ? WaterLandingFlightLogic.NAME : ShoreLandingFlightLogic.NAME;
+        const flightParams = landingLogic === 'water' ? { flightSpeed, landingHeight } : { flightSpeed, zRange };
+
         return AnimalLogicStep.sequence([
             {
                 name: ShoreIdleLogic.NAME,
                 params: { minNoticeDistance: minNoticeDistance, ignoreBottles: true }
             },
             {
-                name: DefaultFlightLogic.NAME,
-                params: { flightSpeed: flightSpeed, zRange: zRange }
+                name: flightLogicName,
+                params: flightParams
             }
         ]);
     }

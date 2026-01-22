@@ -15,6 +15,7 @@ export interface FlyingAnimalSpawnConfig {
     entityRadius?: number;
     shoreProbability?: number;
     shorePlacement?: ShorePlacementOptions;
+    heightInWater?: number;
     waterPlacement?: RiverPlacementOptions;
 }
 
@@ -40,6 +41,10 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
 
     protected get shorePlacement(): ShorePlacementOptions {
         return this.config.shorePlacement ?? { minDistFromBank: 2.0, maxDistFromBank: 8.0 };
+    }
+
+    protected get heightInWater(): number {
+        return this.config.heightInWater ?? 0.0;
     }
 
     protected get waterPlacement(): RiverPlacementOptions {
@@ -125,7 +130,7 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
                 placement = {
                     worldX: riverPos.worldX,
                     worldZ: riverPos.worldZ,
-                    height: 0, // In water
+                    height: this.heightInWater,
                     rotation: Math.random() * Math.PI * 2,
                     normal: new THREE.Vector3(0, 1, 0)
                 };

@@ -158,7 +158,8 @@ export class EntitySpawners {
             getDensity: () => 0.1 / 20,
             factory: (physicsEngine, options) => new Egret(physicsEngine, options),
             shoreProbability: 0.0,
-            entityRadius: 3.0
+            entityRadius: 3.0,
+            heightInWater: Egret.HEIGHT_IN_WATER
         }
     ];
 

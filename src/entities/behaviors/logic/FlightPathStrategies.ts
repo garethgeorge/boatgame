@@ -149,3 +149,62 @@ export class LandingStrategy extends AnimalPathStrategy {
         };
     }
 }
+
+/**
+ * WATER LANDING (Flight)
+ */
+export class WaterLandingStrategy extends AnimalPathStrategy {
+    readonly name = 'Water Landing';
+    private landingStartAltitude: number = -1;
+    private readonly lookAhead: number = 30.0;
+    private readonly minShoreHeight: number = 8.0;
+
+    constructor(private horizSpeed: number, private landingHeight: number = 0.0) { super(); }
+
+    update(context: AnimalStrategyContext): AnimalSteering {
+        const riverSystem = RiverSystem.getInstance();
+
+        // Target is the center of the river at a point ahead in the current flight direction
+        const angle = context.physicsBody.getAngle();
+        const moveDir = new planck.Vec2(-Math.sin(angle), -Math.cos(angle));
+
+        const targetZ = context.originPos.y + moveDir.y * this.lookAhead;
+        const banks = riverSystem.getBankPositions(targetZ);
+        const center = (banks.left + banks.right) / 2;
+        const targetWorldPos = new planck.Vec2(center, targetZ);
+
+        // Ground information at current position
+        const groundHeight = riverSystem.terrainGeometry.calculateHeight(context.originPos.x, context.originPos.y);
+        const currentBanks = riverSystem.getBankPositions(context.originPos.y);
+        const isOverWater = context.originPos.x > currentBanks.left && context.originPos.x < currentBanks.right;
+
+        // Altitude relative to ground/water
+        const currentAltitude = Math.max(0, context.currentHeight - (isOverWater ? 0 : groundHeight));
+
+        if (this.landingStartAltitude < 0) {
+            this.landingStartAltitude = currentAltitude;
+        }
+
+        let targetHeight = 0.0;
+        let speedFactor = 1.0;
+
+        if (!isOverWater) {
+            // Over land: stay at least minShoreHeight up
+            targetHeight = groundHeight + this.minShoreHeight;
+            speedFactor = 1.0;
+        } else {
+            // Over water: descend to landingHeight
+            targetHeight = this.landingHeight;
+            // Slow down as we approach the final destination altitude
+            const totalDrop = Math.max(0.1, this.landingStartAltitude - this.landingHeight);
+            const currentDropRemaining = Math.max(0, context.currentHeight - this.landingHeight);
+            speedFactor = Math.max(0.2, Math.min(1.0, currentDropRemaining / totalDrop));
+        }
+
+        return {
+            target: targetWorldPos,
+            speed: this.horizSpeed * speedFactor,
+            height: targetHeight
+        };
+    }
+}
