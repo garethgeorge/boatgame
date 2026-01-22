@@ -1,8 +1,9 @@
 import * as planck from 'planck';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase, LocomotionType } from './AnimalLogic';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
 export interface WaitForBoatParams {
+    waitOnShore?: boolean;
     minNoticeDistance?: number;
     ignoreBottles?: boolean;
     maxDuration?: number;
@@ -18,10 +19,15 @@ export class WaitForBoatLogic implements AnimalLogic {
     public static readonly RESULT_NOTICED = 'shore_idle_noticed';
     readonly name = WaitForBoatLogic.NAME;
 
+    private locomotionType: LocomotionType;
+    private logicPhase: AnimalLogicPhase;
     private minNoticeDistance: number;
     private ignoreBottles: boolean;
 
     constructor(params?: WaitForBoatParams) {
+        const waitOnShore = params?.waitOnShore ?? true;
+        this.locomotionType = waitOnShore ? 'LAND' : 'WATER';
+        this.logicPhase = waitOnShore ? AnimalLogicPhase.IDLE_SHORE : AnimalLogicPhase.IDLE_WATER;
         this.minNoticeDistance = params?.minNoticeDistance ?? 50.0;
         this.ignoreBottles = params?.ignoreBottles ?? false;
     }
@@ -52,12 +58,12 @@ export class WaitForBoatLogic implements AnimalLogic {
                 target: context.originPos,
                 speed: 0
             },
-            locomotionType: 'LAND',
+            locomotionType: this.locomotionType,
             result: result
         };
     }
 
     getPhase(): AnimalLogicPhase {
-        return AnimalLogicPhase.IDLE_SHORE
+        return this.logicPhase;
     }
 }

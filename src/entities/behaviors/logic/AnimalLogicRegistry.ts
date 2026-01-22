@@ -3,10 +3,11 @@ import { WolfAttackLogic } from './WolfAttackLogic';
 import { AmbushAttackLogic } from './AmbushAttackLogic';
 import { DefaultSwimAwayLogic } from './DefaultSwimAwayLogic';
 import { ShoreLandingFlightLogic } from './ShoreLandingFlightLogic';
-import { WaterLandingFlightLogic } from './WaterLandingFlightLogic';
 import { EnteringWaterLogic } from './EnteringWaterLogic';
 import { WaitForBoatLogic } from './WaitForBoatLogic';
 import { ShoreWalkLogic } from './ShoreWalkLogic';
+import { DelayLogic } from './DelayLogic';
+import { WaterLandingFlightLogic } from './WaterLandingFlightLogic';
 
 export class AnimalLogicRegistry {
     private static factories: Map<string, (params?: any) => AnimalLogic> = new Map();
@@ -19,6 +20,7 @@ export class AnimalLogicRegistry {
         this.register(WaterLandingFlightLogic.NAME, (params) => new WaterLandingFlightLogic(params as any));
         this.register(EnteringWaterLogic.NAME, (params) => new EnteringWaterLogic(params as any));
         this.register(WaitForBoatLogic.NAME, (params) => new WaitForBoatLogic(params as any));
+        this.register(DelayLogic.NAME, (params) => new DelayLogic(params as any));
         this.register(ShoreWalkLogic.NAME, (params) => new ShoreWalkLogic(params as any));
     }
 

@@ -9,6 +9,7 @@ import { WaitForBoatLogic } from '../behaviors/logic/WaitForBoatLogic';
 import { Animal, AnimalOptions } from './Animal';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
+import { DelayLogic } from '../behaviors/logic/DelayLogic';
 
 export interface FlyingAnimalOptions extends AnimalOptions {
     minNoticeDistance?: number,
@@ -78,11 +79,15 @@ export class FlyingBehaviorFactory {
             AnimalLogicStep.sequence([
                 {
                     name: WaitForBoatLogic.NAME,
-                    params: { minNoticeDistance: minNoticeDistance, ignoreBottles: true }
+                    params: { waitOnShore: false, minNoticeDistance: minNoticeDistance, ignoreBottles: true }
                 },
                 {
                     name: WaterLandingFlightLogic.NAME,
                     params: { flightSpeed, landingHeight }
+                },
+                {
+                    name: DelayLogic.NAME,
+                    params: { waitOnShore: false, maxDuration: 2.0 }
                 }
             ])
         );
