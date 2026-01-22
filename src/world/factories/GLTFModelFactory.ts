@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { DecorationFactory } from './DecorationFactory';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
+import { ObjectPool } from '../../core/ObjectPool';
 
 interface GLTFModelData {
     model: THREE.Group | null;
@@ -12,6 +13,7 @@ interface GLTFModelData {
 export class GLTFModelFactory implements DecorationFactory {
     private cache: GLTFModelData = { model: null, animations: [] };
     private path: string;
+    private pool: ObjectPool<THREE.Group> | null = null;
 
     constructor(path: string) {
         this.path = path;
@@ -29,6 +31,21 @@ export class GLTFModelFactory implements DecorationFactory {
                 GraphicsUtils.markAsCache(model);
                 this.cache.model = model;
                 this.cache.animations = gltf.animations || [];
+
+                // Initialize pool after model is loaded
+                this.pool = new ObjectPool<THREE.Group>(() => {
+                    const clonedModel = SkeletonUtils.clone(this.cache.model!) as THREE.Group;
+                    GraphicsUtils.registerObject(clonedModel);
+                    GraphicsUtils.markAsCache(clonedModel);
+
+                    // Add disposal hook to return to pool
+                    clonedModel.userData.onDispose = (obj: THREE.Group) => {
+                        this.release(obj);
+                    };
+
+                    return clonedModel;
+                });
+
                 resolve();
             }, undefined, (error) => {
                 console.error(`An error occurred loading model ${this.path}:`, error);
@@ -38,18 +55,32 @@ export class GLTFModelFactory implements DecorationFactory {
     }
 
     create(): THREE.Group {
-        if (!this.cache.model) {
+        if (!this.pool) {
             console.warn(`Model ${this.path} not loaded yet`);
             throw new Error(`Model ${this.path} not loaded yet`);
         }
 
-        const clonedModel = SkeletonUtils.clone(this.cache.model) as THREE.Group;
-        GraphicsUtils.registerObject(clonedModel);
-        return clonedModel;
+        const model = this.pool.get();
+        // Reset transform
+        model.position.set(0, 0, 0);
+        model.rotation.set(0, 0, 0);
+        model.scale.set(1, 1, 1);
+        model.quaternion.set(0, 0, 0, 1);
+
+        return model;
+    }
+
+    release(obj: THREE.Group): void {
+        if (obj.parent) {
+            obj.parent.remove(obj);
+        }
+        if (this.pool) {
+            this.pool.release(obj);
+        }
     }
 
     createAnimation(name: string): THREE.AnimationClip {
-        return this.cache.animations.find(a => a.name === name);
+        return this.cache.animations.find(a => a.name === name)!;
     }
 
     getAllAnimations(): THREE.AnimationClip[] {

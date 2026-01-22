@@ -22,6 +22,9 @@ export interface DecorationFactory {
     // create mesh (optional fallback)
     create?(options?: any): THREE.Group;
 
+    // release mesh (optional for pooling)
+    release?(obj: THREE.Group): void;
+
     // create individual instances for instanced rendering
     createInstance?(options?: any): DecorationInstance[];
 

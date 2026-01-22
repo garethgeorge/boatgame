@@ -26,6 +26,12 @@ export class GraphicsUtils {
      *   and are no longer needed.
      */
     public static disposeObject(object: THREE.Object3D | DisposableResource) {
+        // Check for custom dispose hook (e.g., for object pooling)
+        if (object instanceof THREE.Object3D && object.userData.onDispose) {
+            object.userData.onDispose(object);
+            return;
+        }
+
         this.tracker.untrack(object);
     }
 
