@@ -147,6 +147,15 @@ export class EntityManager {
         continue;
       }
 
+      // Tiered Throttling
+      if (dist < 50) {
+        entity.setAnimationThrottle(1);
+      } else if (dist < 100) {
+        entity.setAnimationThrottle(3);
+      } else {
+        entity.setAnimationThrottle(6);
+      }
+
       // Direction check (dot product)
       const toEntity = entityPos.clone().sub(cameraPos);
       const dot = toEntity.dot(cameraDir);

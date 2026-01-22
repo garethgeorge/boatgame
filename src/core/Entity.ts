@@ -35,6 +35,10 @@ export abstract class Entity {
 
   constructor() { }
 
+  public setAnimationThrottle(throttle: number) {
+    // No-op by default
+  }
+
   abstract update(dt: number): void;
 
   // Do stuff when hit by the player

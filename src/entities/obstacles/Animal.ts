@@ -190,6 +190,10 @@ export abstract class Animal extends Entity implements AnyAnimal {
         }
     }
 
+    public setAnimationThrottle(throttle: number): void {
+        this.player?.setThrottle(throttle);
+    }
+
     //--- Entity
 
     update(dt: number) {

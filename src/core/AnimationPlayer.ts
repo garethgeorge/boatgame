@@ -55,6 +55,10 @@ export class AnimationPlayer {
     private currentAction: THREE.AnimationAction | null = null;
     private delayTimer: number = 0;
 
+    private throttle: number = 1;
+    private throttleFrameCount: number = 0;
+    private accumulatedDt: number = 0;
+
     constructor(group: THREE.Group, animations: THREE.AnimationClip[]) {
         this.mixer = new THREE.AnimationMixer(group);
         for (const clip of animations) {
@@ -101,13 +105,26 @@ export class AnimationPlayer {
         return this.actions.get(name);
     }
 
+    public setThrottle(throttle: number) {
+        this.throttle = Math.max(1, Math.floor(throttle));
+    }
+
     public update(dt: number) {
-        this.mixer.update(dt);
-        if (this.delayTimer > 0) {
-            this.delayTimer -= dt;
-            if (this.delayTimer <= 0) {
-                this.delayTimer = 0;
-                this.playNextScriptStep();
+        this.accumulatedDt += dt;
+        this.throttleFrameCount++;
+
+        if (this.throttleFrameCount >= this.throttle) {
+            const updateDt = this.accumulatedDt;
+            this.accumulatedDt = 0;
+            this.throttleFrameCount = 0;
+
+            this.mixer.update(updateDt);
+            if (this.delayTimer > 0) {
+                this.delayTimer -= updateDt;
+                if (this.delayTimer <= 0) {
+                    this.delayTimer = 0;
+                    this.playNextScriptStep();
+                }
             }
         }
     }
