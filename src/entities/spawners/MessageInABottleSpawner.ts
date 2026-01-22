@@ -12,15 +12,15 @@ export class MessageInABottleSpawner extends BaseSpawner {
     return 1 / 400 + 1 / 400 * Math.random();
   }
 
-  async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
+  *spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
     // Check for Bonus Arc (Rare event per chunk segment?)
     if (Math.random() < 0.1) {
       this.spawnBonusArc(context, zStart, zEnd);
     }
-    await super.spawn(context, count, zStart, zEnd);
+    yield* super.spawn(context, count, zStart, zEnd);
   }
 
-  async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
+  spawnAt(context: SpawnContext, z: number): boolean {
     return this.spawnInRiver(context, z, {});
   }
 
@@ -28,7 +28,7 @@ export class MessageInABottleSpawner extends BaseSpawner {
    * Spawns count bottle instances starting at zStart and placed zStep distance
    * apart.
    */
-  async spawnRiverBottleArc(context: SpawnContext, count: number, zStart: number, zStep: number) {
+  spawnRiverBottleArc(context: SpawnContext, count: number, zStart: number, zStep: number) {
     for (let i = 1; i <= count; i++) {
       const bz = zStart + i * zStep;
       const pos = context.placementHelper.tryPlace(bz, bz, 1.0, { range: [-0.2, 0.2] });
@@ -39,7 +39,7 @@ export class MessageInABottleSpawner extends BaseSpawner {
     }
   }
 
-  async spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {
+  spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {
     const opts = {
       minDistFromBank: 1.0,
       ...options
@@ -52,11 +52,11 @@ export class MessageInABottleSpawner extends BaseSpawner {
     }
     return false;
   }
-  async spawnInRiverAbsolute(
+  spawnInRiverAbsolute(
     context: SpawnContext,
     sample: RiverGeometrySample,
     distanceRange: [number, number]
-  ): Promise<boolean> {
+  ): boolean {
     const radius = 1.0;
     const minSpacing = 1.0;
     const minDistFromShore = 1.0;

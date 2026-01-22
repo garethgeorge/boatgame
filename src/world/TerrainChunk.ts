@@ -33,13 +33,11 @@ export class TerrainChunk {
   private waterMesh: THREE.Mesh;
   private decorations: THREE.Group;
 
-  public static async createAsync(
+  public static create(
     zOffset: number,
-    graphicsEngine: GraphicsEngine):
-    Promise<TerrainChunk> {
-    const chunk = new TerrainChunk(zOffset, graphicsEngine);
-    await chunk.initAsync();
-    return chunk;
+    graphicsEngine: GraphicsEngine
+  ): TerrainChunk {
+    return new TerrainChunk(zOffset, graphicsEngine);
   }
 
   private constructor(
@@ -65,34 +63,76 @@ export class TerrainChunk {
   public update(dt: number) {
   }
 
-  private async initAsync() {
-    console.log('Chunk initAsync');
+  public *getInitIterator(
+    physicsEngine: PhysicsEngine,
+    entityManager: EntityManager
+  ): Generator<void, void, unknown> {
+    console.log('Chunk init started');
     try {
-      const groundMesh = await this.generateMesh();
+      Profiler.start('GenMeshBatch');
+      const meshIterator = this.generateMeshIterator();
+      let meshResult = meshIterator.next();
+      while (!meshResult.done) {
+        Profiler.pause('GenMeshBatch');
+        yield;
+        Profiler.resume('GenMeshBatch');
+        meshResult = meshIterator.next();
+      }
+      const groundMesh = meshResult.value;
+      Profiler.end('GenMeshBatch');
+
       GraphicsUtils.disposeObject(this.mesh);
       this.mesh = groundMesh;
-      await this.yieldToMain();
+      yield;
 
-      const waterMesh = this.generateWater(); // Fast enough to be sync? Or make async too?
+      const waterIterator = this.generateWaterIterator();
+      let waterResult = waterIterator.next();
+      while (!waterResult.done) {
+        yield;
+        waterResult = waterIterator.next();
+      }
+      const waterMesh = waterResult.value;
+
       GraphicsUtils.disposeObject(this.waterMesh);
       this.waterMesh = waterMesh;
-      // Water is simple plane, sync is fine.
 
-      const decorations = await this.generateDecorations();
+      Profiler.start('GenDecoBatch');
+      const decoIterator = this.generateDecorationsIterator();
+      let decoResult = decoIterator.next();
+      while (!decoResult.done) {
+        Profiler.pause('GenDecoBatch');
+        yield;
+        Profiler.resume('GenDecoBatch');
+        decoResult = decoIterator.next();
+      }
+      const decorations = decoResult.value;
+      Profiler.end('GenDecoBatch');
+
       GraphicsUtils.disposeObject(this.decorations);
       this.decorations = decorations;
 
       this.graphicsEngine.add(this.mesh);
       this.graphicsEngine.add(this.waterMesh);
       this.graphicsEngine.add(this.decorations);
+
+      // 4. Spawn Obstacles
+      Profiler.start('SpawnObstacles');
+      const spawnIterator = this.spawnObstaclesIterator(physicsEngine, entityManager);
+      let spawnResult = spawnIterator.next();
+      while (!spawnResult.done) {
+        Profiler.pause('SpawnObstacles');
+        yield;
+        Profiler.resume('SpawnObstacles');
+        spawnResult = spawnIterator.next();
+      }
+      Profiler.end('SpawnObstacles');
+
     } finally {
-      console.log('Chunk initAsync done');
+      console.log('Chunk init done');
     }
   }
 
-  // ... (yieldToMain, generateMesh)
-
-  private async generateDecorations(): Promise<THREE.Group> {
+  private *generateDecorationsIterator(): Generator<void, THREE.Group, unknown> {
     const geometryGroup = new THREE.Group();
     const geometriesByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
     const instancedData = new Map<THREE.BufferGeometry, Map<THREE.Material, { matrix: THREE.Matrix4, color?: THREE.Color }[]>>();
@@ -109,19 +149,13 @@ export class TerrainChunk {
       decoHelper: new BiomeDecorationHelper()
     };
 
-    Profiler.start('GenDecoBatch');
-
     for (const segment of segments) {
       context.biomeZMin = segment.biomeZMin;
       context.biomeZMax = segment.biomeZMax;
 
       const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
-      await features.decorate(context, segment.zMin, segment.zMax);
-      Profiler.pause('GenDecoBatch');
-      await this.yieldToMain();
-      Profiler.resume('GenDecoBatch');
+      yield* features.decorate(context, segment.zMin, segment.zMax);
     }
-    Profiler.end('GenDecoBatch');
 
     // Merge geometries and create meshes
     context.decoHelper.mergeAndAddGeometries(context);
@@ -129,12 +163,9 @@ export class TerrainChunk {
     return geometryGroup;
   }
 
-  // Called by TerrainManager when a new chunk is created
-  public async spawnObstacles(physicsEngine: PhysicsEngine, entityManager: EntityManager) {
-    Profiler.start('SpawnObstacles');
-
+  public *spawnObstaclesIterator(physicsEngine: PhysicsEngine, entityManager: EntityManager): Generator<void, void, unknown> {
     const zMin = this.zOffset;
-    const zMax = zMin + TerrainChunk.CHUNK_SIZE
+    const zMax = zMin + TerrainChunk.CHUNK_SIZE;
 
     const placementHelper = new PlacementHelper(physicsEngine.world, this.spatialGrid, this.riverSystem);
     const segments = this.riverSystem.biomeManager.getFeatureSegments(zMin, zMax);
@@ -161,17 +192,11 @@ export class TerrainChunk {
       };
 
       const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
-      await features.spawn(context, difficulty, segment.zMin, segment.zMax);
+      yield* features.spawn(context, difficulty, segment.zMin, segment.zMax);
     }
-
-    Profiler.end('SpawnObstacles');
   }
 
-  private yieldToMain(): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, 0));
-  }
-
-  private async generateMesh(): Promise<THREE.Mesh> {
+  private *generateMeshIterator(): Generator<void, THREE.Mesh, unknown> {
     const chunkSize = TerrainChunk.CHUNK_SIZE;
     const chunkWidth = TerrainChunk.CHUNK_WIDTH;
     const resX = TerrainChunk.RESOLUTION_X;
@@ -192,15 +217,11 @@ export class TerrainChunk {
     };
 
     // Generate Vertices
-    Profiler.start('GenMeshBatch');
-
     // Iterate from chunk near to far
     for (let iz = 0; iz <= resZ; iz++) {
       // Yield every few rows to keep frame rate smooth
       if (iz % 5 === 0) {
-        Profiler.pause('GenMeshBatch');
-        await this.yieldToMain();
-        Profiler.resume('GenMeshBatch');
+        yield;
       }
 
       // tz is parametric [0,1] from chunk near to far
@@ -241,7 +262,6 @@ export class TerrainChunk {
         uvs[index * 2 + 1] = tz;
       }
     }
-    Profiler.end('GenMeshBatch');
 
     // Generate triangle indices
     let i = 0;
@@ -316,7 +336,7 @@ export class TerrainChunk {
     GraphicsUtils.disposeObject(this.decorations);
   }
 
-  private generateWater(): THREE.Mesh {
+  private *generateWaterIterator(): Generator<void, THREE.Mesh, unknown> {
     const geometry = new THREE.PlaneGeometry(
       TerrainChunk.CHUNK_WIDTH,
       TerrainChunk.CHUNK_SIZE,
@@ -332,6 +352,7 @@ export class TerrainChunk {
     const positions = geometry.attributes.position;
 
     for (let i = 0; i < positions.count; i++) {
+      if (i % 200 === 0) yield;
       const localX = positions.getX(i);
       const localZ = positions.getZ(i);
       const worldZ = this.zOffset + localZ;

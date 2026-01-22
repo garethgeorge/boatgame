@@ -48,14 +48,14 @@ export class PoissonDecorationStrategy {
         this.noise2D = noise2D;
     }
 
-    public generate(
+    public *generateIterator(
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
         spatialGrid: SpatialGrid,
         terrainProvider: (x: number, z: number) => { height: number, slope: number, distToRiver: number },
         biomeProgressProvider: (z: number) => number,
         seed: number = 0
-    ): PlacementManifest[] {
+    ): Generator<void, PlacementManifest[], unknown> {
         const manifests: PoissonPlacement[] = [];
 
         const sortedRules = rules;
@@ -86,8 +86,10 @@ export class PoissonDecorationStrategy {
                     spatialGrid.insert(candidate);
                 }
             }
+            yield;
 
             // Phase 2: Growth (Bridson's)
+            let attemptsSinceYield = 0;
             while (activeList.length > 0) {
                 const index = Math.floor(Math.random() * activeList.length);
                 const parent = activeList[index];
@@ -105,6 +107,7 @@ export class PoissonDecorationStrategy {
                 const rmin = parent.spacing * 1.5;
                 const drmax = parent.spacing * 1.0;
                 for (let i = 0; i < dynamicK; i++) {
+                    attemptsSinceYield++;
                     const angle = Math.random() * Math.PI * 2;
                     const distance = rmin + drmax * Math.random();
 
@@ -128,6 +131,11 @@ export class PoissonDecorationStrategy {
                 if (!found) {
                     // No offspring produced after k attempts, remove from active list
                     activeList.splice(index, 1);
+                }
+
+                if (attemptsSinceYield > 50) {
+                    yield;
+                    attemptsSinceYield = 0;
                 }
             }
         }

@@ -17,7 +17,7 @@ export class BuoySpawner extends BaseSpawner {
     return 0.0053 * ramp;
   }
 
-  async spawnAt(context: SpawnContext, wz: number): Promise<boolean> {
+  spawnAt(context: SpawnContext, wz: number): boolean {
     const riverSystem = RiverSystem.getInstance();
 
     const isLeft = Math.random() > 0.5;
@@ -71,11 +71,11 @@ export class BuoySpawner extends BaseSpawner {
     return true;
   }
 
-  async spawnInRiverAbsolute(
+  spawnInRiverAbsolute(
     context: SpawnContext,
     sample: RiverGeometrySample,
     distanceRange: [number, number]
-  ): Promise<boolean> {
+  ): boolean {
     const spacing = 4.0;
 
     // Determine which end of the range is closer to a bank to use as the anchor

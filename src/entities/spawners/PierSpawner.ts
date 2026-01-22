@@ -13,7 +13,7 @@ export class PierSpawner extends BaseSpawner {
     return 0.0026;
   }
 
-  async spawnAt(context: SpawnContext, worldZ: number, forceDepot?: boolean): Promise<boolean> {
+  spawnAt(context: SpawnContext, worldZ: number, forceDepot?: boolean): boolean {
     const riverSystem = RiverSystem.getInstance();
     const minDepotPierLength = 13.0;
 

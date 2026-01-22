@@ -12,7 +12,7 @@ export class RockSpawner extends BaseSpawner {
     return 0.003;
   }
 
-  async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
+  spawnAt(context: SpawnContext, z: number): boolean {
     // Bias towards shores (70% chance)
     const isShore = Math.random() < 0.7;
     const side = Math.random() > 0.5 ? 1 : -1;
@@ -21,7 +21,7 @@ export class RockSpawner extends BaseSpawner {
     return this.spawnInRiver(context, z, false, '', { range });
   }
 
-  async spawnInRiver(context: SpawnContext, z: number, pillars: boolean, biome: string,
+  spawnInRiver(context: SpawnContext, z: number, pillars: boolean, biome: string,
     options: RiverPlacementOptions) {
     const opts = {
       minDistFromBank: 0.5,
@@ -38,13 +38,13 @@ export class RockSpawner extends BaseSpawner {
     return false;
   }
 
-  async spawnInRiverAbsolute(
+  spawnInRiverAbsolute(
     context: SpawnContext,
     sample: RiverGeometrySample,
     pillars: boolean,
     biome: string,
     distanceRange: [number, number]
-  ): Promise<boolean> {
+  ): boolean {
     const radius = 1.5 + Math.random() * 3.0; // 1.5 to 4.5m
     const minSpacing = radius * 2.0;
     const minDistFromShore = radius * 1.5;

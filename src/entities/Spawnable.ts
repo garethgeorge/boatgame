@@ -32,5 +32,5 @@ export interface Spawnable {
    * @param zStart World Z start of range
    * @param zEnd World Z end of range
    */
-  spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void>;
+  spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Generator<void, void, unknown>;
 }

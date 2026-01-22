@@ -319,12 +319,12 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         return { x: ux, y: uy };
     }
 
-    async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
+    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
         // Decoration is now empty as icebergs are spawned as entities
         return;
     }
 
-    async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
+    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
         const boundarySize = 50.0;
 
         const fracturedStart = context.biomeZMin + boundarySize;
@@ -374,19 +374,19 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         const startOverlapStart = Math.max(zStart, context.biomeZMin);
         const startOverlapEnd = Math.min(zEnd, fracturedStart);
         if (startOverlapStart < startOverlapEnd) {
-            await EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd);
+            yield* EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd);
         }
 
         // End Boundary
         const endOverlapStart = Math.max(zStart, fracturedEnd);
         const endOverlapEnd = Math.min(zEnd, context.biomeZMax);
         if (endOverlapStart < endOverlapEnd) {
-            await EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd);
+            yield* EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd);
         }
 
         // 3. Spawn bears/penguins
-        await this.spawnObstacle(EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK)!, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(EntitySpawners.getInstance().animal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
+        yield* this.spawnObstacles(EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK)!, context, difficulty, zStart, zEnd);
+        yield* this.spawnObstacles(EntitySpawners.getInstance().animal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
     }
 
     private nextHalfedge(e: number): number {

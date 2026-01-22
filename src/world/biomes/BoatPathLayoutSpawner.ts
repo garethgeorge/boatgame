@@ -19,13 +19,13 @@ export class BoatPathLayoutSpawner {
      * Spawns entities for a given BoatPathLayout within a specific Z range.
      * Consolidates spawning logic from all biomes into a single place.
      */
-    public async spawn(
+    public *spawnIterator(
         context: SpawnContext,
         layout: BoatPathLayout,
         biomeType: BiomeType,
         zStart: number,
         zEnd: number
-    ): Promise<void> {
+    ): Generator<void, void, unknown> {
         if (!layout) return;
 
         // Map world Z range to path indices
@@ -37,6 +37,7 @@ export class BoatPathLayoutSpawner {
 
         const spawners = EntitySpawners.getInstance();
 
+        let countSinceYield = 0;
         for (const section of layout.sections) {
             // Check if section overlaps with current segment arc length range
             if (section.iEnd <= iChunkMin || section.iStart >= iChunkMax) {
@@ -49,13 +50,22 @@ export class BoatPathLayoutSpawner {
                 const entityType = entityTypeStr as EntityIds;
 
                 for (const p of placements) {
+                    countSinceYield++;
+                    if (countSinceYield > 10) {
+                        yield;
+                        countSinceYield = 0;
+                    }
+
                     // Check if placement is within current segment
                     if (p.index >= iChunkMin && p.index < iChunkMax) {
                         const sample = RiverGeometry.getPathPoint(layout.path, p.index);
 
                         switch (entityType) {
                             case EntityIds.LOG:
-                                await spawners.log().spawnInRiverAbsolute(context, sample, p.range);
+                                // spawner.spawnInRiverAbsolute is already async but we treat it as sync-ish here
+                                // since it's just physics body creation which is fast per-call.
+                                // If physics creation becomes slow we can make spawners async too.
+                                spawners.log().spawnInRiverAbsolute(context, sample, p.range);
                                 break;
 
                             case EntityIds.ROCK: {
@@ -63,29 +73,29 @@ export class BoatPathLayoutSpawner {
                                 if (biomeType === 'forest') pillars = Math.random() < 0.1;
                                 else if (biomeType === 'desert') pillars = Math.random() < 0.3;
 
-                                await spawners.rock().spawnInRiverAbsolute(
+                                spawners.rock().spawnInRiverAbsolute(
                                     context, sample, pillars, biomeType as any, p.range
                                 );
                                 break;
                             }
 
                             case EntityIds.BUOY:
-                                await spawners.buoy().spawnInRiverAbsolute(context, sample, p.range);
+                                spawners.buoy().spawnInRiverAbsolute(context, sample, p.range);
                                 break;
 
                             case EntityIds.BOTTLE:
-                                await spawners.messageInABottle().spawnInRiverAbsolute(context, sample, p.range);
+                                spawners.messageInABottle().spawnInRiverAbsolute(context, sample, p.range);
                                 break;
 
                             case EntityIds.PIER: {
                                 const onLeft = biomeType === 'desert' ? true : Math.random() < 0.5;
-                                await spawners.pier().spawnAt(context, sample.centerPos.z, onLeft);
+                                spawners.pier().spawnAt(context, sample.centerPos.z, onLeft);
                                 break;
                             }
 
                             case EntityIds.MANGROVE: {
                                 const offset = p.range[0] + Math.random() * (p.range[1] - p.range[0]);
-                                await spawners.mangrove().spawnAbsolute(
+                                spawners.mangrove().spawnAbsolute(
                                     context,
                                     sample.centerPos.x + sample.normal.x * offset,
                                     sample.centerPos.z + sample.normal.z * offset
@@ -94,7 +104,7 @@ export class BoatPathLayoutSpawner {
                             }
 
                             case EntityIds.WATER_GRASS:
-                                await spawners.waterGrass().spawnInRiverAbsolute(context, sample, p.range);
+                                spawners.waterGrass().spawnInRiverAbsolute(context, sample, p.range);
                                 break;
 
                             case EntityIds.ALLIGATOR:
@@ -126,7 +136,7 @@ export class BoatPathLayoutSpawner {
 
                                 const spawner = spawners.animal(entityType);
                                 if (spawner) {
-                                    await spawner.spawnAnimalAbsolute({
+                                    spawner.spawnAnimalAbsolute({
                                         context,
                                         sample,
                                         distanceRange: range,

@@ -85,11 +85,12 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     public createLayout(zMin: number, zMax: number): any {
     }
 
-    async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
-        // TerrainDecorator.decorate(
+    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
+        // TerrainDecorator.decorateIterator(
         //     context,
         //     this.decorationRules,
         //     { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
+        //     spatialGrid,
         //     20,
         //     12345 // Fixed seed for now
         // );
@@ -168,24 +169,24 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         }
     }
 
-    async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
+    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
         // if (zStart === 0) {
-        //     await this.spawnAllAnimals(context, -50);
+        //     yield* this.spawnAllAnimals(context, -50);
         // }
 
-        // await EntitySpawners.getInstance().messageInABottle().spawn(context, 4, zStart, zEnd);
-        // await EntitySpawners.getInstance().animal(EntityIds.MONKEY)!.spawn(context, 1, zStart, zEnd);
-        // await EntitySpawners.getInstance().animal(EntityIds.ALLIGATOR).spawn(context, 1, zStart, zEnd);
-        // await EntitySpawners.getInstance().animal(EntityIds.TRICERATOPS).spawn(context, 1, zStart, zEnd);
+        // yield* EntitySpawners.getInstance().messageInABottle().spawn(context, 4, zStart, zEnd);
+        // yield* EntitySpawners.getInstance().animal(EntityIds.MONKEY)!.spawn(context, 1, zStart, zEnd);
+        // yield* EntitySpawners.getInstance().animal(EntityIds.ALLIGATOR).spawn(context, 1, zStart, zEnd);
+        // yield* EntitySpawners.getInstance().animal(EntityIds.TRICERATOPS).spawn(context, 1, zStart, zEnd);
 
-        //await EntitySpawners.getInstance().animal(EntityIds.PTERODACTYL).spawn(context, 1, zStart, zEnd);
-        //await EntitySpawners.getInstance().animal(EntityIds.BUTTERFLY).spawn(context, 1, zStart, zEnd);
-        //await EntitySpawners.getInstance().animal(EntityIds.BLUEBIRD).spawn(context, 1, zStart, zEnd);
+        //yield* EntitySpawners.getInstance().animal(EntityIds.PTERODACTYL).spawn(context, 1, zStart, zEnd);
+        //yield* EntitySpawners.getInstance().animal(EntityIds.BUTTERFLY).spawn(context, 1, zStart, zEnd);
+        //yield* EntitySpawners.getInstance().animal(EntityIds.BLUEBIRD).spawn(context, 1, zStart, zEnd);
 
-        // await EntitySpawners.getInstance().animal(EntityIds.DUCKLING).spawn(context, 1, zStart, zEnd);
-        // await EntitySpawners.getInstance().animal(EntityIds.DOLPHIN).spawn(context, 1, zStart, zEnd);
-        // await EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK).spawn(context, 1, zStart, zEnd);
-        // await EntitySpawners.getInstance().animal(EntityIds.SWAN).spawn(context, 1, zStart, zEnd);
-        await EntitySpawners.getInstance().animal(EntityIds.EGRET).spawn(context, 2, zStart, zEnd);
+        // yield* EntitySpawners.getInstance().animal(EntityIds.DUCKLING).spawn(context, 1, zStart, zEnd);
+        // yield* EntitySpawners.getInstance().animal(EntityIds.DOLPHIN).spawn(context, 1, zStart, zEnd);
+        // yield* EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK).spawn(context, 1, zStart, zEnd);
+        // yield* EntitySpawners.getInstance().animal(EntityIds.SWAN).spawn(context, 1, zStart, zEnd);
+        yield* EntitySpawners.getInstance().animal(EntityIds.EGRET).spawn(context, 2, zStart, zEnd);
     }
 }

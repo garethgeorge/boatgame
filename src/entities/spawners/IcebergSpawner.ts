@@ -9,7 +9,7 @@ export class IcebergSpawner extends BaseSpawner {
     return 0.05;
   }
 
-  async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
+  spawnAt(context: SpawnContext, z: number): boolean {
     let radius = 4.0 + Math.random();
 
     // Size Variance

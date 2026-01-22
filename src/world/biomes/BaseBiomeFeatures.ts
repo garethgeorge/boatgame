@@ -9,12 +9,12 @@ import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 export abstract class BaseBiomeFeatures implements BiomeFeatures {
     abstract id: BiomeType;
 
-    abstract decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void>;
-    abstract spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void>;
+    abstract decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown>;
+    abstract spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown>;
 
-    protected async spawnObstacle(spawner: Spawnable, context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
+    protected *spawnObstacles(spawner: Spawnable, context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
         const count = spawner.getSpawnCount(context, difficulty, zStart, zEnd);
-        await spawner.spawn(context, count, zStart, zEnd);
+        return yield* spawner.spawn(context, count, zStart, zEnd);
     }
 
     getFogDensity(): number {

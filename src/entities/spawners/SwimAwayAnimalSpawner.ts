@@ -38,7 +38,7 @@ export class SwimAwayAnimalSpawner extends AnimalSpawner {
         return this.config.getDensity(difficulty, zStart);
     }
 
-    async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
+    spawnAt(context: SpawnContext, z: number): boolean {
         const radius = this.entityRadius;
 
         const pos = context.placementHelper.tryPlace(z, z, radius, this.waterPlacement);
@@ -61,7 +61,7 @@ export class SwimAwayAnimalSpawner extends AnimalSpawner {
     /**
      * Spawns an animal at an absolute river position.
      */
-    async spawnAnimalAbsolute(options: AnimalSpawnOptions): Promise<boolean> {
+    spawnAnimalAbsolute(options: AnimalSpawnOptions): boolean {
         const {
             context,
             sample,

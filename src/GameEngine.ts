@@ -124,6 +124,8 @@ export class GameEngine {
     }
 
     private update(dt: number) {
+        const frameStart = performance.now();
+
         this.inputManager.update();
 
         if (this.inputManager.wasPressed('paused')) {
@@ -189,6 +191,12 @@ export class GameEngine {
         }
 
         this.skyManager.update(dt, this.graphicsEngine.camera.position, this.boat);
+
+        // Give terrain manager time to initialize chunks that are being created
+        const frameEnd = performance.now();
+        const elapsed = frameEnd - frameStart;
+        const FRAME_BUDGET = 14; // Aim for 14ms total to be safe
+        this.terrainManager.generate(Math.max(FRAME_BUDGET - elapsed, 1.0));
 
         if (TerrainChunk.waterMaterial) {
             TerrainChunk.waterMaterial.uniforms.uTime.value += dt;

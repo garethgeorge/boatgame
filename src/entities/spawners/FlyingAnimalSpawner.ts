@@ -59,7 +59,7 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
         return this.config.factory(physicsEngine, options);
     }
 
-    async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
+    spawnAt(context: SpawnContext, z: number): boolean {
         const riverSystem = RiverSystem.getInstance();
         const sample = RiverGeometry.getRiverGeometrySample(riverSystem, z);
 
@@ -84,7 +84,7 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
      * Spawns a flying animal within a distance range from a river position.
      * Supports both shore and water placement.
      */
-    async spawnAnimalAbsolute(options: AnimalSpawnOptions): Promise<boolean> {
+    spawnAnimalAbsolute(options: AnimalSpawnOptions): boolean {
         const {
             context,
             sample,

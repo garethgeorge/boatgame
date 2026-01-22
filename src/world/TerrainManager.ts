@@ -12,7 +12,7 @@ import { EntityManager } from '../core/EntityManager';
 
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
-  private loadingChunks: Set<number> = new Set();
+  private loadingChunks: Map<number, { chunk: TerrainChunk, iterator: Generator<void, void, unknown> }> = new Map();
   private collisionBodies: planck.Body[] = [];
   private collisionMeshes: THREE.Mesh[] = [];
 
@@ -23,6 +23,9 @@ export class TerrainManager {
   private readonly collisionUpdate = this.collisionStep * 10; // Step for updating segments
   private collisionStartZ: number = -Infinity; // Current start position of generating segments
 
+  private boatHistory: THREE.Vector3[] = [];
+
+
   constructor(
     private physicsEngine: PhysicsEngine,
     private graphicsEngine: GraphicsEngine,
@@ -31,7 +34,29 @@ export class TerrainManager {
     this.riverSystem = RiverSystem.getInstance();
   }
 
-  private boatHistory: THREE.Vector3[] = [];
+  /**
+   * Processes chunk generation iterators for up to timeMs milliseconds.
+   */
+  public generate(timeMs: number) {
+    const startTime = performance.now();
+
+    for (const [index, { chunk, iterator }] of this.loadingChunks) {
+      // Check if time is up
+      if (performance.now() - startTime >= timeMs) {
+        break;
+      }
+
+      // Step the generator
+      const result = iterator.next();
+
+      if (result.done) {
+        // Chunk is fully initialized
+        this.chunks.set(index, chunk);
+        this.loadingChunks.delete(index);
+        console.log(`[TerrainManager] Finished creating chunk ${index}`);
+      }
+    }
+  }
 
   update(boat: Boat, dt: number) {
     // Update all chunks (e.g. for animations)
@@ -109,18 +134,11 @@ export class TerrainManager {
       const offset = i % 2 === 0 ? i / 2 : -((i + 1) / 2);
       const index = currentChunkIndex + offset;
       if (!this.chunks.has(index) && !this.loadingChunks.has(index)) {
+        console.log(`[TerrainManager] Starting creation of chunk ${index}`);
         const zOffset = index * TerrainChunk.CHUNK_SIZE;
-        this.loadingChunks.add(index);
-
-        console.log(`[TerrainManager] Creating chunk ${index}`);
-        TerrainChunk.createAsync(zOffset, this.graphicsEngine).then(chunk => {
-          this.chunks.set(index, chunk);
-          this.loadingChunks.delete(index);
-
-          // Spawn obstacles for this chunk
-          chunk.spawnObstacles(this.physicsEngine, this.entityManager);
-          console.log(`[TerrainManager] Created chunk ${index}`);
-        });
+        const chunk = TerrainChunk.create(zOffset, this.graphicsEngine);
+        const iterator = chunk.getInitIterator(this.physicsEngine, this.entityManager);
+        this.loadingChunks.set(index, { chunk, iterator });
       }
     }
 

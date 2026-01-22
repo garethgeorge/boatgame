@@ -24,10 +24,11 @@ export abstract class BaseSpawner implements Spawnable {
         return Math.floor(count + Math.random());
     }
 
-    async spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Promise<void> {
+    *spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
         for (let i = 0; i < count; i++) {
+            if (i % 5 === 0) yield;
             const z = zStart + Math.random() * (zEnd - zStart);
-            await this.spawnAt(context, z);
+            this.spawnAt(context, z);
         }
     }
 
@@ -36,5 +37,5 @@ export abstract class BaseSpawner implements Spawnable {
      * type specific. It can be on shore or in river, could be a
      * cluster or single instance etc
      */
-    abstract spawnAt(context: SpawnContext, z: number): Promise<boolean>;
+    abstract spawnAt(context: SpawnContext, z: number): boolean | Promise<boolean>;
 }

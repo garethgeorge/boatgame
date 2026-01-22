@@ -23,5 +23,5 @@ export abstract class AnimalSpawner extends BaseSpawner {
      * Spawns an animal within a distance range from a river position.
      * @param options The spawn options.
      */
-    abstract spawnAnimalAbsolute(options: AnimalSpawnOptions): Promise<boolean>;
+    abstract spawnAnimalAbsolute(options: AnimalSpawnOptions): boolean;
 }

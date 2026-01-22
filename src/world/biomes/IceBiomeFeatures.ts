@@ -30,11 +30,12 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         return 2.3;
     }
 
-    async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
+    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
         const length = zEnd - zStart;
         const count = Math.floor(length * 16);
 
         for (let i = 0; i < count; i++) {
+            if (i % 20 === 0) yield;
             const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
             if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
 
@@ -59,12 +60,12 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         }
     }
 
-    async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        await this.spawnObstacle(EntitySpawners.getInstance().buoy(), context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(EntitySpawners.getInstance().messageInABottle(), context, difficulty, zStart, zEnd);
+    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
+        yield* this.spawnObstacles(EntitySpawners.getInstance().buoy(), context, difficulty, zStart, zEnd);
+        yield* this.spawnObstacles(EntitySpawners.getInstance().messageInABottle(), context, difficulty, zStart, zEnd);
 
-        await this.spawnObstacle(EntitySpawners.getInstance().iceBerg(), context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK)!, context, difficulty, zStart, zEnd);
-        await this.spawnObstacle(EntitySpawners.getInstance().animal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
+        yield* this.spawnObstacles(EntitySpawners.getInstance().iceBerg(), context, difficulty, zStart, zEnd);
+        yield* this.spawnObstacles(EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK)!, context, difficulty, zStart, zEnd);
+        yield* this.spawnObstacles(EntitySpawners.getInstance().animal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
     }
 }

@@ -15,11 +15,11 @@ export class LogSpawner extends BaseSpawner {
     return this.density;
   }
 
-  async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
+  spawnAt(context: SpawnContext, z: number): boolean {
     return this.spawnInRiver(context, z, {});
   }
 
-  async spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {
+  spawnInRiver(context: SpawnContext, z: number, options: RiverPlacementOptions) {
     const opts = {
       minDistFromBank: 2.0,
       ...options
@@ -35,11 +35,11 @@ export class LogSpawner extends BaseSpawner {
     return false;
   }
 
-  async spawnInRiverAbsolute(
+  spawnInRiverAbsolute(
     context: SpawnContext,
     sample: RiverGeometrySample,
     distanceRange: [number, number]
-  ): Promise<boolean> {
+  ): boolean {
     const length = 10 + Math.random() * 10;
     const radius = length / 2;
     const minSpacing = radius * 2.0;

@@ -234,9 +234,9 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return boatPath;
     }
 
-    async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
+    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
         const spatialGrid = context.chunk.spatialGrid;
-        TerrainDecorator.decorate(
+        yield* TerrainDecorator.decorateIterator(
             context,
             this.decorationRules,
             { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
@@ -245,7 +245,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         );
     }
 
-    async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        await BoatPathLayoutSpawner.getInstance().spawn(context, context.biomeLayout, this.id, zStart, zEnd);
+    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
+        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, context.biomeLayout as BoatPathLayout, this.id, zStart, zEnd);
     }
 }

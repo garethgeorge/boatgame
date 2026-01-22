@@ -23,31 +23,31 @@ export class TerrainDecorator {
         return this._instance;
     }
 
-    public static decorate(
+    public static *decorateIterator(
         context: DecorationContext,
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
         spatialGrid: SpatialGrid,
         seed: number = 0
     ) {
-        const placements = this.generate(rules, region, spatialGrid, seed);
-        this.populate(context, placements, region);
+        const placements = yield* this.generateIterator(rules, region, spatialGrid, seed);
+        yield* this.populateIterator(context, placements, region);
     }
 
-    public static generate(
+    public static generateIterator(
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
         spatialGrid: SpatialGrid,
         seed: number = 0
-    ): PlacementManifest[] {
-        return this.instance().generate(rules, region, spatialGrid, seed);
+    ): Generator<void, PlacementManifest[], unknown> {
+        return this.instance().generateIterator(rules, region, spatialGrid, seed);
     }
 
-    public static populate(
+    public static populateIterator(
         context: DecorationContext, decorations: PlacementManifest[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-    ) {
-        this.instance().populate(context, decorations, region);
+    ): Generator<void, void, unknown> {
+        return this.instance().populateIterator(context, decorations, region);
     }
 
     constructor() {
@@ -56,12 +56,12 @@ export class TerrainDecorator {
         this.riverSystem = RiverSystem.getInstance();
     }
 
-    private generate(
+    private *generateIterator(
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
         spatialGrid: SpatialGrid,
         seed: number = 0
-    ): PlacementManifest[] {
+    ): Generator<void, PlacementManifest[], unknown> {
 
         // Default Terrain Provider using RiverSystem
         const terrainProvider = (x: number, z: number) => {
@@ -88,7 +88,7 @@ export class TerrainDecorator {
             return (zStart - z) / totalLen;
         };
 
-        return this.strategy.generate(
+        return yield* this.strategy.generateIterator(
             rules,
             region,
             spatialGrid,
@@ -98,10 +98,10 @@ export class TerrainDecorator {
         );
     }
 
-    private populate(
+    private *populateIterator(
         context: DecorationContext, decorations: PlacementManifest[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-    ) {
+    ): Generator<void, void, unknown> {
 
         // Similar logic to BiomeDecorationHelper, this instances with
         // distance from river and a visibility check
@@ -129,7 +129,14 @@ export class TerrainDecorator {
             context.decoHelper.addInstancedDecoration(context, instances, pos, opts.rotation, opts.scale);
         }
 
+        let countSinceYield = 0;
         for (const manifest of decorations) {
+            countSinceYield++;
+            if (countSinceYield > 20) {
+                yield;
+                countSinceYield = 0;
+            }
+
             if (!(region.xMin <= manifest.position.x && manifest.position.x < region.xMax)) continue;
             if (!(region.zMin <= manifest.position.z && manifest.position.z < region.zMax)) continue;
 

@@ -61,7 +61,7 @@ export class AttackAnimalSpawner extends AnimalSpawner {
         return this.config.factory(physicsEngine, options);
     }
 
-    async spawnAt(context: SpawnContext, z: number): Promise<boolean> {
+    spawnAt(context: SpawnContext, z: number): boolean {
         const riverSystem = RiverSystem.getInstance();
         const sample = RiverGeometry.getRiverGeometrySample(riverSystem, z);
 
@@ -87,7 +87,7 @@ export class AttackAnimalSpawner extends AnimalSpawner {
      * If the range includes the shore prefers finding an on shore
      * position. 
      */
-    async spawnAnimalAbsolute(options: AnimalSpawnOptions): Promise<boolean> {
+    spawnAnimalAbsolute(options: AnimalSpawnOptions): boolean {
         const {
             context,
             sample,

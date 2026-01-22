@@ -161,7 +161,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     }
 
 
-    async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
+    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
         const riverSystem = context.chunk.riverSystem;
 
         const length = zEnd - zStart;
@@ -172,6 +172,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         const count = Math.ceil(length * 0.4);
 
         for (let i = 0; i < count; i++) {
+            if (i % 20 === 0) yield;
             const z = zStart + Math.random() * length;
             const riverWidth = riverSystem.getRiverWidth(z);
             const riverCenter = riverSystem.getRiverCenter(z);
@@ -193,9 +194,9 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         }
     }
 
-    async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
+    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
         const layout = context.biomeLayout as BoatPathLayout;
-        await BoatPathLayoutSpawner.getInstance().spawn(context, layout, this.id, zStart, zEnd);
+        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, layout, this.id, zStart, zEnd);
     }
 }
 

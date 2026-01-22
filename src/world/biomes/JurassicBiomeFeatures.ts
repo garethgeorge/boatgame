@@ -126,11 +126,12 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         });
     }
 
-    async decorate(context: DecorationContext, zStart: number, zEnd: number): Promise<void> {
+    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
         const length = zEnd - zStart;
         const count = Math.floor(length * 20); // Denser
 
         for (let i = 0; i < count; i++) {
+            if (i % 20 === 0) yield;
             const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
             if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
 
@@ -148,7 +149,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         }
     }
 
-    async spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Promise<void> {
-        await BoatPathLayoutSpawner.getInstance().spawn(context, context.biomeLayout, this.id, zStart, zEnd);
+    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
+        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, context.biomeLayout, this.id, zStart, zEnd);
     }
 }
