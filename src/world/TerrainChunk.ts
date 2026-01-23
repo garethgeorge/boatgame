@@ -57,7 +57,7 @@ export class TerrainChunk {
     this.decorations = new THREE.Group();
 
     // For keeping track of static items
-    this.spatialGrid = new SpatialGrid(20);
+    this.spatialGrid = new SpatialGrid(30);
   }
 
   public update(dt: number) {

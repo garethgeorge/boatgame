@@ -14,12 +14,14 @@ export interface PlacementManifest {
 
 export class SpatialGrid {
     private cellSize: number;
+    private cellSizeInv: number;
     private maxGroundRadius: number = 0;
     private maxCanopyRadius: number = 0;
     private grid: Map<string, PlacementManifest[]> = new Map();
 
     constructor(cellSize: number) {
         this.cellSize = cellSize;
+        this.cellSizeInv = 1.0 / cellSize;
     }
 
     public getCellSize(): number {
@@ -27,9 +29,9 @@ export class SpatialGrid {
     }
 
     private getKey(x: number, y: number): string {
-        const cx = Math.floor(x / this.cellSize);
-        const cy = Math.floor(y / this.cellSize);
-        return `${cx},${cy}`;
+        const cx = Math.floor(x * this.cellSizeInv);
+        const cy = Math.floor(y * this.cellSizeInv);
+        return cx + "," + cy;
     }
 
     insert(item: PlacementManifest) {
@@ -37,10 +39,12 @@ export class SpatialGrid {
         this.maxCanopyRadius = Math.max(this.maxCanopyRadius, item.canopyRadius);
 
         const key = this.getKey(item.position.x, item.position.z);
-        if (!this.grid.has(key)) {
-            this.grid.set(key, []);
+        let cellItems = this.grid.get(key);
+        if (!cellItems) {
+            cellItems = [];
+            this.grid.set(key, cellItems);
         }
-        this.grid.get(key)!.push(item);
+        cellItems.push(item);
     }
 
     /**
@@ -48,10 +52,41 @@ export class SpatialGrid {
      * canopy levels.
      */
     checkCollision(x: number, y: number, groundRadius: number, canopyRadius: number): boolean {
-        if (this.checkGroundCollision(x, y, groundRadius))
-            return true;
-        if (canopyRadius > 0.0 && this.checkCanopyCollision(x, y, canopyRadius))
-            return true;
+        const searchRange = Math.max(
+            groundRadius + this.maxGroundRadius,
+            canopyRadius > 0 ? canopyRadius + this.maxCanopyRadius : 0
+        );
+
+        const cx = Math.floor(x * this.cellSizeInv);
+        const cy = Math.floor(y * this.cellSizeInv);
+        const cellRange = Math.ceil(searchRange * this.cellSizeInv);
+
+        for (let i = -cellRange; i <= cellRange; i++) {
+            const icx = cx + i;
+            for (let j = -cellRange; j <= cellRange; j++) {
+                const icy = cy + j;
+                const key = icx + "," + icy;
+                const cellItems = this.grid.get(key);
+                if (cellItems) {
+                    for (let k = 0; k < cellItems.length; k++) {
+                        const item = cellItems[k];
+                        const dx = x - item.position.x;
+                        const dy = y - item.position.z;
+                        const distSq = dx * dx + dy * dy;
+
+                        // Check ground collision
+                        const groundDist = groundRadius + item.groundRadius;
+                        if (distSq < groundDist * groundDist) return true;
+
+                        // Check canopy collision
+                        if (canopyRadius > 0.0 && item.canopyRadius > 0) {
+                            const canopyDist = canopyRadius + item.canopyRadius;
+                            if (distSq < canopyDist * canopyDist) return true;
+                        }
+                    }
+                }
+            }
+        }
         return false;
     }
 
@@ -61,13 +96,29 @@ export class SpatialGrid {
      */
     checkGroundCollision(x: number, y: number, groundRadius: number): boolean {
         const searchRange = groundRadius + this.maxGroundRadius;
-        return this.checkCollisionPredicate(
-            x, y, searchRange,
-            (item: PlacementManifest, distSq: number) => {
-                const groundDist = groundRadius + item.groundRadius;
-                return (distSq < groundDist * groundDist);
+        const cx = Math.floor(x * this.cellSizeInv);
+        const cy = Math.floor(y * this.cellSizeInv);
+        const cellRange = Math.ceil(searchRange * this.cellSizeInv);
+
+        for (let i = -cellRange; i <= cellRange; i++) {
+            const icx = cx + i;
+            for (let j = -cellRange; j <= cellRange; j++) {
+                const icy = cy + j;
+                const key = icx + "," + icy;
+                const cellItems = this.grid.get(key);
+                if (cellItems) {
+                    for (let k = 0; k < cellItems.length; k++) {
+                        const item = cellItems[k];
+                        const dx = x - item.position.x;
+                        const dy = y - item.position.z;
+                        const distSq = dx * dx + dy * dy;
+                        const groundDist = groundRadius + item.groundRadius;
+                        if (distSq < groundDist * groundDist) return true;
+                    }
+                }
             }
-        );
+        }
+        return false;
     }
 
     /**
@@ -76,39 +127,25 @@ export class SpatialGrid {
      */
     checkCanopyCollision(x: number, y: number, canopyRadius: number): boolean {
         const searchRange = canopyRadius + this.maxCanopyRadius;
-        return this.checkCollisionPredicate(
-            x, y, searchRange,
-            (item: PlacementManifest, distSq: number) => {
-                if (item.canopyRadius <= 0) return false;
-                const canopyDist = canopyRadius + item.canopyRadius;
-                return (distSq < canopyDist * canopyDist);
-            }
-        );
-    }
-
-    checkCollisionPredicate(
-        x: number, y: number,
-        searchRange: number,
-        predicate: (item: PlacementManifest, distSq: number) => boolean
-    ): boolean {
-        const cx = Math.floor(x / this.cellSize);
-        const cy = Math.floor(y / this.cellSize);
-
-        // Calculate search range based on largest radius involved
-        const cellRange = Math.ceil(searchRange / this.cellSize);
+        const cx = Math.floor(x * this.cellSizeInv);
+        const cy = Math.floor(y * this.cellSizeInv);
+        const cellRange = Math.ceil(searchRange * this.cellSizeInv);
 
         for (let i = -cellRange; i <= cellRange; i++) {
+            const icx = cx + i;
             for (let j = -cellRange; j <= cellRange; j++) {
-                const key = `${cx + i},${cy + j}`;
+                const icy = cy + j;
+                const key = icx + "," + icy;
                 const cellItems = this.grid.get(key);
                 if (cellItems) {
-                    for (const item of cellItems) {
+                    for (let k = 0; k < cellItems.length; k++) {
+                        const item = cellItems[k];
+                        if (item.canopyRadius <= 0) continue;
                         const dx = x - item.position.x;
                         const dy = y - item.position.z;
                         const distSq = dx * dx + dy * dy;
-
-                        if (predicate(item, distSq))
-                            return true;
+                        const canopyDist = canopyRadius + item.canopyRadius;
+                        if (distSq < canopyDist * canopyDist) return true;
                     }
                 }
             }

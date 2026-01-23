@@ -58,28 +58,34 @@ export class PoissonDecorationStrategy {
     ): Generator<void, PlacementManifest[], unknown> {
         const manifests: PoissonPlacement[] = [];
 
-        const sortedRules = rules;
-
         const width = region.xMax - region.xMin;
         const depth = region.zMax - region.zMin;
 
-        // Bridson's algorithm constants (approximate for multi-class)
-        const maxK = 30; // Max attempts per active sample (simplified here to attempts per unit area)
+        // Bridson's algorithm constants
+        const maxK = 30;
 
-        for (const rule of sortedRules) {
+        // Reuse context to reduce GC pressure
+        const ctx: WorldContext = {
+            pos: { x: 0, y: 0 },
+            elevation: 0,
+            slope: 0,
+            distanceToRiver: 0,
+            biomeProgress: 0,
+            random: Math.random,
+            gaussian: MathUtils.createGaussianRNG(Math.random),
+            noise2D: (x, y) => this.noise2D.noise2D(x, y)
+        };
+
+        for (const rule of rules) {
             const activeList: PoissonPlacement[] = [];
 
             // Phase 1: Seeding
-            // We attempt to plant initial seeds to handle disconnected valid areas.
-            // Heuristic: scale number of seeds with area, but clamp it.
-            const seedAttempts = 100; // Increased from 50
-
+            const seedAttempts = 100;
             for (let i = 0; i < seedAttempts; i++) {
-                // Pick random point
                 const x = region.xMin + Math.random() * width;
                 const z = region.zMin + Math.random() * depth;
 
-                const candidate = this.tryPlace(x, z, rule, spatialGrid, terrainProvider, biomeProgressProvider);
+                const candidate = this.tryPlace(x, z, rule, spatialGrid, terrainProvider, biomeProgressProvider, ctx);
                 if (candidate) {
                     manifests.push(candidate);
                     activeList.push(candidate);
@@ -94,18 +100,13 @@ export class PoissonDecorationStrategy {
                 const index = Math.floor(Math.random() * activeList.length);
                 const parent = activeList[index];
 
-                // Dynamic k Implementation, not currently used so hard coded to 1
-                const parentFitness = 1.0;
-
-                // Scale k: High fitness = 30 tries, Low fitness = fewer tries (Natural Thinning)
-                const dynamicK = Math.max(1, Math.floor(maxK * parentFitness));
+                // Scale k: High fitness = 30 tries, Low fitness = fewer tries
+                const dynamicK = maxK; // parentFitness hardcoded to 1.0 in original
 
                 let found = false;
-
-                // Try random locations around the chosen parent, we assume child
-                // spacing is between 0.5 and 1.5 of the parent
                 const rmin = parent.spacing * 1.5;
                 const drmax = parent.spacing * 1.0;
+
                 for (let i = 0; i < dynamicK; i++) {
                     attemptsSinceYield++;
                     const angle = Math.random() * Math.PI * 2;
@@ -116,7 +117,7 @@ export class PoissonDecorationStrategy {
 
                     if (cx < region.xMin || cx > region.xMax || cz < region.zMin || cz > region.zMax) continue;
 
-                    const candidate = this.tryPlace(cx, cz, rule, spatialGrid, terrainProvider, biomeProgressProvider);
+                    const candidate = this.tryPlace(cx, cz, rule, spatialGrid, terrainProvider, biomeProgressProvider, ctx);
                     if (candidate) {
                         manifests.push(candidate);
                         activeList.push(candidate);
@@ -124,16 +125,17 @@ export class PoissonDecorationStrategy {
                         found = true;
                         break;
                     }
-
-                    if (found) break;
                 }
 
                 if (!found) {
-                    // No offspring produced after k attempts, remove from active list
-                    activeList.splice(index, 1);
+                    // Swap-and-pop for O(1) removal
+                    const last = activeList.pop()!;
+                    if (index < activeList.length) {
+                        activeList[index] = last;
+                    }
                 }
 
-                if (attemptsSinceYield > 50) {
+                if (attemptsSinceYield > 100) { // Increased yield threshold
                     yield;
                     attemptsSinceYield = 0;
                 }
@@ -149,36 +151,37 @@ export class PoissonDecorationStrategy {
         rule: DecorationRule,
         spatialGrid: SpatialGrid,
         terrainProvider: (x: number, z: number) => { height: number, slope: number, distToRiver: number },
-        biomeProgressProvider: (z: number) => number
+        biomeProgressProvider: (z: number) => number,
+        ctx: WorldContext
     ): PoissonPlacement | null {
+        // Quick point-in-circle check before expensive calculations.
+        // If the center point is already inside another's ground radius, it's a collision.
+        if (spatialGrid.checkGroundCollision(x, z, 0)) {
+            return null;
+        }
 
         const terrain = terrainProvider(x, z);
         const biomeProgress = biomeProgressProvider(z);
 
-        const ctx: WorldContext = {
-            pos: { x, y: z },
-            elevation: terrain.height,
-            slope: terrain.slope,
-            distanceToRiver: terrain.distToRiver,
-            biomeProgress,
-            random: Math.random,
-            gaussian: MathUtils.createGaussianRNG(Math.random),
-            noise2D: (x, y) => (this.noise2D.noise2D(x, y))
-        };
+        ctx.pos.x = x;
+        ctx.pos.y = z;
+        ctx.elevation = terrain.height;
+        ctx.slope = terrain.slope;
+        ctx.distanceToRiver = terrain.distToRiver;
+        ctx.biomeProgress = biomeProgress;
 
         let f = rule.fitness(ctx);
         if (f > 1) f = 1;
         if (f <= 0) return null;
         if (Math.random() > f) return null;
 
-        // 4. Parameter Baking
         const params = rule.generate(ctx);
 
-        // 5. Proximity Check
         const groundRadius = params.groundRadius;
         const canopyRadius = params.canopyRadius ?? 0;
         let spacing;
-        if (params.canopyRadius <= 0.0) {
+
+        if (canopyRadius <= 0.0) {
             spacing = groundRadius + (params.spacing ?? 0);
             if (spatialGrid.checkGroundCollision(x, z, spacing))
                 return null;
@@ -190,7 +193,7 @@ export class PoissonDecorationStrategy {
         }
 
         return {
-            position: new THREE.Vector3(x, terrain.height, z),
+            position: new THREE.Vector3(x, terrain.height, z), // Vector3 only created when confirmed
             options: params.options,
             groundRadius,
             canopyRadius,
