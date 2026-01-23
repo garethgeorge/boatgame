@@ -144,12 +144,6 @@ export class TerrainDecorator {
             const wz = manifest.position.z;
             const height = manifest.position.y;
 
-            // Visibility Check: Only instantiate if visible from the river
-            const visibilitySteps = 8;
-            if (!this.riverSystem.terrainGeometry.checkVisibility(wx, height, wz, visibilitySteps)) {
-                continue;
-            }
-
             const pos = {
                 worldX: wx,
                 worldZ: wz,

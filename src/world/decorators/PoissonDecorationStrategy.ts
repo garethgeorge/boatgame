@@ -37,8 +37,10 @@ export interface DecorationRule {
 }
 
 // Poisson algorithm adds spacing used to spawn instances around a parent
+// also fitness to adjust how hard we search in the vicinity of a parent
 interface PoissonPlacement extends PlacementManifest {
     spacing: number;
+    fitness: number;
 }
 
 export class PoissonDecorationStrategy {
@@ -60,9 +62,6 @@ export class PoissonDecorationStrategy {
 
         const width = region.xMax - region.xMin;
         const depth = region.zMax - region.zMin;
-
-        // Bridson's algorithm constants
-        const maxK = 30;
 
         // Reuse context to reduce GC pressure
         const ctx: WorldContext = {
@@ -100,8 +99,8 @@ export class PoissonDecorationStrategy {
                 const index = Math.floor(Math.random() * activeList.length);
                 const parent = activeList[index];
 
-                // Scale k: High fitness = 30 tries, Low fitness = fewer tries
-                const dynamicK = maxK; // parentFitness hardcoded to 1.0 in original
+                // Calculate k based on how "easy" it was to place the parent
+                const dynamicK = Math.round(5 + (15 * parent.fitness));
 
                 let found = false;
                 const rmin = parent.spacing * 1.5;
@@ -119,6 +118,8 @@ export class PoissonDecorationStrategy {
 
                     const candidate = this.tryPlace(cx, cz, rule, spatialGrid, terrainProvider, biomeProgressProvider, ctx);
                     if (candidate) {
+                        // fitness is an estimate of how crowded the neighborhood is
+                        candidate.fitness *= 1 / (i + 1);
                         manifests.push(candidate);
                         activeList.push(candidate);
                         spatialGrid.insert(candidate);
@@ -198,6 +199,7 @@ export class PoissonDecorationStrategy {
             groundRadius,
             canopyRadius,
             spacing,
+            fitness: 1.0
         };
     }
 }
