@@ -121,7 +121,7 @@ export class TerrainManager {
 
     // 1. Manage Visual Chunks
     const currentChunkIndex = Math.floor(boatZ / TerrainChunk.CHUNK_SIZE);
-    const renderDistance = 6; // Number of chunks to render in each direction
+    const renderDistance = 7; // Number of chunks to render in each direction
 
     // Create new chunks
     for (let i = 0; i <= 2 * renderDistance; i++) {

@@ -15,9 +15,8 @@ export interface PlacementManifest {
 export class SpatialGrid {
     private cellSize: number;
     private cellSizeInv: number;
-    private maxGroundRadius: number = 0;
-    private maxCanopyRadius: number = 0;
     private grid: Map<string, PlacementManifest[]> = new Map();
+    // No more maxGroundRadius or maxCanopyRadius
 
     constructor(cellSize: number) {
         this.cellSize = cellSize;
@@ -28,23 +27,29 @@ export class SpatialGrid {
         return this.cellSize;
     }
 
-    private getKey(x: number, y: number): string {
-        const cx = Math.floor(x * this.cellSizeInv);
-        const cy = Math.floor(y * this.cellSizeInv);
-        return cx + "," + cy;
+    private getKey(icx: number, icy: number): string {
+        return icx + "," + icy;
     }
 
     insert(item: PlacementManifest) {
-        this.maxGroundRadius = Math.max(this.maxGroundRadius, item.groundRadius);
-        this.maxCanopyRadius = Math.max(this.maxCanopyRadius, item.canopyRadius);
+        const radius = Math.max(item.groundRadius, item.canopyRadius);
 
-        const key = this.getKey(item.position.x, item.position.z);
-        let cellItems = this.grid.get(key);
-        if (!cellItems) {
-            cellItems = [];
-            this.grid.set(key, cellItems);
+        const cxStart = Math.floor((item.position.x - radius) * this.cellSizeInv);
+        const cyStart = Math.floor((item.position.z - radius) * this.cellSizeInv);
+        const cxEnd = Math.floor((item.position.x + radius) * this.cellSizeInv);
+        const cyEnd = Math.floor((item.position.z + radius) * this.cellSizeInv);
+
+        for (let icx = cxStart; icx <= cxEnd; icx++) {
+            for (let icy = cyStart; icy <= cyEnd; icy++) {
+                const key = this.getKey(icx, icy);
+                let cellItems = this.grid.get(key);
+                if (!cellItems) {
+                    cellItems = [];
+                    this.grid.set(key, cellItems);
+                }
+                cellItems.push(item);
+            }
         }
-        cellItems.push(item);
     }
 
     /**
@@ -52,20 +57,16 @@ export class SpatialGrid {
      * canopy levels.
      */
     checkCollision(x: number, y: number, groundRadius: number, canopyRadius: number): boolean {
-        const searchRange = Math.max(
-            groundRadius + this.maxGroundRadius,
-            canopyRadius > 0 ? canopyRadius + this.maxCanopyRadius : 0
-        );
+        const radius = Math.max(groundRadius, canopyRadius);
 
-        const cx = Math.floor(x * this.cellSizeInv);
-        const cy = Math.floor(y * this.cellSizeInv);
-        const cellRange = Math.ceil(searchRange * this.cellSizeInv);
+        const cxStart = Math.floor((x - radius) * this.cellSizeInv);
+        const cyStart = Math.floor((y - radius) * this.cellSizeInv);
+        const cxEnd = Math.floor((x + radius) * this.cellSizeInv);
+        const cyEnd = Math.floor((y + radius) * this.cellSizeInv);
 
-        for (let i = -cellRange; i <= cellRange; i++) {
-            const icx = cx + i;
-            for (let j = -cellRange; j <= cellRange; j++) {
-                const icy = cy + j;
-                const key = icx + "," + icy;
+        for (let icx = cxStart; icx <= cxEnd; icx++) {
+            for (let icy = cyStart; icy <= cyEnd; icy++) {
+                const key = this.getKey(icx, icy);
                 const cellItems = this.grid.get(key);
                 if (cellItems) {
                     for (let k = 0; k < cellItems.length; k++) {
@@ -95,16 +96,14 @@ export class SpatialGrid {
      * circle.
      */
     checkGroundCollision(x: number, y: number, groundRadius: number): boolean {
-        const searchRange = groundRadius + this.maxGroundRadius;
-        const cx = Math.floor(x * this.cellSizeInv);
-        const cy = Math.floor(y * this.cellSizeInv);
-        const cellRange = Math.ceil(searchRange * this.cellSizeInv);
+        const cxStart = Math.floor((x - groundRadius) * this.cellSizeInv);
+        const cyStart = Math.floor((y - groundRadius) * this.cellSizeInv);
+        const cxEnd = Math.floor((x + groundRadius) * this.cellSizeInv);
+        const cyEnd = Math.floor((y + groundRadius) * this.cellSizeInv);
 
-        for (let i = -cellRange; i <= cellRange; i++) {
-            const icx = cx + i;
-            for (let j = -cellRange; j <= cellRange; j++) {
-                const icy = cy + j;
-                const key = icx + "," + icy;
+        for (let icx = cxStart; icx <= cxEnd; icx++) {
+            for (let icy = cyStart; icy <= cyEnd; icy++) {
+                const key = this.getKey(icx, icy);
                 const cellItems = this.grid.get(key);
                 if (cellItems) {
                     for (let k = 0; k < cellItems.length; k++) {
@@ -126,16 +125,14 @@ export class SpatialGrid {
      * circle.
      */
     checkCanopyCollision(x: number, y: number, canopyRadius: number): boolean {
-        const searchRange = canopyRadius + this.maxCanopyRadius;
-        const cx = Math.floor(x * this.cellSizeInv);
-        const cy = Math.floor(y * this.cellSizeInv);
-        const cellRange = Math.ceil(searchRange * this.cellSizeInv);
+        const cxStart = Math.floor((x - canopyRadius) * this.cellSizeInv);
+        const cyStart = Math.floor((y - canopyRadius) * this.cellSizeInv);
+        const cxEnd = Math.floor((x + canopyRadius) * this.cellSizeInv);
+        const cyEnd = Math.floor((y + canopyRadius) * this.cellSizeInv);
 
-        for (let i = -cellRange; i <= cellRange; i++) {
-            const icx = cx + i;
-            for (let j = -cellRange; j <= cellRange; j++) {
-                const icy = cy + j;
-                const key = icx + "," + icy;
+        for (let icx = cxStart; icx <= cxEnd; icx++) {
+            for (let icy = cyStart; icy <= cyEnd; icy++) {
+                const key = this.getKey(icx, icy);
                 const cellItems = this.grid.get(key);
                 if (cellItems) {
                     for (let k = 0; k < cellItems.length; k++) {
