@@ -408,3 +408,15 @@ In `src/world/biomes/BoatPathLayoutSpawner.ts`:
 In the target biome's features file (e.g., `SwampBiomeFeatures.ts`):
 -   Add the new ID to relevant `patterns` (e.g., a `threat` or `scatter` pattern).
 -   If the animal spawns in water, add it to the `waterAnimals` list in `createLayout()`.
+
+## 18. Animal Creation Logic Flow
+
+The following details the logic flow when an animal entity is created by `BoatPathLayoutSpawner`:
+
+1.  **Selection**: The process begins with an `entityType`, `RiverGeometrySample`, and `ObstaclePlacement` identifying an object to be placed at a specific location along the river.
+2.  **Spawner Retrieval**: The `BoatPathLayoutSpawner` retrieves the appropriate `AnimalSpawner` for the `entityType` from the `EntitySpawners` registry.
+3.  **Spawn Call**: The spawner's `spawnAnimalAbsolute()` method is called with `AnimalSpawnOptions`. These options include the river sample, placement range, aggressiveness, and optionally a specific logic name (e.g., `'WolfAttack'`).
+4.  **Spawner Implementation**: The spawner is a sub-class of `AnimalSpawner` (e.g., `AttackAnimalSpawner`, `FlyingAnimalSpawner`, or `SwimAwayAnimalSpawner`).
+5.  **Configuration & Factory**: Each spawner uses a configuration (e.g., `AttackAnimalSpawnConfig`) that defines placement requirements (like `shoreProbability` or `minDistFromBank`) and a `factory` function for the specific animal entity.
+6.  **Placement Resolution**: The spawner chooses an exact world position and orientation for the animal based on its configuration, the provided river sample, and random variance.
+7.  **Instantiation**: Finally, the spawner calls its `factory` function to instantiate the animal, passing it an `AnimalOptions` sub-class (e.g., `AttackAnimalOptions`) containing the resolved placement and behavior settings.
