@@ -18,8 +18,8 @@ export class Brontosaurus extends AttackAnimal {
         super(physicsEngine, 'brontosaurus', Entity.TYPE_OBSTACLE, true,
             options,
             {
-                halfWidth: 1.5,
-                halfLength: 2.5,
+                halfWidth: 2.2,
+                halfLength: 4.5,
                 density: 5.0,
                 friction: 0.3,
                 linearDamping: 3.0,

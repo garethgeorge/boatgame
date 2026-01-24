@@ -17,6 +17,7 @@ import { Duckling } from '../obstacles/Duckling';
 import { PenguinKayak } from '../obstacles/PenguinKayak';
 import { Butterfly } from '../obstacles/Butterfly';
 import { Pterodactyl } from '../obstacles/Pterodactyl';
+import { Dragonfly } from '../obstacles/Dragonfly';
 
 import { BuoySpawner } from './BuoySpawner';
 import { IcebergSpawner } from './IcebergSpawner';
@@ -160,6 +161,12 @@ export class EntitySpawners {
             shoreProbability: 0.0,
             entityRadius: 3.0,
             heightInWater: Egret.HEIGHT_IN_WATER
+        },
+        {
+            id: EntityIds.DRAGONFLY,
+            getDensity: () => 0.5 / 20,
+            factory: (physicsEngine, options) => new Dragonfly(physicsEngine, options),
+            entityRadius: 1.5
         }
     ];
 

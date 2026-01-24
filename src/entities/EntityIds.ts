@@ -15,6 +15,7 @@ export enum EntityIds {
     PTERODACTYL = 'pterodactyl',
     BLUEBIRD = 'bluebird',
     EGRET = 'egret',
+    DRAGONFLY = 'dragonfly',
 
     // Obstacles & Others
     LOG = 'log',

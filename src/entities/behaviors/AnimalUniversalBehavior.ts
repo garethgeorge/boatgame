@@ -348,7 +348,8 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const diffToTarget = targetWorldPos.clone().sub(originPos);
         const targetAngle = Math.atan2(diffToTarget.x, -diffToTarget.y);
 
-        this.handleFlightRotationAndBanking(targetAngle, dt);
+        const turnSpeed = steering.turningSpeed ?? this.ROTATION_SPEED_FLIGHT;
+        this.handleFlightRotationAndBanking(targetAngle, turnSpeed, dt);
         physicsBody.setAngle(this.currentAngle);
 
         // --- Horizontal Movement ---
@@ -368,12 +369,12 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         this.entity.setExplictPosition?.(newHeight, this.getBankingNormal());
     }
 
-    private handleFlightRotationAndBanking(targetAngle: number, dt: number) {
+    private handleFlightRotationAndBanking(targetAngle: number, turnSpeed: number, dt: number) {
         let diff = targetAngle - this.currentAngle;
         while (diff > Math.PI) diff -= Math.PI * 2;
         while (diff < -Math.PI) diff += Math.PI * 2;
 
-        const maxRotation = this.ROTATION_SPEED_FLIGHT * dt;
+        const maxRotation = turnSpeed * dt;
         const turnDirection = Math.sign(diff);
 
         if (Math.abs(diff) < maxRotation) {

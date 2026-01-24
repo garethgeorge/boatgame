@@ -74,11 +74,19 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     density: [0.2, 0.6],
                     types: [EntityIds.ALLIGATOR]
                 },
-                'egret_threat': {
+                'egret_flight': {
                     logic: 'scatter',
                     place: 'path',
-                    density: [0.2, 0.4],
+                    density: [1, 2],
                     types: [EntityIds.EGRET]
+                },
+                'dragonfly_buzz': {
+                    logic: 'cluster',
+                    place: 'path',
+                    density: [0.5, 1],
+                    minCount: 2.0,
+                    maxCount: 3.0,
+                    types: [EntityIds.DRAGONFLY]
                 },
                 'grass_patches': {
                     logic: 'scatter',
@@ -144,19 +152,33 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     name: 'threats',
                     stages: [
                         {
-                            name: 'alligators',
+                            name: 'threats',
                             progress: [0.2, 1.0],
                             patterns: [
                                 [
                                     { pattern: 'alligator_ambush', weight: 1 },
-                                    { pattern: 'egret_threat', weight: 1 }
+                                ]
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: 'friends',
+                    stages: [
+                        {
+                            name: 'threats',
+                            progress: [0.0, 1.0],
+                            patterns: [
+                                [
+                                    { pattern: 'egret_flight', weight: 1 },
+                                    { pattern: 'dragonfly_buzz', weight: 1 }
                                 ]
                             ]
                         }
                     ]
                 }
             ],
-            waterAnimals: [EntityIds.ALLIGATOR, EntityIds.EGRET]
+            waterAnimals: [EntityIds.ALLIGATOR, EntityIds.EGRET, EntityIds.DRAGONFLY]
         });
     }
 

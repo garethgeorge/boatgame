@@ -15,7 +15,7 @@ export class Duckling extends SwimAwayAnimal {
             Entity.TYPE_COLLECTABLE,
             false,
             { height: 0.5, ...options },
-            { halfWidth: 1.5, halfLength: 3.0 });
+            { halfWidth: 0.5, halfLength: 1.0 });
 
         this.setBehavior(SwimAwayBehaviorFactory.create(
             this,

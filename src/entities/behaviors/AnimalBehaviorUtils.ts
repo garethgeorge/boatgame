@@ -98,4 +98,16 @@ export class AnimalBehaviorUtils {
             });
         }
     }
+
+    /**
+     * Calculates a speed multiplier (0.5 to 1.0) based on how well the
+     * animal's current angle aligns with its target angle.
+     */
+    public static calculateAlignmentSpeedScaling(currentAngle: number, targetAngle: number, minScale: number = 0.5): number {
+        let angleDiff = targetAngle - currentAngle;
+        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+        return Math.max(minScale, Math.cos(angleDiff));
+    }
 }

@@ -100,7 +100,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     /**
      * This can be used to check the animal models
      */
-    private async spawnAllAnimals(context: SpawnContext, z: number): Promise<void> {
+    private spawnAllAnimals(context: SpawnContext, z: number) {
         const animalIds = [
             EntityIds.ALLIGATOR,
             EntityIds.BRONTOSAURUS,
@@ -117,7 +117,9 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         ];
         const waterIds = [
             EntityIds.DOLPHIN,
+            EntityIds.DRAGONFLY,
             EntityIds.DUCKLING,
+            EntityIds.EGRET,
             EntityIds.PENGUIN_KAYAK,
             EntityIds.SWAN
         ];
@@ -136,7 +138,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                 // Place on bank
                 const right: [number, number] = [sample.bankDist + xOffset, sample.bankDist + xOffset + 5];
                 const left: [number, number] = [-sample.bankDist - xOffset - 5, -sample.bankDist - xOffset];
-                await spawner.spawnAnimalAbsolute({
+                spawner.spawnAnimalAbsolute({
                     context,
                     sample,
                     distanceRange: left,
@@ -155,13 +157,13 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                 const riverSystem = RiverSystem.getInstance();
                 const sample = RiverGeometry.getRiverGeometrySample(riverSystem, currentZ);
 
-                await spawner.spawnAnimalAbsolute({
+                spawner.spawnAnimalAbsolute({
                     context,
                     sample,
                     distanceRange: [-5, 5],
                     aggressiveness: 0.5,
                     disableLogic: true,
-                    //fixedAngle: 0,
+                    fixedAngle: 0,
                     fixedHeight: 3.0
                 });
             }
@@ -170,23 +172,24 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
-        // if (zStart === 0) {
-        //     yield* this.spawnAllAnimals(context, -50);
-        // }
+        if (false && zStart === 0) {
+            this.spawnAllAnimals(context, -50);
+        }
 
         // yield* EntitySpawners.getInstance().messageInABottle().spawn(context, 4, zStart, zEnd);
         // yield* EntitySpawners.getInstance().animal(EntityIds.MONKEY)!.spawn(context, 1, zStart, zEnd);
         // yield* EntitySpawners.getInstance().animal(EntityIds.ALLIGATOR).spawn(context, 1, zStart, zEnd);
         // yield* EntitySpawners.getInstance().animal(EntityIds.TRICERATOPS).spawn(context, 1, zStart, zEnd);
 
-        //yield* EntitySpawners.getInstance().animal(EntityIds.PTERODACTYL).spawn(context, 1, zStart, zEnd);
-        //yield* EntitySpawners.getInstance().animal(EntityIds.BUTTERFLY).spawn(context, 1, zStart, zEnd);
-        //yield* EntitySpawners.getInstance().animal(EntityIds.BLUEBIRD).spawn(context, 1, zStart, zEnd);
+        // yield* EntitySpawners.getInstance().animal(EntityIds.PTERODACTYL).spawn(context, 1, zStart, zEnd);
+        // yield* EntitySpawners.getInstance().animal(EntityIds.BUTTERFLY).spawn(context, 1, zStart, zEnd);
+        // yield* EntitySpawners.getInstance().animal(EntityIds.BLUEBIRD).spawn(context, 1, zStart, zEnd);
 
         // yield* EntitySpawners.getInstance().animal(EntityIds.DUCKLING).spawn(context, 1, zStart, zEnd);
         // yield* EntitySpawners.getInstance().animal(EntityIds.DOLPHIN).spawn(context, 1, zStart, zEnd);
         // yield* EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK).spawn(context, 1, zStart, zEnd);
         // yield* EntitySpawners.getInstance().animal(EntityIds.SWAN).spawn(context, 1, zStart, zEnd);
-        yield* EntitySpawners.getInstance().animal(EntityIds.EGRET).spawn(context, 2, zStart, zEnd);
+        // yield* EntitySpawners.getInstance().animal(EntityIds.EGRET).spawn(context, 2, zStart, zEnd);
+        yield* EntitySpawners.getInstance().animal(EntityIds.DRAGONFLY).spawn(context, 1, zStart, zEnd);
     }
 }

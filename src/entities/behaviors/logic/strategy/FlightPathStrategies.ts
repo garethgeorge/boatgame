@@ -1,21 +1,21 @@
 import * as planck from 'planck';
 import { RiverSystem } from '../../../../world/RiverSystem';
 import { AnimalPathStrategy, AnimalSteering, AnimalStrategyContext } from './AnimalPathStrategy';
+import { AnimalBehaviorUtils } from '../../AnimalBehaviorUtils';
 
 /**
  * BUZZ TARGET (Flight)
  */
 export class BuzzTargetStrategy extends AnimalPathStrategy {
     readonly name = 'Buzzing';
-    private lastDirectionUpdateTime: number = -1;
-    private targetAngle: number = 0;
     private flightTime: number = 0;
 
     constructor(
         private maxHeight: number,
         private buzzHeight: number,
         private lockOnDistance: number,
-        private horizSpeed: number
+        private horizSpeed: number,
+        private targetOffset: number = 0, // Offset to "lead" the boat
     ) {
         super();
     }
@@ -24,20 +24,20 @@ export class BuzzTargetStrategy extends AnimalPathStrategy {
         this.flightTime += context.dt;
 
         const boatPos = context.targetBody.getPosition();
-        const distToBoat = planck.Vec2.distance(context.originPos, boatPos);
+        const boatVel = context.targetBody.getLinearVelocity();
+        // Target a point ahead of the boat
+        const targetPoint = boatPos.clone().add(boatVel.clone().mul(this.targetOffset));
+        const distToBoat = planck.Vec2.distance(context.originPos, targetPoint);
 
-        if (this.flightTime - this.lastDirectionUpdateTime > 1.0) {
-            const dirToBoat = boatPos.clone().sub(context.originPos);
-            const angleToBoat = Math.atan2(dirToBoat.x, -dirToBoat.y);
-            this.targetAngle = distToBoat > this.lockOnDistance ? angleToBoat + (Math.random() - 0.5) * Math.PI * 0.5 : angleToBoat;
-            this.lastDirectionUpdateTime = this.flightTime;
-        }
+        const diffToTarget = targetPoint.clone().sub(context.originPos);
+        const targetAngle = Math.atan2(diffToTarget.x, -diffToTarget.y);
+        const currentAngle = context.physicsBody.getAngle();
+        const alignment = AnimalBehaviorUtils.calculateAlignmentSpeedScaling(currentAngle, targetAngle);
 
-        const flightDir = planck.Vec2(Math.sin(this.targetAngle), -Math.cos(this.targetAngle));
         return {
-            target: context.originPos.clone().add(flightDir.mul(10)),
-            speed: this.horizSpeed,
-            height: distToBoat > 50.0 ? this.maxHeight : this.buzzHeight
+            target: targetPoint,
+            speed: this.horizSpeed * alignment,
+            height: distToBoat > 50.0 ? this.maxHeight : this.buzzHeight,
         };
     }
 }
@@ -56,18 +56,14 @@ export class FleeRiverStrategy extends AnimalPathStrategy {
     update(context: AnimalStrategyContext): AnimalSteering {
         this.flightTime += context.dt;
 
-        if (this.flightTime - this.lastDirectionUpdateTime > 1.0) {
-            const boatAngle = context.targetBody.getAngle();
-            const offsetDeg = 30 + Math.random() * 20;
-            this.targetAngle = boatAngle + (Math.random() < 0.5 ? -1 : 1) * (offsetDeg * Math.PI / 180.0);
-            this.lastDirectionUpdateTime = this.flightTime;
-        }
+        const currentAngle = context.physicsBody.getAngle();
+        const alignment = AnimalBehaviorUtils.calculateAlignmentSpeedScaling(currentAngle, this.targetAngle);
 
         const flightDir = planck.Vec2(Math.sin(this.targetAngle), -Math.cos(this.targetAngle));
         return {
             target: context.originPos.clone().add(flightDir.mul(10)),
-            speed: this.horizSpeed,
-            height: this.maxHeight
+            speed: this.horizSpeed * alignment,
+            height: this.maxHeight,
         };
     }
 }
@@ -112,10 +108,15 @@ export class FlyToShoreStrategy extends AnimalPathStrategy {
     }
 
     update(context: AnimalStrategyContext): AnimalSteering {
+        const diffToTarget = this.target.clone().sub(context.originPos);
+        const targetAngle = Math.atan2(diffToTarget.x, -diffToTarget.y);
+        const currentAngle = context.physicsBody.getAngle();
+        const alignment = AnimalBehaviorUtils.calculateAlignmentSpeedScaling(currentAngle, targetAngle);
+
         return {
             target: this.target,
-            speed: this.horizSpeed,
-            height: this.maxHeight
+            speed: this.horizSpeed * alignment,
+            height: this.maxHeight,
         };
     }
 }
@@ -204,7 +205,88 @@ export class WaterLandingStrategy extends AnimalPathStrategy {
         return {
             target: targetWorldPos,
             speed: this.horizSpeed * speedFactor,
-            height: targetHeight
+            height: targetHeight,
+        };
+    }
+}
+
+/**
+ * WANDER (Flight)
+ * Moves essentially randomly around a center point.
+ */
+export class WanderStrategy extends AnimalPathStrategy {
+    readonly name = 'Wandering';
+    private target: planck.Vec2;
+    private lastUpdateTime: number = -1;
+
+    constructor(
+        private center: planck.Vec2,
+        private radius: number,
+        private speed: number,
+        private height: number,
+    ) {
+        super();
+        this.target = this.center.clone();
+    }
+
+    update(context: AnimalStrategyContext): AnimalSteering {
+        const distToTarget = planck.Vec2.distance(context.originPos, this.target);
+
+        // Pick new target if reached or periodically
+        if (distToTarget < 2.0 || context.dt + this.lastUpdateTime > 5.0 || this.lastUpdateTime < 0) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = this.radius;
+            this.target = new planck.Vec2(
+                this.center.x + Math.sin(angle) * dist,
+                this.center.y - Math.cos(angle) * dist
+            );
+            this.lastUpdateTime = 0;
+        } else {
+            this.lastUpdateTime += context.dt;
+        }
+
+        const diffToTarget = this.target.clone().sub(context.originPos);
+        const targetAngle = Math.atan2(diffToTarget.x, -diffToTarget.y);
+        const currentAngle = context.physicsBody.getAngle();
+        const alignment = AnimalBehaviorUtils.calculateAlignmentSpeedScaling(currentAngle, targetAngle);
+
+        return {
+            target: this.target,
+            speed: this.speed * alignment,
+            height: this.height,
+        };
+    }
+
+    setCenter(center: planck.Vec2) {
+        this.center = center;
+    }
+}
+
+/**
+ * FLY TO POINT (Flight)
+ * Moves directly to a specific target point.
+ */
+export class FlyToPointStrategy extends AnimalPathStrategy {
+    readonly name = 'Flying to Point';
+
+    constructor(
+        private target: planck.Vec2,
+        private speed: number,
+        private height: number,
+    ) {
+        super();
+    }
+
+    update(context: AnimalStrategyContext): AnimalSteering {
+        const diffToTarget = this.target.clone().sub(context.originPos);
+        const targetAngle = Math.atan2(diffToTarget.x, -diffToTarget.y);
+        const currentAngle = context.physicsBody.getAngle();
+        const alignment = AnimalBehaviorUtils.calculateAlignmentSpeedScaling(currentAngle, targetAngle);
+
+        return {
+            target: this.target,
+            speed: this.speed * alignment,
+            height: this.height
         };
     }
 }

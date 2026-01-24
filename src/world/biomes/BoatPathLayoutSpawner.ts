@@ -123,7 +123,8 @@ export class BoatPathLayoutSpawner {
                             case EntityIds.BUTTERFLY:
                             case EntityIds.PTERODACTYL:
                             case EntityIds.BLUEBIRD:
-                            case EntityIds.EGRET: {
+                            case EntityIds.EGRET:
+                            case EntityIds.DRAGONFLY: {
                                 let logic: string | undefined = undefined;
                                 let range = p.range;
 
