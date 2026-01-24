@@ -7,8 +7,7 @@ import { FleePathStrategy } from './strategy/FleePathStrategy';
  * Swim away logic runs forever.
  */
 export class DefaultSwimAwayLogic implements AnimalLogic {
-    public static readonly NAME = 'swimaway';
-    readonly name = DefaultSwimAwayLogic.NAME;
+    readonly name = 'DefaultSwimAway';
 
     private strategy: FleePathStrategy;
     private state: 'IDLE' | 'FLEEING' = 'IDLE';

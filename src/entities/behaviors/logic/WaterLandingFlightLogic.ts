@@ -10,9 +10,8 @@ export interface WaterLandingFlightParams {
 }
 
 export class WaterLandingFlightLogic implements AnimalLogic {
-    public static readonly NAME = 'WaterLandingFlightLogic';
     public static readonly RESULT_FINISHED = 'water_landing_finished';
-    readonly name = WaterLandingFlightLogic.NAME;
+    readonly name = 'WaterLandingFlight';
 
     private flightSpeed: number;
     private landingHeight: number;

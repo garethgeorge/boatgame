@@ -4,7 +4,8 @@ import { Boat } from '../Boat';
 import { AnyAnimal } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
 import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase, AnimalLogicScript, AnimalLogicScriptFn } from './logic/AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase, AnimalLogicScript, AnimalLogicScriptFn } from './logic/AnimalLogic';
+import { AnimalLogicConfig } from './logic/AnimalLogicConfigs';
 import { AnimalLogicRegistry } from './logic/AnimalLogicRegistry';
 
 interface ScriptStackEntry {

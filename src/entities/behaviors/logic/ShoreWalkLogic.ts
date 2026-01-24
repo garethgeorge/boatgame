@@ -1,5 +1,6 @@
 import * as planck from 'planck';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
+import { AnimalLogicConfig } from './AnimalLogicConfigs';
 import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
 import { ShoreWalkStrategy, ShoreTurnStrategy } from './strategy/ShoreWalkStrategy';
 
@@ -14,10 +15,9 @@ type ShoreWalkState = 'START' | 'OUTBOUND' | 'TURN' | 'INBOUND' | 'END' | 'FINIS
  * Shore walk runs until walk completed then returns the next logic
  */
 export class ShoreWalkLogic implements AnimalLogic {
-    public static readonly NAME = 'shorewalk';
     public static readonly RESULT_FINISHED = 'shore_walk_finished';
 
-    readonly name = ShoreWalkLogic.NAME;
+    readonly name = 'ShoreWalk';
 
     private strategy: AnimalPathStrategy | null = null;
     private walkDistance: number;

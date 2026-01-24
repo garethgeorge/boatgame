@@ -4,6 +4,7 @@ import { BoatPathLayout } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { RiverGeometry } from '../RiverGeometry';
 import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
+import { AttackLogicName } from '../../entities/obstacles/AttackAnimal';
 
 export class BoatPathLayoutSpawner {
     private static instance: BoatPathLayoutSpawner;
@@ -125,13 +126,13 @@ export class BoatPathLayoutSpawner {
                             case EntityIds.BLUEBIRD:
                             case EntityIds.EGRET:
                             case EntityIds.DRAGONFLY: {
-                                let logic: string | undefined = undefined;
+                                let logic: AttackLogicName | undefined = undefined;
                                 let range = p.range;
 
                                 if (biomeType === 'desert') {
-                                    logic = Math.random() < 0.5 ? 'wolf' : 'ambush';
+                                    logic = Math.random() < 0.5 ? 'WolfAttack' : 'AmbushAttack';
                                 } else if (biomeType === 'swamp' && entityType === EntityIds.ALLIGATOR) {
-                                    logic = 'ambush';
+                                    logic = 'AmbushAttack';
                                     range = [-10, 10];
                                 }
 

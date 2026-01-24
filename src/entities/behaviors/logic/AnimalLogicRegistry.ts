@@ -1,4 +1,5 @@
-import { AnimalLogic, AnimalLogicConfig } from './AnimalLogic';
+import { AnimalLogic } from './AnimalLogic';
+import { AnimalLogicConfig } from './AnimalLogicConfigs';
 import { WolfAttackLogic } from './WolfAttackLogic';
 import { AmbushAttackLogic } from './AmbushAttackLogic';
 import { DefaultSwimAwayLogic } from './DefaultSwimAwayLogic';
@@ -17,31 +18,34 @@ export class AnimalLogicRegistry {
     private static factories: Map<string, (params?: any) => AnimalLogic> = new Map();
 
     static {
-        this.register(AmbushAttackLogic.NAME, () => new AmbushAttackLogic());
-        this.register(BuzzBoatFlightLogic.NAME, (params) => new BuzzBoatFlightLogic(params as any));
-        this.register(DefaultSwimAwayLogic.NAME, () => new DefaultSwimAwayLogic());
-        this.register(DelayLogic.NAME, (params) => new DelayLogic(params as any));
-        this.register(EnteringWaterLogic.NAME, (params) => new EnteringWaterLogic(params as any));
-        this.register(FlyDirectToShoreLogic.NAME, (params) => new FlyDirectToShoreLogic(params as any));
-        this.register(FlyOppositeBoatLogic.NAME, (params) => new FlyOppositeBoatLogic(params as any));
-        this.register(ShoreLandingFlightLogic.NAME, (params) => new ShoreLandingFlightLogic(params as any));
-        this.register(ShoreWalkLogic.NAME, (params) => new ShoreWalkLogic(params as any));
-        this.register(WaitForBoatLogic.NAME, (params) => new WaitForBoatLogic(params as any));
-        this.register(WanderingFlightLogic.NAME, (params) => new WanderingFlightLogic(params as any));
-        this.register(WaterLandingFlightLogic.NAME, (params) => new WaterLandingFlightLogic(params as any));
-        this.register(WolfAttackLogic.NAME, () => new WolfAttackLogic());
+        this.register('AmbushAttack', () => new AmbushAttackLogic());
+        this.register('BuzzBoatFlight', (params) => new BuzzBoatFlightLogic(params));
+        this.register('DefaultSwimAway', () => new DefaultSwimAwayLogic());
+        this.register('Delay', (params) => new DelayLogic(params));
+        this.register('EnteringWater', (params) => new EnteringWaterLogic(params));
+        this.register('FlyDirectToShore', (params) => new FlyDirectToShoreLogic(params));
+        this.register('FlyOppositeBoat', (params) => new FlyOppositeBoatLogic(params));
+        this.register('ShoreLandingFlight', (params) => new ShoreLandingFlightLogic(params));
+        this.register('ShoreWalk', (params) => new ShoreWalkLogic(params));
+        this.register('WaitForBoat', (params) => new WaitForBoatLogic(params));
+        this.register('WanderingFlight', (params) => new WanderingFlightLogic(params));
+        this.register('WaterLandingFlight', (params) => new WaterLandingFlightLogic(params));
+        this.register('WolfAttack', () => new WolfAttackLogic());
     }
 
-    public static register(name: string, factory: (params?: any) => AnimalLogic) {
+    public static register<T extends AnimalLogicConfig['name']>(
+        name: T,
+        factory: (params: Extract<AnimalLogicConfig, { name: T }>['params']) => AnimalLogic
+    ) {
         this.factories.set(name, factory);
     }
 
     public static create(config: AnimalLogicConfig): AnimalLogic {
         const factory = this.factories.get(config.name);
         if (!factory) {
-            console.warn(`AnimalLogic "${config.name}" not found, falling back to "${WolfAttackLogic.NAME}"`);
+            console.warn(`AnimalLogic "${config.name}" not found, falling back to "WolfAttack"`);
             return new WolfAttackLogic();
         }
-        return factory(config.params);
+        return factory(config.params as any); // Cast here is safe due to register() being typed
     }
 }

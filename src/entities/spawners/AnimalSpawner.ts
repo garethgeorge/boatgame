@@ -1,13 +1,14 @@
 import { SpawnContext } from '../Spawnable';
 import { RiverGeometrySample } from '../../world/RiverGeometry';
 import { BaseSpawner } from './BaseSpawner';
+import { AttackLogicName } from '../obstacles/AttackAnimal';
 
 export interface AnimalSpawnOptions {
     context: SpawnContext;
     sample: RiverGeometrySample;
     distanceRange: [number, number];
     aggressiveness: number;
-    logic?: string;
+    logic?: AttackLogicName;
     disableLogic?: boolean;
     fixedAngle?: number;
     fixedHeight?: number;

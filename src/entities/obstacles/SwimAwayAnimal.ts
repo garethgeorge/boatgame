@@ -3,7 +3,6 @@ import * as THREE from 'three';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { Animal, AnimalOptions } from './Animal';
-import { DefaultSwimAwayLogic } from '../behaviors/logic/DefaultSwimAwayLogic';
 import { AnimalLogicScript } from '../behaviors/logic/AnimalLogic';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 
@@ -32,7 +31,7 @@ export class SwimAwayBehaviorFactory {
     }
 
     private static getLogicScript(): AnimalLogicScript {
-        return { name: DefaultSwimAwayLogic.NAME };
+        return { name: 'DefaultSwimAway' };
     }
 }
 

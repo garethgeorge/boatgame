@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { AnimalLogicStep, AnimalLogicConfig } from './AnimalLogic';
+import { AnimalLogicStep } from './AnimalLogic';
+import { AnimalLogicConfig } from './AnimalLogicConfigs';
 
 describe('AnimalLogicStep', () => {
-    const configA: AnimalLogicConfig = { name: 'A' };
-    const configB: AnimalLogicConfig = { name: 'B' };
-    const configC: AnimalLogicConfig = { name: 'C' };
+    const configA: any = { name: 'A' };
+    const configB: any = { name: 'B' };
+    const configC: any = { name: 'C' };
 
     describe('sequence', () => {
         it('should return configs in order', () => {

@@ -15,9 +15,8 @@ export interface FlyOppositeBoatParams {
  * current position in the direction opposite to the boat's current heading.
  */
 export class FlyOppositeBoatLogic implements AnimalLogic {
-    public static readonly NAME = 'FlyOppositeBoatLogic';
     public static readonly RESULT_FINISHED = 'fly_opposite_boat_finished';
-    readonly name = FlyOppositeBoatLogic.NAME;
+    readonly name = 'FlyOppositeBoat';
 
     private flightSpeed: number;
     private distance: number;

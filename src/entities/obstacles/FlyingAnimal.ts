@@ -6,13 +6,13 @@ import { WaterLandingFlightLogic } from '../behaviors/logic/WaterLandingFlightLo
 import { WanderingFlightLogic } from '../behaviors/logic/WanderingFlightLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
+import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogicConfigs';
 import { WaitForBoatLogic } from '../behaviors/logic/WaitForBoatLogic';
 import { Animal, AnimalOptions } from './Animal';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { DelayLogic } from '../behaviors/logic/DelayLogic';
 import { BuzzBoatFlightLogic } from '../behaviors/logic/BuzzBoatFlightLogic';
-import { FlyDirectToShoreLogic } from '../behaviors/logic/FlyDirectToShoreLogic';
 import { FlyOppositeBoatLogic } from '../behaviors/logic/FlyOppositeBoatLogic';
 
 export interface FlyingAnimalOptions extends AnimalOptions {
@@ -47,29 +47,29 @@ export class FlyingBehaviorFactory {
         // buzz boat
         // fly away and land on shore
         // if out of range fly direct to shore
-        const script = (step: number, lastResult: string) => {
+        const script = (step: number, lastResult: string): any => {
             if (lastResult === '') {
                 return {
-                    name: WaitForBoatLogic.NAME,
+                    name: 'WaitForBoat',
                     params: { minNoticeDistance: minNoticeDistance, ignoreBottles: true }
                 };
             }
             if (lastResult === WaitForBoatLogic.RESULT_NOTICED) {
                 return {
-                    name: BuzzBoatFlightLogic.NAME,
+                    name: 'BuzzBoatFlight',
                     params: { flightSpeed, zRange }
                 }
             }
             if (lastResult === BuzzBoatFlightLogic.RESULT_FINISHED) {
                 return {
-                    name: ShoreLandingFlightLogic.NAME,
+                    name: 'ShoreLandingFlight',
                     params: { flightSpeed, zRange }
                 }
             }
             if (lastResult === BuzzBoatFlightLogic.RESULT_OUT_OF_RANGE ||
                 lastResult === ShoreLandingFlightLogic.RESULT_OUT_OF_RANGE) {
                 return {
-                    name: FlyDirectToShoreLogic.NAME,
+                    name: 'FlyDirectToShoreLogic',
                     params: { flightSpeed, zRange }
                 }
             }
@@ -102,10 +102,10 @@ export class FlyingBehaviorFactory {
         // buzz boat
         // fly away for a bit and land in water
         // repeat
-        const script = (step: number, lastResult: string) => {
+        const script = (step: number, lastResult: string): any => {
             if (lastResult === '' || lastResult === DelayLogic.RESULT_FINISHED) {
                 return {
-                    name: WaitForBoatLogic.NAME,
+                    name: 'WaitForBoat',
                     params: {
                         minNoticeDistance: step == 0 ? minNoticeDistance : 5.0,
                         ignoreBottles: true
@@ -114,19 +114,19 @@ export class FlyingBehaviorFactory {
             }
             if (lastResult === WaitForBoatLogic.RESULT_NOTICED) {
                 return {
-                    name: BuzzBoatFlightLogic.NAME,
+                    name: 'BuzzBoatFlight',
                     params: { flightSpeed }
                 }
             }
             if (lastResult === BuzzBoatFlightLogic.RESULT_FINISHED) {
                 return {
-                    name: WaterLandingFlightLogic.NAME,
+                    name: 'WaterLandingFlight',
                     params: { flightSpeed, landingHeight }
                 }
             }
             if (lastResult === WaterLandingFlightLogic.RESULT_FINISHED) {
                 return {
-                    name: DelayLogic.NAME,
+                    name: 'Delay',
                     params: { waitOnShore: false, maxDuration: 2.0 }
                 }
             }
@@ -167,11 +167,11 @@ export class FlyingBehaviorFactory {
         // fly to and buzz the boat
         // fly off behind the boat
         // repeat
-        const script = (step: number, lastResult: string) => {
+        const script = (step: number, lastResult: string): any => {
             console.log(lastResult);
             if (lastResult === '' || lastResult === FlyOppositeBoatLogic.RESULT_FINISHED) {
                 return {
-                    name: WanderingFlightLogic.NAME,
+                    name: 'WanderingFlight',
                     params: {
                         flightSpeed,
                         wanderHeight: flightHeight,
@@ -183,7 +183,7 @@ export class FlyingBehaviorFactory {
             }
             if (lastResult === WanderingFlightLogic.RESULT_NOTICED) {
                 return {
-                    name: BuzzBoatFlightLogic.NAME,
+                    name: 'BuzzBoatFlight',
                     params: {
                         flightSpeed,
                         maxHeight: flightHeight,
@@ -195,7 +195,7 @@ export class FlyingBehaviorFactory {
             }
             if (lastResult === BuzzBoatFlightLogic.RESULT_FINISHED) {
                 return {
-                    name: FlyOppositeBoatLogic.NAME,
+                    name: 'FlyOppositeBoatLogic',
                     params: {
                         flightSpeed, flightHeight, distance: noticeDistance
                     }

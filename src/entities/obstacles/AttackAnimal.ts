@@ -1,13 +1,11 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { WolfAttackLogic } from '../behaviors/logic/WolfAttackLogic';
-import { EnteringWaterLogic } from '../behaviors/logic/EnteringWaterLogic';
 import { WaitForBoatLogic } from '../behaviors/logic/WaitForBoatLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
+import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogicConfigs';
 import { AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { Animal, AnimalOptions } from './Animal';
-import { ShoreWalkLogic } from '../behaviors/logic/ShoreWalkLogic';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 
 /**
@@ -18,8 +16,10 @@ import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
  */
 export type AttackAnimalBehavior = 'none' | 'attack' | 'wait' | 'walk';
 
+export type AttackLogicName = 'AmbushAttack' | 'WolfAttack';
+
 export interface AttackAnimalOptions extends AnimalOptions {
-    attackLogicName?: string;
+    attackLogicName?: AttackLogicName;
     attackBehavior?: AttackAnimalBehavior;
 }
 
@@ -28,7 +28,7 @@ export class AttackBehaviorFactory {
         animal: AnyAnimal,
         params: {
             aggressiveness?: number;
-            attackLogicName?: string,
+            attackLogicName?: AttackLogicName,
             attackBehavior?: AttackAnimalBehavior,
             disableLogic?: boolean,
             heightInWater?: number,
@@ -38,7 +38,7 @@ export class AttackBehaviorFactory {
     ) {
         const {
             aggressiveness = 0.5,
-            attackLogicName = WolfAttackLogic.NAME,
+            attackLogicName = 'WolfAttack',
             attackBehavior = 'none',
             disableLogic = false,
             heightInWater = 0,
@@ -62,7 +62,7 @@ export class AttackBehaviorFactory {
     }
 
     private static getLogicScript(
-        attackLogicName: string,
+        attackLogicName: AttackLogicName,
         attackBehavior: AttackAnimalBehavior,
         heightInWater: number,
         jumpsIntoWater: boolean,
@@ -70,30 +70,28 @@ export class AttackBehaviorFactory {
         if (attackBehavior === 'none') {
             return null;
         } else if (attackBehavior === 'attack') {
-            return { name: attackLogicName };
+            return { name: attackLogicName } as AnimalLogicConfig;
         } else if (attackBehavior === 'wait') {
             return AnimalLogicStep.sequence([
                 {
-                    name: WaitForBoatLogic.NAME,
+                    name: 'WaitForBoat',
                 },
                 {
-                    name: EnteringWaterLogic.NAME,
+                    name: 'EnteringWater',
                     params: { targetWaterHeight: heightInWater, jump: jumpsIntoWater }
                 },
-                {
-                    name: attackLogicName
-                }
+                { name: attackLogicName } as AnimalLogicConfig
             ]);
         } else if (attackBehavior === 'walk') {
             return AnimalLogicStep.sequence([
                 AnimalLogicStep.until(WaitForBoatLogic.RESULT_NOTICED, Infinity,
                     AnimalLogicStep.random([
                         {
-                            name: WaitForBoatLogic.NAME,
+                            name: 'WaitForBoat',
                             timeout: 5.0,
                         },
                         {
-                            name: ShoreWalkLogic.NAME,
+                            name: 'ShoreWalk',
                             params: {
                                 walkDistance: 10 + Math.random() * 10,
                                 speed: 0.8 + Math.random() * 0.4
@@ -102,12 +100,10 @@ export class AttackBehaviorFactory {
                     ])
                 ),
                 {
-                    name: EnteringWaterLogic.NAME,
+                    name: 'EnteringWater',
                     params: { targetWaterHeight: heightInWater, jump: jumpsIntoWater }
                 },
-                {
-                    name: attackLogicName
-                }
+                { name: attackLogicName } as AnimalLogicConfig
             ]);
         }
     }

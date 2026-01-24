@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase, LocomotionType } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase, LocomotionType } from './AnimalLogic';
 
 export interface DelayParams {
     waitOnShore?: boolean;
@@ -12,9 +12,8 @@ export interface DelayParams {
  * b) duration expires (returns TIMEOUT)
  */
 export class DelayLogic implements AnimalLogic {
-    public static readonly NAME = 'delay';
     public static readonly RESULT_FINISHED = 'delay_finished';
-    readonly name = DelayLogic.NAME;
+    readonly name = 'Delay';
 
     private locomotionType: LocomotionType;
     private logicPhase: AnimalLogicPhase;

@@ -17,10 +17,9 @@ export interface BuzzBoatFlightParams {
  * enough or after a timeout.
  */
 export class BuzzBoatFlightLogic implements AnimalLogic {
-    public static readonly NAME = 'BuzzBoatFlightLogic';
     public static readonly RESULT_FINISHED = 'buzz_boat_finished';
     public static readonly RESULT_OUT_OF_RANGE = 'buzz_boat_out_of_range';
-    readonly name = BuzzBoatFlightLogic.NAME;
+    readonly name = 'BuzzBoatFlight';
 
     private flightSpeed: number;
     private buzzTimeout: number;

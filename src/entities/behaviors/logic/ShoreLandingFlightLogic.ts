@@ -13,10 +13,9 @@ export interface ShoreLandingFlightParams {
  * Flight logic runs until animal lands.
  */
 export class ShoreLandingFlightLogic implements AnimalLogic {
-    public static readonly NAME = 'ShoreLandingFlightLogic';
     public static readonly RESULT_FINISHED = 'shore_landing_finished';
     public static readonly RESULT_OUT_OF_RANGE = 'shore_landing_out_of_range';
-    readonly name = ShoreLandingFlightLogic.NAME;
+    readonly name = 'ShoreLandingFlight';
 
     private flightSpeed: number;
     private zRange?: [number, number];

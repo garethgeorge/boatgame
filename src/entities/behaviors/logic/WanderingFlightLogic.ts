@@ -14,9 +14,8 @@ export interface WanderingFlightParams {
 }
 
 export class WanderingFlightLogic implements AnimalLogic {
-    public static readonly NAME = 'WanderingFlightLogic';
     public static readonly RESULT_NOTICED = 'wandering_noticed';
-    readonly name = WanderingFlightLogic.NAME;
+    readonly name = 'WanderingFlight';
 
     private flightSpeed: number;
     private noticeDistance: number;

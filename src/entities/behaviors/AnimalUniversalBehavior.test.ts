@@ -4,6 +4,7 @@ import { AnimalUniversalBehavior } from './AnimalUniversalBehavior';
 import { Boat } from '../Boat';
 import { AnimalLogicRegistry } from './logic/AnimalLogicRegistry';
 import { AnimalLogicStep } from './logic/AnimalLogic';
+import { AnimalLogicConfig } from './logic/AnimalLogicConfigs';
 
 // Mock dependencies
 vi.mock('../Boat', () => ({
@@ -71,7 +72,7 @@ describe('AnimalUniversalBehavior', () => {
     });
 
     it('should initialize with a single config script', () => {
-        const script = { name: 'TestLogic' };
+        const script: any = { name: 'TestLogic' };
         const behavior = new AnimalUniversalBehavior(mockEntity, 0.5, script);
 
         behavior.update(0.1);
@@ -81,8 +82,8 @@ describe('AnimalUniversalBehavior', () => {
     });
 
     it('should handle sequential scripts', () => {
-        const configA = { name: 'A' };
-        const configB = { name: 'B' };
+        const configA: any = { name: 'A' };
+        const configB: any = { name: 'B' };
         const script = AnimalLogicStep.sequence([configA, configB]);
 
         const behavior = new AnimalUniversalBehavior(mockEntity, 0.5, script);
@@ -104,7 +105,7 @@ describe('AnimalUniversalBehavior', () => {
     });
 
     it('should handle loop termination with until', () => {
-        const configA = { name: 'A' };
+        const configA: any = { name: 'A' };
         const script = AnimalLogicStep.until('MATCH', Infinity, configA);
 
         const behavior = new AnimalUniversalBehavior(mockEntity, 0.5, script);
@@ -136,8 +137,8 @@ describe('AnimalUniversalBehavior', () => {
     });
 
     it('should handle immediate chaining (finish: false)', () => {
-        const configA = { name: 'A' };
-        const configB = { name: 'B' };
+        const configA: any = { name: 'A' };
+        const configB: any = { name: 'B' };
         const script = AnimalLogicStep.sequence([configA, configB]);
 
         const behavior = new AnimalUniversalBehavior(mockEntity, 0.5, script);

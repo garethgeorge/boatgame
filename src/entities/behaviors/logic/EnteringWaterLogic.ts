@@ -1,7 +1,8 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../../../world/RiverSystem';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
+import { AnimalLogicConfig } from './AnimalLogicConfigs';
 import { EnteringWaterStrategy } from './strategy/EnteringWaterStrategy';
 
 export interface EnteringWaterParams {
@@ -13,9 +14,8 @@ export interface EnteringWaterParams {
  * Entering water runs until animal is in the water. Returns next logic.
  */
 export class EnteringWaterLogic implements AnimalLogic {
-    public static readonly NAME = 'enteringwater';
     public static readonly RESULT_FINISHED = 'entering_water_finished';
-    readonly name = EnteringWaterLogic.NAME;
+    readonly name = 'EnteringWater';
 
     private strategy: EnteringWaterStrategy;
     private duration: number = 0;

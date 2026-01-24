@@ -24,14 +24,7 @@ export enum AnimalLogicPhase {
     FLYING = 'FLYING'
 }
 
-/**
- * Configuration for any animal behavioral logic.
- */
-export interface AnimalLogicConfig {
-    name: string;
-    timeout?: number;
-    params?: Record<string, any>;
-}
+import { AnimalLogicConfig } from './AnimalLogicConfigs';
 
 /**
  * Shared context passed to ALL animal logic modules every frame.

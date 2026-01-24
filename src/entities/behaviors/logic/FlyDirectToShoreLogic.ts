@@ -13,9 +13,8 @@ export interface FlyDirectToShoreParams {
  * Flight logic runs until animal lands.
  */
 export class FlyDirectToShoreLogic implements AnimalLogic {
-    public static readonly NAME = 'FlyDirectToShoreLogic';
     public static readonly RESULT_FINISHED = 'fly_direct_to_shore_finished';
-    readonly name = FlyDirectToShoreLogic.NAME;
+    readonly name = 'FlyDirectToShore';
 
     private flightSpeed: number;
     private zRange?: [number, number];

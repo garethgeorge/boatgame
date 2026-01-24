@@ -9,8 +9,7 @@ import { CircleFlankStrategy, SternInterceptStrategy, VulnerableChargeStrategy }
  * Wolf attack runs forever.
  */
 export class WolfAttackLogic implements AnimalLogic {
-    public static readonly NAME = 'wolf';
-    readonly name = WolfAttackLogic.NAME;
+    readonly name = 'WolfAttack';
 
     private currentStrategy: AnimalPathStrategy;
     private strategyTimer: number = 0;

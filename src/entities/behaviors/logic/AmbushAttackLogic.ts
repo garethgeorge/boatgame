@@ -9,8 +9,7 @@ import { ShoreHuggingStrategy, SternInterceptStrategy } from './strategy/AttackP
  * Ambush logic runs forever.
  */
 export class AmbushAttackLogic implements AnimalLogic {
-    public static readonly NAME = 'ambush';
-    readonly name = AmbushAttackLogic.NAME;
+    readonly name = 'AmbushAttack';
 
     private currentStrategy: AnimalPathStrategy;
     private state: 'IDLE' | 'PREPARING' | 'STALKING' | 'STRIKING' = 'IDLE';

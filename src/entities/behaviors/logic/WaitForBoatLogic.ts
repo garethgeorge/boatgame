@@ -1,5 +1,6 @@
 import * as planck from 'planck';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicConfig, AnimalLogicPhase, LocomotionType } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase, LocomotionType } from './AnimalLogic';
+import { AnimalLogicConfig } from './AnimalLogicConfigs';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
 export interface WaitForBoatParams {
@@ -15,9 +16,8 @@ export interface WaitForBoatParams {
  * b) duration expires (returns TIMEOUT)
  */
 export class WaitForBoatLogic implements AnimalLogic {
-    public static readonly NAME = 'shoreidle';
     public static readonly RESULT_NOTICED = 'shore_idle_noticed';
-    readonly name = WaitForBoatLogic.NAME;
+    readonly name = 'WaitForBoat';
 
     private locomotionType: LocomotionType;
     private logicPhase: AnimalLogicPhase;
