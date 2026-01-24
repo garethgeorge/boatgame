@@ -19,6 +19,7 @@ import { PenguinKayak } from '../obstacles/PenguinKayak';
 import { Butterfly } from '../obstacles/Butterfly';
 import { Pterodactyl } from '../obstacles/Pterodactyl';
 import { Dragonfly } from '../obstacles/Dragonfly';
+import { Turtle } from '../obstacles/Turtle';
 
 import { BuoySpawner } from './BuoySpawner';
 import { IcebergSpawner } from './IcebergSpawner';
@@ -201,6 +202,15 @@ export class EntitySpawners {
             factory: (physicsEngine, options) => new Swan(physicsEngine, options),
             heightInWater: Swan.HEIGHT_IN_WATER,
             entityRadius: 2.0,
+            waterPlacement: { minDistFromBank: 1.0 }
+        },
+        {
+            id: EntityIds.TURTLE,
+            getDensity: () => 0.02,
+            factory: (physicsEngine, options) => new Turtle(physicsEngine, options),
+            heightInWater: Turtle.HEIGHT_IN_WATER,
+            entityRadius: 1.5,
+            shoreProbability: 0.4,
             waterPlacement: { minDistFromBank: 1.0 }
         }
     ];

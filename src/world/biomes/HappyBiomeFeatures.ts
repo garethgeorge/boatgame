@@ -156,77 +156,70 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                 density: [0.5, 1.0],
                 types: [EntityIds.SWAN]
             },
+            'turtle_hurds': {
+                logic: 'scatter',
+                place: 'shore',
+                density: [0.5, 1.0],
+                types: [EntityIds.TURTLE]
+            },
             'butterfly_swarms': {
                 logic: 'scatter',
                 place: 'shore',
-                density: [1.5, 3.0],
+                density: [0.8, 1.2],
                 types: [EntityIds.BUTTERFLY]
             },
             'bluebird_flocks': {
                 logic: 'scatter',
                 place: 'shore',
-                density: [1.5, 3.0],
+                density: [0.8, 1.2],
                 types: [EntityIds.BLUEBIRD]
+            },
+            'dragonfly_swarms': {
+                logic: 'scatter',
+                place: 'path',
+                density: [0.8, 1.2],
+                types: [EntityIds.DRAGONFLY]
             }
         };
 
+        const patternCombos = [
+            { river: 'dolphin_pods', flying: 'bluebird_flocks' },
+            { river: 'swan_bevies', flying: 'butterfly_swarms' },
+            { river: 'turtle_hurds', flying: 'dragonfly_swarms' },
+        ];
+
+        const combo = patternCombos[Math.floor(Math.random() * 3)];
+
         const riverTrack: TrackConfig = {
-            name: 'animals',
+            name: 'river',
             stages: [
                 {
                     name: 'river_animals',
                     progress: [0, 1.0],
+                    patterns: [[{ pattern: combo.river, weight: 1.0 }]]
+                }
+            ]
+        };
+
+        const flyingTrack: TrackConfig = {
+            name: 'flying',
+            stages: [
+                {
+                    name: 'flying_animals',
+                    progress: [0, 1.0],
                     patterns: [
                         [
-                            { pattern: 'dolphin_pods', weight: 1.0 }
-                        ],
-                        [
-                            { pattern: 'swan_bevies', weight: 1.0 }
+                            { pattern: combo.flying, weight: 1.0 }
                         ]
                     ]
                 }
             ]
         };
 
-        const randomChoice = Math.random();
-        let flyingAnimalTrack: TrackConfig;
-
-        if (randomChoice < 0.5) {
-            flyingAnimalTrack = {
-                name: 'butterflies',
-                stages: [
-                    {
-                        name: 'butterfly_meadows',
-                        progress: [0, 1.0],
-                        patterns: [
-                            [
-                                { pattern: 'butterfly_swarms', weight: 1.0 }
-                            ]
-                        ]
-                    }
-                ]
-            };
-        } else {
-            flyingAnimalTrack = {
-                name: 'bluebirds',
-                stages: [
-                    {
-                        name: 'bluebird_skies',
-                        progress: [0, 1.0],
-                        patterns: [
-                            [
-                                { pattern: 'bluebird_flocks', weight: 1.0 }
-                            ]
-                        ]
-                    }
-                ]
-            };
-        }
-
         const boatPath = BoatPathLayoutStrategy.createLayout(zMin, zMax, {
             patterns: patterns,
             tracks: [
-                riverTrack, flyingAnimalTrack
+                riverTrack, flyingTrack
             ],
             waterAnimals
         });
@@ -234,7 +227,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return boatPath;
     }
 
-    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
+    * decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
         const spatialGrid = context.chunk.spatialGrid;
         yield* TerrainDecorator.decorateIterator(
             context,
@@ -245,7 +238,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         );
     }
 
-    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
+    * spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
         yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, context.biomeLayout as BoatPathLayout, this.id, zStart, zEnd);
     }
 }

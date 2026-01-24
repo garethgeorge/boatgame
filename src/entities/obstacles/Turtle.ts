@@ -1,63 +1,62 @@
-import * as planck from 'planck';
 import * as THREE from 'three';
-import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { EntityBehavior } from '../behaviors/EntityBehavior';
-import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
-import { GraphicsUtils } from '../../core/GraphicsUtils';
+import { Decorations } from '../../world/Decorations';
+import { SwimAwayAnimal, SwimAwayAnimalOptions, SwimAwayBehaviorFactory } from './SwimAwayAnimal';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { AnimalAnimations, Animal } from './Animal';
+import { Entity } from '../../core/Entity';
 
-export class Turtle extends Entity {
+export class Turtle extends SwimAwayAnimal {
+    public static readonly HEIGHT_IN_WATER: number = -0.8;
 
+    constructor(physicsEngine: PhysicsEngine, options: SwimAwayAnimalOptions) {
+        super(
+            physicsEngine,
+            'turtle',
+            Entity.TYPE_OBSTACLE,
+            true,
+            options,
+            {
+                density: 8.0,
+                friction: 0.1,
+                linearDamping: 1.0,
+                angularDamping: 1.0
+            });
 
-    private behavior: EntityBehavior | null = null;
-    private turnTimer: number = 0;
-
-    constructor(x: number, y: number, physicsEngine: PhysicsEngine) {
-        super();
-
-        const physicsBody = physicsEngine.world.createBody({
-            type: 'dynamic',
-            position: planck.Vec2(x, y),
-            linearDamping: 1.0,
-            angularDamping: 1.0
-        });
-        this.physicsBodies.push(physicsBody);
-
-        physicsBody.createFixture({
-            shape: planck.Circle(0.8),
-            density: 8.0,
-            friction: 0.1
-        });
-
-        physicsBody.setUserData({ type: 'obstacle', subtype: 'turtle', entity: this });
-
-        // Graphics
-        const geo = new THREE.SphereGeometry(0.8, 16, 16);
-        geo.name = 'Turtle - Shell Geometry';
-        const mat = new THREE.MeshToonMaterial({ color: 0x006400, name: 'Turtle - Shell Material' }); // Dark Green
-        const mesh = GraphicsUtils.createMesh(geo, mat, 'TurtleMesh');
-        this.meshes.push(mesh);
-
-        mesh.scale.y = 0.5; // Flatten it
+        this.setBehavior(SwimAwayBehaviorFactory.create(
+            this,
+            {
+                heightInWater: Turtle.HEIGHT_IN_WATER,
+                ...options
+            }
+        ));
     }
 
-    wasHitByPlayer() {
-        // Turtle dives (disappears)
-        this.destroyPhysicsBodies();
-        this.behavior = new ObstacleHitBehavior(this.meshes, () => {
-            this.shouldRemove = true;
-        }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
+    protected getModelData() {
+        return Decorations.getTurtle();
     }
 
-    update(dt: number) {
-        if (this.behavior) {
-            this.behavior.update(dt);
-        }
+    protected setupModel(model: THREE.Group) {
+        model.scale.set(2.0, 2.0, 2.0);
+    }
 
-        // Meander Timer
-        this.turnTimer -= dt;
-        if (this.turnTimer <= 0) {
-            this.turnTimer = Math.random() * 3 + 1;
-        }
+    protected getAnimations(): AnimalAnimations {
+        return {
+            default: Animal.play({
+                name: 'idle',
+                timeScale: 0.5,
+                repeat: Infinity
+            }),
+            animations: [
+                {
+                    phases: [AnimalLogicPhase.ENTERING_WATER, AnimalLogicPhase.SWIMING_AWAY],
+                    play: Animal.play({
+                        name: 'swim',
+                        timeScale: 1.0,
+                        repeat: Infinity
+                    })
+                }
+            ]
+        };
     }
 }

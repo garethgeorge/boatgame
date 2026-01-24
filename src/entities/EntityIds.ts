@@ -17,6 +17,7 @@ export enum EntityIds {
     EGRET = 'egret',
     DRAGONFLY = 'dragonfly',
     SNAKE = 'snake',
+    TURTLE = 'turtle',
 
     // Obstacles & Others
     LOG = 'log',

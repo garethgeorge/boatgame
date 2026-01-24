@@ -3,10 +3,17 @@ import * as THREE from 'three';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { Animal, AnimalOptions } from './Animal';
-import { AnimalLogicScript } from '../behaviors/logic/AnimalLogic';
+import { AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 
+/**
+ * swim - animal is already in water, starts with swim behavior
+ * wait - wait on land for boat, enter water, and swim away
+ */
+export type SwimAwayAnimalBehavior = 'swim' | 'wait';
+
 export interface SwimAwayAnimalOptions extends AnimalOptions {
+    swimBehavior?: SwimAwayAnimalBehavior;
 }
 
 export class SwimAwayBehaviorFactory {
@@ -16,13 +23,21 @@ export class SwimAwayBehaviorFactory {
         params: {
             disableLogic?: boolean,
             aggressiveness?: number,
+            swimBehavior?: SwimAwayAnimalBehavior,
+            heightInWater?: number,
+            jumpsIntoWater?: boolean,
         }
     ) {
         const {
             disableLogic = false,
             aggressiveness = 0.5,
+            swimBehavior = 'swim',
+            heightInWater = 0,
+            jumpsIntoWater = false,
         } = params;
-        const script = disableLogic ? null : this.getLogicScript();
+
+        const script = disableLogic ? null : this.getLogicScript(swimBehavior, heightInWater, jumpsIntoWater);
+
         if (script) {
             return new AnimalUniversalBehavior(animal, aggressiveness, script);
         } else {
@@ -30,8 +45,26 @@ export class SwimAwayBehaviorFactory {
         }
     }
 
-    private static getLogicScript(): AnimalLogicScript {
-        return { name: 'DefaultSwimAway' };
+    private static getLogicScript(
+        swimBehavior: SwimAwayAnimalBehavior,
+        heightInWater: number,
+        jumpsIntoWater: boolean,
+    ): AnimalLogicScript {
+        if (swimBehavior === 'swim') {
+            return { name: 'DefaultSwimAway' };
+        } else {
+            return AnimalLogicStep.sequence([
+                {
+                    name: 'WaitForBoat',
+                    params: { noticeDistance: 50.0, ignoreBottles: true }
+                },
+                {
+                    name: 'EnteringWater',
+                    params: { targetWaterHeight: heightInWater, jump: jumpsIntoWater }
+                },
+                { name: 'DefaultSwimAway' }
+            ]);
+        }
     }
 }
 
