@@ -13,6 +13,7 @@ import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { DelayLogic } from '../behaviors/logic/DelayLogic';
 import { BuzzBoatFlightLogic } from '../behaviors/logic/BuzzBoatFlightLogic';
 import { FlyDirectToShoreLogic } from '../behaviors/logic/FlyDirectToShoreLogic';
+import { FlyOppositeBoatLogic } from '../behaviors/logic/FlyOppositeBoatLogic';
 
 export interface FlyingAnimalOptions extends AnimalOptions {
     minNoticeDistance?: number,
@@ -97,15 +98,18 @@ export class FlyingBehaviorFactory {
 
         if (disableLogic) return null;
 
-        // wait for boat
+        // wait for boat (first time has a far notice distance)
         // buzz boat
         // fly away for a bit and land in water
         // repeat
         const script = (step: number, lastResult: string) => {
-            if (lastResult === '' || lastResult === WaterLandingFlightLogic.RESULT_FINISHED) {
+            if (lastResult === '' || lastResult === DelayLogic.RESULT_FINISHED) {
                 return {
                     name: WaitForBoatLogic.NAME,
-                    params: { minNoticeDistance: minNoticeDistance, ignoreBottles: true }
+                    params: {
+                        minNoticeDistance: step == 0 ? minNoticeDistance : 5.0,
+                        ignoreBottles: true
+                    }
                 };
             }
             if (lastResult === WaitForBoatLogic.RESULT_NOTICED) {
@@ -120,6 +124,12 @@ export class FlyingBehaviorFactory {
                     params: { flightSpeed, landingHeight }
                 }
             }
+            if (lastResult === WaterLandingFlightLogic.RESULT_FINISHED) {
+                return {
+                    name: DelayLogic.NAME,
+                    params: { waitOnShore: false, maxDuration: 2.0 }
+                }
+            }
             return null;
         };
         return new AnimalUniversalBehavior(animal, aggressiveness, script);
@@ -129,12 +139,12 @@ export class FlyingBehaviorFactory {
         animal: AnyAnimal,
         params: {
             flightSpeed?: number,
+            flightHeight?: number,
             noticeDistance?: number,
             buzzDuration?: number,
             buzzHeight?: number,
             buzzOffset?: number,
             wanderRadius?: number,
-            maxHeight?: number,
             aggressiveness?: number,
             disableLogic?: boolean,
         }
@@ -146,7 +156,7 @@ export class FlyingBehaviorFactory {
             buzzHeight = 2.5,
             buzzOffset = 5.0,
             wanderRadius = 20.0,
-            maxHeight = 15.0,
+            flightHeight = 15.0,
             aggressiveness = 0.5,
             disableLogic = false
         } = params;
@@ -155,19 +165,19 @@ export class FlyingBehaviorFactory {
 
         // wander around until boat is near
         // fly to and buzz the boat
+        // fly off behind the boat
         // repeat
         const script = (step: number, lastResult: string) => {
-            if (lastResult === '' || lastResult === BuzzBoatFlightLogic.RESULT_FINISHED) {
-                const firstTime = step === 0;
+            console.log(lastResult);
+            if (lastResult === '' || lastResult === FlyOppositeBoatLogic.RESULT_FINISHED) {
                 return {
                     name: WanderingFlightLogic.NAME,
                     params: {
                         flightSpeed,
+                        wanderHeight: flightHeight,
                         noticeDistance: noticeDistance,
-                        noticeDelay: firstTime ? 0.0 : 5.0,
+                        noticeDelay: 2.0,
                         wanderRadius,
-                        maxHeight,
-                        moveToCenter: !firstTime
                     }
                 };
             }
@@ -175,13 +185,21 @@ export class FlyingBehaviorFactory {
                 return {
                     name: BuzzBoatFlightLogic.NAME,
                     params: {
-                        buzzOffset,
-                        maxHeight,
-                        buzzHeight,
                         flightSpeed,
+                        maxHeight: flightHeight,
+                        buzzOffset,
+                        buzzHeight,
                         buzzTimeout: buzzDuration
                     }
                 };
+            }
+            if (lastResult === BuzzBoatFlightLogic.RESULT_FINISHED) {
+                return {
+                    name: FlyOppositeBoatLogic.NAME,
+                    params: {
+                        flightSpeed, flightHeight, distance: noticeDistance
+                    }
+                }
             }
             return null;
         };

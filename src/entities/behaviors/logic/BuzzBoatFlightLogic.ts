@@ -39,7 +39,8 @@ export class BuzzBoatFlightLogic implements AnimalLogic {
             buzzOffset = 0,
             buzzHeight = 2.5
         } = params;
-        this.strategy = new BuzzTargetStrategy(maxHeight, buzzHeight, 75.0, this.flightSpeed, buzzOffset);
+
+        this.strategy = new BuzzTargetStrategy(maxHeight, buzzHeight, this.flightSpeed, buzzOffset);
     }
 
     activate(context: AnimalLogicContext): void {
@@ -48,7 +49,6 @@ export class BuzzBoatFlightLogic implements AnimalLogic {
     update(context: AnimalLogicContext): AnimalLogicPathResult {
         this.stateTimer -= context.dt;
 
-        // End if out of z range
         if (this.state === 'TOWARD' || this.state === 'TIMEOUT') {
             const distToBoat = planck.Vec2.distance(context.originPos, context.targetBody.getPosition());
 

@@ -25,13 +25,12 @@ export class Dragonfly extends FlyingAnimal {
             this,
             {
                 flightSpeed: 40.0,
+                flightHeight: 4.0,
                 noticeDistance: 60.0,
                 buzzDuration: 2.0,
                 buzzHeight: 1.5,
                 buzzOffset: 3.0,
-                maxHeight: 5.0,
                 wanderRadius: 10.0,
-                turningSpeed: Math.PI * 4.0,
                 ...options,
             }
         ));

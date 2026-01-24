@@ -11,6 +11,7 @@ import { WaterLandingFlightLogic } from './WaterLandingFlightLogic';
 import { WanderingFlightLogic } from './WanderingFlightLogic';
 import { BuzzBoatFlightLogic } from './BuzzBoatFlightLogic';
 import { FlyDirectToShoreLogic } from './FlyDirectToShoreLogic';
+import { FlyOppositeBoatLogic } from './FlyOppositeBoatLogic';
 
 export class AnimalLogicRegistry {
     private static factories: Map<string, (params?: any) => AnimalLogic> = new Map();
@@ -22,6 +23,7 @@ export class AnimalLogicRegistry {
         this.register(DelayLogic.NAME, (params) => new DelayLogic(params as any));
         this.register(EnteringWaterLogic.NAME, (params) => new EnteringWaterLogic(params as any));
         this.register(FlyDirectToShoreLogic.NAME, (params) => new FlyDirectToShoreLogic(params as any));
+        this.register(FlyOppositeBoatLogic.NAME, (params) => new FlyOppositeBoatLogic(params as any));
         this.register(ShoreLandingFlightLogic.NAME, (params) => new ShoreLandingFlightLogic(params as any));
         this.register(ShoreWalkLogic.NAME, (params) => new ShoreWalkLogic(params as any));
         this.register(WaitForBoatLogic.NAME, (params) => new WaitForBoatLogic(params as any));

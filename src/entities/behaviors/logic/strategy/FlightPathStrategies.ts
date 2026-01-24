@@ -13,7 +13,6 @@ export class BuzzTargetStrategy extends AnimalPathStrategy {
     constructor(
         private maxHeight: number,
         private buzzHeight: number,
-        private lockOnDistance: number,
         private horizSpeed: number,
         private targetOffset: number = 0, // Offset to "lead" the boat
     ) {
@@ -24,9 +23,11 @@ export class BuzzTargetStrategy extends AnimalPathStrategy {
         this.flightTime += context.dt;
 
         const boatPos = context.targetBody.getPosition();
-        const boatVel = context.targetBody.getLinearVelocity();
+        const boatDir = context.targetBody.getLinearVelocity().clone();
+        boatDir.normalize();
+
         // Target a point ahead of the boat
-        const targetPoint = boatPos.clone().add(boatVel.clone().mul(this.targetOffset));
+        const targetPoint = boatPos.clone().add(boatDir.mul(this.targetOffset));
         const distToBoat = planck.Vec2.distance(context.originPos, targetPoint);
 
         const diffToTarget = targetPoint.clone().sub(context.originPos);
