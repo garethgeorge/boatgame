@@ -109,23 +109,24 @@ export class BoatPathLayoutSpawner {
                                 break;
 
                             case EntityIds.ALLIGATOR:
-                            case EntityIds.MONKEY:
-                            case EntityIds.HIPPO:
-                            case EntityIds.TREX:
-                            case EntityIds.TRICERATOPS:
-                            case EntityIds.BRONTOSAURUS:
-                            case EntityIds.MOOSE:
-                            case EntityIds.BROWN_BEAR:
-                            case EntityIds.POLAR_BEAR:
-                            case EntityIds.DUCKLING:
-                            case EntityIds.DOLPHIN:
-                            case EntityIds.SWAN:
-                            case EntityIds.PENGUIN_KAYAK:
-                            case EntityIds.BUTTERFLY:
-                            case EntityIds.PTERODACTYL:
                             case EntityIds.BLUEBIRD:
+                            case EntityIds.BRONTOSAURUS:
+                            case EntityIds.BROWN_BEAR:
+                            case EntityIds.BUTTERFLY:
+                            case EntityIds.DOLPHIN:
+                            case EntityIds.DRAGONFLY:
+                            case EntityIds.DUCKLING:
                             case EntityIds.EGRET:
-                            case EntityIds.DRAGONFLY: {
+                            case EntityIds.HIPPO:
+                            case EntityIds.MONKEY:
+                            case EntityIds.MOOSE:
+                            case EntityIds.PENGUIN_KAYAK:
+                            case EntityIds.POLAR_BEAR:
+                            case EntityIds.PTERODACTYL:
+                            case EntityIds.SNAKE:
+                            case EntityIds.SWAN:
+                            case EntityIds.TREX:
+                            case EntityIds.TRICERATOPS: {
                                 let logic: AttackLogicName | undefined = undefined;
                                 let range = p.range;
 

@@ -121,6 +121,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
             EntityIds.DUCKLING,
             EntityIds.EGRET,
             EntityIds.PENGUIN_KAYAK,
+            EntityIds.SNAKE,
             EntityIds.SWAN
         ];
 
@@ -172,7 +173,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
-        if (false && zStart === 0) {
+        if (true && zStart === 0) {
             this.spawnAllAnimals(context, -50);
         }
 

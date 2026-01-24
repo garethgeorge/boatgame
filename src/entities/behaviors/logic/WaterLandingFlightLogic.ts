@@ -67,7 +67,6 @@ export class WaterLandingFlightLogic implements AnimalLogic {
         if (this.state !== 'LANDING') return false;
         // Water landing is simple - just height and speed check
         const currentAltitude = Math.abs(context.currentHeight - this.landingHeight);
-        console.log('altitude', currentAltitude);
         return currentAltitude < 0.1 && context.physicsBody.getLinearVelocity().length() < 1.0;
     }
 }

@@ -4,6 +4,7 @@ import { AnimalSpawner } from './AnimalSpawner';
 import { SwimAwayAnimalSpawnConfig, SwimAwayAnimalSpawner } from './SwimAwayAnimalSpawner';
 import { EntityIds } from '../EntityIds';
 import { Alligator } from '../obstacles/Alligator';
+import { Snake } from '../obstacles/Snake';
 import { Brontosaurus } from '../obstacles/Brontosaurus';
 import { TRex } from '../obstacles/TRex';
 import { BrownBear } from '../obstacles/BrownBear';
@@ -48,12 +49,7 @@ export class EntitySpawners {
     private attackConfigs: AttackAnimalSpawnConfig[] = [
         {
             id: EntityIds.ALLIGATOR,
-            getDensity: (difficulty, zStart) => {
-                const dist = Math.abs(zStart);
-                if (dist < 1000) return 0;
-                const ramp = Math.max(0, (difficulty - 0.13) / 0.87);
-                return 0.00265 * ramp;
-            },
+            getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Alligator(physicsEngine, options),
             shoreProbability: 0.3,
             entityRadius: 5.0,
@@ -96,12 +92,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.HIPPO,
-            getDensity: (difficulty, zStart) => {
-                const dist = Math.abs(zStart);
-                if (dist < 1000) return 0;
-                const ramp = Math.max(0, (difficulty - 0.13) / 0.87);
-                return 0.00265 * ramp;
-            },
+            getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Hippo(physicsEngine, options),
             shoreProbability: 0.0,
             entityRadius: 5.0,
@@ -133,6 +124,15 @@ export class EntitySpawners {
             heightInWater: Triceratops.HEIGHT_IN_WATER,
             shorePlacement: { minDistFromBank: 3.0, maxDistFromBank: 6.0 },
             waterPlacement: { minDistFromBank: 3.0 }
+        },
+        {
+            id: EntityIds.SNAKE,
+            getDensity: () => 0.1 / 15,
+            factory: (physicsEngine, options) => new Snake(physicsEngine, options),
+            shoreProbability: 0.0,
+            entityRadius: 3.0,
+            heightInWater: Snake.HEIGHT_IN_WATER,
+            waterPlacement: { minDistFromBank: 2.0 }
         },
     ];
 

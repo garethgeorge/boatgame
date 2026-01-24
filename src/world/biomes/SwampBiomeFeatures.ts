@@ -68,11 +68,11 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     density: [0.5, 2.0],
                     types: [EntityIds.LOG]
                 },
-                'alligator_ambush': {
+                'threat_ambush': {
                     logic: 'scatter',
                     place: 'path',
                     density: [0.2, 0.6],
-                    types: [EntityIds.ALLIGATOR]
+                    types: [EntityIds.ALLIGATOR, EntityIds.SNAKE]
                 },
                 'egret_flight': {
                     logic: 'scatter',
@@ -156,7 +156,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                             progress: [0.2, 1.0],
                             patterns: [
                                 [
-                                    { pattern: 'alligator_ambush', weight: 1 },
+                                    { pattern: 'threat_ambush', weight: 1 },
                                 ]
                             ]
                         }
@@ -178,7 +178,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     ]
                 }
             ],
-            waterAnimals: [EntityIds.ALLIGATOR, EntityIds.EGRET, EntityIds.DRAGONFLY]
+            waterAnimals: [EntityIds.ALLIGATOR, EntityIds.SNAKE, EntityIds.EGRET, EntityIds.DRAGONFLY]
         });
     }
 

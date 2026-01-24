@@ -145,7 +145,7 @@ export class AnimationPlayer {
             }
 
             // result is AnimationParameters
-            if (this.playAction(result)) {
+            if (this.playAction(result, true)) {
                 return;
             } else {
                 // If it failed to play, try next step
@@ -154,7 +154,7 @@ export class AnimationPlayer {
         }
     }
 
-    private playAction(options: AnimationParameters): boolean {
+    private playAction(options: AnimationParameters, force: boolean = false): boolean {
 
         let {
             name,
@@ -202,7 +202,7 @@ export class AnimationPlayer {
         const repetitions = repeat;
 
         // If action is current and already has correct parameters, just return
-        if (this.currentAction === action) {
+        if (!force && this.currentAction === action) {
             action.paused = false;
             if (action.isRunning() &&
                 action.loop === mode &&

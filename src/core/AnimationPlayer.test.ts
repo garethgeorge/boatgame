@@ -148,4 +148,22 @@ describe('AnimationPlayer', () => {
 
         expect(actionA.timeScale).toBeCloseTo(0.5);
     });
+
+    it('should force replay the same animation in a script sequence', () => {
+        const configA: AnimationParameters = { name: 'A' };
+        const script = AnimationStep.sequence([configA, configA]);
+
+        player.play(script);
+
+        const actionA = mockActions.get('A');
+        expect(actionA.play).toHaveBeenCalledTimes(1);
+        expect(actionA.reset).toHaveBeenCalledTimes(1);
+
+        // Simulate animation finished event
+        finishedCallback();
+
+        // Should have called reset and play again despite being the same action
+        expect(actionA.play).toHaveBeenCalledTimes(2);
+        expect(actionA.reset).toHaveBeenCalledTimes(2);
+    });
 });

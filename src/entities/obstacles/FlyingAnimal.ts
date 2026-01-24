@@ -167,7 +167,6 @@ export class FlyingBehaviorFactory {
         // fly off behind the boat
         // repeat
         const script = (step: number, lastResult: string): any => {
-            console.log(lastResult);
             if (lastResult === '' || lastResult === FlyOppositeBoatLogic.RESULT_FINISHED) {
                 return {
                     name: 'WanderingFlight',
