@@ -15,8 +15,6 @@ export class Butterfly extends FlyingAnimal {
         super(physicsEngine, 'butterfly', Entity.TYPE_OBSTACLE, false,
             options,
             {
-                halfWidth: 1.0,
-                halfLength: 1.0,
                 density: 0.1,
                 friction: 0.1
             });

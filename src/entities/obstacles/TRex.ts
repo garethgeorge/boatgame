@@ -18,8 +18,6 @@ export class TRex extends AttackAnimal {
         super(physicsEngine, 'trex', Entity.TYPE_OBSTACLE, true,
             options,
             {
-                halfWidth: 2.0,
-                halfLength: 4.0,
                 density: 10.0,
                 friction: 0.1
             });

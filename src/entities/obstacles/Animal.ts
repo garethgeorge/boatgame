@@ -10,6 +10,7 @@ import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogicConfigs';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { ObstacleHitBehavior, ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export interface AnimalOptions {
     x: number;
@@ -23,8 +24,8 @@ export interface AnimalOptions {
 }
 
 export interface AnimalPhysicsOptions {
-    halfWidth: number;
-    halfLength: number;
+    halfWidth?: number;
+    halfLength?: number;
     density?: number;
     friction?: number;
     restitution?: number;
@@ -64,9 +65,9 @@ export abstract class Animal extends Entity implements AnyAnimal {
 
         this.canCausePenalty = canCausePenalty;
 
-        this.setupPhysicsBody(physicsEngine, subtype, entityType, x, y, -angle, physicsOptions);
-
         this.setupModelMesh(height);
+
+        this.setupPhysicsBody(physicsEngine, subtype, entityType, x, y, -angle, physicsOptions);
 
         if (terrainNormal)
             this.normalVector = terrainNormal.clone();
@@ -85,7 +86,7 @@ export abstract class Animal extends Entity implements AnyAnimal {
         angle: number,
         physicsOptions: AnimalPhysicsOptions
     ): planck.Body {
-        const {
+        let {
             halfWidth,
             halfLength,
             density = 5.0,
@@ -94,6 +95,25 @@ export abstract class Animal extends Entity implements AnyAnimal {
             linearDamping = 2.0,
             angularDamping = 1.0
         } = physicsOptions;
+
+        let centerX = 0;
+        let centerY = 0;
+
+        if (halfWidth === undefined || halfLength === undefined) {
+            // Auto-calculate from model
+            const model = this.meshes.length > 0 ? this.meshes[0] : null;
+            if (model) {
+                const bbox = GraphicsUtils.calculateBoundingBox2D(model);
+                halfWidth = halfWidth ?? bbox.halfWidth;
+                halfLength = halfLength ?? bbox.halfHeight;
+                centerX = bbox.centerX;
+                centerY = bbox.centerY;
+            } else {
+                // Fallback
+                halfWidth = halfWidth ?? 1.0;
+                halfLength = halfLength ?? 1.0;
+            }
+        }
 
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
@@ -104,7 +124,7 @@ export abstract class Animal extends Entity implements AnyAnimal {
         });
 
         physicsBody.createFixture({
-            shape: planck.Box(halfWidth, halfLength),
+            shape: planck.Box(halfWidth, halfLength, planck.Vec2(centerX, centerY), 0),
             density: density,
             friction: friction,
             restitution: restitution

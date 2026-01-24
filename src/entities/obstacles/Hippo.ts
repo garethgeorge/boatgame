@@ -18,8 +18,6 @@ export class Hippo extends AttackAnimal {
         super(physicsEngine, 'hippo', Entity.TYPE_OBSTACLE, true,
             options,
             {
-                halfWidth: 1.5,
-                halfLength: 3.0,
                 density: 5.0,
                 friction: 0.1,
                 linearDamping: 2.0,

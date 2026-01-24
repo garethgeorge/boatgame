@@ -18,8 +18,6 @@ export class Monkey extends AttackAnimal {
         super(physicsEngine, 'monkey', Entity.TYPE_OBSTACLE, true,
             options,
             {
-                halfWidth: 1.0,
-                halfLength: 1.0,
                 density: 5.0,
                 friction: 0.3,
                 linearDamping: 3.0,

@@ -15,8 +15,6 @@ export class Bluebird extends FlyingAnimal {
         super(physicsEngine, 'bluebird', Entity.TYPE_OBSTACLE, false,
             options,
             {
-                halfWidth: 1.5,
-                halfLength: 1.5,
                 density: 0.2,
                 friction: 0.1
             });

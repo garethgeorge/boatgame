@@ -302,4 +302,31 @@ export class GraphicsUtils {
     public static addVertexColors(geo: THREE.BufferGeometry, color: THREE.Color) {
         this.addVertexAttribute(geo, 'color', color.r, color.g, color.b);
     }
+
+    /**
+     * Calculates the 2D bounding box of an object in the X-Z plane.
+     * Maps Graphics Z to a "height" or "length" value (Physics Y).
+     */
+    public static calculateBoundingBox2D(object: THREE.Object3D): { centerX: number, centerY: number, halfWidth: number, halfHeight: number } {
+        // Ensure matrices are up to date
+        object.updateMatrixWorld(true);
+
+        const box = new THREE.Box3().setFromObject(object);
+
+        // If the object has a parent we want the bounding box in the parent's coordinate system
+        if (object.parent) {
+            const inverseParentMatrix = new THREE.Matrix4().copy(object.parent.matrixWorld).invert();
+            box.applyMatrix4(inverseParentMatrix);
+        }
+
+        const min = box.min;
+        const max = box.max;
+
+        return {
+            centerX: (min.x + max.x) / 2,
+            centerY: (min.z + max.z) / 2, // Map Graphics Z to Physics Y
+            halfWidth: (max.x - min.x) / 2,
+            halfHeight: (max.z - min.z) / 2
+        };
+    }
 }

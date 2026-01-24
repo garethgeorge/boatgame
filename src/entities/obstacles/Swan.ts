@@ -17,7 +17,7 @@ export class Swan extends SwimAwayAnimal {
             Entity.TYPE_OBSTACLE,
             false,
             { height: 0.2, ...options },
-            { halfWidth: 1.5, halfLength: 3.0 });
+            {});
 
         this.setBehavior(SwimAwayBehaviorFactory.create(
             this,

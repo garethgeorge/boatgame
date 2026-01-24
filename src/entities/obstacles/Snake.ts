@@ -19,8 +19,6 @@ export class Snake extends AttackAnimal {
         super(physicsEngine, 'snake', Entity.TYPE_OBSTACLE, true,
             options,
             {
-                halfWidth: 1.8,
-                halfLength: 3.75,
                 density: 3.0,
                 friction: 0.1,
                 linearDamping: 2.0,

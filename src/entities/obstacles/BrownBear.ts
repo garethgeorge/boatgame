@@ -18,8 +18,6 @@ export class BrownBear extends AttackAnimal {
         super(physicsEngine, 'brownbear', Entity.TYPE_OBSTACLE, true,
             options,
             {
-                halfWidth: 1.5,
-                halfLength: 2.5,
                 density: 5.0,
                 friction: 0.3,
                 linearDamping: 3.0,

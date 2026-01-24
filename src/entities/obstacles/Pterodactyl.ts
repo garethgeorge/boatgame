@@ -15,8 +15,6 @@ export class Pterodactyl extends FlyingAnimal {
         super(physicsEngine, 'pterodactyl', Entity.TYPE_OBSTACLE, false,
             options,
             {
-                halfWidth: 1.5,
-                halfLength: 1.5,
                 density: 1.0,
                 friction: 0.1
             });

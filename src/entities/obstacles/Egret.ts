@@ -17,8 +17,6 @@ export class Egret extends FlyingAnimal {
         super(physicsEngine, 'egret', Entity.TYPE_OBSTACLE, false,
             options,
             {
-                halfWidth: 1.0,
-                halfLength: 1.5,
                 density: 1.0,
                 friction: 0.1
             });
