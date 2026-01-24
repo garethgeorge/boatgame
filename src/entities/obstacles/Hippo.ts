@@ -29,6 +29,8 @@ export class Hippo extends AttackAnimal {
         this.setBehavior(AttackBehaviorFactory.create(this,
             {
                 heightInWater: Hippo.HEIGHT_IN_WATER,
+                jumpsIntoWater: false,
+                snoutOffset: 3.0,
                 ...options,
             })
         );

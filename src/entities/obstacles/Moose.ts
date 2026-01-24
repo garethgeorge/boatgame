@@ -31,6 +31,7 @@ export class Moose extends AttackAnimal {
             {
                 heightInWater: Moose.HEIGHT_IN_WATER,
                 jumpsIntoWater: true,
+                snoutOffset: 2.5,
                 ...options,
             })
         );

@@ -29,6 +29,8 @@ export class Alligator extends AttackAnimal {
         this.setBehavior(
             AttackBehaviorFactory.create(this, {
                 heightInWater: Alligator.HEIGHT_IN_WATER,
+                jumpsIntoWater: false,
+                snoutOffset: 3.0,
                 ...options,
             })
         );

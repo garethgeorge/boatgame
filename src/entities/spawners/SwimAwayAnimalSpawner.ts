@@ -10,6 +10,7 @@ export interface SwimAwayAnimalSpawnConfig {
     id: string;
     getDensity: (difficulty: number, zStart: number) => number;
     factory: (physicsEngine: PhysicsEngine, options: SwimAwayAnimalOptions) => Entity;
+    heightInWater: number;
     entityRadius?: number;
     waterPlacement?: RiverPlacementOptions;
 }
@@ -34,6 +35,10 @@ export class SwimAwayAnimalSpawner extends AnimalSpawner {
         return this.config.waterPlacement ?? { minDistFromBank: 1.0 };
     }
 
+    protected get heightInWater(): number {
+        return this.config.heightInWater;
+    }
+
     protected getDensity(difficulty: number, zStart: number): number {
         return this.config.getDensity(difficulty, zStart);
     }
@@ -48,8 +53,9 @@ export class SwimAwayAnimalSpawner extends AnimalSpawner {
             const entity = this.config.factory(context.physicsEngine, {
                 x: pos.x,
                 y: pos.z,
-                height: 0,
-                angle: angle
+                height: this.heightInWater,
+                angle: angle,
+                zRange: [context.biomeZMin, context.biomeZMax]
             });
             context.entityManager.add(entity);
 
@@ -88,10 +94,11 @@ export class SwimAwayAnimalSpawner extends AnimalSpawner {
             const entity = this.config.factory(context.physicsEngine, {
                 x: riverPos.worldX,
                 y: riverPos.worldZ,
-                height: fixedHeight !== undefined ? fixedHeight : 0,
+                height: fixedHeight !== undefined ? fixedHeight : this.heightInWater,
                 angle: fixedAngle !== undefined ? fixedAngle : Math.random() * Math.PI * 2,
                 aggressiveness,
-                disableLogic
+                disableLogic,
+                zRange: [context.biomeZMin, context.biomeZMax]
             });
             if (entity) {
                 context.entityManager.add(entity);

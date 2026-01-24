@@ -29,6 +29,8 @@ export class BrownBear extends AttackAnimal {
         this.setBehavior(AttackBehaviorFactory.create(this,
             {
                 heightInWater: BrownBear.HEIGHT_IN_WATER,
+                jumpsIntoWater: false,
+                snoutOffset: 2.5,
                 ...options,
             })
         );

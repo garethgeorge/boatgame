@@ -93,7 +93,6 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
             disableLogic,
             fixedAngle,
             fixedHeight,
-            zRange
         } = options;
 
         let placement: any = null;
@@ -146,7 +145,7 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
                 terrainNormal: placement.normal,
                 aggressiveness,
                 disableLogic,
-                zRange: zRange !== undefined ? zRange : [context.biomeZMin, context.biomeZMax]
+                zRange: [context.biomeZMin, context.biomeZMax]
             });
             if (entity) {
                 context.entityManager.add(entity);

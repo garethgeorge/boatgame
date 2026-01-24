@@ -27,6 +27,8 @@ export class TRex extends AttackAnimal {
         this.setBehavior(AttackBehaviorFactory.create(this,
             {
                 heightInWater: TRex.HEIGHT_IN_WATER,
+                jumpsIntoWater: false,
+                snoutOffset: 4.0,
                 ...options,
             })
         );

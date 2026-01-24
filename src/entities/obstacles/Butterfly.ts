@@ -24,6 +24,7 @@ export class Butterfly extends FlyingAnimal {
         this.setBehavior(FlyingBehaviorFactory.createShoreLanding(
             this,
             {
+                noticeDistance: 100.0,
                 flightSpeed: 20.0,
                 ...options,
             }

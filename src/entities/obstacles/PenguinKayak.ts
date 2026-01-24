@@ -7,6 +7,7 @@ import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations, Animal } from './Animal';
 
 export class PenguinKayak extends SwimAwayAnimal {
+    public static readonly HEIGHT_IN_WATER: number = 0.5;
 
     constructor(physicsEngine: PhysicsEngine, options: SwimAwayAnimalOptions) {
         super(

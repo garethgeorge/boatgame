@@ -29,6 +29,8 @@ export class PolarBear extends AttackAnimal {
         this.setBehavior(AttackBehaviorFactory.create(this,
             {
                 heightInWater: PolarBear.HEIGHT_IN_WATER,
+                jumpsIntoWater: false,
+                snoutOffset: 2.5,
                 ...options,
             })
         );

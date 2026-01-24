@@ -8,6 +8,7 @@ import { AnimalAnimations, Animal } from './Animal';
 import { AnimationStep } from '../../core/AnimationPlayer';
 
 export class Swan extends SwimAwayAnimal {
+    public static readonly HEIGHT_IN_WATER: number = 0.0;
 
     constructor(physicsEngine: PhysicsEngine, options: SwimAwayAnimalOptions) {
         super(

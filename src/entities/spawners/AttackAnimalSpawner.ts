@@ -152,7 +152,8 @@ export class AttackAnimalSpawner extends AnimalSpawner {
                 aggressiveness,
                 attackLogicName: logic,
                 attackBehavior: behavior,
-                disableLogic
+                disableLogic,
+                zRange: [context.biomeZMin, context.biomeZMax]
             });
             if (entity) {
                 context.entityManager.add(entity);

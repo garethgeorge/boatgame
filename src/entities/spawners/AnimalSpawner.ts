@@ -9,10 +9,12 @@ export interface AnimalSpawnOptions {
     distanceRange: [number, number];
     aggressiveness: number;
     logic?: AttackLogicName;
+
+    // These are used for debugging so animals can be placed at an exact
+    // location and then inspected visually
     disableLogic?: boolean;
     fixedAngle?: number;
     fixedHeight?: number;
-    zRange?: [number, number];
 }
 
 /**

@@ -24,6 +24,7 @@ export class Pterodactyl extends FlyingAnimal {
         this.setBehavior(FlyingBehaviorFactory.createShoreLanding(
             this,
             {
+                noticeDistance: 200.0,
                 flightSpeed: 30.0,
                 ...options,
             }

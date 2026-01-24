@@ -24,9 +24,9 @@ export class Dragonfly extends FlyingAnimal {
         this.setBehavior(FlyingBehaviorFactory.createWandering(
             this,
             {
+                noticeDistance: 60.0,
                 flightSpeed: 40.0,
                 flightHeight: 4.0,
-                noticeDistance: 60.0,
                 buzzDuration: 2.0,
                 buzzHeight: 1.5,
                 buzzOffset: 3.0,

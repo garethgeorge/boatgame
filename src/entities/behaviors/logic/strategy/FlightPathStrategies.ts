@@ -11,7 +11,7 @@ export class BuzzTargetStrategy extends AnimalPathStrategy {
     private flightTime: number = 0;
 
     constructor(
-        private maxHeight: number,
+        private flightHeight: number,
         private buzzHeight: number,
         private horizSpeed: number,
         private targetOffset: number = 0, // Offset to "lead" the boat
@@ -22,13 +22,10 @@ export class BuzzTargetStrategy extends AnimalPathStrategy {
     update(context: AnimalStrategyContext): AnimalSteering {
         this.flightTime += context.dt;
 
-        const boatPos = context.targetBody.getPosition();
-        const boatDir = context.targetBody.getLinearVelocity().clone();
-        boatDir.normalize();
-
-        // Target a point ahead of the boat
-        const targetPoint = boatPos.clone().add(boatDir.mul(this.targetOffset));
-        const distToBoat = planck.Vec2.distance(context.originPos, targetPoint);
+        // Target a point ahead of the boat in local coordinates
+        // Bow is at -3.0y, Stern at +3.0y. Positive targetOffset = front = negative y.
+        const targetPoint = context.targetBody.getWorldPoint(planck.Vec2(0, -this.targetOffset));
+        const distToTarget = planck.Vec2.distance(context.originPos, targetPoint);
 
         const diffToTarget = targetPoint.clone().sub(context.originPos);
         const targetAngle = Math.atan2(diffToTarget.x, -diffToTarget.y);
@@ -38,7 +35,7 @@ export class BuzzTargetStrategy extends AnimalPathStrategy {
         return {
             target: targetPoint,
             speed: this.horizSpeed * alignment,
-            height: distToBoat > 50.0 ? this.maxHeight : this.buzzHeight,
+            height: distToTarget > 50.0 ? this.flightHeight : this.buzzHeight,
         };
     }
 }
@@ -52,7 +49,7 @@ export class FleeRiverStrategy extends AnimalPathStrategy {
     private lastDirectionUpdateTime: number = -1;
     private flightTime: number = 0;
 
-    constructor(private maxHeight: number, private horizSpeed: number) { super(); }
+    constructor(private flightHeight: number, private horizSpeed: number) { super(); }
 
     update(context: AnimalStrategyContext): AnimalSteering {
         this.flightTime += context.dt;
@@ -64,7 +61,7 @@ export class FleeRiverStrategy extends AnimalPathStrategy {
         return {
             target: context.originPos.clone().add(flightDir.mul(10)),
             speed: this.horizSpeed * alignment,
-            height: this.maxHeight,
+            height: this.flightHeight,
         };
     }
 }
@@ -79,7 +76,7 @@ export class FlyToShoreStrategy extends AnimalPathStrategy {
 
     constructor(
         currentPos: planck.Vec2,
-        private maxHeight: number,
+        private flightHeight: number,
         private horizSpeed: number,
         private zRange: [number, number]
     ) {
@@ -117,7 +114,7 @@ export class FlyToShoreStrategy extends AnimalPathStrategy {
         return {
             target: this.target,
             speed: this.horizSpeed * alignment,
-            height: this.maxHeight,
+            height: this.flightHeight,
         };
     }
 }

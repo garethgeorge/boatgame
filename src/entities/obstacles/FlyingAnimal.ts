@@ -1,12 +1,9 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { ShoreLandingFlightLogic } from '../behaviors/logic/ShoreLandingFlightLogic';
 import { WaterLandingFlightLogic } from '../behaviors/logic/WaterLandingFlightLogic';
 import { WanderingFlightLogic } from '../behaviors/logic/WanderingFlightLogic';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
-import { AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
-import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogicConfigs';
 import { WaitForBoatLogic } from '../behaviors/logic/WaitForBoatLogic';
 import { Animal, AnimalOptions } from './Animal';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
@@ -16,9 +13,6 @@ import { BuzzBoatFlightLogic } from '../behaviors/logic/BuzzBoatFlightLogic';
 import { FlyOppositeBoatLogic } from '../behaviors/logic/FlyOppositeBoatLogic';
 
 export interface FlyingAnimalOptions extends AnimalOptions {
-    minNoticeDistance?: number,
-    flightSpeed?: number;
-    zRange?: [number, number];
 }
 
 export class FlyingBehaviorFactory {
@@ -26,18 +20,18 @@ export class FlyingBehaviorFactory {
     public static createShoreLanding(
         animal: AnyAnimal,
         params: {
-            minNoticeDistance?: number,
-            flightSpeed?: number,
             disableLogic?: boolean,
             aggressiveness?: number,
+            noticeDistance?: number,
+            flightSpeed?: number,
             zRange?: [number, number],
         }
     ) {
         const {
-            minNoticeDistance = 200.0,
-            flightSpeed = 1.0,
             disableLogic = false,
             aggressiveness = 0.5,
+            noticeDistance = 200.0,
+            flightSpeed = 1.0,
             zRange,
         } = params;
 
@@ -47,33 +41,38 @@ export class FlyingBehaviorFactory {
         // buzz boat
         // fly away and land on shore
         // if out of range fly direct to shore
+        // stop
         const script = (step: number, lastResult: string): any => {
-            if (lastResult === '') {
-                return {
-                    name: 'WaitForBoat',
-                    params: { minNoticeDistance: minNoticeDistance, ignoreBottles: true }
-                };
-            }
-            if (lastResult === WaitForBoatLogic.RESULT_NOTICED) {
-                return {
-                    name: 'BuzzBoatFlight',
-                    params: { flightSpeed, zRange }
+            switch (lastResult) {
+                case '': {
+                    return {
+                        name: 'WaitForBoat',
+                        params: { noticeDistance: noticeDistance, ignoreBottles: true }
+                    };
+                }
+                case WaitForBoatLogic.RESULT_NOTICED: {
+                    return {
+                        name: 'BuzzBoatFlight',
+                        params: { flightSpeed, zRange }
+                    }
+                }
+                case BuzzBoatFlightLogic.RESULT_FINISHED: {
+                    return {
+                        name: 'ShoreLandingFlight',
+                        params: { flightSpeed, zRange }
+                    }
+                }
+                case BuzzBoatFlightLogic.RESULT_OUT_OF_RANGE:
+                case ShoreLandingFlightLogic.RESULT_OUT_OF_RANGE: {
+                    return {
+                        name: 'FlyDirectToShore',
+                        params: { flightSpeed, zRange }
+                    }
+                }
+                default: {
+                    return null;
                 }
             }
-            if (lastResult === BuzzBoatFlightLogic.RESULT_FINISHED) {
-                return {
-                    name: 'ShoreLandingFlight',
-                    params: { flightSpeed, zRange }
-                }
-            }
-            if (lastResult === BuzzBoatFlightLogic.RESULT_OUT_OF_RANGE ||
-                lastResult === ShoreLandingFlightLogic.RESULT_OUT_OF_RANGE) {
-                return {
-                    name: 'FlyDirectToShoreLogic',
-                    params: { flightSpeed, zRange }
-                }
-            }
-            return null;
         };
         return new AnimalUniversalBehavior(animal, aggressiveness, script);
     }
@@ -81,19 +80,19 @@ export class FlyingBehaviorFactory {
     public static createWaterLanding(
         animal: AnyAnimal,
         params: {
-            minNoticeDistance?: number,
+            noticeDistance?: number,
             flightSpeed?: number,
+            landingHeight?: number
             disableLogic?: boolean,
             aggressiveness?: number,
-            landingHeight?: number
         }
     ) {
         const {
-            minNoticeDistance = 200.0,
+            noticeDistance = 200.0,
             flightSpeed = 1.0,
+            landingHeight = 0.0,
             disableLogic = false,
             aggressiveness = 0.5,
-            landingHeight = 0.0
         } = params;
 
         if (disableLogic) return null;
@@ -107,7 +106,7 @@ export class FlyingBehaviorFactory {
                 return {
                     name: 'WaitForBoat',
                     params: {
-                        minNoticeDistance: step == 0 ? minNoticeDistance : 5.0,
+                        noticeDistance: step == 0 ? noticeDistance : 5.0,
                         ignoreBottles: true
                     }
                 };
@@ -138,9 +137,9 @@ export class FlyingBehaviorFactory {
     public static createWandering(
         animal: AnyAnimal,
         params: {
+            noticeDistance?: number,
             flightSpeed?: number,
             flightHeight?: number,
-            noticeDistance?: number,
             buzzDuration?: number,
             buzzHeight?: number,
             buzzOffset?: number,
@@ -150,13 +149,13 @@ export class FlyingBehaviorFactory {
         }
     ) {
         const {
-            flightSpeed = 1.0,
             noticeDistance = 50.0,
-            buzzDuration = 10.0,
+            flightSpeed = 1.0,
+            flightHeight = 15.0,
+            buzzDuration = 2.0,
             buzzHeight = 2.5,
             buzzOffset = 5.0,
             wanderRadius = 20.0,
-            flightHeight = 15.0,
             aggressiveness = 0.5,
             disableLogic = false
         } = params;
@@ -186,7 +185,7 @@ export class FlyingBehaviorFactory {
                     name: 'BuzzBoatFlight',
                     params: {
                         flightSpeed,
-                        maxHeight: flightHeight,
+                        flightHeight,
                         buzzOffset,
                         buzzHeight,
                         buzzTimeout: buzzDuration
@@ -195,9 +194,9 @@ export class FlyingBehaviorFactory {
             }
             if (lastResult === BuzzBoatFlightLogic.RESULT_FINISHED) {
                 return {
-                    name: 'FlyOppositeBoatLogic',
+                    name: 'FlyOppositeBoat',
                     params: {
-                        flightSpeed, flightHeight, distance: noticeDistance
+                        flightSpeed, flightHeight, distance: noticeDistance / 3
                     }
                 }
             }

@@ -175,6 +175,7 @@ export class EntitySpawners {
             id: EntityIds.DOLPHIN,
             getDensity: () => 0.01,
             factory: (physicsEngine, options) => new Dolphin(physicsEngine, options),
+            heightInWater: Dolphin.HEIGHT_IN_WATER,
             entityRadius: 2.0,
             waterPlacement: { minDistFromBank: 2.0 }
         },
@@ -182,6 +183,7 @@ export class EntitySpawners {
             id: EntityIds.DUCKLING,
             getDensity: () => 0.05,
             factory: (physicsEngine, options) => new Duckling(physicsEngine, options),
+            heightInWater: Duckling.HEIGHT_IN_WATER,
             entityRadius: 1.5,
             waterPlacement: { minDistFromBank: 2.0 }
         },
@@ -189,6 +191,7 @@ export class EntitySpawners {
             id: EntityIds.PENGUIN_KAYAK,
             getDensity: () => 0.01,
             factory: (physicsEngine, options) => new PenguinKayak(physicsEngine, options),
+            heightInWater: PenguinKayak.HEIGHT_IN_WATER,
             entityRadius: 1.5,
             waterPlacement: { minDistFromBank: 1.0 }
         },
@@ -196,6 +199,7 @@ export class EntitySpawners {
             id: EntityIds.SWAN,
             getDensity: () => 0.01,
             factory: (physicsEngine, options) => new Swan(physicsEngine, options),
+            heightInWater: Swan.HEIGHT_IN_WATER,
             entityRadius: 2.0,
             waterPlacement: { minDistFromBank: 1.0 }
         }

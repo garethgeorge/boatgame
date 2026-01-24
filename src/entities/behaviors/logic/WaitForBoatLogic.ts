@@ -5,30 +5,31 @@ import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
 export interface WaitForBoatParams {
     waitOnShore?: boolean;
-    minNoticeDistance?: number;
+    noticeDistance?: number;
     ignoreBottles?: boolean;
     maxDuration?: number;
 }
 
 /**
- * Shore idle runs until:
- * a) boat is noticed and returns next logic
- * b) duration expires (returns TIMEOUT)
+ * Wait for boat runs until boat is noticed:
+ * - Animal is in front of boat
+ * - Animal is closer than minimum notice distance which may depend on number of
+ *   bottles collected
  */
 export class WaitForBoatLogic implements AnimalLogic {
-    public static readonly RESULT_NOTICED = 'shore_idle_noticed';
+    public static readonly RESULT_NOTICED = 'wait_for_boat_noticed';
     readonly name = 'WaitForBoat';
 
     private locomotionType: LocomotionType;
     private logicPhase: AnimalLogicPhase;
-    private minNoticeDistance: number;
+    private noticeDistance: number;
     private ignoreBottles: boolean;
 
     constructor(params?: WaitForBoatParams) {
         const waitOnShore = params?.waitOnShore ?? true;
         this.locomotionType = waitOnShore ? 'LAND' : 'WATER';
         this.logicPhase = waitOnShore ? AnimalLogicPhase.IDLE_SHORE : AnimalLogicPhase.IDLE_WATER;
-        this.minNoticeDistance = params?.minNoticeDistance ?? 50.0;
+        this.noticeDistance = params?.noticeDistance ?? 50.0;
         this.ignoreBottles = params?.ignoreBottles ?? false;
     }
 
@@ -40,16 +41,19 @@ export class WaitForBoatLogic implements AnimalLogic {
         const noticeBoatDistance = AnimalBehaviorUtils.evaluateNoticeBoatDistance(
             context.aggressiveness,
             bottles,
-            this.minNoticeDistance
+            this.noticeDistance
         );
 
         let result: string | undefined = undefined;
 
-        // if boat in range switch to boat noticed logic
+        // if boat in range AND not behind the boat, switch to boat noticed logic
         if (noticeBoatDistance > 0) {
-            const dist = planck.Vec2.distance(context.originPos, context.targetBody.getPosition());
-            if (dist < noticeBoatDistance) {
-                result = WaitForBoatLogic.RESULT_NOTICED;
+            const localPos = context.targetBody.getLocalPoint(context.originPos);
+            if (localPos.y < 0) { // Check that animal is in front of the boat center
+                const dist = localPos.length(); // Use local distance for efficiency
+                if (dist < noticeBoatDistance) {
+                    result = WaitForBoatLogic.RESULT_NOTICED;
+                }
             }
         }
 

@@ -29,6 +29,8 @@ export class Triceratops extends AttackAnimal {
         this.setBehavior(AttackBehaviorFactory.create(this,
             {
                 heightInWater: Triceratops.HEIGHT_IN_WATER,
+                jumpsIntoWater: false,
+                snoutOffset: 2.5,
                 ...options,
             })
         );

@@ -24,6 +24,7 @@ export class Bluebird extends FlyingAnimal {
         this.setBehavior(FlyingBehaviorFactory.createShoreLanding(
             this,
             {
+                noticeDistance: 100.0,
                 flightSpeed: 25.0,
                 ...options,
             }

@@ -19,6 +19,7 @@ export interface AnimalOptions {
     terrainNormal?: THREE.Vector3;
     aggressiveness?: number;
     disableLogic?: boolean;
+    zRange: [number, number];
 }
 
 export interface AnimalPhysicsOptions {
