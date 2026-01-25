@@ -388,9 +388,12 @@ export class LSystemTreeFactory implements DecorationFactory {
             const height = branch.start.distanceTo(branch.end);
             // Map radius to 3-6 segments. 
             // 0.4+ -> 6 segments, 0.2- -> 3 segments
+            // Also specify no end caps
             const t = Math.max(0.0, Math.min((branch.radiusStart - 0.2) / 0.2, 1.0));
             const radialSegments = Math.floor(3 + 3 * t);
-            const geo = new THREE.CylinderGeometry(branch.radiusEnd, branch.radiusStart, height, radialSegments);
+            const geo = new THREE.CylinderGeometry(
+                branch.radiusEnd, branch.radiusStart, height,
+                radialSegments, 1, true);
 
             const midpoint = new THREE.Vector3().addVectors(branch.start, branch.end).multiplyScalar(0.5);
             const direction = new THREE.Vector3().subVectors(branch.end, branch.start).normalize();
