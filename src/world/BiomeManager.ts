@@ -13,9 +13,9 @@ import { BiomeType } from './biomes/BiomeType';
 
 interface BiomeInstance {
   type: BiomeType;
-  length: number;
   zMin: number;
   zMax: number;
+  features: BiomeFeatures;
 }
 
 const BIOME_LENGTHS: Record<BiomeType, number> = {
@@ -43,84 +43,118 @@ const BIOME_CONSTRUCTORS: Record<BiomeType, any> = {
 export class BiomeManager {
   public static DEBUG_BIOME = false;
 
-  private biomeInstances: BiomeInstance[] = [];
-  private totalSequenceLength = 0;
-  private readonly BIOME_ARRAY_SIZE = 100;
-  private readonly BIOME_TRANSITION_WIDTH = 50; // Transition width in units, not fraction
-  private featuresCache: Map<number, BiomeFeatures> = new Map();
-  private readonly MAX_FEATURES_CACHE_SIZE = 20;
+  private activeInstances: BiomeInstance[] = [];
+  private readonly BIOME_TRANSITION_WIDTH = 50;
+  private readonly PRUNE_THRESHOLD = 5000; // units behind boat
+  private readonly WINDOW_BUFFER = 2000;   // units ahead of boat
+
+  // Generator state for the Positive Z direction (backward)
+  private posDeck: BiomeType[] = [];
+
+  // Generator state for the Negative Z direction (forward)
+  private negDeck: BiomeType[] = [];
 
   constructor() {
-    let biomeSequence: BiomeType[] = [];
-    const otherBiomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic'];
-    const happyBiome: BiomeType = 'happy';
+    // Start with the initial biome at Z=0
+    this.ensureZReached(0);
+  }
 
-    if (BiomeManager.DEBUG_BIOME) {
-      biomeSequence = new Array(this.BIOME_ARRAY_SIZE).fill('test');
-    } else {
-      biomeSequence.push(happyBiome);
-      while (biomeSequence.length < this.BIOME_ARRAY_SIZE) {
-        // Create a shuffled list of other biome types
-        const shuffled = [...otherBiomeTypes];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
+  private drawFromDeck(direction: 'pos' | 'neg'): BiomeType {
+    const deck = direction === 'pos' ? this.posDeck : this.negDeck;
 
-        for (const type of shuffled) {
-          biomeSequence.push(type);
-          biomeSequence.push(happyBiome);
-          if (biomeSequence.length >= this.BIOME_ARRAY_SIZE) break;
+    if (deck.length === 0) {
+      const otherTypes: BiomeType[] = ['desert', 'forest', 'ice', 'swamp', 'jurassic'];
+      const shuffled = [...otherTypes].sort(() => Math.random() - 0.5);
+
+      for (const type of shuffled) {
+        if (direction === 'neg') {
+          // negNextIndex starts at 0 (Happy), then 1 (Other)
+          // Pop from end, so push Other then Happy
+          deck.push(type, 'happy');
+        } else {
+          // posNextIndex starts at -1 (Other), then -2 (Happy)
+          // Pop from end, so push Happy then Other
+          deck.push('happy', type);
         }
       }
     }
 
-    // Convert types to instances with specific lengths and boundaries
-    let currentZ = 0;
-    for (const type of biomeSequence) {
+    return deck.pop()!;
+  }
+
+  public ensureZReached(worldZ: number): void {
+    // Grow Negative Z (forward)
+    while (true) {
+      const negCursorZ = this.activeInstances.length > 0 ? this.activeInstances[0].zMin : 0;
+      if (negCursorZ <= worldZ - this.WINDOW_BUFFER) break;
+
+      const type = BiomeManager.DEBUG_BIOME ? 'test' : this.drawFromDeck('neg');
       const length = BIOME_LENGTHS[type];
-      this.biomeInstances.push({
+      const zMax = negCursorZ;
+      const zMin = negCursorZ - length;
+
+      this.activeInstances.unshift({
         type,
-        length,
-        zMin: currentZ,
-        zMax: currentZ + length
+        zMin,
+        zMax,
+        features: new BIOME_CONSTRUCTORS[type](zMin, zMax)
       });
-      currentZ += length;
     }
-    this.totalSequenceLength = currentZ;
+
+    // Grow Positive Z (backward)
+    while (true) {
+      const posCursorZ = this.activeInstances.length > 0 ? this.activeInstances[this.activeInstances.length - 1].zMax : 0;
+      if (posCursorZ >= worldZ + this.WINDOW_BUFFER) break;
+
+      const type = BiomeManager.DEBUG_BIOME ? 'test' : this.drawFromDeck('pos');
+      const length = BIOME_LENGTHS[type];
+      const zMin = posCursorZ;
+      const zMax = posCursorZ + length;
+
+      this.activeInstances.push({
+        type,
+        zMin,
+        zMax,
+        features: new BIOME_CONSTRUCTORS[type](zMin, zMax)
+      });
+    }
+  }
+
+  public pruneActiveInstances(currentZ: number): void {
+    // Remove biomes that are far behind the boat
+    // "Behind" depends on direction. For now let's just keep a fixed radius.
+    const keepRadius = this.PRUNE_THRESHOLD;
+    this.activeInstances = this.activeInstances.filter(inst => {
+      const dist = Math.min(Math.abs(inst.zMin - currentZ), Math.abs(inst.zMax - currentZ));
+      return dist < keepRadius;
+    });
   }
 
   /**
-   * Finds the biome instance containing the given worldZ (modulo totalSequenceLength)
+   * Finds the biome instance containing the given worldZ
    */
   private getBiomeInstanceAt(worldZ: number): BiomeInstance {
-    const index = this.getBiomeInstanceIndexAt(worldZ);
-    return this.biomeInstances[index];
-  }
-
-  /**
-   * Finds the index of the biome instance containing the given worldZ
-   */
-  private getBiomeInstanceIndexAt(worldZ: number): number {
-    const normalizedZ = ((worldZ % this.totalSequenceLength) + this.totalSequenceLength) % this.totalSequenceLength;
+    this.ensureZReached(worldZ);
 
     let low = 0;
-    let high = this.biomeInstances.length - 1;
+    let high = this.activeInstances.length - 1;
 
     while (low <= high) {
       const mid = Math.floor((low + high) / 2);
-      const instance = this.biomeInstances[mid];
+      const instance = this.activeInstances[mid];
 
-      if (normalizedZ >= instance.zMin && normalizedZ < instance.zMax) {
-        return mid;
-      } else if (normalizedZ < instance.zMin) {
+      // worldZ is in biome if zMin < worldZ <= zMax
+      if (worldZ > instance.zMin && worldZ <= instance.zMax) {
+        return instance;
+      } else if (worldZ <= instance.zMin) {
         high = mid - 1;
       } else {
         low = mid + 1;
       }
     }
 
-    return 0;
+    // Fallback to closest if not found (shouldn't happen with ensureZReached)
+    return this.activeInstances[0];
   }
 
   public getBiomeType(worldZ: number): BiomeType {
@@ -129,47 +163,42 @@ export class BiomeManager {
 
   public getBiomeBoundaries(worldZ: number): { zMin: number, zMax: number } {
     const instance = this.getBiomeInstanceAt(worldZ);
-    const numSequences = Math.floor(worldZ / this.totalSequenceLength);
-    const sequenceOffset = numSequences * this.totalSequenceLength;
     return {
-      zMin: sequenceOffset + instance.zMin,
-      zMax: sequenceOffset + instance.zMax
+      zMin: instance.zMin,
+      zMax: instance.zMax
     };
   }
 
   public getFeatureSegments(zMin: number, zMax: number): Array<{
-    biome: BiomeType,
+    features: BiomeFeatures,
     zMin: number, zMax: number,
-    biomeZMin: number, biomeZMax: number,
-    biomeIndex: number
+    biomeZMin: number, biomeZMax: number
   }> {
+    const segments: Array<{
+      features: BiomeFeatures,
+      zMin: number, zMax: number,
+      biomeZMin: number, biomeZMax: number
+    }> = [];
 
-    const segments: Array<{ biome: BiomeType, zMin: number, zMax: number, biomeZMin: number, biomeZMax: number, biomeIndex: number }> = [];
+    // Ensure both boundaries are reached
+    this.ensureZReached(zMin);
+    this.ensureZReached(zMax);
+
     let currentZ = zMin;
+    const direction = zMax < zMin ? -1 : 1;
 
-    while (currentZ < zMax) {
-      const index = this.getBiomeInstanceIndexAt(currentZ);
-      const instance = this.biomeInstances[index];
+    while (direction === 1 ? currentZ < zMax : currentZ > zMax) {
+      // Sample slightly ahead to ensure we cross biome boundaries and avoid infinite loops
+      const sampleZ = currentZ + direction * 0.001;
+      const instance = this.getBiomeInstanceAt(sampleZ);
+      const segmentEnd = direction === 1 ? Math.min(zMax, instance.zMax) : Math.max(zMax, instance.zMin);
 
-      // We need to provide the "real" biomeZMin and biomeZMax in world coordinates, 
-      // not normalized sequence coordinates.
-      // This is tricky because worldZ can be much larger than totalSequenceLength.
-      const numSequences = Math.floor(currentZ / this.totalSequenceLength);
-      const sequenceOffset = numSequences * this.totalSequenceLength;
-
-      const biomeZMin = sequenceOffset + instance.zMin;
-      const biomeZMax = sequenceOffset + instance.zMax;
-
-      const biomeIndex = numSequences * this.biomeInstances.length + index;
-
-      const segmentEnd = Math.min(zMax, biomeZMax);
       segments.push({
-        biome: instance.type,
+        features: instance.features,
         zMin: currentZ,
         zMax: segmentEnd,
-        biomeZMin,
-        biomeZMax,
-        biomeIndex
+        biomeZMin: instance.zMin,
+        biomeZMax: instance.zMax,
       });
       currentZ = segmentEnd;
     }
@@ -177,104 +206,57 @@ export class BiomeManager {
     return segments;
   }
 
-  public getFeatures(biomeIndex: number): BiomeFeatures {
-    if (this.featuresCache.has(biomeIndex)) {
-      const features = this.featuresCache.get(biomeIndex)!;
-      // Refresh LRU
-      this.featuresCache.delete(biomeIndex);
-      this.featuresCache.set(biomeIndex, features);
-      return features;
-    }
-
-    const localIndex = ((biomeIndex % this.biomeInstances.length) + this.biomeInstances.length) % this.biomeInstances.length;
-    const instance = this.biomeInstances[localIndex];
-
-    const numSequences = Math.floor(biomeIndex / this.biomeInstances.length);
-    const sequenceOffset = numSequences * this.totalSequenceLength;
-
-    const zMin = sequenceOffset + instance.zMin;
-    const zMax = sequenceOffset + instance.zMax;
-
-    // Use a method for instantiation to handle potential undefined classes during load
-    const Constructor = BIOME_CONSTRUCTORS[instance.type];
-    if (!Constructor) {
-      throw new Error(`Biome constructor not found for type: ${instance.type}`);
-    }
-    const features = new Constructor(zMin, zMax);
-
-    // Basic LRU management
-    if (this.featuresCache.size >= this.MAX_FEATURES_CACHE_SIZE) {
-      const firstKey = this.featuresCache.keys().next().value;
-      if (firstKey !== undefined) this.featuresCache.delete(firstKey);
-    }
-    this.featuresCache.set(biomeIndex, features);
-
-    return features;
-  }
-
   public getBiomeMixture(worldZ: number): {
-    index1: number,
-    index2: number,
+    features1: BiomeFeatures,
+    features2: BiomeFeatures,
     weight1: number,
     weight2: number
   } {
     const transitionWidth = this.BIOME_TRANSITION_WIDTH;
-    const normalizedZ = ((worldZ % this.totalSequenceLength) + this.totalSequenceLength) % this.totalSequenceLength;
+    const instance = this.getBiomeInstanceAt(worldZ);
 
-    const index = this.getBiomeInstanceIndexAt(worldZ);
-    const instance = this.biomeInstances[index];
-
-    const numSequences = Math.floor(worldZ / this.totalSequenceLength);
-    const biomeIndex = numSequences * this.biomeInstances.length + index;
-
-    let index1 = biomeIndex;
-    let index2 = biomeIndex;
+    let features1 = instance.features;
+    let features2 = instance.features;
     let weight1 = 1.0;
     let weight2 = 0.0;
 
-    const distFromStart = normalizedZ - instance.zMin;
-    const distFromEnd = instance.zMax - normalizedZ;
+    const distFromMin = Math.abs(worldZ - instance.zMin);
+    const distFromMax = Math.abs(worldZ - instance.zMax);
 
-    if (distFromStart < transitionWidth / 2) {
-      // Transition from previous biome
-      const prevIndex = (index - 1 + this.biomeInstances.length) % this.biomeInstances.length;
-      const prevNumSequences = index === 0 ? numSequences - 1 : numSequences;
-      const prevBiomeIndex = prevNumSequences * this.biomeInstances.length + prevIndex;
+    if (distFromMin < transitionWidth / 2) {
+      const otherZ = instance.zMin - 0.001;
+      const otherInstance = this.getBiomeInstanceAt(otherZ);
+      features1 = instance.features;
+      features2 = otherInstance.features;
 
-      index1 = biomeIndex;
-      index2 = prevBiomeIndex;
-
-      const t = distFromStart / (transitionWidth / 2);
+      const t = distFromMin / (transitionWidth / 2);
       weight1 = this.lerp(0.5, 1.0, t);
       weight2 = 1.0 - weight1;
-    } else if (distFromEnd < transitionWidth / 2) {
-      // Transition to next biome
-      const nextIndex = (index + 1) % this.biomeInstances.length;
-      const nextNumSequences = index === this.biomeInstances.length - 1 ? numSequences + 1 : numSequences;
-      const nextBiomeIndex = nextNumSequences * this.biomeInstances.length + nextIndex;
+    } else if (distFromMax < transitionWidth / 2) {
+      const otherZ = instance.zMax + 0.001;
+      const otherInstance = this.getBiomeInstanceAt(otherZ);
+      features1 = instance.features;
+      features2 = otherInstance.features;
 
-      index1 = biomeIndex;
-      index2 = nextBiomeIndex;
-
-      const t = (transitionWidth / 2 - distFromEnd) / (transitionWidth / 2);
+      const t = (transitionWidth / 2 - distFromMax) / (transitionWidth / 2);
       weight1 = this.lerp(1.0, 0.5, t);
       weight2 = 1.0 - weight1;
     }
 
-    return { index1, index2, weight1, weight2 };
+    return { features1, features2, weight1, weight2 };
   }
 
   public getBiomeFogDensity(worldZ: number): number {
     const mixture = this.getBiomeMixture(worldZ);
-    const d1 = this.getFeatures(mixture.index1).getFogDensity();
-    const d2 = this.getFeatures(mixture.index2).getFogDensity();
+    const d1 = mixture.features1.getFogDensity();
+    const d2 = mixture.features2.getFogDensity();
     return d1 * mixture.weight1 + d2 * mixture.weight2;
   }
 
   public getBiomeFogRange(worldZ: number): { near: number, far: number } {
     const mixture = this.getBiomeMixture(worldZ);
-    const range1 = this.getFeatures(mixture.index1).getFogRange();
-    const range2 = this.getFeatures(mixture.index2).getFogRange();
+    const range1 = mixture.features1.getFogRange();
+    const range2 = mixture.features2.getFogRange();
 
     return {
       near: this.lerp(range1.near, range2.near, mixture.weight2), // weight2 is t from 1 to 2
@@ -285,8 +267,8 @@ export class BiomeManager {
   public getBiomeGroundColor(worldZ: number): { r: number, g: number, b: number } {
     const mixture = this.getBiomeMixture(worldZ);
 
-    const color1 = this.getFeatures(mixture.index1).getGroundColor();
-    const color2 = this.getFeatures(mixture.index2).getGroundColor();
+    const color1 = mixture.features1.getGroundColor();
+    const color2 = mixture.features2.getGroundColor();
 
     return {
       r: color1.r * mixture.weight1 + color2.r * mixture.weight2,
@@ -298,8 +280,8 @@ export class BiomeManager {
   public getBiomeScreenTint(worldZ: number): { r: number, g: number, b: number } {
     const mixture = this.getBiomeMixture(worldZ);
 
-    const color1 = this.getFeatures(mixture.index1).getScreenTint();
-    const color2 = this.getFeatures(mixture.index2).getScreenTint();
+    const color1 = mixture.features1.getScreenTint();
+    const color2 = mixture.features2.getScreenTint();
 
     return {
       r: color1.r * mixture.weight1 + color2.r * mixture.weight2,
@@ -312,8 +294,8 @@ export class BiomeManager {
     const mixture = this.getBiomeMixture(worldZ);
 
     // Get sky gradient for each biome
-    const sky1 = this.getFeatures(mixture.index1).getSkyColors(dayness);
-    const sky2 = this.getFeatures(mixture.index2).getSkyColors(dayness);
+    const sky1 = mixture.features1.getSkyColors(dayness);
+    const sky2 = mixture.features2.getSkyColors(dayness);
 
     // Blend the two sky gradients based on mixture weights
     const top = sky1.top.clone().multiplyScalar(mixture.weight1).add(sky2.top.clone().multiplyScalar(mixture.weight2));
@@ -324,8 +306,8 @@ export class BiomeManager {
 
   public getAmplitudeMultiplier(wz: number): number {
     const mixture = this.getBiomeMixture(wz);
-    const amplitude1 = this.getFeatures(mixture.index1).getAmplitudeMultiplier();
-    const amplitude2 = this.getFeatures(mixture.index2).getAmplitudeMultiplier();
+    const amplitude1 = mixture.features1.getAmplitudeMultiplier();
+    const amplitude2 = mixture.features2.getAmplitudeMultiplier();
 
     const amplitudeMultiplier = amplitude1 * mixture.weight1 + amplitude2 * mixture.weight2;
     return amplitudeMultiplier;
@@ -334,8 +316,8 @@ export class BiomeManager {
   public getRiverWidthMultiplier(worldZ: number): number {
     // Apply Swamp Modifier: Widen river significantly
     const mixture = this.getBiomeMixture(worldZ);
-    const width1 = this.getFeatures(mixture.index1).getRiverWidthMultiplier();
-    const width2 = this.getFeatures(mixture.index2).getRiverWidthMultiplier();
+    const width1 = mixture.features1.getRiverWidthMultiplier();
+    const width2 = mixture.features2.getRiverWidthMultiplier();
 
     const widthMultiplier = width1 * mixture.weight1 + width2 * mixture.weight2;
     return widthMultiplier;
@@ -344,8 +326,8 @@ export class BiomeManager {
   public getRiverMaterialSwampFactor(worldZ: number): number {
     const mixture = this.getBiomeMixture(worldZ);
     let swampFactor = 0.0;
-    const type1 = this.biomeInstances[((mixture.index1 % this.biomeInstances.length) + this.biomeInstances.length) % this.biomeInstances.length].type;
-    const type2 = this.biomeInstances[((mixture.index2 % this.biomeInstances.length) + this.biomeInstances.length) % this.biomeInstances.length].type;
+    const type1 = mixture.features1.id;
+    const type2 = mixture.features2.id;
     if (type1 === 'swamp') swampFactor += mixture.weight1;
     if (type2 === 'swamp') swampFactor += mixture.weight2;
     return swampFactor;

@@ -153,8 +153,7 @@ export class TerrainChunk {
       context.biomeZMin = segment.biomeZMin;
       context.biomeZMax = segment.biomeZMax;
 
-      const features = this.riverSystem.biomeManager.getFeatures(segment.biomeIndex);
-      yield* features.decorate(context, segment.zMin, segment.zMax);
+      yield* segment.features.decorate(context, segment.zMin, segment.zMax);
     }
 
     // Merge geometries and create meshes
@@ -189,8 +188,7 @@ export class TerrainChunk {
       context.biomeZMin = segment.biomeZMin;
       context.biomeZMax = segment.biomeZMax;
 
-      const features = this.riverSystem.biomeManager.getFeatures(segment.biomeIndex);
-      yield* features.spawn(context, difficulty, segment.zMin, segment.zMax);
+      yield* segment.features.spawn(context, difficulty, segment.zMin, segment.zMax);
     }
   }
 
