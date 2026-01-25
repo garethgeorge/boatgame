@@ -12,15 +12,15 @@ export class MessageInABottleSpawner extends BaseSpawner {
     return 1 / 400 + 1 / 400 * Math.random();
   }
 
-  *spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
+  *spawn(context: SpawnContext, count: number, zStart: number, zEnd: number, biomeZRange: [number, number]): Generator<void, void, unknown> {
     // Check for Bonus Arc (Rare event per chunk segment?)
     if (Math.random() < 0.1) {
       this.spawnBonusArc(context, zStart, zEnd);
     }
-    yield* super.spawn(context, count, zStart, zEnd);
+    yield* super.spawn(context, count, zStart, zEnd, biomeZRange);
   }
 
-  spawnAt(context: SpawnContext, z: number): boolean {
+  spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {
     return this.spawnInRiver(context, z, {});
   }
 

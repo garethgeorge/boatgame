@@ -59,7 +59,7 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
         return this.config.factory(physicsEngine, options);
     }
 
-    spawnAt(context: SpawnContext, z: number): boolean {
+    spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {
         const riverSystem = RiverSystem.getInstance();
         const sample = RiverGeometry.getRiverGeometrySample(riverSystem, z);
 
@@ -72,11 +72,11 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
             const range: [number, number] = left ?
                 [-sample.bankDist - (shorePlace.maxDistFromBank || 8.0), -sample.bankDist] :
                 [sample.bankDist, sample.bankDist + (shorePlace.maxDistFromBank || 8.0)];
-            return this.spawnAnimalAbsolute({ context, sample, distanceRange: range, aggressiveness: aggro });
+            return this.spawnAnimalAbsolute({ context, sample, distanceRange: range, aggressiveness: aggro, biomeZRange });
 
         } else {
             const range: [number, number] = [-sample.bankDist, sample.bankDist];
-            return this.spawnAnimalAbsolute({ context, sample, distanceRange: range, aggressiveness: aggro });
+            return this.spawnAnimalAbsolute({ context, sample, distanceRange: range, aggressiveness: aggro, biomeZRange });
         }
     }
 
@@ -145,7 +145,7 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
                 terrainNormal: placement.normal,
                 aggressiveness,
                 disableLogic,
-                zRange: [context.biomeZMin, context.biomeZMax]
+                zRange: options.biomeZRange
             });
             if (entity) {
                 context.entityManager.add(entity);

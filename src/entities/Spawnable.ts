@@ -6,10 +6,6 @@ export interface SpawnContext {
   entityManager: EntityManager;
   physicsEngine: PhysicsEngine;
   placementHelper: PlacementHelper;
-  zMin: number;
-  zMax: number;
-  biomeZMin: number;
-  biomeZMax: number;
 }
 
 export interface Spawnable {
@@ -30,6 +26,7 @@ export interface Spawnable {
    * @param count Number of obstacles to attempt to spawn
    * @param zStart World Z start of range
    * @param zEnd World Z end of range
+   * @param biomeZRange World Z range of the biome
    */
-  spawn(context: SpawnContext, count: number, zStart: number, zEnd: number): Generator<void, void, unknown>;
+  spawn(context: SpawnContext, count: number, zStart: number, zEnd: number, biomeZRange: [number, number]): Generator<void, void, unknown>;
 }

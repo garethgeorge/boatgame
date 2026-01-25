@@ -385,14 +385,14 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         const startOverlapStart = Math.max(zStart, this.zMin);
         const startOverlapEnd = Math.min(zEnd, fracturedStart);
         if (startOverlapStart < startOverlapEnd) {
-            yield* EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd);
+            yield* EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd, [this.zMin, this.zMax]);
         }
 
         // End Boundary
         const endOverlapStart = Math.max(zStart, fracturedEnd);
         const endOverlapEnd = Math.min(zEnd, this.zMax);
         if (endOverlapStart < endOverlapEnd) {
-            yield* EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd);
+            yield* EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd, [this.zMin, this.zMax]);
         }
 
         // 3. Spawn bears/penguins

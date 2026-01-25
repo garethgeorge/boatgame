@@ -7,11 +7,6 @@ export interface DecorationContext {
     // The chunk we are decorating
     chunk: TerrainChunk;
 
-    // The start Z of the current biome
-    biomeZMin: number;
-    // The end Z of the current biome
-    biomeZMax: number;
-
     // Helper for biome decorations
     decoHelper: BiomeDecorationHelper;
 

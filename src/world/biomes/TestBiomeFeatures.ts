@@ -148,7 +148,8 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                     aggressiveness: 0.5,
                     disableLogic: true,
                     fixedAngle: 0,
-                    fixedHeight: 3.0
+                    fixedHeight: 3.0,
+                    biomeZRange: [this.zMin, this.zMax]
                 });
             }
             currentZ -= spacing;
@@ -167,7 +168,8 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                     aggressiveness: 0.5,
                     disableLogic: true,
                     fixedAngle: 0,
-                    fixedHeight: 3.0
+                    fixedHeight: 3.0,
+                    biomeZRange: [this.zMin, this.zMax]
                 });
             }
             currentZ -= spacing;
@@ -193,6 +195,6 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         // yield* EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK).spawn(context, 1, zStart, zEnd);
         // yield* EntitySpawners.getInstance().animal(EntityIds.SWAN).spawn(context, 1, zStart, zEnd);
         // yield* EntitySpawners.getInstance().animal(EntityIds.EGRET).spawn(context, 2, zStart, zEnd);
-        yield* EntitySpawners.getInstance().animal(EntityIds.DRAGONFLY).spawn(context, 1, zStart, zEnd);
+        yield* EntitySpawners.getInstance().animal(EntityIds.DRAGONFLY).spawn(context, 1, zStart, zEnd, [this.zMin, this.zMax]);
     }
 }

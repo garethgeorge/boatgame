@@ -58,37 +58,37 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             'dolphin_pods': {
                 logic: 'scatter',
                 place: 'slalom',
-                density: [0.5, 1.0],
+                density: [0.3, 0.6],
                 types: [EntityIds.DOLPHIN]
             },
             'swan_bevies': {
                 logic: 'scatter',
                 place: 'slalom',
-                density: [0.5, 1.0],
+                density: [0.3, 0.6],
                 types: [EntityIds.SWAN]
             },
             'turtle_hurds': {
                 logic: 'scatter',
                 place: 'shore',
-                density: [0.5, 1.0],
+                density: [0.3, 0.6],
                 types: [EntityIds.TURTLE]
             },
             'butterfly_swarms': {
                 logic: 'scatter',
                 place: 'shore',
-                density: [0.8, 1.2],
+                density: [0.3, 0.6],
                 types: [EntityIds.BUTTERFLY]
             },
             'bluebird_flocks': {
                 logic: 'scatter',
                 place: 'shore',
-                density: [0.8, 1.2],
+                density: [0.3, 0.6],
                 types: [EntityIds.BLUEBIRD]
             },
             'dragonfly_swarms': {
                 logic: 'scatter',
                 place: 'path',
-                density: [0.8, 1.2],
+                density: [0.3, 0.6],
                 types: [EntityIds.DRAGONFLY]
             }
         };
@@ -154,6 +154,6 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     * spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
         const layout = this.getLayout();
         yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
-            context, layout, this.id, zStart, zEnd);
+            context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
     }
 }

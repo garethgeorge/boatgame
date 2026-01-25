@@ -25,7 +25,8 @@ export class BoatPathLayoutSpawner {
         layout: BoatPathLayout,
         biomeType: BiomeType,
         zStart: number,
-        zEnd: number
+        zEnd: number,
+        biomeZRange: [number, number]
     ): Generator<void, void, unknown> {
         if (!layout) return;
 
@@ -90,7 +91,7 @@ export class BoatPathLayoutSpawner {
 
                             case EntityIds.PIER: {
                                 const onLeft = biomeType === 'desert' ? true : Math.random() < 0.5;
-                                spawners.pier().spawnAt(context, sample.centerPos.z, onLeft);
+                                spawners.pier().spawnAt(context, sample.centerPos.z, biomeZRange, onLeft);
                                 break;
                             }
 
@@ -138,14 +139,15 @@ export class BoatPathLayoutSpawner {
                                     range = [-10, 10];
                                 }
 
-                                const spawner = spawners.animal(entityType);
-                                if (spawner) {
-                                    spawner.spawnAnimalAbsolute({
+                                const animalSpawner = spawners.animal(entityType);
+                                if (animalSpawner) {
+                                    animalSpawner.spawnAnimalAbsolute({
                                         context,
                                         sample,
                                         distanceRange: range,
                                         aggressiveness: p.aggressiveness || 0.5,
-                                        logic
+                                        logic,
+                                        biomeZRange
                                     });
                                 }
                                 break;

@@ -36,7 +36,7 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
 
     protected *spawnObstacles(spawner: Spawnable, context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
         const count = spawner.getSpawnCount(context, difficulty, zStart, zEnd);
-        return yield* spawner.spawn(context, count, zStart, zEnd);
+        return yield* spawner.spawn(context, count, zStart, zEnd, [this.zMin, this.zMax]);
     }
 
     getFogDensity(): number {

@@ -141,8 +141,6 @@ export class TerrainChunk {
 
     const context: DecorationContext = {
       chunk: this,
-      biomeZMin: 0,
-      biomeZMax: 0,
       geometriesByMaterial: geometriesByMaterial,
       instancedData: instancedData,
       geometryGroup: geometryGroup,
@@ -150,9 +148,6 @@ export class TerrainChunk {
     };
 
     for (const segment of segments) {
-      context.biomeZMin = segment.biomeZMin;
-      context.biomeZMax = segment.biomeZMax;
-
       yield* segment.features.decorate(context, segment.zMin, segment.zMax);
     }
 
@@ -178,16 +173,9 @@ export class TerrainChunk {
       entityManager: entityManager,
       physicsEngine: physicsEngine,
       placementHelper: placementHelper,
-      zMin: zMin,
-      zMax: zMax,
-      biomeZMin: 0,
-      biomeZMax: 0
     };
 
     for (const segment of segments) {
-      context.biomeZMin = segment.biomeZMin;
-      context.biomeZMax = segment.biomeZMax;
-
       yield* segment.features.spawn(context, difficulty, segment.zMin, segment.zMax);
     }
   }

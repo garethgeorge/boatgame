@@ -8,6 +8,7 @@ export interface AnimalSpawnOptions {
     sample: RiverGeometrySample;
     distanceRange: [number, number];
     aggressiveness: number;
+    biomeZRange: [number, number];
     logic?: AttackLogicName;
 
     // These are used for debugging so animals can be placed at an exact
