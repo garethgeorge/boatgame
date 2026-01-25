@@ -31,6 +31,11 @@ interface BiomeLayout {
 
 export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'fractured_ice' as BiomeType;
+    private static readonly LENGTH = 1500;
+
+    constructor(index: number, z: number, direction: number) {
+        super(index, z, FracturedIceBiomeFeatures.LENGTH, direction);
+    }
 
     private layoutCache: BiomeLayout | null = null;
 

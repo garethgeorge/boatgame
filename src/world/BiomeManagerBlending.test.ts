@@ -10,10 +10,11 @@ describe('BiomeManager Blending', () => {
     });
 
     it('should return 100% weight for the center of a biome', () => {
-        // Biome 0 is [-1500, 0] (Happy)
-        // Center is -750
-        biomeManager.update(-750);
-        const mixture = (biomeManager as any).getBiomeMixture(-750);
+        const boundaries = biomeManager.getBiomeBoundaries(0);
+        const mid = (boundaries.zMin + boundaries.zMax) / 2;
+
+        biomeManager.update(mid);
+        const mixture = (biomeManager as any).getBiomeMixture(mid);
 
         expect(mixture.weight1).toBe(1.0);
         expect(mixture.weight2).toBe(0.0);
@@ -22,32 +23,35 @@ describe('BiomeManager Blending', () => {
     });
 
     it('should transition weights at boundaries', () => {
-        // Boundary at Z = 0 (between Happy [-1500, 0] and whatever is next in +pos direction)
-        // Transition width is 50, so +/- 25 around 0.
+        const boundaries = biomeManager.getBiomeBoundaries(0);
+        const boundaryZ = boundaries.zMax; // Max of the initial biome (should be 0)
 
-        // At exactly Z = 0 (max of first biome)
-        biomeManager.update(0);
-        const mixtureAt0 = (biomeManager as any).getBiomeMixture(0);
-        expect(mixtureAt0.weight1).toBe(0.5);
-        expect(mixtureAt0.weight2).toBe(0.5);
+        // At exactly the boundary
+        // We might need to ensure the neighbor exists by updating near it
+        biomeManager.update(boundaryZ + 100);
 
-        // At Z = -10 (inside first biome, near max)
-        biomeManager.update(-10);
-        const mixtureAtNeg10 = (biomeManager as any).getBiomeMixture(-10);
-        // distFromMax = 10. t = (25 - 10) / 25 = 15/25 = 0.6
-        // weight1 = lerp(1, 0.5, 0.6) = 1 * 0.4 + 0.5 * 0.6 = 0.4 + 0.3 = 0.7
-        expect(mixtureAtNeg10.weight1).toBeCloseTo(0.7);
-        expect(mixtureAtNeg10.weight2).toBeCloseTo(0.3);
+        const mixtureAtBoundary = (biomeManager as any).getBiomeMixture(boundaryZ);
+        expect(mixtureAtBoundary.weight1).toBe(0.5);
+        expect(mixtureAtBoundary.weight2).toBe(0.5);
 
-        // At Z = 10 (inside second biome, near min)
-        // Wait, currentZ = 0 is max of first, min of second.
-        // If we sample 10, it's in the second biome.
-        // distFromMin = 10. t = 10/25 = 0.4
-        // weight1 = lerp(0.5, 1.0, 0.4) = 0.5 * 0.6 + 1 * 0.4 = 0.3 + 0.4 = 0.7
-        biomeManager.update(10);
-        const mixtureAt10 = (biomeManager as any).getBiomeMixture(10);
-        expect(mixtureAt10.weight1).toBeCloseTo(0.7);
-        expect(mixtureAt10.weight2).toBeCloseTo(0.3);
+        // Transition width is 50, so +/- 25 around boundary
+        const sampleOffset = 10;
+
+        // Inside first biome (near max)
+        const zNeg = boundaryZ - sampleOffset;
+        const mixtureAtNeg = (biomeManager as any).getBiomeMixture(zNeg);
+        // t = (25 - 10) / 25 = 0.6
+        // weight1 = lerp(1, 0.5, 0.6) = 0.7
+        expect(mixtureAtNeg.weight1).toBeCloseTo(0.7);
+        expect(mixtureAtNeg.weight2).toBeCloseTo(0.3);
+
+        // Inside second biome (near min)
+        const zPos = boundaryZ + sampleOffset;
+        const mixtureAtPos = (biomeManager as any).getBiomeMixture(zPos);
+        // t = 10 / 25 = 0.4
+        // weight1 = lerp(0.5, 1.0, 0.4) = 0.7
+        expect(mixtureAtPos.weight1).toBeCloseTo(0.7);
+        expect(mixtureAtPos.weight2).toBeCloseTo(0.3);
     });
 
     it('should correctly blend fog density', () => {

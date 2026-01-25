@@ -6,6 +6,8 @@ import { BiomeType } from './BiomeType';
 export interface BiomeFeatures {
     id: BiomeType;
 
+    getRange(): { zMin: number, zMax: number };
+
     /**
      * Decorate the terrain with static meshes (trees, rocks, etc.)
      */

@@ -10,6 +10,11 @@ import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'jurassic';
+    private static readonly LENGTH = 2000;
+
+    constructor(index: number, z: number, direction: number) {
+        super(index, z, JurassicBiomeFeatures.LENGTH, direction);
+    }
 
     private layoutCache: BoatPathLayout | null = null;
 

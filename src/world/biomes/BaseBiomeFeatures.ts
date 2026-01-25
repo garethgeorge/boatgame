@@ -8,12 +8,27 @@ import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 
 export abstract class BaseBiomeFeatures implements BiomeFeatures {
     abstract id: BiomeType;
-    protected zMin: number;
-    protected zMax: number;
 
-    constructor(zMin: number, zMax: number) {
-        this.zMin = zMin;
-        this.zMax = zMax;
+    protected index: number = 0;
+    protected zMin: number = 0;
+    protected zMax: number = 0;
+
+    /**
+     * If index is < 0 the z value is the end of the biome if > 0 it is the start
+     */
+    constructor(index: number, z: number, length: number, direction: number) {
+        this.index = index;
+        if (direction < 0) {
+            this.zMax = z;
+            this.zMin = z - length;
+        } else {
+            this.zMin = z;
+            this.zMax = z + length;
+        }
+    }
+
+    getRange(): { zMin: number, zMax: number } {
+        return { zMin: this.zMin, zMax: this.zMax };
     }
 
     abstract decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown>;

@@ -11,6 +11,11 @@ import { FOREST_DECORATION_RULES } from './decorations/ForestDecorationRules';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';
+    private static readonly LENGTH = 2000;
+
+    constructor(index: number, z: number, direction: number) {
+        super(index, z, ForestBiomeFeatures.LENGTH, direction);
+    }
 
     private layoutCache: BoatPathLayout | null = null;
 

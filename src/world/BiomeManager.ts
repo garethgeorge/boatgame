@@ -11,24 +11,6 @@ import { FracturedIceBiomeFeatures } from './biomes/FracturedIceBiomeFeatures';
 import { HappyBiomeFeatures } from './biomes/HappyBiomeFeatures';
 import { BiomeType } from './biomes/BiomeType';
 
-interface BiomeInstance {
-  type: BiomeType;
-  zMin: number;
-  zMax: number;
-  features: BiomeFeatures;
-}
-
-const BIOME_LENGTHS: Record<BiomeType, number> = {
-  'desert': 2000,
-  'forest': 2000,
-  'ice': 1000,
-  'swamp': 1600,
-  'jurassic': 2000,
-  'test': 1000,
-  'fractured_ice': 1500, // Conservatively similar to swamp/forest
-  'happy': 1500
-};
-
 const BIOME_CONSTRUCTORS: Record<BiomeType, any> = {
   'desert': DesertBiomeFeatures,
   'forest': ForestBiomeFeatures,
@@ -40,8 +22,50 @@ const BIOME_CONSTRUCTORS: Record<BiomeType, any> = {
   'happy': HappyBiomeFeatures
 };
 
+interface BiomeInstance {
+  type: BiomeType;
+  zMin: number;
+  zMax: number;
+  features: BiomeFeatures;
+};
+
+class BiomeGenerator {
+  public static DEBUG_BIOME = undefined;
+
+  deck: BiomeType[] = [];
+  index: Map<BiomeType, number> = new Map<BiomeType, number>;
+
+  public next(z: number, direction: number): BiomeInstance {
+    const type = BiomeGenerator.DEBUG_BIOME ?? this.drawFromDeck();
+
+    const index = this.index.get(type) ?? 0;
+    this.index.set(type, index + 1);
+
+    const features = new BIOME_CONSTRUCTORS[type](index, z, direction);
+    const range = features.getRange();
+
+    return {
+      type, zMin: range.zMin, zMax: range.zMax, features
+    };
+  }
+
+  private drawFromDeck(): BiomeType {
+    // Each time deck is empty create a sequence
+    // type1, happy, type2, happy,  ...
+    // deck is popped from the top
+    if (this.deck.length === 0) {
+      const otherTypes: BiomeType[] = ['desert', 'forest', 'ice', 'swamp', 'jurassic'];
+      const shuffled = [...otherTypes].sort(() => Math.random() - 0.5);
+
+      for (const type of shuffled) {
+        this.deck.push(type, 'happy');
+      }
+    }
+    return this.deck.pop()!;
+  }
+};
+
 export class BiomeManager {
-  public static DEBUG_BIOME = false;
 
   private readonly BIOME_TRANSITION_WIDTH = 50;
 
@@ -51,27 +75,16 @@ export class BiomeManager {
   private readonly PRUNE_RADIUS = 2500;
   private activeInstances: BiomeInstance[] = [];
 
-  // A shuffled biome sequences for creating new biomes.
-  private posDeck: BiomeType[] = [];
-  private negDeck: BiomeType[] = [];
+  // Shuffled biome sequences for creating new biomes and cycle indices
+  private posGenerator: BiomeGenerator = new BiomeGenerator;
+  private negGenerator: BiomeGenerator = new BiomeGenerator;
 
   constructor() {
-    // Start with two back to back happy biomes so the boat is surrounded
-    // in both directions
-    const type = 'happy';
-    const length = BIOME_LENGTHS[type];
-
-    this.activeInstances.push({
-      type, zMin: -length, zMax: 0, features: new BIOME_CONSTRUCTORS[type](-length, 0)
-    });
-    this.activeInstances.push({
-      type, zMin: 0, zMax: length, features: new BIOME_CONSTRUCTORS[type](-length, 0)
-    });
+    this.updateWindow(0);
   }
 
   public update(worldZ: number): void {
-    this.ensureWindow(worldZ);
-    this.pruneActiveInstances(worldZ);
+    this.updateWindow(worldZ);
   }
 
   private debugCheckZ(worldZ: number): void {
@@ -85,70 +98,43 @@ export class BiomeManager {
     }
   }
 
-  private drawFromDeck(deck: BiomeType[]): BiomeType {
-    // Each time deck is empty create a sequence
-    // happy, type1, happy, type2,  ...
-    // deck is popped from the top
-    if (deck.length === 0) {
-      const otherTypes: BiomeType[] = ['desert', 'forest', 'ice', 'swamp', 'jurassic'];
-      const shuffled = [...otherTypes].sort(() => Math.random() - 0.5);
+  /**
+   * Updates the active biome instances to ensure they cover the requested window [worldZ - WINDOW_RADIUS, worldZ + WINDOW_RADIUS]
+   * plus at least one additional biome in both directions for sampling safety.
+   * Includes hysteresis via PRUNE_RADIUS to prevent biome flickering.
+   */
+  private updateWindow(worldZ: number): void {
+    const minRequiredZ = worldZ - this.WINDOW_RADIUS;
+    const maxRequiredZ = worldZ + this.WINDOW_RADIUS;
+    const minPruneZ = worldZ - this.PRUNE_RADIUS;
+    const maxPruneZ = worldZ + this.PRUNE_RADIUS;
 
-      for (const type of shuffled) {
-        deck.push('happy', type);
-      }
-    }
-    return deck.pop()!;
-  }
+    // --- Negative Z Side ---
 
-  private ensureWindow(worldZ: number): void {
-    // Grow Negative Z (forward)
-    while (true) {
-      const currentZMin = this.activeInstances.length > 0 ? this.activeInstances[0].zMin : Infinity;
-      if (currentZMin <= worldZ - this.WINDOW_RADIUS) break;
-
-      const type = BiomeManager.DEBUG_BIOME ? 'test' : this.drawFromDeck(this.negDeck);
-      const length = BIOME_LENGTHS[type];
-      const zMax = currentZMin;
-      const zMin = currentZMin - length;
-
-      this.activeInstances.unshift({
-        type,
-        zMin,
-        zMax,
-        features: new BIOME_CONSTRUCTORS[type](zMin, zMax)
-      });
+    // 1. Prune: Remove if the 3rd instance already covers the prune boundary.
+    while (this.activeInstances.length > 2 && this.activeInstances[2].zMin < minPruneZ) {
+      this.activeInstances.shift();
     }
 
-    // Grow Positive Z (backward)
-    while (true) {
-      const currentZMax = this.activeInstances.length > 0 ? this.activeInstances[this.activeInstances.length - 1].zMax : -Infinity;
-      if (currentZMax >= worldZ + this.WINDOW_RADIUS) break;
-
-      const type = BiomeManager.DEBUG_BIOME ? 'test' : this.drawFromDeck(this.posDeck);
-      const length = BIOME_LENGTHS[type];
-      const zMin = currentZMax;
-      const zMax = currentZMax + length;
-
-      this.activeInstances.push({
-        type,
-        zMin,
-        zMax,
-        features: new BIOME_CONSTRUCTORS[type](zMin, zMax)
-      });
+    // 2. Grow: Add instances until the 2nd instance covers the window edge.
+    while (this.activeInstances.length < 2 || this.activeInstances[1].zMin > minRequiredZ) {
+      const currentZMin = this.activeInstances.length > 0 ? this.activeInstances[0].zMin : worldZ;
+      this.activeInstances.unshift(this.negGenerator.next(currentZMin, -1));
     }
-  }
 
-  private pruneActiveInstances(currentZ: number): void {
-    this.activeInstances = this.activeInstances.filter(inst => {
-      // if instance is to the "right" keep so long as its start is in range
-      if (currentZ < inst.zMin)
-        return inst.zMin - currentZ <= this.PRUNE_RADIUS;
-      // if instance is to the "left" keep so long as its end is in range
-      if (inst.zMax < currentZ)
-        return currentZ - inst.zMax <= this.PRUNE_RADIUS;
-      // overlaps so definitely keep
-      return true;
-    });
+    // --- Positive Z Side ---
+
+    // 1. Prune: Remove if the 3rd from end already covers the prune boundary.
+    while (this.activeInstances.length > 2 && this.activeInstances[this.activeInstances.length - 3].zMax > maxPruneZ) {
+      this.activeInstances.pop();
+    }
+
+    // 2. Grow: Add instances until the 2nd from end covers the window edge.
+    while (this.activeInstances.length < 2 || this.activeInstances[this.activeInstances.length - 2].zMax < maxRequiredZ) {
+      const len = this.activeInstances.length;
+      const currentZMax = len > 0 ? this.activeInstances[len - 1].zMax : worldZ;
+      this.activeInstances.push(this.posGenerator.next(currentZMax, 1));
+    }
   }
 
   /**
@@ -175,7 +161,9 @@ export class BiomeManager {
     }
 
     // Fallback to closest if not found (shouldn't happen with ensureZReached)
-    return this.activeInstances[0];
+    if (this.activeInstances.length === 0) return null as any;
+    if (worldZ <= this.activeInstances[0].zMin) return this.activeInstances[0];
+    return this.activeInstances[this.activeInstances.length - 1];
   }
 
   public getBiomeBoundaries(worldZ: number): { zMin: number, zMax: number } {
@@ -241,18 +229,18 @@ export class BiomeManager {
     const distFromMax = Math.abs(worldZ - instance.zMax);
 
     if (distFromMin < transitionWidth / 2) {
+      // near to zMin of this biome
       const otherZ = instance.zMin - 0.001;
       const otherInstance = this.getBiomeInstanceAt(otherZ);
-      features1 = instance.features;
       features2 = otherInstance.features;
 
       const t = distFromMin / (transitionWidth / 2);
       weight1 = this.lerp(0.5, 1.0, t);
       weight2 = 1.0 - weight1;
     } else if (distFromMax < transitionWidth / 2) {
+      // near to zMax of this biome
       const otherZ = instance.zMax + 0.001;
       const otherInstance = this.getBiomeInstanceAt(otherZ);
-      features1 = instance.features;
       features2 = otherInstance.features;
 
       const t = (transitionWidth / 2 - distFromMax) / (transitionWidth / 2);

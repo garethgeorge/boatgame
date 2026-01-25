@@ -12,6 +12,11 @@ import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
+    private static readonly LENGTH = 1600;
+
+    constructor(index: number, z: number, direction: number) {
+        super(index, z, SwampBiomeFeatures.LENGTH, direction);
+    }
 
     private layoutCache: BoatPathLayout | null = null;
 

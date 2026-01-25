@@ -9,7 +9,11 @@ import { EntityIds } from '../../entities/EntityIds';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'ice';
+    private static readonly LENGTH = 1000;
 
+    constructor(index: number, z: number, direction: number) {
+        super(index, z, IceBiomeFeatures.LENGTH, direction);
+    }
 
     getGroundColor(): { r: number, g: number, b: number } {
         return { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 };

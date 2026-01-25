@@ -10,9 +10,10 @@ describe('BiomeManager Procedural Generation', () => {
 
     it('should generate an initial biome at Z=0', () => {
         const boundaries = biomeManager.getBiomeBoundaries(0);
-        // Biome 0 is [-1500, 0]
-        expect(boundaries.zMin).toBe(-1500);
-        expect(boundaries.zMax).toBe(0);
+        // Biome 0 should contain 0 and have a valid range
+        expect(boundaries.zMin).toBeLessThanOrEqual(0);
+        expect(boundaries.zMax).toBeGreaterThanOrEqual(0);
+        expect(boundaries.zMax - boundaries.zMin).toBeGreaterThan(0);
         expect((biomeManager as any).getBiomeInstanceAt(0).type).toBe('happy');
     });
 

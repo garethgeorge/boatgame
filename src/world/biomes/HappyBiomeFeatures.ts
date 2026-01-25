@@ -11,19 +11,20 @@ import { RIVERLAND_DECORATION_RULES } from './decorations/RiverlandDecorationRul
 import { PARKLAND_DECORATION_RULES } from './decorations/ParklandDecorationRules';
 
 
-interface HappyBiomeLayout {
-    decorationRules: DecorationRule[],
-    boatPathLayout: BoatPathLayout,
-}
-
 /**
  * Happy Biome: A beautiful spring-like day with lush green fields.
  * Uses Context-Aware Archetypes for procedural placement.
  */
 export class HappyBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'happy';
+    private static readonly LENGTH = 1000;
 
-    private layoutCache: HappyBiomeLayout | null = null;
+    constructor(index: number, z: number, direction: number) {
+        super(index, z, HappyBiomeFeatures.LENGTH, direction);
+    }
+
+    private decorationRules: DecorationRule[] | null = null;
+    private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(): { r: number, g: number, b: number } {
         // Lush green ground color
@@ -41,7 +42,15 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return 0.5;
     }
 
-    private getLayout(): HappyBiomeLayout {
+    private getDecorationRules(): DecorationRule[] {
+        if (!this.decorationRules) {
+            this.decorationRules = Math.random() < 0.5 ?
+                RIVERLAND_DECORATION_RULES : PARKLAND_DECORATION_RULES;
+        }
+        return this.decorationRules;
+    }
+
+    private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
         const waterAnimals = [EntityIds.DOLPHIN, EntityIds.SWAN];
@@ -84,20 +93,20 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             }
         };
 
+        // Pick a combination by simple cycling through
         const patternCombos = [
             { river: 'dolphin_pods', flying: 'bluebird_flocks' },
             { river: 'swan_bevies', flying: 'butterfly_swarms' },
             { river: 'turtle_hurds', flying: 'dragonfly_swarms' },
         ];
-
-        const combo = patternCombos[Math.floor(Math.random() * 3)];
+        const combo = patternCombos[Math.abs(this.index) % 3];
 
         const riverTrack: TrackConfig = {
             name: 'river',
             stages: [
                 {
                     name: 'river_animals',
-                    progress: [0, 1.0],
+                    progress: [0.2, 1.0],
                     patterns: [[{ pattern: combo.river, weight: 1.0 }]]
                 }
             ]
@@ -108,7 +117,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             stages: [
                 {
                     name: 'flying_animals',
-                    progress: [0, 1.0],
+                    progress: [0.4, 1.0],
                     patterns: [
                         [
                             { pattern: combo.flying, weight: 1.0 }
@@ -126,21 +135,16 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             waterAnimals
         });
 
-        const decorationRules = Math.random() < 0.5 ?
-            RIVERLAND_DECORATION_RULES : PARKLAND_DECORATION_RULES;
-
-        this.layoutCache = { decorationRules, boatPathLayout };
+        this.layoutCache = boatPathLayout;
         return this.layoutCache;
     }
 
     * decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
-
-        const layout = this.getLayout();
-
+        const decorationRules = this.getDecorationRules();
         const spatialGrid = context.chunk.spatialGrid;
         yield* TerrainDecorator.decorateIterator(
             context,
-            layout.decorationRules,
+            decorationRules,
             { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
             spatialGrid,
             12345 // Fixed seed for now
@@ -150,6 +154,6 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     * spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
         const layout = this.getLayout();
         yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
-            context, layout.boatPathLayout, this.id, zStart, zEnd);
+            context, layout, this.id, zStart, zEnd);
     }
 }

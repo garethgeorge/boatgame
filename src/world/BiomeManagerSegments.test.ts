@@ -10,39 +10,49 @@ describe('BiomeManager Segments', () => {
     });
 
     it('should return a single segment if range is within one biome', () => {
-        // Range [-1000, -500] is entirely within Happy [-1500, 0]
-        biomeManager.update(-750);
-        const segments = biomeManager.getFeatureSegments(-500, -1000);
+        const boundaries = biomeManager.getBiomeBoundaries(0);
+        const mid = (boundaries.zMin + boundaries.zMax) / 2;
+        const width = (boundaries.zMax - boundaries.zMin) * 0.2;
+
+        const zStart = mid + width;
+        const zEnd = mid - width;
+
+        biomeManager.update(mid);
+        const segments = biomeManager.getFeatureSegments(zStart, zEnd);
 
         expect(segments.length).toBe(1);
-        expect(segments[0].zMin).toBe(-500);
-        expect(segments[0].zMax).toBe(-1000);
+        expect(segments[0].zMin).toBe(zStart);
+        expect(segments[0].zMax).toBe(zEnd);
         expect(segments[0].features.id).toBe('happy');
     });
 
     it('should return multiple segments if range spans biome boundaries', () => {
-        // Happy is [-1500, 0]
-        // Next neg biome starts at -1500
-        // Sample from -1400 to -1600
-        biomeManager.update(-1500);
-        const segments = biomeManager.getFeatureSegments(-1400, -1600);
+        const boundaries = biomeManager.getBiomeBoundaries(0);
+        const transitionZ = boundaries.zMin; // Boundary between first and second biome
+
+        const zStart = transitionZ + 50;
+        const zEnd = transitionZ - 50;
+
+        biomeManager.update(zEnd);
+        const segments = biomeManager.getFeatureSegments(zStart, zEnd);
 
         expect(segments.length).toBe(2);
 
         // First segment (Happy)
         expect(segments[0].features.id).toBe('happy');
-        expect(segments[0].zMin).toBe(-1400);
-        expect(segments[0].zMax).toBe(-1500);
+        expect(segments[0].zMin).toBe(zStart);
+        expect(segments[0].zMax).toBe(transitionZ);
 
         // Second segment (Next biome)
         expect(segments[1].features.id).not.toBe('happy');
-        expect(segments[1].zMin).toBe(-1500);
-        expect(segments[1].zMax).toBe(-1600);
+        expect(segments[1].zMin).toBe(transitionZ);
+        expect(segments[1].zMax).toBe(zEnd);
     });
 
     it('should handle large ranges spanning many biomes', () => {
-        biomeManager.update(-2500);
-        const segments = biomeManager.getFeatureSegments(0, -5000);
+        const targetZ = -5000;
+        biomeManager.update(targetZ);
+        const segments = biomeManager.getFeatureSegments(0, targetZ);
 
         expect(segments.length).toBeGreaterThan(2);
 
@@ -52,7 +62,7 @@ describe('BiomeManager Segments', () => {
         }
 
         expect(segments[0].zMin).toBe(0);
-        expect(segments[segments.length - 1].zMax).toBe(-5000);
+        expect(segments[segments.length - 1].zMax).toBe(targetZ);
     });
 
     it('should handle positive Z direction traversal', () => {

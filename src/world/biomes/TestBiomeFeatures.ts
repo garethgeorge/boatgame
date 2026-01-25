@@ -11,6 +11,11 @@ import { RiverGeometry } from '../RiverGeometry';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
+    private static readonly LENGTH = 1000;
+
+    constructor(index: number, z: number, direction: number) {
+        super(index, z, TestBiomeFeatures.LENGTH, direction);
+    }
 
     private decorationRules: DecorationRule[] = [
         new TierRule({
