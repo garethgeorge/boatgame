@@ -7,12 +7,6 @@ export interface BiomeFeatures {
     id: BiomeType;
 
     /**
-     * Create a lazily initialized layout for this biome instance.
-     * The type is biome-specific.
-     */
-    createLayout(zMin: number, zMax: number): any;
-
-    /**
      * Decorate the terrain with static meshes (trees, rocks, etc.)
      */
     decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown>;
@@ -29,5 +23,4 @@ export interface BiomeFeatures {
     getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color };
     getAmplitudeMultiplier(): number;
     getRiverWidthMultiplier(): number;
-    getBiomeLength(): number;
 }

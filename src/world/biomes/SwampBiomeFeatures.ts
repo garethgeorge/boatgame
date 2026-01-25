@@ -13,6 +13,7 @@ import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
 
+    private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(): { r: number, g: number, b: number } {
         return { r: 0x2B / 255, g: 0x24 / 255, b: 0x1C / 255 }; // Muddy Dark Brown
@@ -42,12 +43,10 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         return 5.0;
     }
 
-    getBiomeLength(): number {
-        return 1600;
-    }
+    private getLayout(): BoatPathLayout {
+        if (this.layoutCache) return this.layoutCache;
 
-    public createLayout(zMin: number, zMax: number): BoatPathLayout {
-        return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
+        this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: {
                 'dense_shore_mangroves': {
                     logic: 'scatter',
@@ -180,6 +179,8 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
             ],
             waterAnimals: [EntityIds.ALLIGATOR, EntityIds.SNAKE, EntityIds.EGRET, EntityIds.DRAGONFLY]
         });
+
+        return this.layoutCache;
     }
 
 
@@ -217,8 +218,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     }
 
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
-        const layout = context.biomeLayout as BoatPathLayout;
-        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, layout, this.id, zStart, zEnd);
+        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, this.getLayout(), this.id, zStart, zEnd);
     }
 }
 

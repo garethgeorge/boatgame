@@ -11,7 +11,7 @@ import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'jurassic';
 
-
+    private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(): { r: number, g: number, b: number } {
         return { r: 0x2E / 255, g: 0x4B / 255, b: 0x2E / 255 };
@@ -32,12 +32,10 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         return 1.7;
     }
 
-    public getBiomeLength(): number {
-        return 2000;
-    }
+    private getLayout(): BoatPathLayout {
+        if (this.layoutCache) return this.layoutCache;
 
-    public createLayout(zMin: number, zMax: number): BoatPathLayout {
-        return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
+        this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: {
                 'scattered_rocks': {
                     logic: 'scatter',
@@ -124,6 +122,8 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
             ],
             waterAnimals: [EntityIds.BRONTOSAURUS]
         });
+
+        return this.layoutCache;
     }
 
     *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
@@ -150,6 +150,6 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     }
 
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
-        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, context.biomeLayout, this.id, zStart, zEnd);
+        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, this.getLayout(), this.id, zStart, zEnd);
     }
 }

@@ -10,7 +10,6 @@ export interface SpawnContext {
   zMax: number;
   biomeZMin: number;
   biomeZMax: number;
-  biomeLayout?: any;
 }
 
 export interface Spawnable {

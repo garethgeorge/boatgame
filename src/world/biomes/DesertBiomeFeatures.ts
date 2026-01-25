@@ -10,6 +10,8 @@ import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';
 
+    private layoutCache: BoatPathLayout | null = null;
+
     getGroundColor(): { r: number, g: number, b: number } {
         return { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 };
     }
@@ -17,12 +19,10 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     protected skyTopColors: number[] = [0x04193c, 0x05559c, 0x058fea]; // [Night, Sunset, Noon]
     protected skyBottomColors: number[] = [0x024b82, 0xafd9ae, 0x53baf5]; // [Night, Sunset, Noon]
 
-    public getBiomeLength(): number {
-        return 2000;
-    }
+    private getLayout(): BoatPathLayout {
+        if (this.layoutCache) return this.layoutCache;
 
-    public createLayout(zMin: number, zMax: number): BoatPathLayout {
-        return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
+        this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: {
                 'animal_corridor': {
                     logic: 'sequence',
@@ -111,6 +111,8 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
             ],
             waterAnimals: [EntityIds.HIPPO]
         });
+
+        return this.layoutCache;
     }
 
     *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
@@ -134,7 +136,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     }
 
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
-        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, context.biomeLayout, this.id, zStart, zEnd);
+        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, this.getLayout(), this.id, zStart, zEnd);
     }
 
 }

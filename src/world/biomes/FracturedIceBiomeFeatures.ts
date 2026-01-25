@@ -32,6 +32,8 @@ interface BiomeLayout {
 export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'fractured_ice' as BiomeType;
 
+    private layoutCache: BiomeLayout | null = null;
+
 
     // Cache the material
     private static iceMaterial: THREE.Material | null = null;
@@ -58,10 +60,12 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
     protected skyTopColors: number[] = [0x0c1424, 0x888b8f, 0xc2c7da]; // [Night, Sunset, Noon]
     protected skyBottomColors: number[] = [0x20283d, 0x85a2bd, 0xe5d9b2]; // [Night, Sunset, Noon]
 
-    createLayout(zMin: number, zMax: number): BiomeLayout {
+    private getLayout(): BiomeLayout {
+        if (this.layoutCache) return this.layoutCache;
+
         const riverSystem = RiverSystem.getInstance();
         const boatWidth = 5.0; // Conservative boat width
-        const length = zMax - zMin;
+        const length = this.zMax - this.zMin;
 
         // Reduced density slightly since elongated cells cover more Z space effectively?
         // Or keep same. Let's keep same for now.
@@ -84,7 +88,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
             for (let i = 0; i < numSeeds; i++) {
                 const z = Math.random() * length;
-                const worldZ = z + zMin;
+                const worldZ = z + this.zMin;
 
                 const banks = riverSystem.getBankPositions(worldZ);
                 const width = banks.right - banks.left;
@@ -110,9 +114,10 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
             const voronoi = this.computeVoronoi(scaledSeeds, seeds, delaunay, length, boundsX, zScale);
 
             // 3. Build Graph
-            if (this.checkNavigability(voronoi, riverSystem, zMin, length, boatWidth, shrinkFactor)) {
+            if (this.checkNavigability(voronoi, riverSystem, this.zMin, length, boatWidth, shrinkFactor)) {
                 console.log(`[FracturedIce] Success on attempt ${attempt + 1}`);
-                return { cells: voronoi.cells, shrinkFactor };
+                this.layoutCache = { cells: voronoi.cells, shrinkFactor };
+                return this.layoutCache;
             }
 
             // Increase density
@@ -120,7 +125,8 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         }
 
         console.warn("[FracturedIce] Failed to generate navigable layout after max attempts.");
-        return { cells: [] };
+        this.layoutCache = { cells: [] };
+        return this.layoutCache;
     }
 
     private computeVoronoi(scaledSeeds: Point[], realSeeds: Point[], delaunay: Delaunator, length: number, boundsX: number, zScale: number) {
@@ -327,18 +333,18 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
         const boundarySize = 50.0;
 
-        const fracturedStart = context.biomeZMin + boundarySize;
-        const fracturedEnd = context.biomeZMax - boundarySize;
+        const fracturedStart = this.zMin + boundarySize;
+        const fracturedEnd = this.zMax - boundarySize;
 
         // 1. Spawn dynamic icebergs from layout
-        const layout = context.biomeLayout;
+        const layout = this.getLayout();
 
         if (layout && layout.cells) {
             // Filter cells that are within the current chunk (zStart, zEnd)
             // AND are within the fractured ice region (fracturedStart, fracturedEnd)
 
             const cells = (layout.cells as VoronoiCell[]).filter(c => {
-                const worldZ = c.centroid.y + context.biomeZMin;
+                const worldZ = c.centroid.y + this.zMin;
                 if (worldZ < zStart || worldZ >= zEnd) return false;
                 if (worldZ < fracturedStart || worldZ > fracturedEnd) return false;
                 return true;
@@ -362,7 +368,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
                 }
 
                 const worldX = cx;
-                const worldZ = cy + context.biomeZMin;
+                const worldZ = cy + this.zMin;
 
                 const iceberg = new FracturedIceberg(worldX, worldZ, relativeVertices, context.physicsEngine);
                 context.entityManager.add(iceberg);
@@ -371,7 +377,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
         // 2. Spawn Standard Boundary Icebergs
         // Start Boundary
-        const startOverlapStart = Math.max(zStart, context.biomeZMin);
+        const startOverlapStart = Math.max(zStart, this.zMin);
         const startOverlapEnd = Math.min(zEnd, fracturedStart);
         if (startOverlapStart < startOverlapEnd) {
             yield* EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd);
@@ -379,7 +385,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
         // End Boundary
         const endOverlapStart = Math.max(zStart, fracturedEnd);
-        const endOverlapEnd = Math.min(zEnd, context.biomeZMax);
+        const endOverlapEnd = Math.min(zEnd, this.zMax);
         if (endOverlapStart < endOverlapEnd) {
             yield* EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd);
         }

@@ -8,6 +8,13 @@ import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 
 export abstract class BaseBiomeFeatures implements BiomeFeatures {
     abstract id: BiomeType;
+    protected zMin: number;
+    protected zMax: number;
+
+    constructor(zMin: number, zMax: number) {
+        this.zMin = zMin;
+        this.zMax = zMax;
+    }
 
     abstract decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown>;
     abstract spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown>;
@@ -65,11 +72,4 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         return 1.0;
     }
 
-    public getBiomeLength(): number {
-        return 1000;
-    }
-
-    public createLayout(zMin: number, zMax: number): any {
-        return null;
-    }
 }

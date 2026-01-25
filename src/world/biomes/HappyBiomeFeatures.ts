@@ -23,6 +23,8 @@ interface HappyBiomeLayout {
 export class HappyBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'happy';
 
+    private layoutCache: HappyBiomeLayout | null = null;
+
     getGroundColor(): { r: number, g: number, b: number } {
         // Lush green ground color
         return { r: 0x33 / 255, g: 0xaa / 255, b: 0x33 / 255 };
@@ -35,15 +37,13 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     protected skyTopColors: number[] = [0x303948, 0xf6b581, 0x01cad1]; // [Night, Sunset, Noon]
     protected skyBottomColors: number[] = [0x5b6831, 0xf7efbc, 0xb0ece6]; // [Night, Sunset, Noon]
 
-    public getBiomeLength(): number {
-        return 1500;
-    }
-
     public override getAmplitudeMultiplier(): number {
         return 0.5;
     }
 
-    public createLayout(zMin: number, zMax: number): HappyBiomeLayout {
+    private getLayout(): HappyBiomeLayout {
+        if (this.layoutCache) return this.layoutCache;
+
         const waterAnimals = [EntityIds.DOLPHIN, EntityIds.SWAN];
         const patterns: PatternConfigs = {
             'dolphin_pods': {
@@ -118,7 +118,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             ]
         };
 
-        const boatPathLayout = BoatPathLayoutStrategy.createLayout(zMin, zMax, {
+        const boatPathLayout = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: patterns,
             tracks: [
                 riverTrack, flyingTrack
@@ -129,12 +129,13 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         const decorationRules = Math.random() < 0.5 ?
             RIVERLAND_DECORATION_RULES : PARKLAND_DECORATION_RULES;
 
-        return { decorationRules, boatPathLayout };
+        this.layoutCache = { decorationRules, boatPathLayout };
+        return this.layoutCache;
     }
 
     * decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
 
-        const layout = context.biomeLayout as HappyBiomeLayout;
+        const layout = this.getLayout();
 
         const spatialGrid = context.chunk.spatialGrid;
         yield* TerrainDecorator.decorateIterator(
@@ -147,7 +148,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     }
 
     * spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
-        const layout = context.biomeLayout as HappyBiomeLayout;
+        const layout = this.getLayout();
         yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
             context, layout.boatPathLayout, this.id, zStart, zEnd);
     }

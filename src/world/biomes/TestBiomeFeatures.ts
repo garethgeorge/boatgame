@@ -82,9 +82,6 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         return 0.0;
     }
 
-    public createLayout(zMin: number, zMax: number): any {
-    }
-
     *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
         // TerrainDecorator.decorateIterator(
         //     context,

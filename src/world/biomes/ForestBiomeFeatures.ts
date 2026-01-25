@@ -12,6 +12,8 @@ import { FOREST_DECORATION_RULES } from './decorations/ForestDecorationRules';
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';
 
+    private layoutCache: BoatPathLayout | null = null;
+
     getGroundColor(): { r: number, g: number, b: number } {
         return { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 };
     }
@@ -19,18 +21,16 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     protected skyTopColors: number[] = [0x0b1517, 0x455d96, 0x0067b6]; // [Night, Sunset, Noon]
     protected skyBottomColors: number[] = [0x2b4f68, 0xede6da, 0xb1daec]; // [Night, Sunset, Noon]
 
-    public getBiomeLength(): number {
-        return 2000;
-    }
-
     public override getAmplitudeMultiplier(): number {
         return 1.0;
     }
 
     private decorationRules = FOREST_DECORATION_RULES;
 
-    public createLayout(zMin: number, zMax: number): BoatPathLayout {
-        return BoatPathLayoutStrategy.createLayout(zMin, zMax, {
+    private getLayout(): BoatPathLayout {
+        if (this.layoutCache) return this.layoutCache;
+
+        this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: {
                 'forest_slalom': {
                     logic: 'scatter',
@@ -110,6 +110,8 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
             ],
             waterAnimals: [EntityIds.DUCKLING]
         });
+
+        return this.layoutCache;
     }
 
     *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
@@ -124,6 +126,6 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
-        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, context.biomeLayout, this.id, zStart, zEnd);
+        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, this.getLayout(), this.id, zStart, zEnd);
     }
 }

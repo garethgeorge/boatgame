@@ -152,13 +152,8 @@ export class TerrainChunk {
     for (const segment of segments) {
       context.biomeZMin = segment.biomeZMin;
       context.biomeZMax = segment.biomeZMax;
-      context.biomeLayout = this.riverSystem.biomeManager.getLayoutForBiome(
-        segment.biomeIndex,
-        segment.biomeZMin,
-        segment.biomeZMax
-      );
 
-      const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
+      const features = this.riverSystem.biomeManager.getFeatures(segment.biomeIndex);
       yield* features.decorate(context, segment.zMin, segment.zMax);
     }
 
@@ -193,13 +188,8 @@ export class TerrainChunk {
     for (const segment of segments) {
       context.biomeZMin = segment.biomeZMin;
       context.biomeZMax = segment.biomeZMax;
-      context.biomeLayout = this.riverSystem.biomeManager.getLayoutForBiome(
-        segment.biomeIndex,
-        segment.biomeZMin,
-        segment.biomeZMax
-      );
 
-      const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
+      const features = this.riverSystem.biomeManager.getFeatures(segment.biomeIndex);
       yield* features.spawn(context, difficulty, segment.zMin, segment.zMax);
     }
   }
@@ -239,6 +229,9 @@ export class TerrainChunk {
       const dz = tz * chunkSize;
       const wz = this.zOffset + dz;
 
+      // Biome properties are constant across the width of the chunk (constant worldZ)
+      const color = this.riverSystem.biomeManager.getBiomeGroundColor(wz);
+
       // Now iterate across chunk width
       for (let ix = 0; ix <= resX; ix++) {
         // tx is parametric [-1,1] from chunk edge to edge
@@ -257,9 +250,6 @@ export class TerrainChunk {
         positions[index * 3 + 2] = wz;
 
         // Colors
-        // Purely biome based, maybe slight noise variation but mostly solid
-        // Lerp between Desert and Forest based on biomeFactor
-        const color = this.riverSystem.biomeManager.getBiomeGroundColor(wz);
         colors[index * 3] = color.r;
         colors[index * 3 + 1] = color.g;
         colors[index * 3 + 2] = color.b;
