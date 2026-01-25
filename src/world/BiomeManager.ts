@@ -43,24 +43,34 @@ const BIOME_CONSTRUCTORS: Record<BiomeType, any> = {
 export class BiomeManager {
   public static DEBUG_BIOME = false;
 
-  private activeInstances: BiomeInstance[] = [];
   private readonly BIOME_TRANSITION_WIDTH = 50;
-  private readonly PRUNE_THRESHOLD = 5000; // units behind boat
-  private readonly WINDOW_BUFFER = 2000;   // units ahead of boat
 
-  // Generator state for the Positive Z direction (backward)
+  // The active instances are generated to cover the window radius and
+  // are pruned once outside the prune radius
+  private readonly WINDOW_RADIUS = 2000;
+  private readonly PRUNE_RADIUS = 2500;
+  private activeInstances: BiomeInstance[] = [];
+
+  // A shuffled biome sequences for creating new biomes.
   private posDeck: BiomeType[] = [];
-
-  // Generator state for the Negative Z direction (forward)
   private negDeck: BiomeType[] = [];
 
   constructor() {
-    // Initial state is at Z=0. update() will handle growth as the boat moves.
-    this.update(0);
+    // Start with two back to back happy biomes so the boat is surrounded
+    // in both directions
+    const type = 'happy';
+    const length = BIOME_LENGTHS[type];
+
+    this.activeInstances.push({
+      type, zMin: -length, zMax: 0, features: new BIOME_CONSTRUCTORS[type](-length, 0)
+    });
+    this.activeInstances.push({
+      type, zMin: 0, zMax: length, features: new BIOME_CONSTRUCTORS[type](-length, 0)
+    });
   }
 
   public update(worldZ: number): void {
-    this.ensureZReached(worldZ);
+    this.ensureWindow(worldZ);
     this.pruneActiveInstances(worldZ);
   }
 
@@ -75,39 +85,31 @@ export class BiomeManager {
     }
   }
 
-  private drawFromDeck(direction: 'pos' | 'neg'): BiomeType {
-    const deck = direction === 'pos' ? this.posDeck : this.negDeck;
-
+  private drawFromDeck(deck: BiomeType[]): BiomeType {
+    // Each time deck is empty create a sequence
+    // happy, type1, happy, type2,  ...
+    // deck is popped from the top
     if (deck.length === 0) {
       const otherTypes: BiomeType[] = ['desert', 'forest', 'ice', 'swamp', 'jurassic'];
       const shuffled = [...otherTypes].sort(() => Math.random() - 0.5);
 
       for (const type of shuffled) {
-        if (direction === 'neg') {
-          // negNextIndex starts at 0 (Happy), then 1 (Other)
-          // Pop from end, so push Other then Happy
-          deck.push(type, 'happy');
-        } else {
-          // posNextIndex starts at -1 (Other), then -2 (Happy)
-          // Pop from end, so push Happy then Other
-          deck.push('happy', type);
-        }
+        deck.push('happy', type);
       }
     }
-
     return deck.pop()!;
   }
 
-  private ensureZReached(worldZ: number): void {
+  private ensureWindow(worldZ: number): void {
     // Grow Negative Z (forward)
     while (true) {
-      const negCursorZ = this.activeInstances.length > 0 ? this.activeInstances[0].zMin : 0;
-      if (negCursorZ <= worldZ - this.WINDOW_BUFFER) break;
+      const currentZMin = this.activeInstances.length > 0 ? this.activeInstances[0].zMin : Infinity;
+      if (currentZMin <= worldZ - this.WINDOW_RADIUS) break;
 
-      const type = BiomeManager.DEBUG_BIOME ? 'test' : this.drawFromDeck('neg');
+      const type = BiomeManager.DEBUG_BIOME ? 'test' : this.drawFromDeck(this.negDeck);
       const length = BIOME_LENGTHS[type];
-      const zMax = negCursorZ;
-      const zMin = negCursorZ - length;
+      const zMax = currentZMin;
+      const zMin = currentZMin - length;
 
       this.activeInstances.unshift({
         type,
@@ -119,13 +121,13 @@ export class BiomeManager {
 
     // Grow Positive Z (backward)
     while (true) {
-      const posCursorZ = this.activeInstances.length > 0 ? this.activeInstances[this.activeInstances.length - 1].zMax : 0;
-      if (posCursorZ >= worldZ + this.WINDOW_BUFFER) break;
+      const currentZMax = this.activeInstances.length > 0 ? this.activeInstances[this.activeInstances.length - 1].zMax : -Infinity;
+      if (currentZMax >= worldZ + this.WINDOW_RADIUS) break;
 
-      const type = BiomeManager.DEBUG_BIOME ? 'test' : this.drawFromDeck('pos');
+      const type = BiomeManager.DEBUG_BIOME ? 'test' : this.drawFromDeck(this.posDeck);
       const length = BIOME_LENGTHS[type];
-      const zMin = posCursorZ;
-      const zMax = posCursorZ + length;
+      const zMin = currentZMax;
+      const zMax = currentZMax + length;
 
       this.activeInstances.push({
         type,
@@ -137,12 +139,15 @@ export class BiomeManager {
   }
 
   private pruneActiveInstances(currentZ: number): void {
-    // Remove biomes that are far behind the boat
-    // "Behind" depends on direction. For now let's just keep a fixed radius.
-    const keepRadius = this.PRUNE_THRESHOLD;
     this.activeInstances = this.activeInstances.filter(inst => {
-      const dist = Math.min(Math.abs(inst.zMin - currentZ), Math.abs(inst.zMax - currentZ));
-      return dist < keepRadius;
+      // if instance is to the "right" keep so long as its start is in range
+      if (currentZ < inst.zMin)
+        return inst.zMin - currentZ <= this.PRUNE_RADIUS;
+      // if instance is to the "left" keep so long as its end is in range
+      if (inst.zMax < currentZ)
+        return currentZ - inst.zMax <= this.PRUNE_RADIUS;
+      // overlaps so definitely keep
+      return true;
     });
   }
 
