@@ -152,6 +152,11 @@ export class TerrainChunk {
     for (const segment of segments) {
       context.biomeZMin = segment.biomeZMin;
       context.biomeZMax = segment.biomeZMax;
+      context.biomeLayout = this.riverSystem.biomeManager.getLayoutForBiome(
+        segment.biomeIndex,
+        segment.biomeZMin,
+        segment.biomeZMax
+      );
 
       const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
       yield* features.decorate(context, segment.zMin, segment.zMax);
@@ -175,21 +180,24 @@ export class TerrainChunk {
     const distance = Math.abs(centerZ);
     const difficulty = Math.min(distance / 7500, 1.0);
 
+    const context: SpawnContext = {
+      entityManager: entityManager,
+      physicsEngine: physicsEngine,
+      placementHelper: placementHelper,
+      zMin: zMin,
+      zMax: zMax,
+      biomeZMin: 0,
+      biomeZMax: 0
+    };
+
     for (const segment of segments) {
-      const context: SpawnContext = {
-        entityManager: entityManager,
-        physicsEngine: physicsEngine,
-        placementHelper: placementHelper,
-        zMin: zMin,
-        zMax: zMax,
-        biomeZMin: segment.biomeZMin,
-        biomeZMax: segment.biomeZMax,
-        biomeLayout: this.riverSystem.biomeManager.getLayoutForBiome(
-          segment.biomeIndex,
-          segment.biomeZMin,
-          segment.biomeZMax
-        )
-      };
+      context.biomeZMin = segment.biomeZMin;
+      context.biomeZMax = segment.biomeZMax;
+      context.biomeLayout = this.riverSystem.biomeManager.getLayoutForBiome(
+        segment.biomeIndex,
+        segment.biomeZMin,
+        segment.biomeZMax
+      );
 
       const features = this.riverSystem.biomeManager.getFeatures(segment.biome);
       yield* features.spawn(context, difficulty, segment.zMin, segment.zMax);

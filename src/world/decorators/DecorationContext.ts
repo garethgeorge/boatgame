@@ -11,6 +11,8 @@ export interface DecorationContext {
     biomeZMin: number;
     // The end Z of the current biome
     biomeZMax: number;
+    // The biome layout
+    biomeLayout?: any;
 
     // Helper for biome decorations
     decoHelper: BiomeDecorationHelper;

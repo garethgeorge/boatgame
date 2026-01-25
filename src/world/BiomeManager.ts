@@ -28,11 +28,7 @@ export class BiomeManager {
   private features: Map<BiomeType, BiomeFeatures> = new Map();
   private layoutCache: Map<number, any> = new Map();
   private readonly MAX_LAYOUT_CACHE_SIZE = 20;
-
   constructor() {
-    const biomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic', 'happy'];
-
-    // Initialize features
     this.features.set('desert', new DesertBiomeFeatures());
     this.features.set('forest', new ForestBiomeFeatures());
     this.features.set('ice', new IceBiomeFeatures());
@@ -43,30 +39,26 @@ export class BiomeManager {
     this.features.set('happy', new HappyBiomeFeatures());
 
     let biomeSequence: BiomeType[] = [];
+    const otherBiomeTypes: Array<BiomeType> = ['desert', 'forest', 'ice', 'swamp', 'jurassic'];
+    const happyBiome: BiomeType = 'happy';
 
     if (BiomeManager.DEBUG_BIOME) {
       biomeSequence = new Array(this.BIOME_ARRAY_SIZE).fill('test');
     } else {
+      biomeSequence.push(happyBiome);
       while (biomeSequence.length < this.BIOME_ARRAY_SIZE) {
-        // Create a shuffled list of biome types
-        const shuffled = [...biomeTypes];
+        // Create a shuffled list of other biome types
+        const shuffled = [...otherBiomeTypes];
         for (let i = shuffled.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
 
-        // Ensure the first biome in the list is not the same as the last one currently in the array
-        if (biomeSequence.length > 0) {
-          const lastBiome = biomeSequence[biomeSequence.length - 1];
-          if (shuffled[0] === lastBiome) {
-            const temp = shuffled[0];
-            shuffled[0] = shuffled[shuffled.length - 1];
-            shuffled[shuffled.length - 1] = temp;
-          }
+        for (const type of shuffled) {
+          biomeSequence.push(type);
+          biomeSequence.push(happyBiome);
+          if (biomeSequence.length >= this.BIOME_ARRAY_SIZE) break;
         }
-
-        // Append the list to the array
-        biomeSequence.push(...shuffled);
       }
     }
 

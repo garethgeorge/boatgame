@@ -6,9 +6,15 @@ import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy, PatternConfigs, TrackConfig } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
-import { TerrainDecorator } from '../decorators/TerrainDecorator';
+import { DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { RIVERLAND_DECORATION_RULES } from './decorations/RiverlandDecorationRules';
 import { PARKLAND_DECORATION_RULES } from './decorations/ParklandDecorationRules';
+
+
+interface HappyBiomeLayout {
+    decorationRules: DecorationRule[],
+    boatPathLayout: BoatPathLayout,
+}
 
 /**
  * Happy Biome: A beautiful spring-like day with lush green fields.
@@ -37,7 +43,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return 0.5;
     }
 
-    public createLayout(zMin: number, zMax: number): BoatPathLayout {
+    public createLayout(zMin: number, zMax: number): HappyBiomeLayout {
         const waterAnimals = [EntityIds.DOLPHIN, EntityIds.SWAN];
         const patterns: PatternConfigs = {
             'dolphin_pods': {
@@ -112,7 +118,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             ]
         };
 
-        const boatPath = BoatPathLayoutStrategy.createLayout(zMin, zMax, {
+        const boatPathLayout = BoatPathLayoutStrategy.createLayout(zMin, zMax, {
             patterns: patterns,
             tracks: [
                 riverTrack, flyingTrack
@@ -120,18 +126,20 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             waterAnimals
         });
 
-        return boatPath;
+        const decorationRules = Math.random() < 0.5 ?
+            RIVERLAND_DECORATION_RULES : PARKLAND_DECORATION_RULES;
+
+        return { decorationRules, boatPathLayout };
     }
 
     * decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
 
-        const decorationRules = Math.random() < 0.5 ?
-            RIVERLAND_DECORATION_RULES : PARKLAND_DECORATION_RULES;
+        const layout = context.biomeLayout as HappyBiomeLayout;
 
         const spatialGrid = context.chunk.spatialGrid;
         yield* TerrainDecorator.decorateIterator(
             context,
-            decorationRules,
+            layout.decorationRules,
             { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
             spatialGrid,
             12345 // Fixed seed for now
@@ -139,6 +147,8 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     }
 
     * spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
-        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, context.biomeLayout as BoatPathLayout, this.id, zStart, zEnd);
+        const layout = context.biomeLayout as HappyBiomeLayout;
+        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
+            context, layout.boatPathLayout, this.id, zStart, zEnd);
     }
 }
