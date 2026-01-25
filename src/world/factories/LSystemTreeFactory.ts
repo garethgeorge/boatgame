@@ -4,8 +4,8 @@ import { DecorationFactory, DecorationInstance, NUM_DECORATION_ARCHETYPES } from
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
 import {
-    LSystemTreeKind,
     TreeConfig,
+    LSystemTreeKind,
     ARCHETYPES,
     BlobLeafKindParams,
     WillowLeafKindParams,
@@ -15,9 +15,9 @@ import {
 } from './LSystemTreeArchetypes';
 
 import {
-    ProceduralTree,
+    ProceduralPlant,
     LeafData,
-} from './LSystemTreeGenerator';
+} from './LSystemPlantGenerator';
 
 import { LeafShader } from '../../shaders/LeafShader';
 
@@ -350,7 +350,7 @@ export class LSystemTreeFactory implements DecorationFactory {
         GraphicsUtils.registerObject(LSystemTreeFactory.woodMaterial);
         GraphicsUtils.registerObject(LSystemTreeFactory.leafMaterial);
 
-        const treeGen = new ProceduralTree();
+        const treeGen = new ProceduralPlant();
 
         console.log("--- Tree Archetype Triangle Counts ---");
         for (const kind of Object.keys(ARCHETYPES) as LSystemTreeKind[]) {
@@ -379,7 +379,7 @@ export class LSystemTreeFactory implements DecorationFactory {
         console.log("---------------------------------------");
     }
 
-    private createArchetype(kind: LSystemTreeKind, variation: number, tree: ProceduralTree, params: TreeConfig): TreeArchetype {
+    private createArchetype(kind: LSystemTreeKind, variation: number, tree: ProceduralPlant, params: TreeConfig): TreeArchetype {
         const leafGenerator = this.createLeafGenerator(params);
         const woodGeos: THREE.BufferGeometry[] = [];
         const leafGeos: THREE.BufferGeometry[] = [];
@@ -431,7 +431,7 @@ export class LSystemTreeFactory implements DecorationFactory {
     }
 
     private createLeafGenerator(config: TreeConfig): LeafGenerator {
-        const leafKind = config.params.leafKind;
+        const leafKind = config.leafKind;
         switch (leafKind.kind) {
             case 'willow':
                 return new WillowLeafGenerator(leafKind);

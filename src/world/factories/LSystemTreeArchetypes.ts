@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { MathUtils } from '../../core/MathUtils';
+import { PlantConfig } from './LSystemPlantGenerator';
 
 export type LSystemTreeKind = 'willow' | 'poplar' | 'oak' | 'elm' |
     'umbrella' | 'open' | 'irregular' | 'vase' | 'birch' | 'elder';
@@ -23,62 +23,13 @@ export interface UmbrellaLeafKindParams {
 export type LeafKindParams = BlobLeafKindParams | WillowLeafKindParams |
     IrregularLeafKindParams | ClusterLeafKindParams | UmbrellaLeafKindParams;
 
-export interface TreeParams {
-    iterations: number;
-    length: number;             // base length for branches
-    lengthDecay: number;        // length decay factor
-    thickness: number;          // base thickness for the trunk
-    thicknessDecay: number;     // thickness decay factor (typically 0.5 to 1.0)
+export interface TreeConfig extends PlantConfig {
     leafKind: LeafKindParams;
-    leafColor?: number;         // Base color for leaves
-    leafVariation?: { h: number, s: number, l: number }; // HSL variation range
-    woodColor?: number;         // Optional override for wood color
-}
-
-export interface BranchParams {
-    spread?: number;            // default angle of sub-branch to branch (degrees)
-    jitter?: number;            // jitter for angle to branch and angle around branch (degrees)
-    scale?: number;             // scales branch length
-
-    // shaping parameters
-    gravity?: number;           // pulls branches to ground or pushes to sky
-    horizonBias?: number;       // pull toward or push away from horizon
-    heliotropism?: number;
-    wind?: THREE.Vector3;       // push branches in wind direction
-    windForce?: number;
-    antiShadow?: number;
-}
-
-export interface ExpansionRuleResult {
-    successors?: string[];
-    successor?: string;    // Convenience for single successor
-    weights?: number[];    // their weights (probabilities)
-}
-
-export type ExpansionRuleDefinition = ExpansionRuleResult | ((val: number) => ExpansionRuleResult);
-
-export type BranchRuleDefinition = BranchParams | ((val: number) => BranchParams);
-
-export interface TreeConfig {
-    // starting string
-    axiom: string;
-    // grammar substitution rules
-    rules: Record<string, ExpansionRuleDefinition>;
-    // final substitution applied to all non-terminals
-    finalRule?: string;
-    // maps branch terminal symbols to parameters
-    branches: Record<string, BranchRuleDefinition>;
-
-    // parameters for the tree
-    params: TreeParams;
-    defaults: {
-        // default parameters for branches
-        branch: BranchParams;
-    }
-}
+};
 
 export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     willow: {
+        leafKind: { kind: 'willow', strands: 3 },
         axiom: "#C",
         rules: {
             // crown section
@@ -99,7 +50,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 5,
             length: 3, lengthDecay: 0.85,
             thickness: 0.5, thicknessDecay: 0.7,
-            leafKind: { kind: 'willow', strands: 3 },
             leafColor: 0x41b98d,
             leafVariation: { h: 0.05, s: 0.1, l: 0.1 }
         },
@@ -111,6 +61,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     },
 
     poplar: {
+        leafKind: { kind: 'blob', size: 1.0, thickness: 2.5 },
         axiom: "##X",
         rules: {
             'X': { successors: ["[&B]==[/X]", "=+"], weights: [0.95, 0.05] },
@@ -124,7 +75,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 7,
             length: 2, lengthDecay: 0.8,
             thickness: 0.3, thicknessDecay: 0.7,
-            leafKind: { kind: 'blob', size: 1.0, thickness: 2.5 },
             leafColor: 0x3ea043,
             leafVariation: { h: 0.02, s: 0.05, l: 0.1 }
         },
@@ -136,6 +86,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     },
 
     oak: {
+        leafKind: { kind: 'blob', size: 1.0, thickness: 0.6 },
         axiom: "T",
         rules: {
             // trunk
@@ -156,7 +107,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 7,
             length: 4, lengthDecay: 0.8,
             thickness: 0.7, thicknessDecay: 0.7,
-            leafKind: { kind: 'blob', size: 1.0, thickness: 0.6 },
             leafColor: 0x228B22,
             leafVariation: { h: 0.03, s: 0.1, l: 0.15 }
         },
@@ -168,6 +118,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     },
 
     elm: {
+        leafKind: { kind: 'cluster', size: 2.0, thickness: 0.3, leaves: 20, leafSize: 0.5 },
         axiom: "T",
         rules: {
             // trunk
@@ -191,7 +142,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 10,
             length: 1, lengthDecay: 1,
             thickness: 0.6, thicknessDecay: 0.5,
-            leafKind: { kind: 'cluster', size: 2.0, thickness: 0.3, leaves: 20, leafSize: 0.5 },
             leafColor: 0x2e8b57,
             leafVariation: { h: 0.05, s: 0.15, l: 0.2 }
         },
@@ -203,6 +153,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     },
 
     umbrella: { // Stone Pine / Acacia style
+        leafKind: { kind: 'umbrella', size: 2.0, leaves: 10, leafSize: 0.8 },
         axiom: "T",
         rules: {
             // trunk
@@ -221,7 +172,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 6,
             length: 2, lengthDecay: 0.9,
             thickness: 0.5, thicknessDecay: 0.6,
-            leafKind: { kind: 'umbrella', size: 2.0, leaves: 10, leafSize: 0.8 },
             leafColor: 0x1a4a1c,
             leafVariation: { h: 0.02, s: 0.05, l: 0.05 }
         },
@@ -233,6 +183,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     },
 
     open: { // Japanese Maple / Birch style
+        leafKind: { kind: 'cluster', size: 1.0, thickness: 0.3, leaves: 20, leafSize: 0.6 },
         axiom: "=X",
         rules: {
             'X': (i: number) => {
@@ -248,7 +199,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 6,
             length: 1.5, lengthDecay: 0.9,
             thickness: 0.2, thicknessDecay: 0.5,
-            leafKind: { kind: 'cluster', size: 1.0, thickness: 0.3, leaves: 20, leafSize: 0.6 },
             leafColor: 0xa03e3e,
             leafVariation: { h: 0.08, s: 0.2, l: 0.1 }
         },
@@ -260,6 +210,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     },
 
     irregular: { // Monterey Cypress / Gnarled Oak style
+        leafKind: { kind: 'blob', size: 1.0, thickness: 0.3 },
         axiom: "X",
         rules: {
             'X': (level: number) => {
@@ -279,7 +230,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 12,
             length: 1.0, lengthDecay: 0.9,
             thickness: 0.3, thicknessDecay: 0.6,
-            leafKind: { kind: 'blob', size: 1.0, thickness: 0.3 },
             leafColor: 0x228B22,
             leafVariation: { h: 0.05, s: 0.1, l: 0.1 }
         },
@@ -291,6 +241,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
     },
 
     vase: {
+        leafKind: { kind: 'blob', size: 1.0, thickness: 0.5 },
         axiom: "T",
         rules: {
             // trunk, has a bend then forced more upright
@@ -312,7 +263,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 8,
             length: 0.75, lengthDecay: 0.9,
             thickness: 0.3, thicknessDecay: 0.5,
-            leafKind: { kind: 'blob', size: 1.0, thickness: 0.5 },
             leafColor: 0x2d5a27,
             leafVariation: { h: 0.03, s: 0.05, l: 0.1 }
         },
@@ -325,6 +275,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
 
     elder: {
         // "Mother of the Forest" - Ancient, massive, and distinct
+        leafKind: { kind: 'blob', size: 4.5, thickness: 0.4 },
         axiom: "T",
         rules: {
             // Twisted trunk
@@ -352,7 +303,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 9, // One more iteration for the extra size
             length: 10.0, lengthDecay: 0.82, // Significantly longer base
             thickness: 6.0, thicknessDecay: 0.6, // Massive trunk
-            leafKind: { kind: 'blob', size: 4.5, thickness: 0.4 },
 
             // Updated colors per user request
             leafColor: 0x2d5a27, // Lush forest green
@@ -368,6 +318,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
 
     birch: {
         // Based on Oak, but with adjustments for a birch feel
+        leafKind: { kind: 'blob', size: 1.0, thickness: 0.6 }, // Light green leaves
         axiom: "T",
         rules: {
             // trunk
@@ -389,7 +340,6 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             iterations: 7,
             length: 3.5, lengthDecay: 0.85,
             thickness: 0.6, thicknessDecay: 0.7, // Slightly thinner than oak
-            leafKind: { kind: 'blob', size: 1.0, thickness: 0.6 }, // Light green leaves
             leafColor: 0x86bf5e,
             leafVariation: { h: 0.03, s: 0.1, l: 0.1 },
             woodColor: 0xe3e3e3 // White/Pale trunk

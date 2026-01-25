@@ -1,8 +1,57 @@
 import * as THREE from 'three';
-import {
-    BranchParams,
-    TreeConfig,
-} from './LSystemTreeArchetypes';
+
+export interface PlantParams {
+    iterations: number;
+    length: number;             // base length for branches
+    lengthDecay: number;        // length decay factor
+    thickness: number;          // base thickness for the trunk
+    thicknessDecay: number;     // thickness decay factor (typically 0.5 to 1.0)
+    leafColor?: number;         // Base color for leaves
+    leafVariation?: { h: number, s: number, l: number }; // HSL variation range
+    woodColor?: number;         // Optional override for wood color
+}
+
+export interface BranchParams {
+    spread?: number;            // default angle of sub-branch to branch (degrees)
+    jitter?: number;            // jitter for angle to branch and angle around branch (degrees)
+    scale?: number;             // scales branch length
+
+    // shaping parameters
+    gravity?: number;           // pulls branches to ground or pushes to sky
+    horizonBias?: number;       // pull toward or push away from horizon
+    heliotropism?: number;
+    wind?: THREE.Vector3;       // push branches in wind direction
+    windForce?: number;
+    antiShadow?: number;
+}
+
+export interface ExpansionRuleResult {
+    successors?: string[];
+    successor?: string;    // Convenience for single successor
+    weights?: number[];    // their weights (probabilities)
+}
+
+export type ExpansionRuleDefinition = ExpansionRuleResult | ((val: number) => ExpansionRuleResult);
+
+export type BranchRuleDefinition = BranchParams | ((val: number) => BranchParams);
+
+export interface PlantConfig {
+    // starting string
+    axiom: string;
+    // grammar substitution rules
+    rules: Record<string, ExpansionRuleDefinition>;
+    // final substitution applied to all non-terminals
+    finalRule?: string;
+    // maps branch terminal symbols to parameters
+    branches: Record<string, BranchRuleDefinition>;
+
+    // parameters for the plant
+    params: PlantParams;
+    defaults: {
+        // default parameters for branches
+        branch: BranchParams;
+    }
+}
 
 export interface BranchData {
     start: THREE.Vector3;
@@ -18,13 +67,13 @@ export interface LeafData {
 }
 
 /**
- * L-SYSTEM 3D TREE GENERATION LOGIC
+ * L-SYSTEM 3D PLANT GENERATION LOGIC
  */
-export class ProceduralTree {
+export class ProceduralPlant {
     branches: BranchData[] = [];
     leaves: LeafData[] = [];
 
-    generate(config: TreeConfig) {
+    generate(config: PlantConfig) {
         this.branches = [];
         this.leaves = [];
 
@@ -70,11 +119,11 @@ export class ProceduralTree {
         this.interpret(current, config);
     }
 
-    private interpret(instructions: string, config: TreeConfig) {
+    private interpret(instructions: string, config: PlantConfig) {
 
         // --- DATA STRUCTURES ---
-        class TreeNode {
-            children: TreeNode[] = [];
+        class PlantNode {
+            children: PlantNode[] = [];
             leaves: LeafData[] = [];
             leafCount: number = 0;   // The "Pipe" value
             radius: number = 0;      // Calculated in Pass 2
@@ -89,7 +138,7 @@ export class ProceduralTree {
             pos: THREE.Vector3;
             quat: THREE.Quaternion;
             branch: Required<BranchParams>;
-            node: TreeNode;
+            node: PlantNode;
         }
 
         // Default parameters for all branches
@@ -109,7 +158,7 @@ export class ProceduralTree {
         };
 
         // --- PASS 1: BUILD TOPOLOGY ---
-        const root = new TreeNode(new THREE.Vector3(0, 0, 0), 0);
+        const root = new PlantNode(new THREE.Vector3(0, 0, 0), 0);
 
         const turtle: TurtleState = {
             pos: new THREE.Vector3(0, 0, 0),
@@ -131,7 +180,7 @@ export class ProceduralTree {
                 const length = config.params.length * turtle.branch.scale * lengthScale;
 
                 // A. Apply physical forces
-                turtle.quat = this.applyTreeForces(turtle.quat, turtle.pos, turtle.branch, stack.length);
+                turtle.quat = this.applyPlantForces(turtle.quat, turtle.pos, turtle.branch, stack.length);
 
                 // This is a pseudo-branch used to set parameters but having no length
                 if (length <= 0) {
@@ -143,7 +192,7 @@ export class ProceduralTree {
                 const endPos = turtle.pos.clone().add(dir.multiplyScalar(length));
 
                 // C. Create Graph Node
-                const newNode = new TreeNode(endPos, stack.length);
+                const newNode = new PlantNode(endPos, stack.length);
                 turtle.node.children.push(newNode);
 
                 // D. Move turtle
@@ -219,7 +268,7 @@ export class ProceduralTree {
         // --- PASS 2: CALCULATE RADII (Back-Propagation) ---
 
         // 2a. Calculate Load (Leaf Counts)
-        const calculateLoad = (node: TreeNode): number => {
+        const calculateLoad = (node: PlantNode): number => {
             for (let child of node.children) {
                 node.leafCount += calculateLoad(child);
             }
@@ -235,7 +284,7 @@ export class ProceduralTree {
         const rootLoad = root.leafCount;
         const scaler = rootLoad > 0 ? trunkThickness / Math.pow(rootLoad, power) : trunkThickness;
 
-        const applyRadii = (node: TreeNode) => {
+        const applyRadii = (node: PlantNode) => {
             node.radius = scaler * Math.pow(node.leafCount, power);
             for (let child of node.children) {
                 applyRadii(child);
@@ -245,7 +294,7 @@ export class ProceduralTree {
 
 
         // --- PASS 3: LENGTH ADJUSTMENT (Vigor) ---
-        const shiftSubtree = (node: TreeNode, offset: THREE.Vector3) => {
+        const shiftSubtree = (node: PlantNode, offset: THREE.Vector3) => {
             // Move node's leaves
             for (const leaf of node.leaves) {
                 leaf.pos.add(offset);
@@ -257,7 +306,7 @@ export class ProceduralTree {
             }
         };
 
-        const adjustNodesForLength = (node: TreeNode) => {
+        const adjustNodesForLength = (node: PlantNode) => {
             for (let child of node.children) {
                 // 1. Calculate relative vigor [0..1]
                 const vigor = node.leafCount > 0 ? child.leafCount / node.leafCount : 0;
@@ -290,7 +339,7 @@ export class ProceduralTree {
 
 
         // --- PASS 4: GEOMETRY AND LEAF COLLECTION ---
-        const generateBranchList = (node: TreeNode) => {
+        const generateBranchList = (node: PlantNode) => {
             // Collect leaves on this node
             for (const leaf of node.leaves) {
                 this.leaves.push(leaf);
@@ -311,7 +360,7 @@ export class ProceduralTree {
         generateBranchList(root);
     }
 
-    private applyTreeForces(
+    private applyPlantForces(
         currentQuat: THREE.Quaternion,
         currentPos: THREE.Vector3,
         forces: BranchParams,
@@ -355,7 +404,7 @@ export class ProceduralTree {
 
         // --- FORCE D: HORIZON BIAS (Growth Strategy) ---
         // Note: We don't multiply by flexibility here because this is an 
-        // architectural "intent" of the tree stage (T, A, C), not a physical sag.
+        // architectural "intent" of the plant stage (T, A, C), not a physical sag.
         if (forces.horizonBias !== 0) {
             const targetDir = forces.horizonBias > 0
                 ? new THREE.Vector3(currentDir.x, 0, currentDir.z).normalize()
