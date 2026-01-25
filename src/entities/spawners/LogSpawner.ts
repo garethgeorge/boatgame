@@ -15,7 +15,7 @@ export class LogSpawner extends BaseSpawner {
     return this.density;
   }
 
-  spawnAt(context: SpawnContext, z: number): boolean {
+  spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {
     return this.spawnInRiver(context, z, {});
   }
 

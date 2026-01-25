@@ -9,7 +9,7 @@ export class IcebergSpawner extends BaseSpawner {
     return 0.05;
   }
 
-  spawnAt(context: SpawnContext, z: number): boolean {
+  spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {
     let radius = 4.0 + Math.random();
 
     // Size Variance

@@ -12,7 +12,7 @@ export class RockSpawner extends BaseSpawner {
     return 0.003;
   }
 
-  spawnAt(context: SpawnContext, z: number): boolean {
+  spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {
     // Bias towards shores (70% chance)
     const isShore = Math.random() < 0.7;
     const side = Math.random() > 0.5 ? 1 : -1;

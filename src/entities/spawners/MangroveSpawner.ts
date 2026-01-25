@@ -14,7 +14,7 @@ export class MangroveSpawner extends BaseSpawner {
     return this.density;
   }
 
-  spawnAt(context: SpawnContext, z: number): boolean {
+  spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {
     const riverSystem = RiverSystem.getInstance();
 
     // Get river width and center at this Z

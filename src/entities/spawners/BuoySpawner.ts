@@ -17,7 +17,7 @@ export class BuoySpawner extends BaseSpawner {
     return 0.0053 * ramp;
   }
 
-  spawnAt(context: SpawnContext, wz: number): boolean {
+  spawnAt(context: SpawnContext, wz: number, biomeZRange: [number, number]): boolean {
     const riverSystem = RiverSystem.getInstance();
 
     const isLeft = Math.random() > 0.5;

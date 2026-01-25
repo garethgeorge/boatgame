@@ -14,7 +14,7 @@ export class WaterGrassSpawner extends BaseSpawner {
         return 0.005;
     }
 
-    spawnAt(context: SpawnContext, z: number): boolean {
+    spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {
         // Fallback simple spawn logic if not driven by layout
         // Bias towards shores
         const isShore = Math.random() < 0.8;
