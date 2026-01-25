@@ -7,16 +7,11 @@ describe('BiomeManager Segments', () => {
 
     beforeEach(() => {
         biomeManager = new BiomeManager();
-        // Force evaluation of a range to ensure biomes are created
-        // Happy is [-1500, 0]
-        // Next neg biome will be at <= -1500
-        // Next pos biome will be at >= 0
-        biomeManager.ensureZReached(-5000);
-        biomeManager.ensureZReached(5000);
     });
 
     it('should return a single segment if range is within one biome', () => {
         // Range [-1000, -500] is entirely within Happy [-1500, 0]
+        biomeManager.update(-750);
         const segments = biomeManager.getFeatureSegments(-500, -1000);
 
         expect(segments.length).toBe(1);
@@ -29,6 +24,7 @@ describe('BiomeManager Segments', () => {
         // Happy is [-1500, 0]
         // Next neg biome starts at -1500
         // Sample from -1400 to -1600
+        biomeManager.update(-1500);
         const segments = biomeManager.getFeatureSegments(-1400, -1600);
 
         expect(segments.length).toBe(2);
@@ -45,6 +41,7 @@ describe('BiomeManager Segments', () => {
     });
 
     it('should handle large ranges spanning many biomes', () => {
+        biomeManager.update(-2500);
         const segments = biomeManager.getFeatureSegments(0, -5000);
 
         expect(segments.length).toBeGreaterThan(2);
@@ -60,6 +57,7 @@ describe('BiomeManager Segments', () => {
 
     it('should handle positive Z direction traversal', () => {
         // Range [0, 2000]
+        biomeManager.update(1000);
         const segments = biomeManager.getFeatureSegments(0, 2000);
 
         expect(segments.length).toBeGreaterThan(0);

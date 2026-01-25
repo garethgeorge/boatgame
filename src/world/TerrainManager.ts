@@ -179,8 +179,8 @@ export class TerrainManager {
     // 2. Manage Collision Segments
     this.updateCollision(boatZ);
 
-    // 3. Prune old biomes
-    this.riverSystem.biomeManager.pruneActiveInstances(boatZ);
+    // 3. Update Biomes (includes pruning)
+    this.riverSystem.biomeManager.update(boatZ);
   }
 
   public updateVisibility(cameraPos: THREE.Vector3, cameraDir: THREE.Vector3) {

@@ -55,8 +55,24 @@ export class BiomeManager {
   private negDeck: BiomeType[] = [];
 
   constructor() {
-    // Start with the initial biome at Z=0
-    this.ensureZReached(0);
+    // Initial state is at Z=0. update() will handle growth as the boat moves.
+    this.update(0);
+  }
+
+  public update(worldZ: number): void {
+    this.ensureZReached(worldZ);
+    this.pruneActiveInstances(worldZ);
+  }
+
+  private debugCheckZ(worldZ: number): void {
+    const first = this.activeInstances[0];
+    const last = this.activeInstances[this.activeInstances.length - 1];
+
+    if (!first || !last) return;
+
+    if (worldZ < first.zMin || worldZ > last.zMax) {
+      console.warn(`[BiomeManager] worldZ ${worldZ} is outside the active biome window [${first.zMin}, ${last.zMax}]!`);
+    }
   }
 
   private drawFromDeck(direction: 'pos' | 'neg'): BiomeType {
@@ -82,7 +98,7 @@ export class BiomeManager {
     return deck.pop()!;
   }
 
-  public ensureZReached(worldZ: number): void {
+  private ensureZReached(worldZ: number): void {
     // Grow Negative Z (forward)
     while (true) {
       const negCursorZ = this.activeInstances.length > 0 ? this.activeInstances[0].zMin : 0;
@@ -120,7 +136,7 @@ export class BiomeManager {
     }
   }
 
-  public pruneActiveInstances(currentZ: number): void {
+  private pruneActiveInstances(currentZ: number): void {
     // Remove biomes that are far behind the boat
     // "Behind" depends on direction. For now let's just keep a fixed radius.
     const keepRadius = this.PRUNE_THRESHOLD;
@@ -134,7 +150,7 @@ export class BiomeManager {
    * Finds the biome instance containing the given worldZ
    */
   private getBiomeInstanceAt(worldZ: number): BiomeInstance {
-    this.ensureZReached(worldZ);
+    this.debugCheckZ(worldZ);
 
     let low = 0;
     let high = this.activeInstances.length - 1;
@@ -157,10 +173,6 @@ export class BiomeManager {
     return this.activeInstances[0];
   }
 
-  public getBiomeType(worldZ: number): BiomeType {
-    return this.getBiomeInstanceAt(worldZ).type;
-  }
-
   public getBiomeBoundaries(worldZ: number): { zMin: number, zMax: number } {
     const instance = this.getBiomeInstanceAt(worldZ);
     return {
@@ -180,9 +192,9 @@ export class BiomeManager {
       biomeZMin: number, biomeZMax: number
     }> = [];
 
-    // Ensure both boundaries are reached
-    this.ensureZReached(zMin);
-    this.ensureZReached(zMax);
+    // Both boundaries should be reached via the update loop.
+    this.debugCheckZ(zMin);
+    this.debugCheckZ(zMax);
 
     let currentZ = zMin;
     const direction = zMax < zMin ? -1 : 1;
@@ -206,7 +218,7 @@ export class BiomeManager {
     return segments;
   }
 
-  public getBiomeMixture(worldZ: number): {
+  private getBiomeMixture(worldZ: number): {
     features1: BiomeFeatures,
     features2: BiomeFeatures,
     weight1: number,
