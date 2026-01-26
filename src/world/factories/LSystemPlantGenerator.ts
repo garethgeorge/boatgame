@@ -9,6 +9,8 @@ export interface PlantParams {
 }
 
 export interface BranchParams {
+    opts?: any;                 // passed through to the branch data
+
     spread?: number;            // default angle of sub-branch to branch (degrees)
     jitter?: number;            // jitter for angle to branch and angle around branch (degrees)
     scale?: number;             // scales branch length
@@ -20,11 +22,23 @@ export interface BranchParams {
     wind?: THREE.Vector3;       // push branches in wind direction
     windForce?: number;
     antiShadow?: number;
+
+    weight?: number;            // weight of the branch segment itself (default 0)
+}
+
+export interface LeafParams {
+    opts?: any;                 // passed through to the leaf data
+    weight?: number;            // weight of the leaf (default 1)
 }
 
 export interface BendParams {
     spread?: number;            // angle of sub-branch to branch (degrees)
     jitter?: number;            // jitter for angle to branch
+};
+
+export interface RotateParams {
+    angle?: number;             // angle of rotation (degrees)
+    jitter?: number;            // jitter for angle
 };
 
 export interface ExpansionRuleResult {
@@ -34,11 +48,8 @@ export interface ExpansionRuleResult {
 }
 
 export type ExpansionRuleDefinition = ExpansionRuleResult | ((val: number) => ExpansionRuleResult);
-
 export type BranchRuleDefinition = BranchParams | ((val: number) => BranchParams);
-
-export interface LeafRuleDefinition {
-}
+export type LeafRuleDefinition = LeafParams;
 
 /**
  * Defines the rules for generating a plant. There are two steps:
@@ -62,7 +73,7 @@ export interface LeafRuleDefinition {
  * define a symbol plant with two branches and a leaf:
  *  symbols: {
  *      'F': (turtle: Turtle) => {
- *          turtle.branch({ spread: 20 }).bend().branch().leaf({ kind: 'leaf' });
+ *          turtle.branch({ spread: 20 }).bend().branch().leaf({opts: { kind: 'leaf' }});
  *      }
  * }
  * 
@@ -80,8 +91,15 @@ export interface LeafRuleDefinition {
  * defined. Exammple:
  *  leaves: {
  *      // defines * to add a leaf
- *      '*': { kind; 'center' }
+ *      '*': { opts: { kind; 'center' }}
  *  }
+ * 
+ * Once a plant structure has been generated via the turtle graphics additional
+ * passes fine tune it. This includes:
+ * - Calculating branch radii based on the weight of the branches and leaves it
+ *   supports. By default each leaf counts as a weight of 1 and branches as 0
+ *   but custom values can be given for non-homogeneous plant structures (e.g.
+ *   a flower petal has less weight than a true leaf).
  */
 export interface PlantConfig {
     // starting string
@@ -95,7 +113,7 @@ export interface PlantConfig {
     // maps branch terminal symbols to parameters
     branches?: Record<string, BranchRuleDefinition>;
     // maps leaf terminal symbols to parameters
-    leaves?: Record<string, LeafRuleDefinition>;
+    leaves?: Record<string, LeafParams>;
 
     // parameters for the plant
     params: PlantParams;
@@ -111,24 +129,28 @@ export interface BranchData {
     radiusStart: number;
     radiusEnd: number;
     level: number;
+    opts?: any;
 }
 
 export interface LeafData {
     pos: THREE.Vector3;
     dir: THREE.Vector3;
     quat: THREE.Quaternion;
-    params?: LeafRuleDefinition;
+    opts?: any;
 }
 
 class PlantNode {
     children: PlantNode[] = [];
     leaves: LeafData[] = [];
-    leafCount: number = 0;   // The "Pipe" value
-    radius: number = 0;      // Calculated in Pass 2
+    leafWeightSum: number = 0;   // Sum of weights of leaves attached directly to this node
+    branchWeight: number = 0;    // Weight of the branch segment leading to this node
+    load: number = 0;            // The total "Pipe" value (sum of leaves and branch weights above)
+    radius: number = 0;          // Calculated in Pass 2
 
     constructor(
         public position: THREE.Vector3,
-        public level: number
+        public level: number,
+        public opts?: any
     ) { }
 }
 
@@ -194,7 +216,8 @@ export class Turtle {
         const endPos = this.state.pos.clone().add(dir.multiplyScalar(length));
 
         // C. Create Graph Node
-        const newNode = new PlantNode(endPos, this.stack.length);
+        const newNode = new PlantNode(endPos, this.stack.length, this.state.branch.opts);
+        newNode.branchWeight = this.state.branch.weight ?? 0.0;
         this.state.node.children.push(newNode);
 
         // D. Move turtle
@@ -206,10 +229,11 @@ export class Turtle {
 
     /** Adds a leaf
      */
-    public leaf(params: LeafRuleDefinition = undefined): Turtle {
+    public leaf(params: LeafParams = {}): Turtle {
         if (this.logging) console.log('leaf');
         // This node supports a leaf
-        this.state.node.leafCount += 1;
+        const weight = params.weight ?? 1.0;
+        this.state.node.leafWeightSum += weight;
 
         // Also store the visual leaf data for final rendering
         const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(this.state.quat);
@@ -217,7 +241,7 @@ export class Turtle {
             pos: this.state.pos.clone(),
             dir: dir,
             quat: this.state.quat.clone(),
-            params: params
+            opts: params?.opts
         });
 
         return this;
@@ -279,10 +303,12 @@ export class Turtle {
         return this;
     }
 
-    public rotate(): Turtle {
+    public rotate(params: RotateParams = {}): Turtle {
         if (this.logging) console.log('rotate');
-        const goldenAngle = 2.399;
-        const yawAngle = goldenAngle + (Math.random() - 0.5) * THREE.MathUtils.degToRad(this.state.branch.jitter || 0);
+        const goldenAngle = 137.5;
+        const angle = params.angle ?? goldenAngle;
+        const jitter = params.jitter ?? (this.state.branch.jitter ?? 0);
+        const yawAngle = THREE.MathUtils.degToRad(angle + (Math.random() - 0.5) * jitter);
         const yaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yawAngle);
         this.state.quat.multiply(yaw);
         return this;
@@ -420,6 +446,8 @@ export class ProceduralPlant {
 
         // Default parameters for all branches
         const defaultBranch: Required<BranchParams> = {
+            opts: undefined,
+
             spread: 45,
             jitter: 5,
             scale: 1.0,
@@ -430,6 +458,7 @@ export class ProceduralPlant {
             wind: new THREE.Vector3(0, 0, 0),
             windForce: 0,
             antiShadow: 0.0,
+            weight: 0.0,
 
             ...config.defaults.branch
         };
@@ -486,25 +515,28 @@ export class ProceduralPlant {
 
         // --- PASS 2: CALCULATE RADII (Back-Propagation) ---
 
-        // 2a. Calculate Load (Leaf Counts)
+        // 2a. Calculate Load (Weighted Sums)
         const calculateLoad = (node: PlantNode): number => {
+            let totalLoad = node.leafWeightSum;
             for (let child of node.children) {
-                node.leafCount += calculateLoad(child);
+                totalLoad += calculateLoad(child) + child.branchWeight;
             }
-            // Base Case: Tip with no leaves gets small value to ensure non-zero radius
-            if (node.leafCount === 0) node.leafCount = 0.5;
-            return node.leafCount;
+            node.load = totalLoad;
+
+            // Base Case: Tip with no load gets small value to ensure non-zero radius
+            if (node.load === 0) node.load = 0.5;
+            return node.load;
         };
         calculateLoad(root);
 
         // 2b. Apply Radii (Area Preservation)
         const trunkThickness = config.params.thickness || 1.0;
         const power = config.params.thicknessDecay || 0.5;
-        const rootLoad = root.leafCount;
+        const rootLoad = root.load;
         const scaler = rootLoad > 0 ? trunkThickness / Math.pow(rootLoad, power) : trunkThickness;
 
         const applyRadii = (node: PlantNode) => {
-            node.radius = scaler * Math.pow(node.leafCount, power);
+            node.radius = scaler * Math.pow(node.load, power);
             for (let child of node.children) {
                 applyRadii(child);
             }
@@ -528,7 +560,7 @@ export class ProceduralPlant {
         const adjustNodesForLength = (node: PlantNode) => {
             for (let child of node.children) {
                 // 1. Calculate relative vigor [0..1]
-                const vigor = node.leafCount > 0 ? child.leafCount / node.leafCount : 0;
+                const vigor = node.load > 0 ? (child.load + child.branchWeight) / node.load : 0;
 
                 // 2. Determine new length
                 const currentVec = new THREE.Vector3().subVectors(child.position, node.position);
@@ -571,7 +603,8 @@ export class ProceduralPlant {
                     end: child.position.clone(),
                     radiusStart: node.radius,
                     radiusEnd: child.radius,
-                    level: child.level
+                    level: child.level,
+                    opts: child.opts
                 });
                 generateBranchList(child);
             }

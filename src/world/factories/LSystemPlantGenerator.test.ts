@@ -115,7 +115,8 @@ describe('ProceduralPlant', () => {
                 branch: {
                     spread: 45, jitter: 0, scale: 1,
                     gravity: 0, horizonBias: 0, heliotropism: 0,
-                    wind: new THREE.Vector3(), windForce: 0, antiShadow: 0
+                    wind: new THREE.Vector3(), windForce: 0, antiShadow: 0,
+                    weight: 0
                 }
             }
         });
@@ -245,5 +246,128 @@ describe('ProceduralPlant', () => {
             // If [ and ] work, it should have 1 branch
             expect(plant.branches.length).toBe(1);
         });
+
+        it('should pass through branch opts to BranchData', () => {
+            const plant = new ProceduralPlant();
+            const config: PlantConfig = {
+                axiom: 'X',
+                params: {
+                    iterations: 1,
+                    length: 1, lengthDecay: 1,
+                    thickness: 0.1, thicknessDecay: 1
+                },
+                symbols: {
+                    'X': (turtle: Turtle) => turtle.branch({ opts: { foo: 'bar' } })
+                },
+                defaults: {
+                    branch: { scale: 1 } as any
+                }
+            };
+
+            plant.generate(config);
+            expect(plant.branches.length).toBe(1);
+            expect(plant.branches[0].opts).toEqual({ foo: 'bar' });
+        });
+    });
+
+    describe('Weights and Load Calculation', () => {
+        const createMultiSegmentConfig = (leafWeight: number, branchWeight: number) => ({
+            axiom: '--+',
+            params: {
+                iterations: 1,
+                length: 1, lengthDecay: 1,
+                thickness: 1.0, thicknessDecay: 0.5
+            },
+            symbols: {
+                '-': (turtle: Turtle) => turtle.branch({ weight: branchWeight }),
+                '+': (turtle: Turtle) => turtle.leaf({ weight: leafWeight })
+            },
+            defaults: { branch: { scale: 1, weight: 0 } as any }
+        });
+
+        it('should account for leaf weights in multi-segment branches', () => {
+            const plant = new ProceduralPlant();
+
+            // Case A: leaf=1. B2 load = 1. B1 load = 1.
+            plant.generate(createMultiSegmentConfig(1, 0));
+            expect(plant.branches[1].radiusStart / plant.branches[0].radiusStart).toBeCloseTo(1.0, 2);
+
+            // Case B: leaf=4. B2 load = 4. B1 load = 4.
+            plant.generate(createMultiSegmentConfig(4, 0));
+            expect(plant.branches[1].radiusStart / plant.branches[0].radiusStart).toBeCloseTo(1.0, 2);
+
+            // Note: Since both B1 and B2 have same load, radius same.
+        });
+
+        it('should account for branch weights in multi-segment branches', () => {
+            const plant = new ProceduralPlant();
+
+            // Explicitly build a 2-segment plant:
+            // segment 1 (B1): root -> N1. weight = 3.
+            // segment 2 (B2): N1 -> N2. weight = 0.
+            // leaf at N2: weight = 1.
+
+            const config: PlantConfig = {
+                axiom: 'X',
+                params: {
+                    iterations: 1,
+                    length: 1, lengthDecay: 1,
+                    thickness: 1.0, thicknessDecay: 0.5
+                },
+                symbols: {
+                    'X': (turtle: Turtle) => {
+                        turtle.branch({ weight: 3 }); // B1
+                        turtle.branch({ weight: 0 }); // B2
+                        turtle.leaf({ weight: 1 });
+                    }
+                },
+                defaults: { branch: { scale: 1, weight: 0 } as any }
+            };
+
+            plant.generate(config);
+            expect(plant.branches.length).toBe(2);
+            // root.load = calculateLoad(N1) + N1.branchWeight = 1 + 3 = 4.
+            // N1.load = calculateLoad(N2) + N2.branchWeight = 1 + 0 = 1.
+
+            // B1 starts at root (radiusStart propto sqrt(4))
+            // B2 starts at N1 (radiusStart propto sqrt(1))
+            expect(plant.branches[1].radiusStart / plant.branches[0].radiusStart).toBeCloseTo(Math.sqrt(1 / 4), 2);
+        });
+
+        it('should propagate multi-level branch weights correctly', () => {
+            const plant = new ProceduralPlant();
+            const config: PlantConfig = {
+                axiom: '-', // Trunk
+                params: {
+                    iterations: 1,
+                    length: 1, lengthDecay: 1,
+                    thickness: 1.0, thicknessDecay: 0.5
+                },
+                symbols: {
+                    '-': (turtle: Turtle) => {
+                        turtle.branch({ weight: 1 }).push();
+                        turtle.branch({ weight: 1 }).leaf({ weight: 1 }).pop();
+                    }
+                },
+                defaults: { branch: { scale: 1, weight: 0 } as any }
+            };
+
+            plant.generate(config);
+            // Branch 1 (B1): child of root. branchWeight=1. supports child B2.
+            // Branch 2 (B2): child of B1 end node. branchWeight=1. supports leaf w=1.
+
+            // B2 end node load = leafWeightSum(1). B2.load = 1.
+            // B1 end node load = B2.load + B2.branchWeight (1) = 1 + 1 = 2. B1.load = 2.
+            // root load = B1.load + B1.branchWeight (1) = 2 + 1 = 3.
+
+            expect(plant.branches.length).toBe(2);
+            const rootRadius = plant.branches[0].radiusStart;
+            const child1Radius = plant.branches[1].radiusStart;
+
+            // rootRadius = scaler * sqrt(3)
+            // child1Radius = scaler * sqrt(2)
+            expect(rootRadius / child1Radius).toBeCloseTo(Math.sqrt(3 / 2), 2);
+        });
     });
 });
+
