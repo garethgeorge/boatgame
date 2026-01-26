@@ -13,8 +13,10 @@ import { DecorationInstance } from './factories/DecorationFactory';
 import { MangroveFactory } from './factories/MangroveFactory';
 import { LSystemTreeFactory, LSystemTreeInstanceOptions } from './factories/LSystemTreeFactory';
 import { LSystemTreeKind } from './factories/LSystemTreeArchetypes';
+import { LSystemFlowerFactory, LSystemFlowerInstanceOptions } from './factories/LSystemFlowerFactory';
+import { LSystemFlowerKind } from './factories/LSystemFlowerArchetypes';
 
-export type { DecorationInstance, LSystemTreeKind, LSystemTreeInstanceOptions };
+export type { DecorationInstance, LSystemTreeKind, LSystemTreeInstanceOptions, LSystemFlowerKind, LSystemFlowerInstanceOptions };
 
 // Register factories
 DecorationRegistry.register('bush', new BushFactory());
@@ -49,6 +51,7 @@ DecorationRegistry.register('snake', new GLTFModelFactory('assets/snake-model-1.
 DecorationRegistry.register('turtle', new GLTFModelFactory('assets/turtle-model-1.glb'));
 DecorationRegistry.register('mangrove', new MangroveFactory());
 DecorationRegistry.register('lsystem-tree', new LSystemTreeFactory());
+DecorationRegistry.register('lsystem-flower', new LSystemFlowerFactory());
 
 
 
@@ -70,6 +73,11 @@ export class Decorations {
    */
   static getLSystemTreeInstance(options: LSystemTreeInstanceOptions): DecorationInstance[] {
     const factory = DecorationRegistry.getFactory('lsystem-tree') as LSystemTreeFactory;
+    return factory.createInstance(options);
+  }
+
+  static getLSystemFlowerInstance(options: LSystemFlowerInstanceOptions): DecorationInstance[] {
+    const factory = DecorationRegistry.getFactory('lsystem-flower') as LSystemFlowerFactory;
     return factory.createInstance(options);
   }
 

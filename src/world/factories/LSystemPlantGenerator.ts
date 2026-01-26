@@ -64,6 +64,7 @@ export interface BranchData {
 export interface LeafData {
     pos: THREE.Vector3;
     dir: THREE.Vector3;
+    quat: THREE.Quaternion;
 }
 
 /**
@@ -209,7 +210,7 @@ export class ProceduralPlant {
 
                     // Also store the visual leaf data for final rendering
                     const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
-                    turtle.node.leaves.push({ pos: turtle.pos.clone(), dir: dir });
+                    turtle.node.leaves.push({ pos: turtle.pos.clone(), dir: dir, quat: turtle.quat.clone() });
                     break;
                 }
                 case '^': {

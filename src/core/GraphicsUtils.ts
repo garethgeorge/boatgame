@@ -304,6 +304,16 @@ export class GraphicsUtils {
     }
 
     /**
+     * Generates a random color with a random hue and specified saturation and lightness.
+     * Values for saturation and lightness should be between 0 and 1.
+     */
+    public static getRandomColor(saturation: number, lightness: number): number {
+        const color = new THREE.Color();
+        color.setHSL(Math.random(), saturation, lightness);
+        return color.getHex();
+    }
+
+    /**
      * Calculates the 2D bounding box of an object in the X-Z plane.
      * Maps Graphics Z to a "height" or "length" value (Physics Y).
      */

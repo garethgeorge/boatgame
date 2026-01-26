@@ -4,10 +4,11 @@ export type { DecorationRule, PlacementManifest };
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../SimplexNoise';
 import { DecorationContext } from './DecorationContext';
-import { DecorationInstance, Decorations, LSystemTreeKind } from '../Decorations';
+import { DecorationInstance, Decorations, LSystemTreeKind, LSystemFlowerKind } from '../Decorations';
+import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export interface DecorationOptions {
-    kind: LSystemTreeKind | 'flower' | 'rock';
+    kind: LSystemTreeKind | LSystemFlowerKind | 'flower' | 'rock';
     rotation: number;
     scale: number;
 }
@@ -163,8 +164,16 @@ export class TerrainDecorator {
                 case 'open':
                 case 'irregular':
                 case 'vase': {
-                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: opts.kind as any });
+                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: opts.kind });
                     tryPlace(treeInstances, pos, opts);
+                    break;
+                }
+                case 'daisy': {
+                    const flowerInstances = Decorations.getLSystemFlowerInstance({
+                        kind: opts.kind,
+                        petalColor: GraphicsUtils.getRandomColor(1.0, 0.5)
+                    });
+                    tryPlace(flowerInstances, pos, opts);
                     break;
                 }
                 case 'flower': {

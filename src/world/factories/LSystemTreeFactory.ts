@@ -66,9 +66,7 @@ export class BlobLeafGenerator implements LeafGenerator {
 
         geo.scale(1, this.params.thickness, 1);
 
-        const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), leafData.dir);
-
-        const matrix = new THREE.Matrix4().compose(leafData.pos, quat, new THREE.Vector3(1, 1, 1));
+        const matrix = new THREE.Matrix4().compose(leafData.pos, leafData.quat, new THREE.Vector3(1, 1, 1));
         geo.applyMatrix4(matrix);
 
         // Calculate HSL offsets
@@ -165,8 +163,7 @@ export class IrregularLeafGenerator implements LeafGenerator {
 
         geo.scale(1, this.params.thickness, 1);
 
-        const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), leafData.dir);
-        const matrix = new THREE.Matrix4().compose(leafData.pos, quat, new THREE.Vector3(1, 1, 1));
+        const matrix = new THREE.Matrix4().compose(leafData.pos, leafData.quat, new THREE.Vector3(1, 1, 1));
         geo.applyMatrix4(matrix);
 
         // Calculate HSL offsets
@@ -233,8 +230,7 @@ export class ClusterLeafGenerator implements LeafGenerator {
         mergedTriangles.name = 'ClusterLeaf - merged';
         GraphicsUtils.registerObject(mergedTriangles);
 
-        const finalQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), leafData.dir);
-        const finalMatrix = new THREE.Matrix4().compose(leafData.pos, finalQuat, new THREE.Vector3(1, 1, 1));
+        const finalMatrix = new THREE.Matrix4().compose(leafData.pos, leafData.quat, new THREE.Vector3(1, 1, 1));
         mergedTriangles.applyMatrix4(finalMatrix);
 
         leafGeos.push(mergedTriangles);
@@ -343,8 +339,6 @@ export class LSystemTreeFactory implements DecorationFactory {
     });
 
     private archetypes: Map<LSystemTreeKind, TreeArchetype[]> = new Map();
-    private materialCache: Map<number, THREE.MeshToonMaterial> = new Map();
-    private leafMaterialCache: Map<string, THREE.ShaderMaterial> = new Map();
 
     async load(): Promise<void> {
         GraphicsUtils.registerObject(LSystemTreeFactory.woodMaterial);
@@ -463,32 +457,29 @@ export class LSystemTreeFactory implements DecorationFactory {
 
 
     private getWoodMaterial(color?: number): THREE.MeshToonMaterial {
-        if (color === undefined) return LSystemTreeFactory.woodMaterial;
-
-        const cached = this.materialCache.get(color);
-        if (cached) return cached;
-
-        const cloned = LSystemTreeFactory.woodMaterial.clone();
-        cloned.color.set(color);
-        cloned.name = `LSystemTree - Wood (${color.toString(16)})`;
-        GraphicsUtils.registerObject(cloned);
-        this.materialCache.set(color, cloned);
-        return cloned;
+        return LSystemTreeFactory.woodMaterial;
     }
 
-    private getLeafMaterial(color?: number, isSnowy: boolean = false, side: THREE.Side = THREE.FrontSide): THREE.ShaderMaterial {
-        const colorVal = color ?? 0xffffff;
-        const key = `${colorVal}_${isSnowy}_${side}`;
-        const cached = this.leafMaterialCache.get(key);
+    private getLeafMaterial(isSnowy: boolean = false, side: THREE.Side = THREE.FrontSide): THREE.ShaderMaterial {
+        const key = `${isSnowy}_${side}`;
+        // Note: In a real implementation we might want to cache by (isSnowy, side) 
+        // since these are shared shader settings, but for now we follow the pattern.
+        // Actually the user wants a single material for all leaves if possible, 
+        // but different sides and snowy states require different materials.
+        // Let's keep a small cache for these structural variants.
+        if (!this['structuralLeafCache']) (this as any)['structuralLeafCache'] = new Map<string, THREE.ShaderMaterial>();
+        const cache = (this as any)['structuralLeafCache'];
+
+        let cached = cache.get(key);
         if (cached) return cached;
 
         const cloned = LSystemTreeFactory.leafMaterial.clone() as THREE.ShaderMaterial;
-        cloned.uniforms.diffuse.value = new THREE.Color(colorVal); // 'diffuse' is the standard color uniform in Three.js
+        cloned.uniforms = THREE.UniformsUtils.clone(LSystemTreeFactory.leafMaterial.uniforms);
         cloned.uniforms.uSnowFactor.value = isSnowy ? 1.0 : 0.0;
         cloned.side = side;
-        cloned.name = `LSystemTree - Leaf (${colorVal.toString(16)})${isSnowy ? ' [Snowy]' : ''}${side === THREE.DoubleSide ? ' [DoubleSide]' : ''}`;
+        cloned.name = `LSystemTree - Leaf (Shared)${isSnowy ? ' [Snowy]' : ''}${side === THREE.DoubleSide ? ' [DoubleSide]' : ''}`;
         GraphicsUtils.registerObject(cloned);
-        this.leafMaterialCache.set(key, cloned);
+        cache.set(key, cloned);
         return cloned;
     }
 
@@ -514,8 +505,9 @@ export class LSystemTreeFactory implements DecorationFactory {
         const result: DecorationInstance[] = [
             {
                 geometry: best.woodGeo,
-                material: this.getWoodMaterial(woodColor ?? best.woodColor),
-                matrix: matrix.clone()
+                material: this.getWoodMaterial(undefined), // Always returns shared woodMaterial
+                matrix: matrix.clone(),
+                color: new THREE.Color(woodColor ?? best.woodColor ?? 0xffffff)
             }
         ];
 
@@ -524,8 +516,9 @@ export class LSystemTreeFactory implements DecorationFactory {
 
             result.push({
                 geometry: best.leafGeo,
-                material: this.getLeafMaterial(leafColor ?? best.leafColor, isSnowy, side),
-                matrix: matrix.clone()
+                material: this.getLeafMaterial(isSnowy, side),
+                matrix: matrix.clone(),
+                color: new THREE.Color(leafColor ?? best.leafColor ?? 0xffffff)
             });
         }
 

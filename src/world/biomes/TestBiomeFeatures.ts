@@ -8,6 +8,7 @@ import { DecorationRule } from '../decorators/PoissonDecorationStrategy';
 import { Combine, Signal, TierRule } from '../decorators/PoissonDecorationRules';
 import { RiverSystem } from '../RiverSystem';
 import { RiverGeometry } from '../RiverGeometry';
+import { TerrainDecorator } from '../decorators/TerrainDecorator';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -18,45 +19,45 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     private decorationRules: DecorationRule[] = [
-        new TierRule({
-            species: [
-                {
-                    id: 'willow_tree',
-                    preference: Combine.all(
-                        Signal.constant(1.0),
-                        Signal.inRange(Signal.distanceToRiver, 5, 25),
-                        Signal.inRange(Signal.elevation, 1.0, 5.0),
-                        Signal.inRange(Signal.slope, 0, 15)
-                    ),
-                    params: (ctx) => {
-                        const scale = 0.8 + ctx.random() * 0.4;
-                        return {
-                            groundRadius: 2 * scale,
-                            canopyRadius: 8 * scale,
-                            spacing: 10 * scale,
-                            options: { kind: 'willow', rotation: ctx.random() * Math.PI * 2, scale }
-                        };
-                    }
-                },
-                {
-                    id: 'oak_tree',
-                    preference: Combine.all(
-                        Signal.constant(1.0),
-                        Signal.linearRange(Signal.distanceToRiver, 5, 50),
-                        Signal.inRange(Signal.elevation, 3.0, 20.0),
-                        Signal.inRange(Signal.slope, 0, 50)
-                    ),
-                    params: (ctx) => {
-                        const scale = 0.8 + ctx.random() * 0.4;
-                        return {
-                            groundRadius: 3 * scale,
-                            canopyRadius: 12 * scale,
-                            options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
-                        };
-                    }
-                }
-            ]
-        }),
+        // new TierRule({
+        //     species: [
+        //         {
+        //             id: 'willow_tree',
+        //             preference: Combine.all(
+        //                 Signal.constant(1.0),
+        //                 Signal.inRange(Signal.distanceToRiver, 5, 25),
+        //                 Signal.inRange(Signal.elevation, 1.0, 5.0),
+        //                 Signal.inRange(Signal.slope, 0, 15)
+        //             ),
+        //             params: (ctx) => {
+        //                 const scale = 0.8 + ctx.random() * 0.4;
+        //                 return {
+        //                     groundRadius: 2 * scale,
+        //                     canopyRadius: 8 * scale,
+        //                     spacing: 10 * scale,
+        //                     options: { kind: 'willow', rotation: ctx.random() * Math.PI * 2, scale }
+        //                 };
+        //             }
+        //         },
+        //         {
+        //             id: 'oak_tree',
+        //             preference: Combine.all(
+        //                 Signal.constant(1.0),
+        //                 Signal.linearRange(Signal.distanceToRiver, 5, 50),
+        //                 Signal.inRange(Signal.elevation, 3.0, 20.0),
+        //                 Signal.inRange(Signal.slope, 0, 50)
+        //             ),
+        //             params: (ctx) => {
+        //                 const scale = 0.8 + ctx.random() * 0.4;
+        //                 return {
+        //                     groundRadius: 3 * scale,
+        //                     canopyRadius: 12 * scale,
+        //                     options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
+        //                 };
+        //             }
+        //         }
+        //     ]
+        // }),
         new TierRule({
             species: [
                 {
@@ -64,14 +65,19 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                     preference: Combine.all(
                         Signal.constant(1.0),
                         Signal.inRange(Signal.distanceToRiver, 5, 25),
-                        Signal.inRange(Signal.elevation, 1.0, 5.0),
-                        Signal.inRange(Signal.slope, 0, 15)
+                        // Signal.inRange(Signal.elevation, 1.0, 5.0),
+                        // Signal.inRange(Signal.slope, 0, 15)
                     ),
                     params: (ctx) => {
                         const scale = 0.8 + ctx.random() * 0.4;
                         return {
-                            groundRadius: 1.0 * scale,
-                            options: { kind: 'flower', rotation: ctx.random() * Math.PI * 2, scale }
+                            groundRadius: 0.5 * scale,
+                            options: {
+                                kind: 'daisy',
+                                rotation: ctx.random() * Math.PI * 2,
+                                scale
+                            },
+                            spacing: 4.0
                         };
                     }
                 },
@@ -88,14 +94,14 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
-        // TerrainDecorator.decorateIterator(
-        //     context,
-        //     this.decorationRules,
-        //     { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
-        //     spatialGrid,
-        //     20,
-        //     12345 // Fixed seed for now
-        // );
+        const spatialGrid = context.chunk.spatialGrid;
+        yield* TerrainDecorator.decorateIterator(
+            context,
+            this.decorationRules,
+            { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
+            spatialGrid,
+            12345 // Fixed seed for now
+        );
     }
 
 
@@ -177,9 +183,9 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
-        if (true && zStart === 0) {
-            this.spawnAllAnimals(context, -50);
-        }
+        // if (true && zStart === 0) {
+        //     this.spawnAllAnimals(context, -50);
+        // }
 
         // yield* EntitySpawners.getInstance().messageInABottle().spawn(context, 4, zStart, zEnd);
         // yield* EntitySpawners.getInstance().animal(EntityIds.MONKEY)!.spawn(context, 1, zStart, zEnd);
@@ -195,6 +201,6 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         // yield* EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK).spawn(context, 1, zStart, zEnd);
         // yield* EntitySpawners.getInstance().animal(EntityIds.SWAN).spawn(context, 1, zStart, zEnd);
         // yield* EntitySpawners.getInstance().animal(EntityIds.EGRET).spawn(context, 2, zStart, zEnd);
-        yield* EntitySpawners.getInstance().animal(EntityIds.DRAGONFLY).spawn(context, 1, zStart, zEnd, [this.zMin, this.zMax]);
+        // yield* EntitySpawners.getInstance().animal(EntityIds.DRAGONFLY).spawn(context, 1, zStart, zEnd, [this.zMin, this.zMax]);
     }
 }
