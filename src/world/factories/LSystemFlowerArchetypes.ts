@@ -1,16 +1,23 @@
-import * as THREE from 'three';
 import { PlantConfig } from './LSystemPlantGenerator';
 
-export type LSystemFlowerKind = 'daisy';
+export type LSystemFlowerKind = 'daisy' | 'lily';
 
-export type PetalKind = 'simple';
+export type PetalKind = 'rectangle' | 'kite';
 
-export interface SimpleFlowerPetalParams {
-    kind: 'simple';
+export interface RectangleFlowerPetalParams {
+    kind: 'rectangle';
     size: number;
-    thickness: number;
     length: number;
 }
+
+export interface KiteFlowerPetalParams {
+    kind: 'kite';
+    width: number;
+    length: number;
+    widestPointFraction: number; // 0 to 1
+}
+
+export type FlowerPetalParams = RectangleFlowerPetalParams | KiteFlowerPetalParams;
 
 export interface FlowerCenterParams {
     kind: 'center';
@@ -19,10 +26,10 @@ export interface FlowerCenterParams {
     offset?: number;
 }
 
-export type FlowerPartParams = SimpleFlowerPetalParams | FlowerCenterParams;
+export type FlowerPartParams = FlowerPetalParams | FlowerCenterParams;
 
 export interface FlowerVisuals {
-    petals: SimpleFlowerPetalParams;
+    petals: FlowerPetalParams;
     center?: FlowerCenterParams;
     leafColor?: number;
     leafVariation?: { h: number, s: number, l: number };
@@ -37,23 +44,26 @@ export interface FlowerConfig extends PlantConfig {
 export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
     daisy: {
         visuals: {
-            petals: { kind: 'simple', size: 0.4, thickness: 0.05, length: 1.0 },
+            petals: { kind: 'rectangle', size: 0.4, length: 1.0 },
             center: { kind: 'center', size: 0.5, thickness: 0.1, offset: 0.2 },
             leafColor: 0xffffff, // White petals
             woodColor: 0x4CAF50, // Green stalk
             centerColor: 0xFFD700, // Gold center
         },
-        axiom: "-S",
+        axiom: "B",
         rules: {
-            // stalk has some kinks
+            // base has a piece of stalk
+            'B': { successor: "-S" },
+            // stalk grows a couple more steps with kinks
             'S': { successors: ["-/[&U]", "-//[&U]", "U"] },
-            'U': { successors: ["-/[&C]", "-//[&C]"] },
+            'U': { successors: ["-/[&F]", "-//[&F]"] },
+            // flower head
             // first #& adds top of stalk and tilts out 80 degrees from stalk
             // the . is a 0 length pseudo-branch for petals, it defines the angle they get attached at
             // each / rotates the turtle around the pseudo-branch axis 
             // each petal is [&+] the & rotates it out from the pseudo-branch
             // the * adds the flower center
-            'C': { successor: "#&.*[&+]/[&+]/[&+]/[&+]/[&+]/[&+]/[&+]/[&+]" }
+            'F': { successor: "#&.*[&+]/[&+]/[&+]/[&+]/[&+]/[&+]/[&+]/[&+]" }
         },
         branches: {
             '-': { scale: 1.0, spread: 15, jitter: 10 },
@@ -74,6 +84,43 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
             branch: {
                 jitter: 0, gravity: 0.0
             },
+        }
+    },
+
+    lily: {
+        visuals: {
+            petals: { kind: 'kite', width: 0.8, length: 1.5, widestPointFraction: 0.3 },
+            center: { kind: 'center', size: 0.3, thickness: 0.1, offset: 0.1 },
+            leafColor: 0xffb6c1, // Light pink
+            woodColor: 0x4CAF50,
+            centerColor: 0xFFD700,
+        },
+        axiom: "B",
+        rules: {
+            // base optionally splits
+            'B': { successors: ["=S", "=[=S]/[&=S]", "=[&=S]/[&=S]"] },
+            // stem has some wiggle then flower
+            'S': { successor: "-/[&F]" },
+            // Flower head some stalk, bend 45, center and ring of 6 petals
+            'F': { successor: "#&.*[&+]/[&+]/[&+]/[&+]/[&+]/[&+]" }
+        },
+        branches: {
+            '=': { spread: 20 },
+            '-': { spread: 10 },
+            '#': { spread: 45 },
+            '.': { scale: 0.0, spread: 40 },
+        },
+        leaves: {
+            '+': { kind: 'petal' },
+            '*': { kind: 'center' },
+        },
+        params: {
+            iterations: 8,
+            length: 1.0, lengthDecay: 0.9,
+            thickness: 0.1, thicknessDecay: 1.0,
+        },
+        defaults: {
+            branch: {},
         }
     }
 };

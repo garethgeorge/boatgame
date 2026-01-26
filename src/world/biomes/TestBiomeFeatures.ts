@@ -73,7 +73,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                         return {
                             groundRadius: 0.5 * scale,
                             options: {
-                                kind: 'daisy',
+                                kind: Math.random() < 0.5 ? 'daisy' : 'lily',
                                 rotation: ctx.random() * Math.PI * 2,
                                 scale
                             },

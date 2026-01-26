@@ -170,7 +170,8 @@ export class TerrainDecorator {
                     tryPlace(treeInstances, pos, opts);
                     break;
                 }
-                case 'daisy': {
+                case 'daisy':
+                case 'lily': {
                     const flowerInstances = Decorations.getLSystemFlowerInstance({
                         kind: opts.kind,
                         petalColor: GraphicsUtils.getRandomColor(1.0, 0.5)
