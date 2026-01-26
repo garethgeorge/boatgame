@@ -6,7 +6,7 @@ import {
     FlowerConfig,
     LSystemFlowerKind,
     ARCHETYPES,
-    SimplePetalKindParams,
+    FlowerPartParams,
 } from './LSystemFlowerArchetypes';
 
 import {
@@ -20,20 +20,23 @@ export interface LSystemFlowerInstanceOptions {
     kind: LSystemFlowerKind;
     variation?: number;
     petalColor?: number;
+    centerColor?: number;
     stalkColor?: number;
     scale?: number;
 }
 
-export interface PetalGenerator {
-    addPetals(petalGeos: THREE.BufferGeometry[], petalData: LeafData, variation: { h: number, s: number, l: number }): void;
+export interface FlowerPartGenerator {
+    addPart(geos: THREE.BufferGeometry[], data: LeafData, variation: { h: number, s: number, l: number }): void;
 }
 
-export class SimplePetalGenerator implements PetalGenerator {
-    constructor(readonly params: SimplePetalKindParams) { }
+export class SimplePetalGenerator implements FlowerPartGenerator {
+    constructor(readonly params: FlowerPartParams) { }
 
-    addPetals(petalGeos: THREE.BufferGeometry[], petalData: LeafData, variation: { h: number, s: number, l: number }): void {
-        const geo = new THREE.BoxGeometry(this.params.size, this.params.length, this.params.thickness);
-        geo.translate(0, this.params.length / 2, 0); // Rotate around base (now Y axis)
+    addPart(petalGeos: THREE.BufferGeometry[], petalData: LeafData, variation: { h: number, s: number, l: number }): void {
+        const p = this.params as any; // Cast to access petal specific params
+        let geo: THREE.BufferGeometry = new THREE.BoxGeometry(p.size, p.length, p.thickness);
+        if (geo.index) geo = geo.toNonIndexed();
+        geo.translate(0, p.length / 2, 0); // Rotate around base (now Y axis)
 
         const matrix = new THREE.Matrix4().compose(petalData.pos, petalData.quat, new THREE.Vector3(1, 1, 1));
         geo.applyMatrix4(matrix);
@@ -48,11 +51,39 @@ export class SimplePetalGenerator implements PetalGenerator {
     }
 }
 
+export class FlowerCenterGenerator implements FlowerPartGenerator {
+    constructor(readonly params: FlowerPartParams) { }
+
+    addPart(geos: THREE.BufferGeometry[], data: LeafData, variation: { h: number, s: number, l: number }): void {
+        const p = this.params as any; // Cast to access center specific params
+        let geo: THREE.BufferGeometry = new THREE.IcosahedronGeometry(p.size, 1);
+        if (geo.index) geo = geo.toNonIndexed();
+        geo.scale(1, p.thickness / p.size, 1);
+
+        if (p.offset) {
+            geo.translate(0, p.offset, 0);
+        }
+
+        const matrix = new THREE.Matrix4().compose(data.pos, data.quat, new THREE.Vector3(1, 1, 1));
+        geo.applyMatrix4(matrix);
+
+        // HSL offsets - default to yellow for center as requested
+        const h = (Math.random() - 0.5) * variation.h;
+        const s = (Math.random() - 0.5) * variation.s;
+        const l = (Math.random() - 0.5) * variation.l;
+        GraphicsUtils.addVertexAttribute(geo, 'hslOffset', h, s, l);
+
+        geos.push(geo);
+    }
+}
+
 interface FlowerArchetype {
     stalkGeo: THREE.BufferGeometry;
     stalkColor?: number;
     petalGeo: THREE.BufferGeometry;
     petalColor?: number;
+    centerGeo: THREE.BufferGeometry;
+    centerColor?: number;
     kind: LSystemFlowerKind;
     variation: number;
 }
@@ -102,9 +133,15 @@ export class LSystemFlowerFactory implements DecorationFactory {
     }
 
     private createArchetype(kind: LSystemFlowerKind, variation: number, plant: ProceduralPlant, params: FlowerConfig): FlowerArchetype {
-        const petalGenerator = new SimplePetalGenerator(params.petalKind);
+        const generators: Map<string, FlowerPartGenerator> = new Map();
+        generators.set('petal', new SimplePetalGenerator(params.visuals.petals));
+        if (params.visuals.center) {
+            generators.set('center', new FlowerCenterGenerator(params.visuals.center));
+        }
+
         const stalkGeos: THREE.BufferGeometry[] = [];
         const petalGeos: THREE.BufferGeometry[] = [];
+        const centerGeos: THREE.BufferGeometry[] = [];
 
         for (const branch of plant.branches) {
             const height = branch.start.distanceTo(branch.end);
@@ -121,20 +158,27 @@ export class LSystemFlowerFactory implements DecorationFactory {
             stalkGeos.push(geo);
         }
 
-        for (const petal of plant.leaves) {
-            const varHSL = params.params.leafVariation || { h: 0.05, s: 0.1, l: 0.1 };
-            petalGenerator.addPetals(petalGeos, petal, varHSL);
+        for (const leaf of plant.leaves) {
+            const varHSL = params.visuals.leafVariation || { h: 0.05, s: 0.1, l: 0.1 };
+            const generator = generators.get(leaf.kind);
+            if (generator) {
+                const targetGeos = leaf.kind === 'center' ? centerGeos : petalGeos;
+                generator.addPart(targetGeos, leaf, varHSL);
+            }
         }
 
         const mergedStalk = this.mergeGeometries(stalkGeos, `LSystemStalk_${kind}_${variation}`);
         const mergedPetals = this.mergeGeometries(petalGeos, `LSystemPetals_${kind}_${variation}`);
+        const mergedCenter = this.mergeGeometries(centerGeos, `LSystemCenter_${kind}_${variation}`);
 
         stalkGeos.forEach(g => g.dispose());
         petalGeos.forEach(g => g.dispose());
+        centerGeos.forEach(g => g.dispose());
 
         return {
-            stalkGeo: mergedStalk, stalkColor: params.params.woodColor,
-            petalGeo: mergedPetals, petalColor: params.params.leafColor,
+            stalkGeo: mergedStalk, stalkColor: params.visuals.woodColor,
+            petalGeo: mergedPetals, petalColor: params.visuals.leafColor,
+            centerGeo: mergedCenter, centerColor: params.visuals.centerColor,
             kind, variation
         };
     }
@@ -161,7 +205,7 @@ export class LSystemFlowerFactory implements DecorationFactory {
     }
 
     createInstance(options: LSystemFlowerInstanceOptions): DecorationInstance[] {
-        const { kind, variation = Math.random(), petalColor, stalkColor, scale = 1.0 } = options;
+        const { kind, variation = Math.random(), petalColor, centerColor, stalkColor, scale = 1.0 } = options;
         const list = this.archetypes.get(kind);
         if (!list) return [];
 
@@ -192,6 +236,12 @@ export class LSystemFlowerFactory implements DecorationFactory {
                 material: this.getPetalMaterial(),
                 matrix: matrix.clone(),
                 color: new THREE.Color(petalColor ?? best.petalColor ?? 0xffffff)
+            },
+            {
+                geometry: best.centerGeo,
+                material: this.getPetalMaterial(), // Still use petal material for toon shading
+                matrix: matrix.clone(),
+                color: new THREE.Color(centerColor ?? best.centerColor ?? 0xffffff)
             }
         ];
     }

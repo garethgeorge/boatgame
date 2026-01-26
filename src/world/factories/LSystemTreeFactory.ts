@@ -399,7 +399,7 @@ export class LSystemTreeFactory implements DecorationFactory {
         }
 
         for (const leaf of tree.leaves) {
-            const variation = params.params.leafVariation || { h: 0, s: 0, l: 0 };
+            const variation = params.visuals.leafVariation || { h: 0, s: 0, l: 0 };
             leafGenerator.addLeaves(leafGeos, leaf, variation);
         }
 
@@ -410,8 +410,8 @@ export class LSystemTreeFactory implements DecorationFactory {
         leafGeos.forEach(g => g.dispose());
 
         return {
-            woodGeo: mergedWood, woodColor: params.params.woodColor,
-            leafGeo: mergedLeaves, leafColor: params.params.leafColor,
+            woodGeo: mergedWood, woodColor: params.visuals.woodColor,
+            leafGeo: mergedLeaves, leafColor: params.visuals.leafColor,
             kind, variation,
             canCullLeaves: leafGenerator.canCull
         };
@@ -425,7 +425,7 @@ export class LSystemTreeFactory implements DecorationFactory {
     }
 
     private createLeafGenerator(config: TreeConfig): LeafGenerator {
-        const leafKind = config.leafKind;
+        const leafKind = config.visuals.leafKind;
         switch (leafKind.kind) {
             case 'willow':
                 return new WillowLeafGenerator(leafKind);

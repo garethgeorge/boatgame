@@ -6,9 +6,6 @@ export interface PlantParams {
     lengthDecay: number;        // length decay factor
     thickness: number;          // base thickness for the trunk
     thicknessDecay: number;     // thickness decay factor (typically 0.5 to 1.0)
-    leafColor?: number;         // Base color for leaves
-    leafVariation?: { h: number, s: number, l: number }; // HSL variation range
-    woodColor?: number;         // Optional override for wood color
 }
 
 export interface BranchParams {
@@ -35,6 +32,10 @@ export type ExpansionRuleDefinition = ExpansionRuleResult | ((val: number) => Ex
 
 export type BranchRuleDefinition = BranchParams | ((val: number) => BranchParams);
 
+export interface LeafRuleDefinition {
+    kind: string;
+}
+
 export interface PlantConfig {
     // starting string
     axiom: string;
@@ -44,6 +45,8 @@ export interface PlantConfig {
     finalRule?: string;
     // maps branch terminal symbols to parameters
     branches: Record<string, BranchRuleDefinition>;
+    // maps leaf terminal symbols to parameters
+    leaves?: Record<string, LeafRuleDefinition>;
 
     // parameters for the plant
     params: PlantParams;
@@ -65,6 +68,7 @@ export interface LeafData {
     pos: THREE.Vector3;
     dir: THREE.Vector3;
     quat: THREE.Quaternion;
+    kind: string;
 }
 
 /**
@@ -158,6 +162,8 @@ export class ProceduralPlant {
             ...config.defaults.branch
         };
 
+        const leafRules = config.leaves || { '+': { kind: 'leaf' } };
+
         // --- PASS 1: BUILD TOPOLOGY ---
         const root = new PlantNode(new THREE.Vector3(0, 0, 0), 0);
 
@@ -202,17 +208,25 @@ export class ProceduralPlant {
                 continue;
             }
 
+            // is symbol a leaf?
+            const leafRule = leafRules[symbol];
+            if (leafRule) {
+                // This node supports a leaf
+                turtle.node.leafCount += 1;
+
+                // Also store the visual leaf data for final rendering
+                const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
+                turtle.node.leaves.push({
+                    pos: turtle.pos.clone(),
+                    dir: dir,
+                    quat: turtle.quat.clone(),
+                    kind: leafRule.kind
+                });
+                continue;
+            }
+
             // handle built-ins
             switch (symbol) {
-                case '+': {
-                    // This node supports a leaf
-                    turtle.node.leafCount += 1;
-
-                    // Also store the visual leaf data for final rendering
-                    const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
-                    turtle.node.leaves.push({ pos: turtle.pos.clone(), dir: dir, quat: turtle.quat.clone() });
-                    break;
-                }
                 case '^': {
                     // Orient Upright with Jitter
                     // Resets the turtle to point upwards (0,1,0), perturbed by jitter.
