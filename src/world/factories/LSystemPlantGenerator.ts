@@ -38,7 +38,6 @@ export type ExpansionRuleDefinition = ExpansionRuleResult | ((val: number) => Ex
 export type BranchRuleDefinition = BranchParams | ((val: number) => BranchParams);
 
 export interface LeafRuleDefinition {
-    kind: string;
 }
 
 /**
@@ -115,7 +114,7 @@ export interface LeafData {
     pos: THREE.Vector3;
     dir: THREE.Vector3;
     quat: THREE.Quaternion;
-    kind: string;
+    params?: LeafRuleDefinition;
 }
 
 class PlantNode {
@@ -204,7 +203,7 @@ export class Turtle {
 
     /** Adds a leaf
      */
-    public leaf(params: LeafRuleDefinition = { kind: 'leaf' }): Turtle {
+    public leaf(params: LeafRuleDefinition = undefined): Turtle {
         if (this.logging) console.log('leaf');
         // This node supports a leaf
         this.state.node.leafCount += 1;
@@ -215,7 +214,7 @@ export class Turtle {
             pos: this.state.pos.clone(),
             dir: dir,
             quat: this.state.quat.clone(),
-            kind: params.kind
+            params: params
         });
 
         return this;
@@ -363,15 +362,14 @@ export class ProceduralPlant {
     leaves: LeafData[] = [];
 
     generate(config: PlantConfig) {
+        this.branches = [];
+        this.leaves = [];
 
         // If there are no rules just interpret the axiom string
         if (config.rules === undefined) {
             this.interpret(config.axiom, config);
             return;
         }
-
-        this.branches = [];
-        this.leaves = [];
 
         let current = config.axiom;
 

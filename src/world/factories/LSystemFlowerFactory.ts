@@ -7,6 +7,10 @@ import {
     LSystemFlowerKind,
     ARCHETYPES,
     FlowerPartParams,
+    FlowerPartKind,
+    RectangleFlowerPetalParams,
+    KiteFlowerPetalParams,
+    FlowerCenterParams,
 } from './LSystemFlowerArchetypes';
 
 import {
@@ -26,14 +30,12 @@ export interface LSystemFlowerInstanceOptions {
 }
 
 export interface FlowerPartGenerator {
-    addPart(geos: THREE.BufferGeometry[], data: LeafData, variation: { h: number, s: number, l: number }): void;
+    addPart(geos: THREE.BufferGeometry[], data: LeafData): void;
 }
 
 export class RectanglePetalGenerator implements FlowerPartGenerator {
-    constructor(readonly params: FlowerPartParams) { }
-
-    addPart(petalGeos: THREE.BufferGeometry[], petalData: LeafData, variation: { h: number, s: number, l: number }): void {
-        const p = this.params as any; // Cast to access petal specific params
+    addPart(petalGeos: THREE.BufferGeometry[], petalData: LeafData): void {
+        const p = petalData.params as RectangleFlowerPetalParams;
         let geo: THREE.BufferGeometry = new THREE.PlaneGeometry(p.size, p.length);
         if (geo.index) geo = geo.toNonIndexed();
         geo.translate(0, p.length / 2, 0); // Rotate around base (now Y axis)
@@ -42,20 +44,30 @@ export class RectanglePetalGenerator implements FlowerPartGenerator {
         geo.applyMatrix4(matrix);
 
         // HSL offsets
-        const h = (Math.random() - 0.5) * variation.h;
-        const s = (Math.random() - 0.5) * variation.s;
-        const l = (Math.random() - 0.5) * variation.l;
-        GraphicsUtils.addVertexAttribute(geo, 'hslOffset', h, s, l);
+        const h = (Math.random() - 0.5) * (p.variation?.h ?? 0.05);
+        const s = (Math.random() - 0.5) * (p.variation?.s ?? 0.1);
+        const random_l = (Math.random() - 0.5) * (p.variation?.l ?? 0.1);
+        const base_l = random_l + (p.lGradient?.[0] ?? 0);
+        const tip_l = random_l + (p.lGradient?.[1] ?? 0);
+
+        const count = geo.attributes.position.count;
+        const hslData = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+            hslData[i * 3] = h;
+            hslData[i * 3 + 1] = s;
+            // Vertices 0, 2, 5 are Tip; 1, 3, 4 are Base in non-indexed PlaneGeometry
+            const isTip = (i === 0 || i === 2 || i === 5);
+            hslData[i * 3 + 2] = isTip ? tip_l : base_l;
+        }
+        geo.setAttribute('hslOffset', new THREE.BufferAttribute(hslData, 3));
 
         petalGeos.push(geo);
     }
 }
 
 export class KitePetalGenerator implements FlowerPartGenerator {
-    constructor(readonly params: FlowerPartParams) { }
-
-    addPart(petalGeos: THREE.BufferGeometry[], petalData: LeafData, variation: { h: number, s: number, l: number }): void {
-        const p = this.params as any; // Cast to access kite specific params
+    addPart(petalGeos: THREE.BufferGeometry[], petalData: LeafData): void {
+        const p = petalData.params as KiteFlowerPetalParams;
         const w = p.width;
         const l = p.length;
         const f = p.middle;
@@ -88,20 +100,36 @@ export class KitePetalGenerator implements FlowerPartGenerator {
         geo.applyMatrix4(matrix);
 
         // HSL offsets
-        const h = (Math.random() - 0.5) * variation.h;
-        const s = (Math.random() - 0.5) * variation.s;
-        const l_hsl = (Math.random() - 0.5) * variation.l;
-        GraphicsUtils.addVertexAttribute(geo, 'hslOffset', h, s, l_hsl);
+        const h = (Math.random() - 0.5) * (p.variation?.h ?? 0.05);
+        const s = (Math.random() - 0.5) * (p.variation?.s ?? 0.1);
+        const random_l = (Math.random() - 0.5) * (p.variation?.l ?? 0.1);
+        const base_l = random_l + (p.lGradient?.[0] ?? 0);
+        const tip_l = random_l + (p.lGradient?.[1] ?? 0);
+        const mid_l = base_l + (tip_l - base_l) * f;
+
+        const hslData = new Float32Array(6 * 3);
+        // Vertex 0: Base
+        hslData[0] = h; hslData[1] = s; hslData[2] = base_l;
+        // Vertex 1: Mid
+        hslData[3] = h; hslData[4] = s; hslData[5] = mid_l;
+        // Vertex 2: Mid
+        hslData[6] = h; hslData[7] = s; hslData[8] = mid_l;
+        // Vertex 3: Mid
+        hslData[9] = h; hslData[10] = s; hslData[11] = mid_l;
+        // Vertex 4: Mid
+        hslData[12] = h; hslData[13] = s; hslData[14] = mid_l;
+        // Vertex 5: Tip
+        hslData[15] = h; hslData[16] = s; hslData[17] = tip_l;
+
+        geo.setAttribute('hslOffset', new THREE.BufferAttribute(hslData, 3));
 
         petalGeos.push(geo);
     }
 }
 
 export class FlowerCenterGenerator implements FlowerPartGenerator {
-    constructor(readonly params: FlowerPartParams) { }
-
-    addPart(geos: THREE.BufferGeometry[], data: LeafData, variation: { h: number, s: number, l: number }): void {
-        const p = this.params as any; // Cast to access center specific params
+    addPart(geos: THREE.BufferGeometry[], data: LeafData): void {
+        const p = data.params as FlowerCenterParams;
         let geo: THREE.BufferGeometry = new THREE.IcosahedronGeometry(p.size, 1);
         if (geo.index) geo = geo.toNonIndexed();
         geo.scale(1, p.thickness / p.size, 1);
@@ -114,9 +142,9 @@ export class FlowerCenterGenerator implements FlowerPartGenerator {
         geo.applyMatrix4(matrix);
 
         // HSL offsets - default to yellow for center as requested
-        const h = (Math.random() - 0.5) * variation.h;
-        const s = (Math.random() - 0.5) * variation.s;
-        const l = (Math.random() - 0.5) * variation.l;
+        const h = (Math.random() - 0.5) * (p.variation?.h ?? 0.05);
+        const s = (Math.random() - 0.5) * (p.variation?.s ?? 0.1);
+        const l = (Math.random() - 0.5) * (p.variation?.l ?? 0.1);
         GraphicsUtils.addVertexAttribute(geo, 'hslOffset', h, s, l);
 
         geos.push(geo);
@@ -179,18 +207,10 @@ export class LSystemFlowerFactory implements DecorationFactory {
     }
 
     private createArchetype(kind: LSystemFlowerKind, variation: number, plant: ProceduralPlant, params: FlowerConfig): FlowerArchetype {
-        const generators: Map<string, FlowerPartGenerator> = new Map();
-
-        const petalParams = params.visuals.petals;
-        if (petalParams.kind === 'rectangle') {
-            generators.set('petal', new RectanglePetalGenerator(petalParams));
-        } else if (petalParams.kind === 'kite') {
-            generators.set('petal', new KitePetalGenerator(petalParams));
-        }
-
-        if (params.visuals.center) {
-            generators.set('center', new FlowerCenterGenerator(params.visuals.center));
-        }
+        const generators: Map<FlowerPartKind, FlowerPartGenerator> = new Map();
+        generators.set('rectangle', new RectanglePetalGenerator());
+        generators.set('kite', new KitePetalGenerator());
+        generators.set('center', new FlowerCenterGenerator());
 
         const stalkGeos: THREE.BufferGeometry[] = [];
         const petalGeos: THREE.BufferGeometry[] = [];
@@ -212,11 +232,13 @@ export class LSystemFlowerFactory implements DecorationFactory {
         }
 
         for (const leaf of plant.leaves) {
-            const varHSL = params.visuals.petalVariation || { h: 0.05, s: 0.1, l: 0.1 };
-            const generator = generators.get(leaf.kind);
-            if (generator) {
-                const targetGeos = leaf.kind === 'center' ? centerGeos : petalGeos;
-                generator.addPart(targetGeos, leaf, varHSL);
+            if (leaf.params !== undefined) {
+                const part = leaf.params as FlowerPartParams;
+                const generator = generators.get(part.kind);
+                if (generator) {
+                    const targetGeos = part.kind === 'center' ? centerGeos : petalGeos;
+                    generator.addPart(targetGeos, leaf);
+                }
             }
         }
 

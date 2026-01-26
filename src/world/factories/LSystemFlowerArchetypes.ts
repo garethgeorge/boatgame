@@ -2,12 +2,12 @@ import { PlantConfig, Turtle } from './LSystemPlantGenerator';
 
 export type LSystemFlowerKind = 'daisy' | 'lily' | 'waterlily';
 
-export type PetalKind = 'rectangle' | 'kite';
-
 export interface RectangleFlowerPetalParams {
     kind: 'rectangle';
     size: number;
     length: number;
+    variation?: { h: number, s: number, l: number };
+    lGradient?: [number, number]; // [base, tip] lightness adjustment
 }
 
 export interface KiteFlowerPetalParams {
@@ -16,24 +16,27 @@ export interface KiteFlowerPetalParams {
     length: number;
     middle: number; // 0 to 1 position of widest part
     bend?: number;  // in degrees
+    variation?: { h: number, s: number, l: number };
+    lGradient?: [number, number]; // [base, tip] lightness adjustment
 }
-
-export type FlowerPetalParams = RectangleFlowerPetalParams | KiteFlowerPetalParams;
 
 export interface FlowerCenterParams {
     kind: 'center';
     size: number;
     thickness: number;
     offset?: number;
+    variation?: { h: number, s: number, l: number };
 }
 
-export type FlowerPartParams = FlowerPetalParams | FlowerCenterParams;
+export type FlowerPartKind = 'rectangle' | 'kite' | 'center';
+
+export type FlowerPartParams =
+    RectangleFlowerPetalParams |
+    KiteFlowerPetalParams |
+    FlowerCenterParams;
 
 export interface FlowerVisuals {
-    petals: FlowerPetalParams;
-    center?: FlowerCenterParams;
     petalColor?: number;
-    petalVariation?: { h: number, s: number, l: number };
     stalkColor?: number;
     centerColor?: number;
 }
@@ -45,8 +48,6 @@ export interface FlowerConfig extends PlantConfig {
 export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
     daisy: {
         visuals: {
-            petals: { kind: 'rectangle', size: 0.4, length: 1.0 },
-            center: { kind: 'center', size: 0.5, thickness: 0.1, offset: 0.2 },
             petalColor: 0xffffff, // White petals
             stalkColor: 0x4CAF50, // Green stalk
             centerColor: 0xFFD700, // Gold center
@@ -73,8 +74,8 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
             '.': { scale: 0.0, spread: 75, jitter: 5 },
         },
         leaves: {
-            '+': { kind: 'petal' },
-            '*': { kind: 'center' },
+            '+': { kind: 'rectangle', size: 0.4, length: 1.0 },
+            '*': { kind: 'center', size: 0.5, thickness: 0.1, offset: 0.2 },
         },
         params: {
             iterations: 10,
@@ -90,8 +91,6 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
 
     lily: {
         visuals: {
-            petals: { kind: 'kite', width: 0.7, length: 1.5, middle: 0.6, bend: 35 },
-            center: { kind: 'center', size: 0.3, thickness: 0.1, offset: 0.1 },
             petalColor: 0xffb6c1, // Light pink
             stalkColor: 0x4CAF50,
             centerColor: 0xFFD700,
@@ -112,8 +111,8 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
             '.': { scale: 0.0, spread: 30 },
         },
         leaves: {
-            '+': { kind: 'petal' },
-            '*': { kind: 'center' },
+            '+': { kind: 'kite', width: 1.0, length: 2.0, middle: 0.6, bend: 35, lGradient: [0.3, 0] },
+            '*': { kind: 'center', size: 0.3, thickness: 0.1, offset: 0.1 },
         },
         params: {
             iterations: 8,
@@ -127,7 +126,6 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
 
     waterlily: {
         visuals: {
-            petals: { kind: 'kite', width: 1.0, length: 3.0, middle: 0.6, bend: -20 },
             petalColor: 0xffb6c1, // Light pink
         },
         axiom: "F",
@@ -136,10 +134,21 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
                 //turtle.enableLogging();
                 for (let r = 0; r < 4; r++) {
                     if (r == 1) continue;
+
+                    // Petals get longer in outer rings
+                    const scale = 0.8 + 0.2 * (r / 3);
+                    // Petals get lighter in inner rings
+                    const baseL = 0.3 * (r / 3);
+                    const petal: KiteFlowerPetalParams = {
+                        kind: 'kite', width: 1.0, length: 3.0 * scale, middle: 0.6, bend: -20,
+                        lGradient: [baseL + 0.15, baseL] // Lighter at base
+                    };
+
+                    // 4, (5), 6, 7 petals = total 17
                     for (let i = 0; i < 4 + r; i++) {
                         turtle.rotate()
                         turtle.push();
-                        turtle.bend({ spread: 20 * r, jitter: 6 }).leaf({ kind: 'petal' });
+                        turtle.bend({ spread: 23 * r, jitter: 6 }).leaf(petal);
                         turtle.pop();
                     }
                 }
