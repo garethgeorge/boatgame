@@ -164,7 +164,9 @@ export class TerrainDecorator {
                 case 'open':
                 case 'irregular':
                 case 'vase': {
-                    const treeInstances = Decorations.getLSystemTreeInstance({ kind: opts.kind });
+                    const treeInstances = Decorations.getLSystemTreeInstance({
+                        kind: opts.kind
+                    });
                     tryPlace(treeInstances, pos, opts);
                     break;
                 }

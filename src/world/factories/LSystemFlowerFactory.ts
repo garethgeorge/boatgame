@@ -59,14 +59,14 @@ interface FlowerArchetype {
 
 export class LSystemFlowerFactory implements DecorationFactory {
     private static readonly stalkMaterial = new THREE.MeshToonMaterial({
-        color: 0x4CAF50,
+        color: 0xffffff,
         name: 'LSystemFlower - Stalk',
         side: THREE.FrontSide
     });
     private static readonly petalMaterial = new THREE.ShaderMaterial({
         ...LeafShader,
         name: 'LSystemFlower - Petal',
-        vertexColors: false,
+        vertexColors: true,
         side: THREE.DoubleSide,
         lights: true,
         fog: true

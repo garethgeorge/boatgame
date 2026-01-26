@@ -51,7 +51,8 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             length: 3, lengthDecay: 0.85,
             thickness: 0.5, thicknessDecay: 0.7,
             leafColor: 0x41b98d,
-            leafVariation: { h: 0.05, s: 0.1, l: 0.1 }
+            leafVariation: { h: 0.05, s: 0.1, l: 0.1 },
+            woodColor: 0x4b3621
         },
         defaults: {
             branch: {
@@ -76,7 +77,8 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             length: 2, lengthDecay: 0.8,
             thickness: 0.3, thicknessDecay: 0.7,
             leafColor: 0x3ea043,
-            leafVariation: { h: 0.02, s: 0.05, l: 0.1 }
+            leafVariation: { h: 0.02, s: 0.05, l: 0.1 },
+            woodColor: 0x4b3621
         },
         defaults: {
             branch: {
@@ -108,7 +110,8 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             length: 4, lengthDecay: 0.8,
             thickness: 0.7, thicknessDecay: 0.7,
             leafColor: 0x228B22,
-            leafVariation: { h: 0.03, s: 0.1, l: 0.15 }
+            leafVariation: { h: 0.03, s: 0.1, l: 0.15 },
+            woodColor: 0x4b3621
         },
         defaults: {
             branch: {
@@ -143,7 +146,8 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             length: 1, lengthDecay: 1,
             thickness: 0.6, thicknessDecay: 0.5,
             leafColor: 0x2e8b57,
-            leafVariation: { h: 0.05, s: 0.15, l: 0.2 }
+            leafVariation: { h: 0.05, s: 0.15, l: 0.2 },
+            woodColor: 0x4b3621
         },
         defaults: {
             branch: {
@@ -173,7 +177,8 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             length: 2, lengthDecay: 0.9,
             thickness: 0.5, thicknessDecay: 0.6,
             leafColor: 0x1a4a1c,
-            leafVariation: { h: 0.02, s: 0.05, l: 0.05 }
+            leafVariation: { h: 0.02, s: 0.05, l: 0.05 },
+            woodColor: 0x4b3621
         },
         defaults: {
             branch: {
@@ -200,7 +205,8 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             length: 1.5, lengthDecay: 0.9,
             thickness: 0.2, thicknessDecay: 0.5,
             leafColor: 0xa03e3e,
-            leafVariation: { h: 0.08, s: 0.2, l: 0.1 }
+            leafVariation: { h: 0.08, s: 0.2, l: 0.1 },
+            woodColor: 0x4b3621
         },
         defaults: {
             branch: {
@@ -231,7 +237,8 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             length: 1.0, lengthDecay: 0.9,
             thickness: 0.3, thicknessDecay: 0.6,
             leafColor: 0x228B22,
-            leafVariation: { h: 0.05, s: 0.1, l: 0.1 }
+            leafVariation: { h: 0.05, s: 0.1, l: 0.1 },
+            woodColor: 0x4b3621
         },
         defaults: {
             branch: {
@@ -264,7 +271,8 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             length: 0.75, lengthDecay: 0.9,
             thickness: 0.3, thicknessDecay: 0.5,
             leafColor: 0x2d5a27,
-            leafVariation: { h: 0.03, s: 0.05, l: 0.1 }
+            leafVariation: { h: 0.03, s: 0.05, l: 0.1 },
+            woodColor: 0x4b3621
         },
         defaults: {
             branch: {

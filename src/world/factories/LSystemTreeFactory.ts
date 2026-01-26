@@ -325,14 +325,14 @@ interface TreeArchetype {
 
 export class LSystemTreeFactory implements DecorationFactory {
     private static readonly woodMaterial = new THREE.MeshToonMaterial({
-        color: 0x4b3621,
+        color: 0xffffff,
         name: 'LSystemTree - Wood',
         side: THREE.FrontSide
     });
     private static readonly leafMaterial = new THREE.ShaderMaterial({
         ...LeafShader,
         name: 'LSystemTree - Leaf',
-        vertexColors: false,
+        vertexColors: true,
         side: THREE.FrontSide, // Default to back-face culling for performance
         lights: true,
         fog: true
@@ -456,7 +456,7 @@ export class LSystemTreeFactory implements DecorationFactory {
 
 
 
-    private getWoodMaterial(color?: number): THREE.MeshToonMaterial {
+    private getWoodMaterial(): THREE.MeshToonMaterial {
         return LSystemTreeFactory.woodMaterial;
     }
 
@@ -505,7 +505,7 @@ export class LSystemTreeFactory implements DecorationFactory {
         const result: DecorationInstance[] = [
             {
                 geometry: best.woodGeo,
-                material: this.getWoodMaterial(undefined), // Always returns shared woodMaterial
+                material: this.getWoodMaterial(),
                 matrix: matrix.clone(),
                 color: new THREE.Color(woodColor ?? best.woodColor ?? 0xffffff)
             }

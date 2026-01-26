@@ -11,7 +11,8 @@ export const LeafShader = {
     uniforms: THREE.UniformsUtils.merge([
         toonShader.uniforms,
         {
-            uSnowFactor: { value: 0.0 }
+            uSnowFactor: { value: 0.0 },
+            diffuse: { value: new THREE.Color(0xffffff) }
         }
     ]),
 
@@ -33,6 +34,9 @@ export const LeafShader = {
     fragmentShader: `
         varying vec3 vHslOffset;
         uniform float uSnowFactor;
+
+        // THREE.JS built-ins for color (but avoid duplicates if already in toon)
+        // #include <common> // Toon already has this
 
         // HSL to RGB Helper
         float leaf_hue2rgb(float p, float q, float t) {
@@ -80,6 +84,9 @@ export const LeafShader = {
         `
         #include <color_fragment>
         
+        // At this point, diffuseColor.rgb has been multiplied by vColor (instancing color)
+        // if vertexColors is true and instancing is enabled.
+
         // 1. Convert initial diffuseColor to HSL
         // vHslOffset contains our [HueOffset, SatOffset, LightOffset]
         vec3 hsl = leaf_rgb2hsl(diffuseColor.rgb);
