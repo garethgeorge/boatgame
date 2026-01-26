@@ -30,7 +30,7 @@ interface BiomeInstance {
 };
 
 class BiomeGenerator {
-  public static DEBUG_BIOME = undefined;
+  public static DEBUG_BIOME: BiomeType = undefined; // 'test';
 
   deck: BiomeType[] = [];
   index: Map<BiomeType, number> = new Map<BiomeType, number>;
