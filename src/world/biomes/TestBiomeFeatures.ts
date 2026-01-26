@@ -61,19 +61,19 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         new TierRule({
             species: [
                 {
-                    id: 'flower',
+                    id: 'land',
                     preference: Combine.all(
                         Signal.constant(1.0),
                         Signal.inRange(Signal.distanceToRiver, 5, 25),
-                        // Signal.inRange(Signal.elevation, 1.0, 5.0),
-                        // Signal.inRange(Signal.slope, 0, 15)
                     ),
                     params: (ctx) => {
                         const scale = 0.8 + ctx.random() * 0.4;
+                        const kinds = ['daisy', 'lily', 'waterlily'];
+                        const kind = kinds[Math.floor(Math.random() * 3)];
                         return {
                             groundRadius: 0.5 * scale,
                             options: {
-                                kind: Math.random() < 0.5 ? 'daisy' : 'lily',
+                                kind: kind,
                                 rotation: ctx.random() * Math.PI * 2,
                                 scale
                             },

@@ -58,19 +58,26 @@ export class KitePetalGenerator implements FlowerPartGenerator {
         const p = this.params as any; // Cast to access kite specific params
         const w = p.width;
         const l = p.length;
-        const f = p.widestPointFraction;
+        const f = p.middle;
+        const bendDeg = p.bend ?? 0;
+        const bendRad = bendDeg * (Math.PI / 180);
 
-        // Vertices for a kite made of two triangles:
-        // Triangle 1: (0,0), (-w/2, l*f), (0, l)
-        // Triangle 2: (0,0), (0, l), (w/2, l*f)
+        const widestY = l * f;
+        const tipDist = l * (1 - f);
+        const tipY = widestY + tipDist * Math.cos(bendRad);
+        const tipZ = tipDist * Math.sin(bendRad);
+
+        // Vertices for a kite made of two triangles, split at the widest point:
+        // Triangle 1 (Bottom): (0,0,0), (w/2, widestY, 0), (-w/2, widestY, 0)
+        // Triangle 2 (Top): (-w/2, widestY, 0), (w/2, widestY, 0), (0, tipY, tipZ)
         const vertices = new Float32Array([
             0, 0, 0,
-            -w / 2, l * f, 0,
-            0, l, 0,
+            w / 2, widestY, 0,
+            -w / 2, widestY, 0,
 
-            0, 0, 0,
-            0, l, 0,
-            w / 2, l * f, 0
+            -w / 2, widestY, 0,
+            w / 2, widestY, 0,
+            0, tipY, tipZ
         ]);
 
         let geo = new THREE.BufferGeometry();
@@ -205,7 +212,7 @@ export class LSystemFlowerFactory implements DecorationFactory {
         }
 
         for (const leaf of plant.leaves) {
-            const varHSL = params.visuals.leafVariation || { h: 0.05, s: 0.1, l: 0.1 };
+            const varHSL = params.visuals.petalVariation || { h: 0.05, s: 0.1, l: 0.1 };
             const generator = generators.get(leaf.kind);
             if (generator) {
                 const targetGeos = leaf.kind === 'center' ? centerGeos : petalGeos;
@@ -222,8 +229,8 @@ export class LSystemFlowerFactory implements DecorationFactory {
         centerGeos.forEach(g => g.dispose());
 
         return {
-            stalkGeo: mergedStalk, stalkColor: params.visuals.woodColor,
-            petalGeo: mergedPetals, petalColor: params.visuals.leafColor,
+            stalkGeo: mergedStalk, stalkColor: params.visuals.stalkColor,
+            petalGeo: mergedPetals, petalColor: params.visuals.petalColor,
             centerGeo: mergedCenter, centerColor: params.visuals.centerColor,
             kind, variation
         };

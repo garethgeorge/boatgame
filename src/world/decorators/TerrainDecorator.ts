@@ -171,7 +171,8 @@ export class TerrainDecorator {
                     break;
                 }
                 case 'daisy':
-                case 'lily': {
+                case 'lily':
+                case 'waterlily': {
                     const flowerInstances = Decorations.getLSystemFlowerInstance({
                         kind: opts.kind,
                         petalColor: GraphicsUtils.getRandomColor(1.0, 0.5)

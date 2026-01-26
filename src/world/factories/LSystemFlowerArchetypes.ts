@@ -1,6 +1,6 @@
 import { PlantConfig } from './LSystemPlantGenerator';
 
-export type LSystemFlowerKind = 'daisy' | 'lily';
+export type LSystemFlowerKind = 'daisy' | 'lily' | 'waterlily';
 
 export type PetalKind = 'rectangle' | 'kite';
 
@@ -14,7 +14,8 @@ export interface KiteFlowerPetalParams {
     kind: 'kite';
     width: number;
     length: number;
-    widestPointFraction: number; // 0 to 1
+    middle: number; // 0 to 1 position of widest part
+    bend?: number;  // in degrees
 }
 
 export type FlowerPetalParams = RectangleFlowerPetalParams | KiteFlowerPetalParams;
@@ -31,9 +32,9 @@ export type FlowerPartParams = FlowerPetalParams | FlowerCenterParams;
 export interface FlowerVisuals {
     petals: FlowerPetalParams;
     center?: FlowerCenterParams;
-    leafColor?: number;
-    leafVariation?: { h: number, s: number, l: number };
-    woodColor?: number;
+    petalColor?: number;
+    petalVariation?: { h: number, s: number, l: number };
+    stalkColor?: number;
     centerColor?: number;
 }
 
@@ -46,8 +47,8 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
         visuals: {
             petals: { kind: 'rectangle', size: 0.4, length: 1.0 },
             center: { kind: 'center', size: 0.5, thickness: 0.1, offset: 0.2 },
-            leafColor: 0xffffff, // White petals
-            woodColor: 0x4CAF50, // Green stalk
+            petalColor: 0xffffff, // White petals
+            stalkColor: 0x4CAF50, // Green stalk
             centerColor: 0xFFD700, // Gold center
         },
         axiom: "B",
@@ -89,10 +90,10 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
 
     lily: {
         visuals: {
-            petals: { kind: 'kite', width: 0.8, length: 1.5, widestPointFraction: 0.3 },
+            petals: { kind: 'kite', width: 0.7, length: 1.5, middle: 0.6, bend: 35 },
             center: { kind: 'center', size: 0.3, thickness: 0.1, offset: 0.1 },
-            leafColor: 0xffb6c1, // Light pink
-            woodColor: 0x4CAF50,
+            petalColor: 0xffb6c1, // Light pink
+            stalkColor: 0x4CAF50,
             centerColor: 0xFFD700,
         },
         axiom: "B",
@@ -108,7 +109,7 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
             '=': { spread: 20 },
             '-': { spread: 10 },
             '#': { spread: 45 },
-            '.': { scale: 0.0, spread: 40 },
+            '.': { scale: 0.0, spread: 30 },
         },
         leaves: {
             '+': { kind: 'petal' },
@@ -122,5 +123,36 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
         defaults: {
             branch: {},
         }
-    }
+    },
+
+    waterlily: {
+        visuals: {
+            petals: { kind: 'kite', width: 1.0, length: 3.0, middle: 0.6, bend: -20 },
+            petalColor: 0xffb6c1, // Light pink
+        },
+        axiom: "F",
+        rules: {
+            // Flower head rings of petals progressively bent out
+            'F': { successor: ".P/R/S" },
+            // Rings of petals
+            'P': { successor: "[&+]/[&+]/[&+]/[&+]/[&+]" },
+            'Q': { successor: "[&&+]/[&&+]/[&&+]/[&&+]/[&&+]/[&&+]" },
+            'R': { successor: "[&&&+]/[&&&+]/[&&&+]/[&&&+]/[&&&+]/[&&&+]" },
+            'S': { successor: "[&&&&+]/[&&&&+]/[&&&&+]/[&&&&+]/[&&&&+]/[&&&&+]" }
+        },
+        branches: {
+            '.': { scale: 0.0, spread: 18, jitter: 6 },
+        },
+        leaves: {
+            '+': { kind: 'petal' },
+        },
+        params: {
+            iterations: 8,
+            length: 1.0, lengthDecay: 0.9,
+            thickness: 0.1, thicknessDecay: 1.0,
+        },
+        defaults: {
+            branch: {},
+        }
+    },
 };
