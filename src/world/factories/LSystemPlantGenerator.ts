@@ -45,30 +45,16 @@ export interface LeafRuleDefinition {
  * 1) Generate a string using a set of simple grammar substitution rules.
  * 2) Interpret the string as a set of instructions to a 3d turtle graphics system.
  * 
- * If custom symbols are not defined some characters have built-in meanings in
- * the result string. All others are non-terminal symbols. The built ins are:
+ * Some characters have built-in meanings in the result string. All others are
+ * non-terminal symbols. The built ins are:
  * 
- * + - add a leaf
  * ^ - point the turtle upright
  * & - bend out from the current axis
  * / - rotate facing direction around current axis
  * [ - push the current state onto a stack
  * ] - pop the current state from the stack
  * 
- * There are no built-in branches. They must be defined in the branches parameter
- * or via the symbols parameter. Leaf symbols can be defined in the leaves parameter.
- * If any leaf symbols are defined the default + symbol is not automatically
- * defined. Exammples:
- *  branches: {
- *      // defines = to add a branch and set the angle for & to 20 degrees
- *      '=': { spread: 20, },
- *      // defines - to add a branch and set the angle for & to 10 degrees
- *      '-': { spread: 10, }
- *  },
- *  leaves: {
- *      // defines * to add a leaf
- *      '*': { kind; 'center' }
- *  }
+ * Additional terminal symbols can be defined in three ways.
  * 
  * The symbols parameter allows a turtle function to be explicitly defined
  * for a symbol. This gives great flexibility. In fact it can be used entirely
@@ -79,6 +65,23 @@ export interface LeafRuleDefinition {
  *          turtle.branch({ spread: 20 }).bend().branch().leaf({ kind: 'leaf' });
  *      }
  * }
+ * 
+ * There are no built-in branches. They must be defined via symbols or in the
+ * branches parameter.
+ *  branches: {
+ *      // defines = to add a branch and set the angle for & to 20 degrees
+ *      '=': { spread: 20, },
+ *      // defines - to add a branch and set the angle for & to 10 degrees
+ *      '-': { spread: 10, }
+ *  },
+ *
+ * Leaf symbols can be defined in the leaves parameter. If any leaf symbols
+ *  are defined the default + symbol is not automatically
+ * defined. Exammple:
+ *  leaves: {
+ *      // defines * to add a leaf
+ *      '*': { kind; 'center' }
+ *  }
  */
 export interface PlantConfig {
     // starting string
@@ -439,13 +442,17 @@ export class ProceduralPlant {
         const leafSymbol = config.leaves != undefined ? {} : {
             '+': (turtle: Turtle) => turtle.leaf()
         };
-        const symbolRules = config.symbols || {
+        const defaultSymbols = {
             '^': (turtle: Turtle) => turtle.up(),
             '[': (turtle: Turtle) => turtle.push(),
             ']': (turtle: Turtle) => turtle.pop(),
             '&': (turtle: Turtle) => turtle.bend(),
             '/': (turtle: Turtle) => turtle.rotate(),
-            ...leafSymbol
+        };
+        const symbolRules = {
+            ...defaultSymbols,
+            ...leafSymbol,
+            ...config.symbols
         };
 
         // --- PASS 1: BUILD TOPOLOGY ---

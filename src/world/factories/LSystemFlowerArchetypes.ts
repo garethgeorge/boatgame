@@ -54,28 +54,34 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
         },
         axiom: "B",
         rules: {
-            // base has a piece of stalk
-            'B': { successor: "-S" },
-            // stalk grows a couple more steps with kinks
-            'S': { successors: ["-/[&U]", "-//[&U]", "U"] },
-            'U': { successors: ["-/[&F]", "-//[&F]"] },
-            // flower head
-            // first #& adds top of stalk and tilts out 80 degrees from stalk
-            // the . is a 0 length pseudo-branch for petals, it defines the angle they get attached at
-            // each / rotates the turtle around the pseudo-branch axis 
-            // each petal is [&+] the & rotates it out from the pseudo-branch
-            // the * adds the flower center
-            'F': { successor: "#&.*[&+]/[&+]/[&+]/[&+]/[&+]/[&+]/[&+]/[&+]" }
+            // base has a piece of stalk, two squiggly bits and a flower
+            'B': { successors: ["=$$$F", "=&&F"] },
         },
-        branches: {
-            '-': { scale: 1.0, spread: 15, jitter: 10 },
-            '#': { scale: 1.0, spread: 75, jitter: 10 },
-            // Pseudo branch for attaching petals
-            '.': { scale: 0.0, spread: 75, jitter: 5 },
-        },
-        leaves: {
-            '+': { kind: 'rectangle', size: 0.4, length: 1.0 },
-            '*': { kind: 'center', size: 0.5, thickness: 0.1, offset: 0.2 },
+        symbols: {
+            // straight branch
+            '=': (turtle: Turtle) => { turtle.branch(); },
+            // squiggly branch (picks a random facing and then bends)
+            '$': (turtle: Turtle) => {
+                const r = Math.random();
+                if (r < 0.33) {
+                    turtle.rotate().bend({ spread: 15, jitter: 10 }).branch();
+                } if (r < 0.66) {
+                    turtle.rotate().rotate().bend({ spread: 15, jitter: 10 }).branch();
+                } else {
+                    turtle.branch();
+                }
+            },
+            // flower
+            'F': (turtle: Turtle) => {
+                turtle.bend({ spread: 80 });
+                turtle.leaf({ kind: 'center', size: 0.5, thickness: 0.1, offset: 0.2 });
+                for (let i = 0; i < 8; i++) {
+                    turtle.rotate();
+                    turtle.push();
+                    turtle.bend({ spread: 75, jitter: 5 }).leaf({ kind: 'rectangle', size: 0.4, length: 1.0 });
+                    turtle.pop();
+                }
+            }
         },
         params: {
             iterations: 10,
@@ -97,22 +103,32 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
         },
         axiom: "B",
         rules: {
-            // base optionally splits
-            'B': { successors: ["=S", "=[=S]/[&=S]", "=[&=S]/[&=S]"] },
-            // stem has some wiggle then flower
-            'S': { successor: "-/[&F]" },
-            // Flower head some stalk, bend 45, center and ring of 6 petals
-            'F': { successor: "#&.*[&+]/[&+]/[&+]/[&+]/[&+]/[&+]" }
+            'B': {
+                successors: [
+                    "===F", // straight stem
+                    "=[===F]/[&==F]", // one straight and side split
+                    "=[&===F]/[&==F]" // y split
+                ]
+            },
         },
-        branches: {
-            '=': { spread: 20 },
-            '-': { spread: 10 },
-            '#': { spread: 45 },
-            '.': { scale: 0.0, spread: 30 },
-        },
-        leaves: {
-            '+': { kind: 'kite', width: 1.0, length: 2.0, middle: 0.6, bend: 35, lGradient: [0.3, 0] },
-            '*': { kind: 'center', size: 0.3, thickness: 0.1, offset: 0.1 },
+        symbols: {
+            // Stem. = adds to stem, & brances off at 20 degrees
+            '=': (turtle: Turtle) => { turtle.branch(); },
+            '&': (turtle: Turtle) => { turtle.bend({ spread: 20 }); },
+            // Flower head
+            'F': (turtle: Turtle) => {
+                turtle.bend({ spread: 45 });
+                turtle.leaf({ kind: 'center', size: 0.3, thickness: 0.1, offset: 0.1 });
+                for (let i = 0; i < 6; i++) {
+                    turtle.rotate();
+                    turtle.push();
+                    turtle.bend({ spread: 30 }).leaf({
+                        kind: 'kite', width: 1.0, length: 2.0, middle: 0.6, bend: 35,
+                        lGradient: [0.3, 0]
+                    });
+                    turtle.pop();
+                }
+            }
         },
         params: {
             iterations: 8,

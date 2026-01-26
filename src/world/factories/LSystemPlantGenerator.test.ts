@@ -204,10 +204,6 @@ describe('ProceduralPlant', () => {
                 },
                 symbols: {
                     'L': (turtle: Turtle) => turtle.leaf(),
-                    '[': (turtle: Turtle) => turtle.push(),
-                    ']': (turtle: Turtle) => turtle.pop(),
-                    '&': (turtle: Turtle) => turtle.bend(),
-                    '/': (turtle: Turtle) => turtle.rotate(),
                 },
                 defaults: {
                     branch: { spread: 45, jitter: 0, scale: 1 } as any
@@ -226,6 +222,28 @@ describe('ProceduralPlant', () => {
 
             // Should have different directions due to / (rotate)
             expect(l1.dir.dot(l2.dir)).toBeLessThan(0.99);
+        });
+
+        it('should keep default symbols even when user provides some symbol overrides', () => {
+            const plant = new ProceduralPlant();
+            const config: PlantConfig = {
+                axiom: '[X]',
+                params: {
+                    iterations: 1,
+                    length: 1, lengthDecay: 1,
+                    thickness: 0.1, thicknessDecay: 1
+                },
+                symbols: {
+                    'X': (turtle: Turtle) => turtle.branch()
+                },
+                defaults: {
+                    branch: { scale: 1 } as any
+                }
+            };
+
+            plant.generate(config);
+            // If [ and ] work, it should have 1 branch
+            expect(plant.branches.length).toBe(1);
         });
     });
 });
