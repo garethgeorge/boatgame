@@ -22,6 +22,11 @@ export interface BranchParams {
     antiShadow?: number;
 }
 
+export interface BendParams {
+    spread?: number;            // angle of sub-branch to branch (degrees)
+    jitter?: number;            // jitter for angle to branch
+};
+
 export interface ExpansionRuleResult {
     successors?: string[];
     successor?: string;    // Convenience for single successor
@@ -36,15 +41,57 @@ export interface LeafRuleDefinition {
     kind: string;
 }
 
+/**
+ * Defines the rules for generating a plant. There are two steps:
+ * 1) Generate a string using a set of simple grammar substitution rules.
+ * 2) Interpret the string as a set of instructions to a 3d turtle graphics system.
+ * 
+ * If custom symbols are not defined some characters have built-in meanings in
+ * the result string. All others are non-terminal symbols. The built ins are:
+ * 
+ * + - add a leaf
+ * ^ - point the turtle upright
+ * & - bend out from the current axis
+ * / - rotate facing direction around current axis
+ * [ - push the current state onto a stack
+ * ] - pop the current state from the stack
+ * 
+ * There are no built-in branches. They must be defined in the branches parameter
+ * or via the symbols parameter. Leaf symbols can be defined in the leaves parameter.
+ * If any leaf symbols are defined the default + symbol is not automatically
+ * defined. Exammples:
+ *  branches: {
+ *      // defines = to add a branch and set the angle for & to 20 degrees
+ *      '=': { spread: 20, },
+ *      // defines - to add a branch and set the angle for & to 10 degrees
+ *      '-': { spread: 10, }
+ *  },
+ *  leaves: {
+ *      // defines * to add a leaf
+ *      '*': { kind; 'center' }
+ *  }
+ * 
+ * The symbols parameter allows a turtle function to be explicitly defined
+ * for a symbol. This gives great flexibility. In fact it can be used entirely
+ * in place of the grammar substition. For example with axiom 'F' we can
+ * define a symbol plant with two branches and a leaf:
+ *  symbols: {
+ *      'F': (turtle: Turtle) => {
+ *          turtle.branch({ spread: 20 }).bend().branch().leaf({ kind: 'leaf' });
+ *      }
+ * }
+ */
 export interface PlantConfig {
     // starting string
     axiom: string;
     // grammar substitution rules
-    rules: Record<string, ExpansionRuleDefinition>;
+    rules?: Record<string, ExpansionRuleDefinition>;
     // final substitution applied to all non-terminals
     finalRule?: string;
+    // maps terminal symbols to turtle functions
+    symbols?: Record<string, (turtle: Turtle) => void>;
     // maps branch terminal symbols to parameters
-    branches: Record<string, BranchRuleDefinition>;
+    branches?: Record<string, BranchRuleDefinition>;
     // maps leaf terminal symbols to parameters
     leaves?: Record<string, LeafRuleDefinition>;
 
@@ -71,6 +118,243 @@ export interface LeafData {
     kind: string;
 }
 
+class PlantNode {
+    children: PlantNode[] = [];
+    leaves: LeafData[] = [];
+    leafCount: number = 0;   // The "Pipe" value
+    radius: number = 0;      // Calculated in Pass 2
+
+    constructor(
+        public position: THREE.Vector3,
+        public level: number
+    ) { }
+}
+
+interface TurtleState {
+    pos: THREE.Vector3;
+    quat: THREE.Quaternion;
+    branch: Required<BranchParams>;
+    node: PlantNode;
+}
+
+export class Turtle {
+    // overall plant parameters
+    private plantParams: PlantParams;
+    // default parameters for branches
+    private defaultBranch: Required<BranchParams>;
+    // stack of saved states
+    private stack: TurtleState[] = [];
+    // current state
+    private state: TurtleState;
+    private logging: boolean = false;
+
+    constructor(
+        root: PlantNode,
+        plantParams: PlantParams,
+        defaultBranch: Required<BranchParams>
+    ) {
+        this.plantParams = plantParams;
+        this.defaultBranch = defaultBranch;
+        this.state = {
+            pos: new THREE.Vector3(0, 0, 0),
+            quat: new THREE.Quaternion(),
+            branch: this.defaultBranch,
+            node: root
+        };
+    }
+
+    public enableLogging() {
+        this.logging = true;
+    }
+
+    /**
+     * Adds a branch. The parameters for the branch are set to the defaults
+     * plus any overrides in the given params.
+     */
+    public branch(params: BranchRuleDefinition = {}): Turtle {
+        if (this.logging) console.log('branch');
+        this.state.branch = { ...this.defaultBranch, ...params };
+
+        const lengthScale = Math.pow(this.plantParams.lengthDecay, this.stack.length);
+        const length = this.plantParams.length * this.state.branch.scale * lengthScale;
+
+        // A. Apply physical forces
+        this.state.quat = this.applyPlantForces(
+            this.state.quat, this.state.pos, this.state.branch, this.stack.length);
+
+        // This is a pseudo-branch used to set parameters but having no length
+        if (length <= 0) {
+            return this;
+        }
+
+        // B. Calculate end point
+        const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(this.state.quat);
+        const endPos = this.state.pos.clone().add(dir.multiplyScalar(length));
+
+        // C. Create Graph Node
+        const newNode = new PlantNode(endPos, this.stack.length);
+        this.state.node.children.push(newNode);
+
+        // D. Move turtle
+        this.state.node = newNode; // Move logical turtle
+        this.state.pos.copy(endPos); // Move physical turtle
+
+        return this;
+    }
+
+    /** Adds a leaf
+     */
+    public leaf(params: LeafRuleDefinition = { kind: 'leaf' }): Turtle {
+        if (this.logging) console.log('leaf');
+        // This node supports a leaf
+        this.state.node.leafCount += 1;
+
+        // Also store the visual leaf data for final rendering
+        const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(this.state.quat);
+        this.state.node.leaves.push({
+            pos: this.state.pos.clone(),
+            dir: dir,
+            quat: this.state.quat.clone(),
+            kind: params.kind
+        });
+
+        return this;
+    }
+
+    /** 
+     * Resets the turtle to point upwards (0,1,0), perturbed by jitter.
+     */
+    public up(): Turtle {
+        if (this.logging) console.log('up');
+        this.state.quat.set(0, 0, 0, 1); // Identity points UP in our coordinate system
+
+        const jitter = this.state.branch.jitter || 0;
+        if (jitter > 0) {
+            const jitterRad = THREE.MathUtils.degToRad(jitter);
+            const randomQuat = new THREE.Quaternion().setFromEuler(
+                new THREE.Euler(
+                    (Math.random() - 0.5) * jitterRad,
+                    (Math.random() - 0.5) * jitterRad,
+                    (Math.random() - 0.5) * jitterRad
+                )
+            );
+            this.state.quat.multiply(randomQuat);
+        }
+
+        return this;
+    }
+
+    public push(): Turtle {
+        if (this.logging) console.log('push');
+        this.stack.push({
+            pos: this.state.pos.clone(),
+            quat: this.state.quat.clone(),
+            branch: { ...this.state.branch },
+            node: this.state.node // Save junction point in graph
+        });
+        return this;
+    }
+
+    public pop(): Turtle {
+        if (this.logging) console.log('pop');
+        const prev = this.stack.pop();
+        if (prev) {
+            this.state.pos.copy(prev.pos);
+            this.state.quat.copy(prev.quat);
+            this.state.branch = { ...prev.branch };
+            this.state.node = prev.node; // Return to junction point
+        }
+        return this;
+    }
+
+    public bend(params: BendParams = {}): Turtle {
+        if (this.logging) console.log('bend');
+        const spread = params.spread ?? (this.state.branch.spread ?? 0);
+        const jitter = params.jitter ?? (this.state.branch.jitter ?? 0);
+        const pitchAngle = THREE.MathUtils.degToRad(spread + (Math.random() - 0.5) * jitter);
+        const pitch = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), pitchAngle);
+        this.state.quat.multiply(pitch);
+        return this;
+    }
+
+    public rotate(): Turtle {
+        if (this.logging) console.log('rotate');
+        const goldenAngle = 2.399;
+        const yawAngle = goldenAngle + (Math.random() - 0.5) * THREE.MathUtils.degToRad(this.state.branch.jitter || 0);
+        const yaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yawAngle);
+        this.state.quat.multiply(yaw);
+        return this;
+    }
+
+    private applyPlantForces(
+        currentQuat: THREE.Quaternion,
+        currentPos: THREE.Vector3,
+        forces: BranchParams,
+        level: number
+    ) {
+        const currentDir = new THREE.Vector3(0, 1, 0).applyQuaternion(currentQuat);
+
+        // 1. FLEXIBILITY CURVE
+        // level 0 = 1.0 (stiff). Higher levels increase flexibility exponentially.
+        // 1.15 is a "stiffness" constant; higher = floppier twigs.
+        const flexibility = Math.pow(1.15, level);
+
+        // --- FORCE A: GRAVITY (Highly dependent on flexibility) ---
+        if (forces.gravity !== 0) {
+            const targetVec = new THREE.Vector3(0, forces.gravity > 0 ? -1 : 1, 0);
+            const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), targetVec);
+
+            // The further from the trunk, the more gravity wins
+            const strength = Math.min(0.95, Math.abs(forces.gravity) * flexibility);
+            currentQuat.slerp(targetQuat, strength);
+        }
+
+        // --- FORCE B: WIND (Highly dependent on flexibility) ---
+        if (forces.windForce > 0 && forces.wind.lengthSq() > 0) {
+            const windDir = forces.wind.clone().normalize();
+            const windQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), windDir);
+
+            // Wind affects thin branches much more than thick trunks
+            const strength = Math.min(0.8, forces.windForce * flexibility);
+            currentQuat.slerp(windQuat, strength);
+        }
+
+        // --- FORCE C: HELIOTROPISM (Seeking light) ---
+        if (forces.heliotropism !== 0) {
+            const skyQuat = new THREE.Quaternion(); // Identity = Up [0,1,0]
+
+            // Young shoots (high level) are more phototropic than old wood
+            const strength = Math.min(0.5, forces.heliotropism * flexibility);
+            currentQuat.slerp(skyQuat, strength);
+        }
+
+        // --- FORCE D: HORIZON BIAS (Growth Strategy) ---
+        // Note: We don't multiply by flexibility here because this is an 
+        // architectural "intent" of the plant stage (T, A, C), not a physical sag.
+        if (forces.horizonBias !== 0) {
+            const targetDir = forces.horizonBias > 0
+                ? new THREE.Vector3(currentDir.x, 0, currentDir.z).normalize()
+                : new THREE.Vector3(0, 1, 0);
+
+            if (targetDir.lengthSq() > 0) {
+                const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), targetDir);
+                currentQuat.slerp(targetQuat, Math.abs(forces.horizonBias));
+            }
+        }
+
+        // --- FORCE E: ANTI-SHADOWING (Growth Strategy) ---
+        if (forces.antiShadow !== 0) {
+            const awayFromCenter = new THREE.Vector3(currentPos.x, 0, currentPos.z).normalize();
+            if (awayFromCenter.lengthSq() > 0) {
+                const shadowQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), awayFromCenter);
+                currentQuat.slerp(shadowQuat, forces.antiShadow);
+            }
+        }
+
+        return currentQuat;
+    }
+};
+
 /**
  * L-SYSTEM 3D PLANT GENERATION LOGIC
  */
@@ -79,6 +363,13 @@ export class ProceduralPlant {
     leaves: LeafData[] = [];
 
     generate(config: PlantConfig) {
+
+        // If there are no rules just interpret the axiom string
+        if (config.rules === undefined) {
+            this.interpret(config.axiom, config);
+            return;
+        }
+
         this.branches = [];
         this.leaves = [];
 
@@ -126,26 +417,6 @@ export class ProceduralPlant {
 
     private interpret(instructions: string, config: PlantConfig) {
 
-        // --- DATA STRUCTURES ---
-        class PlantNode {
-            children: PlantNode[] = [];
-            leaves: LeafData[] = [];
-            leafCount: number = 0;   // The "Pipe" value
-            radius: number = 0;      // Calculated in Pass 2
-
-            constructor(
-                public position: THREE.Vector3,
-                public level: number
-            ) { }
-        }
-
-        interface TurtleState {
-            pos: THREE.Vector3;
-            quat: THREE.Quaternion;
-            branch: Required<BranchParams>;
-            node: PlantNode;
-        }
-
         // Default parameters for all branches
         const defaultBranch: Required<BranchParams> = {
             spread: 45,
@@ -162,121 +433,49 @@ export class ProceduralPlant {
             ...config.defaults.branch
         };
 
-        const leafRules = config.leaves || { '+': { kind: 'leaf' } };
+        // get branch and leaf rules
+        const branchRules = config.branches;
+        const leafRules = config.leaves;
 
-        // --- PASS 1: BUILD TOPOLOGY ---
-        const root = new PlantNode(new THREE.Vector3(0, 0, 0), 0);
-
-        const turtle: TurtleState = {
-            pos: new THREE.Vector3(0, 0, 0),
-            quat: new THREE.Quaternion(),
-            branch: defaultBranch,
-            node: root
+        // get symbol rules
+        const leafSymbol = config.leaves != undefined ? {} : {
+            '+': (turtle: Turtle) => turtle.leaf()
+        };
+        const symbolRules = config.symbols || {
+            '^': (turtle: Turtle) => turtle.up(),
+            '[': (turtle: Turtle) => turtle.push(),
+            ']': (turtle: Turtle) => turtle.pop(),
+            '&': (turtle: Turtle) => turtle.bend(),
+            '/': (turtle: Turtle) => turtle.rotate(),
+            ...leafSymbol
         };
 
-        const stack: TurtleState[] = [];
+        // --- PASS 1: BUILD TOPOLOGY ---
+
+        const root = new PlantNode(new THREE.Vector3(0, 0, 0), 0);
+        const turtle = new Turtle(root, config.params, defaultBranch);
 
         for (const symbol of instructions) {
 
-            // is symbol a branch?
-            const branchParams = config.branches?.[symbol];
+            // first try for a symbol function
+            const rule = symbolRules[symbol];
+            if (rule) {
+                rule(turtle);
+                continue;
+            }
+
+            // perhaps its a branch?
+            const branchParams = branchRules?.[symbol];
             if (branchParams) {
-                turtle.branch = { ...defaultBranch, ...branchParams };
-
-                const lengthScale = Math.pow(config.params.lengthDecay, stack.length);
-                const length = config.params.length * turtle.branch.scale * lengthScale;
-
-                // A. Apply physical forces
-                turtle.quat = this.applyPlantForces(turtle.quat, turtle.pos, turtle.branch, stack.length);
-
-                // This is a pseudo-branch used to set parameters but having no length
-                if (length <= 0) {
-                    continue;
-                }
-
-                // B. Calculate end point
-                const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
-                const endPos = turtle.pos.clone().add(dir.multiplyScalar(length));
-
-                // C. Create Graph Node
-                const newNode = new PlantNode(endPos, stack.length);
-                turtle.node.children.push(newNode);
-
-                // D. Move turtle
-                turtle.node = newNode; // Move logical turtle
-                turtle.pos.copy(endPos); // Move physical turtle
+                turtle.branch(branchParams);
                 continue;
             }
 
-            // is symbol a leaf?
-            const leafRule = leafRules[symbol];
+            // perhaps its a leaf?
+            const leafRule = leafRules?.[symbol];
             if (leafRule) {
-                // This node supports a leaf
-                turtle.node.leafCount += 1;
-
-                // Also store the visual leaf data for final rendering
-                const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(turtle.quat);
-                turtle.node.leaves.push({
-                    pos: turtle.pos.clone(),
-                    dir: dir,
-                    quat: turtle.quat.clone(),
-                    kind: leafRule.kind
-                });
+                turtle.leaf(leafRule);
                 continue;
-            }
-
-            // handle built-ins
-            switch (symbol) {
-                case '^': {
-                    // Orient Upright with Jitter
-                    // Resets the turtle to point upwards (0,1,0), perturbed by jitter.
-                    turtle.quat.set(0, 0, 0, 1); // Identity points UP in our coordinate system
-
-                    const jitter = turtle.branch.jitter || 0;
-                    if (jitter > 0) {
-                        const jitterRad = THREE.MathUtils.degToRad(jitter);
-                        const randomQuat = new THREE.Quaternion().setFromEuler(
-                            new THREE.Euler(
-                                (Math.random() - 0.5) * jitterRad,
-                                (Math.random() - 0.5) * jitterRad,
-                                (Math.random() - 0.5) * jitterRad
-                            )
-                        );
-                        turtle.quat.multiply(randomQuat);
-                    }
-                    break;
-                }
-                case '[':
-                    stack.push({
-                        pos: turtle.pos.clone(),
-                        quat: turtle.quat.clone(),
-                        branch: { ...turtle.branch },
-                        node: turtle.node // Save junction point in graph
-                    });
-                    break;
-                case ']':
-                    const prev = stack.pop();
-                    if (prev) {
-                        turtle.pos.copy(prev.pos);
-                        turtle.quat.copy(prev.quat);
-                        turtle.branch = { ...prev.branch };
-                        turtle.node = prev.node; // Return to junction point
-                    }
-                    break;
-                case '&': {
-                    const spread = turtle.branch.spread || 0;
-                    const pitchAngle = THREE.MathUtils.degToRad(spread + (Math.random() - 0.5) * (turtle.branch.jitter || 0));
-                    const pitch = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), pitchAngle);
-                    turtle.quat.multiply(pitch);
-                    break;
-                }
-                case '/': {
-                    const goldenAngle = 2.399;
-                    const yawAngle = goldenAngle + (Math.random() - 0.5) * THREE.MathUtils.degToRad(turtle.branch.jitter || 0);
-                    const yaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yawAngle);
-                    turtle.quat.multiply(yaw);
-                    break;
-                }
             }
         }
 
@@ -373,73 +572,5 @@ export class ProceduralPlant {
             }
         };
         generateBranchList(root);
-    }
-
-    private applyPlantForces(
-        currentQuat: THREE.Quaternion,
-        currentPos: THREE.Vector3,
-        forces: BranchParams,
-        level: number
-    ) {
-        const currentDir = new THREE.Vector3(0, 1, 0).applyQuaternion(currentQuat);
-
-        // 1. FLEXIBILITY CURVE
-        // level 0 = 1.0 (stiff). Higher levels increase flexibility exponentially.
-        // 1.15 is a "stiffness" constant; higher = floppier twigs.
-        const flexibility = Math.pow(1.15, level);
-
-        // --- FORCE A: GRAVITY (Highly dependent on flexibility) ---
-        if (forces.gravity !== 0) {
-            const targetVec = new THREE.Vector3(0, forces.gravity > 0 ? -1 : 1, 0);
-            const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), targetVec);
-
-            // The further from the trunk, the more gravity wins
-            const strength = Math.min(0.95, Math.abs(forces.gravity) * flexibility);
-            currentQuat.slerp(targetQuat, strength);
-        }
-
-        // --- FORCE B: WIND (Highly dependent on flexibility) ---
-        if (forces.windForce > 0 && forces.wind.lengthSq() > 0) {
-            const windDir = forces.wind.clone().normalize();
-            const windQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), windDir);
-
-            // Wind affects thin branches much more than thick trunks
-            const strength = Math.min(0.8, forces.windForce * flexibility);
-            currentQuat.slerp(windQuat, strength);
-        }
-
-        // --- FORCE C: HELIOTROPISM (Seeking light) ---
-        if (forces.heliotropism !== 0) {
-            const skyQuat = new THREE.Quaternion(); // Identity = Up [0,1,0]
-
-            // Young shoots (high level) are more phototropic than old wood
-            const strength = Math.min(0.5, forces.heliotropism * flexibility);
-            currentQuat.slerp(skyQuat, strength);
-        }
-
-        // --- FORCE D: HORIZON BIAS (Growth Strategy) ---
-        // Note: We don't multiply by flexibility here because this is an 
-        // architectural "intent" of the plant stage (T, A, C), not a physical sag.
-        if (forces.horizonBias !== 0) {
-            const targetDir = forces.horizonBias > 0
-                ? new THREE.Vector3(currentDir.x, 0, currentDir.z).normalize()
-                : new THREE.Vector3(0, 1, 0);
-
-            if (targetDir.lengthSq() > 0) {
-                const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), targetDir);
-                currentQuat.slerp(targetQuat, Math.abs(forces.horizonBias));
-            }
-        }
-
-        // --- FORCE E: ANTI-SHADOWING (Growth Strategy) ---
-        if (forces.antiShadow !== 0) {
-            const awayFromCenter = new THREE.Vector3(currentPos.x, 0, currentPos.z).normalize();
-            if (awayFromCenter.lengthSq() > 0) {
-                const shadowQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), awayFromCenter);
-                currentQuat.slerp(shadowQuat, forces.antiShadow);
-            }
-        }
-
-        return currentQuat;
     }
 }

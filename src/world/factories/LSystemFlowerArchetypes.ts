@@ -1,4 +1,4 @@
-import { PlantConfig } from './LSystemPlantGenerator';
+import { PlantConfig, Turtle } from './LSystemPlantGenerator';
 
 export type LSystemFlowerKind = 'daisy' | 'lily' | 'waterlily';
 
@@ -131,20 +131,19 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
             petalColor: 0xffb6c1, // Light pink
         },
         axiom: "F",
-        rules: {
-            // Flower head rings of petals progressively bent out
-            'F': { successor: ".P/R/S" },
-            // Rings of petals
-            'P': { successor: "[&+]/[&+]/[&+]/[&+]/[&+]" },
-            'Q': { successor: "[&&+]/[&&+]/[&&+]/[&&+]/[&&+]/[&&+]" },
-            'R': { successor: "[&&&+]/[&&&+]/[&&&+]/[&&&+]/[&&&+]/[&&&+]" },
-            'S': { successor: "[&&&&+]/[&&&&+]/[&&&&+]/[&&&&+]/[&&&&+]/[&&&&+]" }
-        },
-        branches: {
-            '.': { scale: 0.0, spread: 18, jitter: 6 },
-        },
-        leaves: {
-            '+': { kind: 'petal' },
+        symbols: {
+            'F': (turtle: Turtle) => {
+                //turtle.enableLogging();
+                for (let r = 0; r < 4; r++) {
+                    if (r == 1) continue;
+                    for (let i = 0; i < 4 + r; i++) {
+                        turtle.rotate()
+                        turtle.push();
+                        turtle.bend({ spread: 20 * r, jitter: 6 }).leaf({ kind: 'petal' });
+                        turtle.pop();
+                    }
+                }
+            }
         },
         params: {
             iterations: 8,
