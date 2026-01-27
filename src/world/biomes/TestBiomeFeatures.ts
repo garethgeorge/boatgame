@@ -93,7 +93,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         return 0.0;
     }
 
-    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
+    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
         const spatialGrid = context.chunk.spatialGrid;
         yield* TerrainDecorator.decorateIterator(
             context,
@@ -182,7 +182,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         }
     }
 
-    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
+    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
         // if (true && zStart === 0) {
         //     this.spawnAllAnimals(context, -50);
         // }

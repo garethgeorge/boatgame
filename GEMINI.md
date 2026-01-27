@@ -127,6 +127,10 @@ Decorations (trees, rocks, etc.) use a **Registry + Factory** pattern to decoupl
 -   **`DecorationRegistry`**: Maps string keys (e.g., `'tree'`, `'rock'`) to simpler factories.
 -   **`DecorationFactory`**: Interface for creating visual assets. Implementations (e.g., `TreeFactory`) handle procedural geometry generation or GLTF loading.
 -   **`Decorations`**: Static facade providing strongly-typed accessors (e.g., `Decorations.getTree(...)`) that delegate to the registry.
+-   **Async Loading & Gatekeeping**: The system uses a hybrid approach to prevent performance spikes:
+    -   **Lazy Loading**: Assets are loaded on-demand. `GLTFModelFactory.load()` is idempotent and caches its loading promise.
+    -   **Gatekeeper Pattern**: Biome generators (`decorate`, `spawn`) and `TerrainChunk` generators return `Generator<void | Promise<void>, ...>`. They yield `Promise` objects returned by `Decorations.ensureLoaded(id)` *before* instantiating entities.
+    -   **Non-Blocking Wait**: `TerrainManager` tracks these yielded promises and pauses chunk processing without blocking the game loop.
 -   **Optimization**: `TerrainChunk` uses `BiomeDecorationHelper` to batch and merge decoration geometries to reduce draw calls.
 
 ## 8. Entity & Spawner System

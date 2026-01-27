@@ -30,7 +30,7 @@ export class Game {
     async preload() {
         GraphicsUtils.tracker.verbose = false;
         await Promise.all([
-            Decorations.preload(),
+            Decorations.preload(['boat']),
             BaseMangrove.preload(),
         ]);
         GraphicsUtils.tracker.verbose = false;

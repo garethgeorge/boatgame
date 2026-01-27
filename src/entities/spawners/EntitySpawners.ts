@@ -30,9 +30,11 @@ import { PierSpawner } from './PierSpawner';
 import { RockSpawner } from './RockSpawner';
 import { WaterGrassSpawner } from './WaterGrassSpawner';
 import { LillyPadPatchSpawner } from './LillyPadPatchSpawner';
+import { BaseSpawner } from './BaseSpawner';
 import { Bluebird } from '../obstacles/Bluebird';
 import { Egret } from '../obstacles/Egret';
 import { Swan } from '../obstacles/Swan';
+import { Decorations, DecorationId } from '../../world/Decorations';
 
 export class EntitySpawners {
     private static instance: EntitySpawners;
@@ -52,6 +54,7 @@ export class EntitySpawners {
     private attackConfigs: AttackAnimalSpawnConfig[] = [
         {
             id: EntityIds.ALLIGATOR,
+            decorationIds: ['alligator'],
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Alligator(physicsEngine, options),
             shoreProbability: 0.3,
@@ -61,6 +64,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.BRONTOSAURUS,
+            decorationIds: ['brontosaurus'],
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Brontosaurus(physicsEngine, options),
             shoreProbability: 0.6,
@@ -70,6 +74,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.TREX,
+            decorationIds: ['trex'],
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new TRex(physicsEngine, options),
             shoreProbability: 0.6,
@@ -79,6 +84,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.BROWN_BEAR,
+            decorationIds: ['brownBear'],
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new BrownBear(physicsEngine, options),
             shoreProbability: 1.0,
@@ -87,6 +93,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.POLAR_BEAR,
+            decorationIds: ['polarBear'],
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new PolarBear(physicsEngine, options),
             shoreProbability: 1.0,
@@ -95,6 +102,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.HIPPO,
+            decorationIds: ['hippo'],
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Hippo(physicsEngine, options),
             shoreProbability: 0.0,
@@ -104,6 +112,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.MONKEY,
+            decorationIds: ['monkey'],
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Monkey(physicsEngine, options),
             shoreProbability: 1.0,
@@ -113,6 +122,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.MOOSE,
+            decorationIds: ['moose'],
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Moose(physicsEngine, options),
             shoreProbability: 0.6,
@@ -120,6 +130,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.TRICERATOPS,
+            decorationIds: ['triceratops'],
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Triceratops(physicsEngine, options),
             shoreProbability: 0.6,
@@ -130,6 +141,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.SNAKE,
+            decorationIds: ['snake'],
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Snake(physicsEngine, options),
             shoreProbability: 0.0,
@@ -142,23 +154,27 @@ export class EntitySpawners {
     private flyingConfigs: FlyingAnimalSpawnConfig[] = [
         {
             id: EntityIds.BLUEBIRD,
+            decorationIds: ['bluebird'],
             getDensity: () => 0.5 / 20,
             factory: (physicsEngine, options) => new Bluebird(physicsEngine, options),
             entityRadius: 1.5
         },
         {
             id: EntityIds.BUTTERFLY,
+            decorationIds: ['butterfly'],
             getDensity: () => 0.5 / 20,
             factory: (physicsEngine, options) => new Butterfly(physicsEngine, options),
             entityRadius: 0.5
         },
         {
             id: EntityIds.PTERODACTYL,
+            decorationIds: ['pterodactyl'],
             getDensity: () => 0.1 / 20,
             factory: (physicsEngine, options) => new Pterodactyl(physicsEngine, options)
         },
         {
             id: EntityIds.EGRET,
+            decorationIds: ['egret'],
             getDensity: () => 0.1 / 20,
             factory: (physicsEngine, options) => new Egret(physicsEngine, options),
             shoreProbability: 0.0,
@@ -167,6 +183,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.DRAGONFLY,
+            decorationIds: ['dragonfly'],
             getDensity: () => 0.5 / 20,
             factory: (physicsEngine, options) => new Dragonfly(physicsEngine, options),
             entityRadius: 1.5
@@ -176,6 +193,7 @@ export class EntitySpawners {
     private swimAwayConfigs: SwimAwayAnimalSpawnConfig[] = [
         {
             id: EntityIds.DOLPHIN,
+            decorationIds: ['dolphin'],
             getDensity: () => 0.01,
             factory: (physicsEngine, options) => new Dolphin(physicsEngine, options),
             heightInWater: Dolphin.HEIGHT_IN_WATER,
@@ -184,6 +202,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.DUCKLING,
+            decorationIds: ['duckling'],
             getDensity: () => 0.05,
             factory: (physicsEngine, options) => new Duckling(physicsEngine, options),
             heightInWater: Duckling.HEIGHT_IN_WATER,
@@ -192,6 +211,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.PENGUIN_KAYAK,
+            decorationIds: ['penguinKayak'],
             getDensity: () => 0.01,
             factory: (physicsEngine, options) => new PenguinKayak(physicsEngine, options),
             heightInWater: PenguinKayak.HEIGHT_IN_WATER,
@@ -200,6 +220,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.SWAN,
+            decorationIds: ['swan'],
             getDensity: () => 0.01,
             factory: (physicsEngine, options) => new Swan(physicsEngine, options),
             heightInWater: Swan.HEIGHT_IN_WATER,
@@ -208,6 +229,7 @@ export class EntitySpawners {
         },
         {
             id: EntityIds.TURTLE,
+            decorationIds: ['turtle'],
             getDensity: () => 0.02,
             factory: (physicsEngine, options) => new Turtle(physicsEngine, options),
             heightInWater: Turtle.HEIGHT_IN_WATER,
@@ -239,8 +261,33 @@ export class EntitySpawners {
         return EntitySpawners.instance;
     }
 
-    public animal(id: string): AnimalSpawner | undefined {
+    public *ensureAllLoaded(ids: EntityIds[]): Generator<void | Promise<void>, void, unknown> {
+        for (const id of ids) {
+            const spawner = this.getSpawnerById(id);
+            if (spawner) {
+                yield* spawner.ensureLoaded();
+            }
+        }
+    }
+
+    public animal(id: EntityIds): AnimalSpawner | undefined {
         return this.animalSpawners.get(id);
+    }
+
+    private getSpawnerById(id: EntityIds): AnimalSpawner | BaseSpawner | undefined {
+        if (this.animalSpawners.has(id)) return this.animalSpawners.get(id);
+        switch (id) {
+            case EntityIds.BUOY: return this._buoy;
+            case EntityIds.ICEBERG: return this._iceBerg;
+            case EntityIds.LOG: return this._log;
+            case EntityIds.MANGROVE: return this._mangrove;
+            case EntityIds.BOTTLE: return this._messageInABottle;
+            case EntityIds.PIER: return this._pier;
+            case EntityIds.ROCK: return this._rock;
+            case EntityIds.WATER_GRASS: return this._waterGrass;
+            case EntityIds.LILLY_PAD_PATCH: return this._lillyPadPatch;
+        }
+        return undefined;
     }
 
     public buoy(): BuoySpawner { return this._buoy; }

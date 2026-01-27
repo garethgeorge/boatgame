@@ -4,8 +4,8 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations, LSystemTreeKind } from '../Decorations';
-import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { EntityIds } from '../../entities/EntityIds';
+import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'ice';
@@ -34,7 +34,7 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         return 2.3;
     }
 
-    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
+    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
         const length = zEnd - zStart;
         const count = Math.floor(length * 16);
 
@@ -64,7 +64,13 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         }
     }
 
-    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
+    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+        // Gatekeeping for spawner assets
+        yield* EntitySpawners.getInstance().ensureAllLoaded([
+            EntityIds.BUOY, EntityIds.BOTTLE, EntityIds.ICEBERG,
+            EntityIds.PENGUIN_KAYAK, EntityIds.POLAR_BEAR
+        ]);
+
         yield* this.spawnObstacles(EntitySpawners.getInstance().buoy(), context, difficulty, zStart, zEnd);
         yield* this.spawnObstacles(EntitySpawners.getInstance().messageInABottle(), context, difficulty, zStart, zEnd);
 

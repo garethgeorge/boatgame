@@ -31,7 +31,7 @@ export class TerrainDecorator {
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
         spatialGrid: SpatialGrid,
         seed: number = 0
-    ) {
+    ): Generator<void | Promise<void>, void, unknown> {
         const placements = yield* this.generateIterator(rules, region, spatialGrid, seed);
         yield* this.populateIterator(context, placements, region);
     }
@@ -41,14 +41,14 @@ export class TerrainDecorator {
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
         spatialGrid: SpatialGrid,
         seed: number = 0
-    ): Generator<void, PlacementManifest[], unknown> {
+    ): Generator<void | Promise<void>, PlacementManifest[], unknown> {
         return this.instance().generateIterator(rules, region, spatialGrid, seed);
     }
 
     public static populateIterator(
         context: DecorationContext, decorations: PlacementManifest[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-    ): Generator<void, void, unknown> {
+    ): Generator<void | Promise<void>, void, unknown> {
         return this.instance().populateIterator(context, decorations, region);
     }
 
@@ -63,7 +63,7 @@ export class TerrainDecorator {
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
         spatialGrid: SpatialGrid,
         seed: number = 0
-    ): Generator<void, PlacementManifest[], unknown> {
+    ): Generator<void | Promise<void>, PlacementManifest[], unknown> {
 
         // Default Terrain Provider using RiverSystem
         const terrainProvider = (x: number, z: number) => {
@@ -103,7 +103,7 @@ export class TerrainDecorator {
     private *populateIterator(
         context: DecorationContext, decorations: PlacementManifest[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-    ): Generator<void, void, unknown> {
+    ): Generator<void | Promise<void>, void, unknown> {
 
         // Similar logic to BiomeDecorationHelper, this instances with
         // distance from river and a visibility check

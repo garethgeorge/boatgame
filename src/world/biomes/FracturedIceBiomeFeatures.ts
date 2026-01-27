@@ -12,6 +12,7 @@ import Delaunator from 'delaunator';
 import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { EntityIds } from '../../entities/EntityIds';
 import { FracturedIceberg } from '../../entities/obstacles/FracturedIceberg';
+import { Decorations } from '../Decorations';
 
 interface Point {
     x: number;
@@ -330,12 +331,19 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         return { x: ux, y: uy };
     }
 
-    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
+    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
         // Decoration is now empty as icebergs are spawned as entities
         return;
     }
 
-    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
+    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+        // Gatekeeping
+        yield* EntitySpawners.getInstance().ensureAllLoaded([
+            EntityIds.ICEBERG,
+            EntityIds.PENGUIN_KAYAK,
+            EntityIds.POLAR_BEAR
+        ]);
+
         const boundarySize = 50.0;
 
         const fracturedStart = this.zMin + boundarySize;

@@ -32,6 +32,10 @@ export abstract class BaseSpawner implements Spawnable {
         }
     }
 
+    *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+        // Default implementation for purely procedural spawners
+    }
+
     /**
      * Spawn an instance at the specified z value. The details are
      * type specific. It can be on shore or in river, could be a

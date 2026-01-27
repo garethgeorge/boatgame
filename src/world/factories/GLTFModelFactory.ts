@@ -14,15 +14,17 @@ export class GLTFModelFactory implements DecorationFactory {
     private cache: GLTFModelData = { model: null, animations: [] };
     private path: string;
     private pool: ObjectPool<THREE.Group> | null = null;
+    private loadingPromise: Promise<void> | null = null;
 
     constructor(path: string) {
         this.path = path;
     }
 
     async load(): Promise<void> {
-        if (this.cache.model) return;
+        if (this.cache.model) return Promise.resolve();
+        if (this.loadingPromise) return this.loadingPromise;
 
-        return new Promise((resolve, reject) => {
+        this.loadingPromise = new Promise((resolve, reject) => {
             const loader = new GLTFLoader();
             loader.load(this.path, (gltf) => {
                 const model = gltf.scene;
@@ -33,25 +35,31 @@ export class GLTFModelFactory implements DecorationFactory {
                 this.cache.animations = gltf.animations || [];
 
                 // Initialize pool after model is loaded
-                this.pool = new ObjectPool<THREE.Group>(() => {
-                    const clonedModel = SkeletonUtils.clone(this.cache.model!) as THREE.Group;
-                    GraphicsUtils.registerObject(clonedModel);
-                    GraphicsUtils.markAsCache(clonedModel);
+                if (!this.pool) {
+                    this.pool = new ObjectPool<THREE.Group>(() => {
+                        const clonedModel = SkeletonUtils.clone(this.cache.model!) as THREE.Group;
+                        GraphicsUtils.registerObject(clonedModel);
+                        GraphicsUtils.markAsCache(clonedModel);
 
-                    // Add disposal hook to return to pool
-                    clonedModel.userData.onDispose = (obj: THREE.Group) => {
-                        this.release(obj);
-                    };
+                        // Add disposal hook to return to pool
+                        clonedModel.userData.onDispose = (obj: THREE.Group) => {
+                            this.release(obj);
+                        };
 
-                    return clonedModel;
-                });
+                        return clonedModel;
+                    });
+                }
 
+                this.loadingPromise = null;
                 resolve();
             }, undefined, (error) => {
                 console.error(`An error occurred loading model ${this.path}:`, error);
+                this.loadingPromise = null;
                 resolve(); // Resolve anyway to avoid blocking everything
             });
         });
+
+        return this.loadingPromise;
     }
 
     create(): THREE.Group {

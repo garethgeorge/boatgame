@@ -120,7 +120,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         return this.layoutCache;
     }
 
-    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown> {
+    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
         const length = zEnd - zStart;
         const count = Math.floor(length * 16);
 
@@ -140,7 +140,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         }
     }
 
-    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
+    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
         yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, this.getLayout(), this.id, zStart, zEnd, [this.zMin, this.zMax]);
     }
 

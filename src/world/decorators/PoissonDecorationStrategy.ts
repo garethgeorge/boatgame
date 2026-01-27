@@ -57,7 +57,7 @@ export class PoissonDecorationStrategy {
         terrainProvider: (x: number, z: number) => { height: number, slope: number, distToRiver: number },
         biomeProgressProvider: (z: number) => number,
         seed: number = 0
-    ): Generator<void, PlacementManifest[], unknown> {
+    ): Generator<void | Promise<void>, PlacementManifest[], unknown> {
         const manifests: PoissonPlacement[] = [];
 
         const width = region.xMax - region.xMin;

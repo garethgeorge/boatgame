@@ -15,7 +15,7 @@ export class PolarBear extends AttackAnimal {
         physicsEngine: PhysicsEngine,
         options: AttackAnimalOptions
     ) {
-        super(physicsEngine, 'polarbear', Entity.TYPE_OBSTACLE, true,
+        super(physicsEngine, 'polarBear', Entity.TYPE_OBSTACLE, true,
             options,
             {
                 density: 5.0,

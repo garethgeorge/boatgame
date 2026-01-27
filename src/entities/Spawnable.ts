@@ -28,5 +28,10 @@ export interface Spawnable {
    * @param zEnd World Z end of range
    * @param biomeZRange World Z range of the biome
    */
-  spawn(context: SpawnContext, count: number, zStart: number, zEnd: number, biomeZRange: [number, number]): Generator<void, void, unknown>;
+  spawn(context: SpawnContext, count: number, zStart: number, zEnd: number, biomeZRange: [number, number]): Generator<void | Promise<void>, void, unknown>;
+
+  /**
+   * Ensures the models and assets required by this spawner are loaded.
+   */
+  ensureLoaded(): Generator<void | Promise<void>, void, unknown>;
 }

@@ -17,46 +17,80 @@ import { LSystemFlowerKind } from './factories/LSystemFlowerArchetypes';
 
 export type { DecorationInstance, LSystemTreeKind, LSystemTreeInstanceOptions, LSystemFlowerKind, LSystemFlowerInstanceOptions };
 
+const DECORATION_FACTORIES = {
+  'bush': new BushFactory(),
+  'cactus': new CactusFactory(),
+  'rock': new RockFactory(),
+  'bottle': new BottleFactory(),
+  'cycad': new CycadFactory(),
+  'treeFern': new TreeFernFactory(),
+  'riverRock': new RiverRockFactory(),
+  'boat': new GLTFModelFactory('assets/boat-model-1.glb'),
+  'polarBear': new GLTFModelFactory('assets/polar-bear-model-1.glb'),
+  'hippo': new GLTFModelFactory('assets/hippo-model-1.glb'),
+  'alligator': new GLTFModelFactory('assets/alligator-model-1.glb'),
+  'penguinKayak': new GLTFModelFactory('assets/penguin-kayak-model-1.glb'),
+  'brownBear': new GLTFModelFactory('assets/brown-bear-model-1.glb'),
+  'monkey': new GLTFModelFactory('assets/monkey-model-1.glb'),
+  'moose': new GLTFModelFactory('assets/moose-model-1.glb'),
+  'duckling': new GLTFModelFactory('assets/duckling-model-1.glb'),
+  'depot': new GLTFModelFactory('assets/depot-model-1.glb'),
+  'trex': new GLTFModelFactory('assets/t-rex-model-1.glb'),
+  'triceratops': new GLTFModelFactory('assets/triceratops-model-1.glb'),
+  'brontosaurus': new GLTFModelFactory('assets/brontosaurus-model-1.glb'),
+  'pterodactyl': new GLTFModelFactory('assets/pterodactyl-model-1.glb'),
+  'butterfly': new GLTFModelFactory('assets/butterfly-model-1.glb'),
+  'dolphin': new GLTFModelFactory('assets/dolphin-model-1.glb'),
+  'bluebird': new GLTFModelFactory('assets/bluebird-model-1.glb'),
+  'egret': new GLTFModelFactory('assets/egret-model-1.glb'),
+  'swan': new GLTFModelFactory('assets/swan-model-1.glb'),
+  'dragonfly': new GLTFModelFactory('assets/dragonfly-model-1.glb'),
+  'snake': new GLTFModelFactory('assets/snake-model-1.glb'),
+  'turtle': new GLTFModelFactory('assets/turtle-model-1.glb'),
+  'mangrove': new MangroveFactory(),
+  'lsystem-tree': new LSystemTreeFactory(),
+  'lsystem-flower': new LSystemFlowerFactory(),
+} as const;
+
+export type DecorationId = keyof typeof DECORATION_FACTORIES;
+
 // Register factories
-DecorationRegistry.register('bush', new BushFactory());
-DecorationRegistry.register('cactus', new CactusFactory());
-DecorationRegistry.register('rock', new RockFactory());
-DecorationRegistry.register('bottle', new BottleFactory());
-DecorationRegistry.register('cycad', new CycadFactory());
-DecorationRegistry.register('treeFern', new TreeFernFactory());
-DecorationRegistry.register('riverRock', new RiverRockFactory());
-DecorationRegistry.register('boat', new GLTFModelFactory('assets/boat-model-1.glb'));
-DecorationRegistry.register('polarBear', new GLTFModelFactory('assets/polar-bear-model-1.glb'));
-DecorationRegistry.register('hippo', new GLTFModelFactory('assets/hippo-model-1.glb'));
-DecorationRegistry.register('alligator', new GLTFModelFactory('assets/alligator-model-1.glb'));
-DecorationRegistry.register('penguinKayak', new GLTFModelFactory('assets/penguin-kayak-model-1.glb'));
-DecorationRegistry.register('brownBear', new GLTFModelFactory('assets/brown-bear-model-1.glb'));
-DecorationRegistry.register('monkey', new GLTFModelFactory('assets/monkey-model-1.glb'));
-DecorationRegistry.register('moose', new GLTFModelFactory('assets/moose-model-1.glb'));
-DecorationRegistry.register('duckling', new GLTFModelFactory('assets/duckling-model-1.glb'));
-DecorationRegistry.register('depot', new GLTFModelFactory('assets/depot-model-1.glb'));
-DecorationRegistry.register('trex', new GLTFModelFactory('assets/t-rex-model-1.glb'));
-DecorationRegistry.register('triceratops', new GLTFModelFactory('assets/triceratops-model-1.glb'));
-DecorationRegistry.register('brontosaurus', new GLTFModelFactory('assets/brontosaurus-model-1.glb'));
-DecorationRegistry.register('pterodactyl', new GLTFModelFactory('assets/pterodactyl-model-1.glb'));
-DecorationRegistry.register('butterfly', new GLTFModelFactory('assets/butterfly-model-1.glb'));
-DecorationRegistry.register('dolphin', new GLTFModelFactory('assets/dolphin-model-1.glb'));
-DecorationRegistry.register('bluebird', new GLTFModelFactory('assets/bluebird-model-1.glb'));
-DecorationRegistry.register('egret', new GLTFModelFactory('assets/egret-model-1.glb'));
-DecorationRegistry.register('swan', new GLTFModelFactory('assets/swan-model-1.glb'));
-DecorationRegistry.register('dragonfly', new GLTFModelFactory('assets/dragonfly-model-1.glb'));
-DecorationRegistry.register('snake', new GLTFModelFactory('assets/snake-model-1.glb'));
-DecorationRegistry.register('turtle', new GLTFModelFactory('assets/turtle-model-1.glb'));
-DecorationRegistry.register('mangrove', new MangroveFactory());
-DecorationRegistry.register('lsystem-tree', new LSystemTreeFactory());
-DecorationRegistry.register('lsystem-flower', new LSystemFlowerFactory());
-
-
+Object.entries(DECORATION_FACTORIES).forEach(([name, factory]) => {
+  DecorationRegistry.register(name as DecorationId, factory as any);
+});
 
 export class Decorations {
 
-  static async preload(): Promise<void> {
-    await DecorationRegistry.loadAll();
+  static isDecorationId(id: string): id is DecorationId {
+    return id in DECORATION_FACTORIES;
+  }
+
+  static async preload(names?: DecorationId[]): Promise<void> {
+    await DecorationRegistry.loadFiltered((name, factory) => {
+      // Always load non-GLTF models as they may have internal caches that need initialization
+      const isGLTF = factory instanceof GLTFModelFactory;
+      const explicit = names && names.includes(name as DecorationId);
+      return !isGLTF || explicit;
+    });
+  }
+
+  /**
+   * Triggers a load in the background without awaiting it.
+   */
+  static loadBackground(name: DecorationId): void {
+    DecorationRegistry.load(name).catch(err => {
+      console.error(`Failed to background load ${name}:`, err);
+    });
+  }
+
+  /**
+   * Ensures all assets in array are loaded.
+   */
+  static *ensureAllLoaded(names: DecorationId[]): Generator<void | Promise<void>, void, unknown> {
+    for (const name of names) {
+      const promise = DecorationRegistry.load(name);
+      if (promise) yield promise;
+    }
   }
 
   /**
@@ -163,7 +197,7 @@ export class Decorations {
   static getSnake() { return this.getModelAndAnimations('snake'); }
   static getTurtle() { return this.getModelAndAnimations('turtle'); }
 
-  private static getModelAndAnimations(name: string): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
+  private static getModelAndAnimations(name: DecorationId): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
     try {
       const factory = DecorationRegistry.getFactory(name);
       const model = factory.create();

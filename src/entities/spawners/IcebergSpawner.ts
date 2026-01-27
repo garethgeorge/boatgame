@@ -1,12 +1,17 @@
 import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { Iceberg } from '../../entities/obstacles/Iceberg';
+import { Decorations } from '../../world/Decorations';
 
 export class IcebergSpawner extends BaseSpawner {
   id = 'iceberg';
 
   protected getDensity(difficulty: number, zStart: number): number {
     return 0.05;
+  }
+
+  *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+    yield* Decorations.ensureAllLoaded(['polarBear']);
   }
 
   spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {

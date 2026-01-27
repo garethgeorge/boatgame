@@ -28,4 +28,9 @@ export abstract class AnimalSpawner extends BaseSpawner {
      * @param options The spawn options.
      */
     abstract spawnAnimalAbsolute(options: AnimalSpawnOptions): boolean;
+
+    /**
+     * Ensures the models and assets required by this animal spawner are loaded.
+     */
+    abstract ensureLoaded(): Generator<void | Promise<void>, void, unknown>;
 }

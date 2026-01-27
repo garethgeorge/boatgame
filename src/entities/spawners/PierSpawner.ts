@@ -3,6 +3,7 @@ import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { Pier } from '../../entities/obstacles/Pier';
 import { RiverSystem } from '../../world/RiverSystem';
+import { Decorations } from '../../world/Decorations';
 
 export class PierSpawner extends BaseSpawner {
   id = 'pier';
@@ -11,6 +12,10 @@ export class PierSpawner extends BaseSpawner {
     const dist = Math.abs(zStart);
     if (dist < 200) return 0;
     return 0.0026;
+  }
+
+  *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+    yield* Decorations.ensureAllLoaded(['depot']);
   }
 
   spawnAt(context: SpawnContext, worldZ: number, biomeZRange: [number, number], forceDepot?: boolean): boolean {

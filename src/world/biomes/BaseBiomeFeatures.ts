@@ -31,10 +31,10 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         return { zMin: this.zMin, zMax: this.zMax };
     }
 
-    abstract decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown>;
-    abstract spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown>;
+    abstract decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown>;
+    abstract spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown>;
 
-    protected *spawnObstacles(spawner: Spawnable, context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown> {
+    protected *spawnObstacles(spawner: Spawnable, context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
         const count = spawner.getSpawnCount(context, difficulty, zStart, zEnd);
         return yield* spawner.spawn(context, count, zStart, zEnd, [this.zMin, this.zMax]);
     }

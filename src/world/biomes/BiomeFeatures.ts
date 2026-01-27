@@ -11,12 +11,12 @@ export interface BiomeFeatures {
     /**
      * Decorate the terrain with static meshes (trees, rocks, etc.)
      */
-    decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void, void, unknown>;
+    decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown>;
 
     /**
      * Spawn entities (animals, obstacles, etc.)
      */
-    spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void, void, unknown>;
+    spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown>;
 
     getFogDensity(): number;
     getFogRange(): { near: number, far: number };

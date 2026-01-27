@@ -66,7 +66,7 @@ export class TerrainChunk {
   public *getInitIterator(
     physicsEngine: PhysicsEngine,
     entityManager: EntityManager
-  ): Generator<void, void, unknown> {
+  ): Generator<void | Promise<void>, void, unknown> {
     console.log('Chunk init started');
     try {
       Profiler.start('GenMeshBatch');
@@ -74,7 +74,7 @@ export class TerrainChunk {
       let meshResult = meshIterator.next();
       while (!meshResult.done) {
         Profiler.pause('GenMeshBatch');
-        yield;
+        yield meshResult.value as void | Promise<void>;
         Profiler.resume('GenMeshBatch');
         meshResult = meshIterator.next();
       }
@@ -85,13 +85,7 @@ export class TerrainChunk {
       this.mesh = groundMesh;
       yield;
 
-      const waterIterator = this.generateWaterIterator();
-      let waterResult = waterIterator.next();
-      while (!waterResult.done) {
-        yield;
-        waterResult = waterIterator.next();
-      }
-      const waterMesh = waterResult.value;
+      const waterMesh = yield* this.generateWaterIterator();
 
       GraphicsUtils.disposeObject(this.waterMesh);
       this.waterMesh = waterMesh;
@@ -101,7 +95,7 @@ export class TerrainChunk {
       let decoResult = decoIterator.next();
       while (!decoResult.done) {
         Profiler.pause('GenDecoBatch');
-        yield;
+        yield decoResult.value as void | Promise<void>;
         Profiler.resume('GenDecoBatch');
         decoResult = decoIterator.next();
       }
@@ -121,7 +115,7 @@ export class TerrainChunk {
       let spawnResult = spawnIterator.next();
       while (!spawnResult.done) {
         Profiler.pause('SpawnObstacles');
-        yield;
+        yield spawnResult.value;
         Profiler.resume('SpawnObstacles');
         spawnResult = spawnIterator.next();
       }
@@ -132,7 +126,7 @@ export class TerrainChunk {
     }
   }
 
-  private *generateDecorationsIterator(): Generator<void, THREE.Group, unknown> {
+  private *generateDecorationsIterator(): Generator<void | Promise<void>, THREE.Group, unknown> {
     const geometryGroup = new THREE.Group();
     const geometriesByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
     const instancedData = new Map<THREE.BufferGeometry, Map<THREE.Material, { matrix: THREE.Matrix4, color?: THREE.Color }[]>>();
@@ -157,7 +151,7 @@ export class TerrainChunk {
     return geometryGroup;
   }
 
-  public *spawnObstaclesIterator(physicsEngine: PhysicsEngine, entityManager: EntityManager): Generator<void, void, unknown> {
+  public *spawnObstaclesIterator(physicsEngine: PhysicsEngine, entityManager: EntityManager): Generator<void | Promise<void>, void, unknown> {
     const zMin = this.zOffset;
     const zMax = zMin + TerrainChunk.CHUNK_SIZE;
 
@@ -180,7 +174,7 @@ export class TerrainChunk {
     }
   }
 
-  private *generateMeshIterator(): Generator<void, THREE.Mesh, unknown> {
+  private *generateMeshIterator(): Generator<void | Promise<void>, THREE.Mesh, unknown> {
     const chunkSize = TerrainChunk.CHUNK_SIZE;
     const chunkWidth = TerrainChunk.CHUNK_WIDTH;
     const resX = TerrainChunk.RESOLUTION_X;
@@ -320,7 +314,7 @@ export class TerrainChunk {
     GraphicsUtils.disposeObject(this.decorations);
   }
 
-  private *generateWaterIterator(): Generator<void, THREE.Mesh, unknown> {
+  private *generateWaterIterator(): Generator<void | Promise<void>, THREE.Mesh, unknown> {
     const geometry = new THREE.PlaneGeometry(
       TerrainChunk.CHUNK_WIDTH,
       TerrainChunk.CHUNK_SIZE,

@@ -4,12 +4,16 @@ import { SpawnContext } from '../Spawnable';
 import { RiverPlacementOptions } from '../../managers/PlacementHelper';
 import { RiverRock } from '../../entities/obstacles/RiverRock';
 import { RiverGeometrySample } from '../../world/RiverGeometry';
+import { Decorations } from '../../world/Decorations';
 
 export class RockSpawner extends BaseSpawner {
   id = 'rock';
 
   protected getDensity(difficulty: number, zStart: number): number {
     return 0.003;
+  }
+
+  *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
   }
 
   spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {

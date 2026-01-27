@@ -15,7 +15,7 @@ export class BrownBear extends AttackAnimal {
         physicsEngine: PhysicsEngine,
         options: AttackAnimalOptions
     ) {
-        super(physicsEngine, 'brownbear', Entity.TYPE_OBSTACLE, true,
+        super(physicsEngine, 'brownBear', Entity.TYPE_OBSTACLE, true,
             options,
             {
                 density: 5.0,

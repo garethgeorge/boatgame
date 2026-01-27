@@ -7,9 +7,11 @@ import { RiverPlacementOptions, ShorePlacementOptions } from '../../managers/Pla
 import { AnimalSpawner, AnimalSpawnOptions } from './AnimalSpawner';
 import { FlyingAnimalOptions } from '../obstacles/FlyingAnimal';
 import * as THREE from 'three';
+import { DecorationId, Decorations } from '../../world/Decorations';
 
 export interface FlyingAnimalSpawnConfig {
     id: string;
+    decorationIds: DecorationId[];
     getDensity: (difficulty: number, zStart: number) => number;
     factory: (physicsEngine: PhysicsEngine, options: FlyingAnimalOptions) => Entity;
     entityRadius?: number;
@@ -57,6 +59,10 @@ export class FlyingAnimalSpawner extends AnimalSpawner {
 
     protected spawnEntity(physicsEngine: PhysicsEngine, options: FlyingAnimalOptions): Entity {
         return this.config.factory(physicsEngine, options);
+    }
+
+    *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+        yield* Decorations.ensureAllLoaded(this.config.decorationIds);
     }
 
     spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {

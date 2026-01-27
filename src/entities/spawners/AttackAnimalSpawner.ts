@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { DecorationId, Decorations } from '../../world/Decorations';
 import { Spawnable, SpawnContext } from '../Spawnable';
 import { RiverSystem } from '../../world/RiverSystem';
 import { RiverGeometry, RiverGeometrySample } from '../../world/RiverGeometry';
@@ -10,6 +11,7 @@ import { AnimalSpawner, AnimalSpawnOptions } from './AnimalSpawner';
 
 export interface AttackAnimalSpawnConfig {
     id: string;
+    decorationIds: DecorationId[];
     getDensity: (difficulty: number, zStart: number) => number;
     factory: (physicsEngine: PhysicsEngine, options: AttackAnimalOptions) => Entity;
     shoreProbability?: number;
@@ -59,6 +61,10 @@ export class AttackAnimalSpawner extends AnimalSpawner {
 
     protected spawnEntity(physicsEngine: PhysicsEngine, options: AttackAnimalOptions): Entity {
         return this.config.factory(physicsEngine, options);
+    }
+
+    *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+        yield* Decorations.ensureAllLoaded(this.config.decorationIds);
     }
 
     spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {

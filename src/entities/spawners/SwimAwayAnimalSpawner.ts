@@ -7,9 +7,11 @@ import { RiverGeometry, RiverGeometrySample } from '../../world/RiverGeometry';
 import { AnimalSpawner, AnimalSpawnOptions } from './AnimalSpawner';
 import { SwimAwayAnimalBehavior, SwimAwayAnimalOptions } from '../obstacles/SwimAwayAnimal';
 import { RiverSystem } from '../../world/RiverSystem';
+import { DecorationId, Decorations } from '../../world/Decorations';
 
 export interface SwimAwayAnimalSpawnConfig {
     id: string;
+    decorationIds: DecorationId[];
     getDensity: (difficulty: number, zStart: number) => number;
     factory: (physicsEngine: PhysicsEngine, options: SwimAwayAnimalOptions) => Entity;
     heightInWater: number;
@@ -48,6 +50,10 @@ export class SwimAwayAnimalSpawner extends AnimalSpawner {
     }
     protected getDensity(difficulty: number, zStart: number): number {
         return this.config.getDensity(difficulty, zStart);
+    }
+
+    *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+        yield* Decorations.ensureAllLoaded(this.config.decorationIds);
     }
 
     spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {

@@ -14,6 +14,11 @@ export class WaterGrassSpawner extends BaseSpawner {
         return 0.005;
     }
 
+    *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+        const promise = WaterGrass.preload();
+        if (promise) yield promise;
+    }
+
     spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {
         // Fallback simple spawn logic if not driven by layout
         // Bias towards shores

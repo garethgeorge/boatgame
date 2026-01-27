@@ -27,17 +27,25 @@ export class BoatPathLayoutSpawner {
         zStart: number,
         zEnd: number,
         biomeZRange: [number, number]
-    ): Generator<void, void, unknown> {
+    ): Generator<void | Promise<void>, void, unknown> {
         if (!layout) return;
 
-        // Map world Z range to path indices
+        const spawners = EntitySpawners.getInstance();
+
         const iChunkStart = RiverGeometry.getPathIndexByZ(layout.path, zStart);
         const iChunkEnd = RiverGeometry.getPathIndexByZ(layout.path, zEnd);
-
         const iChunkMin = Math.min(iChunkStart, iChunkEnd);
         const iChunkMax = Math.max(iChunkStart, iChunkEnd);
 
-        const spawners = EntitySpawners.getInstance();
+        // Gatekeeping: identify needed models and ensure all loaded
+        const neededIds = new Set<EntityIds>();
+        for (const section of layout.sections) {
+            if (section.iEnd <= iChunkMin || section.iStart >= iChunkMax) continue;
+            for (const entityTypeStr of Object.keys(section.placements)) {
+                neededIds.add(entityTypeStr as EntityIds);
+            }
+        }
+        yield* spawners.ensureAllLoaded(Array.from(neededIds));
 
         let countSinceYield = 0;
         for (const section of layout.sections) {
@@ -108,7 +116,7 @@ export class BoatPathLayoutSpawner {
                             case EntityIds.WATER_GRASS:
                                 spawners.waterGrass().spawnInRiverAbsolute(context, sample, p.range);
                                 break;
-                            
+
                             case EntityIds.LILLY_PAD_PATCH:
                                 spawners.lillyPadPatch().spawnInRiverAbsolute(context, sample, p.range);
                                 break;

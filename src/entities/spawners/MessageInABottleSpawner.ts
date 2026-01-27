@@ -4,12 +4,16 @@ import { MessageInABottle } from '../../entities/obstacles/MessageInABottle';
 import { RiverSystem } from '../../world/RiverSystem';
 import { RiverGeometrySample } from '../../world/RiverGeometry';
 import { RiverPlacementOptions } from '../../managers/PlacementHelper';
+import { Decorations } from '../../world/Decorations';
 
 export class MessageInABottleSpawner extends BaseSpawner {
   id = 'bottle';
 
   protected getDensity(difficulty: number, zStart: number): number {
     return 1 / 400 + 1 / 400 * Math.random();
+  }
+
+  *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
   }
 
   *spawn(context: SpawnContext, count: number, zStart: number, zEnd: number, biomeZRange: [number, number]): Generator<void, void, unknown> {

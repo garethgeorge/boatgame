@@ -2,6 +2,7 @@ import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { SmallMangrove, LargeMangrove } from '../../entities/obstacles/Mangrove';
 import { RiverSystem } from '../../world/RiverSystem';
+import { Decorations } from '../../world/Decorations';
 
 export class MangroveSpawner extends BaseSpawner {
   id = 'mangrove';
@@ -12,6 +13,9 @@ export class MangroveSpawner extends BaseSpawner {
 
   protected getDensity(difficulty: number, zStart: number): number {
     return this.density;
+  }
+
+  *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
   }
 
   spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {

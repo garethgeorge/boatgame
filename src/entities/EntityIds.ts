@@ -3,8 +3,8 @@ export enum EntityIds {
     ALLIGATOR = 'alligator',
     BRONTOSAURUS = 'brontosaurus',
     TREX = 'trex',
-    BROWN_BEAR = 'brownbear',
-    POLAR_BEAR = 'polarbear',
+    BROWN_BEAR = 'brownBear',
+    POLAR_BEAR = 'polarBear',
     HIPPO = 'hippo',
     MONKEY = 'monkey',
     MOOSE = 'moose',
@@ -29,6 +29,6 @@ export enum EntityIds {
     LILLY_PAD_PATCH = 'lilly_pad_patch',
     PIER = 'pier',
     ICEBERG = 'iceberg',
-    PENGUIN_KAYAK = 'penguin_kayak',
+    PENGUIN_KAYAK = 'penguinKayak',
     SWAN = 'swan'
 }

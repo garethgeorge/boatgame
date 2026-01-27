@@ -12,7 +12,11 @@ import { EntityManager } from '../core/EntityManager';
 
 export class TerrainManager {
   private chunks: Map<number, TerrainChunk> = new Map();
-  private loadingChunks: Map<number, { chunk: TerrainChunk, iterator: Generator<void, void, unknown> }> = new Map();
+  private loadingChunks: Map<number, {
+    chunk: TerrainChunk,
+    iterator: Generator<void | Promise<void>, void, unknown>,
+    activePromise?: Promise<void>
+  }> = new Map();
   private collisionBodies: planck.Body[] = [];
   private collisionMeshes: THREE.Mesh[] = [];
 
@@ -40,14 +44,30 @@ export class TerrainManager {
   public generate(timeMs: number) {
     const startTime = performance.now();
 
-    for (const [index, { chunk, iterator }] of this.loadingChunks) {
+    for (const [index, entry] of this.loadingChunks) {
       // Check if time is up
       if (performance.now() - startTime >= timeMs) {
         break;
       }
 
+      // If chunk is waiting on a promise, skip it
+      if (entry.activePromise) {
+        continue;
+      }
+
+      const { chunk, iterator } = entry;
+
       // Step the generator
       const result = iterator.next();
+
+      if (result.value instanceof Promise) {
+        // Chunk yielded a promise (e.g., waiting for model load)
+        const promise = result.value;
+        entry.activePromise = promise;
+        promise.finally(() => {
+          entry.activePromise = undefined;
+        });
+      }
 
       if (result.done) {
         // Chunk is fully initialized
