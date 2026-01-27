@@ -7,8 +7,8 @@ import { BoatPathLayout, BoatPathLayoutStrategy, PatternConfigs, TrackConfig } f
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
-import { RIVERLAND_DECORATION_RULES } from './decorations/RiverlandDecorationRules';
-import { PARKLAND_DECORATION_RULES } from './decorations/ParklandDecorationRules';
+import { TierRule } from '../decorators/PoissonDecorationRules';
+import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 
 
 /**
@@ -42,10 +42,64 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return 0.5;
     }
 
+    private riverlandRules(): DecorationRule[] {
+        const rules = [
+            new TierRule({
+                species: [
+                    SpeciesRules.elm_tree(),
+                    SpeciesRules.box_elder(),
+                    SpeciesRules.japanese_maple(),
+                ]
+            }),
+            new TierRule({
+                species: [
+                    SpeciesRules.daisy(),
+                    SpeciesRules.lily()
+                ]
+            })
+        ];
+        return rules;
+    }
+
+    private parklandRules(): DecorationRule[] {
+        const rules = [
+            new TierRule({
+                species: [
+                    SpeciesRules.willow_tree(),
+                    SpeciesRules.oak_tree({
+                        fitness: 1.0, linearDistance: [20, 50], elevation: [3, 20], slope: [0, 50]
+                    })
+                ]
+            }),
+            new TierRule({
+                species: [
+                    SpeciesRules.poplar_tree()
+                ]
+            }),
+            new TierRule({
+                species: [
+                    SpeciesRules.rock({
+                        stepDistance: [3, 20], elevation: [6, Infinity], slope: [50, Infinity]
+                    }),
+                ]
+            }),
+            new TierRule({
+                species: [
+                    SpeciesRules.daisy(),
+                    SpeciesRules.lily()
+                ]
+            })
+        ];
+        return rules;
+    }
+
     private getDecorationRules(): DecorationRule[] {
         if (!this.decorationRules) {
-            this.decorationRules = Math.random() < 0.5 ?
-                RIVERLAND_DECORATION_RULES : PARKLAND_DECORATION_RULES;
+            if (Math.random() < 0.5) {
+                this.decorationRules = this.parklandRules();
+            } else {
+                this.decorationRules = this.riverlandRules();
+            }
         }
         return this.decorationRules;
     }

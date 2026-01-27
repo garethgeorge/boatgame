@@ -6,8 +6,9 @@ import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
-import { TerrainDecorator } from '../decorators/TerrainDecorator';
-import { FOREST_DECORATION_RULES } from './decorations/ForestDecorationRules';
+import { DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
+import { TierRule } from '../decorators/PoissonDecorationRules';
+import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';
@@ -30,7 +31,20 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
         return 1.0;
     }
 
-    private decorationRules = FOREST_DECORATION_RULES;
+    private decorationRules: DecorationRule[] = [
+        new TierRule({
+            species: [
+                SpeciesRules.elder_tree(),
+                SpeciesRules.birch_tree(),
+                SpeciesRules.oak_tree({ fitness: 0.9, stepDistance: [5, 200] })
+            ]
+        }),
+        new TierRule({
+            species: [
+                SpeciesRules.rock({ fitness: 0.2, minFitness: 0.02, stepDistance: [2, 10] })
+            ]
+        })
+    ];
 
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;

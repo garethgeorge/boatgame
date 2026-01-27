@@ -5,9 +5,9 @@ export const Signal = {
     constant: (fitness: number) => (ctx: WorldContext) =>
         fitness,
 
-    // Scaled to [0,1]
+    // Scaled to [0,1]. Bigger sx, sy values make the noise vary more slowly
     noise2D: (sx: number, sy: number, dx: number = 0, dy: number = 0) => (ctx: WorldContext) =>
-        (ctx.noise2D(ctx.pos.x * sx + dx, ctx.pos.y * sy + dy) + 1) / 2.0,
+        (ctx.noise2D(ctx.pos.x / sx + dx, ctx.pos.y / sy + dy) + 1) / 2.0,
 
     distanceToRiver: (ctx: WorldContext) =>
         ctx.distanceToRiver,
