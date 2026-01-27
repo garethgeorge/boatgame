@@ -29,6 +29,7 @@ export class GameEngine {
     terrainManager!: TerrainManager;
 
     isPaused: boolean = true;
+    timeScale: number = 1.0;
     viewMode: 'close' | 'far' | 'birds' | 'birdsFar' = 'close';
 
     pendingContacts: Map<Entity, { type: string, subtype: any, boatPart: string }> = new Map();
@@ -109,7 +110,7 @@ export class GameEngine {
         requestAnimationFrame(() => this.animate());
 
         Profiler.start('Update');
-        const dt = this.clock.getDelta();
+        const dt = this.clock.getDelta() * this.timeScale;
         this.update(dt);
         if (this.onUpdate) this.onUpdate(dt);
         Profiler.end('Update');
@@ -132,33 +133,14 @@ export class GameEngine {
             this.inputManager.setOptions({ paused: this.isPaused });
         }
 
-        if (this.inputManager.wasPressed('debug')) {
-            DebugSettings.debugMode = !DebugSettings.debugMode;
-            DebugSettings.profilerVisible = DebugSettings.debugMode;
-            this.terrainManager.setDebug(DebugSettings.debugMode);
-            this.entityManager.setDebug(DebugSettings.debugMode);
-        }
-
-        if (this.inputManager.wasPressed('debugProfiler')) {
-            if (DebugSettings.profilerVisible && !DebugSettings.debugMode) {
-                DebugSettings.profilerVisible = false;
-            } else {
-                DebugSettings.profilerVisible = true;
-                DebugSettings.debugMode = false;
-            }
-            this.terrainManager.setDebug(DebugSettings.debugMode);
-            this.entityManager.setDebug(DebugSettings.debugMode);
-        }
+        // Debug sync (logic moved to DebugMenu)
+        this.terrainManager.setDebug(DebugSettings.geometryVisible);
+        this.entityManager.setDebug(DebugSettings.geometryVisible);
 
         if (this.inputManager.wasPressed('viewMode')) {
             const modes: ('close' | 'far' | 'birds' | 'birdsFar')[] = ['close', 'far', 'birds', 'birdsFar'];
             const idx = modes.indexOf(this.viewMode);
             this.viewMode = modes[(idx + 1) % modes.length];
-        }
-
-        if (this.inputManager.wasPressed('debugConsole')) {
-            DebugSettings.debugConsoleVisible = !DebugSettings.debugConsoleVisible;
-            DebugConsole.setVisibility(DebugSettings.debugConsoleVisible);
         }
 
         if (this.inputManager.wasPressed('skipBiome')) {

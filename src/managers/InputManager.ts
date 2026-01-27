@@ -1,4 +1,8 @@
-export type InputAction = 'forward' | 'backward' | 'left' | 'right' | 'stop' | 'viewMode' | 'debug' | 'debugProfiler' | 'debugConsole' | 'paused' | 'skipBiome';
+import { DebugSettings } from '../core/DebugSettings';
+
+export type InputAction =
+    'forward' | 'backward' | 'left' | 'right' | 'paused' |
+    'stop' | 'viewMode' | 'skipBiome' | 'toggleDebugMenu';
 
 export class InputManager {
     // State tracked directly from event listeners
@@ -14,9 +18,23 @@ export class InputManager {
     // Analog inputs (not boolean)
     public tilt: number = 0; // -1.0 to 1.0
 
+    private mobileOverride: boolean | null = null;
+    private readonly _isMobile: boolean;
+
 
     constructor() {
+        this._isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         this.init();
+    }
+
+    public isMobile(): boolean {
+        if (this.mobileOverride !== null) return this.mobileOverride;
+        return this._isMobile;
+    }
+
+    public setMobileOverride(isMobile: boolean | null) {
+        this.mobileOverride = isMobile;
+        console.log(`[InputManager] Mobile override set to: ${isMobile}`);
     }
 
     public setOptions(options: { paused?: boolean }) {
@@ -138,28 +156,29 @@ export class InputManager {
             case 'KeyD':
                 this.liveActions.add('right');
                 break;
-            case 'KeyX':
-                this.liveActions.add('stop');
-                break;
-            case 'KeyV':
-                this.liveActions.add('viewMode');
-                break;
-            case 'KeyZ':
-                if (e.shiftKey) {
-                    this.liveActions.add('debugProfiler');
-                } else {
-                    this.liveActions.add('debug');
-                }
-                break;
-            case 'KeyC':
-                this.liveActions.add('debugConsole');
-                break;
             case 'Space':
                 this.liveActions.add('paused');
                 e.preventDefault(); // Prevent scrolling
                 break;
+            case 'KeyX':
+                if (!DebugSettings.isRelease) {
+                    this.liveActions.add('stop');
+                }
+                break;
             case 'KeyB':
-                this.liveActions.add('skipBiome');
+                if (!DebugSettings.isRelease) {
+                    this.liveActions.add('skipBiome');
+                }
+                break;
+            case 'KeyV':
+                if (!DebugSettings.isRelease) {
+                    this.liveActions.add('viewMode');
+                }
+                break;
+            case 'KeyZ':
+                if (!DebugSettings.isRelease) {
+                    this.liveActions.add('toggleDebugMenu');
+                }
                 break;
         }
     }
@@ -186,21 +205,17 @@ export class InputManager {
             case 'KeyX':
                 this.liveActions.delete('stop');
                 break;
-            case 'KeyV':
-                this.liveActions.delete('viewMode');
-                break;
-            case 'KeyZ':
-                this.liveActions.delete('debug');
-                this.liveActions.delete('debugProfiler');
-                break;
-            case 'KeyC':
-                this.liveActions.delete('debugConsole');
-                break;
             case 'Space':
                 this.liveActions.delete('paused');
                 break;
             case 'KeyB':
                 this.liveActions.delete('skipBiome');
+                break;
+            case 'KeyV':
+                this.liveActions.delete('viewMode');
+                break;
+            case 'KeyZ':
+                this.liveActions.delete('toggleDebugMenu');
                 break;
         }
     }

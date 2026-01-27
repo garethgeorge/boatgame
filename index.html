@@ -76,7 +76,9 @@
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       /* iOS smooth scrolling */
-      display: none;
+      display: flex;
+      opacity: 0;
+      visibility: hidden;
       align-items: flex-start;
       justify-content: center;
       background: rgba(0, 0, 0, 0.7);
@@ -86,6 +88,12 @@
       padding-top: 40px;
       padding-bottom: 40px;
       box-sizing: border-box;
+      transition: opacity 0.5s ease, visibility 0.5s;
+    }
+
+    #instructions-overlay.visible {
+      opacity: 1;
+      visibility: visible;
     }
 
     #instructions-content {
@@ -230,6 +238,67 @@
       opacity: 0.8;
       font-family: monospace;
     }
+
+    #debug-menu {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.85);
+      color: #00ff00;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 9999;
+      font-family: 'Courier New', Courier, monospace;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      border: 1px solid #00ff00;
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+      pointer-events: auto;
+      min-width: 200px;
+    }
+
+    #debug-menu h3 {
+      margin: 0 0 10px 0;
+      font-size: 18px;
+      text-align: center;
+      border-bottom: 1px solid #00ff00;
+      padding-bottom: 5px;
+    }
+
+    .debug-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .debug-option input {
+      cursor: pointer;
+    }
+
+    #debug-menu button {
+      background: #333;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    #debug-menu button:hover {
+      background: #444;
+    }
+
+    #debug-menu select {
+      background: #333;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      font-family: inherit;
+    }
   </style>
 </head>
 
@@ -272,6 +341,29 @@
     </div>
     <div id="version-number">v0.0.13</div>
   </div>
+  <div id="debug-menu">
+    <h3>DEBUG MENU</h3>
+    <label class="debug-option">
+      <input type="checkbox" id="debug-geometry"> Geometry (Collisions)
+    </label>
+    <label class="debug-option">
+      <input type="checkbox" id="debug-profiler"> Profiler
+    </label>
+    <label class="debug-option">
+      <input type="checkbox" id="debug-console"> Console
+    </label>
+    <hr style="border: 0; border-top: 1px solid #00ff00; width: 100%;">
+    <button id="debug-reset-instructions">Reset Instructions</button>
+    <label class="debug-option" style="margin-top: 5px;">
+      Mode:
+      <select id="debug-mobile-mode">
+        <option value="auto">Auto</option>
+        <option value="mobile">Mobile</option>
+        <option value="desktop">Desktop</option>
+      </select>
+    </label>
+  </div>
+
   <script>
     const video = document.getElementById('bg-video');
     const unmuteBtn = document.getElementById('unmute-btn');

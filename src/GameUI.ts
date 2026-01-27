@@ -1,10 +1,15 @@
 import { GameThrottle } from './GameThrottle';
+import { DebugSettings } from './core/DebugSettings';
+import { Profiler } from './core/Profiler';
+import { DebugConsole } from './core/DebugConsole';
 
 export interface GameUIListeners {
     onStart: () => Promise<void>;
     getBoatThrottle: () => number;
     setBoatThrottle: (val: number) => void;
     isPaused: () => boolean;
+    onResetInstructions: () => void;
+    onSetMobileOverride: (isMobile: boolean | null) => void;
 }
 
 export class GameUI {
@@ -16,6 +21,7 @@ export class GameUI {
     scoreElement: HTMLElement;
     gameThrottle: GameThrottle;
     fuelElement: HTMLElement;
+    debugMenu: HTMLElement;
 
     constructor(listeners: GameUIListeners) {
         this.container = document.getElementById('game-container') as HTMLElement;
@@ -53,6 +59,64 @@ export class GameUI {
             instructions.style.marginTop = "10px";
             this.startScreen.appendChild(instructions);
         }
+
+        this.debugMenu = document.getElementById('debug-menu') as HTMLElement;
+        this.initDebugMenu(listeners);
+    }
+
+    private initDebugMenu(listeners: GameUIListeners) {
+        if (!this.debugMenu) return;
+
+        const geometryToggle = document.getElementById('debug-geometry') as HTMLInputElement;
+        const profilerToggle = document.getElementById('debug-profiler') as HTMLInputElement;
+        const consoleToggle = document.getElementById('debug-console') as HTMLInputElement;
+        const resetBtn = document.getElementById('debug-reset-instructions') as HTMLButtonElement;
+        const mobileSelect = document.getElementById('debug-mobile-mode') as HTMLSelectElement;
+
+        geometryToggle.checked = DebugSettings.geometryVisible;
+        profilerToggle.checked = DebugSettings.profilerVisible;
+        consoleToggle.checked = DebugSettings.debugConsoleVisible;
+
+        geometryToggle.addEventListener('change', () => {
+            DebugSettings.geometryVisible = geometryToggle.checked;
+        });
+
+        profilerToggle.addEventListener('change', () => {
+            DebugSettings.profilerVisible = profilerToggle.checked;
+            Profiler.setVisibility(DebugSettings.profilerVisible);
+        });
+
+        consoleToggle.addEventListener('change', () => {
+            DebugSettings.debugConsoleVisible = consoleToggle.checked;
+            DebugConsole.setVisibility(DebugSettings.debugConsoleVisible);
+        });
+
+        resetBtn.addEventListener('click', () => {
+            listeners.onResetInstructions();
+            alert('Instructions reset!');
+        });
+
+        mobileSelect.addEventListener('change', () => {
+            const val = mobileSelect.value;
+            if (val === 'auto') listeners.onSetMobileOverride(null);
+            else if (val === 'mobile') listeners.onSetMobileOverride(true);
+            else if (val === 'desktop') listeners.onSetMobileOverride(false);
+        });
+    }
+
+    public toggleDebugMenu() {
+        DebugSettings.debugMenuVisible = !DebugSettings.debugMenuVisible;
+        this.debugMenu.style.display = DebugSettings.debugMenuVisible ? 'flex' : 'none';
+
+        if (DebugSettings.debugMenuVisible) {
+            const geometryToggle = document.getElementById('debug-geometry') as HTMLInputElement;
+            const profilerToggle = document.getElementById('debug-profiler') as HTMLInputElement;
+            const consoleToggle = document.getElementById('debug-console') as HTMLInputElement;
+
+            if (geometryToggle) geometryToggle.checked = DebugSettings.geometryVisible;
+            if (profilerToggle) profilerToggle.checked = DebugSettings.profilerVisible;
+            if (consoleToggle) consoleToggle.checked = DebugSettings.debugConsoleVisible;
+        }
     }
 
     public setStartButtonVisible(visible: boolean) {
@@ -71,7 +135,7 @@ export class GameUI {
 
     public showInstructions(url: string, onDismiss: () => void) {
         console.log('[DEBUG] showInstructions() called with url:', url);
-        this.instructionsOverlay.style.display = 'flex';
+        this.instructionsOverlay.classList.add('visible');
         this.loadInstructionsContent(url, onDismiss);
     }
 
@@ -105,9 +169,11 @@ export class GameUI {
 
     private dismissInstructions(onDismiss: () => void) {
         console.log('[DEBUG] dismissInstructions() called');
-        this.instructionsOverlay.style.display = 'none';
-        this.instructionsContent.innerHTML = '';
-        onDismiss();
+        this.instructionsOverlay.classList.remove('visible');
+        setTimeout(() => {
+            this.instructionsContent.innerHTML = '';
+            onDismiss();
+        }, 500); // Match CSS transition duration
     }
 
     public updateScore(score: number) {
