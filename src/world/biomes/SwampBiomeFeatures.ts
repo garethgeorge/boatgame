@@ -97,6 +97,13 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     place: 'shore',
                     density: [1.5, 3.0],
                     types: [EntityIds.WATER_GRASS]
+                },
+                'lilly_patches': {
+                    logic: 'scatter',
+                    place: 'middle',
+                    density: [5.0, 10.0],
+                    minCount: 100,
+                    types: [EntityIds.LILLY_PAD_PATCH]
                 }
             },
             tracks: [
@@ -132,7 +139,8 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                             patterns: [
                                 [
                                     { pattern: 'log_scatter', weight: 3 },
-                                    { pattern: 'grass_patches', weight: 1.5 }
+                                    { pattern: 'grass_patches', weight: 1.5 },
+                                    { pattern: 'lilly_patches', weight: 6.0 }
                                 ]
                             ]
                         }

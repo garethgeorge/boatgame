@@ -46,7 +46,7 @@ export interface BoatPathLayout {
 }
 
 export type PatternLogic = 'scatter' | 'sequence' | 'gate' | 'staggered' | 'cluster';
-export type PlacementType = 'path' | 'slalom' | 'shore';
+export type PlacementType = 'path' | 'slalom' | 'shore' | 'middle';
 
 /**
  * Configuration for a single behavioral pattern of obstacle placement.
@@ -569,6 +569,10 @@ export class BoatPathLayoutStrategy {
                     [0.5 * pathPoint.bankDist, pathPoint.bankDist + 15] :
                     [-pathPoint.bankDist - 15, 0.5 * -pathPoint.bankDist];
             }
+        } else if (place === 'middle') {
+            return side === 'right' ?
+                [0, 0.5 * pathPoint.bankDist] :
+                [0.5 * -pathPoint.bankDist, 0];
         } else {
             // path, random position offset by +/-2
             return [pathPoint.boatXOffset - 2, pathPoint.boatXOffset + 2];

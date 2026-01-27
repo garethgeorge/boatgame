@@ -29,6 +29,7 @@ import { MessageInABottleSpawner } from './MessageInABottleSpawner';
 import { PierSpawner } from './PierSpawner';
 import { RockSpawner } from './RockSpawner';
 import { WaterGrassSpawner } from './WaterGrassSpawner';
+import { LillyPadPatchSpawner } from './LillyPadPatchSpawner';
 import { Bluebird } from '../obstacles/Bluebird';
 import { Egret } from '../obstacles/Egret';
 import { Swan } from '../obstacles/Swan';
@@ -46,6 +47,7 @@ export class EntitySpawners {
     private _pier: PierSpawner = new PierSpawner();
     private _rock: RockSpawner = new RockSpawner();
     private _waterGrass: WaterGrassSpawner = new WaterGrassSpawner();
+    private _lillyPadPatch: LillyPadPatchSpawner = new LillyPadPatchSpawner();
 
     private attackConfigs: AttackAnimalSpawnConfig[] = [
         {
@@ -249,4 +251,5 @@ export class EntitySpawners {
     public pier(): PierSpawner { return this._pier; }
     public rock(): RockSpawner { return this._rock; }
     public waterGrass(): WaterGrassSpawner { return this._waterGrass; }
+    public lillyPadPatch(): LillyPadPatchSpawner { return this._lillyPadPatch; }
 }
