@@ -100,17 +100,21 @@ export class LillyPadPatch extends Entity {
         const area = Math.PI * (width / 2) * (length / 2);
         const count = Math.ceil(area * 0.4); 
 
+        // Pad Data
+        interface PadData { x: number, z: number, radius: number }
+        const pads: PadData[] = [];
+
         const padGeometries: THREE.BufferGeometry[] = [];
         
         // Flower parts
         const stalkGeometries: THREE.BufferGeometry[] = [];
         const petalGeometries: THREE.BufferGeometry[] = [];
-        const centerGeometries: THREE.BufferGeometry[] = [];
-
+        
         // Materials for flowers need to be captured from instances or assumed
         let stalkMaterial: THREE.Material | null = null;
         let petalMaterial: THREE.Material | null = null;
 
+        // 1. Generate Pads
         for (let i = 0; i < count; i++) {
             // Random point in ellipse
             const r = Math.sqrt(Math.random());
@@ -120,15 +124,15 @@ export class LillyPadPatch extends Entity {
 
             const scale = 0.5 + Math.random() * 0.5; // Random size
 
-            // --- 1. LILLY PAD ---
-            // Increased radius relative to flower (was 0.8 * scale, now 1.2 * scale for 1.5x bigger)
+            // --- LILLY PAD ---
             const padRadius = 1.2 * scale; 
             const thickness = 0.05 * scale; // Visual thickness
             const notchAngle = 0.5; // radians
             const totalAngle = Math.PI * 2 - notchAngle;
             
+            pads.push({ x: lx, z: lz, radius: padRadius });
+
             // CylinderGeometry(radiusTop, radiusBottom, height, radialSegments, heightSegments, openEnded, thetaStart, thetaLength)
-            // Default Cylinder is vertical (Y-axis), which is what we want for "flat on water" if we consider thickness is Y.
             const padGeo = new THREE.CylinderGeometry(padRadius, padRadius, thickness, 12, 1, false, notchAngle / 2, totalAngle);
             
             // Rotate randomly
@@ -136,66 +140,115 @@ export class LillyPadPatch extends Entity {
             padGeo.rotateY(rotation);
 
             // Translate
-            // Center is at 0,0,0 local (so it dips below 0 by thickness/2)
             // We want it slightly above water (0.02)
             padGeo.translate(lx, 0.02 + thickness / 2, lz);
 
             padGeometries.push(padGeo);
 
-            // --- 2. FLOWER (1 in 9 chance) ---
-            if (Math.random() < 0.11) {
+            // --- LILY FLOWER (on top of pad) ---
+            // 5% chance to have a flower on the pad (reduced from 20%)
+            if (Math.random() < 0.05) {
                  const flowerInstances = Decorations.getLSystemFlowerInstance({
-                     kind: 'waterlily',
-                     scale: scale * 0.5 // Slightly smaller relative to the new giant pad
+                     kind: 'lily',
+                     scale: scale * 0.5 
                  });
 
                  for (const instance of flowerInstances) {
                      const geo = instance.geometry.clone();
-                     
-                     // Skip empty geometries (e.g. waterlilies have no stalks)
-                     if (!geo.attributes.position) {
-                         geo.dispose();
-                         continue;
-                     }
-
-                     // Apply instance matrix (which includes scale)
+                     if (!geo.attributes.position) { geo.dispose(); continue; }
                      geo.applyMatrix4(instance.matrix);
+                     geo.translate(lx, 0.05, lz); // On top of pad
 
-                     // Position on the pad (at lx, lz)
-                     // Flowers usually sit on top.
-                     geo.translate(lx, 0.05, lz); // Slightly above pad
-
-                     // Apply Color to Vertices
+                     // Apply Color
                      const color = instance.color;
-                     const rgb = [color.r, color.g, color.b];
                      const count = geo.attributes.position.count;
                      const colors = new Float32Array(count * 3);
                      for(let k=0; k<count; k++) {
-                         colors[k*3] = rgb[0];
-                         colors[k*3+1] = rgb[1];
-                         colors[k*3+2] = rgb[2];
+                         colors[k*3] = color.r;
+                         colors[k*3+1] = color.g;
+                         colors[k*3+2] = color.b;
                      }
                      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-                     // Sort into buckets
-                     // We identify based on material name or type
-                     // LSystemFlowerFactory uses 'LSystemFlower - Stalk' and 'LSystemFlower - Petal'
                      const matName = instance.material.name;
                      if (matName.includes('Stalk')) {
                          stalkGeometries.push(geo);
                          if (!stalkMaterial) stalkMaterial = instance.material;
-                     } else if (matName.includes('Petal')) {
-                         // Centers also use Petal material in the factory
-                         // But we can check if it's a center by geometry type if needed?
-                         // Actually merging them all into Petal is fine as long as they use the same shader.
-                         // But Center might be 'center' part.
-                         // The factory groups center and petal separately in createInstance but uses same material.
+                     } else {
                          petalGeometries.push(geo);
                          if (!petalMaterial) petalMaterial = instance.material;
-                     } else {
-                         // Fallback
-                         petalGeometries.push(geo);
                      }
+                 }
+            }
+        }
+
+        // 2. Generate Water Lilies (in between pads)
+        // Aim for roughly 1/8th as many water lilies as pads (reduced from 1/2)
+        const waterLilyCount = Math.ceil(count * 0.125);
+        let placed = 0;
+        let attempts = 0;
+        
+        while (placed < waterLilyCount && attempts < waterLilyCount * 10) {
+            attempts++;
+            
+            // Random point in ellipse
+            const r = Math.sqrt(Math.random());
+            const theta = Math.random() * Math.PI * 2;
+            const lx = (width / 2) * r * Math.cos(theta);
+            const lz = (length / 2) * r * Math.sin(theta);
+            
+            const scale = 0.5 + Math.random() * 0.5;
+            // Approximate radius of a water lily (3.0 length * 0.5 scale = 1.5 radius)
+            // Use a bit conservative radius for collision check
+            const flowerRadius = 1.0 * scale; 
+
+            // Check collision with pads
+            let collision = false;
+            for (const pad of pads) {
+                const dx = lx - pad.x;
+                const dz = lz - pad.z;
+                const distSq = dx*dx + dz*dz;
+                const minDist = pad.radius + flowerRadius;
+                if (distSq < minDist * minDist) {
+                    collision = true;
+                    break;
+                }
+            }
+            
+            if (collision) continue;
+
+            // Place Water Lily
+            placed++;
+            const flowerInstances = Decorations.getLSystemFlowerInstance({
+                 kind: 'waterlily',
+                 scale: scale * 0.5 
+            });
+
+            for (const instance of flowerInstances) {
+                 const geo = instance.geometry.clone();
+                 if (!geo.attributes.position) { geo.dispose(); continue; }
+                 geo.applyMatrix4(instance.matrix);
+                 // Water lilies sit on water surface (y=0), maybe slightly up to avoid z-fight
+                 geo.translate(lx, 0.01, lz); 
+
+                 // Apply Color
+                 const color = instance.color;
+                 const count = geo.attributes.position.count;
+                 const colors = new Float32Array(count * 3);
+                 for(let k=0; k<count; k++) {
+                     colors[k*3] = color.r;
+                     colors[k*3+1] = color.g;
+                     colors[k*3+2] = color.b;
+                 }
+                 geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+                 const matName = instance.material.name;
+                 if (matName.includes('Stalk')) {
+                     stalkGeometries.push(geo);
+                     if (!stalkMaterial) stalkMaterial = instance.material;
+                 } else {
+                     petalGeometries.push(geo);
+                     if (!petalMaterial) petalMaterial = instance.material;
                  }
             }
         }
@@ -218,12 +271,6 @@ export class LillyPadPatch extends Entity {
              // Ensure material supports vertex colors
             const mat = stalkMaterial.clone(); 
             mat.vertexColors = true;
-            // We need to register this new material variant? 
-            // Or just modify the instance material? 
-            // Ideally we shouldn't modify the static material from the factory.
-            // But we don't want to create 1000 materials.
-            // Let's create a shared one for patches if possible.
-            // For now, new material is safer.
             
             const mesh = GraphicsUtils.createMesh(merged, mat, 'LillyPadPatch-Stalks');
             group.add(mesh);
@@ -232,7 +279,7 @@ export class LillyPadPatch extends Entity {
 
         if (petalGeometries.length > 0 && petalMaterial) {
             const merged = BufferGeometryUtils.mergeGeometries(petalGeometries);
-            // petalMaterial from factory already has vertexColors: true (it's LeafShader-based)
+            // petalMaterial from factory already has vertexColors: true
             const mesh = GraphicsUtils.createMesh(merged, petalMaterial, 'LillyPadPatch-Petals');
             group.add(mesh);
             petalGeometries.forEach(g => g.dispose());
