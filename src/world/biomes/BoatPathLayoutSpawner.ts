@@ -108,6 +108,10 @@ export class BoatPathLayoutSpawner {
                             case EntityIds.WATER_GRASS:
                                 spawners.waterGrass().spawnInRiverAbsolute(context, sample, p.range);
                                 break;
+                            
+                            case EntityIds.LILLY_PAD_PATCH:
+                                spawners.lillyPadPatch().spawnInRiverAbsolute(context, sample, p.range);
+                                break;
 
                             case EntityIds.ALLIGATOR:
                             case EntityIds.BLUEBIRD:

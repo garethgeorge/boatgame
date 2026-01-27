@@ -26,6 +26,7 @@ export enum EntityIds {
     BOTTLE = 'bottle',
     MANGROVE = 'mangrove',
     WATER_GRASS = 'water_grass',
+    LILLY_PAD_PATCH = 'lilly_pad_patch',
     PIER = 'pier',
     ICEBERG = 'iceberg',
     PENGUIN_KAYAK = 'penguin_kayak',
