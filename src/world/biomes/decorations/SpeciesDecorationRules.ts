@@ -1,6 +1,7 @@
 import { MathUtils } from "../../../core/MathUtils";
 import { Combine, Signal } from "../../decorators/PoissonDecorationRules";
 import { WorldContext } from "../../decorators/PoissonDecorationStrategy";
+import { FlowerPalettes } from "../../decorators/FlowerPalettes";
 
 export interface FitnessParams {
     // overall fitness multiplier
@@ -233,7 +234,7 @@ export class SpeciesRules {
         };
     }
 
-    public static daisy() {
+    public static daisy(paletteName: string = 'daisy') {
         return {
             id: 'daisy',
             preference: Combine.all(
@@ -242,18 +243,20 @@ export class SpeciesRules {
                 Signal.inRange(Signal.slope, 0, 15),
                 Signal.step(Signal.noise2D(100.0, 100.0, Math.random(), Math.random()), 0.7),
             ),
-            params: (ctx) => {
+            params: (ctx: WorldContext) => {
                 const scale = 0.7 + ctx.random() * 0.5;
+                const palette = FlowerPalettes.getPalette(paletteName);
+                const petalColor = FlowerPalettes.getInterpolatedColor(palette, ctx.random());
                 return {
                     groundRadius: 0.8 * scale,
                     spacing: 2 * scale,
-                    options: { kind: 'daisy', rotation: ctx.random() * Math.PI * 2, scale }
+                    options: { kind: 'daisy', rotation: ctx.random() * Math.PI * 2, scale, petalColor }
                 };
             }
         };
     }
 
-    public static lily() {
+    public static lily(paletteName: string = 'lily') {
         return {
             id: 'lily',
             preference: Combine.all(
@@ -262,12 +265,14 @@ export class SpeciesRules {
                 Signal.inRange(Signal.slope, 0, 15),
                 Signal.step(Signal.noise2D(100.0, 100.0, Math.random(), Math.random()), 0.7),
             ),
-            params: (ctx) => {
+            params: (ctx: WorldContext) => {
                 const scale = 0.7 + ctx.random() * 0.5;
+                const palette = FlowerPalettes.getPalette(paletteName);
+                const petalColor = FlowerPalettes.getInterpolatedColor(palette, ctx.random());
                 return {
                     groundRadius: 1 * scale,
                     spacing: 2 * scale,
-                    options: { kind: 'lily', rotation: ctx.random() * Math.PI * 2, scale }
+                    options: { kind: 'lily', rotation: ctx.random() * Math.PI * 2, scale, petalColor }
                 };
             }
         };

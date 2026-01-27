@@ -8,9 +8,10 @@ import { DecorationInstance, Decorations, LSystemTreeKind, LSystemFlowerKind } f
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export interface DecorationOptions {
-    kind: LSystemTreeKind | LSystemFlowerKind | 'flower' | 'rock';
+    kind: LSystemTreeKind | LSystemFlowerKind | 'rock';
     rotation: number;
     scale: number;
+    petalColor?: number;
 }
 
 export class TerrainDecorator {
@@ -175,7 +176,7 @@ export class TerrainDecorator {
                 case 'waterlily': {
                     const flowerInstances = Decorations.getLSystemFlowerInstance({
                         kind: opts.kind,
-                        petalColor: GraphicsUtils.getRandomColor(1.0, 0.5)
+                        petalColor: opts.petalColor ?? 0xffffff
                     });
                     tryPlace(flowerInstances, pos, opts);
                     break;
