@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 
-export interface FlowerPalette {
+export interface ColorPalette {
     colors: number[];
 }
 
-export class FlowerPalettes {
-    public static readonly DAISY: FlowerPalette = {
+export class ColorPalettes {
+    public static readonly DAISY: ColorPalette = {
         colors: [
             0x0000ff, // Bright Blue
             0x8a2be2, // Blue Violet
@@ -15,7 +15,7 @@ export class FlowerPalettes {
         ]
     };
 
-    public static readonly LILY: FlowerPalette = {
+    public static readonly LILY: ColorPalette = {
         colors: [
             0xff0000, // Red
             0xff4500, // Orange Red
@@ -25,15 +25,38 @@ export class FlowerPalettes {
         ]
     };
 
-    private static readonly PALETTES: Record<string, FlowerPalette> = {
+    public static readonly FALL_YELLOW: ColorPalette = {
+        colors: [
+            0xDEB887, // Burlywood
+            0xF4A460, // Sandy Brown
+            0xDAA520, // Goldenrod
+            0xFFD700, // Gold
+            0xFFFF00, // Yellow
+        ]
+    };
+
+    public static readonly FALL_RED_ORANGE: ColorPalette = {
+        colors: [
+            0x8B0000, // Dark Red
+            0xA52A2A, // Brown
+            0xD2691E, // Chocolate
+            0xE9967A, // Dark Salmon
+            0xFF4500, // Orange Red
+            0xFF8C00, // Dark Orange
+        ]
+    };
+
+    private static readonly PALETTES: Record<string, ColorPalette> = {
         'daisy': this.DAISY,
         'lily': this.LILY,
+        'fall_yellow': this.FALL_YELLOW,
+        'fall_red_orange': this.FALL_RED_ORANGE,
     };
 
     /**
      * Returns a color interpolated from the given palette based on t (0-1).
      */
-    public static getInterpolatedColor(palette: FlowerPalette, t: number): number {
+    public static getInterpolatedColor(palette: ColorPalette, t: number): number {
         if (palette.colors.length === 0) return 0xffffff;
         if (palette.colors.length === 1) return palette.colors[0];
 
@@ -54,7 +77,7 @@ export class FlowerPalettes {
     /**
      * Gets a palette by name. Defaults to DAISY if not found.
      */
-    public static getPalette(name: string): FlowerPalette {
+    public static getPalette(name: string): ColorPalette {
         return this.PALETTES[name.toLowerCase()] || this.DAISY;
     }
 }

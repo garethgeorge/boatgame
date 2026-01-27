@@ -34,9 +34,9 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     private decorationRules: DecorationRule[] = [
         new TierRule({
             species: [
-                SpeciesRules.elder_tree(),
-                SpeciesRules.birch_tree(),
-                SpeciesRules.oak_tree({ fitness: 0.9, stepDistance: [5, 200] })
+                SpeciesRules.elder_tree('fall_yellow'),
+                SpeciesRules.birch_tree('fall_yellow'),
+                SpeciesRules.oak_tree({ fitness: 0.9, stepDistance: [5, 200] }, 'fall_red_orange')
             ]
         }),
         new TierRule({

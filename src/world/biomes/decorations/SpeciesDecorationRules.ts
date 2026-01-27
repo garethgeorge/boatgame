@@ -1,7 +1,7 @@
 import { MathUtils } from "../../../core/MathUtils";
 import { Combine, Signal } from "../../decorators/PoissonDecorationRules";
 import { WorldContext } from "../../decorators/PoissonDecorationStrategy";
-import { FlowerPalettes } from "../../decorators/FlowerPalettes";
+import { ColorPalettes } from "../../decorators/ColorPalettes";
 
 export interface FitnessParams {
     // overall fitness multiplier
@@ -76,7 +76,7 @@ export class SpeciesRules {
         };
     }
 
-    public static elder_tree() {
+    public static elder_tree(paletteName?: string) {
         return {
             id: 'elder_tree',
             preference: Combine.all(
@@ -86,19 +86,20 @@ export class SpeciesRules {
                 // Rare spawn chance (5%) implemented via noise gating
                 Signal.step(Signal.noise2D(123.4, 123.4), 0.95)
             ),
-            params: (ctx) => {
+            params: (ctx: WorldContext) => {
                 const scale = 2.0 + ctx.random() * 0.5; // Large scale
+                const color = paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
                 return {
                     groundRadius: 1.0 * scale,
                     canopyRadius: 5.0 * scale,
                     spacing: 25.0 * scale,
-                    options: { kind: 'elder', rotation: ctx.random() * Math.PI * 2, scale }
+                    options: { kind: 'elder', rotation: ctx.random() * Math.PI * 2, scale, color }
                 };
             }
         }
     }
 
-    public static birch_tree() {
+    public static birch_tree(paletteName?: string) {
         return {
             id: 'birch_tree',
             preference: Combine.all(
@@ -108,33 +109,35 @@ export class SpeciesRules {
                 // Avoid river
                 Signal.inRange(Signal.distanceToRiver, 5, 200)
             ),
-            params: (ctx) => {
+            params: (ctx: WorldContext) => {
                 const scale = MathUtils.clamp(0.6, 1.8, 0.9 + ctx.gaussian() * 0.3);
+                const color = paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
                 return {
                     groundRadius: 1.2 * scale,
                     canopyRadius: 4.0 * scale,
-                    options: { kind: 'birch', rotation: ctx.random() * Math.PI * 2, scale }
+                    options: { kind: 'birch', rotation: ctx.random() * Math.PI * 2, scale, color }
                 };
             }
         };
     }
 
-    public static oak_tree(params: FitnessParams) {
+    public static oak_tree(params: FitnessParams, paletteName?: string) {
         return {
             id: 'oak_tree',
             preference: SpeciesRules.buildFitness(params),
-            params: (ctx) => {
+            params: (ctx: WorldContext) => {
                 const scale = MathUtils.clamp(0.8, 3.0, 1.0 + ctx.gaussian() * 0.5);
+                const color = paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
                 return {
                     groundRadius: 1.5 * scale,
                     canopyRadius: 5.0 * scale,
-                    options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
+                    options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale, color }
                 };
             }
         };
     }
 
-    public static elm_tree() {
+    public static elm_tree(paletteName?: string) {
         return {
             id: 'elm_tree',
             preference: Combine.all(
@@ -143,19 +146,20 @@ export class SpeciesRules {
                 Signal.inRange(Signal.distanceToRiver, 10, 60),
                 Signal.inRange(Signal.slope, 0, 25)
             ),
-            params: (ctx) => {
+            params: (ctx: WorldContext) => {
                 const scale = 1.0 + ctx.random() * 0.5;
+                const color = paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
                 return {
                     groundRadius: 2.0 * scale,
                     canopyRadius: 6.0 * scale,
                     spacing: 15.0 * scale,
-                    options: { kind: 'elm', rotation: ctx.random() * Math.PI * 2, scale }
+                    options: { kind: 'elm', rotation: ctx.random() * Math.PI * 2, scale, color }
                 };
             }
         };
     }
 
-    public static box_elder() {
+    public static box_elder(paletteName?: string) {
         return {
             id: 'vase_tree',
             preference: Combine.all(
@@ -163,18 +167,19 @@ export class SpeciesRules {
                 Signal.inRange(Signal.distanceToRiver, 15, 50),
                 Signal.inRange(Signal.slope, 0, 20)
             ),
-            params: (ctx) => {
+            params: (ctx: WorldContext) => {
                 const scale = 0.9 + ctx.random() * 0.4;
+                const color = paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
                 return {
                     groundRadius: 1.5 * scale,
                     canopyRadius: 4.5 * scale,
-                    options: { kind: 'vase', rotation: ctx.random() * Math.PI * 2, scale }
+                    options: { kind: 'vase', rotation: ctx.random() * Math.PI * 2, scale, color }
                 };
             }
         };
     }
 
-    public static willow_tree() {
+    public static willow_tree(paletteName?: string) {
         return {
             id: 'willow_tree',
             preference: Combine.all(
@@ -184,18 +189,19 @@ export class SpeciesRules {
                 Signal.inRange(Signal.elevation, 1.0, 5.0),
                 Signal.inRange(Signal.slope, 0, 15)
             ),
-            params: (ctx) => {
+            params: (ctx: WorldContext) => {
                 const scale = 0.8 + ctx.random() * 0.4;
+                const color = paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
                 return {
                     groundRadius: 2 * scale,
                     canopyRadius: 5 * scale,
-                    options: { kind: 'willow', rotation: ctx.random() * Math.PI * 2, scale }
+                    options: { kind: 'willow', rotation: ctx.random() * Math.PI * 2, scale, color }
                 };
             }
         };
     }
 
-    public static poplar_tree() {
+    public static poplar_tree(paletteName?: string) {
         return {
             id: 'poplar',
             preference: Combine.all(
@@ -203,19 +209,20 @@ export class SpeciesRules {
                 Signal.inRange(Signal.distanceToRiver, 20, 40),
                 Signal.inRange(Signal.slope, 0, 15)
             ),
-            params: (ctx) => {
+            params: (ctx: WorldContext) => {
                 const scale = 0.7 + ctx.random() * 0.6;
+                const color = paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
                 return {
                     groundRadius: 0.5 * scale,
                     canopyRadius: 1.5 * scale,
                     spacing: 2 * scale,
-                    options: { kind: 'poplar', rotation: ctx.random() * Math.PI * 2, scale }
+                    options: { kind: 'poplar', rotation: ctx.random() * Math.PI * 2, scale, color }
                 }
             }
         };
     }
 
-    public static japanese_maple() {
+    public static japanese_maple(paletteName?: string) {
         return {
             id: 'open_tree',
             preference: Combine.all(
@@ -223,12 +230,13 @@ export class SpeciesRules {
                 Signal.inRange(Signal.distanceToRiver, 5, 40),
                 Signal.inRange(Signal.slope, 0, 30)
             ),
-            params: (ctx) => {
+            params: (ctx: WorldContext) => {
                 const scale = 0.8 + ctx.random() * 0.6;
+                const color = paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
                 return {
                     groundRadius: 1.2 * scale,
                     canopyRadius: 4.0 * scale,
-                    options: { kind: 'open', rotation: ctx.random() * Math.PI * 2, scale }
+                    options: { kind: 'open', rotation: ctx.random() * Math.PI * 2, scale, color }
                 };
             }
         };
@@ -245,12 +253,12 @@ export class SpeciesRules {
             ),
             params: (ctx: WorldContext) => {
                 const scale = 0.7 + ctx.random() * 0.5;
-                const palette = FlowerPalettes.getPalette(paletteName);
-                const petalColor = FlowerPalettes.getInterpolatedColor(palette, ctx.random());
+                const palette = ColorPalettes.getPalette(paletteName);
+                const color = ColorPalettes.getInterpolatedColor(palette, ctx.random());
                 return {
                     groundRadius: 0.8 * scale,
                     spacing: 2 * scale,
-                    options: { kind: 'daisy', rotation: ctx.random() * Math.PI * 2, scale, petalColor }
+                    options: { kind: 'daisy', rotation: ctx.random() * Math.PI * 2, scale, color }
                 };
             }
         };
@@ -267,12 +275,12 @@ export class SpeciesRules {
             ),
             params: (ctx: WorldContext) => {
                 const scale = 0.7 + ctx.random() * 0.5;
-                const palette = FlowerPalettes.getPalette(paletteName);
-                const petalColor = FlowerPalettes.getInterpolatedColor(palette, ctx.random());
+                const palette = ColorPalettes.getPalette(paletteName);
+                const color = ColorPalettes.getInterpolatedColor(palette, ctx.random());
                 return {
                     groundRadius: 1 * scale,
                     spacing: 2 * scale,
-                    options: { kind: 'lily', rotation: ctx.random() * Math.PI * 2, scale, petalColor }
+                    options: { kind: 'lily', rotation: ctx.random() * Math.PI * 2, scale, color }
                 };
             }
         };

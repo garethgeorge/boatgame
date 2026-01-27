@@ -11,7 +11,7 @@ export interface DecorationOptions {
     kind: LSystemTreeKind | LSystemFlowerKind | 'rock';
     rotation: number;
     scale: number;
-    petalColor?: number;
+    color?: number;
 }
 
 export class TerrainDecorator {
@@ -166,7 +166,8 @@ export class TerrainDecorator {
                 case 'irregular':
                 case 'vase': {
                     const treeInstances = Decorations.getLSystemTreeInstance({
-                        kind: opts.kind
+                        kind: opts.kind,
+                        leafColor: opts.color
                     });
                     tryPlace(treeInstances, pos, opts);
                     break;
@@ -176,7 +177,7 @@ export class TerrainDecorator {
                 case 'waterlily': {
                     const flowerInstances = Decorations.getLSystemFlowerInstance({
                         kind: opts.kind,
-                        petalColor: opts.petalColor ?? 0xffffff
+                        petalColor: opts.color ?? 0xffffff
                     });
                     tryPlace(flowerInstances, pos, opts);
                     break;
