@@ -25,6 +25,9 @@ export class Game {
         this.instructionManager = new InstructionManager();
         this.engine = new GameEngine(this.ui.container);
         DebugConsole.init();
+
+        // for now reset instruction manager on every launch
+        this.instructionManager.reset();
     }
 
     async preload() {
