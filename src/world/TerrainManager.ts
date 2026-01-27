@@ -311,7 +311,12 @@ export class TerrainManager {
     const pNextL = planck.Vec2(centerNext - widthNext / 2, zNext);
 
     const bodyL = this.physicsEngine.world.createBody({ type: 'static' });
-    const shapeL = planck.Edge(pStartL, pEndL);
+    if (!bodyL) {
+      console.error('[TerrainManager] Failed to create left collision body - world likely locked');
+      return { bodies: [], meshes: createMeshes ? [] : undefined };
+    }
+
+    const shapeL = new planck.EdgeShape(pStartL, pEndL);
     shapeL.setPrevVertex(pPrevL);
     shapeL.setNextVertex(pNextL);
 
@@ -332,7 +337,12 @@ export class TerrainManager {
     const pNextR = planck.Vec2(centerNext + widthNext / 2, zNext);
 
     const bodyR = this.physicsEngine.world.createBody({ type: 'static' });
-    const shapeR = planck.Edge(pStartR, pEndR);
+    if (!bodyR) {
+      console.error('[TerrainManager] Failed to create right collision body - world likely locked');
+      return { bodies, meshes: createMeshes ? meshes : undefined };
+    }
+
+    const shapeR = new planck.EdgeShape(pStartR, pEndR);
     shapeR.setPrevVertex(pPrevR);
     shapeR.setNextVertex(pNextR);
 
