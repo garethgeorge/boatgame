@@ -8,7 +8,6 @@ import { GLTFModelFactory } from './factories/GLTFModelFactory';
 import { CycadFactory } from './factories/CycadFactory';
 import { TreeFernFactory } from './factories/TreeFernFactory';
 import { RiverRockFactory } from './factories/RiverRockFactory';
-import { FlowerFactory } from './factories/FlowerFactory';
 import { DecorationInstance } from './factories/DecorationFactory';
 import { MangroveFactory } from './factories/MangroveFactory';
 import { LSystemTreeFactory, LSystemTreeInstanceOptions } from './factories/LSystemTreeFactory';
@@ -26,7 +25,6 @@ DecorationRegistry.register('bottle', new BottleFactory());
 DecorationRegistry.register('cycad', new CycadFactory());
 DecorationRegistry.register('treeFern', new TreeFernFactory());
 DecorationRegistry.register('riverRock', new RiverRockFactory());
-DecorationRegistry.register('flower', new FlowerFactory());
 DecorationRegistry.register('boat', new GLTFModelFactory('assets/boat-model-1.glb'));
 DecorationRegistry.register('polarBear', new GLTFModelFactory('assets/polar-bear-model-1.glb'));
 DecorationRegistry.register('hippo', new GLTFModelFactory('assets/hippo-model-1.glb'));
@@ -104,11 +102,6 @@ export class Decorations {
   static getRockInstance(biome: string, size: number): DecorationInstance[] {
     const factory = DecorationRegistry.getFactory('rock') as RockFactory;
     return factory.createInstance({ biome, size });
-  }
-
-  static getFlowerInstance(): DecorationInstance[] {
-    const factory = DecorationRegistry.getFactory('flower') as FlowerFactory;
-    return factory.createInstance();
   }
 
   /**

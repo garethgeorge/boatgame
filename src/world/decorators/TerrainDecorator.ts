@@ -180,11 +180,6 @@ export class TerrainDecorator {
                     tryPlace(flowerInstances, pos, opts);
                     break;
                 }
-                case 'flower': {
-                    const flowerInstances = Decorations.getFlowerInstance();
-                    tryPlace(flowerInstances, pos, opts);
-                    break;
-                }
                 case 'rock': {
                     const rockInstances = Decorations.getRockInstance('happy', opts.scale);
                     tryPlace(rockInstances, pos, opts);
