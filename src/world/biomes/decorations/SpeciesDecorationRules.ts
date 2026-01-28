@@ -190,7 +190,7 @@ export class SpeciesRules {
                 Signal.inRange(Signal.slope, 0, 15)
             ),
             params: (ctx: WorldContext) => {
-                const scale = 0.8 + ctx.random() * 0.4;
+                const scale = 2.0 + ctx.random() * 1.0;
                 const color = paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
                 return {
                     groundRadius: 2 * scale,

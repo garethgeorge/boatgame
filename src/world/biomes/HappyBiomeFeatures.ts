@@ -144,6 +144,12 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                 place: 'path',
                 density: [0.3, 0.6],
                 types: [EntityIds.DRAGONFLY]
+            },
+            'unicorn_herd': {
+                logic: 'scatter',
+                place: 'shore',
+                density: [0.2, 0.4],
+                types: [EntityIds.UNICORN]
             }
         };
 
@@ -181,10 +187,25 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             ]
         };
 
+        const shoreTrack: TrackConfig = {
+            name: 'shore',
+            stages: [
+                {
+                    name: 'shore_animals',
+                    progress: [0.0, 1.0],
+                    patterns: [
+                        [
+                            { pattern: 'unicorn_herd', weight: 1.0 }
+                        ]
+                    ]
+                }
+            ]
+        };
+
         const boatPathLayout = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: patterns,
             tracks: [
-                riverTrack, flyingTrack
+                riverTrack, flyingTrack, shoreTrack
             ],
             waterAnimals
         });

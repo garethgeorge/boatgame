@@ -140,7 +140,8 @@ export class BoatPathLayoutSpawner {
                             case EntityIds.SWAN:
                             case EntityIds.TREX:
                             case EntityIds.TRICERATOPS:
-                            case EntityIds.TURTLE: {
+                            case EntityIds.TURTLE:
+                            case EntityIds.UNICORN: {
                                 let logic: AttackLogicName | undefined = undefined;
                                 let range = p.range;
 

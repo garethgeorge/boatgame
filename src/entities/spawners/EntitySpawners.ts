@@ -2,6 +2,7 @@ import { AttackAnimalSpawnConfig, AttackAnimalSpawner } from './AttackAnimalSpaw
 import { FlyingAnimalSpawnConfig, FlyingAnimalSpawner } from './FlyingAnimalSpawner';
 import { AnimalSpawner } from './AnimalSpawner';
 import { SwimAwayAnimalSpawnConfig, SwimAwayAnimalSpawner } from './SwimAwayAnimalSpawner';
+import { ShoreAnimalSpawnConfig, ShoreAnimalSpawner } from './ShoreAnimalSpawner';
 import { EntityIds } from '../EntityIds';
 import { Alligator } from '../obstacles/Alligator';
 import { Snake } from '../obstacles/Snake';
@@ -20,6 +21,7 @@ import { Butterfly } from '../obstacles/Butterfly';
 import { Pterodactyl } from '../obstacles/Pterodactyl';
 import { Dragonfly } from '../obstacles/Dragonfly';
 import { Turtle } from '../obstacles/Turtle';
+import { Unicorn } from '../obstacles/Unicorn';
 
 import { BuoySpawner } from './BuoySpawner';
 import { IcebergSpawner } from './IcebergSpawner';
@@ -239,6 +241,17 @@ export class EntitySpawners {
         }
     ];
 
+    private shoreConfigs: ShoreAnimalSpawnConfig[] = [
+        {
+            id: EntityIds.UNICORN,
+            decorationIds: ['unicorn'],
+            getDensity: () => 0.05,
+            factory: (physicsEngine, options) => new Unicorn(physicsEngine, options),
+            entityRadius: 3.0,
+            shorePlacement: { minDistFromBank: 4.0, maxDistFromBank: 10.0 }
+        }
+    ];
+
     private constructor() {
         // Create Animal Spawners
         this.attackConfigs.forEach(config => {
@@ -251,6 +264,10 @@ export class EntitySpawners {
 
         this.swimAwayConfigs.forEach(config => {
             this.animalSpawners.set(config.id, new SwimAwayAnimalSpawner(config));
+        });
+
+        this.shoreConfigs.forEach(config => {
+            this.animalSpawners.set(config.id, new ShoreAnimalSpawner(config));
         });
     }
 

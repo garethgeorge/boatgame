@@ -47,6 +47,7 @@ const DECORATION_FACTORIES = {
   'dragonfly': new GLTFModelFactory('assets/dragonfly-model-1.glb'),
   'snake': new GLTFModelFactory('assets/snake-model-1.glb'),
   'turtle': new GLTFModelFactory('assets/turtle-model-1.glb'),
+  'unicorn': new GLTFModelFactory('assets/unicorn-model-1.glb'),
   'mangrove': new MangroveFactory(),
   'lsystem-tree': new LSystemTreeFactory(),
   'lsystem-flower': new LSystemFlowerFactory(),
@@ -196,6 +197,7 @@ export class Decorations {
   static getDragonfly() { return this.getModelAndAnimations('dragonfly'); }
   static getSnake() { return this.getModelAndAnimations('snake'); }
   static getTurtle() { return this.getModelAndAnimations('turtle'); }
+  static getUnicorn() { return this.getModelAndAnimations('unicorn'); }
 
   private static getModelAndAnimations(name: DecorationId): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
     try {
