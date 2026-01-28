@@ -15,6 +15,7 @@ export class SwimAwayBehaviorFactory {
             heightInWater?: number,
             jumpsIntoWater?: boolean,
             behavior?: AnimalBehaviorConfig
+            zRange?: [number, number]
         }
     ) {
 
@@ -23,14 +24,23 @@ export class SwimAwayBehaviorFactory {
             aggressiveness = 0.5,
             heightInWater = 0,
             jumpsIntoWater = false,
-            behavior
+            behavior,
+            zRange
         } = params;
 
-        if (disableLogic || !behavior || behavior.type === 'none') {
+        if (disableLogic || !behavior) {
             return null;
         }
 
-        const script = this.getLogicScript(behavior, heightInWater, jumpsIntoWater);
+        let script = undefined;
+        switch (behavior.type) {
+            case 'swim':
+                script = this.swim(zRange);
+                break;
+            case 'wait-swim':
+                script = this.wait_swim(heightInWater, jumpsIntoWater, zRange);
+                break;
+        }
 
         if (script) {
             return new AnimalUniversalBehavior(animal, aggressiveness, script);
@@ -39,32 +49,49 @@ export class SwimAwayBehaviorFactory {
         }
     }
 
-    private static getLogicScript(
-        behavior: AnimalBehaviorConfig,
+    private static swim(
+        zRange: [number, number] | undefined
+    ): AnimalLogicScript {
+        return AnimalLogicStep.loop([
+            {
+                name: 'SwimAway',
+                params: { zRange }
+            },
+            {
+                name: 'SwimBackInRange',
+                params: { zRange }
+            }
+        ]);
+    }
+
+    private static wait_swim(
         heightInWater: number,
         jumpsIntoWater: boolean,
+        zRange: [number, number] | undefined
     ): AnimalLogicScript {
 
-        if (behavior.type === 'swim') {
-            return { name: 'DefaultSwimAway' };
-        } else if (behavior.type === 'wait-swim') {
-            return AnimalLogicStep.sequence([
-                {
-                    name: 'WaitForBoat',
-                    params: {
-                        forwardMax: 50.0,
-                        ignoreBottles: true,
-                        phase: AnimalLogicPhase.IDLE_SHORE
-                    }
-                },
-                {
-                    name: 'EnteringWater',
-                    params: { targetWaterHeight: heightInWater, jump: jumpsIntoWater }
-                },
-                { name: 'DefaultSwimAway' }
-            ]);
-        }
-        return null;
+        return AnimalLogicStep.loop([
+            {
+                name: 'WaitForBoat',
+                params: {
+                    forwardMax: 50.0,
+                    ignoreBottles: true,
+                    phase: AnimalLogicPhase.IDLE_SHORE
+                }
+            },
+            {
+                name: 'EnteringWater',
+                params: { targetWaterHeight: heightInWater, jump: jumpsIntoWater }
+            },
+            {
+                name: 'SwimAway',
+                params: { zRange }
+            },
+            {
+                name: 'SwimBackInRange',
+                params: { zRange }
+            }
+        ]);
     }
 }
 

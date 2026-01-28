@@ -3,17 +3,25 @@ import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { FleePathStrategy } from './strategy/FleePathStrategy';
 
+export interface SwimAwayParams {
+    zRange?: [number, number];
+}
+
 /**
  * Swim away logic runs forever.
  */
-export class DefaultSwimAwayLogic implements AnimalLogic {
-    readonly name = 'DefaultSwimAway';
+export class SwimAwayLogic implements AnimalLogic {
+    public static readonly RESULT_OUT_OF_RANGE = 'swim_away_out_of_range';
 
+    readonly name = 'SwimAway';
+
+    private zRange: [number, number] | undefined;
     private strategy: FleePathStrategy;
     private state: 'IDLE' | 'FLEEING' = 'IDLE';
     private sleepTime: number = 0;
 
-    constructor() {
+    constructor(params: SwimAwayParams) {
+        this.zRange = params.zRange;
         this.strategy = new FleePathStrategy();
     }
 
@@ -41,12 +49,14 @@ export class DefaultSwimAwayLogic implements AnimalLogic {
         }
 
         if (this.state == 'IDLE') {
+            const result = this.inRange(context) ? undefined : SwimAwayLogic.RESULT_OUT_OF_RANGE;
             return {
                 path: {
                     target: context.originPos,
                     speed: 0
                 },
                 locomotionType: 'WATER',
+                result
             }
         }
 
@@ -61,7 +71,15 @@ export class DefaultSwimAwayLogic implements AnimalLogic {
         return this.state === 'IDLE' ? AnimalLogicPhase.IDLE_WATER : AnimalLogicPhase.SWIMING_AWAY;
     }
 
+    private inRange(context: AnimalLogicContext): boolean {
+        if (this.zRange === undefined) return true;
+        return this.zRange[0] < context.originPos.y && context.originPos.y < this.zRange[1];
+    }
+
     shouldEngage(context: AnimalLogicContext): boolean {
+        if (!this.inRange(context))
+            return false;
+
         const inFront = AnimalBehaviorUtils.isInFrontOfBoat(context.snoutPos, context.targetBody);
         if (!inFront)
             return false;
@@ -71,6 +89,9 @@ export class DefaultSwimAwayLogic implements AnimalLogic {
     }
 
     shouldDisengage(context: AnimalLogicContext): boolean {
+        if (!this.inRange(context))
+            return true;
+
         const inFront = AnimalBehaviorUtils.isInFrontOfBoat(context.snoutPos, context.targetBody);
         if (!inFront)
             return true;

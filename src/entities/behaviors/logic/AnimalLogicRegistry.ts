@@ -2,7 +2,7 @@ import { AnimalLogic } from './AnimalLogic';
 import { AnimalLogicConfig } from './AnimalLogicConfigs';
 import { WolfAttackLogic } from './WolfAttackLogic';
 import { AmbushAttackLogic } from './AmbushAttackLogic';
-import { DefaultSwimAwayLogic } from './DefaultSwimAwayLogic';
+import { SwimAwayLogic } from './SwimAwayLogic';
 import { ShoreLandingFlightLogic } from './ShoreLandingFlightLogic';
 import { EnteringWaterLogic } from './EnteringWaterLogic';
 import { WaitForBoatLogic } from './WaitForBoatLogic';
@@ -13,6 +13,7 @@ import { WanderingFlightLogic } from './WanderingFlightLogic';
 import { BuzzBoatFlightLogic } from './BuzzBoatFlightLogic';
 import { FlyDirectToShoreLogic } from './FlyDirectToShoreLogic';
 import { FlyOppositeBoatLogic } from './FlyOppositeBoatLogic';
+import { SwimBackInRangeLogic } from './SwimBackInRangeLogic';
 
 export class AnimalLogicRegistry {
     private static factories: Map<string, (params?: any) => AnimalLogic> = new Map();
@@ -20,7 +21,7 @@ export class AnimalLogicRegistry {
     static {
         this.register('AmbushAttack', () => new AmbushAttackLogic());
         this.register('BuzzBoatFlight', (params) => new BuzzBoatFlightLogic(params));
-        this.register('DefaultSwimAway', () => new DefaultSwimAwayLogic());
+        this.register('SwimAway', (params) => new SwimAwayLogic(params));
         this.register('Delay', (params) => new DelayLogic(params));
         this.register('EnteringWater', (params) => new EnteringWaterLogic(params));
         this.register('FlyDirectToShore', (params) => new FlyDirectToShoreLogic(params));
@@ -30,6 +31,7 @@ export class AnimalLogicRegistry {
         this.register('WaitForBoat', (params) => new WaitForBoatLogic(params));
         this.register('WanderingFlight', (params) => new WanderingFlightLogic(params));
         this.register('WaterLandingFlight', (params) => new WaterLandingFlightLogic(params));
+        this.register('SwimBackInRange', (params) => new SwimBackInRangeLogic(params));
         this.register('WolfAttack', () => new WolfAttackLogic());
     }
 

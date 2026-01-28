@@ -25,7 +25,7 @@ export enum AnimalLogicPhase {
     // For AmbushAttackLogic and WolfAttackLogic
     PREPARING_ATTACK = 'PREPARING_ATTACK',
     ATTACKING = 'ATTACKING',
-    // For DefaultSwimAwayLogic
+    // For SwimAway
     SWIMING_AWAY = 'SWIMING_AWAY',
     // For ShoreWalkLogic
     WALKING = 'WALKING',

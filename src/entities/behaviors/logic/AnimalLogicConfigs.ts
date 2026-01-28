@@ -1,6 +1,6 @@
 import { AmbushAttackLogic } from './AmbushAttackLogic';
 import { BuzzBoatFlightLogic, BuzzBoatFlightParams } from './BuzzBoatFlightLogic';
-import { DefaultSwimAwayLogic } from './DefaultSwimAwayLogic';
+import { SwimAwayLogic, SwimAwayParams } from './SwimAwayLogic';
 import { DelayLogic, DelayParams } from './DelayLogic';
 import { EnteringWaterLogic, EnteringWaterParams } from './EnteringWaterLogic';
 import { FlyDirectToShoreLogic, FlyDirectToShoreParams } from './FlyDirectToShoreLogic';
@@ -10,6 +10,7 @@ import { ShoreWalkLogic, ShoreWalkParams } from './ShoreWalkLogic';
 import { WaitForBoatLogic, WaitForBoatParams } from './WaitForBoatLogic';
 import { WanderingFlightLogic, WanderingFlightParams } from './WanderingFlightLogic';
 import { WaterLandingFlightLogic, WaterLandingFlightParams } from './WaterLandingFlightLogic';
+import { SwimBackInRangeLogic, SwimBackInRangeParams } from './SwimBackInRangeLogic';
 import { WolfAttackLogic } from './WolfAttackLogic';
 
 export interface AnimalLogicBaseConfig {
@@ -19,7 +20,7 @@ export interface AnimalLogicBaseConfig {
 export type AnimalLogicConfig =
     | ({ name: 'AmbushAttack'; params?: never } & AnimalLogicBaseConfig)
     | ({ name: 'BuzzBoatFlight'; params: BuzzBoatFlightParams } & AnimalLogicBaseConfig)
-    | ({ name: 'DefaultSwimAway'; params?: never } & AnimalLogicBaseConfig)
+    | ({ name: 'SwimAway'; params: SwimAwayParams } & AnimalLogicBaseConfig)
     | ({ name: 'Delay'; params: DelayParams } & AnimalLogicBaseConfig)
     | ({ name: 'EnteringWater'; params: EnteringWaterParams } & AnimalLogicBaseConfig)
     | ({ name: 'FlyDirectToShore'; params: FlyDirectToShoreParams } & AnimalLogicBaseConfig)
@@ -29,4 +30,5 @@ export type AnimalLogicConfig =
     | ({ name: 'WaitForBoat'; params: WaitForBoatParams } & AnimalLogicBaseConfig)
     | ({ name: 'WanderingFlight'; params: WanderingFlightParams } & AnimalLogicBaseConfig)
     | ({ name: 'WaterLandingFlight'; params: WaterLandingFlightParams } & AnimalLogicBaseConfig)
+    | ({ name: 'SwimBackInRange'; params: SwimBackInRangeParams } & AnimalLogicBaseConfig)
     | ({ name: 'WolfAttack'; params?: never } & AnimalLogicBaseConfig);
