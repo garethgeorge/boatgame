@@ -56,7 +56,7 @@ export class EntitySpawners {
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Alligator(physicsEngine, options),
             shoreProbability: 0.3,
-            entityRadius: 5.0,
+            entityRadius: Alligator.RADIUS,
             heightInWater: Alligator.HEIGHT_IN_WATER,
             waterPlacement: { minDistFromBank: 3.0 }
         },
@@ -66,7 +66,7 @@ export class EntitySpawners {
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Brontosaurus(physicsEngine, options),
             shoreProbability: 0.6,
-            entityRadius: 5.0,
+            entityRadius: Brontosaurus.RADIUS,
             heightInWater: Brontosaurus.HEIGHT_IN_WATER,
             waterPlacement: { minDistFromBank: 3.0 }
         },
@@ -76,7 +76,7 @@ export class EntitySpawners {
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new TRex(physicsEngine, options),
             shoreProbability: 0.6,
-            entityRadius: 5.0,
+            entityRadius: TRex.RADIUS,
             heightInWater: TRex.HEIGHT_IN_WATER,
             waterPlacement: { minDistFromBank: 3.0 }
         },
@@ -87,6 +87,7 @@ export class EntitySpawners {
             factory: (physicsEngine, options) => new BrownBear(physicsEngine, options),
             shoreProbability: 1.0,
             shorePlacement: { minDistFromBank: 2.5, maxDistFromBank: 3.0 },
+            entityRadius: BrownBear.RADIUS,
             heightInWater: BrownBear.HEIGHT_IN_WATER
         },
         {
@@ -96,6 +97,7 @@ export class EntitySpawners {
             factory: (physicsEngine, options) => new PolarBear(physicsEngine, options),
             shoreProbability: 1.0,
             shorePlacement: { minDistFromBank: 2.5, maxDistFromBank: 4.0 },
+            entityRadius: PolarBear.RADIUS,
             heightInWater: PolarBear.HEIGHT_IN_WATER
         },
         {
@@ -104,7 +106,7 @@ export class EntitySpawners {
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Hippo(physicsEngine, options),
             shoreProbability: 0.0,
-            entityRadius: 5.0,
+            entityRadius: Hippo.RADIUS,
             heightInWater: Hippo.HEIGHT_IN_WATER,
             waterPlacement: { minDistFromBank: 3.0 }
         },
@@ -115,6 +117,7 @@ export class EntitySpawners {
             factory: (physicsEngine, options) => new Monkey(physicsEngine, options),
             shoreProbability: 1.0,
             shorePlacement: { minDistFromBank: 0.5, maxDistFromBank: 3.0 },
+            entityRadius: Monkey.RADIUS,
             heightInWater: Monkey.HEIGHT_IN_WATER,
             defaultShoreBehavior: { type: 'walk-attack', logicName: 'AmbushAttack' }
         },
@@ -124,6 +127,7 @@ export class EntitySpawners {
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Moose(physicsEngine, options),
             shoreProbability: 0.6,
+            entityRadius: Moose.RADIUS,
             heightInWater: Moose.HEIGHT_IN_WATER,
             defaultShoreBehavior: { type: 'none' }
         },
@@ -133,7 +137,7 @@ export class EntitySpawners {
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Triceratops(physicsEngine, options),
             shoreProbability: 0.6,
-            entityRadius: 5.0,
+            entityRadius: Triceratops.RADIUS,
             heightInWater: Triceratops.HEIGHT_IN_WATER,
             shorePlacement: { minDistFromBank: 3.0, maxDistFromBank: 6.0 },
             waterPlacement: { minDistFromBank: 3.0 }
@@ -144,7 +148,7 @@ export class EntitySpawners {
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Snake(physicsEngine, options),
             shoreProbability: 0.0,
-            entityRadius: 3.0,
+            entityRadius: Snake.RADIUS,
             heightInWater: Snake.HEIGHT_IN_WATER,
             waterPlacement: { minDistFromBank: 2.0 }
         },
@@ -155,20 +159,21 @@ export class EntitySpawners {
             decorationIds: ['bluebird'],
             getDensity: () => 0.5 / 20,
             factory: (physicsEngine, options) => new Bluebird(physicsEngine, options),
-            entityRadius: 1.5
+            entityRadius: Bluebird.RADIUS
         },
         {
             id: EntityIds.BUTTERFLY,
             decorationIds: ['butterfly'],
             getDensity: () => 0.5 / 20,
             factory: (physicsEngine, options) => new Butterfly(physicsEngine, options),
-            entityRadius: 0.5
+            entityRadius: Butterfly.RADIUS
         },
         {
             id: EntityIds.PTERODACTYL,
             decorationIds: ['pterodactyl'],
             getDensity: () => 0.1 / 20,
-            factory: (physicsEngine, options) => new Pterodactyl(physicsEngine, options)
+            factory: (physicsEngine, options) => new Pterodactyl(physicsEngine, options),
+            entityRadius: Pterodactyl.RADIUS
         },
         {
             id: EntityIds.EGRET,
@@ -176,7 +181,7 @@ export class EntitySpawners {
             getDensity: () => 0.1 / 20,
             factory: (physicsEngine, options) => new Egret(physicsEngine, options),
             shoreProbability: 0.0,
-            entityRadius: 3.0,
+            entityRadius: Egret.RADIUS,
             heightInWater: Egret.HEIGHT_IN_WATER
         },
         {
@@ -184,7 +189,7 @@ export class EntitySpawners {
             decorationIds: ['dragonfly'],
             getDensity: () => 0.5 / 20,
             factory: (physicsEngine, options) => new Dragonfly(physicsEngine, options),
-            entityRadius: 1.5
+            entityRadius: Dragonfly.RADIUS
         },
 
         // Swim Away Animals
@@ -194,7 +199,7 @@ export class EntitySpawners {
             getDensity: () => 0.01,
             factory: (physicsEngine, options) => new Dolphin(physicsEngine, options),
             heightInWater: Dolphin.HEIGHT_IN_WATER,
-            entityRadius: 2.0,
+            entityRadius: Dolphin.RADIUS,
             waterPlacement: { minDistFromBank: 2.0 }
         },
         {
@@ -203,7 +208,7 @@ export class EntitySpawners {
             getDensity: () => 0.05,
             factory: (physicsEngine, options) => new Duckling(physicsEngine, options),
             heightInWater: Duckling.HEIGHT_IN_WATER,
-            entityRadius: 1.5,
+            entityRadius: Duckling.RADIUS,
             waterPlacement: { minDistFromBank: 2.0 }
         },
         {
@@ -212,7 +217,7 @@ export class EntitySpawners {
             getDensity: () => 0.01,
             factory: (physicsEngine, options) => new PenguinKayak(physicsEngine, options),
             heightInWater: PenguinKayak.HEIGHT_IN_WATER,
-            entityRadius: 1.5,
+            entityRadius: PenguinKayak.RADIUS,
             waterPlacement: { minDistFromBank: 1.0 }
         },
         {
@@ -221,7 +226,7 @@ export class EntitySpawners {
             getDensity: () => 0.01,
             factory: (physicsEngine, options) => new Swan(physicsEngine, options),
             heightInWater: Swan.HEIGHT_IN_WATER,
-            entityRadius: 2.0,
+            entityRadius: Swan.RADIUS,
             waterPlacement: { minDistFromBank: 1.0 }
         },
         {
@@ -230,7 +235,7 @@ export class EntitySpawners {
             getDensity: () => 0.02,
             factory: (physicsEngine, options) => new Turtle(physicsEngine, options),
             heightInWater: Turtle.HEIGHT_IN_WATER,
-            entityRadius: 1.5,
+            entityRadius: Turtle.RADIUS,
             shoreProbability: 0.4,
             waterPlacement: { minDistFromBank: 1.0 },
             defaultShoreBehavior: { type: 'wait-swim' },
@@ -243,7 +248,7 @@ export class EntitySpawners {
             decorationIds: ['unicorn'],
             getDensity: () => 0.05,
             factory: (physicsEngine, options) => new Unicorn(physicsEngine, options),
-            entityRadius: 3.0,
+            entityRadius: Unicorn.RADIUS,
             shorePlacement: { minDistFromBank: 4.0, maxDistFromBank: 10.0 }
         }
     ];

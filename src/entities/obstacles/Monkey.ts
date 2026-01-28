@@ -10,6 +10,7 @@ import { AnimationStep } from '../../core/AnimationPlayer';
 export class Monkey extends AttackAnimal {
 
     public static readonly HEIGHT_IN_WATER: number = -1.7;
+    public static readonly RADIUS: number = 2.0;
 
     constructor(
         physicsEngine: PhysicsEngine,

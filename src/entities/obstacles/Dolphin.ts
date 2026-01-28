@@ -8,6 +8,7 @@ import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
 
 export class Dolphin extends SwimAwayAnimal {
     public static readonly HEIGHT_IN_WATER: number = 0.0;
+    public static readonly RADIUS: number = 2.0;
 
     constructor(physicsEngine: PhysicsEngine, options: AnimalOptions) {
         super(

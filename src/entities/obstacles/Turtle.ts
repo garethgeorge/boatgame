@@ -8,6 +8,7 @@ import { Entity } from '../../core/Entity';
 
 export class Turtle extends SwimAwayAnimal {
     public static readonly HEIGHT_IN_WATER: number = -0.8;
+    public static readonly RADIUS: number = 1.5;
 
     constructor(physicsEngine: PhysicsEngine, options: AnimalOptions) {
         super(

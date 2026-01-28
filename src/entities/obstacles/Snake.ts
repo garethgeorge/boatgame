@@ -11,6 +11,7 @@ import { AnimationPlayer } from '../../core/AnimationPlayer';
 export class Snake extends AttackAnimal {
 
     public static readonly HEIGHT_IN_WATER: number = -0.5;
+    public static readonly RADIUS: number = 3.0;
 
     constructor(
         physicsEngine: PhysicsEngine,

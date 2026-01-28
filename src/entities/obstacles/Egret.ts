@@ -9,6 +9,7 @@ import { AnimationPlayer, AnimationStep } from '../../core/AnimationPlayer';
 
 export class Egret extends FlyingAnimal {
     public static readonly HEIGHT_IN_WATER = -0.2;
+    public static readonly RADIUS: number = 3.0;
 
     constructor(
         physicsEngine: PhysicsEngine,

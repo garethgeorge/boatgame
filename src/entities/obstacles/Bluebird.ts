@@ -7,6 +7,8 @@ import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { Entity } from '../../core/Entity';
 
 export class Bluebird extends FlyingAnimal {
+    public static readonly RADIUS: number = 1.5;
+
 
     constructor(
         physicsEngine: PhysicsEngine,

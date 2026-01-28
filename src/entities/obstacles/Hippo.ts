@@ -10,6 +10,7 @@ import { Entity } from '../../core/Entity';
 export class Hippo extends AttackAnimal {
 
     public static readonly HEIGHT_IN_WATER: number = -0.5;
+    public static readonly RADIUS: number = 5.0;
 
     constructor(
         physicsEngine: PhysicsEngine,
@@ -102,7 +103,7 @@ export class Hippo extends AttackAnimal {
                     // Sit lower in water
                     mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, 0, event.dt * 5);
                     mesh.rotation.z = THREE.MathUtils.lerp(mesh.rotation.z, 0, event.dt * 5);
-                    mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, -0.5, event.dt * 2);
+                    mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, Hippo.HEIGHT_IN_WATER, event.dt * 2);
                     break;
                 }
             }

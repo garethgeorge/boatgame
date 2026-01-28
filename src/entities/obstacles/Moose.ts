@@ -10,6 +10,7 @@ import { Entity } from '../../core/Entity';
 export class Moose extends AttackAnimal {
 
     public static readonly HEIGHT_IN_WATER: number = -3.0;
+    public static readonly RADIUS: number = 2.0;
 
 
     constructor(

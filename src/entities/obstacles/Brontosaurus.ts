@@ -10,6 +10,7 @@ import { Entity } from '../../core/Entity';
 export class Brontosaurus extends AttackAnimal {
 
     public static readonly HEIGHT_IN_WATER: number = -1.5;
+    public static readonly RADIUS: number = 5.0;
 
     constructor(
         physicsEngine: PhysicsEngine,

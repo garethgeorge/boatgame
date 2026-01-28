@@ -7,6 +7,8 @@ import { Entity } from '../../core/Entity';
 import { AnimationStep } from '../../core/AnimationPlayer';
 
 export class Unicorn extends ShoreAnimal {
+    public static readonly RADIUS: number = 3.0;
+
 
     constructor(
         physicsEngine: PhysicsEngine,
