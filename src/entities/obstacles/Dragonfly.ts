@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { FlyingAnimal, FlyingAnimalOptions, FlyingBehaviorFactory } from './FlyingAnimal';
-import { AnimalAnimations, Animal } from './Animal';
+import { FlyingAnimal, FlyingBehaviorFactory } from './FlyingAnimal';
+import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { Entity } from '../../core/Entity';
 
@@ -10,7 +10,7 @@ export class Dragonfly extends FlyingAnimal {
 
     constructor(
         physicsEngine: PhysicsEngine,
-        options: FlyingAnimalOptions
+        options: AnimalOptions
     ) {
         super(physicsEngine, 'dragonfly', Entity.TYPE_OBSTACLE, false,
             options,

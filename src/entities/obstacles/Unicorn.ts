@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { ShoreAnimal, ShoreAnimalOptions, ShoreAnimalBehaviorFactory } from './ShoreAnimal';
-import { AnimalAnimations } from './Animal';
+import { ShoreAnimal, ShoreAnimalBehaviorFactory } from './ShoreAnimal';
+import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
 import { AnimationStep } from '../../core/AnimationPlayer';
 
@@ -10,7 +10,7 @@ export class Unicorn extends ShoreAnimal {
 
     constructor(
         physicsEngine: PhysicsEngine,
-        options: ShoreAnimalOptions
+        options: AnimalOptions
     ) {
         super(physicsEngine, 'unicorn', Entity.TYPE_OBSTACLE, true,
             options,

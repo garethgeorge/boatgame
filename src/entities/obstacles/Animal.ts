@@ -12,6 +12,14 @@ import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { ObstacleHitBehavior, ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
+export type AnimalBehaviorConfig =
+    | { type: 'none' }
+    | { type: 'attack'; logicName: 'AmbushAttack' | 'WolfAttack' }
+    | { type: 'wait-attack'; logicName: 'AmbushAttack' | 'WolfAttack' }
+    | { type: 'walk-attack'; logicName: 'AmbushAttack' | 'WolfAttack' }
+    | { type: 'swim' }
+    | { type: 'wait-swim' };
+
 export interface AnimalOptions {
     x: number;
     y: number;
@@ -20,8 +28,10 @@ export interface AnimalOptions {
     terrainNormal?: THREE.Vector3;
     aggressiveness?: number;
     disableLogic?: boolean;
+    behavior?: AnimalBehaviorConfig;
     zRange: [number, number];
 }
+
 
 export interface AnimalPhysicsOptions {
     halfWidth?: number;

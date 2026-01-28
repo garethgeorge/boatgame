@@ -2,19 +2,9 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
-import { Animal, AnimalOptions } from './Animal';
+import { Animal, AnimalOptions, AnimalBehaviorConfig } from './Animal';
 import { AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
-
-/**
- * swim - animal is already in water, starts with swim behavior
- * wait - wait on land for boat, enter water, and swim away
- */
-export type SwimAwayAnimalBehavior = 'swim' | 'wait';
-
-export interface SwimAwayAnimalOptions extends AnimalOptions {
-    swimBehavior?: SwimAwayAnimalBehavior;
-}
 
 export class SwimAwayBehaviorFactory {
 
@@ -23,20 +13,24 @@ export class SwimAwayBehaviorFactory {
         params: {
             disableLogic?: boolean,
             aggressiveness?: number,
-            swimBehavior?: SwimAwayAnimalBehavior,
             heightInWater?: number,
             jumpsIntoWater?: boolean,
+            behavior?: AnimalBehaviorConfig
         }
     ) {
         const {
             disableLogic = false,
             aggressiveness = 0.5,
-            swimBehavior = 'swim',
             heightInWater = 0,
             jumpsIntoWater = false,
+            behavior
         } = params;
 
-        const script = disableLogic ? null : this.getLogicScript(swimBehavior, heightInWater, jumpsIntoWater);
+        if (disableLogic || !behavior || behavior.type === 'none') {
+            return null;
+        }
+
+        const script = this.getLogicScript(behavior, heightInWater, jumpsIntoWater);
 
         if (script) {
             return new AnimalUniversalBehavior(animal, aggressiveness, script);
@@ -46,13 +40,13 @@ export class SwimAwayBehaviorFactory {
     }
 
     private static getLogicScript(
-        swimBehavior: SwimAwayAnimalBehavior,
+        behavior: AnimalBehaviorConfig,
         heightInWater: number,
         jumpsIntoWater: boolean,
     ): AnimalLogicScript {
-        if (swimBehavior === 'swim') {
+        if (behavior.type === 'swim') {
             return { name: 'DefaultSwimAway' };
-        } else {
+        } else if (behavior.type === 'wait-swim') {
             return AnimalLogicStep.sequence([
                 {
                     name: 'WaitForBoat',
@@ -65,8 +59,10 @@ export class SwimAwayBehaviorFactory {
                 { name: 'DefaultSwimAway' }
             ]);
         }
+        return null;
     }
 }
+
 
 export abstract class SwimAwayAnimal extends Animal implements AnyAnimal {
     protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {

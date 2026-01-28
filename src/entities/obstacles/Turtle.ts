@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { SwimAwayAnimal, SwimAwayAnimalOptions, SwimAwayBehaviorFactory } from './SwimAwayAnimal';
+import { SwimAwayAnimal, SwimAwayBehaviorFactory } from './SwimAwayAnimal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
-import { AnimalAnimations, Animal } from './Animal';
+import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
 import { Entity } from '../../core/Entity';
 
 export class Turtle extends SwimAwayAnimal {
     public static readonly HEIGHT_IN_WATER: number = -0.8;
 
-    constructor(physicsEngine: PhysicsEngine, options: SwimAwayAnimalOptions) {
+    constructor(physicsEngine: PhysicsEngine, options: AnimalOptions) {
         super(
             physicsEngine,
             'turtle',

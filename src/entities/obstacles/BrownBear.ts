@@ -2,9 +2,9 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions, AttackBehaviorFactory } from './AttackAnimal';
+import { AttackAnimal, AttackBehaviorFactory } from './AttackAnimal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
-import { AnimalAnimations } from './Animal';
+import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
 
 export class BrownBear extends AttackAnimal {
@@ -13,7 +13,7 @@ export class BrownBear extends AttackAnimal {
 
     constructor(
         physicsEngine: PhysicsEngine,
-        options: AttackAnimalOptions
+        options: AnimalOptions
     ) {
         super(physicsEngine, 'brownBear', Entity.TYPE_OBSTACLE, true,
             options,

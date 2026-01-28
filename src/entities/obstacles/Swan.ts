@@ -2,15 +2,15 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { SwimAwayAnimal, SwimAwayAnimalOptions, SwimAwayBehaviorFactory } from './SwimAwayAnimal';
+import { SwimAwayAnimal, SwimAwayBehaviorFactory } from './SwimAwayAnimal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
-import { AnimalAnimations, Animal } from './Animal';
+import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
 import { AnimationStep } from '../../core/AnimationPlayer';
 
 export class Swan extends SwimAwayAnimal {
     public static readonly HEIGHT_IN_WATER: number = 0.0;
 
-    constructor(physicsEngine: PhysicsEngine, options: SwimAwayAnimalOptions) {
+    constructor(physicsEngine: PhysicsEngine, options: AnimalOptions) {
         super(
             physicsEngine,
             'swan',

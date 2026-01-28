@@ -4,7 +4,8 @@ import { BoatPathLayout } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { RiverGeometry } from '../RiverGeometry';
 import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
-import { AttackLogicName } from '../../entities/obstacles/AttackAnimal';
+import { AnimalBehaviorConfig } from '../../entities/obstacles/Animal';
+
 
 export class BoatPathLayoutSpawner {
     private static instance: BoatPathLayoutSpawner;
@@ -142,13 +143,14 @@ export class BoatPathLayoutSpawner {
                             case EntityIds.TRICERATOPS:
                             case EntityIds.TURTLE:
                             case EntityIds.UNICORN: {
-                                let logic: AttackLogicName | undefined = undefined;
+                                let behavior: AnimalBehaviorConfig | undefined = undefined;
                                 let range = p.range;
 
                                 if (biomeType === 'desert') {
-                                    logic = Math.random() < 0.5 ? 'WolfAttack' : 'AmbushAttack';
+                                    const logicName = Math.random() < 0.5 ? 'WolfAttack' : 'AmbushAttack';
+                                    behavior = { type: 'attack', logicName };
                                 } else if (biomeType === 'swamp' && entityType === EntityIds.ALLIGATOR) {
-                                    logic = 'AmbushAttack';
+                                    behavior = { type: 'attack', logicName: 'AmbushAttack' };
                                     range = [-10, 10];
                                 }
 
@@ -159,10 +161,11 @@ export class BoatPathLayoutSpawner {
                                         sample,
                                         distanceRange: range,
                                         aggressiveness: p.aggressiveness || 0.5,
-                                        logic,
+                                        behavior,
                                         biomeZRange
                                     });
                                 }
+
                                 break;
                             }
                         }

@@ -12,8 +12,8 @@ import { DelayLogic } from '../behaviors/logic/DelayLogic';
 import { BuzzBoatFlightLogic } from '../behaviors/logic/BuzzBoatFlightLogic';
 import { FlyOppositeBoatLogic } from '../behaviors/logic/FlyOppositeBoatLogic';
 
-export interface FlyingAnimalOptions extends AnimalOptions {
-}
+// FlyingAnimalOptions removed, use AnimalOptions directly
+
 
 export class FlyingBehaviorFactory {
 

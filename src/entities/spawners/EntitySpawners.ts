@@ -1,8 +1,4 @@
-import { AttackAnimalSpawnConfig, AttackAnimalSpawner } from './AttackAnimalSpawner';
-import { FlyingAnimalSpawnConfig, FlyingAnimalSpawner } from './FlyingAnimalSpawner';
-import { AnimalSpawner } from './AnimalSpawner';
-import { SwimAwayAnimalSpawnConfig, SwimAwayAnimalSpawner } from './SwimAwayAnimalSpawner';
-import { ShoreAnimalSpawnConfig, ShoreAnimalSpawner } from './ShoreAnimalSpawner';
+import { AnimalSpawner, AnimalSpawnerConfig } from './AnimalSpawner';
 import { EntityIds } from '../EntityIds';
 import { Alligator } from '../obstacles/Alligator';
 import { Snake } from '../obstacles/Snake';
@@ -36,7 +32,6 @@ import { BaseSpawner } from './BaseSpawner';
 import { Bluebird } from '../obstacles/Bluebird';
 import { Egret } from '../obstacles/Egret';
 import { Swan } from '../obstacles/Swan';
-import { Decorations, DecorationId } from '../../world/Decorations';
 
 export class EntitySpawners {
     private static instance: EntitySpawners;
@@ -53,7 +48,8 @@ export class EntitySpawners {
     private _waterGrass: WaterGrassSpawner = new WaterGrassSpawner();
     private _lillyPadPatch: LillyPadPatchSpawner = new LillyPadPatchSpawner();
 
-    private attackConfigs: AttackAnimalSpawnConfig[] = [
+    private animalConfigs: AnimalSpawnerConfig[] = [
+        // Attack Animals
         {
             id: EntityIds.ALLIGATOR,
             decorationIds: ['alligator'],
@@ -120,7 +116,7 @@ export class EntitySpawners {
             shoreProbability: 1.0,
             shorePlacement: { minDistFromBank: 0.5, maxDistFromBank: 3.0 },
             heightInWater: Monkey.HEIGHT_IN_WATER,
-            shoreBehavior: 'walk'
+            defaultShoreBehavior: { type: 'walk-attack', logicName: 'AmbushAttack' }
         },
         {
             id: EntityIds.MOOSE,
@@ -128,7 +124,8 @@ export class EntitySpawners {
             getDensity: () => 0.1 / 15,
             factory: (physicsEngine, options) => new Moose(physicsEngine, options),
             shoreProbability: 0.6,
-            heightInWater: Moose.HEIGHT_IN_WATER
+            heightInWater: Moose.HEIGHT_IN_WATER,
+            defaultShoreBehavior: { type: 'none' }
         },
         {
             id: EntityIds.TRICERATOPS,
@@ -151,9 +148,8 @@ export class EntitySpawners {
             heightInWater: Snake.HEIGHT_IN_WATER,
             waterPlacement: { minDistFromBank: 2.0 }
         },
-    ];
 
-    private flyingConfigs: FlyingAnimalSpawnConfig[] = [
+        // Flying Animals
         {
             id: EntityIds.BLUEBIRD,
             decorationIds: ['bluebird'],
@@ -189,10 +185,9 @@ export class EntitySpawners {
             getDensity: () => 0.5 / 20,
             factory: (physicsEngine, options) => new Dragonfly(physicsEngine, options),
             entityRadius: 1.5
-        }
-    ];
+        },
 
-    private swimAwayConfigs: SwimAwayAnimalSpawnConfig[] = [
+        // Swim Away Animals
         {
             id: EntityIds.DOLPHIN,
             decorationIds: ['dolphin'],
@@ -237,11 +232,12 @@ export class EntitySpawners {
             heightInWater: Turtle.HEIGHT_IN_WATER,
             entityRadius: 1.5,
             shoreProbability: 0.4,
-            waterPlacement: { minDistFromBank: 1.0 }
-        }
-    ];
+            waterPlacement: { minDistFromBank: 1.0 },
+            defaultShoreBehavior: { type: 'wait-swim' },
+            defaultWaterBehavior: { type: 'swim' }
+        },
 
-    private shoreConfigs: ShoreAnimalSpawnConfig[] = [
+        // Shore Animals
         {
             id: EntityIds.UNICORN,
             decorationIds: ['unicorn'],
@@ -254,20 +250,8 @@ export class EntitySpawners {
 
     private constructor() {
         // Create Animal Spawners
-        this.attackConfigs.forEach(config => {
-            this.animalSpawners.set(config.id, new AttackAnimalSpawner(config));
-        });
-
-        this.flyingConfigs.forEach(config => {
-            this.animalSpawners.set(config.id, new FlyingAnimalSpawner(config));
-        });
-
-        this.swimAwayConfigs.forEach(config => {
-            this.animalSpawners.set(config.id, new SwimAwayAnimalSpawner(config));
-        });
-
-        this.shoreConfigs.forEach(config => {
-            this.animalSpawners.set(config.id, new ShoreAnimalSpawner(config));
+        this.animalConfigs.forEach(config => {
+            this.animalSpawners.set(config.id, new AnimalSpawner(config));
         });
     }
 
@@ -317,3 +301,4 @@ export class EntitySpawners {
     public waterGrass(): WaterGrassSpawner { return this._waterGrass; }
     public lillyPadPatch(): LillyPadPatchSpawner { return this._lillyPadPatch; }
 }
+

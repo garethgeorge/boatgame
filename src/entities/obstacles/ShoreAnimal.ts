@@ -1,19 +1,8 @@
-import * as planck from 'planck';
-import * as THREE from 'three';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
-import { Animal, AnimalOptions } from './Animal';
+import { Animal, AnimalOptions, AnimalBehaviorConfig } from './Animal';
 import { AnimalLogicScript } from '../behaviors/logic/AnimalLogic';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
-
-/**
- * none - animal has no behavior, just stays put
- */
-export type ShoreAnimalBehavior = 'none';
-
-export interface ShoreAnimalOptions extends AnimalOptions {
-    shoreBehavior?: ShoreAnimalBehavior;
-}
 
 export class ShoreAnimalBehaviorFactory {
 
@@ -22,16 +11,20 @@ export class ShoreAnimalBehaviorFactory {
         params: {
             disableLogic?: boolean,
             aggressiveness?: number,
-            shoreBehavior?: ShoreAnimalBehavior,
+            behavior?: AnimalBehaviorConfig
         }
     ) {
         const {
             disableLogic = false,
             aggressiveness = 0.5,
-            shoreBehavior = 'none',
+            behavior
         } = params;
 
-        const script = disableLogic ? null : this.getLogicScript(shoreBehavior);
+        if (disableLogic || !behavior || behavior.type === 'none') {
+            return null;
+        }
+
+        const script = this.getLogicScript(behavior);
 
         if (script) {
             return new AnimalUniversalBehavior(animal, aggressiveness, script);
@@ -41,14 +34,13 @@ export class ShoreAnimalBehaviorFactory {
     }
 
     private static getLogicScript(
-        shoreBehavior: ShoreAnimalBehavior,
+        behavior: AnimalBehaviorConfig,
     ): AnimalLogicScript {
-        if (shoreBehavior === 'none') {
-            return null;
-        }
+        // currently no shore specific logic beyond 'none' which is handled above
         return null;
     }
 }
+
 
 export abstract class ShoreAnimal extends Animal implements AnyAnimal {
     protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {

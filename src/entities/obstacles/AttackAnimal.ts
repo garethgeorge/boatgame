@@ -5,50 +5,37 @@ import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogicConfigs';
 import { AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
-import { Animal, AnimalOptions } from './Animal';
+import { Animal, AnimalOptions, AnimalBehaviorConfig } from './Animal';
 import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
-
-/**
- * none - animal has no behavior, just stays put
- * attack - for animals that are already in water, starts with attack logic
- * wait - wait on land for boat, enter water, and attack
- * wait - wait on land for boat periodically take a walk, enter water, and attack
- */
-export type AttackAnimalBehavior = 'none' | 'attack' | 'wait' | 'walk';
-
-export type AttackLogicName = 'AmbushAttack' | 'WolfAttack';
-
-export interface AttackAnimalOptions extends AnimalOptions {
-    attackLogicName?: AttackLogicName;
-    attackBehavior?: AttackAnimalBehavior;
-}
 
 export class AttackBehaviorFactory {
     public static create(
         animal: AnyAnimal,
         params: {
             aggressiveness?: number;
-            attackLogicName?: AttackLogicName,
-            attackBehavior?: AttackAnimalBehavior,
             disableLogic?: boolean,
             heightInWater?: number,
             jumpsIntoWater?: boolean,
-            snoutOffset?: number
+            snoutOffset?: number,
+            behavior?: AnimalBehaviorConfig
         }
     ) {
         const {
             aggressiveness = 0.5,
-            attackLogicName = 'WolfAttack',
-            attackBehavior = 'none',
             disableLogic = false,
             heightInWater = 0,
             jumpsIntoWater = false,
-            snoutOffset = 0
+            snoutOffset = 0,
+            behavior
         } = params;
-        const snoutVector = this.getSnoutVector(snoutOffset);
 
-        const script = disableLogic ? null :
-            this.getLogicScript(attackLogicName, attackBehavior, heightInWater, jumpsIntoWater);
+        if (disableLogic || !behavior || behavior.type === 'none') {
+            return null;
+        }
+
+        const snoutVector = this.getSnoutVector(snoutOffset);
+        const script = this.getLogicScript(behavior, heightInWater, jumpsIntoWater);
+
         if (script) {
             return new AnimalUniversalBehavior(animal, aggressiveness, script, snoutVector);
         } else {
@@ -62,16 +49,13 @@ export class AttackBehaviorFactory {
     }
 
     private static getLogicScript(
-        attackLogicName: AttackLogicName,
-        attackBehavior: AttackAnimalBehavior,
+        behavior: AnimalBehaviorConfig,
         heightInWater: number,
         jumpsIntoWater: boolean,
     ): AnimalLogicScript {
-        if (attackBehavior === 'none') {
-            return null;
-        } else if (attackBehavior === 'attack') {
-            return { name: attackLogicName } as AnimalLogicConfig;
-        } else if (attackBehavior === 'wait') {
+        if (behavior.type === 'attack') {
+            return { name: behavior.logicName } as AnimalLogicConfig;
+        } else if (behavior.type === 'wait-attack') {
             return AnimalLogicStep.sequence([
                 {
                     name: 'WaitForBoat',
@@ -80,9 +64,9 @@ export class AttackBehaviorFactory {
                     name: 'EnteringWater',
                     params: { targetWaterHeight: heightInWater, jump: jumpsIntoWater }
                 },
-                { name: attackLogicName } as AnimalLogicConfig
+                { name: behavior.logicName } as AnimalLogicConfig
             ]);
-        } else if (attackBehavior === 'walk') {
+        } else if (behavior.type === 'walk-attack') {
             return AnimalLogicStep.sequence([
                 AnimalLogicStep.until(WaitForBoatLogic.RESULT_NOTICED, Infinity,
                     AnimalLogicStep.random([
@@ -103,11 +87,13 @@ export class AttackBehaviorFactory {
                     name: 'EnteringWater',
                     params: { targetWaterHeight: heightInWater, jump: jumpsIntoWater }
                 },
-                { name: attackLogicName } as AnimalLogicConfig
+                { name: behavior.logicName } as AnimalLogicConfig
             ]);
         }
+        return null;
     }
 }
+
 
 export abstract class AttackAnimal extends Animal implements AnyAnimal {
 

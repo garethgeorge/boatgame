@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackAnimalOptions, AttackBehaviorFactory } from './AttackAnimal';
+import { AttackAnimal, AttackBehaviorFactory } from './AttackAnimal';
 import { AnimalLogic, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimationPlayer, AnimationStep } from '../../core/AnimationPlayer';
-import { Animal, AnimalAnimations } from './Animal';
+import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
 
 export class Moose extends AttackAnimal {
@@ -14,7 +14,7 @@ export class Moose extends AttackAnimal {
 
     constructor(
         physicsEngine: PhysicsEngine,
-        options: AttackAnimalOptions
+        options: AnimalOptions
     ) {
         super(physicsEngine, 'moose', Entity.TYPE_OBSTACLE, true,
             options,
