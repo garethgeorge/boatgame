@@ -144,27 +144,50 @@ export class BoatPathLayoutSpawner {
                             case EntityIds.TRICERATOPS:
                             case EntityIds.TURTLE:
                             case EntityIds.UNICORN: {
-                                let behavior: AnimalBehaviorConfig | undefined = undefined;
                                 let range = p.range;
-
-                                if (biomeType === 'desert') {
-                                    const logicName = Math.random() < 0.5 ? 'WolfAttack' : 'AmbushAttack';
-                                    behavior = { type: 'attack', logicName };
-                                } else if (biomeType === 'swamp' && entityType === EntityIds.ALLIGATOR) {
-                                    behavior = { type: 'attack', logicName: 'AmbushAttack' };
+                                if (biomeType === 'swamp' && entityType === EntityIds.ALLIGATOR) {
                                     range = [-10, 10];
+                                }
+
+                                let landBehavior = (id: EntityIds) => undefined;
+                                let waterBehavior = (id: EntityIds) => undefined;
+                                if (biomeType === 'desert') {
+                                    landBehavior = (id: EntityIds) => {
+                                        return {
+                                            type: id === EntityIds.MONKEY ? 'walk-attack' : 'wait-attack',
+                                            logicName: Math.random() < 0.5 ? 'WolfAttack' : 'AmbushAttack'
+                                        };
+                                    }
+                                    waterBehavior = (id: EntityIds) => {
+                                        return {
+                                            type: 'attack',
+                                            logicName: Math.random() < 0.5 ? 'WolfAttack' : 'AmbushAttack'
+                                        };
+                                    }
+                                } else if (biomeType === 'swamp') {
+                                    waterBehavior = (id: EntityIds) => {
+                                        if (id === EntityIds.ALLIGATOR)
+                                            return {
+                                                type: 'attack',
+                                                logicName: 'AmbushAttack'
+                                            };
+                                        return undefined;
+                                    }
                                 }
 
                                 const animalSpawner = spawners.animal(entityType);
                                 if (animalSpawner) {
-                                    animalSpawner.spawnAnimalAbsolute({
+                                    const baseOptions = {
                                         context,
                                         sample,
                                         distanceRange: range,
                                         aggressiveness: p.aggressiveness || 0.5,
-                                        behavior,
                                         biomeZRange
-                                    });
+                                    };
+
+                                    if (!animalSpawner.spawnOnLand({ ...baseOptions, behavior: landBehavior(entityType) })) {
+                                        animalSpawner.spawnInRiver({ ...baseOptions, behavior: waterBehavior(entityType) });
+                                    }
                                 }
 
                                 break;

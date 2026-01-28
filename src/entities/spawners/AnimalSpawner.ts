@@ -76,7 +76,7 @@ export class AnimalSpawner extends BaseSpawner {
             const range: [number, number] = left ?
                 [-sample.bankDist - (shorePlace.maxDistFromBank || 8.0), -sample.bankDist] :
                 [sample.bankDist, sample.bankDist + (shorePlace.maxDistFromBank || 8.0)];
-            return this.spawnAnimalAbsolute({
+            return this.spawnOnLand({
                 context,
                 sample,
                 distanceRange: range,
@@ -86,7 +86,7 @@ export class AnimalSpawner extends BaseSpawner {
             });
         } else {
             const range: [number, number] = [-sample.bankDist, sample.bankDist];
-            return this.spawnAnimalAbsolute({
+            return this.spawnInRiver({
                 context,
                 sample,
                 distanceRange: range,
@@ -98,9 +98,9 @@ export class AnimalSpawner extends BaseSpawner {
     }
 
     /**
-     * Spawns an animal within a distance range from a river position.
+     * Spawns an animal on land within a distance range from a river position.
      */
-    spawnAnimalAbsolute(options: AnimalSpawnOptions): boolean {
+    spawnOnLand(options: AnimalSpawnOptions): boolean {
         const {
             context,
             sample,
@@ -112,56 +112,90 @@ export class AnimalSpawner extends BaseSpawner {
             fixedHeight
         } = options;
 
-        let placement: any = null;
+        const radius = this.config.entityRadius ?? 2.0;
+        const minSpacing = this.config.waterPlacement?.minDistFromOthers ?? 2.0;
+        const minShoreDist = this.config.shorePlacement?.minDistFromBank ?? 2.0;
+        const maxSlopeDegrees = this.config.shorePlacement?.maxSlopeDegrees || 30.0;
+
+        // Check if range overlaps shore (outside the main channel)
+        const overlapsShore = distanceRange[0] < -sample.bankDist - minShoreDist || distanceRange[1] > sample.bankDist + minShoreDist;
+        if (!overlapsShore) {
+            return false;
+        }
+
+        const placement = context.placementHelper.tryShorePlaceAbsolute(
+            sample,
+            radius,
+            minSpacing,
+            minShoreDist,
+            distanceRange,
+            maxSlopeDegrees
+        );
+
+        if (placement) {
+            const finalBehavior = behavior ?? this.config.defaultShoreBehavior;
+            const entity = this.config.factory(context.physicsEngine, {
+                x: placement.worldX,
+                y: placement.worldZ,
+                angle: fixedAngle !== undefined ? fixedAngle : placement.rotation,
+                height: fixedHeight !== undefined ? fixedHeight : placement.height,
+                terrainNormal: placement.normal,
+                aggressiveness,
+                behavior: finalBehavior,
+                disableLogic,
+                zRange: options.biomeZRange
+            });
+            if (entity) {
+                context.entityManager.add(entity);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Spawns an animal in the river within a distance range from a river position.
+     */
+    spawnInRiver(options: AnimalSpawnOptions): boolean {
+        const {
+            context,
+            sample,
+            distanceRange,
+            aggressiveness,
+            behavior,
+            disableLogic,
+            fixedAngle,
+            fixedHeight
+        } = options;
 
         const radius = this.config.entityRadius ?? 2.0;
         const minSpacing = this.config.waterPlacement?.minDistFromOthers ?? 2.0;
         const minWaterDist = this.config.waterPlacement?.minDistFromBank ?? 1.0;
-        const minShoreDist = this.config.shorePlacement?.minDistFromBank ?? 2.0;
-        const maxSlopeDegrees = this.config.shorePlacement?.maxSlopeDegrees || 30.0;
 
-        // Check if range overlaps shore
-        const overlapsShore = distanceRange[0] < -sample.bankDist - minShoreDist || distanceRange[1] > sample.bankDist + minShoreDist;
-
-        let finalBehavior = behavior;
-
-        if (overlapsShore) {
-            placement = context.placementHelper.tryShorePlaceAbsolute(
-                sample,
-                radius,
-                minSpacing,
-                minShoreDist,
-                distanceRange,
-                maxSlopeDegrees
-            );
-            if (placement && !finalBehavior) {
-                finalBehavior = this.config.defaultShoreBehavior;
-            }
+        // Check if range overlaps river (within the main channel)
+        const overlapsRiver = distanceRange[0] < sample.bankDist - minWaterDist && distanceRange[1] > -sample.bankDist + minWaterDist;
+        if (!overlapsRiver) {
+            return false;
         }
 
-        if (!placement) {
-            const riverPos = context.placementHelper.tryRiverPlaceAbsolute(
-                sample,
-                radius,
-                minSpacing,
-                minWaterDist,
-                distanceRange
-            );
-            if (riverPos) {
-                placement = {
-                    worldX: riverPos.worldX,
-                    worldZ: riverPos.worldZ,
-                    height: this.config.heightInWater ?? 0.0,
-                    rotation: Math.random() * Math.PI * 2,
-                    normal: new THREE.Vector3(0, 1, 0)
-                };
-                if (!finalBehavior) {
-                    finalBehavior = this.config.defaultWaterBehavior;
-                }
-            }
-        }
+        const riverPos = context.placementHelper.tryRiverPlaceAbsolute(
+            sample,
+            radius,
+            minSpacing,
+            minWaterDist,
+            distanceRange
+        );
 
-        if (placement) {
+        if (riverPos) {
+            const finalBehavior = behavior ?? this.config.defaultWaterBehavior;
+            const placement = {
+                worldX: riverPos.worldX,
+                worldZ: riverPos.worldZ,
+                height: this.config.heightInWater ?? 0.0,
+                rotation: Math.random() * Math.PI * 2,
+                normal: new THREE.Vector3(0, 1, 0)
+            };
+
             const entity = this.config.factory(context.physicsEngine, {
                 x: placement.worldX,
                 y: placement.worldZ,

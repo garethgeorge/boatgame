@@ -147,7 +147,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                 // Place on bank
                 const right: [number, number] = [sample.bankDist + xOffset, sample.bankDist + xOffset + 5];
                 const left: [number, number] = [-sample.bankDist - xOffset - 5, -sample.bankDist - xOffset];
-                spawner.spawnAnimalAbsolute({
+                spawner.spawnOnLand({
                     context,
                     sample,
                     distanceRange: left,
@@ -167,7 +167,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                 const riverSystem = RiverSystem.getInstance();
                 const sample = RiverGeometry.getRiverGeometrySample(riverSystem, currentZ);
 
-                spawner.spawnAnimalAbsolute({
+                spawner.spawnInRiver({
                     context,
                     sample,
                     distanceRange: [-5, 5],
