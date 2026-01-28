@@ -2,13 +2,14 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackBehaviorFactory } from './AttackAnimal';
-import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
+import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
 
-export class Snake extends AttackAnimal {
+export class Snake extends Animal {
 
     public static readonly HEIGHT_IN_WATER: number = -0.5;
     public static readonly RADIUS: number = 3.0;
@@ -36,6 +37,10 @@ export class Snake extends AttackAnimal {
         );
     }
 
+    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
+        return { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 };
+    }
+
     protected getModelData() {
         return Decorations.getSnake();
     }
@@ -45,7 +50,7 @@ export class Snake extends AttackAnimal {
     }
 
     private static readonly animations: AnimalAnimations = {
-        default: AttackAnimal.play((step: number) => {
+        default: Animal.play((step: number) => {
             // always play first time through to establish pose
             const r = Math.random();
             if (step === 0 || r < 0.5) {
@@ -61,7 +66,7 @@ export class Snake extends AttackAnimal {
                     AnimalLogicPhase.PREPARING_ATTACK,
                     AnimalLogicPhase.ATTACKING,
                 ],
-                play: AttackAnimal.play({
+                play: Animal.play({
                     name: 'swim', timeScale: 1.0, repeat: Infinity
                 })
             },

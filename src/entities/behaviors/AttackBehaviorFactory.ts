@@ -1,12 +1,12 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { WaitForBoatLogic } from '../behaviors/logic/WaitForBoatLogic';
-import { AnyAnimal } from '../behaviors/AnimalBehavior';
-import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogicConfigs';
-import { AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
-import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
-import { Animal, AnimalOptions, AnimalBehaviorConfig } from './Animal';
-import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
+import { WaitForBoatLogic } from './logic/WaitForBoatLogic';
+import { AnyAnimal } from './AnimalBehavior';
+import { AnimalLogicConfig } from './logic/AnimalLogicConfigs';
+import { AnimalLogicScript, AnimalLogicStep } from './logic/AnimalLogic';
+import { AnimalUniversalBehavior } from './AnimalUniversalBehavior';
+
+import { AttackBehaviorConfig, AnimalBehaviorConfig } from './AnimalBehaviorConfigs';
 
 export class AttackBehaviorFactory {
     public static create(
@@ -20,6 +20,7 @@ export class AttackBehaviorFactory {
             behavior?: AnimalBehaviorConfig
         }
     ) {
+
         const {
             aggressiveness = 0.5,
             disableLogic = false,
@@ -53,6 +54,7 @@ export class AttackBehaviorFactory {
         heightInWater: number,
         jumpsIntoWater: boolean,
     ): AnimalLogicScript {
+
         if (behavior.type === 'attack') {
             return { name: behavior.logicName } as AnimalLogicConfig;
         } else if (behavior.type === 'wait-attack') {
@@ -94,10 +96,3 @@ export class AttackBehaviorFactory {
     }
 }
 
-
-export abstract class AttackAnimal extends Animal implements AnyAnimal {
-
-    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
-        return { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 };
-    }
-}

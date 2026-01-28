@@ -1,10 +1,12 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { AnyAnimal } from '../behaviors/AnimalBehavior';
-import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
-import { Animal, AnimalOptions, AnimalBehaviorConfig } from './Animal';
-import { AnimalLogicScript, AnimalLogicStep } from '../behaviors/logic/AnimalLogic';
-import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
+import { AnyAnimal } from './AnimalBehavior';
+import { Animal, AnimalOptions } from '../obstacles/Animal';
+
+import { AnimalLogicScript, AnimalLogicStep } from './logic/AnimalLogic';
+import { AnimalUniversalBehavior } from './AnimalUniversalBehavior';
+
+import { SwimAwayBehaviorConfig, AnimalBehaviorConfig } from './AnimalBehaviorConfigs';
 
 export class SwimAwayBehaviorFactory {
 
@@ -18,6 +20,7 @@ export class SwimAwayBehaviorFactory {
             behavior?: AnimalBehaviorConfig
         }
     ) {
+
         const {
             disableLogic = false,
             aggressiveness = 0.5,
@@ -44,6 +47,7 @@ export class SwimAwayBehaviorFactory {
         heightInWater: number,
         jumpsIntoWater: boolean,
     ): AnimalLogicScript {
+
         if (behavior.type === 'swim') {
             return { name: 'DefaultSwimAway' };
         } else if (behavior.type === 'wait-swim') {
@@ -63,9 +67,3 @@ export class SwimAwayBehaviorFactory {
     }
 }
 
-
-export abstract class SwimAwayAnimal extends Animal implements AnyAnimal {
-    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
-        return { duration: 0.5, rotateSpeed: 25, targetHeightOffset: 5 };
-    }
-}

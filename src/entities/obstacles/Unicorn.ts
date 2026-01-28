@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { ShoreAnimal, ShoreAnimalBehaviorFactory } from './ShoreAnimal';
+import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
+import { ShoreBehaviorFactory } from '../behaviors/ShoreBehaviorFactory';
 import { AnimationStep } from '../../core/AnimationPlayer';
 
-export class Unicorn extends ShoreAnimal {
+export class Unicorn extends Animal {
     public static readonly RADIUS: number = 3.0;
 
 
@@ -23,9 +24,13 @@ export class Unicorn extends ShoreAnimal {
                 angularDamping: 2.0
             });
 
-        this.setBehavior(ShoreAnimalBehaviorFactory.create(this, {
+        this.setBehavior(ShoreBehaviorFactory.create(this, {
             ...options
         }));
+    }
+
+    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
+        return { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 };
     }
 
     protected getModelData() {
@@ -37,7 +42,7 @@ export class Unicorn extends ShoreAnimal {
     }
 
     private static readonly animations: AnimalAnimations = {
-        default: Unicorn.play(
+        default: Animal.play(
             AnimationStep.random(Infinity, [0.5, 0.25, 0.25], [
                 { name: 'stand', timeScale: 0.2, repeat: 1 },
                 { name: 'paw', timeScale: 0.5, repeat: 1 },

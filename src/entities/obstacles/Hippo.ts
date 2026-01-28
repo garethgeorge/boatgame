@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackBehaviorFactory } from './AttackAnimal';
+import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
+import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
 
-export class Hippo extends AttackAnimal {
+export class Hippo extends Animal {
 
     public static readonly HEIGHT_IN_WATER: number = -0.5;
     public static readonly RADIUS: number = 5.0;
@@ -35,6 +36,10 @@ export class Hippo extends AttackAnimal {
         );
     }
 
+    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
+        return { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 };
+    }
+
     protected getModelData() {
         return Decorations.getHippo();
     }
@@ -46,7 +51,7 @@ export class Hippo extends AttackAnimal {
     }
 
     private static readonly animations: AnimalAnimations = {
-        default: AttackAnimal.play({
+        default: Animal.play({
             name: 'swimming',
             timeScale: 2.0, startTime: -1, randomizeLength: 0.2,
             repeat: Infinity
@@ -58,7 +63,7 @@ export class Hippo extends AttackAnimal {
                     AnimalLogicPhase.PREPARING_ATTACK,
                     AnimalLogicPhase.ATTACKING,
                 ],
-                play: AttackAnimal.play({
+                play: Animal.play({
                     name: 'swimming',
                     timeScale: 2.0, startTime: -1, randomizeLength: 0.2,
                     repeat: Infinity

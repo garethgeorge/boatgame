@@ -5,20 +5,12 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AnimationParameters, AnimationPlayer, AnimationScript } from '../../core/AnimationPlayer';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
-import { AnimalLogic, AnimalLogicPhase, AnimalLogicScript } from '../behaviors/logic/AnimalLogic';
-import { AnimalLogicConfig } from '../behaviors/logic/AnimalLogicConfigs';
+import { AnimalLogic, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
-import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
 import { ObstacleHitBehavior, ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
+import { AnimalBehaviorConfig } from '../behaviors/AnimalBehaviorConfigs';
 
-export type AnimalBehaviorConfig =
-    | { type: 'none' }
-    | { type: 'attack'; logicName: 'AmbushAttack' | 'WolfAttack' }
-    | { type: 'wait-attack'; logicName: 'AmbushAttack' | 'WolfAttack' }
-    | { type: 'walk-attack'; logicName: 'AmbushAttack' | 'WolfAttack' }
-    | { type: 'swim' }
-    | { type: 'wait-swim' };
 
 export interface AnimalOptions {
     x: number;

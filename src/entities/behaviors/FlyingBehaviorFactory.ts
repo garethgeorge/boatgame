@@ -1,16 +1,14 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { ShoreLandingFlightLogic } from '../behaviors/logic/ShoreLandingFlightLogic';
-import { WaterLandingFlightLogic } from '../behaviors/logic/WaterLandingFlightLogic';
-import { WanderingFlightLogic } from '../behaviors/logic/WanderingFlightLogic';
-import { AnyAnimal } from '../behaviors/AnimalBehavior';
-import { WaitForBoatLogic } from '../behaviors/logic/WaitForBoatLogic';
-import { Animal, AnimalOptions } from './Animal';
-import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
-import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
-import { DelayLogic } from '../behaviors/logic/DelayLogic';
-import { BuzzBoatFlightLogic } from '../behaviors/logic/BuzzBoatFlightLogic';
-import { FlyOppositeBoatLogic } from '../behaviors/logic/FlyOppositeBoatLogic';
+import { ShoreLandingFlightLogic } from './logic/ShoreLandingFlightLogic';
+import { WaterLandingFlightLogic } from './logic/WaterLandingFlightLogic';
+import { WanderingFlightLogic } from './logic/WanderingFlightLogic';
+import { AnyAnimal } from './AnimalBehavior';
+import { WaitForBoatLogic } from './logic/WaitForBoatLogic';
+import { AnimalUniversalBehavior } from './AnimalUniversalBehavior';
+import { DelayLogic } from './logic/DelayLogic';
+import { BuzzBoatFlightLogic } from './logic/BuzzBoatFlightLogic';
+import { FlyOppositeBoatLogic } from './logic/FlyOppositeBoatLogic';
 
 // FlyingAnimalOptions removed, use AnimalOptions directly
 
@@ -203,11 +201,5 @@ export class FlyingBehaviorFactory {
         };
 
         return new AnimalUniversalBehavior(animal, aggressiveness, script);
-    }
-}
-
-export abstract class FlyingAnimal extends Animal implements AnyAnimal {
-    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
-        return null;
     }
 }

@@ -1,10 +1,10 @@
-import { AnyAnimal } from '../behaviors/AnimalBehavior';
-import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
-import { Animal, AnimalOptions, AnimalBehaviorConfig } from './Animal';
-import { AnimalLogicScript } from '../behaviors/logic/AnimalLogic';
-import { AnimalUniversalBehavior } from '../behaviors/AnimalUniversalBehavior';
+import { AnyAnimal } from './AnimalBehavior';
+import { AnimalLogicScript } from './logic/AnimalLogic';
+import { AnimalUniversalBehavior } from './AnimalUniversalBehavior';
 
-export class ShoreAnimalBehaviorFactory {
+import { ShoreBehaviorConfig, AnimalBehaviorConfig } from './AnimalBehaviorConfigs';
+
+export class ShoreBehaviorFactory {
 
     public static create(
         animal: AnyAnimal,
@@ -14,6 +14,7 @@ export class ShoreAnimalBehaviorFactory {
             behavior?: AnimalBehaviorConfig
         }
     ) {
+
         const {
             disableLogic = false,
             aggressiveness = 0.5,
@@ -36,14 +37,9 @@ export class ShoreAnimalBehaviorFactory {
     private static getLogicScript(
         behavior: AnimalBehaviorConfig,
     ): AnimalLogicScript {
+
         // currently no shore specific logic beyond 'none' which is handled above
         return null;
     }
 }
 
-
-export abstract class ShoreAnimal extends Animal implements AnyAnimal {
-    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
-        return { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 };
-    }
-}

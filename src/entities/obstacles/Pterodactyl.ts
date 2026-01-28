@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { FlyingAnimal, FlyingBehaviorFactory } from './FlyingAnimal';
+import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { Entity } from '../../core/Entity';
+import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 
-export class Pterodactyl extends FlyingAnimal {
+export class Pterodactyl extends Animal {
     public static readonly RADIUS: number = 2.0;
 
 
@@ -29,6 +30,10 @@ export class Pterodactyl extends FlyingAnimal {
                 ...options,
             }
         ));
+    }
+
+    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
+        return null;
     }
 
     protected getModelData() {

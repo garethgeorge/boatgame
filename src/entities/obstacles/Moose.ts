@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackBehaviorFactory } from './AttackAnimal';
-import { AnimalLogic, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
-import { AnimationPlayer, AnimationStep } from '../../core/AnimationPlayer';
+import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
+import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
+import { AnimalLogic, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { AnimationPlayer, AnimationStep } from '../../core/AnimationPlayer';
 
-export class Moose extends AttackAnimal {
+export class Moose extends Animal {
 
     public static readonly HEIGHT_IN_WATER: number = -3.0;
     public static readonly RADIUS: number = 2.0;
@@ -36,6 +37,10 @@ export class Moose extends AttackAnimal {
         );
     }
 
+    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
+        return { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 };
+    }
+
     protected getModelData() {
         return Decorations.getMoose();
     }
@@ -47,7 +52,7 @@ export class Moose extends AttackAnimal {
     }
 
     private static readonly animations: AnimalAnimations = {
-        default: AttackAnimal.play({
+        default: Animal.play({
             name: 'idle',
             timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
             repeat: Infinity
@@ -78,7 +83,7 @@ export class Moose extends AttackAnimal {
                     AnimalLogicPhase.PREPARING_ATTACK,
                     AnimalLogicPhase.ATTACKING,
                 ],
-                play: AttackAnimal.play({
+                play: Animal.play({
                     name: 'walk',
                     timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
                     repeat: Infinity

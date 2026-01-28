@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { FlyingAnimal, FlyingBehaviorFactory } from './FlyingAnimal';
+import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { Entity } from '../../core/Entity';
+import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 import { AnimationPlayer, AnimationStep } from '../../core/AnimationPlayer';
 
-export class Egret extends FlyingAnimal {
+export class Egret extends Animal {
     public static readonly HEIGHT_IN_WATER = -0.2;
     public static readonly RADIUS: number = 3.0;
 
@@ -31,6 +32,10 @@ export class Egret extends FlyingAnimal {
                 ...options,
             }
         ));
+    }
+
+    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
+        return null;
     }
 
     protected getModelData() {

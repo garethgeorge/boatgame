@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { SwimAwayAnimal, SwimAwayBehaviorFactory } from './SwimAwayAnimal';
+import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
+import { SwimAwayBehaviorFactory } from '../behaviors/SwimAwayBehaviorFactory';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
 import { Entity } from '../../core/Entity';
 
-export class Turtle extends SwimAwayAnimal {
+export class Turtle extends Animal {
     public static readonly HEIGHT_IN_WATER: number = -0.8;
     public static readonly RADIUS: number = 1.5;
 
@@ -31,6 +32,10 @@ export class Turtle extends SwimAwayAnimal {
                 ...options
             }
         ));
+    }
+
+    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
+        return { duration: 0.5, rotateSpeed: 25, targetHeightOffset: 5 };
     }
 
     protected getModelData() {

@@ -2,12 +2,13 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackBehaviorFactory } from './AttackAnimal';
-import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
+import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
-export class Brontosaurus extends AttackAnimal {
+export class Brontosaurus extends Animal {
 
     public static readonly HEIGHT_IN_WATER: number = -1.5;
     public static readonly RADIUS: number = 5.0;
@@ -35,6 +36,10 @@ export class Brontosaurus extends AttackAnimal {
         );
     }
 
+    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
+        return { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 };
+    }
+
     protected getModelData() {
         return Decorations.getBrontosaurus();
     }
@@ -45,7 +50,7 @@ export class Brontosaurus extends AttackAnimal {
     }
 
     private static readonly animations: AnimalAnimations = {
-        default: AttackAnimal.play({
+        default: Animal.play({
             name: 'standing',
             timeScale: 0.5, startTime: -1, randomizeLength: 0.2,
             repeat: Infinity
@@ -57,7 +62,7 @@ export class Brontosaurus extends AttackAnimal {
                     AnimalLogicPhase.PREPARING_ATTACK,
                     AnimalLogicPhase.ATTACKING,
                 ],
-                play: AttackAnimal.play({
+                play: Animal.play({
                     name: 'walking',
                     timeScale: 0.5, startTime: -1, randomizeLength: 0.2,
                     repeat: Infinity

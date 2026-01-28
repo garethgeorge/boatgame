@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import { SpawnContext } from '../Spawnable';
 import { RiverGeometry, RiverGeometrySample } from '../../world/RiverGeometry';
 import { BaseSpawner } from './BaseSpawner';
-import { AnimalBehaviorConfig, AnimalOptions } from '../obstacles/Animal';
+import { AnimalOptions } from '../obstacles/Animal';
+import { AnimalBehaviorConfig } from '../behaviors/AnimalBehaviorConfigs';
+
 import { DecorationId, Decorations } from '../../world/Decorations';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Entity } from '../../core/Entity';

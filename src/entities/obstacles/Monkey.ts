@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
-import { AttackAnimal, AttackBehaviorFactory } from './AttackAnimal';
-import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
+import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
+import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimationStep } from '../../core/AnimationPlayer';
 
-export class Monkey extends AttackAnimal {
+export class Monkey extends Animal {
 
     public static readonly HEIGHT_IN_WATER: number = -1.7;
     public static readonly RADIUS: number = 2.0;
@@ -35,6 +36,10 @@ export class Monkey extends AttackAnimal {
         );
     }
 
+    protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
+        return { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 };
+    }
+
     protected getModelData() {
         return Decorations.getMonkey();
     }
@@ -45,7 +50,7 @@ export class Monkey extends AttackAnimal {
     }
 
     private static readonly animations: AnimalAnimations = {
-        default: AttackAnimal.play(
+        default: Animal.play(
             AnimationStep.random(Infinity, [0.5, 0.5], [
                 { name: 'idle', timeScale: 1.0, repeat: 2 },
                 { name: 'dance', timeScale: 1.0, repeat: 2 },
@@ -57,7 +62,7 @@ export class Monkey extends AttackAnimal {
                     AnimalLogicPhase.WALKING,
                     AnimalLogicPhase.ENTERING_WATER,
                 ],
-                play: AttackAnimal.play({
+                play: Animal.play({
                     name: 'walk',
                     timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
                     repeat: Infinity
@@ -69,7 +74,7 @@ export class Monkey extends AttackAnimal {
                     AnimalLogicPhase.PREPARING_ATTACK,
                     AnimalLogicPhase.ATTACKING,
                 ],
-                play: AttackAnimal.play({
+                play: Animal.play({
                     name: 'swim',
                     timeScale: 2.5, startTime: -1, randomizeLength: 0.2,
                     repeat: Infinity

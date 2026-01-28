@@ -4,7 +4,8 @@ import { BoatPathLayout } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { RiverGeometry } from '../RiverGeometry';
 import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
-import { AnimalBehaviorConfig } from '../../entities/obstacles/Animal';
+import { AnimalBehaviorConfig } from '../../entities/behaviors/AnimalBehaviorConfigs';
+
 
 
 export class BoatPathLayoutSpawner {
