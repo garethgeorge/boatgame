@@ -57,19 +57,19 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                 },
                 'dino_scatter': {
                     logic: 'scatter',
-                    place: 'shore',
+                    place: 'near-shore',
                     density: [0.5, 1.5],
                     types: [EntityIds.TREX, EntityIds.TRICERATOPS]
                 },
                 'ptero_scatter': {
                     logic: 'scatter',
-                    place: 'shore',
+                    place: 'on-shore',
                     density: [0.5, 1.5],
                     types: [EntityIds.PTERODACTYL]
                 },
                 'bronto_migration': {
                     logic: 'sequence',
-                    place: 'shore',
+                    place: 'near-shore',
                     density: [0.4, 0.4],
                     types: [EntityIds.BRONTOSAURUS]
                 },
@@ -81,7 +81,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                 },
                 'grass_patches': {
                     logic: 'scatter',
-                    place: 'shore',
+                    place: 'near-shore',
                     density: [1.5, 3.0],
                     types: [EntityIds.WATER_GRASS]
                 }

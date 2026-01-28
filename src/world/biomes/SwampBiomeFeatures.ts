@@ -55,7 +55,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
             patterns: {
                 'dense_shore_mangroves': {
                     logic: 'scatter',
-                    place: 'shore',
+                    place: 'near-shore',
                     density: [20, 40],
                     types: [EntityIds.MANGROVE],
                     minCount: 15
@@ -94,7 +94,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                 },
                 'grass_patches': {
                     logic: 'scatter',
-                    place: 'shore',
+                    place: 'near-shore',
                     density: [1.5, 3.0],
                     types: [EntityIds.WATER_GRASS]
                 },

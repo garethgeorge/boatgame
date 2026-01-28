@@ -170,11 +170,12 @@ export class AnimalSpawner extends BaseSpawner {
 
         const radius = this.config.entityRadius ?? 2.0;
         const minSpacing = this.config.waterPlacement?.minDistFromOthers ?? 2.0;
-        const minWaterDist = this.config.waterPlacement?.minDistFromBank ?? 1.0;
+        const minBankDist = this.config.waterPlacement?.minDistFromBank ?? 1.0;
 
-        // Check if range overlaps river (within the main channel)
-        const overlapsRiver = distanceRange[0] < sample.bankDist - minWaterDist && distanceRange[1] > -sample.bankDist + minWaterDist;
-        if (!overlapsRiver) {
+        // Check if range is outside river
+        const riverRange = [-sample.bankDist + minBankDist, sample.bankDist - minBankDist];
+        const outsideRiver = distanceRange[1] < riverRange[0] || riverRange[1] < distanceRange[0];
+        if (outsideRiver) {
             return false;
         }
 
@@ -182,7 +183,7 @@ export class AnimalSpawner extends BaseSpawner {
             sample,
             radius,
             minSpacing,
-            minWaterDist,
+            minBankDist,
             distanceRange
         );
 

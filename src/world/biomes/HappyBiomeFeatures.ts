@@ -123,19 +123,19 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             },
             'turtle_hurds': {
                 logic: 'scatter',
-                place: 'shore',
+                place: 'near-shore',
                 density: [0.3, 0.6],
                 types: [EntityIds.TURTLE]
             },
             'butterfly_swarms': {
                 logic: 'scatter',
-                place: 'shore',
+                place: 'on-shore',
                 density: [0.3, 0.6],
                 types: [EntityIds.BUTTERFLY]
             },
             'bluebird_flocks': {
                 logic: 'scatter',
-                place: 'shore',
+                place: 'on-shore',
                 density: [0.3, 0.6],
                 types: [EntityIds.BLUEBIRD]
             },
@@ -147,7 +147,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             },
             'unicorn_herd': {
                 logic: 'scatter',
-                place: 'shore',
+                place: 'on-shore',
                 density: [0.2, 0.4],
                 types: [EntityIds.UNICORN]
             }
@@ -188,7 +188,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         };
 
         const shoreTrack: TrackConfig = {
-            name: 'shore',
+            name: 'near-shore',
             stages: [
                 {
                     name: 'shore_animals',

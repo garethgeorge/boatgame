@@ -75,7 +75,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                 },
                 'forest_animals': {
                     logic: 'scatter',
-                    place: 'shore',
+                    place: 'near-shore',
                     density: [0.8, 2.5],
                     types: [EntityIds.BROWN_BEAR, EntityIds.MOOSE]
                 },
@@ -88,7 +88,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                 },
                 'grass_patches': {
                     logic: 'scatter',
-                    place: 'shore',
+                    place: 'near-shore',
                     density: [1.0, 2.0],
                     types: [EntityIds.WATER_GRASS]
                 }

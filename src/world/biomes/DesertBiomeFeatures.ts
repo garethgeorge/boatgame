@@ -31,13 +31,13 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
             patterns: {
                 'animal_corridor': {
                     logic: 'sequence',
-                    place: 'shore',
+                    place: 'near-shore',
                     density: [0.5, 4.0],
                     types: [EntityIds.ALLIGATOR, EntityIds.MONKEY]
                 },
                 'hippo_pod': {
                     logic: 'cluster',
-                    place: 'shore',
+                    place: 'near-shore',
                     density: [0.3, 2.0],
                     types: [EntityIds.HIPPO],
                     minCount: 2
@@ -96,7 +96,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 {
                     name: 'unique_elements',
                     placements: [
-                        { name: 'dock', place: 'shore', at: 0.95, type: EntityIds.PIER }
+                        { name: 'dock', place: 'near-shore', at: 0.95, type: EntityIds.PIER }
                     ]
                 },
                 {

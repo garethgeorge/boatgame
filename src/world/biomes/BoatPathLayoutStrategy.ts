@@ -46,7 +46,7 @@ export interface BoatPathLayout {
 }
 
 export type PatternLogic = 'scatter' | 'sequence' | 'gate' | 'staggered' | 'cluster';
-export type PlacementType = 'path' | 'slalom' | 'shore' | 'middle';
+export type PlacementType = 'on-shore' | 'path' | 'slalom' | 'near-shore' | 'middle';
 
 /**
  * Configuration for a single behavioral pattern of obstacle placement.
@@ -119,7 +119,7 @@ export interface BoatPathLayoutConfig {
     patterns: PatternConfigs;
     /** Array of tracks. Each track generates stages independently to fill the biome. */
     tracks: TrackConfig[];
-    /** List of entity types that are considered 'water animals' for shore placement refinement */
+    /** List of entity types that are considered 'water animals' for 'near-shore' placement */
     waterAnimals: EntityIds[];
 }
 
@@ -554,11 +554,15 @@ export class BoatPathLayoutStrategy {
         place: PlacementType,
         config: BoatPathLayoutConfig
     ): [number, number] {
-        if (place === 'slalom') {
+        if (place === 'on-shore') {
+            return side === 'right' ?
+                [pathPoint.bankDist, pathPoint.bankDist + 15] :
+                [-pathPoint.bankDist - 15, -pathPoint.bankDist];
+        } else if (place === 'slalom') {
             return side === 'right' ?
                 [pathPoint.boatXOffset + 5.0, pathPoint.bankDist - 2.0] :
                 [-pathPoint.bankDist + 2.0, pathPoint.boatXOffset - 5.0];
-        } else if (place === 'shore') {
+        } else if (place === 'near-shore') {
             const isWaterAnimal = config.waterAnimals.includes(type);
             if (isWaterAnimal) {
                 return side === 'right' ?
