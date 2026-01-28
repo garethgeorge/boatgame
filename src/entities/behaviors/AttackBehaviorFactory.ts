@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import { WaitForBoatLogic } from './logic/WaitForBoatLogic';
 import { AnyAnimal } from './AnimalBehavior';
 import { AnimalLogicConfig } from './logic/AnimalLogicConfigs';
-import { AnimalLogicScript, AnimalLogicStep } from './logic/AnimalLogic';
+import { AnimalLogicScript, AnimalLogicStep, AnimalLogicPhase } from './logic/AnimalLogic';
+import { WaitForBoatParams } from './logic/WaitForBoatLogic';
 import { AnimalUniversalBehavior } from './AnimalUniversalBehavior';
 
 import { AttackBehaviorConfig, AnimalBehaviorConfig } from './AnimalBehaviorConfigs';
@@ -61,6 +62,7 @@ export class AttackBehaviorFactory {
             return AnimalLogicStep.sequence([
                 {
                     name: 'WaitForBoat',
+                    params: { phase: AnimalLogicPhase.IDLE_SHORE }
                 },
                 {
                     name: 'EnteringWater',
@@ -74,7 +76,8 @@ export class AttackBehaviorFactory {
                     AnimalLogicStep.random([
                         {
                             name: 'WaitForBoat',
-                            timeout: 5.0,
+                            params: { phase: AnimalLogicPhase.IDLE_SHORE },
+                            timeout: 5.0
                         },
                         {
                             name: 'ShoreWalk',

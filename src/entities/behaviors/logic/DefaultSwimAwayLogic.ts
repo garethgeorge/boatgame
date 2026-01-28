@@ -62,15 +62,20 @@ export class DefaultSwimAwayLogic implements AnimalLogic {
     }
 
     shouldEngage(context: AnimalLogicContext): boolean {
+        const inFront = AnimalBehaviorUtils.isInFrontOfBoat(context.snoutPos, context.targetBody);
+        if (!inFront)
+            return false;
+
         const params = AnimalBehaviorUtils.evaluateSwimAwayParams(context.aggressiveness, context.bottles);
-        return planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < params.startFleeDistance;
+        return AnimalBehaviorUtils.distanceToBoat(context.originPos, context.targetBody) < params.startFleeDistance;
     }
 
     shouldDisengage(context: AnimalLogicContext): boolean {
+        const inFront = AnimalBehaviorUtils.isInFrontOfBoat(context.snoutPos, context.targetBody);
+        if (!inFront)
+            return true;
+
         const params = AnimalBehaviorUtils.evaluateSwimAwayParams(context.aggressiveness, context.bottles);
-        const boatToAnimal = context.originPos.clone().sub(context.targetBody.getPosition());
-        const isMovingTowards = planck.Vec2.dot(context.targetBody.getLinearVelocity(), boatToAnimal) > 0;
-        return boatToAnimal.length() > params.stopFleeDistance ||
-            (context.targetBody.getLinearVelocity().length() > 0.5 && !isMovingTowards);
+        return AnimalBehaviorUtils.distanceToBoat(context.originPos, context.targetBody) > params.stopFleeDistance;
     }
 }

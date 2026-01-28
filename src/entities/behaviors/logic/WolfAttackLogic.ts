@@ -91,20 +91,26 @@ export class WolfAttackLogic implements AnimalLogic {
     }
 
     shouldEngage(context: AnimalLogicContext): boolean {
-        if (context.bottles <= 0) return false;
+        if (context.bottles <= 0)
+            return false;
+        if (!AnimalBehaviorUtils.isInFrontOfBoat(context.originPos, context.targetBody))
+            return false;
+
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
-        if (context.targetBody.getLocalPoint(context.originPos).y > Boat.STERN_Y) return false;
-        return planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) < params.startAttackDistance;
+        return AnimalBehaviorUtils.distanceToBoat(context.originPos, context.targetBody) < params.startAttackDistance;
     }
 
     shouldDisengage(context: AnimalLogicContext): boolean {
-        if (context.bottles <= 0) return true;
+        if (context.bottles <= 0)
+            return true;
+
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
 
-        if (planck.Vec2.distance(context.originPos, context.targetBody.getPosition()) > params.endAttackDistance) return true;
-
         const boatSpeed = context.targetBody.getLinearVelocity().length();
-        const localPos = context.targetBody.getLocalPoint(context.snoutPos);
-        return localPos.y > Boat.STERN_Y && boatSpeed > 0.5 * params.attackSpeed;
+        if (!AnimalBehaviorUtils.isInFrontOfBoat(context.originPos, context.targetBody) &&
+            boatSpeed > 0.5 * params.attackSpeed)
+            return true;
+
+        return AnimalBehaviorUtils.distanceToBoat(context.originPos, context.targetBody) > params.endAttackDistance;
     }
 }

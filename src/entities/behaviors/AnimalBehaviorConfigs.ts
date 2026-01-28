@@ -15,7 +15,8 @@ export type SwimAwayBehaviorConfig =
     | { type: 'wait-swim' };
 
 export type ShoreBehaviorConfig =
-    { type: 'none' };
+    { type: 'none' }
+    | { type: 'unicorn' };
 
 export type AnimalBehaviorConfig =
     AttackBehaviorConfig

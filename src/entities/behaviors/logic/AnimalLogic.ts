@@ -14,14 +14,24 @@ export type LocomotionType = 'WATER' | 'LAND' | 'FLIGHT';
  */
 export enum AnimalLogicPhase {
     NONE = 'NONE',
+    // For WaitOnShoreLogic and DelayLogic
     IDLE_SHORE = 'IDLE_SHORE',
+    IDLE_NEAR = 'IDLE_NEAR',
+    // Also used for various logics that have idle states in the river
+    // e.g. ambush, wolf, swim away
     IDLE_WATER = 'IDLE_WATER',
+    // For EnteringWaterLogic
     ENTERING_WATER = 'ENTERING_WATER',
+    // For AmbushAttackLogic and WolfAttackLogic
     PREPARING_ATTACK = 'PREPARING_ATTACK',
     ATTACKING = 'ATTACKING',
+    // For DefaultSwimAwayLogic
     SWIMING_AWAY = 'SWIMING_AWAY',
+    // For ShoreWalkLogic
     WALKING = 'WALKING',
-    FLYING = 'FLYING'
+    // For BuzzBoatFlightLogic, FlyDirectToShoreLogic, FlyOppositeBoatLogic
+    // ShoreLandingFlightLogic, WanderingFlightLogic, WaterLandingFlightLogic
+    FLYING = 'FLYING',
 }
 
 import { AnimalLogicConfig } from './AnimalLogicConfigs';
@@ -63,6 +73,17 @@ export class AnimalLogicStep {
             if (step > 0 || choices.length === 0) return null;
             const index = Math.floor(Math.random() * choices.length);
             return choices[index];
+        }
+    }
+
+    /** Loop a sequence of scripts indefinitely */
+    public static loop(sequence: AnimalLogicScript[], debug?: string) {
+        return (step: number, lastResult: string) => {
+            const next = sequence[step % sequence.length];
+            if (debug !== undefined) {
+                console.log(debug, step, lastResult, next);
+            }
+            return next;
         }
     }
 }

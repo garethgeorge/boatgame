@@ -1,12 +1,9 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { AnyAnimal } from './AnimalBehavior';
-import { Animal, AnimalOptions } from '../obstacles/Animal';
-
-import { AnimalLogicScript, AnimalLogicStep } from './logic/AnimalLogic';
+import { AnimalLogicScript, AnimalLogicStep, AnimalLogicPhase } from './logic/AnimalLogic';
 import { AnimalUniversalBehavior } from './AnimalUniversalBehavior';
-
-import { SwimAwayBehaviorConfig, AnimalBehaviorConfig } from './AnimalBehaviorConfigs';
+import { AnimalBehaviorConfig } from './AnimalBehaviorConfigs';
 
 export class SwimAwayBehaviorFactory {
 
@@ -54,7 +51,11 @@ export class SwimAwayBehaviorFactory {
             return AnimalLogicStep.sequence([
                 {
                     name: 'WaitForBoat',
-                    params: { noticeDistance: 50.0, ignoreBottles: true }
+                    params: {
+                        forwardMax: 50.0,
+                        ignoreBottles: true,
+                        phase: AnimalLogicPhase.IDLE_SHORE
+                    }
                 },
                 {
                     name: 'EnteringWater',

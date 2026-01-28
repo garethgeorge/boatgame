@@ -58,7 +58,9 @@ export class EntitySpawners {
             shoreProbability: 0.3,
             entityRadius: Alligator.RADIUS,
             heightInWater: Alligator.HEIGHT_IN_WATER,
-            waterPlacement: { minDistFromBank: 3.0 }
+            waterPlacement: { minDistFromBank: 3.0 },
+            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
             id: EntityIds.BRONTOSAURUS,
@@ -68,7 +70,9 @@ export class EntitySpawners {
             shoreProbability: 0.6,
             entityRadius: Brontosaurus.RADIUS,
             heightInWater: Brontosaurus.HEIGHT_IN_WATER,
-            waterPlacement: { minDistFromBank: 3.0 }
+            waterPlacement: { minDistFromBank: 3.0 },
+            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
             id: EntityIds.TREX,
@@ -78,7 +82,9 @@ export class EntitySpawners {
             shoreProbability: 0.6,
             entityRadius: TRex.RADIUS,
             heightInWater: TRex.HEIGHT_IN_WATER,
-            waterPlacement: { minDistFromBank: 3.0 }
+            waterPlacement: { minDistFromBank: 3.0 },
+            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
             id: EntityIds.BROWN_BEAR,
@@ -88,7 +94,9 @@ export class EntitySpawners {
             shoreProbability: 1.0,
             shorePlacement: { minDistFromBank: 2.5, maxDistFromBank: 3.0 },
             entityRadius: BrownBear.RADIUS,
-            heightInWater: BrownBear.HEIGHT_IN_WATER
+            heightInWater: BrownBear.HEIGHT_IN_WATER,
+            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
             id: EntityIds.POLAR_BEAR,
@@ -98,7 +106,9 @@ export class EntitySpawners {
             shoreProbability: 1.0,
             shorePlacement: { minDistFromBank: 2.5, maxDistFromBank: 4.0 },
             entityRadius: PolarBear.RADIUS,
-            heightInWater: PolarBear.HEIGHT_IN_WATER
+            heightInWater: PolarBear.HEIGHT_IN_WATER,
+            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
             id: EntityIds.HIPPO,
@@ -108,7 +118,8 @@ export class EntitySpawners {
             shoreProbability: 0.0,
             entityRadius: Hippo.RADIUS,
             heightInWater: Hippo.HEIGHT_IN_WATER,
-            waterPlacement: { minDistFromBank: 3.0 }
+            waterPlacement: { minDistFromBank: 3.0 },
+            defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
             id: EntityIds.MONKEY,
@@ -119,7 +130,7 @@ export class EntitySpawners {
             shorePlacement: { minDistFromBank: 0.5, maxDistFromBank: 3.0 },
             entityRadius: Monkey.RADIUS,
             heightInWater: Monkey.HEIGHT_IN_WATER,
-            defaultShoreBehavior: { type: 'walk-attack', logicName: 'AmbushAttack' }
+            defaultShoreBehavior: { type: 'walk-attack', logicName: 'AmbushAttack' },
         },
         {
             id: EntityIds.MOOSE,
@@ -129,7 +140,8 @@ export class EntitySpawners {
             shoreProbability: 0.6,
             entityRadius: Moose.RADIUS,
             heightInWater: Moose.HEIGHT_IN_WATER,
-            defaultShoreBehavior: { type: 'none' }
+            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
             id: EntityIds.TRICERATOPS,
@@ -140,7 +152,9 @@ export class EntitySpawners {
             entityRadius: Triceratops.RADIUS,
             heightInWater: Triceratops.HEIGHT_IN_WATER,
             shorePlacement: { minDistFromBank: 3.0, maxDistFromBank: 6.0 },
-            waterPlacement: { minDistFromBank: 3.0 }
+            waterPlacement: { minDistFromBank: 3.0 },
+            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
             id: EntityIds.SNAKE,
@@ -150,7 +164,8 @@ export class EntitySpawners {
             shoreProbability: 0.0,
             entityRadius: Snake.RADIUS,
             heightInWater: Snake.HEIGHT_IN_WATER,
-            waterPlacement: { minDistFromBank: 2.0 }
+            waterPlacement: { minDistFromBank: 2.0 },
+            defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
 
         // Flying Animals
@@ -200,7 +215,8 @@ export class EntitySpawners {
             factory: (physicsEngine, options) => new Dolphin(physicsEngine, options),
             heightInWater: Dolphin.HEIGHT_IN_WATER,
             entityRadius: Dolphin.RADIUS,
-            waterPlacement: { minDistFromBank: 2.0 }
+            waterPlacement: { minDistFromBank: 2.0 },
+            defaultWaterBehavior: { type: 'swim' }
         },
         {
             id: EntityIds.DUCKLING,
@@ -209,7 +225,8 @@ export class EntitySpawners {
             factory: (physicsEngine, options) => new Duckling(physicsEngine, options),
             heightInWater: Duckling.HEIGHT_IN_WATER,
             entityRadius: Duckling.RADIUS,
-            waterPlacement: { minDistFromBank: 2.0 }
+            waterPlacement: { minDistFromBank: 2.0 },
+            defaultWaterBehavior: { type: 'swim' }
         },
         {
             id: EntityIds.PENGUIN_KAYAK,
@@ -218,7 +235,8 @@ export class EntitySpawners {
             factory: (physicsEngine, options) => new PenguinKayak(physicsEngine, options),
             heightInWater: PenguinKayak.HEIGHT_IN_WATER,
             entityRadius: PenguinKayak.RADIUS,
-            waterPlacement: { minDistFromBank: 1.0 }
+            waterPlacement: { minDistFromBank: 1.0 },
+            defaultWaterBehavior: { type: 'swim' }
         },
         {
             id: EntityIds.SWAN,
@@ -227,7 +245,8 @@ export class EntitySpawners {
             factory: (physicsEngine, options) => new Swan(physicsEngine, options),
             heightInWater: Swan.HEIGHT_IN_WATER,
             entityRadius: Swan.RADIUS,
-            waterPlacement: { minDistFromBank: 1.0 }
+            waterPlacement: { minDistFromBank: 1.0 },
+            defaultWaterBehavior: { type: 'swim' }
         },
         {
             id: EntityIds.TURTLE,
@@ -249,7 +268,8 @@ export class EntitySpawners {
             getDensity: () => 0.05,
             factory: (physicsEngine, options) => new Unicorn(physicsEngine, options),
             entityRadius: Unicorn.RADIUS,
-            shorePlacement: { minDistFromBank: 4.0, maxDistFromBank: 10.0 }
+            shorePlacement: { minDistFromBank: 4.0, maxDistFromBank: 10.0 },
+            defaultShoreBehavior: { type: 'unicorn' }
         }
     ];
 

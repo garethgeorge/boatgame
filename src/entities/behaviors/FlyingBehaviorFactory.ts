@@ -9,6 +9,8 @@ import { AnimalUniversalBehavior } from './AnimalUniversalBehavior';
 import { DelayLogic } from './logic/DelayLogic';
 import { BuzzBoatFlightLogic } from './logic/BuzzBoatFlightLogic';
 import { FlyOppositeBoatLogic } from './logic/FlyOppositeBoatLogic';
+import { AnimalLogicPhase } from './logic/AnimalLogic';
+import { WaitForBoatParams } from './logic/WaitForBoatLogic';
 
 // FlyingAnimalOptions removed, use AnimalOptions directly
 
@@ -45,7 +47,11 @@ export class FlyingBehaviorFactory {
                 case '': {
                     return {
                         name: 'WaitForBoat',
-                        params: { noticeDistance: noticeDistance, ignoreBottles: true }
+                        params: {
+                            forwardMax: noticeDistance,
+                            ignoreBottles: true,
+                            phase: AnimalLogicPhase.IDLE_SHORE
+                        }
                     };
                 }
                 case WaitForBoatLogic.RESULT_NOTICED: {
@@ -104,9 +110,10 @@ export class FlyingBehaviorFactory {
                 return {
                     name: 'WaitForBoat',
                     params: {
-                        noticeDistance: step == 0 ? noticeDistance : 5.0,
-                        ignoreBottles: true
-                    }
+                        forwardMax: step == 0 ? noticeDistance : 5.0,
+                        ignoreBottles: true,
+                        phase: AnimalLogicPhase.IDLE_SHORE
+                    } as WaitForBoatParams
                 };
             }
             if (lastResult === WaitForBoatLogic.RESULT_NOTICED) {
@@ -124,7 +131,11 @@ export class FlyingBehaviorFactory {
             if (lastResult === WaterLandingFlightLogic.RESULT_FINISHED) {
                 return {
                     name: 'Delay',
-                    params: { waitOnShore: false, maxDuration: 2.0 }
+                    params: {
+                        waitOnShore: false,
+                        maxDuration: 2.0,
+                        phase: AnimalLogicPhase.IDLE_WATER
+                    }
                 }
             }
             return null;

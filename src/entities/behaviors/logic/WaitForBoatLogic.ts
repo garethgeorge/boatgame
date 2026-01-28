@@ -4,17 +4,19 @@ import { AnimalLogicConfig } from './AnimalLogicConfigs';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
 export interface WaitForBoatParams {
+    phase: AnimalLogicPhase;
     waitOnShore?: boolean;
-    noticeDistance?: number;
     ignoreBottles?: boolean;
-    maxDuration?: number;
+    forwardMin?: number;
+    forwardMax?: number;
+    backwardMin?: number;
+    backwardMax?: number;
 }
 
 /**
  * Wait for boat runs until boat is noticed:
- * - Animal is in front of boat
- * - Animal is closer than minimum notice distance which may depend on number of
- *   bottles collected
+ * - Original logic: Animal is in front of boat AND closer than noticeDistance.
+ * - Generalized logic: Any of the specified distance criteria are met (forward/backward min/max).
  */
 export class WaitForBoatLogic implements AnimalLogic {
     public static readonly RESULT_NOTICED = 'wait_for_boat_noticed';
@@ -22,38 +24,55 @@ export class WaitForBoatLogic implements AnimalLogic {
 
     private locomotionType: LocomotionType;
     private logicPhase: AnimalLogicPhase;
-    private noticeDistance: number;
     private ignoreBottles: boolean;
 
-    constructor(params?: WaitForBoatParams) {
-        const waitOnShore = params?.waitOnShore ?? true;
+    private forwardMin?: number;
+    private forwardMax?: number;
+    private backwardMin?: number;
+    private backwardMax?: number;
+
+    constructor(params: WaitForBoatParams) {
+        const waitOnShore = params.waitOnShore ?? true;
         this.locomotionType = waitOnShore ? 'LAND' : 'WATER';
-        this.logicPhase = waitOnShore ? AnimalLogicPhase.IDLE_SHORE : AnimalLogicPhase.IDLE_WATER;
-        this.noticeDistance = params?.noticeDistance ?? 50.0;
-        this.ignoreBottles = params?.ignoreBottles ?? false;
+        this.logicPhase = params.phase;
+        this.ignoreBottles = params.ignoreBottles ?? false;
+
+        this.forwardMin = params.forwardMin;
+        this.forwardMax = params.forwardMax;
+        this.backwardMin = params.backwardMin;
+        this.backwardMax = params.backwardMax;
     }
 
     activate(context: AnimalLogicContext): void {
     }
 
     update(context: AnimalLogicContext): AnimalLogicPathResult {
-        const bottles = this.ignoreBottles ? -1 : context.bottles;
-        const noticeBoatDistance = AnimalBehaviorUtils.evaluateNoticeBoatDistance(
-            context.aggressiveness,
-            bottles,
-            this.noticeDistance
-        );
-
         let result: string | undefined = undefined;
 
-        // if boat in range AND not behind the boat, switch to boat noticed logic
-        if (noticeBoatDistance > 0) {
-            const localPos = context.targetBody.getLocalPoint(context.originPos);
-            if (localPos.y < 0) { // Check that animal is in front of the boat center
-                const dist = localPos.length(); // Use local distance for efficiency
-                if (dist < noticeBoatDistance) {
-                    result = WaitForBoatLogic.RESULT_NOTICED;
-                }
+
+        const distToBoat = AnimalBehaviorUtils.distanceToBoat(context.originPos, context.targetBody);
+        const inFront = AnimalBehaviorUtils.isInFrontOfBoat(context.originPos, context.targetBody);
+
+        // Apply bottle-based adjustment to forwardMax if it's the primary notice criterion
+        let forwardMax = this.forwardMax;
+        if (forwardMax !== undefined) {
+            const bottles = this.ignoreBottles ? -1 : context.bottles;
+            forwardMax = AnimalBehaviorUtils.evaluateNoticeBoatDistance(
+                context.aggressiveness,
+                bottles,
+                forwardMax
+            );
+        }
+
+        if (inFront) {
+            if ((this.forwardMin !== undefined && distToBoat > this.forwardMin) ||
+                (forwardMax !== undefined && distToBoat < forwardMax)) {
+                result = WaitForBoatLogic.RESULT_NOTICED;
+            }
+        } else {
+            if ((this.backwardMin !== undefined && distToBoat > this.backwardMin) ||
+                (this.backwardMax !== undefined && distToBoat < this.backwardMax)) {
+                result = WaitForBoatLogic.RESULT_NOTICED;
             }
         }
 
@@ -63,7 +82,8 @@ export class WaitForBoatLogic implements AnimalLogic {
                 speed: 0
             },
             locomotionType: this.locomotionType,
-            result: result
+            result: result,
+            finish: true // Always finish on same frame when result is set
         };
     }
 

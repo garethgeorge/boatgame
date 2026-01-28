@@ -3,6 +3,7 @@ import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhas
 import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
 import { FlyToPointStrategy, WanderStrategy } from './strategy/FlightPathStrategies';
 import { RiverSystem } from '../../../world/RiverSystem';
+import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
 export interface WanderingFlightParams {
     flightSpeed: number;
@@ -54,8 +55,7 @@ export class WanderingFlightLogic implements AnimalLogic {
 
         this.noticeDelay -= context.dt;
 
-        const boatPos = context.targetBody.getPosition();
-        const distToBoat = planck.Vec2.distance(context.originPos, boatPos);
+        const distToBoat = AnimalBehaviorUtils.distanceToBoat(context.originPos, context.targetBody);
 
         // Check for boat
         if (this.noticeDelay <= 0 && distToBoat < this.noticeDistance) {

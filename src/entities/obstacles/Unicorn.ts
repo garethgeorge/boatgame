@@ -6,10 +6,10 @@ import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
 import { ShoreBehaviorFactory } from '../behaviors/ShoreBehaviorFactory';
 import { AnimationStep } from '../../core/AnimationPlayer';
+import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
 export class Unicorn extends Animal {
     public static readonly RADIUS: number = 3.0;
-
 
     constructor(
         physicsEngine: PhysicsEngine,
@@ -42,13 +42,26 @@ export class Unicorn extends Animal {
     }
 
     private static readonly animations: AnimalAnimations = {
-        default: Animal.play(
-            AnimationStep.random(Infinity, [0.5, 0.25, 0.25], [
-                { name: 'stand', timeScale: 0.2, repeat: 1 },
-                { name: 'paw', timeScale: 0.5, repeat: 1 },
-                { name: 'rear', timeScale: 0.5, repeat: 1 },
-            ])
-        )
+        default: Animal.play({ name: 'stand', timeScale: 0.2, repeat: Infinity }),
+        animations: [
+            {
+                phases: [AnimalLogicPhase.IDLE_SHORE],
+                play: Animal.play({ name: 'stand', timeScale: 0.2, repeat: Infinity })
+            },
+            {
+                phases: [AnimalLogicPhase.WALKING],
+                play: Animal.play({ name: 'walk', timeScale: 1.0, repeat: Infinity })
+            },
+            {
+                phases: [AnimalLogicPhase.IDLE_NEAR],
+                play: Animal.play(
+                    AnimationStep.random(Infinity, [0.5, 0.5], [
+                        { name: 'paw', timeScale: 0.5, repeat: 1 },
+                        { name: 'rear', timeScale: 0.5, repeat: 1 },
+                    ])
+                )
+            }
+        ]
     }
 
     protected getAnimations(): AnimalAnimations {

@@ -1,12 +1,13 @@
 import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
-import { AnimalLogicConfig } from './AnimalLogicConfigs';
 import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
 import { ShoreWalkStrategy, ShoreTurnStrategy } from './strategy/ShoreWalkStrategy';
+import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
 export interface ShoreWalkParams {
     walkDistance: number;
     speed: number; // Walk speed
+    finishWithinDistanceOfBoat?: number;
 }
 
 type ShoreWalkState = 'START' | 'OUTBOUND' | 'TURN' | 'INBOUND' | 'END' | 'FINISHED';
@@ -22,12 +23,14 @@ export class ShoreWalkLogic implements AnimalLogic {
     private strategy: AnimalPathStrategy | null = null;
     private walkDistance: number;
     private speed: number;
+    private finishWithinDistanceOfBoat?: number;
 
     private state: ShoreWalkState = 'START';
 
     constructor(params: ShoreWalkParams) {
         this.walkDistance = params.walkDistance;
         this.speed = params.speed;
+        this.finishWithinDistanceOfBoat = params.finishWithinDistanceOfBoat;
     }
 
     activate(context: AnimalLogicContext) {
@@ -38,6 +41,17 @@ export class ShoreWalkLogic implements AnimalLogic {
     update(context: AnimalLogicContext): AnimalLogicPathResult {
         const currentPos = context.originPos;
         const ROTATION_SPEED = 2.0;
+
+        // Check if we should finish early based on boat distance
+        if (this.finishWithinDistanceOfBoat !== undefined &&
+            this.state !== 'END' && this.state !== 'FINISHED') {
+            const dist = AnimalBehaviorUtils.distanceToBoat(currentPos, context.targetBody);
+            if (dist < this.finishWithinDistanceOfBoat) {
+                // Skip to end to turn to shore
+                this.state = 'END';
+                this.strategy = null;
+            }
+        }
 
         // Set strategy if last one finished
         if (!this.strategy) {
@@ -131,4 +145,3 @@ export class ShoreWalkLogic implements AnimalLogic {
         return AnimalLogicPhase.WALKING
     }
 }
-

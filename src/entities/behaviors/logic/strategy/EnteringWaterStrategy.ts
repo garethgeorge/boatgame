@@ -2,6 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../../../../world/RiverSystem';
 import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
+import { AnimalBehaviorUtils } from '../../AnimalBehaviorUtils';
 
 /**
  * ENTERING WATER (Land/Transition)
@@ -92,7 +93,7 @@ export class EnteringWaterStrategy extends AnimalPathStrategy {
 
     getEntryProgress(currentPos: planck.Vec2): number {
         if (!this.entryStartPosition || this.totalEntryDistance <= 0) return 0;
-        const distTraveled = currentPos.clone().sub(this.entryStartPosition).length();
+        const distTraveled = AnimalBehaviorUtils.distance(currentPos, this.entryStartPosition);
         return Math.min(1.0, distTraveled / this.totalEntryDistance);
     }
 

@@ -100,6 +100,32 @@ export class AnimalBehaviorUtils {
     }
 
     /**
+     * Calculates the true Euclidean distance between two points in the 2D physics plane.
+     */
+    public static distance(a: planck.Vec2, b: planck.Vec2): number {
+        return planck.Vec2.distance(a, b);
+    }
+
+    /**
+     * Returns true if the animal is in front of the boat (longitudinally) based on the boat's orientation.
+     * Uses dot product: (animalPos - boatPos) . boatForward > 0
+     */
+    public static isInFrontOfBoat(animalPos: planck.Vec2, boatBody: planck.Body): boolean {
+        const boatPos = boatBody.getPosition();
+        // Boat faces Negative Y in local space
+        const forward = boatBody.getWorldVector(new planck.Vec2(0, -1));
+        const toAnimal = planck.Vec2.sub(animalPos, boatPos);
+        return planck.Vec2.dot(toAnimal, forward) > 0;
+    }
+
+    /**
+     * Calculates the true Euclidean distance between the animal and the boat.
+     */
+    public static distanceToBoat(animalPos: planck.Vec2, boatBody: planck.Body): number {
+        return planck.Vec2.distance(animalPos, boatBody.getPosition());
+    }
+
+    /**
      * Calculates a speed multiplier (0.5 to 1.0) based on how well the
      * animal's current angle aligns with its target angle.
      */

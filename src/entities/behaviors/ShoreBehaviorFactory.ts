@@ -1,6 +1,8 @@
 import { AnyAnimal } from './AnimalBehavior';
-import { AnimalLogicScript } from './logic/AnimalLogic';
+import { AnimalLogicScript, AnimalLogicPhase, AnimalLogicStep } from './logic/AnimalLogic';
 import { AnimalUniversalBehavior } from './AnimalUniversalBehavior';
+import { WaitForBoatParams } from './logic/WaitForBoatLogic';
+import { ShoreWalkParams } from './logic/ShoreWalkLogic';
 
 import { ShoreBehaviorConfig, AnimalBehaviorConfig } from './AnimalBehaviorConfigs';
 
@@ -37,9 +39,46 @@ export class ShoreBehaviorFactory {
     private static getLogicScript(
         behavior: AnimalBehaviorConfig,
     ): AnimalLogicScript {
+        if (behavior.type === 'unicorn') {
+            return AnimalLogicStep.loop([
+                {
+                    name: 'WaitForBoat',
+                    params: {
+                        forwardMax: 200,
+                        phase: AnimalLogicPhase.IDLE_SHORE,
+                        ignoreBottles: true
+                    }
+                },
+                {
+                    name: 'ShoreWalk',
+                    params: {
+                        speed: 6,
+                        walkDistance: 200,
+                        finishWithinDistanceOfBoat: 80
+                    }
+                },
+                {
+                    name: 'WaitForBoat',
+                    params: {
+                        forwardMin: 90,
+                        backwardMin: 5,
+                        phase: AnimalLogicPhase.IDLE_NEAR,
+                        ignoreBottles: true
+                    }
+                },
+                {
+                    name: 'WaitForBoat',
+                    params: {
+                        forwardMin: 220,
+                        backwardMin: 220,
+                        phase: AnimalLogicPhase.IDLE_SHORE,
+                        ignoreBottles: true
+                    }
+                }
+            ], 'unicorn loop');
+        }
 
         // currently no shore specific logic beyond 'none' which is handled above
         return null;
     }
 }
-

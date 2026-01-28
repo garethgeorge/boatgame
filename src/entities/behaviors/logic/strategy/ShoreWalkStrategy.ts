@@ -2,6 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { RiverSystem } from '../../../../world/RiverSystem';
 import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
+import { AnimalBehaviorUtils } from '../../AnimalBehaviorUtils';
 
 /**
  * 0: Face Toward river
@@ -118,7 +119,7 @@ export class ShoreWalkStrategy extends AnimalPathStrategy {
         const currentPos = context.originPos;
 
         // Calculate progress
-        this.distanceTravelled += planck.Vec2.distance(currentPos, this.lastPos);
+        this.distanceTravelled += AnimalBehaviorUtils.distance(currentPos, this.lastPos);
         this.lastPos.setVec2(currentPos);
 
         if (this.distanceTravelled >= this.distance) {

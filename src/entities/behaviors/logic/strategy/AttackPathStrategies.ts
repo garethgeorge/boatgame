@@ -20,7 +20,7 @@ export class SternInterceptStrategy extends AnimalPathStrategy {
         const sternWorldPos = context.targetBody.getWorldPoint(planck.Vec2(sternLocalX, sternLocalY));
         const boatVel = context.targetBody.getLinearVelocity();
         const diff = sternWorldPos.clone().sub(context.snoutPos);
-        const dist = diff.length();
+        const dist = AnimalBehaviorUtils.distance(sternWorldPos, context.snoutPos);
         const dirToTarget = diff.clone();
         if (dist > 0.01) dirToTarget.normalize();
 

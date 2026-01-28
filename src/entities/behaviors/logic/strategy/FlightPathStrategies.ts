@@ -25,7 +25,7 @@ export class BuzzTargetStrategy extends AnimalPathStrategy {
         // Target a point ahead of the boat in local coordinates
         // Bow is at -3.0y, Stern at +3.0y. Positive targetOffset = front = negative y.
         const targetPoint = context.targetBody.getWorldPoint(planck.Vec2(0, -this.targetOffset));
-        const distToTarget = planck.Vec2.distance(context.originPos, targetPoint);
+        const distToTarget = AnimalBehaviorUtils.distance(context.originPos, targetPoint);
 
         const diffToTarget = targetPoint.clone().sub(context.originPos);
         const targetAngle = Math.atan2(diffToTarget.x, -diffToTarget.y);
@@ -228,7 +228,7 @@ export class WanderStrategy extends AnimalPathStrategy {
     }
 
     update(context: AnimalStrategyContext): AnimalSteering {
-        const distToTarget = planck.Vec2.distance(context.originPos, this.target);
+        const distToTarget = AnimalBehaviorUtils.distance(context.originPos, this.target);
 
         // Pick new target if reached or periodically
         if (distToTarget < 2.0 || context.dt + this.lastUpdateTime > 5.0 || this.lastUpdateTime < 0) {

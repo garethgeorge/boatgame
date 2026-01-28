@@ -3,6 +3,7 @@ import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhas
 import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
 import { FlyToPointStrategy } from './strategy/FlightPathStrategies';
 import { RiverSystem } from '../../../world/RiverSystem';
+import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
 export interface FlyOppositeBoatParams {
     flightSpeed: number;

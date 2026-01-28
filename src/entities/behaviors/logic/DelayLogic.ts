@@ -2,6 +2,7 @@ import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase, LocomotionType } from './AnimalLogic';
 
 export interface DelayParams {
+    phase: AnimalLogicPhase,
     waitOnShore?: boolean;
     maxDuration?: number;
 }
@@ -20,9 +21,9 @@ export class DelayLogic implements AnimalLogic {
     private timeRemaining: number;
 
     constructor(params?: DelayParams) {
+        this.logicPhase = params.phase;
         const waitOnShore = params?.waitOnShore ?? true;
         this.locomotionType = waitOnShore ? 'LAND' : 'WATER';
-        this.logicPhase = waitOnShore ? AnimalLogicPhase.IDLE_SHORE : AnimalLogicPhase.IDLE_WATER;
         this.timeRemaining = params?.maxDuration ?? 1.0;
     }
 
