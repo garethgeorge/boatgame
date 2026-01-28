@@ -147,9 +147,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                 // Place on bank
                 const right: [number, number] = [sample.bankDist + xOffset, sample.bankDist + xOffset + 5];
                 const left: [number, number] = [-sample.bankDist - xOffset - 5, -sample.bankDist - xOffset];
-                spawner.spawnOnLand({
-                    context,
-                    sample,
+                spawner.spawnOnLand(context, sample, {
                     distanceRange: left,
                     aggressiveness: 0.5,
                     disableLogic: true,
@@ -167,9 +165,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                 const riverSystem = RiverSystem.getInstance();
                 const sample = RiverGeometry.getRiverGeometrySample(riverSystem, currentZ);
 
-                spawner.spawnInRiver({
-                    context,
-                    sample,
+                spawner.spawnInRiver(context, sample, {
                     distanceRange: [-5, 5],
                     aggressiveness: 0.5,
                     disableLogic: true,

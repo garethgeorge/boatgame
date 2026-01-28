@@ -1,6 +1,9 @@
 import { EntityIds } from '../../entities/EntityIds';
+import { AnimalSpawnOptions } from '../../entities/spawners/AnimalSpawner';
 import { RiverGeometry, RiverGeometrySample } from '../RiverGeometry';
 import { RiverSystem } from '../RiverSystem';
+
+export type SpawnOptionsFn = (id: EntityIds, inRiver: boolean) => AnimalSpawnOptions;
 
 /**
  * Represents a point on the boat path, extending the basic river geometry
@@ -21,6 +24,8 @@ export interface ObstaclePlacement {
     range: [number, number];
     /** Optional behavior scaling for attack animals */
     aggressiveness?: number;
+    /** Function called at spawn time to get placement parameters */
+    options?: SpawnOptionsFn;
 }
 
 /**
@@ -64,6 +69,8 @@ export interface PatternConfig {
     minCount?: number;
     /** Maximum allowed instances */
     maxCount?: number;
+    /** Function called at spawn time to get placement parameters */
+    options?: SpawnOptionsFn;
 }
 
 export type PatternConfigs = Record<string, PatternConfig>;
@@ -97,6 +104,8 @@ export interface ExplicitPlacementConfig {
     at: number;
     /** The obstacle type to spawn */
     type: EntityIds;
+    /** Function called at spawn time to get placement parameters */
+    options?: SpawnOptionsFn;
 }
 
 /**
@@ -251,6 +260,7 @@ export class BoatPathLayoutStrategy {
                                 block,
                                 ep.type,
                                 ep.place,
+                                ep.options,
                                 pathIndex,
                                 config,
                                 state,
@@ -416,6 +426,7 @@ export class BoatPathLayoutStrategy {
                         block,
                         pattern.types[Math.floor(Math.random() * pattern.types.length)],
                         pattern.place,
+                        pattern.options,
                         pathIndex,
                         config,
                         state,
@@ -433,6 +444,7 @@ export class BoatPathLayoutStrategy {
                                 block,
                                 pattern.types[Math.floor(Math.random() * pattern.types.length)],
                                 pattern.place,
+                                pattern.options,
                                 pathIndex,
                                 config,
                                 state,
@@ -448,6 +460,7 @@ export class BoatPathLayoutStrategy {
                                 block,
                                 pattern.types[Math.floor(Math.random() * pattern.types.length)],
                                 pattern.place,
+                                pattern.options,
                                 pathIndex,
                                 config,
                                 state,
@@ -466,6 +479,7 @@ export class BoatPathLayoutStrategy {
                                 block,
                                 pattern.types[Math.floor(Math.random() * pattern.types.length)],
                                 pattern.place,
+                                pattern.options,
                                 pathIndex,
                                 config,
                                 state,
@@ -485,6 +499,7 @@ export class BoatPathLayoutStrategy {
                                 block,
                                 pattern.types[Math.floor(Math.random() * pattern.types.length)],
                                 pattern.place,
+                                pattern.options,
                                 pathIndex,
                                 config,
                                 state,
@@ -507,6 +522,7 @@ export class BoatPathLayoutStrategy {
         block: LayoutBlock,
         type: EntityIds,
         place: PlacementType,
+        spawnOptions: SpawnOptionsFn | undefined,
         pathIndex: number,
         config: BoatPathLayoutConfig,
         state: { lastStaggerSide: 'left' | 'right' },
@@ -540,7 +556,12 @@ export class BoatPathLayoutStrategy {
         const aggressiveness = Math.min(1.0, progress * 0.7 + Math.random() * 0.3);
 
         if (!block.placements[type]) block.placements[type] = [];
-        block.placements[type]!.push({ index: pathIndex, range, aggressiveness });
+        block.placements[type]!.push({
+            index: pathIndex,
+            range,
+            aggressiveness,
+            options: spawnOptions
+        });
     }
 
     /**

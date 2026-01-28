@@ -9,6 +9,7 @@ import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy
 import { RiverGeometry } from '../RiverGeometry';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
+import { AnimalSpawnOptions } from '../../entities/spawners/AnimalSpawner';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
@@ -51,6 +52,18 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
+        // Behaviors for spawning
+        const spawnOptions = (id: EntityIds, inRiver: boolean): AnimalSpawnOptions => {
+            if (id !== EntityIds.ALLIGATOR) return {};
+            return {
+                distanceRange: [-10, 10],
+                behavior: {
+                    type: 'attack',
+                    logicName: 'AmbushAttack'
+                }
+            };
+        };
+
         this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: {
                 'dense_shore_mangroves': {
@@ -76,7 +89,8 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     logic: 'scatter',
                     place: 'path',
                     density: [0.2, 0.6],
-                    types: [EntityIds.ALLIGATOR, EntityIds.SNAKE]
+                    types: [EntityIds.ALLIGATOR, EntityIds.SNAKE],
+                    options: spawnOptions
                 },
                 'egret_flight': {
                     logic: 'scatter',

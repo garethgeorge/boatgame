@@ -6,6 +6,7 @@ import { Decorations } from '../Decorations';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
+import { AnimalSpawnOptions } from '../../entities/spawners/AnimalSpawner';
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';
@@ -27,20 +28,41 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
+        // Behaviors for spawning
+        const spawnOptions = (id: EntityIds, inRiver: boolean): AnimalSpawnOptions => {
+            if (!inRiver) {
+                return {
+                    behavior: {
+                        type: id === EntityIds.MONKEY ? 'walk-attack' : 'wait-attack',
+                        logicName: Math.random() < 0.5 ? 'WolfAttack' : 'AmbushAttack'
+                    }
+                };
+            } else {
+                return {
+                    behavior: {
+                        type: 'attack',
+                        logicName: Math.random() < 0.5 ? 'WolfAttack' : 'AmbushAttack'
+                    }
+                }
+            }
+        };
+
         this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: {
                 'animal_corridor': {
                     logic: 'sequence',
                     place: 'near-shore',
                     density: [0.5, 4.0],
-                    types: [EntityIds.ALLIGATOR, EntityIds.MONKEY]
+                    types: [EntityIds.ALLIGATOR, EntityIds.MONKEY],
+                    options: spawnOptions
                 },
                 'hippo_pod': {
                     logic: 'cluster',
                     place: 'near-shore',
                     density: [0.3, 2.0],
                     types: [EntityIds.HIPPO],
-                    minCount: 2
+                    minCount: 2,
+                    options: spawnOptions
                 },
                 'rocky_slalom': {
                     logic: 'sequence',
@@ -120,7 +142,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         return this.layoutCache;
     }
 
-    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+    * decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
         const length = zEnd - zStart;
         const count = Math.floor(length * 16);
 
@@ -140,7 +162,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         }
     }
 
-    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+    * spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
         yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, this.getLayout(), this.id, zStart, zEnd, [this.zMin, this.zMax]);
     }
 

@@ -25,12 +25,14 @@ export interface AnimalSpawnerConfig {
     defaultShoreBehavior?: AnimalBehaviorConfig;
 }
 
+/**
+ * Spawn options. All parameters are optional so that options can be created
+ * by combining partial sets.
+ */
 export interface AnimalSpawnOptions {
-    context: SpawnContext;
-    sample: RiverGeometrySample;
-    distanceRange: [number, number];
-    aggressiveness: number;
-    biomeZRange: [number, number];
+    distanceRange?: [number, number];
+    aggressiveness?: number;
+    biomeZRange?: [number, number];
     behavior?: AnimalBehaviorConfig;
 
     // These are used for debugging so animals can be placed at an exact
@@ -76,9 +78,7 @@ export class AnimalSpawner extends BaseSpawner {
             const range: [number, number] = left ?
                 [-sample.bankDist - (shorePlace.maxDistFromBank || 8.0), -sample.bankDist] :
                 [sample.bankDist, sample.bankDist + (shorePlace.maxDistFromBank || 8.0)];
-            return this.spawnOnLand({
-                context,
-                sample,
+            return this.spawnOnLand(context, sample, {
                 distanceRange: range,
                 aggressiveness: aggro,
                 biomeZRange,
@@ -86,9 +86,7 @@ export class AnimalSpawner extends BaseSpawner {
             });
         } else {
             const range: [number, number] = [-sample.bankDist, sample.bankDist];
-            return this.spawnInRiver({
-                context,
-                sample,
+            return this.spawnInRiver(context, sample, {
                 distanceRange: range,
                 aggressiveness: aggro,
                 biomeZRange,
@@ -100,11 +98,13 @@ export class AnimalSpawner extends BaseSpawner {
     /**
      * Spawns an animal on land within a distance range from a river position.
      */
-    spawnOnLand(options: AnimalSpawnOptions): boolean {
+    spawnOnLand(
+        context: SpawnContext,
+        sample: RiverGeometrySample,
+        options: AnimalSpawnOptions
+    ): boolean {
         const {
-            context,
-            sample,
-            distanceRange,
+            distanceRange = [-10, 10],
             aggressiveness,
             behavior,
             disableLogic,
@@ -156,11 +156,13 @@ export class AnimalSpawner extends BaseSpawner {
     /**
      * Spawns an animal in the river within a distance range from a river position.
      */
-    spawnInRiver(options: AnimalSpawnOptions): boolean {
+    spawnInRiver(
+        context: SpawnContext,
+        sample: RiverGeometrySample,
+        options: AnimalSpawnOptions
+    ): boolean {
         const {
-            context,
-            sample,
-            distanceRange,
+            distanceRange = [-10, 10],
             aggressiveness,
             behavior,
             disableLogic,
