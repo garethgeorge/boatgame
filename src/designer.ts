@@ -235,41 +235,66 @@ class Designer {
         this.history.push(this.configEditor.value);
     }
 
-    private safeStringify(obj: any): string {
-        const functions: string[] = [];
-        const json = JSON.stringify(obj, (key, value) => {
-            if (typeof value === 'function') {
-                const id = `__FUNC_${functions.length}__`;
-                functions.push(value.toString());
-                return id;
+    private safeStringify(obj: any, indent = 0): string {
+        const spacing = "  ".repeat(indent);
+        const nextSpacing = "  ".repeat(indent + 1);
+
+        if (obj === null) return "null";
+        if (obj === undefined) return "undefined";
+        if (typeof obj === "boolean") return obj.toString();
+        if (typeof obj === "string") return `"${obj}"`;
+        if (typeof obj === "function") return obj.toString();
+
+        if (typeof obj === "number") {
+            // Hex color formatting for values > 255 (heuristically colors)
+            if (obj > 0xff) {
+                return `0x${obj.toString(16).padStart(6, '0')}`;
             }
-            if (value && typeof value === 'object' && value.x !== undefined && value.y !== undefined && value.z !== undefined) {
-                // Return as a dense object for common Vector3 patterns
-                return `__VEC___${value.x}_${value.y}_${value.z}__`;
+            return obj.toString();
+        }
+
+        if (obj instanceof THREE.Vector3) {
+            return `new THREE.Vector3(${obj.x}, ${obj.y}, ${obj.z})`;
+        }
+
+        if (Array.isArray(obj)) {
+            if (obj.length === 0) return "[]";
+            const items = obj.map(item => this.safeStringify(item, indent + 1));
+            return `[\n${nextSpacing}${items.join(`,\n${nextSpacing}`)}\n${spacing}]`;
+        }
+
+        if (typeof obj === "object") {
+            // Check for Vector3-like objects
+            if (obj.x !== undefined && obj.y !== undefined && obj.z !== undefined && Object.keys(obj).length === 3) {
+                return `new THREE.Vector3(${obj.x}, ${obj.y}, ${obj.z})`;
             }
-            return value;
-        }, 2);
 
-        // Replace function placeholders (unquoted)
-        let formatted = json.replace(/"__FUNC_(\d+)__"/g, (match, id) => {
-            return functions[parseInt(id)];
-        });
+            const keys = Object.keys(obj);
+            if (keys.length === 0) return "{}";
 
-        // Replace Vector3 placeholders with a cleaner but still valid JS object format
-        formatted = formatted.replace(/"__VEC___(-?\d*\.?\d+)_(-?\d*\.?\d+)_(-?\d*\.?\d+)__"/g, '{ "x": $1, "y": $2, "z": $3 }');
+            const lines = keys.map(key => {
+                const value = obj[key];
+                const formattedKey = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key) ? key : `"${key}"`;
+                let formattedValue = this.safeStringify(value, indent + 1);
 
-        return formatted;
+                // Ensure colors in visuals are hex formatted even if small
+                if (typeof value === "number" && key.toLowerCase().includes("color")) {
+                    formattedValue = `0x${value.toString(16).padStart(6, '0')}`;
+                }
+
+                return `${formattedKey}: ${formattedValue}`;
+            });
+
+            return `{\n${nextSpacing}${lines.join(`,\n${nextSpacing}`)}\n${spacing}}`;
+        }
+
+        return String(obj);
     }
 
     private parseConfig(text: string): any {
         try {
-            // We use a "loose" parser that can handle function strings returned by safeStringify
-            // This is safer than eval() but still powerful for JS object literal parsing
-            // For a dev tool, this is acceptable.
-            const parsed = new Function('return ' + text)();
-
-            // Post-process to re-evaluate function strings if they were just strings
-            this.rehydrateFunctions(parsed);
+            // provide THREE to the evaluation context
+            const parsed = new Function('THREE', 'return ' + text)(THREE);
 
             // Sanitize Vector3 objects
             ProceduralPlant.sanitizeConfig(parsed);
@@ -280,21 +305,7 @@ class Designer {
         }
     }
 
-    private rehydrateFunctions(obj: any) {
-        if (!obj || typeof obj !== 'object') return;
 
-        for (const key in obj) {
-            if (typeof obj[key] === 'string' && (obj[key].includes('=>') || obj[key].startsWith('function'))) {
-                try {
-                    obj[key] = new Function('return ' + obj[key])();
-                } catch (e) {
-                    // Not a function after all, keep as string
-                }
-            } else if (typeof obj[key] === 'object') {
-                this.rehydrateFunctions(obj[key]);
-            }
-        }
-    }
 
     private initThree() {
         this.scene = new THREE.Scene();
