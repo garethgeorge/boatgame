@@ -137,6 +137,67 @@
             z-index: 100;
             transition: opacity 0.5s ease;
         }
+
+        #debug-menu {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 9999;
+            font-family: 'Courier New', Courier, monospace;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            border: 1px solid #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+            pointer-events: auto;
+            min-width: 200px;
+        }
+
+        #debug-menu h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            text-align: center;
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 5px;
+        }
+
+        .debug-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .debug-option input {
+            cursor: pointer;
+        }
+
+        #debug-menu button {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        #debug-menu button:hover {
+            background: #444;
+        }
+
+        #debug-menu select {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            font-family: inherit;
+        }
     </style>
 </head>
 
@@ -171,8 +232,31 @@
             <p><strong>Navigation:</strong></p>
             • Orbit: <kbd>Left Click</kbd><br>
             • Pan: <kbd>Right Click</kbd><br>
-            • Zoom: <kbd>Scroll</kbd>
+            • Zoom: <kbd>Scroll</kbd><br>
+            • Debug Menu: <kbd>Z</kbd>
         </div>
+    </div>
+
+    <div id="debug-menu">
+        <h3>DEBUG MENU</h3>
+        <label class="debug-option">
+            <input type="checkbox" id="debug-geometry"> Geometry (Collisions)
+        </label>
+        <label class="debug-option">
+            <input type="checkbox" id="debug-profiler"> Profiler
+        </label>
+        <label class="debug-option">
+            <input type="checkbox" id="debug-console"> Console
+        </label>
+        <hr style="border: 0; border-top: 1px solid #00ff00; width: 100%;">
+        <label class="debug-option" style="margin-top: 5px;">
+            Mobile Mode:
+            <select id="debug-mobile-mode">
+                <option value="auto">Auto</option>
+                <option value="mobile">Mobile</option>
+                <option value="desktop">Desktop</option>
+            </select>
+        </label>
     </div>
 
     <!-- We need to give it a little time to load, or the designer script should hide it -->

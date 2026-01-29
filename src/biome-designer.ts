@@ -7,6 +7,9 @@ import { Decorations } from './world/Decorations.js';
 import { DesignerSettings } from './core/DesignerSettings.js';
 import { BaseMangrove } from './entities/obstacles/Mangrove.js';
 import { RiverSystem } from './world/RiverSystem.js';
+import { DebugSettings } from './core/DebugSettings.js';
+import { Profiler } from './core/Profiler.js';
+import { DebugConsole } from './core/DebugConsole.js';
 
 class BiomeDesigner {
     private engine: GameEngine;
@@ -26,7 +29,10 @@ class BiomeDesigner {
         DesignerSettings.targetBiome = targetBiome;
 
         this.initUI(targetBiome);
+        this.initDebugMenu();
     }
+
+    private debugMenu!: HTMLElement;
 
     private initUI(currentBiome: BiomeType) {
         const biomeSelect = document.getElementById('biome-select') as HTMLSelectElement;
@@ -56,7 +62,64 @@ class BiomeDesigner {
         this.engine.skyManager.setCycleTime(parseFloat(timeSlider.value));
     }
 
+    private initDebugMenu() {
+        this.debugMenu = document.getElementById('debug-menu') as HTMLElement;
+        if (!this.debugMenu) return;
+
+        const geometryToggle = document.getElementById('debug-geometry') as HTMLInputElement;
+        const profilerToggle = document.getElementById('debug-profiler') as HTMLInputElement;
+        const consoleToggle = document.getElementById('debug-console') as HTMLInputElement;
+        const mobileSelect = document.getElementById('debug-mobile-mode') as HTMLSelectElement;
+
+        geometryToggle.checked = DebugSettings.geometryVisible;
+        profilerToggle.checked = DebugSettings.profilerVisible;
+        consoleToggle.checked = DebugSettings.debugConsoleVisible;
+
+        geometryToggle.addEventListener('change', () => {
+            DebugSettings.geometryVisible = geometryToggle.checked;
+        });
+
+        profilerToggle.addEventListener('change', () => {
+            DebugSettings.profilerVisible = profilerToggle.checked;
+            Profiler.setVisibility(DebugSettings.profilerVisible);
+        });
+
+        consoleToggle.addEventListener('change', () => {
+            DebugSettings.debugConsoleVisible = consoleToggle.checked;
+            DebugConsole.setVisibility(DebugSettings.debugConsoleVisible);
+        });
+
+        mobileSelect.addEventListener('change', () => {
+            const val = mobileSelect.value;
+            if (val === 'auto') this.engine.inputManager.setMobileOverride(null);
+            else if (val === 'mobile') this.engine.inputManager.setMobileOverride(true);
+            else if (val === 'desktop') this.engine.inputManager.setMobileOverride(false);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyZ') {
+                this.toggleDebugMenu();
+            }
+        });
+    }
+
+    public toggleDebugMenu() {
+        DebugSettings.debugMenuVisible = !DebugSettings.debugMenuVisible;
+        this.debugMenu.style.display = DebugSettings.debugMenuVisible ? 'flex' : 'none';
+
+        if (DebugSettings.debugMenuVisible) {
+            const geometryToggle = document.getElementById('debug-geometry') as HTMLInputElement;
+            const profilerToggle = document.getElementById('debug-profiler') as HTMLInputElement;
+            const consoleToggle = document.getElementById('debug-console') as HTMLInputElement;
+
+            if (geometryToggle) geometryToggle.checked = DebugSettings.geometryVisible;
+            if (profilerToggle) profilerToggle.checked = DebugSettings.profilerVisible;
+            if (consoleToggle) consoleToggle.checked = DebugSettings.debugConsoleVisible;
+        }
+    }
+
     async init() {
+        DebugConsole.init();
         // Preload essential assets
         await Promise.all([
             Decorations.preload(['boat']),
