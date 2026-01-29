@@ -338,7 +338,7 @@ export class Turtle {
         }
 
         // --- FORCE B: WIND (Highly dependent on flexibility) ---
-        if (forces.windForce > 0 && forces.wind.lengthSq() > 0) {
+        if (forces.windForce > 0 && forces.wind && forces.wind.lengthSq() > 0) {
             const windDir = forces.wind.clone().normalize();
             const windQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), windDir);
 
@@ -389,6 +389,31 @@ export class Turtle {
 export class ProceduralPlant {
     branches: BranchData[] = [];
     leaves: LeafData[] = [];
+
+    /**
+     * Sanitizes a plant configuration, converting plain objects with x, y, z properties
+     * back into THREE.Vector3 instances. This is necessary when loading configs from
+     * serialized JSON (e.g., in the plant designer).
+     */
+    public static sanitizeConfig(obj: any) {
+        if (!obj || typeof obj !== 'object') return;
+
+        for (const key in obj) {
+            const value = obj[key];
+            if (value && typeof value === 'object') {
+                if (
+                    typeof value.x === 'number' &&
+                    typeof value.y === 'number' &&
+                    typeof value.z === 'number' &&
+                    !(value instanceof THREE.Vector3)
+                ) {
+                    obj[key] = new THREE.Vector3(value.x, value.y, value.z);
+                } else {
+                    ProceduralPlant.sanitizeConfig(value);
+                }
+            }
+        }
+    }
 
     generate(config: PlantConfig) {
         this.branches = [];
