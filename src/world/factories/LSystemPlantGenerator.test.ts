@@ -369,5 +369,92 @@ describe('ProceduralPlant', () => {
             expect(rootRadius / child1Radius).toBeCloseTo(Math.sqrt(3 / 2), 2);
         });
     });
+
+    describe('Gravity Distribution', () => {
+        it('should maintain radial distribution when gravity is applied', () => {
+            const plant = new ProceduralPlant();
+            const config: PlantConfig = {
+                axiom: 'X',
+                params: {
+                    iterations: 1,
+                    length: 1, lengthDecay: 1,
+                    thickness: 0.1, thicknessDecay: 1
+                },
+                symbols: {
+                    'X': (turtle: Turtle) => {
+                        // Create 4 branches pointing in cardinal directions (N, S, E, W)
+                        // North
+                        turtle.push().bend({ spread: 90 }).branch({ gravity: 0.5 }).pop();
+                        // East
+                        turtle.push().rotate({ angle: 90 }).bend({ spread: 90 }).branch({ gravity: 0.5 }).pop();
+                        // South
+                        turtle.push().rotate({ angle: 180 }).bend({ spread: 90 }).branch({ gravity: 0.5 }).pop();
+                        // West
+                        turtle.push().rotate({ angle: 270 }).bend({ spread: 90 }).branch({ gravity: 0.5 }).pop();
+                    }
+                },
+                defaults: { branch: { scale: 1, gravity: 0 } as any }
+            };
+
+            plant.generate(config);
+
+            expect(plant.branches.length).toBe(4);
+
+            // Collect the end positions of the 4 branches
+            const ends = plant.branches.map(b => b.end);
+
+            const distNS = ends[0].distanceTo(ends[2]);
+            const distEW = ends[1].distanceTo(ends[3]);
+
+            console.log('Dist NS (High Gravity - Post Fix):', distNS);
+            console.log('Dist EW (High Gravity - Post Fix):', distEW);
+
+            // With strength 0.95, if they were converging they would be < 0.2 apart.
+            // With the fix, they should maintain radial distribution.
+            expect(distNS).toBeGreaterThan(0.5);
+            expect(distEW).toBeGreaterThan(0.5);
+        });
+    });
+
+    describe('Branch Orientation', () => {
+        it('should preserve roll orientation in branch topology', () => {
+            const plant = new ProceduralPlant();
+            const config: PlantConfig = {
+                axiom: 'X',
+                params: {
+                    iterations: 1,
+                    length: 1, lengthDecay: 1,
+                    thickness: 0.1, thicknessDecay: 1
+                },
+                symbols: {
+                    'X': (turtle: Turtle) => {
+                        // rotate 90 around Y (yaw), then bend 90 around X (pitch)
+                        turtle.rotate({ angle: 90 }).bend({ spread: 90 }).branch();
+                    }
+                },
+                defaults: { branch: { scale: 1, jitter: 0 } as any }
+            };
+
+            plant.generate(config);
+
+            expect(plant.branches.length).toBe(1);
+            const branch = plant.branches[0] as any;
+
+            // Expected quaternion: Identity * RotateY(90) * RotateX(90)
+            const expectedQuat = new THREE.Quaternion()
+                .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2))
+                .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2));
+
+            // The branch should have this orientation
+            // We need to add 'quat' to BranchData first for this test to pass
+            expect(branch.quat).toBeDefined();
+
+            // Allow for small floating point differences
+            expect(branch.quat.x).toBeCloseTo(expectedQuat.x);
+            expect(branch.quat.y).toBeCloseTo(expectedQuat.y);
+            expect(branch.quat.z).toBeCloseTo(expectedQuat.z);
+            expect(branch.quat.w).toBeCloseTo(expectedQuat.w);
+        });
+    });
 });
 

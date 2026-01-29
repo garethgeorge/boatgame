@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ProceduralPlant } from './world/factories/LSystemPlantGenerator';
-import { LSystemTreeBuilder } from './world/factories/LSystemTreeBuilder';
-import { LSystemFlowerBuilder } from './world/factories/LSystemFlowerBuilder';
+import { LSystemPlantBuilder } from './world/factories/LSystemPlantBuilder';
 import { ARCHETYPES as TREE_ARCHETYPES, LSystemTreeKind } from './world/factories/LSystemTreeArchetypes';
 import { ARCHETYPES as FLOWER_ARCHETYPES, LSystemFlowerKind } from './world/factories/LSystemFlowerArchetypes';
+import { LeafShader } from './shaders/LeafShader';
 
 // Mock GraphicsUtils for the designer to avoid complexity of the tracker
 // if it's too tied to the main game state. Actually, let's try to use the real one
@@ -368,34 +368,50 @@ class Designer {
             let totalTris = 0;
 
             if (this.currentType === 'tree') {
-                const result = LSystemTreeBuilder.createArchetype(this.archetypeSelect.value as LSystemTreeKind, Math.random(), plantGen, config);
+                const result = LSystemPlantBuilder.build(
+                    `LSystemTree_${this.archetypeSelect.value}`,
+                    plantGen,
+                    config.visuals.leafKind
+                );
 
                 const woodMat = new THREE.MeshToonMaterial({ color: config.visuals.woodColor || 0x4b3621 });
-                const leafMat = new THREE.MeshToonMaterial({ color: config.visuals.leafColor || 0x228B22, side: result.canCullLeaves ? THREE.FrontSide : THREE.DoubleSide });
+                const leafMat = new THREE.ShaderMaterial({
+                    ...LeafShader,
+                    uniforms: THREE.UniformsUtils.clone(LeafShader.uniforms),
+                    vertexColors: true,
+                    side: result.canCullSecondary ? THREE.FrontSide : THREE.DoubleSide,
+                    lights: true,
+                    fog: true
+                });
+                leafMat.uniforms.diffuse.value = new THREE.Color(config.visuals.leafColor || 0x228B22);
 
-                const woodMesh = new THREE.Mesh(result.woodGeo, woodMat);
-                const leafMesh = new THREE.Mesh(result.leafGeo, leafMat);
+                const woodMesh = new THREE.Mesh(result.primaryGeo, woodMat);
+                const leafMesh = new THREE.Mesh(result.secondaryGeo, leafMat);
 
                 this.plantContainer.add(woodMesh);
                 this.plantContainer.add(leafMesh);
 
-                totalTris = this.getTriangleCount(result.woodGeo) + this.getTriangleCount(result.leafGeo);
+                totalTris = this.getTriangleCount(result.primaryGeo) + this.getTriangleCount(result.secondaryGeo);
             } else {
-                const result = LSystemFlowerBuilder.createArchetype(this.archetypeSelect.value as LSystemFlowerKind, Math.random(), plantGen, config);
+                const result = LSystemPlantBuilder.build(
+                    `LSystemFlower_${this.archetypeSelect.value}`,
+                    plantGen,
+                    { kind: 'rectangle' }
+                );
 
                 const stalkMat = new THREE.MeshToonMaterial({ color: config.visuals.stalkColor || 0x4CAF50 });
                 const petalMat = new THREE.MeshToonMaterial({ color: config.visuals.petalColor || 0xffffff, side: THREE.DoubleSide });
                 const centerMat = new THREE.MeshToonMaterial({ color: config.visuals.centerColor || 0xFFD700 });
 
-                const stalkMesh = new THREE.Mesh(result.stalkGeo, stalkMat);
-                const petalMesh = new THREE.Mesh(result.petalGeo, petalMat);
-                const centerMesh = new THREE.Mesh(result.centerGeo, centerMat);
+                const stalkMesh = new THREE.Mesh(result.primaryGeo, stalkMat);
+                const petalMesh = new THREE.Mesh(result.secondaryGeo, petalMat);
+                const centerMesh = (result.tertiaryGeo) ? new THREE.Mesh(result.tertiaryGeo, centerMat) : null;
 
                 this.plantContainer.add(stalkMesh);
                 this.plantContainer.add(petalMesh);
-                this.plantContainer.add(centerMesh);
+                if (centerMesh) this.plantContainer.add(centerMesh);
 
-                totalTris = this.getTriangleCount(result.stalkGeo) + this.getTriangleCount(result.petalGeo) + this.getTriangleCount(result.centerGeo);
+                totalTris = this.getTriangleCount(result.primaryGeo) + this.getTriangleCount(result.secondaryGeo) + (result.tertiaryGeo ? this.getTriangleCount(result.tertiaryGeo) : 0);
             }
 
             this.triCountSpan.textContent = `Triangles: ${totalTris.toLocaleString()}`;

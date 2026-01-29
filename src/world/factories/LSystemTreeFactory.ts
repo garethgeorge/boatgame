@@ -11,7 +11,7 @@ import {
     ProceduralPlant,
 } from './LSystemPlantGenerator';
 
-import { LSystemTreeBuilder } from './LSystemTreeBuilder';
+import { LSystemPlantBuilder } from './LSystemPlantBuilder';
 import { LeafShader } from '../../shaders/LeafShader';
 
 export interface LSystemTreeInstanceOptions {
@@ -68,16 +68,20 @@ export class LSystemTreeFactory implements DecorationFactory {
             for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
                 treeGen.generate(params);
                 const variation = i / (NUM_DECORATION_ARCHETYPES || 10);
-                const result = LSystemTreeBuilder.createArchetype(kind, variation, treeGen, params);
+                const result = LSystemPlantBuilder.build(
+                    `LSystemTree_${kind}_${variation}`,
+                    treeGen,
+                    params.visuals.leafKind
+                );
 
                 const archetype: TreeArchetype = {
-                    woodGeo: result.woodGeo,
+                    woodGeo: result.primaryGeo,
                     woodColor: params.visuals.woodColor,
-                    leafGeo: result.leafGeo,
+                    leafGeo: result.secondaryGeo,
                     leafColor: params.visuals.leafColor,
                     kind,
                     variation,
-                    canCullLeaves: result.canCullLeaves
+                    canCullLeaves: result.canCullSecondary ?? true
                 };
 
                 list.push(archetype);
@@ -125,7 +129,15 @@ export class LSystemTreeFactory implements DecorationFactory {
     }
 
     createInstance(options: LSystemTreeInstanceOptions): DecorationInstance[] {
-        const { kind, variation = Math.random(), isSnowy = false, leafColor, woodColor, scale = 1.0, isLeafLess = false } = options;
+        const {
+            kind,
+            variation = Math.random(),
+            isSnowy = false,
+            leafColor,
+            woodColor,
+            scale = 1.0,
+            isLeafLess = false
+        } = options;
         const list = this.archetypes.get(kind) || this.archetypes.get('oak')!;
 
         let best = list[0];

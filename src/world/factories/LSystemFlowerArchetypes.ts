@@ -1,57 +1,7 @@
+import { KiteFlowerPetalParams } from './LSystemPartParams';
 import { PlantConfig, Turtle } from './LSystemPlantGenerator';
 
 export type LSystemFlowerKind = 'daisy' | 'lily' | 'waterlily';
-
-export interface RectangleFlowerPetalParams {
-    kind: 'rectangle';
-    size: number;
-    length: number;
-    variation?: { h: number, s: number, l: number };
-    lGradient?: [number, number]; // [base, tip] lightness adjustment
-}
-
-export interface KiteFlowerPetalParams {
-    kind: 'kite';
-    width: number;
-    length: number;
-    middle: number; // 0 to 1 position of widest part
-    bend?: number;  // in degrees
-    variation?: { h: number, s: number, l: number };
-    lGradient?: [number, number]; // [base, tip] lightness adjustment
-}
-
-export interface FlowerCenterParams {
-    kind: 'center';
-    size: number;
-    thickness: number;
-    offset?: number;
-    variation?: { h: number, s: number, l: number };
-}
-
-export type FlowerPartKind = 'rectangle' | 'kite' | 'center';
-
-export type FlowerPartParams =
-    RectangleFlowerPetalParams |
-    KiteFlowerPetalParams |
-    FlowerCenterParams;
-
-export interface CylinderBranchParams {
-    kind: 'cylinder';
-    variation?: { h: number, s: number, l: number };
-}
-
-export interface RectangleBranchParams {
-    kind: 'rectangle';
-    widthScale?: [number, number];
-    variation?: { h: number, s: number, l: number };
-    lGradient?: [number, number]; // [base, tip] lightness adjustment
-}
-
-export type BranchPartKind = 'cylinder' | 'rectangle';
-
-export type BranchPartParams =
-    CylinderBranchParams |
-    RectangleBranchParams;
 
 export interface FlowerVisuals {
     petalColor?: number;
@@ -108,6 +58,7 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
                 turtle.bend({ spread: 80 });
                 turtle.leaf({
                     weight: 0.2,
+                    geomIndex: 2,
                     opts: {
                         kind: 'center', size: 0.5, thickness: 0.1, offset: 0.2
                     }
@@ -177,6 +128,7 @@ export const ARCHETYPES: Record<LSystemFlowerKind, FlowerConfig> = {
                 turtle.bend({ spread: 45 });
                 turtle.leaf({
                     weight: 0.2,
+                    geomIndex: 2,
                     opts: {
                         kind: 'center', size: 0.3, thickness: 0.1, offset: 0.1
                     }

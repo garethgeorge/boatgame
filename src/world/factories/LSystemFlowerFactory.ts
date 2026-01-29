@@ -11,7 +11,7 @@ import {
     ProceduralPlant,
 } from './LSystemPlantGenerator';
 
-import { LSystemFlowerBuilder } from './LSystemFlowerBuilder';
+import { LSystemPlantBuilder } from './LSystemPlantBuilder';
 import { LeafShader } from '../../shaders/LeafShader';
 
 export interface LSystemFlowerInstanceOptions {
@@ -26,9 +26,9 @@ export interface LSystemFlowerInstanceOptions {
 interface FlowerArchetype {
     stalkGeo: THREE.BufferGeometry;
     stalkColor?: number;
-    petalGeo: THREE.BufferGeometry;
+    secondaryGeo: THREE.BufferGeometry; // Unified naming
     petalColor?: number;
-    centerGeo: THREE.BufferGeometry;
+    tertiaryGeo?: THREE.BufferGeometry; // Unified naming
     centerColor?: number;
     kind: LSystemFlowerKind;
     variation: number;
@@ -65,21 +65,21 @@ export class LSystemFlowerFactory implements DecorationFactory {
             for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
                 plantGen.generate(params);
                 const variation = i / (NUM_DECORATION_ARCHETYPES || 10);
-                const result = LSystemFlowerBuilder.createArchetype(kind, variation, plantGen, params);
+                const result = LSystemPlantBuilder.build(`LSystemFlower_${kind}_${variation}`, plantGen, { kind: 'rectangle' });
 
                 const archetype: FlowerArchetype = {
-                    stalkGeo: result.stalkGeo,
+                    stalkGeo: result.primaryGeo,
                     stalkColor: params.visuals.stalkColor,
-                    petalGeo: result.petalGeo,
+                    secondaryGeo: result.secondaryGeo,
                     petalColor: params.visuals.petalColor,
-                    centerGeo: result.centerGeo,
+                    tertiaryGeo: result.tertiaryGeo,
                     centerColor: params.visuals.centerColor,
                     kind,
                     variation
                 };
 
                 list.push(archetype);
-                totalTriangles += this.getTriangleCount(archetype.stalkGeo) + this.getTriangleCount(archetype.petalGeo);
+                totalTriangles += this.getTriangleCount(archetype.stalkGeo) + this.getTriangleCount(archetype.secondaryGeo);
             }
             this.archetypes.set(kind, list);
             console.log(`[FLOWER:${kind.toUpperCase()}] Avg Triangles: ${Math.round(totalTriangles / (NUM_DECORATION_ARCHETYPES || 10))}`);
@@ -127,17 +127,17 @@ export class LSystemFlowerFactory implements DecorationFactory {
                 color: new THREE.Color(stalkColor ?? best.stalkColor ?? 0xffffff)
             },
             {
-                geometry: best.petalGeo,
+                geometry: best.secondaryGeo,
                 material: this.getPetalMaterial(),
                 matrix: matrix.clone(),
                 color: new THREE.Color(petalColor ?? best.petalColor ?? 0xffffff)
             },
-            {
-                geometry: best.centerGeo,
+            ...(best.tertiaryGeo ? [{
+                geometry: best.tertiaryGeo,
                 material: this.getPetalMaterial(), // Still use petal material for toon shading
                 matrix: matrix.clone(),
                 color: new THREE.Color(centerColor ?? best.centerColor ?? 0xffffff)
-            }
+            }] : [])
         ];
     }
 }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { PlantPartParams } from './LSystemPartParams';
 
 export interface PlantParams {
     iterations: number;
@@ -10,6 +11,7 @@ export interface PlantParams {
 
 export interface BranchParams {
     opts?: any;                 // passed through to the branch data
+    geomIndex?: number;         // 0: primary, 1: secondary, 2: tertiary
 
     spread?: number;            // default angle of sub-branch to branch (degrees)
     jitter?: number;            // jitter for angle to branch and angle around branch (degrees)
@@ -28,6 +30,7 @@ export interface BranchParams {
 
 export interface LeafParams {
     opts?: any;                 // passed through to the leaf data
+    geomIndex?: number;         // 0: primary, 1: secondary, 2: tertiary
     weight?: number;            // weight of the leaf (default 1)
 }
 
@@ -117,9 +120,9 @@ export interface PlantConfig {
 
     // parameters for the plant
     params: PlantParams;
-    defaults: {
+    defaults?: {
         // default parameters for branches
-        branch: BranchParams;
+        branch?: BranchParams;
     }
 }
 
@@ -129,14 +132,17 @@ export interface BranchData {
     radiusStart: number;
     radiusEnd: number;
     level: number;
-    opts?: any;
+    quat: THREE.Quaternion;
+    opts?: PlantPartParams;
+    geomIndex: number;
 }
 
 export interface LeafData {
     pos: THREE.Vector3;
     dir: THREE.Vector3;
     quat: THREE.Quaternion;
-    opts?: any;
+    opts?: PlantPartParams;
+    geomIndex: number;
 }
 
 class PlantNode {
@@ -146,11 +152,13 @@ class PlantNode {
     branchWeight: number = 0;    // Weight of the branch segment leading to this node
     load: number = 0;            // The total "Pipe" value (sum of leaves and branch weights above)
     radius: number = 0;          // Calculated in Pass 2
+    quat: THREE.Quaternion = new THREE.Quaternion(); // Orientation leading to this node
 
     constructor(
         public position: THREE.Vector3,
         public level: number,
-        public opts?: any
+        public opts?: any,
+        public geomIndex: number = 0
     ) { }
 }
 
@@ -216,8 +224,9 @@ export class Turtle {
         const endPos = this.state.pos.clone().add(dir.multiplyScalar(length));
 
         // C. Create Graph Node
-        const newNode = new PlantNode(endPos, this.stack.length, this.state.branch.opts);
+        const newNode = new PlantNode(endPos, this.stack.length, this.state.branch.opts, this.state.branch.geomIndex ?? 0);
         newNode.branchWeight = this.state.branch.weight ?? 0.0;
+        newNode.quat.copy(this.state.quat); // Store orientation that created this branch
         this.state.node.children.push(newNode);
 
         // D. Move turtle
@@ -241,7 +250,8 @@ export class Turtle {
             pos: this.state.pos.clone(),
             dir: dir,
             quat: this.state.quat.clone(),
-            opts: params?.opts
+            opts: params?.opts,
+            geomIndex: params?.geomIndex ?? 1
         });
 
         return this;
@@ -330,30 +340,26 @@ export class Turtle {
         // --- FORCE A: GRAVITY (Highly dependent on flexibility) ---
         if (forces.gravity !== 0) {
             const targetVec = new THREE.Vector3(0, forces.gravity > 0 ? -1 : 1, 0);
-            const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), targetVec);
 
             // The further from the trunk, the more gravity wins
             const strength = Math.min(0.95, Math.abs(forces.gravity) * flexibility);
-            currentQuat.slerp(targetQuat, strength);
+            this.applyDirectionalForce(currentQuat, targetVec, strength);
         }
 
         // --- FORCE B: WIND (Highly dependent on flexibility) ---
         if (forces.windForce > 0 && forces.wind && forces.wind.lengthSq() > 0) {
-            const windDir = forces.wind.clone().normalize();
-            const windQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), windDir);
-
             // Wind affects thin branches much more than thick trunks
             const strength = Math.min(0.8, forces.windForce * flexibility);
-            currentQuat.slerp(windQuat, strength);
+            this.applyDirectionalForce(currentQuat, forces.wind, strength);
         }
 
         // --- FORCE C: HELIOTROPISM (Seeking light) ---
         if (forces.heliotropism !== 0) {
-            const skyQuat = new THREE.Quaternion(); // Identity = Up [0,1,0]
+            const skyVec = new THREE.Vector3(0, 1, 0);
 
             // Young shoots (high level) are more phototropic than old wood
             const strength = Math.min(0.5, forces.heliotropism * flexibility);
-            currentQuat.slerp(skyQuat, strength);
+            this.applyDirectionalForce(currentQuat, skyVec, strength);
         }
 
         // --- FORCE D: HORIZON BIAS (Growth Strategy) ---
@@ -365,8 +371,7 @@ export class Turtle {
                 : new THREE.Vector3(0, 1, 0);
 
             if (targetDir.lengthSq() > 0) {
-                const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), targetDir);
-                currentQuat.slerp(targetQuat, Math.abs(forces.horizonBias));
+                this.applyDirectionalForce(currentQuat, targetDir, Math.abs(forces.horizonBias));
             }
         }
 
@@ -374,10 +379,38 @@ export class Turtle {
         if (forces.antiShadow !== 0) {
             const awayFromCenter = new THREE.Vector3(currentPos.x, 0, currentPos.z).normalize();
             if (awayFromCenter.lengthSq() > 0) {
-                const shadowQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), awayFromCenter);
-                currentQuat.slerp(shadowQuat, forces.antiShadow);
+                this.applyDirectionalForce(currentQuat, awayFromCenter, forces.antiShadow);
             }
         }
+
+        return currentQuat;
+    }
+
+    /**
+     * Rotates the current orientation such that the direction it points (UP) 
+     * moves towards targetVec by the given strength, while minimizing 
+     * change to other axes (roll).
+     */
+    private applyDirectionalForce(
+        currentQuat: THREE.Quaternion,
+        targetVec: THREE.Vector3,
+        strength: number
+    ) {
+        if (strength <= 0) return currentQuat;
+
+        const currentDir = new THREE.Vector3(0, 1, 0).applyQuaternion(currentQuat);
+        const targetDir = targetVec.clone().normalize();
+
+        // Calculate the shortest-arc rotation between current direction and target direction
+        const deltaQuat = new THREE.Quaternion().setFromUnitVectors(currentDir, targetDir);
+
+        // Slerp from identity to the delta based on strength
+        const identity = new THREE.Quaternion();
+        const partialDelta = identity.slerp(deltaQuat, strength);
+
+        // Apply the partial rotation PRE-multiplied
+        // We want to rotate the current orientation BY the delta.
+        currentQuat.premultiply(partialDelta);
 
         return currentQuat;
     }
@@ -472,6 +505,7 @@ export class ProceduralPlant {
         // Default parameters for all branches
         const defaultBranch: Required<BranchParams> = {
             opts: undefined,
+            geomIndex: 0,
 
             spread: 45,
             jitter: 5,
@@ -485,7 +519,7 @@ export class ProceduralPlant {
             antiShadow: 0.0,
             weight: 0.0,
 
-            ...config.defaults.branch
+            ...config?.defaults?.branch ?? {}
         };
 
         // get branch and leaf rules
@@ -629,7 +663,9 @@ export class ProceduralPlant {
                     radiusStart: node.radius,
                     radiusEnd: child.radius,
                     level: child.level,
-                    opts: child.opts
+                    quat: child.quat.clone(),
+                    opts: child.opts,
+                    geomIndex: child.geomIndex
                 });
                 generateBranchList(child);
             }
