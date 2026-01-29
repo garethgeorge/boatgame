@@ -14,6 +14,7 @@ import { DebugSettings } from './core/DebugSettings';
 import { TerrainChunk } from './world/TerrainChunk';
 import { RiverSystem } from './world/RiverSystem';
 import { DebugConsole } from './core/DebugConsole';
+import { DesignerSettings } from './core/DesignerSettings';
 
 export class GameEngine {
     physicsEngine: PhysicsEngine;
@@ -216,6 +217,15 @@ export class GameEngine {
     }
 
     private updateCameraAndVisibility(dt: number) {
+
+        // Conditional far plane/skybox for designer
+        if (DesignerSettings.isDesignerMode) {
+            if (this.graphicsEngine.camera.far !== 5000) {
+                this.graphicsEngine.camera.far = 5000;
+                this.graphicsEngine.camera.updateProjectionMatrix();
+            }
+        }
+
         const boatMesh = this.boat.meshes[0];
         const boatPos = boatMesh.position.clone();
         const boatRot = boatMesh.rotation.y;
@@ -253,9 +263,13 @@ export class GameEngine {
         }
 
         const t = 1.0 - Math.pow(0.01, dt);
-        this.graphicsEngine.camera.position.lerp(idealPosition, t * 2.0);
+        if (!DesignerSettings.isDesignerMode) {
+            this.graphicsEngine.camera.position.lerp(idealPosition, t * 2.0);
+            const lookAtPos = boatPos.clone().add(new THREE.Vector3(0, 2, 0));
+            this.graphicsEngine.camera.lookAt(lookAtPos);
+        }
+
         const lookAtPos = boatPos.clone().add(new THREE.Vector3(0, 2, 0));
-        this.graphicsEngine.camera.lookAt(lookAtPos);
 
         // Update visibility of entities and chunks, for the way up
         // above view pretend the camera is behind the boat so the visibility

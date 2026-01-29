@@ -9,6 +9,7 @@ describe('BiomeManager Procedural Generation', () => {
     });
 
     it('should generate an initial biome at Z=0', () => {
+        biomeManager.ensureWindow(0, 0);
         const boundaries = biomeManager.getBiomeBoundaries(0);
         // Biome 0 should contain 0 and have a valid range
         expect(boundaries.zMin).toBeLessThanOrEqual(0);
@@ -18,10 +19,11 @@ describe('BiomeManager Procedural Generation', () => {
     });
 
     it('should grow forward (-ve Z) on demand', () => {
+        biomeManager.ensureWindow(0, 0);
         const startBiome = (biomeManager as any).getBiomeInstanceAt(0).type;
         // Move deep into negative Z
         const targetZ = -5000;
-        biomeManager.update(targetZ);
+        biomeManager.ensureWindow(targetZ, 0);
 
         const biomeAtTarget = (biomeManager as any).getBiomeInstanceAt(targetZ).type;
         expect(biomeAtTarget).toBeDefined();
@@ -33,7 +35,7 @@ describe('BiomeManager Procedural Generation', () => {
 
     it('should grow backward (+ve Z) on demand', () => {
         const targetZ = 5000;
-        biomeManager.update(targetZ);
+        biomeManager.ensureWindow(0, targetZ);
 
         const biomeAtTarget = (biomeManager as any).getBiomeInstanceAt(targetZ).type;
         expect(biomeAtTarget).toBeDefined();
@@ -47,7 +49,7 @@ describe('BiomeManager Procedural Generation', () => {
         // Check first 10 biomes
         let currentZ = 0;
         for (let i = 0; i < 10; i++) {
-            biomeManager.update(currentZ);
+            biomeManager.ensureWindow(currentZ, currentZ);
             const type = (biomeManager as any).getBiomeInstanceAt(currentZ).type;
             const boundaries = biomeManager.getBiomeBoundaries(currentZ);
 
@@ -74,7 +76,7 @@ describe('BiomeManager Procedural Generation', () => {
         const typesSeen: string[] = [];
 
         for (let i = 0; i < 12; i++) { // 12 biomes = 6 happy + 6 other
-            biomeManager.update(currentZ);
+            biomeManager.ensureWindow(currentZ, currentZ);
             const type = (biomeManager as any).getBiomeInstanceAt(currentZ).type;
             const boundaries = biomeManager.getBiomeBoundaries(currentZ);
             if (type !== 'happy') {
@@ -90,13 +92,14 @@ describe('BiomeManager Procedural Generation', () => {
 
     it('should prune old biomes without breaking neighbors', () => {
         // Populate a large range
-        biomeManager.update(0);
-        biomeManager.update(-5000);
-        biomeManager.update(-10000);
+        biomeManager.ensureWindow(0, 0);
+        biomeManager.ensureWindow(-5000, -5000);
+        biomeManager.ensureWindow(-10000, -10000);
         const initialCount = (biomeManager as any).activeInstances.length;
 
         // Move far forward - this should prune biomes near Z=0
-        biomeManager.update(-20000);
+        biomeManager.ensureWindow(-20000, -20000);
+        biomeManager.pruneWindow(-20000, -20000);
 
         const prunedCount = (biomeManager as any).activeInstances.length;
         // At -20000, biomes near 0 are definitely gone.

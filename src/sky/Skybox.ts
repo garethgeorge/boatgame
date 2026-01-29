@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GraphicsUtils } from '../core/GraphicsUtils';
+import { DesignerSettings } from '../core/DesignerSettings';
 
 export class Skybox {
     public mesh: THREE.Mesh;
@@ -67,6 +68,12 @@ export class Skybox {
 
     update(cameraPosition: THREE.Vector3, topColor: THREE.Color, bottomColor: THREE.Color) {
         this.mesh.position.copy(cameraPosition);
+
+        // Conditional scaling for designer
+        if (DesignerSettings.isDesignerMode && this.mesh.scale.x !== 10) {
+            this.mesh.scale.set(10, 10, 10);
+        }
+
         this.uniforms.topColor.value.copy(topColor);
         this.uniforms.bottomColor.value.copy(bottomColor);
     }

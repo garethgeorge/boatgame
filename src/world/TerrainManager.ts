@@ -9,18 +9,27 @@ import { RiverSystem } from './RiverSystem';
 import { Boat } from '../entities/Boat';
 import { GraphicsUtils } from '../core/GraphicsUtils';
 import { EntityManager } from '../core/EntityManager';
+import { DesignerSettings } from '../core/DesignerSettings';
 
 export class TerrainManager {
+  private riverSystem: RiverSystem;
+
+  // The active chunks
   private chunks: Map<number, TerrainChunk> = new Map();
+
+  // Chunks that are being loaded
   private loadingChunks: Map<number, {
     chunk: TerrainChunk,
     iterator: Generator<void | Promise<void>, void, unknown>,
     activePromise?: Promise<void>
   }> = new Map();
+
+  // For designer mode, a list of chunk indicies to recreate
+  private regenerationQueue: number[] = [];
+
+  // Collision segments along the shoreline
   private collisionBodies: planck.Body[] = [];
   private collisionMeshes: THREE.Mesh[] = [];
-
-  private riverSystem: RiverSystem;
 
   private readonly collisionRadius = 300; // Radius around boat to generate collision
   private readonly collisionStep = 5; // Step size for collision segments
@@ -36,6 +45,13 @@ export class TerrainManager {
     private entityManager: EntityManager
   ) {
     this.riverSystem = RiverSystem.getInstance();
+  }
+
+  public regenerateDesignerTerrain(): void {
+    if (!DesignerSettings.isDesignerMode) return;
+
+    console.log('[TerrainManager] Requested designer terrain regeneration');
+    this.regenerationQueue = Array.from(this.chunks.keys()).sort((a, b) => b - a);
   }
 
   /**
@@ -87,7 +103,7 @@ export class TerrainManager {
     const boatZ = boat.meshes[0].position.z;
     const currentPos = boat.meshes[0].position.clone();
 
-    // Update History
+    // Update Boat History
     if (this.boatHistory.length === 0) {
       this.boatHistory.push(currentPos);
     } else {
@@ -139,68 +155,11 @@ export class TerrainManager {
       }
     }
 
-    // 1. Manage Visual Chunks
-    const currentChunkIndex = Math.floor(boatZ / TerrainChunk.CHUNK_SIZE);
-    const renderDistance = 7; // Number of chunks to render in each direction
+    // Manage Terrain Chunks
+    this.manageTerrainChunks(boatZ);
 
-    // Create new chunks
-    for (let i = 0; i <= 2 * renderDistance; i++) {
-
-      // limit number of concurrent creations
-      if (this.loadingChunks.size > 3)
-        break;
-
-      // 0, 1, 2, ... -> 0, -1, 1, -2, ...
-      const offset = i % 2 === 0 ? i / 2 : -((i + 1) / 2);
-      const index = currentChunkIndex + offset;
-      if (!this.chunks.has(index) && !this.loadingChunks.has(index)) {
-        console.log(`[TerrainManager] Starting creation of chunk ${index}`);
-        const zOffset = index * TerrainChunk.CHUNK_SIZE;
-        const chunk = TerrainChunk.create(zOffset, this.graphicsEngine);
-        const iterator = chunk.getInitIterator(this.physicsEngine, this.entityManager);
-        this.loadingChunks.set(index, { chunk, iterator });
-      }
-    }
-
-    // Remove old chunks, slightly wider aperture else chunks can be
-    // created and immediately destroyed if the boat is sitting close
-    // to a boundary
-    for (const [index, chunk] of this.chunks) {
-      if (Math.abs(index - currentChunkIndex) > renderDistance + 1) {
-        console.log(`[TerrainManager] Disposing chunk ${index}`);
-        chunk.dispose();
-        this.chunks.delete(index);
-
-        // Calculate the range to remove. The range should extend to the boundaries
-        // of the nearest existing chunks.
-        // Find nearest existing indices
-        const existingIndices = Array.from(this.chunks.keys()).sort((a, b) => a - b);
-        const lowerIdx = existingIndices.slice().reverse().find(i => i < index);
-        const upperIdx = existingIndices.find(i => i > index);
-
-        let zMin = 0;
-        if (lowerIdx !== undefined) {
-          zMin = (lowerIdx + 1) * TerrainChunk.CHUNK_SIZE;
-        } else {
-          zMin = index * TerrainChunk.CHUNK_SIZE - 1000; // Far enough
-        }
-
-        let zMax = 0;
-        if (upperIdx !== undefined) {
-          zMax = upperIdx * TerrainChunk.CHUNK_SIZE;
-        } else {
-          zMax = (index + 1) * TerrainChunk.CHUNK_SIZE + 1000; // Far enough
-        }
-
-        this.entityManager.removeEntitiesInRange(zMin, zMax);
-      }
-    }
-
-    // 2. Manage Collision Segments
+    // Manage Collision Segments
     this.updateCollision(boatZ);
-
-    // 3. Update Biomes (includes pruning)
-    this.riverSystem.biomeManager.update(boatZ);
   }
 
   public updateVisibility(cameraPos: THREE.Vector3, cameraDir: THREE.Vector3) {
@@ -225,7 +184,7 @@ export class TerrainManager {
 
       // 1. Distance check (rough culling)
       // Check if any corner is within range, or if camera is within the chunk's Z range
-      let inRange = (cameraPos.z >= z0 && cameraPos.z <= z1);
+      let inRange = DesignerSettings.isDesignerMode || (cameraPos.z >= z0 && cameraPos.z <= z1);
       if (!inRange) {
         for (const corner of corners) {
           if (cameraPos.distanceToSquared(corner) < visibilityRadiusSq) {
@@ -242,7 +201,7 @@ export class TerrainManager {
 
       // 2. Direction check (frustum-ish culling)
       // Visible if ANY corner is in front of the camera plane, or if camera is inside chunk Z
-      let visible = (cameraPos.z >= z0 && cameraPos.z <= z1);
+      let visible = DesignerSettings.isDesignerMode || (cameraPos.z >= z0 && cameraPos.z <= z1);
       if (!visible) {
         for (const corner of corners) {
           const toCorner = corner.clone().sub(cameraPos);
@@ -272,6 +231,111 @@ export class TerrainManager {
       });
       this.collisionMeshes = [];
     }
+  }
+
+  private manageTerrainChunks(boatZ: number) {
+
+    const renderDistance = 7;
+    const currentChunkIndex = Math.floor(boatZ / TerrainChunk.CHUNK_SIZE);
+
+    // Determine range of chunks needed. In designer mode, we use a fixed range
+    // to avoid churn if the boat/camera moves
+    let negDistance = renderDistance;
+    const posDistance = renderDistance;
+    let iMinChunk = currentChunkIndex - negDistance;
+    let iMaxChunk = currentChunkIndex + posDistance;
+    if (DesignerSettings.isDesignerMode) {
+      const boundaries = this.riverSystem.biomeManager.getBiomeBoundaries(-1);
+      const biomeMinChunkIdx = Math.floor(boundaries.zMin / TerrainChunk.CHUNK_SIZE);
+      iMinChunk = biomeMinChunkIdx - 1;
+      iMaxChunk = 1;
+    }
+
+    // each chunk has range [idx * size, (idx + 1) * size]
+    const zMinWindow = iMinChunk * TerrainChunk.CHUNK_SIZE;
+    const zMaxWindow = (iMaxChunk + 1) * TerrainChunk.CHUNK_SIZE;
+
+    // Ensure biomes exist for the window
+    this.riverSystem.biomeManager.ensureWindow(zMinWindow, zMaxWindow);
+
+    const loadChunk = (index: number) => {
+      if (!this.chunks.has(index) && !this.loadingChunks.has(index)) {
+        console.log(`[TerrainManager] Starting creation of chunk ${index}`);
+        const zOffset = index * TerrainChunk.CHUNK_SIZE;
+        const chunk = TerrainChunk.create(zOffset, this.graphicsEngine);
+        const iterator = chunk.getInitIterator(this.physicsEngine, this.entityManager);
+        this.loadingChunks.set(index, { chunk, iterator });
+      }
+    };
+
+    // Start loading new chunks. Do so from the boat position out and
+    // assuming -ve z traveral
+    for (let iChunk = currentChunkIndex;
+      iChunk >= iMinChunk && this.loadingChunks.size < 3;
+      iChunk--) {
+      loadChunk(iChunk);
+    }
+    for (let iChunk = currentChunkIndex + 1;
+      iChunk <= iMaxChunk && this.loadingChunks.size < 3;
+      iChunk++) {
+      loadChunk(iChunk);
+    }
+
+    // Remove old chunks. Those that don't intersect the window + 1 to avoid
+    // create/delete cycles when close to chunk boundaries.
+    let removeCount = 0;
+
+    // If in designer mode and regenerating explicitly delete chunks and let
+    // them get recreated
+    let regenerateIndex = Infinity;
+    if (DesignerSettings.isDesignerMode && this.regenerationQueue.length > 0) {
+      if (this.loadingChunks.size === 0)
+        regenerateIndex = this.regenerationQueue.shift()!;
+    }
+
+    for (const [index, chunk] of this.chunks) {
+      if ((iMinChunk - 1 <= index && index <= iMaxChunk + 1) && index != regenerateIndex)
+        continue;
+
+      removeCount += 1;
+      console.log(`[TerrainManager] Disposing chunk ${index}`);
+      chunk.dispose();
+      this.chunks.delete(index);
+    }
+
+    // Remove all entities that do not belong to an active chunk.
+    if (removeCount > 0) {
+      const indices = this.getActiveChunkIndices();
+      if (indices.length > 0) {
+        // 1. Clear everything significantly before the first chunk
+        const firstZ = indices[0] * TerrainChunk.CHUNK_SIZE;
+        this.entityManager.removeEntitiesInRange(firstZ - 2000, firstZ);
+
+        // 2. Clear everything significantly after the last chunk
+        const lastZ = (indices[indices.length - 1] + 1) * TerrainChunk.CHUNK_SIZE;
+        this.entityManager.removeEntitiesInRange(lastZ, lastZ + 2000);
+
+        // 3. Clear gaps between chunks
+        for (let i = 0; i < indices.length - 1; i++) {
+          const expectedNext = indices[i] + 1;
+          if (indices[i + 1] > expectedNext) {
+            const gapStart = expectedNext * TerrainChunk.CHUNK_SIZE;
+            const gapEnd = indices[i + 1] * TerrainChunk.CHUNK_SIZE;
+            this.entityManager.removeEntitiesInRange(gapStart, gapEnd);
+          }
+        }
+
+        // 4. Prune biomes
+        this.riverSystem.biomeManager.pruneWindow(firstZ, lastZ);
+      }
+    }
+  }
+
+  private getActiveChunkIndices(): number[] {
+    const indices = new Set<number>();
+    for (const index of this.chunks.keys()) indices.add(index);
+    for (const index of this.loadingChunks.keys()) indices.add(index);
+    return Array.from(indices).sort((a, b) => a - b);
   }
 
   private updateCollision(boatZ: number) {

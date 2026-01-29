@@ -10,6 +10,7 @@ describe('BiomeManager Segments', () => {
     });
 
     it('should return a single segment if range is within one biome', () => {
+        biomeManager.ensureWindow(0, 0);
         const boundaries = biomeManager.getBiomeBoundaries(0);
         const mid = (boundaries.zMin + boundaries.zMax) / 2;
         const width = (boundaries.zMax - boundaries.zMin) * 0.2;
@@ -17,7 +18,7 @@ describe('BiomeManager Segments', () => {
         const zStart = mid + width;
         const zEnd = mid - width;
 
-        biomeManager.update(mid);
+        biomeManager.ensureWindow(zEnd, zStart);
         const segments = biomeManager.getFeatureSegments(zStart, zEnd);
 
         expect(segments.length).toBe(1);
@@ -27,13 +28,14 @@ describe('BiomeManager Segments', () => {
     });
 
     it('should return multiple segments if range spans biome boundaries', () => {
+        biomeManager.ensureWindow(0, 0);
         const boundaries = biomeManager.getBiomeBoundaries(0);
         const transitionZ = boundaries.zMin; // Boundary between first and second biome
 
         const zStart = transitionZ + 50;
         const zEnd = transitionZ - 50;
 
-        biomeManager.update(zEnd);
+        biomeManager.ensureWindow(zEnd, zStart);
         const segments = biomeManager.getFeatureSegments(zStart, zEnd);
 
         expect(segments.length).toBe(2);
@@ -51,7 +53,7 @@ describe('BiomeManager Segments', () => {
 
     it('should handle large ranges spanning many biomes', () => {
         const targetZ = -5000;
-        biomeManager.update(targetZ);
+        biomeManager.ensureWindow(targetZ, 0);
         const segments = biomeManager.getFeatureSegments(0, targetZ);
 
         expect(segments.length).toBeGreaterThan(2);
@@ -67,7 +69,7 @@ describe('BiomeManager Segments', () => {
 
     it('should handle positive Z direction traversal', () => {
         // Range [0, 2000]
-        biomeManager.update(1000);
+        biomeManager.ensureWindow(0, 2000);
         const segments = biomeManager.getFeatureSegments(0, 2000);
 
         expect(segments.length).toBeGreaterThan(0);

@@ -3,6 +3,7 @@ import { Entity } from './Entity';
 import { PhysicsEngine } from './PhysicsEngine';
 import { GraphicsEngine } from './GraphicsEngine';
 import * as planck from 'planck';
+import { DesignerSettings } from './DesignerSettings';
 
 export class EntityManager {
   entities: Set<Entity> = new Set();
@@ -118,7 +119,7 @@ export class EntityManager {
       const isPlayer = entity.physicsBodies.length > 0 &&
         (entity.physicsBodies[0].getUserData() as any)?.type === Entity.TYPE_PLAYER;
 
-      if (entity.isVisible || isPlayer) {
+      if (entity.isVisible || isPlayer || DesignerSettings.isDesignerMode) {
         entity.update(dt);
         entity.sync(alpha);
       }
@@ -130,6 +131,8 @@ export class EntityManager {
   }
 
   public updateVisibility(cameraPos: THREE.Vector3, cameraDir: THREE.Vector3) {
+    if (DesignerSettings.isDesignerMode) return;
+
     const visibilityRadius = 360;
     const dotBuffer = -20; // Entities are small, smaller buffer than chunks
 
@@ -163,10 +166,15 @@ export class EntityManager {
       const toEntity = entityPos.clone().sub(cameraPos);
       const dot = toEntity.dot(cameraDir);
 
-      if (dot < dotBuffer) {
-        entity.setVisible(false);
-      } else {
+      if (DesignerSettings.isDesignerMode) {
         entity.setVisible(true);
+        entity.setAnimationThrottle(1);
+      } else {
+        if (dot < dotBuffer) {
+          entity.setVisible(false);
+        } else {
+          entity.setVisible(true);
+        }
       }
     }
   }

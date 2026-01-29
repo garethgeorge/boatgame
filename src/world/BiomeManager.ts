@@ -9,7 +9,9 @@ import { JurassicBiomeFeatures } from './biomes/JurassicBiomeFeatures';
 import { TestBiomeFeatures } from './biomes/TestBiomeFeatures';
 import { FracturedIceBiomeFeatures } from './biomes/FracturedIceBiomeFeatures';
 import { HappyBiomeFeatures } from './biomes/HappyBiomeFeatures';
+import { NullBiomeFeatures } from './biomes/NullBiomeFeatures';
 import { BiomeType } from './biomes/BiomeType';
+import { DesignerSettings } from '../core/DesignerSettings';
 
 const BIOME_CONSTRUCTORS: Record<BiomeType, any> = {
   'desert': DesertBiomeFeatures,
@@ -19,7 +21,8 @@ const BIOME_CONSTRUCTORS: Record<BiomeType, any> = {
   'jurassic': JurassicBiomeFeatures,
   'test': TestBiomeFeatures,
   'fractured_ice': FracturedIceBiomeFeatures,
-  'happy': HappyBiomeFeatures
+  'happy': HappyBiomeFeatures,
+  'null': NullBiomeFeatures
 };
 
 interface BiomeInstance {
@@ -36,7 +39,17 @@ class BiomeGenerator {
   index: Map<BiomeType, number> = new Map<BiomeType, number>;
 
   public next(z: number, direction: number): BiomeInstance {
-    const type = BiomeGenerator.DEBUG_BIOME ?? this.drawFromDeck();
+
+    console.log('Biome', z, direction);
+
+    let type = undefined;
+    if (BiomeGenerator.DEBUG_BIOME !== undefined) {
+      type = BiomeGenerator.DEBUG_BIOME;
+    } else if (DesignerSettings.isDesignerMode) {
+      type = z === 0 && direction < 0 ? DesignerSettings.targetBiome : 'null';
+    } else {
+      type = this.drawFromDeck();
+    }
 
     const index = this.index.get(type) ?? 0;
     this.index.set(type, index + 1);
@@ -69,10 +82,6 @@ export class BiomeManager {
 
   private readonly BIOME_TRANSITION_WIDTH = 50;
 
-  // The active instances are generated to cover the window radius and
-  // are pruned once outside the prune radius
-  private readonly WINDOW_RADIUS = 2000;
-  private readonly PRUNE_RADIUS = 2500;
   private activeInstances: BiomeInstance[] = [];
 
   // Shuffled biome sequences for creating new biomes and cycle indices
@@ -80,11 +89,15 @@ export class BiomeManager {
   private negGenerator: BiomeGenerator = new BiomeGenerator;
 
   constructor() {
-    this.updateWindow(0);
+    this.ensureWindow(-1, 1);
   }
 
-  public update(worldZ: number): void {
-    this.updateWindow(worldZ);
+  public resetDesignerBiome(): void {
+    if (DesignerSettings.isDesignerMode) {
+      console.log('[BiomeManager] Resetting designer biome');
+      this.activeInstances = [];
+      this.ensureWindow(-1, 1);
+    }
   }
 
   private debugCheckZ(worldZ: number): void {
@@ -99,41 +112,55 @@ export class BiomeManager {
   }
 
   /**
-   * Updates the active biome instances to ensure they cover the requested window [worldZ - WINDOW_RADIUS, worldZ + WINDOW_RADIUS]
+   * Updates the active biome instances to ensure they cover the requested window
    * plus at least one additional biome in both directions for sampling safety.
-   * Includes hysteresis via PRUNE_RADIUS to prevent biome flickering.
+   * Hence on completion the active biomes are a contiguous sequence with:
+   * - activeInstances[1].zMin <= min z
+   * - max z <= activeInstances[lenght-2].zMax
+   * So there is at least one extra biome on each end
    */
-  private updateWindow(worldZ: number): void {
-    const minRequiredZ = worldZ - this.WINDOW_RADIUS;
-    const maxRequiredZ = worldZ + this.WINDOW_RADIUS;
-    const minPruneZ = worldZ - this.PRUNE_RADIUS;
-    const maxPruneZ = worldZ + this.PRUNE_RADIUS;
-
+  public ensureWindow(minRequiredZ: number, maxRequiredZ: number): void {
     // --- Negative Z Side ---
 
-    // 1. Prune: Remove if the 3rd instance already covers the prune boundary.
-    while (this.activeInstances.length > 2 && this.activeInstances[2].zMin < minPruneZ) {
-      this.activeInstances.shift();
-    }
-
-    // 2. Grow: Add instances until the 2nd instance covers the window edge.
+    // Grow: Add instances until the 2nd instance covers the window edge.
     while (this.activeInstances.length < 2 || this.activeInstances[1].zMin > minRequiredZ) {
-      const currentZMin = this.activeInstances.length > 0 ? this.activeInstances[0].zMin : worldZ;
+      const currentZMin = this.activeInstances.length > 0 ? this.activeInstances[0].zMin : 0;
       this.activeInstances.unshift(this.negGenerator.next(currentZMin, -1));
     }
 
     // --- Positive Z Side ---
 
-    // 1. Prune: Remove if the 3rd from end already covers the prune boundary.
-    while (this.activeInstances.length > 2 && this.activeInstances[this.activeInstances.length - 3].zMax > maxPruneZ) {
-      this.activeInstances.pop();
-    }
-
-    // 2. Grow: Add instances until the 2nd from end covers the window edge.
+    // Grow: Add instances until the 2nd from end covers the window edge.
     while (this.activeInstances.length < 2 || this.activeInstances[this.activeInstances.length - 2].zMax < maxRequiredZ) {
       const len = this.activeInstances.length;
-      const currentZMax = len > 0 ? this.activeInstances[len - 1].zMax : worldZ;
+      const currentZMax = len > 0 ? this.activeInstances[len - 1].zMax : 0;
       this.activeInstances.push(this.posGenerator.next(currentZMax, 1));
+    }
+  }
+
+  /**
+   * Updates the active biome instances to remove any not needed in order to
+   * cover the requested window plus at least one additional biome in both directions
+   * for sampling safety.
+   */
+  public pruneWindow(minRequiredZ: number, maxRequiredZ): void {
+
+    // Add a little to avoid wobble causing biomes to be repeatedly added and pruned
+    const minPruneZ = minRequiredZ - 200;
+    const maxPruneZ = maxRequiredZ + 200;
+
+    // --- Negative Z Side ---
+
+    // Prune: Remove if the 3rd instance already covers the prune boundary.
+    while (this.activeInstances.length > 2 && this.activeInstances[2].zMin < minPruneZ) {
+      this.activeInstances.shift();
+    }
+
+    // --- Positive Z Side ---
+
+    // Prune: Remove if the 3rd from end already covers the prune boundary.
+    while (this.activeInstances.length > 2 && this.activeInstances[this.activeInstances.length - 3].zMax > maxPruneZ) {
+      this.activeInstances.pop();
     }
   }
 

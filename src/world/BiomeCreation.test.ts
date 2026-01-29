@@ -39,6 +39,8 @@ describe('TerrainManager', () => {
         // RiverSystem is a singleton, so we rely on its existing state or mock getInstance if it was DI.
         // For now, assuming RiverSystem works deterministically.
         terrainManager = new TerrainManager(mockPhysicsEngine, mockGraphicsEngine, mockEntityManager);
+        // Ensure a biome window exists for tests
+        RiverSystem.getInstance().biomeManager.ensureWindow(-1000, 1000);
     });
 
     it('should generate collision bodies around the boat Z position', () => {

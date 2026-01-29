@@ -75,7 +75,7 @@ export class ShoreBehaviorFactory {
                         ignoreBottles: true
                     }
                 }
-            ], 'unicorn loop');
+            ]);
         }
 
         // currently no shore specific logic beyond 'none' which is handled above

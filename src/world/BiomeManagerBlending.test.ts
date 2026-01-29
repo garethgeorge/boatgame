@@ -10,10 +10,11 @@ describe('BiomeManager Blending', () => {
     });
 
     it('should return 100% weight for the center of a biome', () => {
+        biomeManager.ensureWindow(0, 0);
         const boundaries = biomeManager.getBiomeBoundaries(0);
         const mid = (boundaries.zMin + boundaries.zMax) / 2;
 
-        biomeManager.update(mid);
+        biomeManager.ensureWindow(mid, mid);
         const mixture = (biomeManager as any).getBiomeMixture(mid);
 
         expect(mixture.weight1).toBe(1.0);
@@ -23,12 +24,13 @@ describe('BiomeManager Blending', () => {
     });
 
     it('should transition weights at boundaries', () => {
+        biomeManager.ensureWindow(0, 0);
         const boundaries = biomeManager.getBiomeBoundaries(0);
         const boundaryZ = boundaries.zMax; // Max of the initial biome (should be 0)
 
         // At exactly the boundary
         // We might need to ensure the neighbor exists by updating near it
-        biomeManager.update(boundaryZ + 100);
+        biomeManager.ensureWindow(boundaryZ - 100, boundaryZ + 100);
 
         const mixtureAtBoundary = (biomeManager as any).getBiomeMixture(boundaryZ);
         expect(mixtureAtBoundary.weight1).toBe(0.5);
@@ -57,7 +59,7 @@ describe('BiomeManager Blending', () => {
     it('should correctly blend fog density', () => {
         // Find a boundary where we know the types
         const z = 0;
-        biomeManager.update(z);
+        biomeManager.ensureWindow(z, z);
         const mixture = (biomeManager as any).getBiomeMixture(z);
         const d1 = mixture.features1.getFogDensity();
         const d2 = mixture.features2.getFogDensity();
@@ -68,7 +70,7 @@ describe('BiomeManager Blending', () => {
 
     it('should correctly blend ground color', () => {
         const z = 0;
-        biomeManager.update(z);
+        biomeManager.ensureWindow(z, z);
         const mixture = (biomeManager as any).getBiomeMixture(z);
         const c1 = mixture.features1.getGroundColor();
         const c2 = mixture.features2.getGroundColor();

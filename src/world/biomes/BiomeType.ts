@@ -1,1 +1,1 @@
-export type BiomeType = 'desert' | 'forest' | 'ice' | 'swamp' | 'jurassic' | 'test' | 'fractured_ice' | 'happy';
+export type BiomeType = 'desert' | 'forest' | 'ice' | 'swamp' | 'jurassic' | 'test' | 'fractured_ice' | 'happy' | 'null';

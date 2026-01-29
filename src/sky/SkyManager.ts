@@ -5,6 +5,7 @@ import { Moon } from './Moon';
 import { ScreenOverlay } from './ScreenOverlay';
 import { Boat } from '../entities/Boat';
 import { RiverSystem } from '../world/RiverSystem';
+import { DesignerSettings } from '../core/DesignerSettings';
 
 export class SkyManager {
     private scene: THREE.Scene;
@@ -21,6 +22,7 @@ export class SkyManager {
     private ambientLight: THREE.AmbientLight;
 
     // Day/Night Cycle Config
+    public isCyclePaused: boolean = false;
     private readonly cycleDuration: number = 15 * 60; // 15 minutes in seconds
     // Start at High Morning (Angle 30 degrees)
     // 30/360 * 15*60 = 1/12 * 900 = 75 seconds.
@@ -58,7 +60,10 @@ export class SkyManager {
         this.setupLighting();
 
         // Fog setup
-        this.scene.fog = new THREE.Fog(0xffffff, 100, 1000);
+        if (DesignerSettings.isDesignerMode)
+            this.scene.fog = new THREE.Fog(0xffffff, 100, 5000);
+        else
+            this.scene.fog = new THREE.Fog(0xffffff, 100, 1000);
     }
 
     private setupLighting() {
@@ -76,14 +81,24 @@ export class SkyManager {
         return this.sun.light.position;
     }
 
+    public setCycleTime(normalizedTime: number) {
+        this.cycleTime = normalizedTime * this.cycleDuration;
+    }
+
+    public getCycleTime(): number {
+        return this.cycleTime / this.cycleDuration;
+    }
+
     public update(dt: number, cameraPosition: THREE.Vector3, boat: Boat) {
 
         const boatZ = boat.meshes[0].position.z;
 
         // Update Day/Night Cycle
-        this.cycleTime += dt;
-        if (this.cycleTime > this.cycleDuration) {
-            this.cycleTime -= this.cycleDuration;
+        if (!this.isCyclePaused) {
+            this.cycleTime += dt;
+            if (this.cycleTime > this.cycleDuration) {
+                this.cycleTime -= this.cycleDuration;
+            }
         }
 
         const time = this.cycleTime / this.cycleDuration; // 0 to 1
