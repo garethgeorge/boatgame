@@ -19,45 +19,6 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     }
 
     private decorationRules: DecorationRule[] = [
-        // new TierRule({
-        //     species: [
-        //         {
-        //             id: 'willow_tree',
-        //             preference: Combine.all(
-        //                 Signal.constant(1.0),
-        //                 Signal.inRange(Signal.distanceToRiver, 5, 25),
-        //                 Signal.inRange(Signal.elevation, 1.0, 5.0),
-        //                 Signal.inRange(Signal.slope, 0, 15)
-        //             ),
-        //             params: (ctx) => {
-        //                 const scale = 0.8 + ctx.random() * 0.4;
-        //                 return {
-        //                     groundRadius: 2 * scale,
-        //                     canopyRadius: 8 * scale,
-        //                     spacing: 10 * scale,
-        //                     options: { kind: 'willow', rotation: ctx.random() * Math.PI * 2, scale }
-        //                 };
-        //             }
-        //         },
-        //         {
-        //             id: 'oak_tree',
-        //             preference: Combine.all(
-        //                 Signal.constant(1.0),
-        //                 Signal.linearRange(Signal.distanceToRiver, 5, 50),
-        //                 Signal.inRange(Signal.elevation, 3.0, 20.0),
-        //                 Signal.inRange(Signal.slope, 0, 50)
-        //             ),
-        //             params: (ctx) => {
-        //                 const scale = 0.8 + ctx.random() * 0.4;
-        //                 return {
-        //                     groundRadius: 3 * scale,
-        //                     canopyRadius: 12 * scale,
-        //                     options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale }
-        //                 };
-        //             }
-        //         }
-        //     ]
-        // }),
         new TierRule({
             species: [
                 {
@@ -84,6 +45,14 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
             ]
         })
     ];
+
+    public getDecorationRules(): DecorationRule[] {
+        return this.decorationRules;
+    }
+
+    public setDecorationRules(rules: DecorationRule[]): void {
+        this.decorationRules = rules;
+    }
 
     getGroundColor(): { r: number, g: number, b: number } {
         return { r: 0x88 / 255, g: 0x88 / 255, b: 0x88 / 255 };

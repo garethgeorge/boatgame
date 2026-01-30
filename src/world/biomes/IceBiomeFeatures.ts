@@ -39,7 +39,7 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
 
     private decorationRules: DecorationRule[] | null = null;
 
-    private getDecorationRules(): DecorationRule[] {
+    public getDecorationRules(): DecorationRule[] {
         if (this.decorationRules) return this.decorationRules;
 
         this.decorationRules = [
@@ -78,6 +78,10 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
             })
         ];
         return this.decorationRules;
+    }
+
+    public setDecorationRules(rules: DecorationRule[]): void {
+        this.decorationRules = rules;
     }
 
     *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {

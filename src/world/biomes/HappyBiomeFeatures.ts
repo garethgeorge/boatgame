@@ -174,7 +174,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return rules;
     }
 
-    private getDecorationRules(): DecorationRule[] {
+    public getDecorationRules(): DecorationRule[] {
         if (!this.decorationRules) {
             if (Math.random() < 0.5) {
                 this.decorationRules = this.parklandRules();
@@ -183,6 +183,10 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             }
         }
         return this.decorationRules;
+    }
+
+    public setDecorationRules(rules: DecorationRule[]): void {
+        this.decorationRules = rules;
     }
 
     private getLayout(): BoatPathLayout {

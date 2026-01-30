@@ -87,4 +87,12 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         return 1.0;
     }
 
+    public getDecorationRules(): any[] | undefined {
+        return undefined;
+    }
+
+    public setDecorationRules(rules: any[]): void {
+        // Default no-op
+    }
+
 }

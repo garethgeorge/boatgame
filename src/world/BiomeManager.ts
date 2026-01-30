@@ -37,6 +37,11 @@ class BiomeGenerator {
 
   deck: BiomeType[] = [];
   index: Map<BiomeType, number> = new Map<BiomeType, number>;
+  private overriddenRules: Map<string, any[]>;
+
+  constructor(overriddenRules: Map<string, any[]>) {
+    this.overriddenRules = overriddenRules;
+  }
 
   public next(z: number, direction: number): BiomeInstance {
 
@@ -55,6 +60,15 @@ class BiomeGenerator {
     this.index.set(type, index + 1);
 
     const features = new BIOME_CONSTRUCTORS[type](index, z, direction);
+
+    // Apply overridden rules if in designer mode
+    if (DesignerSettings.isDesignerMode && features.setDecorationRules) {
+      const rules = this.overriddenRules.get(type);
+      if (rules) {
+        features.setDecorationRules(rules);
+      }
+    }
+
     const range = features.getRange();
 
     return {
@@ -83,10 +97,11 @@ export class BiomeManager {
   private readonly BIOME_TRANSITION_WIDTH = 50;
 
   private activeInstances: BiomeInstance[] = [];
+  private overriddenRules: Map<string, any[]> = new Map();
 
   // Shuffled biome sequences for creating new biomes and cycle indices
-  private posGenerator: BiomeGenerator = new BiomeGenerator;
-  private negGenerator: BiomeGenerator = new BiomeGenerator;
+  private posGenerator: BiomeGenerator = new BiomeGenerator(this.overriddenRules);
+  private negGenerator: BiomeGenerator = new BiomeGenerator(this.overriddenRules);
 
   constructor() {
     this.ensureWindow(-1, 1);
@@ -98,6 +113,17 @@ export class BiomeManager {
       this.activeInstances = [];
       this.ensureWindow(-1, 1);
     }
+  }
+
+  public setOverriddenRules(type: string, rules: any[]): void {
+    this.overriddenRules.set(type, rules);
+  }
+
+  public getDesignerBiome(): BiomeFeatures | undefined {
+    // In designer mode, the target biome starts at z=0 and goes in direction 1 or -1
+    // We can just look for the first instance that isn't 'null'
+    const designerInstance = this.activeInstances.find(inst => inst.type !== 'null');
+    return designerInstance ? designerInstance.features : undefined;
   }
 
   private debugCheckZ(worldZ: number): void {

@@ -29,7 +29,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     protected skyTopColors: number[] = [0x04193c, 0x05559c, 0x058fea]; // [Night, Sunset, Noon]
     protected skyBottomColors: number[] = [0x024b82, 0xafd9ae, 0x53baf5]; // [Night, Sunset, Noon]
 
-    private getDecorationRules(): DecorationRule[] {
+    public getDecorationRules(): DecorationRule[] {
         if (!this.decorationRules) {
             this.decorationRules = [
                 new TierRule({
@@ -38,7 +38,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                             id: 'cactus',
                             preference: SpeciesRules.fitness({
                                 fitness: 0.2,
-                                stepDistance: [5, 50],
+                                stepDistance: [5, 100],
                                 slope: [0, 30]
                             }),
                             params: SpeciesRules.cactus()
@@ -61,6 +61,10 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
             ];
         }
         return this.decorationRules;
+    }
+
+    public setDecorationRules(rules: DecorationRule[]): void {
+        this.decorationRules = rules;
     }
 
     private getLayout(): BoatPathLayout {

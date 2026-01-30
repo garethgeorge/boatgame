@@ -25,4 +25,10 @@ export interface BiomeFeatures {
     getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color };
     getAmplitudeMultiplier(): number;
     getRiverWidthMultiplier(): number;
+
+    /**
+     * These allow the biome designer UI to directly edit a biome
+     */
+    getDecorationRules?(): any[] | undefined;
+    setDecorationRules?(rules: any[]): void;
 }

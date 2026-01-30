@@ -198,6 +198,99 @@
             border: 1px solid #00ff00;
             font-family: inherit;
         }
+
+        /* Decoration Rules Editor Styles */
+        #rules-editor-container {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+        }
+
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 5px 0;
+            user-select: none;
+        }
+
+        .collapsible-header:hover {
+            color: #4488ff;
+        }
+
+        .collapsible-header .icon {
+            transition: transform 0.3s ease;
+        }
+
+        .collapsible-header.collapsed .icon {
+            transform: rotate(-90deg);
+        }
+
+        #rules-editor-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #rules-editor-content.collapsed {
+            display: none;
+        }
+
+        #rules-textarea {
+            width: 100%;
+            height: 300px;
+            background: #1a1a1f;
+            color: #d4d4d4;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        #rules-textarea:focus {
+            outline: none;
+            border-color: #4488ff;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .editor-actions button {
+            flex: 1;
+            margin-top: 0;
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .error-overlay {
+            position: absolute;
+            bottom: 40px;
+            left: 360px;
+            /* Offset from sidebar */
+            right: 40px;
+            background: rgba(200, 50, 50, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 100, 100, 0.5);
+            word-break: break-all;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
     </style>
 </head>
 
@@ -227,6 +320,22 @@
         </div>
 
         <button id="reload-btn">Regenerate Biome</button>
+
+        <div id="rules-editor-container">
+            <div class="collapsible-header" id="rules-header">
+                <label>Decoration Rules</label>
+                <span class="icon">▼</span>
+            </div>
+            <div id="rules-editor-content">
+                <div class="editor-actions">
+                    <button id="undo-btn" title="Undo (Ctrl+Z)">Undo</button>
+                    <button id="redo-btn" title="Redo (Ctrl+Y)">Redo</button>
+                </div>
+                <textarea id="rules-textarea" spellcheck="false"
+                    placeholder="Enter decoration rules JavaScript..."></textarea>
+                <button id="apply-rules-btn">Apply Rules</button>
+            </div>
+        </div>
 
         <div class="help-text">
             <p><strong>Navigation:</strong></p>
@@ -258,6 +367,8 @@
             </select>
         </label>
     </div>
+
+    <div id="error-display" class="error-overlay"></div>
 
     <!-- We need to give it a little time to load, or the designer script should hide it -->
     <script>

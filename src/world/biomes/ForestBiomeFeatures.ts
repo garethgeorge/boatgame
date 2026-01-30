@@ -75,6 +75,14 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
         })
     ];
 
+    public getDecorationRules(): DecorationRule[] {
+        return this.decorationRules;
+    }
+
+    public setDecorationRules(rules: DecorationRule[]): void {
+        this.decorationRules = rules;
+    }
+
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
