@@ -15,7 +15,9 @@ export interface FitnessParams {
 
     // River distance parameters
     // 0 up to first value, reaches 1 at second
-    linearDistance?: [number, number],
+    linearEaseIn?: [number, number],
+    // 1 up to first value, reaches 0 at second
+    linearEaseOut?: [number, number],
     // 0 outside the range, 1 inside
     stepDistance?: [number, number],
 
@@ -44,9 +46,14 @@ export class SpeciesRules {
                 params.stepDistance[0], params.stepDistance[1]
             ));
         }
-        if (params.linearDistance !== undefined) {
-            fitnessFuncs.push(Signal.linearRange(Signal.distanceToRiver,
-                params.linearDistance[0], params.linearDistance[1]
+        if (params.linearEaseIn !== undefined) {
+            fitnessFuncs.push(Signal.linearEaseIn(Signal.distanceToRiver,
+                params.linearEaseIn[0], params.linearEaseIn[1]
+            ))
+        }
+        if (params.linearEaseOut !== undefined) {
+            fitnessFuncs.push(Signal.linearEaseOut(Signal.distanceToRiver,
+                params.linearEaseOut[0], params.linearEaseOut[1]
             ))
         }
         if (params.stepNoise !== undefined) {
@@ -110,13 +117,20 @@ export class SpeciesRules {
         }
     }
 
-    public static birch_tree(options: { paletteName?: string } = {}) {
+    public static birch_tree(options: { spacing?: number, paletteName?: string } = {}) {
+        const {
+            spacing = undefined,
+            paletteName = undefined
+        } = options;
         return (ctx: WorldContext) => {
             const scale = MathUtils.clamp(0.6, 1.8, 0.9 + ctx.gaussian() * 0.3);
-            const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.random()) : undefined;
+            const color = paletteName !== undefined ?
+                ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) :
+                undefined;
             return {
                 groundRadius: 1.2 * scale,
-                canopyRadius: 4.0 * scale,
+                canopyRadius: 6.0 * scale,
+                spacing: spacing,
                 options: { kind: 'birch', rotation: ctx.random() * Math.PI * 2, scale, color }
             };
         };
@@ -135,14 +149,14 @@ export class SpeciesRules {
                 undefined;
             return {
                 groundRadius: 1.5 * scale,
-                canopyRadius: 5.0 * scale,
+                canopyRadius: 6.0 * scale,
                 options: {
                     kind: 'oak',
                     rotation: ctx.random() * Math.PI * 2,
                     scale,
                     color,
                     isSnowy: snow,
-                    isLeafLess: ctx.random() < leaves
+                    isLeafLess: ctx.random() > leaves
                 }
             };
         };
@@ -169,7 +183,7 @@ export class SpeciesRules {
                     scale,
                     color,
                     isSnowy: snow,
-                    isLeafLess: ctx.random() < leaves
+                    isLeafLess: ctx.random() > leaves
                 }
             };
         };

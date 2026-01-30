@@ -17,4 +17,7 @@ export interface DecorationContext {
     instancedData: Map<THREE.BufferGeometry, Map<THREE.Material, { matrix: THREE.Matrix4, color?: THREE.Color }[]>>;
     // Output for geometries that can't be grouped by material.
     geometryGroup: THREE.Group;
+
+    // Statistics for decorations placed in this context
+    stats: Map<string, number>;
 }

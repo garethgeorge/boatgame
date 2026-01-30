@@ -178,4 +178,20 @@ export class EntityManager {
       }
     }
   }
+
+  public getEntityStats(): Map<string, number> {
+    const stats = new Map<string, number>();
+    for (const entity of this.entities) {
+      let type = 'unknown';
+      if (entity.physicsBodies.length > 0) {
+        const userData = entity.physicsBodies[0].getUserData() as any;
+        if (userData) {
+          type = userData.subtype || userData.type || 'unknown';
+        }
+      }
+
+      stats.set(type, (stats.get(type) || 0) + 1);
+    }
+    return stats;
+  }
 }

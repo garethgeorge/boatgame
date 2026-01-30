@@ -118,7 +118,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                     {
                         id: 'oak_tree',
                         preference: SpeciesRules.fitness({
-                            fitness: 1.0, linearDistance: [20, 50], elevation: [3, 20], slope: [0, 50]
+                            fitness: 1.0, linearEaseIn: [20, 50], elevation: [3, 20], slope: [0, 50]
                         }),
                         params: SpeciesRules.oak_tree()
                     }

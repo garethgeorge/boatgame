@@ -36,6 +36,7 @@ class BiomeDesigner {
         this.initUI(targetBiome);
         this.initDebugMenu();
         this.initRulesEditor();
+        this.initStatsDisplay();
     }
 
     private debugMenu!: HTMLElement;
@@ -172,7 +173,6 @@ class BiomeDesigner {
         const header = document.getElementById('rules-header')!;
         const content = document.getElementById('rules-editor-content')!;
         const textarea = document.getElementById('rules-textarea') as HTMLTextAreaElement;
-        const applyBtn = document.getElementById('apply-rules-btn') as HTMLButtonElement;
         const undoBtn = document.getElementById('undo-btn') as HTMLButtonElement;
         const redoBtn = document.getElementById('redo-btn') as HTMLButtonElement;
 
@@ -219,10 +219,6 @@ class BiomeDesigner {
             setTimeout(updateEditorVisibility, 100);
         });
 
-        applyBtn.addEventListener('click', () => {
-            this.rulesHistory.push(textarea.value);
-        });
-
         undoBtn.addEventListener('click', () => this.rulesHistory.undo());
         redoBtn.addEventListener('click', () => this.rulesHistory.redo());
 
@@ -261,6 +257,79 @@ class BiomeDesigner {
                 this.rulesHistory.push(textarea.value);
             }, 500);
         });
+    }
+
+    private initStatsDisplay() {
+        const header = document.getElementById('stats-header')!;
+        const content = document.getElementById('stats-content')!;
+
+        // Collapsible behavior
+        header.addEventListener('click', () => {
+            header.classList.toggle('collapsed');
+            content.classList.toggle('collapsed');
+            const isCollapsed = content.classList.contains('collapsed');
+            localStorage.setItem('biomeDesignerStatsCollapsed', isCollapsed ? 'true' : 'false');
+        });
+
+        // Restore collapsed state
+        const savedCollapsed = localStorage.getItem('biomeDesignerStatsCollapsed');
+        if (savedCollapsed === 'true') {
+            header.classList.add('collapsed');
+            content.classList.add('collapsed');
+        }
+
+        // Start update loop
+        setInterval(() => this.updateStats(), 2000);
+    }
+
+    private updateStats() {
+        const statsContent = document.getElementById('stats-content');
+        if (!statsContent) return;
+
+        const decorationStats = this.engine.terrainManager.getDecorationStats();
+        const entityStats = this.engine.entityManager.getEntityStats();
+
+        let html = '';
+
+        const renderSection = (title: string, stats: Map<string, number>) => {
+            if (stats.size === 0) return '';
+
+            const sortedKeys = Array.from(stats.keys()).sort();
+            let sectionHtml = `
+                <div style="margin-top: 10px;">
+                    <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; opacity: 0.5; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px;">
+                        ${title}
+                    </div>
+                    <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+            `;
+
+            for (const key of sortedKeys) {
+                const count = stats.get(key)!;
+                sectionHtml += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 2px 0;">${key}</td>
+                        <td style="padding: 2px 0; text-align: right;">${count}</td>
+                    </tr>
+                `;
+            }
+
+            sectionHtml += `
+                    </table>
+                </div>
+            `;
+            return sectionHtml;
+        };
+
+        const decoHtml = renderSection('Decorations', decorationStats);
+        const entityHtml = renderSection('Entities', entityStats);
+
+        if (!decoHtml && !entityHtml) {
+            html = '<div style="text-align: center; opacity: 0.5; padding: 10px; font-size: 12px;">No data</div>';
+        } else {
+            html = decoHtml + entityHtml;
+        }
+
+        statsContent.innerHTML = html;
     }
 
     private applyRules(text: string) {

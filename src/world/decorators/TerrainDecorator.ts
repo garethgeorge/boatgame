@@ -6,6 +6,7 @@ import { SimplexNoise } from '../SimplexNoise';
 import { DecorationContext } from './DecorationContext';
 import { DecorationInstance, Decorations, LSystemTreeKind, LSystemFlowerKind } from '../Decorations';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
+import { MathUtils } from '../../core/MathUtils';
 
 export interface TreeDecorationOptions {
     kind: LSystemTreeKind
@@ -143,10 +144,12 @@ export class TerrainDecorator {
             const distFromBank = distFromCenter - riverWidth / 2;
 
             // Apply distance-based probability bias
-            if (distFromBank > 0) {
-                const biasDistance = 240; // Tripled from 80 per user request
-                const normalizedDist = Math.min(1.0, distFromBank / biasDistance);
-                const probability = Math.pow(1.0 - normalizedDist, 2);
+            const fadeStart = 30;
+            if (distFromBank > fadeStart) {
+                const fadeDistance = 200 - (fadeStart + riverWidth / 2);
+                // 0 at 60 units from bank, 1 at edge of chunk
+                const t = MathUtils.clamp(0, 1, (distFromBank - fadeStart) / fadeDistance);
+                const probability = Math.max(0.1, Math.pow(1 - t, 2));
                 if (Math.random() > probability) return false;
             }
 
@@ -157,6 +160,12 @@ export class TerrainDecorator {
                 return;
             }
             context.decoHelper.addInstancedDecoration(context, instances, pos, opts.rotation, opts.scale);
+
+            // Record stats
+            if (context.stats) {
+                const species = opts.kind;
+                context.stats.set(species, (context.stats.get(species) || 0) + 1);
+            }
         }
 
         let countSinceYield = 0;

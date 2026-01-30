@@ -32,6 +32,7 @@ export class TerrainChunk {
   private mesh: THREE.Mesh;
   private waterMesh: THREE.Mesh;
   private decorations: THREE.Group;
+  private decorationStats: Map<string, number> = new Map();
 
   public static create(
     zOffset: number,
@@ -58,6 +59,10 @@ export class TerrainChunk {
 
     // For keeping track of static items
     this.spatialGrid = new SpatialGrid(30);
+  }
+
+  public getDecorationStats(): Map<string, number> {
+    return this.decorationStats;
   }
 
   public update(dt: number) {
@@ -138,7 +143,8 @@ export class TerrainChunk {
       geometriesByMaterial: geometriesByMaterial,
       instancedData: instancedData,
       geometryGroup: geometryGroup,
-      decoHelper: new BiomeDecorationHelper()
+      decoHelper: new BiomeDecorationHelper(),
+      stats: this.decorationStats
     };
 
     for (const segment of segments) {

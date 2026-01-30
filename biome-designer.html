@@ -34,6 +34,16 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             pointer-events: auto;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .collapsed .icon {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-content.collapsed {
+            display: none !important;
         }
 
         h2 {
@@ -226,10 +236,6 @@
             transition: transform 0.3s ease;
         }
 
-        .collapsible-header.collapsed .icon {
-            transform: rotate(-90deg);
-        }
-
         #rules-editor-content {
             display: flex;
             flex-direction: column;
@@ -321,19 +327,28 @@
 
         <button id="reload-btn">Regenerate Biome</button>
 
+        <div id="stats-container">
+            <div class="collapsible-header" id="stats-header">
+                <label>Biome Statistics</label>
+                <span class="icon">▼</span>
+            </div>
+            <div id="stats-content" class="collapsible-content">
+                <!-- Data will be dynamically rendered here -->
+            </div>
+        </div>
+
         <div id="rules-editor-container">
             <div class="collapsible-header" id="rules-header">
                 <label>Decoration Rules</label>
                 <span class="icon">▼</span>
             </div>
-            <div id="rules-editor-content">
+            <div id="rules-editor-content" class="collapsible-content">
                 <div class="editor-actions">
                     <button id="undo-btn" title="Undo (Ctrl+Z)">Undo</button>
                     <button id="redo-btn" title="Redo (Ctrl+Y)">Redo</button>
                 </div>
                 <textarea id="rules-textarea" spellcheck="false"
                     placeholder="Enter decoration rules JavaScript..."></textarea>
-                <button id="apply-rules-btn">Apply Rules</button>
             </div>
         </div>
 

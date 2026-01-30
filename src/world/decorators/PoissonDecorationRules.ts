@@ -40,20 +40,24 @@ export const Signal = {
     max: (a: (ctx: WorldContext) => number, b: (ctx: WorldContext) => number) => (ctx: WorldContext) =>
         Math.max(a(ctx), b(ctx)),
 
-    linearRange: (
+    linearEaseIn: (
         f: (ctx: WorldContext) => number,
-        min0: number, min1: number, max1: number = Infinity, max0: number = Infinity
+        min0: number, min1: number
     ) => (ctx: WorldContext) => {
         const v = f(ctx);
-        if (v <= min0 || v >= max0) return 0;
-        if (v >= min1 && v <= max1) return 1;
-        if (v < min1) {
-            return MathUtils.linearstep(min0, min1, v);
-        }
-        if (v > max1) {
-            return MathUtils.linearstep(max1, max0, v);
-        }
-        return v;
+        if (v <= min0) return 0;
+        if (v >= min1) return 1;
+        return MathUtils.linearstep(min0, min1, v);
+    },
+
+    linearEaseOut: (
+        f: (ctx: WorldContext) => number,
+        max1: number, max0: number
+    ) => (ctx: WorldContext) => {
+        const v = f(ctx);
+        if (v >= max0) return 0;
+        if (v <= max1) return 1;
+        return MathUtils.linearstep(max1, max0, v);
     },
 
     smoothRange: (

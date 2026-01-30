@@ -465,4 +465,15 @@ export class TerrainManager {
 
     return mesh;
   }
+
+  public getDecorationStats(): Map<string, number> {
+    const stats = new Map<string, number>();
+    for (const chunk of this.chunks.values()) {
+      const chunkStats = chunk.getDecorationStats();
+      for (const [species, count] of chunkStats) {
+        stats.set(species, (stats.get(species) || 0) + count);
+      }
+    }
+    return stats;
+  }
 }
