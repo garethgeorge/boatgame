@@ -251,4 +251,16 @@ export class SpeciesRules {
             };
         };
     }
+
+    public static cactus() {
+        return (ctx: WorldContext) => {
+            const scale = 0.8 + ctx.random() * 0.4;
+            return {
+                groundRadius: 1 * scale,
+                canopyRadius: 5 * scale,
+                spacing: 1 * scale,
+                options: { kind: 'cactus', rotation: ctx.random() * Math.PI * 2, scale }
+            };
+        };
+    }
 }

@@ -30,10 +30,17 @@ export interface RockDecorationOptions {
     rockBiome?: string;
 }
 
+export interface CactusDecorationOptions {
+    kind: 'cactus';
+    rotation: number;
+    scale: number;
+}
+
 export type DecorationOptions =
     TreeDecorationOptions
     | FlowerDecorationOptions
-    | RockDecorationOptions;
+    | RockDecorationOptions
+    | CactusDecorationOptions;
 
 export class TerrainDecorator {
     private static _instance: TerrainDecorator;
@@ -208,6 +215,11 @@ export class TerrainDecorator {
                 case 'rock': {
                     const rockInstances = Decorations.getRockInstance(opts.rockBiome ?? 'happy', opts.scale);
                     tryPlace(rockInstances, pos, opts);
+                    break;
+                }
+                case 'cactus': {
+                    const cactusInstances = Decorations.getCactusInstance();
+                    tryPlace(cactusInstances, pos, opts);
                     break;
                 }
             }

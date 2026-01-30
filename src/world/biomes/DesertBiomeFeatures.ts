@@ -7,6 +7,9 @@ import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { AnimalSpawnOptions } from '../../entities/spawners/AnimalSpawner';
+import { DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
+import { TierRule } from '../decorators/PoissonDecorationRules';
+import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';
@@ -16,6 +19,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, DesertBiomeFeatures.LENGTH, direction);
     }
 
+    private decorationRules: DecorationRule[] | null = null;
     private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(): { r: number, g: number, b: number } {
@@ -24,6 +28,40 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
     protected skyTopColors: number[] = [0x04193c, 0x05559c, 0x058fea]; // [Night, Sunset, Noon]
     protected skyBottomColors: number[] = [0x024b82, 0xafd9ae, 0x53baf5]; // [Night, Sunset, Noon]
+
+    private getDecorationRules(): DecorationRule[] {
+        if (!this.decorationRules) {
+            this.decorationRules = [
+                new TierRule({
+                    species: [
+                        {
+                            id: 'cactus',
+                            preference: SpeciesRules.fitness({
+                                fitness: 0.2,
+                                stepDistance: [5, 50],
+                                slope: [0, 30]
+                            }),
+                            params: SpeciesRules.cactus()
+                        }
+                    ]
+                }),
+                new TierRule({
+                    species: [
+                        {
+                            id: 'rock',
+                            preference: SpeciesRules.fitness({
+                                fitness: 0.1,
+                                stepDistance: [3, 20],
+                                slope: [0, 70]
+                            }),
+                            params: SpeciesRules.rock({ rockBiome: 'desert' })
+                        }
+                    ]
+                })
+            ];
+        }
+        return this.decorationRules;
+    }
 
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
@@ -143,23 +181,15 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     }
 
     * decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        const length = zEnd - zStart;
-        const count = Math.floor(length * 16);
-
-        for (let i = 0; i < count; i++) {
-            if (i % 20 === 0) yield;
-            const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-            if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
-
-            const rand = Math.random();
-            if (rand > 0.95) {
-                const cactusInstances = Decorations.getCactusInstance();
-                context.decoHelper.addInstancedDecoration(context, cactusInstances, position);
-            } else if (rand > 0.90) {
-                const rockInstances = Decorations.getRockInstance(this.id, Math.random());
-                context.decoHelper.addInstancedDecoration(context, rockInstances, position);
-            }
-        }
+        const rules = this.getDecorationRules();
+        const spatialGrid = context.chunk.spatialGrid;
+        yield* TerrainDecorator.decorateIterator(
+            context,
+            rules,
+            { xMin: -240, xMax: 240, zMin: zStart, zMax: zEnd },
+            spatialGrid,
+            42 // Desert seed
+        );
     }
 
     * spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
