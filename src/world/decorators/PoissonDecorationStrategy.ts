@@ -3,6 +3,10 @@ import { PlacementManifest, SpatialGrid } from '../../managers/SpatialGrid';
 import { SimplexNoise } from '../SimplexNoise';
 import { MathUtils } from '../../core/MathUtils';
 
+export interface WorldMap {
+    sample(x: number, y: number): number;
+}
+
 // Environmental Context
 export interface WorldContext {
     pos: { x: number, y: number }; // World X, Z (using y for z in 2D context)
@@ -14,6 +18,7 @@ export interface WorldContext {
     random: () => number;
     gaussian: () => number;
     noise2D: (x: number, y: number) => number;
+    sampleMap: (name: string, x?: number, y?: number) => number;
 }
 
 // The Declarative Rule
@@ -56,7 +61,8 @@ export class PoissonDecorationStrategy {
         spatialGrid: SpatialGrid,
         terrainProvider: (x: number, z: number) => { height: number, slope: number, distToRiver: number },
         biomeProgressProvider: (z: number) => number,
-        seed: number = 0
+        seed: number = 0,
+        maps: Record<string, WorldMap> = {}
     ): Generator<void | Promise<void>, PlacementManifest[], unknown> {
         const manifests: PoissonPlacement[] = [];
 
@@ -72,7 +78,12 @@ export class PoissonDecorationStrategy {
             biomeProgress: 0,
             random: Math.random,
             gaussian: MathUtils.createGaussianRNG(Math.random),
-            noise2D: (x, y) => this.noise2D.noise2D(x, y)
+            noise2D: (x, y) => this.noise2D.noise2D(x, y),
+            sampleMap: (name, x, y) => {
+                const map = maps[name];
+                if (!map) return 0;
+                return map.sample(x ?? ctx.pos.x, y ?? ctx.pos.y);
+            }
         };
 
         for (const rule of rules) {

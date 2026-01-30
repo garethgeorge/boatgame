@@ -1,4 +1,4 @@
-import { PoissonDecorationStrategy, DecorationRule } from './PoissonDecorationStrategy';
+import { PoissonDecorationStrategy, DecorationRule, WorldMap } from './PoissonDecorationStrategy';
 import { PlacementManifest, SpatialGrid } from '../../managers/SpatialGrid';
 export type { DecorationRule, PlacementManifest };
 import { RiverSystem } from '../RiverSystem';
@@ -45,6 +45,32 @@ export type DecorationOptions =
     | { kind: 'cycad', rotation: number, scale: number }
     | { kind: 'treeFern', rotation: number, scale: number };
 
+export class NoiseMap implements WorldMap {
+    private noise: SimplexNoise;
+    private sx: number;
+    private sy: number;
+    private dx: number;
+    private dy: number;
+
+    constructor(noise: SimplexNoise, sx: number, sy: number,
+        dx: number = Math.random(), dy: number = Math.random()) {
+        this.noise = noise;
+        this.sx = sx;
+        this.sy = sy;
+        this.dx = dx;
+        this.dy = dy;
+    }
+
+    sample(x: number, y: number): number {
+        return (this.noise.noise2D(x / this.sx + this.dx, y / this.sy + this.dy) + 1) / 2.0;
+    }
+}
+
+export interface DecorationConfig {
+    maps: Record<string, WorldMap>,
+    rules: DecorationRule[]
+};
+
 export class TerrainDecorator {
     private static _instance: TerrainDecorator;
 
@@ -58,22 +84,22 @@ export class TerrainDecorator {
 
     public static *decorateIterator(
         context: DecorationContext,
-        rules: DecorationRule[],
+        config: DecorationConfig,
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
         spatialGrid: SpatialGrid,
-        seed: number = 0
+        seed: number = 0,
     ): Generator<void | Promise<void>, void, unknown> {
-        const placements = yield* this.generateIterator(rules, region, spatialGrid, seed);
+        const placements = yield* this.generateIterator(config, region, spatialGrid, seed);
         yield* this.populateIterator(context, placements, region);
     }
 
     public static generateIterator(
-        rules: DecorationRule[],
+        config: DecorationConfig,
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
         spatialGrid: SpatialGrid,
-        seed: number = 0
+        seed: number = 0,
     ): Generator<void | Promise<void>, PlacementManifest[], unknown> {
-        return this.instance().generateIterator(rules, region, spatialGrid, seed);
+        return this.instance().generateIterator(config, region, spatialGrid, seed);
     }
 
     public static populateIterator(
@@ -90,10 +116,10 @@ export class TerrainDecorator {
     }
 
     private *generateIterator(
-        rules: DecorationRule[],
+        config: DecorationConfig,
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
         spatialGrid: SpatialGrid,
-        seed: number = 0
+        seed: number = 0,
     ): Generator<void | Promise<void>, PlacementManifest[], unknown> {
 
         // Default Terrain Provider using RiverSystem
@@ -122,12 +148,13 @@ export class TerrainDecorator {
         };
 
         return yield* this.strategy.generateIterator(
-            rules,
+            config.rules,
             region,
             spatialGrid,
             terrainProvider,
             biomeProgressProvider,
-            seed
+            seed,
+            config.maps
         );
     }
 

@@ -6,8 +6,8 @@ import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy, PatternConfigs, TrackConfig } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
-import { DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
-import { TierRule } from '../decorators/PoissonDecorationRules';
+import { DecorationRule, TerrainDecorator, NoiseMap, DecorationConfig } from '../decorators/TerrainDecorator';
+import { TierRule, Signal, Combine } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 
 
@@ -23,7 +23,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, HappyBiomeFeatures.LENGTH, direction);
     }
 
-    private decorationRules: DecorationRule[] | null = null;
+    private decorationConfig: DecorationConfig | null = null;
     private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(): { r: number, g: number, b: number } {
@@ -174,19 +174,15 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return rules;
     }
 
-    public getDecorationRules(): DecorationRule[] {
-        if (!this.decorationRules) {
+    public getDecorationConfig(): DecorationConfig {
+        if (!this.decorationConfig) {
             if (Math.random() < 0.5) {
-                this.decorationRules = this.parklandRules();
+                this.decorationConfig = { rules: this.parklandRules(), maps: {} };
             } else {
-                this.decorationRules = this.riverlandRules();
+                this.decorationConfig = { rules: this.riverlandRules(), maps: {} };
             }
         }
-        return this.decorationRules;
-    }
-
-    public setDecorationRules(rules: DecorationRule[]): void {
-        this.decorationRules = rules;
+        return this.decorationConfig;
     }
 
     private getLayout(): BoatPathLayout {
@@ -300,11 +296,11 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     }
 
     * decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        const decorationRules = this.getDecorationRules();
+        const decorationConfig = this.getDecorationConfig();
         const spatialGrid = context.chunk.spatialGrid;
         yield* TerrainDecorator.decorateIterator(
             context,
-            decorationRules,
+            decorationConfig,
             { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
             spatialGrid,
             12345 // Fixed seed for now

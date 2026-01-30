@@ -8,7 +8,7 @@ import { DecorationRule } from '../decorators/PoissonDecorationStrategy';
 import { Combine, Signal, TierRule } from '../decorators/PoissonDecorationRules';
 import { RiverSystem } from '../RiverSystem';
 import { RiverGeometry } from '../RiverGeometry';
-import { TerrainDecorator } from '../decorators/TerrainDecorator';
+import { DecorationConfig, TerrainDecorator } from '../decorators/TerrainDecorator';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -18,40 +18,39 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, TestBiomeFeatures.LENGTH, direction);
     }
 
-    private decorationRules: DecorationRule[] = [
-        new TierRule({
-            species: [
-                {
-                    id: 'land',
-                    preference: Combine.all(
-                        Signal.constant(1.0),
-                        Signal.inRange(Signal.distanceToRiver, 5, 25),
-                    ),
-                    params: (ctx) => {
-                        const scale = 0.8 + ctx.random() * 0.4;
-                        const kinds = ['daisy', 'lily', 'waterlily'];
-                        const kind = kinds[Math.floor(Math.random() * 3)];
-                        return {
-                            groundRadius: 0.5 * scale,
-                            options: {
-                                kind: kind,
-                                rotation: ctx.random() * Math.PI * 2,
-                                scale
-                            },
-                            spacing: 4.0
-                        };
-                    }
-                },
-            ]
-        })
-    ];
+    private decorationConfig: DecorationConfig = {
+        maps: {},
+        rules: [
+            new TierRule({
+                species: [
+                    {
+                        id: 'land',
+                        preference: Combine.all(
+                            Signal.constant(1.0),
+                            Signal.inRange(Signal.distanceToRiver, 5, 25),
+                        ),
+                        params: (ctx) => {
+                            const scale = 0.8 + ctx.random() * 0.4;
+                            const kinds = ['daisy', 'lily', 'waterlily'];
+                            const kind = kinds[Math.floor(Math.random() * 3)];
+                            return {
+                                groundRadius: 0.5 * scale,
+                                options: {
+                                    kind: kind,
+                                    rotation: ctx.random() * Math.PI * 2,
+                                    scale
+                                },
+                                spacing: 4.0
+                            };
+                        }
+                    },
+                ]
+            })
+        ]
+    };
 
-    public getDecorationRules(): DecorationRule[] {
-        return this.decorationRules;
-    }
-
-    public setDecorationRules(rules: DecorationRule[]): void {
-        this.decorationRules = rules;
+    public getDecorationConfig(): DecorationConfig {
+        return this.decorationConfig;
     }
 
     getGroundColor(): { r: number, g: number, b: number } {
@@ -66,7 +65,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         const spatialGrid = context.chunk.spatialGrid;
         yield* TerrainDecorator.decorateIterator(
             context,
-            this.decorationRules,
+            this.decorationConfig,
             { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
             spatialGrid,
             12345 // Fixed seed for now

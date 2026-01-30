@@ -7,7 +7,7 @@ import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { AnimalSpawnOptions } from '../../entities/spawners/AnimalSpawner';
-import { DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
+import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 
@@ -19,7 +19,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, DesertBiomeFeatures.LENGTH, direction);
     }
 
-    private decorationRules: DecorationRule[] | null = null;
+    private decorationConfig: DecorationConfig | null = null;
     private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(): { r: number, g: number, b: number } {
@@ -29,9 +29,9 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     protected skyTopColors: number[] = [0x04193c, 0x05559c, 0x058fea]; // [Night, Sunset, Noon]
     protected skyBottomColors: number[] = [0x024b82, 0xafd9ae, 0x53baf5]; // [Night, Sunset, Noon]
 
-    public getDecorationRules(): DecorationRule[] {
-        if (!this.decorationRules) {
-            this.decorationRules = [
+    public getDecorationConfig(): DecorationConfig {
+        if (!this.decorationConfig) {
+            const rules = [
                 new TierRule({
                     species: [
                         {
@@ -59,12 +59,10 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                     ]
                 })
             ];
-        }
-        return this.decorationRules;
-    }
 
-    public setDecorationRules(rules: DecorationRule[]): void {
-        this.decorationRules = rules;
+            this.decorationConfig = { rules, maps: {} };
+        }
+        return this.decorationConfig;
     }
 
     private getLayout(): BoatPathLayout {
@@ -185,11 +183,11 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     }
 
     * decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        const rules = this.getDecorationRules();
+        const config = this.getDecorationConfig();
         const spatialGrid = context.chunk.spatialGrid;
         yield* TerrainDecorator.decorateIterator(
             context,
-            rules,
+            config,
             { xMin: -240, xMax: 240, zMin: zStart, zMax: zEnd },
             spatialGrid,
             42 // Desert seed

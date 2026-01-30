@@ -3,8 +3,7 @@ import { BiomeFeatures } from './BiomeFeatures';
 import { Spawnable, SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { Decorations } from '../Decorations';
-import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
+import { DecorationConfig } from '../decorators/TerrainDecorator';
 
 export abstract class BaseBiomeFeatures implements BiomeFeatures {
     abstract id: BiomeType;
@@ -87,12 +86,7 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         return 1.0;
     }
 
-    public getDecorationRules(): any[] | undefined {
+    public getDecorationConfig(): DecorationConfig | undefined {
         return undefined;
     }
-
-    public setDecorationRules(rules: any[]): void {
-        // Default no-op
-    }
-
 }

@@ -21,10 +21,14 @@ export interface FitnessParams {
     // 0 outside the range, 1 inside
     stepDistance?: [number, number],
 
+    // Samples 2D noise and returns 1 if value exceeds threshold
     stepNoise?: {
         scale: number | [number, number],
         threshold: number
     },
+
+    // 1 if the named map value is in range
+    map?: { name: string, range: [number, number] },
 
     // Elevation must be between these values
     elevation?: [number, number],
@@ -66,6 +70,10 @@ export class SpeciesRules {
             fitnessFuncs.push(Signal.step(
                 Signal.noise2D(sx, sy, dx, dy),
                 threshold));
+        }
+        if (params.map !== undefined) {
+            fitnessFuncs.push(Signal.inRange(Signal.map(params.map.name),
+                params.map.range[0], params.map.range[1]));
         }
         if (params.elevation !== undefined) {
             fitnessFuncs.push(Signal.inRange(Signal.elevation,

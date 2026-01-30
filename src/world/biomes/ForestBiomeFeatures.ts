@@ -6,7 +6,7 @@ import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
-import { DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
+import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
@@ -33,54 +33,53 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
         return 1.0;
     }
 
-    private decorationRules: DecorationRule[] = [
-        new TierRule({
-            species: [
-                {
-                    id: 'elder_tree',
-                    preference: SpeciesRules.fitness({
-                        stepDistance: [60, 70],
-                        stepNoise: { scale: 123.4, threshold: 0.95 }
-                    }),
-                    params: SpeciesRules.elder_tree({ paletteName: 'fall_yellow' })
-                },
-                {
-                    id: 'birch_tree',
-                    preference: SpeciesRules.fitness({
-                        stepNoise: { scale: 50, threshold: 0.5 },
-                        stepDistance: [5, 200]
-                    }),
-                    params: SpeciesRules.birch_tree({ paletteName: 'fall_yellow' })
-                },
-                {
-                    id: 'oak_tree',
-                    preference: SpeciesRules.fitness({
-                        fitness: 0.9,
-                        stepDistance: [5, 200]
-                    }),
-                    params: SpeciesRules.oak_tree({ paletteName: 'fall_red_orange' })
-                }
-            ]
-        }),
-        new TierRule({
-            species: [
-                {
-                    id: 'rock',
-                    preference: SpeciesRules.fitness({
-                        fitness: 0.2, minFitness: 0.02, stepDistance: [2, 10]
-                    }),
-                    params: SpeciesRules.rock()
-                }
-            ]
-        })
-    ];
+    private decorationConfig: DecorationConfig = {
+        maps: {},
+        rules: [
+            new TierRule({
+                species: [
+                    {
+                        id: 'elder_tree',
+                        preference: SpeciesRules.fitness({
+                            stepDistance: [60, 70],
+                            stepNoise: { scale: 123.4, threshold: 0.95 }
+                        }),
+                        params: SpeciesRules.elder_tree({ paletteName: 'fall_yellow' })
+                    },
+                    {
+                        id: 'birch_tree',
+                        preference: SpeciesRules.fitness({
+                            stepNoise: { scale: 50, threshold: 0.5 },
+                            stepDistance: [5, 200]
+                        }),
+                        params: SpeciesRules.birch_tree({ paletteName: 'fall_yellow' })
+                    },
+                    {
+                        id: 'oak_tree',
+                        preference: SpeciesRules.fitness({
+                            fitness: 0.9,
+                            stepDistance: [5, 200]
+                        }),
+                        params: SpeciesRules.oak_tree({ paletteName: 'fall_red_orange' })
+                    }
+                ]
+            }),
+            new TierRule({
+                species: [
+                    {
+                        id: 'rock',
+                        preference: SpeciesRules.fitness({
+                            fitness: 0.2, minFitness: 0.02, stepDistance: [2, 10]
+                        }),
+                        params: SpeciesRules.rock()
+                    }
+                ]
+            })
+        ]
+    };
 
-    public getDecorationRules(): DecorationRule[] {
-        return this.decorationRules;
-    }
-
-    public setDecorationRules(rules: DecorationRule[]): void {
-        this.decorationRules = rules;
+    public getDecorationConfig(): DecorationConfig {
+        return this.decorationConfig;
     }
 
     private getLayout(): BoatPathLayout {
@@ -174,7 +173,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
         const spatialGrid = context.chunk.spatialGrid;
         yield* TerrainDecorator.decorateIterator(
             context,
-            this.decorationRules,
+            this.decorationConfig,
             { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
             spatialGrid,
             12345 + zStart // Seed variation

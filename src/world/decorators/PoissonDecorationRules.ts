@@ -9,6 +9,10 @@ export const Signal = {
     noise2D: (sx: number, sy: number, dx: number = 0, dy: number = 0) => (ctx: WorldContext) =>
         (ctx.noise2D(ctx.pos.x / sx + dx, ctx.pos.y / sy + dy) + 1) / 2.0,
 
+    // Get value from map
+    map: (name: string) => (ctx: WorldContext) =>
+        ctx.sampleMap(name, ctx.pos.x, ctx.pos.y),
+
     distanceToRiver: (ctx: WorldContext) =>
         ctx.distanceToRiver,
 
@@ -75,10 +79,6 @@ export const Signal = {
         }
         return v;
     },
-
-    // Noise: 0 to 1 organic clumps
-    clumps: (scale: number, seed: number) => (ctx: WorldContext) =>
-        (ctx.noise2D(ctx.pos.x * scale, ctx.pos.y * scale) + 1) / 2
 };
 
 export const Combine = {

@@ -6,9 +6,11 @@ import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy, PatternConfigs } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
-import { DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
+import { DecorationConfig, DecorationRule, NoiseMap, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
+import { WorldMap } from '../decorators/PoissonDecorationStrategy';
+import { SimplexNoise } from '../SimplexNoise';
 
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'jurassic';
@@ -18,7 +20,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, JurassicBiomeFeatures.LENGTH, direction);
     }
 
-    private decorationRules: DecorationRule[] | null = null;
+    private decorationConfig: DecorationConfig | null = null;
     private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(): { r: number, g: number, b: number } {
@@ -40,16 +42,20 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         return 1.7;
     }
 
-    public getDecorationRules(): DecorationRule[] {
-        if (!this.decorationRules) {
-            this.decorationRules = [
+    public getDecorationConfig(): DecorationConfig {
+        if (!this.decorationConfig) {
+            const maps = {
+                trees: new NoiseMap(new SimplexNoise(), 300, 300)
+            };
+
+            const rules = [
                 new TierRule({
                     species: [
                         {
                             id: 'cycad',
                             preference: SpeciesRules.fitness({
-                                stepNoise: { scale: 300, threshold: 0.5 },
-                                stepDistance: [5, 60],
+                                map: { name: 'trees', range: [0, 0.5] },
+                                stepDistance: [5, 100],
                                 slope: [0, 30]
                             }),
                             params: SpeciesRules.cycad()
@@ -57,8 +63,8 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                         {
                             id: 'tree_fern',
                             preference: SpeciesRules.fitness({
-                                stepNoise: { scale: 300, threshold: 0.6 },
-                                stepDistance: [10, 50],
+                                map: { name: 'trees', range: [0.5, 1] },
+                                stepDistance: [10, 100],
                                 slope: [0, 25]
                             }),
                             params: SpeciesRules.tree_fern()
@@ -75,8 +81,10 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                     ]
                 })
             ];
+
+            this.decorationConfig = { maps, rules };
         }
-        return this.decorationRules;
+        return this.decorationConfig;
     }
 
     private getLayout(): BoatPathLayout {
@@ -176,11 +184,11 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     }
 
     *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        const decorationRules = this.getDecorationRules();
+        const decorationConfig = this.getDecorationConfig();
         const spatialGrid = context.chunk.spatialGrid;
         yield* TerrainDecorator.decorateIterator(
             context,
-            decorationRules,
+            decorationConfig,
             { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
             spatialGrid,
             42 // Use a specific seed

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
+import { DecorationConfig } from '../decorators/TerrainDecorator';
 
 export interface BiomeFeatures {
     id: BiomeType;
@@ -27,8 +28,7 @@ export interface BiomeFeatures {
     getRiverWidthMultiplier(): number;
 
     /**
-     * These allow the biome designer UI to directly edit a biome
+     * Allows the biome designer UI to directly edit a biome
      */
-    getDecorationRules?(): any[] | undefined;
-    setDecorationRules?(rules: any[]): void;
+    getDecorationConfig?(): DecorationConfig | undefined;
 }

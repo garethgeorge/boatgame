@@ -4,7 +4,7 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations } from '../Decorations';
-import { DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
+import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule, Combine, Signal } from '../decorators/PoissonDecorationRules';
 import { EntityIds } from '../../entities/EntityIds';
 import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
@@ -37,12 +37,12 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         return 2.3;
     }
 
-    private decorationRules: DecorationRule[] | null = null;
+    private decorationConfig: DecorationConfig | null = null;
 
-    public getDecorationRules(): DecorationRule[] {
-        if (this.decorationRules) return this.decorationRules;
+    public getDecorationConfig(): DecorationConfig {
+        if (this.decorationConfig) return this.decorationConfig;
 
-        this.decorationRules = [
+        const rules = [
             new TierRule({
                 species: [
                     {
@@ -77,18 +77,16 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 ]
             })
         ];
-        return this.decorationRules;
-    }
 
-    public setDecorationRules(rules: DecorationRule[]): void {
-        this.decorationRules = rules;
+        this.decorationConfig = { rules, maps:{}};
+        return this.decorationConfig;
     }
 
     *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        const rules = this.getDecorationRules();
+        const config = this.getDecorationConfig();
         yield* TerrainDecorator.decorateIterator(
             context,
-            rules,
+            config,
             { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
             context.chunk.spatialGrid,
             this.index

@@ -193,9 +193,9 @@ class BiomeDesigner {
 
         const updateEditorVisibility = () => {
             const features = RiverSystem.getInstance().biomeManager.getDesignerBiome();
-            const rules = (features && features.getDecorationRules) ? features.getDecorationRules() : undefined;
+            const rules = (features && features.getDecorationConfig) ? features.getDecorationConfig().rules : undefined;
 
-            if (rules && features?.setDecorationRules) {
+            if (rules) {
                 container.style.display = 'flex';
                 const rulesText = DesignerUtils.safeStringify(rules);
                 textarea.value = rulesText;
@@ -351,8 +351,8 @@ class BiomeDesigner {
             );
 
             const features = RiverSystem.getInstance().biomeManager.getDesignerBiome();
-            if (features && features.setDecorationRules) {
-                features.setDecorationRules(evalRules);
+            if (features && features.getDecorationConfig) {
+                features.getDecorationConfig().rules = evalRules;
                 RiverSystem.getInstance().biomeManager.setOverriddenRules(features.id, evalRules);
 
                 RiverSystem.getInstance().biomeManager.resetDesignerBiome();
