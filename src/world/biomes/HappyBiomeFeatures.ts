@@ -46,19 +46,55 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         const rules = [
             new TierRule({
                 species: [
-                    SpeciesRules.elm_tree({
-                        stepNoise: { scale: 400, threshold: 0.5 },
-                        stepDistance: [10, 60],
-                        slope: [0, 25]
-                    }),
-                    SpeciesRules.box_elder(),
-                    SpeciesRules.japanese_maple(),
+                    {
+                        id: 'elm_tree',
+                        preference: SpeciesRules.fitness({
+                            stepNoise: { scale: 400, threshold: 0.5 },
+                            stepDistance: [10, 60],
+                            slope: [0, 25]
+                        }),
+                        params: SpeciesRules.elm_tree()
+                    },
+                    {
+                        id: 'vase_tree',
+                        preference: SpeciesRules.fitness({
+                            fitness: 0.8,
+                            stepDistance: [15, 50],
+                            slope: [0, 20]
+                        }),
+                        params: SpeciesRules.box_elder()
+                    },
+                    {
+                        id: 'open_tree',
+                        preference: SpeciesRules.fitness({
+                            fitness: 0.7,
+                            stepDistance: [5, 40],
+                            slope: [0, 30]
+                        }),
+                        params: SpeciesRules.japanese_maple()
+                    },
                 ]
             }),
             new TierRule({
                 species: [
-                    SpeciesRules.daisy(),
-                    SpeciesRules.lily()
+                    {
+                        id: 'daisy',
+                        preference: SpeciesRules.fitness({
+                            stepDistance: [2, 30],
+                            slope: [0, 15],
+                            stepNoise: { scale: 100, threshold: 0.7 }
+                        }),
+                        params: SpeciesRules.daisy()
+                    },
+                    {
+                        id: 'lily',
+                        preference: SpeciesRules.fitness({
+                            stepDistance: [2, 30],
+                            slope: [0, 15],
+                            stepNoise: { scale: 100, threshold: 0.7 }
+                        }),
+                        params: SpeciesRules.lily()
+                    }
                 ]
             })
         ];
@@ -69,28 +105,69 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         const rules = [
             new TierRule({
                 species: [
-                    SpeciesRules.willow_tree(),
-                    SpeciesRules.oak_tree({
-                        fitness: 1.0, linearDistance: [20, 50], elevation: [3, 20], slope: [0, 50]
-                    })
+                    {
+                        id: 'willow_tree',
+                        preference: SpeciesRules.fitness({
+                            stepNoise: { scale: [500, 250], threshold: 0.6 },
+                            stepDistance: [5, 25],
+                            elevation: [1.0, 5.0],
+                            slope: [0, 15]
+                        }),
+                        params: SpeciesRules.willow_tree()
+                    },
+                    {
+                        id: 'oak_tree',
+                        preference: SpeciesRules.fitness({
+                            fitness: 1.0, linearDistance: [20, 50], elevation: [3, 20], slope: [0, 50]
+                        }),
+                        params: SpeciesRules.oak_tree()
+                    }
                 ]
             }),
             new TierRule({
                 species: [
-                    SpeciesRules.poplar_tree()
+                    {
+                        id: 'poplar',
+                        preference: SpeciesRules.fitness({
+                            stepNoise: { scale: [500, 250], threshold: 0.7 },
+                            stepDistance: [20, 40],
+                            slope: [0, 15]
+                        }),
+                        params: SpeciesRules.poplar_tree()
+                    }
                 ]
             }),
             new TierRule({
                 species: [
-                    SpeciesRules.rock({
-                        stepDistance: [3, 20], elevation: [6, Infinity], slope: [50, Infinity]
-                    }),
+                    {
+                        id: 'rock',
+                        preference: SpeciesRules.fitness({
+                            stepDistance: [3, 20], elevation: [6, Infinity], slope: [50, Infinity]
+                        }),
+                        params: SpeciesRules.rock()
+                    },
                 ]
             }),
             new TierRule({
                 species: [
-                    SpeciesRules.daisy(),
-                    SpeciesRules.lily()
+                    {
+                        id: 'daisy',
+                        preference: SpeciesRules.fitness({
+                            stepDistance: [2, 30],
+                            slope: [0, 15],
+                            stepNoise: { scale: 100, threshold: 0.7 }
+                        }),
+                        params: SpeciesRules.daisy()
+                    },
+                    {
+                        id: 'lily',
+                        preference: SpeciesRules.fitness({
+                            stepDistance: [2, 30],
+                            slope: [0, 15],
+                            stepNoise: { scale: 100, threshold: 0.7 }
+                        }),
+                        params: SpeciesRules.lily()
+                    }
                 ]
             })
         ];

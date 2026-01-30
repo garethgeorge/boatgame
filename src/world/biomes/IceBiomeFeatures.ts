@@ -45,26 +45,35 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         this.decorationRules = [
             new TierRule({
                 species: [
-                    SpeciesRules.oak_tree({
-                        fitness: 0.6,
-                        stepDistance: [10, 200],
-                        slope: [0, 30],
-                        snow: true,
-                        leaves: 0.5
-                    }),
-                    SpeciesRules.elm_tree({
-                        fitness: 0.4,
-                        stepDistance: [10, 60],
-                        slope: [0, 25]
-                    }),
+                    {
+                        id: 'oak_tree',
+                        preference: SpeciesRules.fitness({
+                            fitness: 0.6,
+                            stepDistance: [10, 200],
+                            slope: [0, 30]
+                        }),
+                        params: SpeciesRules.oak_tree({ snow: true, leaves: 0.5 })
+                    },
+                    {
+                        id: 'elm_tree',
+                        preference: SpeciesRules.fitness({
+                            fitness: 0.4,
+                            stepDistance: [10, 60],
+                            slope: [0, 25]
+                        }),
+                        params: SpeciesRules.elm_tree()
+                    },
                 ]
             }),
             new TierRule({
                 species: [
-                    SpeciesRules.rock({
-                        fitness: 0.1,
-                        rockBiome: 'ice'
-                    }),
+                    {
+                        id: 'rock',
+                        preference: SpeciesRules.fitness({
+                            fitness: 0.1
+                        }),
+                        params: SpeciesRules.rock({ rockBiome: 'ice' })
+                    },
                 ]
             })
         ];

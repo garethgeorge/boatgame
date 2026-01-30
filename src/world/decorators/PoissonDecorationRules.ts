@@ -34,16 +34,6 @@ export const Signal = {
         return v < threshold ? 0.0 : 1.0;
     },
 
-    stepLinear: (
-        f: (ctx: WorldContext) => number,
-        min: number,
-        max: number
-    ) => (ctx: WorldContext) => {
-        const v = f(ctx);
-        if (v < min || v > max) return 0.0;
-        return 1.0;
-    },
-
     sin: (freq: number) => (ctx: WorldContext) =>
         Math.sin(ctx.pos.y * freq),
 
