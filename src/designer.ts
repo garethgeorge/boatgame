@@ -82,11 +82,29 @@ class Designer {
         this.initThree();
         this.initResizer();
 
+        // Load saved state
+        const savedType = localStorage.getItem('plantDesignerType');
+        const savedArchetype = localStorage.getItem('plantDesignerArchetype');
+
+        if (savedType === 'tree' || savedType === 'flower') {
+            this.currentType = savedType;
+            this.typeSelect.value = savedType;
+            this.updateArchetypeList();
+        }
+
+        if (savedArchetype) {
+            // Check if the archetype exists in the current list
+            const options = Array.from(this.archetypeSelect.options).map(o => o.value);
+            if (options.includes(savedArchetype)) {
+                this.archetypeSelect.value = savedArchetype;
+            }
+        }
+
         // Initial state for history
         const key = this.archetypeSelect.value;
         const archetypes = this.currentType === 'tree' ? TREE_ARCHETYPES : FLOWER_ARCHETYPES;
-        const initialConfig = archetypes[key];
-        const initialText = this.safeStringify(initialConfig);
+        const config = archetypes[key];
+        const initialText = this.safeStringify(config);
         this.configEditor.value = initialText;
 
         this.history = new HistoryManager(initialText, (state) => {
@@ -159,12 +177,15 @@ class Designer {
 
         this.typeSelect.addEventListener('change', () => {
             this.currentType = this.typeSelect.value as 'tree' | 'flower';
+            localStorage.setItem('plantDesignerType', this.currentType);
             this.updateArchetypeList();
             this.loadArchetype();
+            localStorage.setItem('plantDesignerArchetype', this.archetypeSelect.value);
         });
 
         this.archetypeSelect.addEventListener('change', () => {
             this.loadArchetype();
+            localStorage.setItem('plantDesignerArchetype', this.archetypeSelect.value);
         });
 
         this.generateBtn.addEventListener('click', () => {
