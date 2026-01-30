@@ -3,10 +3,12 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { Decorations } from '../Decorations';
-import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, PatternConfigs } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
+import { DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
+import { TierRule } from '../decorators/PoissonDecorationRules';
+import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'jurassic';
@@ -16,6 +18,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, JurassicBiomeFeatures.LENGTH, direction);
     }
 
+    private decorationRules: DecorationRule[] | null = null;
     private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(): { r: number, g: number, b: number } {
@@ -37,55 +40,96 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         return 1.7;
     }
 
+    public getDecorationRules(): DecorationRule[] {
+        if (!this.decorationRules) {
+            this.decorationRules = [
+                new TierRule({
+                    species: [
+                        {
+                            id: 'cycad',
+                            preference: SpeciesRules.fitness({
+                                stepNoise: { scale: 300, threshold: 0.5 },
+                                stepDistance: [5, 60],
+                                slope: [0, 30]
+                            }),
+                            params: SpeciesRules.cycad()
+                        },
+                        {
+                            id: 'tree_fern',
+                            preference: SpeciesRules.fitness({
+                                stepNoise: { scale: 300, threshold: 0.6 },
+                                stepDistance: [10, 50],
+                                slope: [0, 25]
+                            }),
+                            params: SpeciesRules.tree_fern()
+                        },
+                        {
+                            id: 'rock',
+                            preference: SpeciesRules.fitness({
+                                fitness: 0.5,
+                                stepDistance: [3, 40],
+                                slope: [30, 90]
+                            }),
+                            params: SpeciesRules.rock({ rockBiome: this.id })
+                        }
+                    ]
+                })
+            ];
+        }
+        return this.decorationRules;
+    }
+
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
-            patterns: {
-                'scattered_rocks': {
-                    logic: 'scatter',
-                    place: 'slalom',
-                    density: [1.0, 3.0],
-                    types: [EntityIds.ROCK]
-                },
-                'staggered_logs': {
-                    logic: 'staggered',
-                    place: 'slalom',
-                    density: [0.5, 1.5],
-                    types: [EntityIds.LOG],
-                    minCount: 4
-                },
-                'dino_scatter': {
-                    logic: 'scatter',
-                    place: 'near-shore',
-                    density: [0.5, 1.5],
-                    types: [EntityIds.TREX, EntityIds.TRICERATOPS]
-                },
-                'ptero_scatter': {
-                    logic: 'scatter',
-                    place: 'on-shore',
-                    density: [0.5, 1.5],
-                    types: [EntityIds.PTERODACTYL]
-                },
-                'bronto_migration': {
-                    logic: 'sequence',
-                    place: 'near-shore',
-                    density: [0.4, 0.4],
-                    types: [EntityIds.BRONTOSAURUS]
-                },
-                'bottle_hunt': {
-                    logic: 'scatter',
-                    place: 'path',
-                    density: [0.25, 0.5],
-                    types: [EntityIds.BOTTLE]
-                },
-                'grass_patches': {
-                    logic: 'scatter',
-                    place: 'near-shore',
-                    density: [1.5, 3.0],
-                    types: [EntityIds.WATER_GRASS]
-                }
+        const patterns: PatternConfigs = {
+            'scattered_rocks': {
+                logic: 'scatter',
+                place: 'slalom',
+                density: [1.0, 3.0],
+                types: [EntityIds.ROCK]
             },
+            'staggered_logs': {
+                logic: 'staggered',
+                place: 'slalom',
+                density: [0.5, 1.5],
+                types: [EntityIds.LOG],
+                minCount: 4
+            },
+            'dino_scatter': {
+                logic: 'scatter',
+                place: 'near-shore',
+                density: [0.5, 1.5],
+                types: [EntityIds.TREX, EntityIds.TRICERATOPS]
+            },
+            'ptero_scatter': {
+                logic: 'scatter',
+                place: 'on-shore',
+                density: [0.5, 1.5],
+                types: [EntityIds.PTERODACTYL]
+            },
+            'bronto_migration': {
+                logic: 'sequence',
+                place: 'near-shore',
+                density: [0.4, 0.4],
+                types: [EntityIds.BRONTOSAURUS]
+            },
+            'bottle_hunt': {
+                logic: 'scatter',
+                place: 'path',
+                density: [0.25, 0.5],
+                types: [EntityIds.BOTTLE]
+            },
+            'grass_patches': {
+                logic: 'scatter',
+                place: 'near-shore',
+                density: [1.5, 3.0],
+                types: [EntityIds.WATER_GRASS]
+            }
+        };
+
+        this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
+            patterns: patterns,
             tracks: [
                 {
                     name: 'obstacles',
@@ -132,26 +176,15 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     }
 
     *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        const length = zEnd - zStart;
-        const count = Math.floor(length * 20); // Denser
-
-        for (let i = 0; i < count; i++) {
-            if (i % 20 === 0) yield;
-            const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-            if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
-
-            const rand = Math.random();
-            if (rand > 0.8) {
-                const cycadInstances = Decorations.getCycadInstance();
-                context.decoHelper.addInstancedDecoration(context, cycadInstances, position);
-            } else if (rand > 0.6) {
-                const fernInstances = Decorations.getTreeFernInstance();
-                context.decoHelper.addInstancedDecoration(context, fernInstances, position);
-            } else if (rand > 0.55) {
-                const rockInstances = Decorations.getRockInstance(this.id, Math.random());
-                context.decoHelper.addInstancedDecoration(context, rockInstances, position);
-            }
-        }
+        const decorationRules = this.getDecorationRules();
+        const spatialGrid = context.chunk.spatialGrid;
+        yield* TerrainDecorator.decorateIterator(
+            context,
+            decorationRules,
+            { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
+            spatialGrid,
+            42 // Use a specific seed
+        );
     }
 
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {

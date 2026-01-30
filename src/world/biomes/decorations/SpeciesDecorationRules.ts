@@ -277,4 +277,28 @@ export class SpeciesRules {
             };
         };
     }
+
+    public static cycad() {
+        return (ctx: WorldContext) => {
+            const scale = 0.8 + ctx.random() * 0.4;
+            return {
+                groundRadius: 1 * scale,
+                canopyRadius: 5 * scale,
+                spacing: 1 * scale,
+                options: { kind: 'cycad', rotation: ctx.random() * Math.PI * 2, scale }
+            };
+        };
+    }
+
+    public static tree_fern() {
+        return (ctx: WorldContext) => {
+            const scale = 0.8 + ctx.random() * 0.4;
+            return {
+                groundRadius: 1 * scale,
+                canopyRadius: 6 * scale,
+                spacing: 1 * scale,
+                options: { kind: 'treeFern', rotation: ctx.random() * Math.PI * 2, scale }
+            };
+        };
+    }
 }

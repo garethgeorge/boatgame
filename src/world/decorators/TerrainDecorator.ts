@@ -41,7 +41,9 @@ export type DecorationOptions =
     TreeDecorationOptions
     | FlowerDecorationOptions
     | RockDecorationOptions
-    | CactusDecorationOptions;
+    | CactusDecorationOptions
+    | { kind: 'cycad', rotation: number, scale: number }
+    | { kind: 'treeFern', rotation: number, scale: number };
 
 export class TerrainDecorator {
     private static _instance: TerrainDecorator;
@@ -229,6 +231,16 @@ export class TerrainDecorator {
                 case 'cactus': {
                     const cactusInstances = Decorations.getCactusInstance();
                     tryPlace(cactusInstances, pos, opts);
+                    break;
+                }
+                case 'cycad': {
+                    const cycadInstances = Decorations.getCycadInstance();
+                    tryPlace(cycadInstances, pos, opts);
+                    break;
+                }
+                case 'treeFern': {
+                    const treeFernInstances = Decorations.getTreeFernInstance();
+                    tryPlace(treeFernInstances, pos, opts);
                     break;
                 }
             }

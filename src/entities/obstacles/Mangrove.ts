@@ -11,7 +11,7 @@ export abstract class BaseMangrove extends Entity {
 
   // Materials
   protected static trunkMaterial = new THREE.MeshToonMaterial({ color: 0x5D5346, name: 'Mangrove - Trunk Material' }); // Darker swamp wood
-  
+
   // Leaf material - Solid colors
   protected static leafMaterial = new THREE.MeshToonMaterial({
     name: 'Mangrove - Leaf Material',
@@ -41,7 +41,7 @@ export abstract class BaseMangrove extends Entity {
 
     this.createFixtures(body, mesh, scale);
 
-    body.setUserData({ type: 'obstacle', entity: this });
+    body.setUserData({ type: 'obstacle', subtype: 'mangrove', entity: this });
     this.physicsBodies.push(body);
 
     // Sync initial position
@@ -269,7 +269,7 @@ export abstract class BaseMangrove extends Entity {
 
         const leaf = this.createLeafCluster();
         leaf.position.copy(pos);
-        
+
         // Random rotations for the leaf cluster
         leaf.rotation.y = Math.random() * Math.PI * 2;
         // No extra tilt needed as triangles are already tilted in cluster
@@ -288,7 +288,7 @@ export abstract class BaseMangrove extends Entity {
       leaf.position.y = height + (Math.random() - 0.5) * 1.5;
       leaf.position.x = (Math.random() - 0.5) * 9.0;
       leaf.position.z = (Math.random() - 0.5) * 9.0;
-      
+
       leaf.rotation.y = Math.random() * Math.PI * 2;
 
       group.add(leaf);
@@ -335,9 +335,9 @@ export abstract class BaseMangrove extends Entity {
       const mergedLeaves = BufferGeometryUtils.mergeGeometries(leafGeometries);
       // Ensure color attribute is preserved
       if (!mergedLeaves.getAttribute('color')) {
-          // Should have it if triangles were created with it
+        // Should have it if triangles were created with it
       }
-      
+
       const leafMesh = GraphicsUtils.createMesh(mergedLeaves, this.leafMaterial, 'MangroveLeaves');
       leafMesh.castShadow = false;
       leafMesh.receiveShadow = false;
@@ -365,68 +365,68 @@ export abstract class BaseMangrove extends Entity {
     const baseColor = new THREE.Color(0x7FB048); // Base green
 
     for (let i = 0; i < triCount; i++) {
-        // Random center for this leaf (relative to cluster center)
-        const cx = (Math.random() - 0.5) * 4.0; 
-        const cy = (Math.random() - 0.5) * 3.0; // Increased vertical spread for volume
-        const cz = (Math.random() - 0.5) * 4.0;
+      // Random center for this leaf (relative to cluster center)
+      const cx = (Math.random() - 0.5) * 4.0;
+      const cy = (Math.random() - 0.5) * 3.0; // Increased vertical spread for volume
+      const cz = (Math.random() - 0.5) * 4.0;
 
-        // Color variation (tight range)
-        const leafColor = baseColor.clone().offsetHSL(
-            (Math.random() - 0.5) * 0.08, // Hue (subtle)
-            (Math.random() - 0.5) * 0.1,  // Sat
-            (Math.random() - 0.5) * 0.15  // Lightness
-        );
+      // Color variation (tight range)
+      const leafColor = baseColor.clone().offsetHSL(
+        (Math.random() - 0.5) * 0.08, // Hue (subtle)
+        (Math.random() - 0.5) * 0.1,  // Sat
+        (Math.random() - 0.5) * 0.15  // Lightness
+      );
 
-        // Triangle vertices (local to leaf center)
-        // Doubled size as requested
-        const size = 1.0 + Math.random() * 0.8;
-        
-        // Create an equilateral triangle lying on XZ plane
-        const p1 = new THREE.Vector3(Math.cos(0) * size, 0, Math.sin(0) * size);
-        const p2 = new THREE.Vector3(Math.cos(2*Math.PI/3) * size, 0, Math.sin(2*Math.PI/3) * size);
-        const p3 = new THREE.Vector3(Math.cos(4*Math.PI/3) * size, 0, Math.sin(4*Math.PI/3) * size);
+      // Triangle vertices (local to leaf center)
+      // Doubled size as requested
+      const size = 1.0 + Math.random() * 0.8;
 
-        // Orient the triangle
-        // 1. Random rotation Y
-        const rotY = Math.random() * Math.PI * 2;
-        // 2. Slight tilt X/Z to be "biased horizontal" but not perfectly flat
-        const tiltX = (Math.random() - 0.5) * 0.6; // +/- ~17 deg
-        const tiltZ = (Math.random() - 0.5) * 0.6;
+      // Create an equilateral triangle lying on XZ plane
+      const p1 = new THREE.Vector3(Math.cos(0) * size, 0, Math.sin(0) * size);
+      const p2 = new THREE.Vector3(Math.cos(2 * Math.PI / 3) * size, 0, Math.sin(2 * Math.PI / 3) * size);
+      const p3 = new THREE.Vector3(Math.cos(4 * Math.PI / 3) * size, 0, Math.sin(4 * Math.PI / 3) * size);
 
-        const euler = new THREE.Euler(tiltX, rotY, tiltZ);
-        p1.applyEuler(euler);
-        p2.applyEuler(euler);
-        p3.applyEuler(euler);
+      // Orient the triangle
+      // 1. Random rotation Y
+      const rotY = Math.random() * Math.PI * 2;
+      // 2. Slight tilt X/Z to be "biased horizontal" but not perfectly flat
+      const tiltX = (Math.random() - 0.5) * 0.6; // +/- ~17 deg
+      const tiltZ = (Math.random() - 0.5) * 0.6;
 
-        // Translate to cluster position
-        p1.add(new THREE.Vector3(cx, cy, cz));
-        p2.add(new THREE.Vector3(cx, cy, cz));
-        p3.add(new THREE.Vector3(cx, cy, cz));
+      const euler = new THREE.Euler(tiltX, rotY, tiltZ);
+      p1.applyEuler(euler);
+      p2.applyEuler(euler);
+      p3.applyEuler(euler);
 
-        // Push positions
-        positions.push(p1.x, p1.y, p1.z);
-        positions.push(p2.x, p2.y, p2.z);
-        positions.push(p3.x, p3.y, p3.z);
+      // Translate to cluster position
+      p1.add(new THREE.Vector3(cx, cy, cz));
+      p2.add(new THREE.Vector3(cx, cy, cz));
+      p3.add(new THREE.Vector3(cx, cy, cz));
 
-        // Push colors
-        colors.push(leafColor.r, leafColor.g, leafColor.b);
-        colors.push(leafColor.r, leafColor.g, leafColor.b);
-        colors.push(leafColor.r, leafColor.g, leafColor.b);
+      // Push positions
+      positions.push(p1.x, p1.y, p1.z);
+      positions.push(p2.x, p2.y, p2.z);
+      positions.push(p3.x, p3.y, p3.z);
 
-        // Normals - compute face normal
-        const ab = new THREE.Vector3().subVectors(p2, p1);
-        const ac = new THREE.Vector3().subVectors(p3, p1);
-        const n = new THREE.Vector3().crossVectors(ab, ac).normalize();
-        
-        // Double sided lighting usually wants normals for both sides or just one side? 
-        // With DoubleSide material, one side might look dark if normal opposes light?
-        // Actually MeshToonMaterial with DoubleSide usually handles this okay.
-        
-        normals.push(n.x, n.y, n.z);
-        normals.push(n.x, n.y, n.z);
-        normals.push(n.x, n.y, n.z);
+      // Push colors
+      colors.push(leafColor.r, leafColor.g, leafColor.b);
+      colors.push(leafColor.r, leafColor.g, leafColor.b);
+      colors.push(leafColor.r, leafColor.g, leafColor.b);
+
+      // Normals - compute face normal
+      const ab = new THREE.Vector3().subVectors(p2, p1);
+      const ac = new THREE.Vector3().subVectors(p3, p1);
+      const n = new THREE.Vector3().crossVectors(ab, ac).normalize();
+
+      // Double sided lighting usually wants normals for both sides or just one side? 
+      // With DoubleSide material, one side might look dark if normal opposes light?
+      // Actually MeshToonMaterial with DoubleSide usually handles this okay.
+
+      normals.push(n.x, n.y, n.z);
+      normals.push(n.x, n.y, n.z);
+      normals.push(n.x, n.y, n.z);
     }
-    
+
     geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     geom.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
