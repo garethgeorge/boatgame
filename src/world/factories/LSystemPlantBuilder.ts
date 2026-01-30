@@ -3,7 +3,7 @@ import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUti
 import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { ProceduralPlant, BranchData, LeafData, } from './LSystemPlantGenerator';
-import { BlobLeafKindParams, ClusterLeafKindParams, FlowerCenterParams, IrregularLeafKindParams, KiteFlowerPetalParams, RectangleBranchParams, RectangleFlowerPetalParams, UmbrellaLeafKindParams, WillowLeafKindParams } from './LSystemPartParams';
+import { BlobLeafKindParams, ClusterLeafKindParams, CylinderBranchParams, FlowerCenterParams, IrregularLeafKindParams, KiteFlowerPetalParams, RectangleBranchParams, RectangleFlowerPetalParams, UmbrellaLeafKindParams, WillowLeafKindParams } from './LSystemPartParams';
 
 
 export interface PlantGeometryResult {
@@ -57,14 +57,31 @@ export class RectangleGeometryHelper {
         const w0 = widthStart / 2;
         const w1 = widthEnd / 2;
 
-        const vertices = new Float32Array([
-            -w1, length, 0, // 0: Tip Left
-            -w0, 0, 0,      // 1: Base Left
-            w1, length, 0, // 2: Tip Right
+        const vBaseL = new THREE.Vector3(-w0, 0, 0).applyQuaternion(quat).add(pos);
+        const vBaseR = new THREE.Vector3(w0, 0, 0).applyQuaternion(quat).add(pos);
+        const vTipL = new THREE.Vector3(-w1, length, 0).applyQuaternion(quat).add(pos);
+        const vTipR = new THREE.Vector3(w1, length, 0).applyQuaternion(quat).add(pos);
 
-            w1, length, 0, // 3: Tip Right
-            -w0, 0, 0,      // 4: Base Left
-            w0, 0, 0       // 5: Base Right
+        this.addRectangleCustom(geos, vTipL, vBaseL, vTipR, vBaseR, variation, lGradient);
+    }
+
+    static addRectangleCustom(
+        geos: THREE.BufferGeometry[],
+        vTipL: THREE.Vector3,
+        vBaseL: THREE.Vector3,
+        vTipR: THREE.Vector3,
+        vBaseR: THREE.Vector3,
+        variation?: { h: number, s: number, l: number },
+        lGradient?: [number, number]
+    ): void {
+        const vertices = new Float32Array([
+            vTipL.x, vTipL.y, vTipL.z, // 0: Tip Left
+            vBaseL.x, vBaseL.y, vBaseL.z, // 1: Base Left
+            vTipR.x, vTipR.y, vTipR.z, // 2: Tip Right
+
+            vTipR.x, vTipR.y, vTipR.z, // 3: Tip Right
+            vBaseL.x, vBaseL.y, vBaseL.z, // 4: Base Left
+            vBaseR.x, vBaseR.y, vBaseR.z  // 5: Base Right
         ]);
 
         const uvs = new Float32Array([
@@ -82,8 +99,7 @@ export class RectangleGeometryHelper {
         geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
         geo.computeVertexNormals();
 
-        const matrix = new THREE.Matrix4().compose(pos, quat, new THREE.Vector3(1, 1, 1));
-        geo.applyMatrix4(matrix);
+        // No matrix apply needed here as vertices are already in world space
 
         // HSL offsets
         const h = (Math.random() - 0.5) * (variation?.h ?? 0.05);
@@ -114,26 +130,90 @@ export class CylinderBranchGenerator implements PlantPartGenerator {
     readonly canCull: boolean = true;
     addPart(geos: THREE.BufferGeometry[], data: BranchData): void {
         const branch = data as BranchData;
-        const height = branch.start.distanceTo(branch.end);
 
-        // Calculate segments based on radius (as in TreeBuilder)
+        // Calculate segments based on radius (consistent with previous implementation)
         const t = Math.max(0.0, Math.min((branch.radiusStart - 0.2) / 0.2, 1.0));
         const radialSegments = Math.floor(3 + 3 * t);
 
-        let geo: THREE.BufferGeometry = new THREE.CylinderGeometry(
-            branch.radiusEnd, branch.radiusStart, height,
-            radialSegments, 1, true);
-        if (geo.index) geo = geo.toNonIndexed();
+        // To ensure seamless joining, we manually build the cylinder rings
+        const ringBase: THREE.Vector3[] = [];
+        const ringTip: THREE.Vector3[] = [];
 
-        const midpoint = new THREE.Vector3().addVectors(branch.start, branch.end).multiplyScalar(0.5);
-        const direction = new THREE.Vector3().subVectors(branch.end, branch.start).normalize();
-        const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+        for (let i = 0; i <= radialSegments; i++) {
+            const theta = (i / radialSegments) * Math.PI * 2;
+            const cos = Math.cos(theta);
+            const sin = Math.sin(theta);
+            const localV = new THREE.Vector3(cos, 0, sin);
 
-        const matrix = new THREE.Matrix4().compose(midpoint, quaternion, new THREE.Vector3(1, 1, 1));
-        geo.applyMatrix4(matrix);
+            // Base Ring vertex (start of branch)
+            let vBase: THREE.Vector3;
+            const vCurrBase = localV.clone().multiplyScalar(branch.radiusStart).applyQuaternion(branch.quat);
+            if (branch.prev) {
+                const vPrevEnd = localV.clone().multiplyScalar(branch.prev.radiusEnd).applyQuaternion(branch.prev.quat);
+                vBase = branch.start.clone().add(vCurrBase.add(vPrevEnd).multiplyScalar(0.5));
+            } else {
+                vBase = branch.start.clone().add(vCurrBase);
+            }
+            ringBase.push(vBase);
 
-        // Add dummy hslOffset
-        GraphicsUtils.addVertexAttribute(geo, 'hslOffset', 0, 0, 0);
+            // Tip Ring vertex (end of branch)
+            let vTip: THREE.Vector3;
+            const vCurrTip = localV.clone().multiplyScalar(branch.radiusEnd).applyQuaternion(branch.quat);
+            if (branch.next) {
+                const vNextStart = localV.clone().multiplyScalar(branch.next.radiusStart).applyQuaternion(branch.next.quat);
+                vTip = branch.end.clone().add(vCurrTip.add(vNextStart).multiplyScalar(0.5));
+            } else {
+                vTip = branch.end.clone().add(vCurrTip);
+            }
+            ringTip.push(vTip);
+        }
+
+        // Build geometry (triangles)
+        const vertices = new Float32Array(radialSegments * 6 * 3);
+        const uvs = new Float32Array(radialSegments * 6 * 2);
+
+        for (let i = 0; i < radialSegments; i++) {
+            const b0 = ringBase[i];
+            const b1 = ringBase[i + 1];
+            const t0 = ringTip[i];
+            const t1 = ringTip[i + 1];
+
+            const idx = i * 6 * 3;
+            const uidx = i * 6 * 2;
+
+            // Face triangles (CCW)
+            // Triangle 1
+            vertices[idx + 0] = b0.x; vertices[idx + 1] = b0.y; vertices[idx + 2] = b0.z;
+            vertices[idx + 3] = t1.x; vertices[idx + 4] = t1.y; vertices[idx + 5] = t1.z;
+            vertices[idx + 6] = t0.x; vertices[idx + 7] = t0.y; vertices[idx + 8] = t0.z;
+
+            // Triangle 2
+            vertices[idx + 9] = b0.x; vertices[idx + 10] = b0.y; vertices[idx + 11] = b0.z;
+            vertices[idx + 12] = b1.x; vertices[idx + 13] = b1.y; vertices[idx + 14] = b1.z;
+            vertices[idx + 15] = t1.x; vertices[idx + 16] = t1.y; vertices[idx + 17] = t1.z;
+
+            const u0 = i / radialSegments;
+            const u1 = (i + 1) / radialSegments;
+            uvs[uidx + 0] = u0; uvs[uidx + 1] = 0;
+            uvs[uidx + 2] = u1; uvs[uidx + 3] = 1;
+            uvs[uidx + 4] = u0; uvs[uidx + 5] = 1;
+
+            uvs[uidx + 6] = u0; uvs[uidx + 7] = 0;
+            uvs[uidx + 8] = u1; uvs[uidx + 9] = 0;
+            uvs[uidx + 10] = u1; uvs[uidx + 11] = 1;
+        }
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+        geo.computeVertexNormals();
+
+        // Calculate HSL offsets
+        const opts = (branch.opts || {}) as CylinderBranchParams;
+        const h = (Math.random() - 0.5) * (opts.variation?.h ?? 0.05);
+        const s = (Math.random() - 0.5) * (opts.variation?.s ?? 0.1);
+        const l = (Math.random() - 0.5) * (opts.variation?.l ?? 0.1);
+        GraphicsUtils.addVertexAttribute(geo, 'hslOffset', h, s, l);
 
         geos.push(geo);
     }
@@ -144,15 +224,56 @@ export class RectangleBranchGenerator implements PlantPartGenerator {
     addPart(geos: THREE.BufferGeometry[], data: BranchData): void {
         const branch = data as BranchData;
         const opts = (branch.opts || {}) as RectangleBranchParams;
-        const length = branch.start.distanceTo(branch.end);
-
         const widthScale = opts.widthScale ?? [1, 1];
-        RectangleGeometryHelper.addRectangle(
+
+        const w0 = branch.radiusStart * 2 * widthScale[0];
+        const w1 = branch.radiusEnd * 2 * widthScale[1];
+
+        // 1. Current branch half-width vectors (local X direction)
+        const vCurrBase = new THREE.Vector3(w0 / 2, 0, 0).applyQuaternion(branch.quat);
+        const vCurrTip = new THREE.Vector3(w1 / 2, 0, 0).applyQuaternion(branch.quat);
+
+        // 2. Base vertices (start of branch)
+        let vBaseL: THREE.Vector3;
+        let vBaseR: THREE.Vector3;
+
+        if (branch.prev) {
+            const prevOpts = (branch.prev.opts || {}) as RectangleBranchParams;
+            const prevWidthScale = prevOpts.widthScale ?? [1, 1];
+            const wPrevEnd = branch.prev.radiusEnd * 2 * prevWidthScale[1];
+            const vPrevEnd = new THREE.Vector3(wPrevEnd / 2, 0, 0).applyQuaternion(branch.prev.quat);
+
+            // Interpolate halfway between previous tip and current base
+            const joinedHalfWidth = new THREE.Vector3().addVectors(vCurrBase, vPrevEnd).multiplyScalar(0.5);
+            vBaseL = branch.start.clone().sub(joinedHalfWidth);
+            vBaseR = branch.start.clone().add(joinedHalfWidth);
+        } else {
+            vBaseL = branch.start.clone().sub(vCurrBase);
+            vBaseR = branch.start.clone().add(vCurrBase);
+        }
+
+        // 3. Tip vertices (end of branch)
+        let vTipL: THREE.Vector3;
+        let vTipR: THREE.Vector3;
+
+        if (branch.next) {
+            const nextOpts = (branch.next.opts || {}) as RectangleBranchParams;
+            const nextWidthScale = nextOpts.widthScale ?? [1, 1];
+            const wNextStart = branch.next.radiusStart * 2 * nextWidthScale[0];
+            const vNextStart = new THREE.Vector3(wNextStart / 2, 0, 0).applyQuaternion(branch.next.quat);
+
+            // Interpolate halfway between current tip and next base
+            const joinedHalfWidth = new THREE.Vector3().addVectors(vCurrTip, vNextStart).multiplyScalar(0.5);
+            vTipL = branch.end.clone().sub(joinedHalfWidth);
+            vTipR = branch.end.clone().add(joinedHalfWidth);
+        } else {
+            vTipL = branch.end.clone().sub(vCurrTip);
+            vTipR = branch.end.clone().add(vCurrTip);
+        }
+
+        RectangleGeometryHelper.addRectangleCustom(
             geos,
-            branch.radiusStart * 2 * widthScale[0],
-            branch.radiusEnd * 2 * widthScale[1],
-            length,
-            branch.start, branch.quat,
+            vTipL, vBaseL, vTipR, vBaseR,
             opts.variation, opts.lGradient
         );
     }

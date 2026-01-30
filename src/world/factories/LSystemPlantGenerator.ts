@@ -135,6 +135,10 @@ export interface BranchData {
     quat: THREE.Quaternion;
     opts?: PlantPartParams;
     geomIndex: number;
+
+    // Links for seamless joining
+    prev?: BranchData;
+    next?: BranchData;
 }
 
 export interface LeafData {
@@ -649,7 +653,7 @@ export class ProceduralPlant {
 
 
         // --- PASS 4: GEOMETRY AND LEAF COLLECTION ---
-        const generateBranchList = (node: PlantNode) => {
+        const generateBranchList = (node: PlantNode, parentBranch?: BranchData) => {
             // Collect leaves on this node
             for (const leaf of node.leaves) {
                 this.leaves.push(leaf);
@@ -657,7 +661,7 @@ export class ProceduralPlant {
 
             // Collect branches to children
             for (let child of node.children) {
-                this.branches.push({
+                const branch: BranchData = {
                     start: node.position.clone(),
                     end: child.position.clone(),
                     radiusStart: node.radius,
@@ -666,8 +670,18 @@ export class ProceduralPlant {
                     quat: child.quat.clone(),
                     opts: child.opts,
                     geomIndex: child.geomIndex
-                });
-                generateBranchList(child);
+                };
+
+                // Link for seamless joining if this is a simple sequence with same kind
+                if (parentBranch && node.children.length === 1) {
+                    if (parentBranch.opts?.kind === branch.opts?.kind) {
+                        branch.prev = parentBranch;
+                        parentBranch.next = branch;
+                    }
+                }
+
+                this.branches.push(branch);
+                generateBranchList(child, branch);
             }
         };
         generateBranchList(root);
