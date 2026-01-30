@@ -46,7 +46,11 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         const rules = [
             new TierRule({
                 species: [
-                    SpeciesRules.elm_tree(),
+                    SpeciesRules.elm_tree({
+                        stepNoise: { scale: 400, threshold: 0.5 },
+                        stepDistance: [10, 60],
+                        slope: [0, 25]
+                    }),
                     SpeciesRules.box_elder(),
                     SpeciesRules.japanese_maple(),
                 ]

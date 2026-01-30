@@ -7,12 +7,33 @@ import { DecorationContext } from './DecorationContext';
 import { DecorationInstance, Decorations, LSystemTreeKind, LSystemFlowerKind } from '../Decorations';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
-export interface DecorationOptions {
-    kind: LSystemTreeKind | LSystemFlowerKind | 'rock';
+export interface TreeDecorationOptions {
+    kind: LSystemTreeKind
+    rotation: number;
+    scale: number;
+    color?: number;
+    isSnowy?: boolean;
+    isLeafLess?: boolean;
+}
+
+export interface FlowerDecorationOptions {
+    kind: LSystemFlowerKind
     rotation: number;
     scale: number;
     color?: number;
 }
+
+export interface RockDecorationOptions {
+    kind: 'rock';
+    rotation: number;
+    scale: number;
+    rockBiome?: string;
+}
+
+export type DecorationOptions =
+    TreeDecorationOptions
+    | FlowerDecorationOptions
+    | RockDecorationOptions;
 
 export class TerrainDecorator {
     private static _instance: TerrainDecorator;
@@ -167,7 +188,9 @@ export class TerrainDecorator {
                 case 'vase': {
                     const treeInstances = Decorations.getLSystemTreeInstance({
                         kind: opts.kind,
-                        leafColor: opts.color
+                        leafColor: opts.color,
+                        isSnowy: opts.isSnowy,
+                        isLeafLess: opts.isLeafLess
                     });
                     tryPlace(treeInstances, pos, opts);
                     break;
@@ -183,7 +206,7 @@ export class TerrainDecorator {
                     break;
                 }
                 case 'rock': {
-                    const rockInstances = Decorations.getRockInstance('happy', opts.scale);
+                    const rockInstances = Decorations.getRockInstance(opts.rockBiome ?? 'happy', opts.scale);
                     tryPlace(rockInstances, pos, opts);
                     break;
                 }

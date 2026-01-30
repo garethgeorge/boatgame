@@ -3,9 +3,12 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { Decorations, LSystemTreeKind } from '../Decorations';
+import { Decorations } from '../Decorations';
+import { DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
+import { TierRule, Combine, Signal } from '../decorators/PoissonDecorationRules';
 import { EntityIds } from '../../entities/EntityIds';
 import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
+import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'ice';
@@ -34,34 +37,49 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         return 2.3;
     }
 
+    private decorationRules: DecorationRule[] | null = null;
+
+    private getDecorationRules(): DecorationRule[] {
+        if (this.decorationRules) return this.decorationRules;
+
+        this.decorationRules = [
+            new TierRule({
+                species: [
+                    SpeciesRules.oak_tree({
+                        fitness: 0.6,
+                        stepDistance: [10, 200],
+                        slope: [0, 30],
+                        snow: true,
+                        leaves: 0.5
+                    }),
+                    SpeciesRules.elm_tree({
+                        fitness: 0.4,
+                        stepDistance: [10, 60],
+                        slope: [0, 25]
+                    }),
+                ]
+            }),
+            new TierRule({
+                species: [
+                    SpeciesRules.rock({
+                        fitness: 0.1,
+                        rockBiome: 'ice'
+                    }),
+                ]
+            })
+        ];
+        return this.decorationRules;
+    }
+
     *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        const length = zEnd - zStart;
-        const count = Math.floor(length * 16);
-
-        for (let i = 0; i < count; i++) {
-            if (i % 20 === 0) yield;
-            const position = context.decoHelper.generateRandomPositionInRange(context, zStart, zEnd);
-            if (!context.decoHelper.isValidDecorationPosition(context, position)) continue;
-
-            if (Math.random() > 0.8) {
-                const isLeafless = Math.random() > 0.5;
-                const kinds: LSystemTreeKind[] = ['oak', 'elm'];
-                const kind = kinds[Math.floor(Math.random() * kinds.length)];
-                const scale = 0.8 + Math.random() * 0.4;
-
-                const treeInstances = Decorations.getLSystemTreeInstance({
-                    kind,
-                    variation: Math.random(),
-                    isLeafLess: isLeafless,
-                    isSnowy: true, // Snowy for the ice biome
-                    scale
-                });
-                context.decoHelper.addInstancedDecoration(context, treeInstances, position);
-            } else if (Math.random() > 0.9) {
-                const rockInstances = Decorations.getRockInstance(this.id, Math.random());
-                context.decoHelper.addInstancedDecoration(context, rockInstances, position);
-            }
-        }
+        const rules = this.getDecorationRules();
+        yield* TerrainDecorator.decorateIterator(
+            context,
+            rules,
+            { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
+            context.chunk.spatialGrid,
+            this.index
+        );
     }
 
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {

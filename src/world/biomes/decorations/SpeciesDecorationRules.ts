@@ -3,6 +3,10 @@ import { Combine, Signal } from "../../decorators/PoissonDecorationRules";
 import { WorldContext } from "../../decorators/PoissonDecorationStrategy";
 import { ColorPalettes } from "../../decorators/ColorPalettes";
 
+/** 
+ * Parameters for building a fitness function that is the product
+ * of the parameters.
+ */
 export interface FitnessParams {
     // overall fitness multiplier
     fitness?: number,
@@ -14,6 +18,8 @@ export interface FitnessParams {
     linearDistance?: [number, number],
     // 0 outside the range, 1 inside
     stepDistance?: [number, number],
+
+    stepNoise?: { scale: number, threshold: number },
 
     // Elevation must be between these values
     elevation?: [number, number],
@@ -40,6 +46,15 @@ export class SpeciesRules {
                 params.linearDistance[0], params.linearDistance[1]
             ))
         }
+        if (params.stepNoise !== undefined) {
+            const scale = params.stepNoise.scale;
+            const dx = Math.random();
+            const dy = Math.random();
+            const threshold = params.stepNoise.threshold;
+            fitnessFuncs.push(Signal.step(
+                Signal.noise2D(scale, scale, dx, dy),
+                threshold));
+        }
         if (params.elevation !== undefined) {
             fitnessFuncs.push(Signal.inRange(Signal.elevation,
                 params.elevation[0], params.elevation[1]));
@@ -61,7 +76,7 @@ export class SpeciesRules {
             fitnessFuncs[0] : Combine.all(...fitnessFuncs);
     }
 
-    public static rock(params: FitnessParams) {
+    public static rock(params: FitnessParams & { rockBiome?: string }) {
         return {
             id: 'rock',
             preference: SpeciesRules.buildFitness(params),
@@ -70,7 +85,12 @@ export class SpeciesRules {
                 return {
                     groundRadius: 5 * scale,
                     spacing: 10.0 * scale,
-                    options: { kind: 'rock', rotation: ctx.random() * Math.PI * 2, scale }
+                    options: {
+                        kind: 'rock',
+                        rotation: ctx.random() * Math.PI * 2,
+                        scale,
+                        rockBiome: params.rockBiome
+                    }
                 };
             }
         };
@@ -121,39 +141,64 @@ export class SpeciesRules {
         };
     }
 
-    public static oak_tree(params: FitnessParams, paletteName?: string) {
+    public static oak_tree(params: FitnessParams &
+    { paletteName?: string, snow?: boolean, leaves?: number }) {
+        const {
+            paletteName = undefined,
+            snow = false,
+            leaves = 1
+        } = params;
         return {
             id: 'oak_tree',
             preference: SpeciesRules.buildFitness(params),
             params: (ctx: WorldContext) => {
                 const scale = MathUtils.clamp(0.8, 3.0, 1.0 + ctx.gaussian() * 0.5);
-                const color = paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
+                const color = paletteName !== undefined ?
+                    ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) :
+                    undefined;
                 return {
                     groundRadius: 1.5 * scale,
                     canopyRadius: 5.0 * scale,
-                    options: { kind: 'oak', rotation: ctx.random() * Math.PI * 2, scale, color }
+                    options: {
+                        kind: 'oak',
+                        rotation: ctx.random() * Math.PI * 2,
+                        scale,
+                        color,
+                        isSnowy: snow,
+                        isLeafLess: ctx.random() < leaves
+                    }
                 };
             }
         };
     }
 
-    public static elm_tree(paletteName?: string) {
+    public static elm_tree(params: FitnessParams &
+    { paletteName?: string, snow?: boolean, leaves?: number }) {
+        const {
+            paletteName = undefined,
+            snow = false,
+            leaves = 1
+        } = params;
         return {
             id: 'elm_tree',
-            preference: Combine.all(
-                Signal.constant(1.0),
-                Signal.step(Signal.noise2D(400.0, 400.0, 0.3, 0.4), 0.5),
-                Signal.inRange(Signal.distanceToRiver, 10, 60),
-                Signal.inRange(Signal.slope, 0, 25)
-            ),
+            preference: SpeciesRules.buildFitness(params),
             params: (ctx: WorldContext) => {
                 const scale = 1.0 + ctx.random() * 0.5;
-                const color = paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
+                const color = paletteName !== undefined ?
+                    ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) :
+                    undefined;
                 return {
                     groundRadius: 2.0 * scale,
                     canopyRadius: 6.0 * scale,
                     spacing: 15.0 * scale,
-                    options: { kind: 'elm', rotation: ctx.random() * Math.PI * 2, scale, color }
+                    options: {
+                        kind: 'elm',
+                        rotation: ctx.random() * Math.PI * 2,
+                        scale,
+                        color,
+                        isSnowy: snow,
+                        isLeafLess: ctx.random() < leaves
+                    }
                 };
             }
         };
