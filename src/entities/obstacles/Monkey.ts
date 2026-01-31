@@ -8,10 +8,13 @@ import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimationStep } from '../../core/AnimationPlayer';
 
+import { EntityMetadata } from '../EntityMetadata';
+
 export class Monkey extends Animal {
 
     public static readonly HEIGHT_IN_WATER: number = -1.7;
-    public static readonly RADIUS: number = 2.0;
+    public static readonly MODEL_SCALE: number = 0.025;
+    public static readonly RADIUS: number = EntityMetadata.monkey.radius;
 
     constructor(
         physicsEngine: PhysicsEngine,
@@ -45,7 +48,8 @@ export class Monkey extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        model.scale.set(0.025, 0.025, 0.025);
+        const scale = Monkey.MODEL_SCALE;
+        model.scale.set(scale, scale, scale);
         model.rotation.y = Math.PI;
     }
 

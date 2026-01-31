@@ -7,9 +7,12 @@ import { SwimAwayBehaviorFactory } from '../behaviors/SwimAwayBehaviorFactory';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
 
+import { EntityMetadata } from '../EntityMetadata';
+
 export class PenguinKayak extends Animal {
     public static readonly HEIGHT_IN_WATER: number = 0.5;
-    public static readonly RADIUS: number = 1.5;
+    public static readonly MODEL_SCALE: number = 2.0;
+    public static readonly RADIUS: number = EntityMetadata.penguinKayak.radius;
 
     constructor(physicsEngine: PhysicsEngine, options: AnimalOptions) {
         super(
@@ -31,7 +34,8 @@ export class PenguinKayak extends Animal {
     }
 
     protected setupModel(model: THREE.Group) {
-        model.scale.set(2.0, 2.0, 2.0);
+        const scale = PenguinKayak.MODEL_SCALE;
+        model.scale.set(scale, scale, scale);
         model.rotation.y = Math.PI / 2.0;
         model.position.y = -0.4;
     }

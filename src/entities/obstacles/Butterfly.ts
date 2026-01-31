@@ -7,8 +7,11 @@ import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { Entity } from '../../core/Entity';
 import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 
+import { EntityMetadata } from '../EntityMetadata';
+
 export class Butterfly extends Animal {
-    public static readonly RADIUS: number = 0.5;
+    public static readonly MODEL_SCALE: number = 1.0;
+    public static readonly RADIUS: number = EntityMetadata.butterfly.radius;
 
 
     constructor(
@@ -41,7 +44,8 @@ export class Butterfly extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        model.scale.set(1, 1, 1);
+        const scale = Butterfly.MODEL_SCALE;
+        model.scale.set(scale, scale, scale);
         model.rotation.y = 0;
     }
 

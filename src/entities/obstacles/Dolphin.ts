@@ -6,10 +6,12 @@ import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { SwimAwayBehaviorFactory } from '../behaviors/SwimAwayBehaviorFactory';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
+import { EntityMetadata } from '../EntityMetadata';
 
 export class Dolphin extends Animal {
     public static readonly HEIGHT_IN_WATER: number = 0.0;
-    public static readonly RADIUS: number = 2.0;
+    public static readonly MODEL_SCALE: number = 4.0;
+    public static readonly RADIUS: number = EntityMetadata.dolphin.radius;
 
     constructor(physicsEngine: PhysicsEngine, options: AnimalOptions) {
         super(
@@ -35,7 +37,8 @@ export class Dolphin extends Animal {
     }
 
     protected setupModel(model: THREE.Group) {
-        model.scale.set(4.0, 4.0, 4.0);
+        const scale = Dolphin.MODEL_SCALE;
+        model.scale.set(scale, scale, scale);
     }
 
     protected getAnimations(): AnimalAnimations {

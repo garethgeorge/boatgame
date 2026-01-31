@@ -7,9 +7,12 @@ import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
 import { Entity } from '../../core/Entity';
 
+import { EntityMetadata } from '../EntityMetadata';
+
 export class Turtle extends Animal {
     public static readonly HEIGHT_IN_WATER: number = -0.8;
-    public static readonly RADIUS: number = 1.5;
+    public static readonly MODEL_SCALE: number = 2.0;
+    public static readonly RADIUS: number = EntityMetadata.turtle.radius;
 
     constructor(physicsEngine: PhysicsEngine, options: AnimalOptions) {
         super(
@@ -43,7 +46,8 @@ export class Turtle extends Animal {
     }
 
     protected setupModel(model: THREE.Group) {
-        model.scale.set(2.0, 2.0, 2.0);
+        const scale = Turtle.MODEL_SCALE;
+        model.scale.set(scale, scale, scale);
     }
 
     protected getAnimations(): AnimalAnimations {

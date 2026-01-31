@@ -2,6 +2,7 @@ import { MathUtils } from "../../../core/MathUtils";
 import { Combine, Signal } from "../../decorators/PoissonDecorationRules";
 import { WorldContext } from "../../decorators/PoissonDecorationStrategy";
 import { ColorPalettes } from "../../decorators/ColorPalettes";
+import { DecorationMetadata } from "../../DecorationMetadata";
 
 /** 
  * Parameters for building a fitness function that is the product
@@ -100,7 +101,7 @@ export class SpeciesRules {
         return (ctx: WorldContext) => {
             const scale = 0.8 + ctx.random() * 0.8;
             return {
-                groundRadius: 5 * scale,
+                groundRadius: DecorationMetadata.rock.groundRadius * scale,
                 spacing: 10.0 * scale,
                 options: {
                     kind: 'rock',
@@ -116,9 +117,10 @@ export class SpeciesRules {
         return (ctx: WorldContext) => {
             const scale = 2.0 + ctx.random() * 0.5; // Large scale
             const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.random()) : undefined;
+            const meta = DecorationMetadata.elder;
             return {
-                groundRadius: 1.0 * scale,
-                canopyRadius: 5.0 * scale,
+                groundRadius: meta.groundRadius * scale,
+                canopyRadius: meta.canopyRadius * scale,
                 spacing: 25.0 * scale,
                 options: { kind: 'elder', rotation: ctx.random() * Math.PI * 2, scale, color }
             };
@@ -135,9 +137,10 @@ export class SpeciesRules {
             const color = paletteName !== undefined ?
                 ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) :
                 undefined;
+            const meta = DecorationMetadata.birch;
             return {
-                groundRadius: 1.2 * scale,
-                canopyRadius: 6.0 * scale,
+                groundRadius: meta.groundRadius * scale,
+                canopyRadius: meta.canopyRadius * scale,
                 spacing: spacing,
                 options: { kind: 'birch', rotation: ctx.random() * Math.PI * 2, scale, color }
             };
@@ -155,9 +158,10 @@ export class SpeciesRules {
             const color = paletteName !== undefined ?
                 ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) :
                 undefined;
+            const meta = DecorationMetadata.oak;
             return {
-                groundRadius: 1.5 * scale,
-                canopyRadius: 6.0 * scale,
+                groundRadius: meta.groundRadius * scale,
+                canopyRadius: meta.canopyRadius * scale,
                 options: {
                     kind: 'oak',
                     rotation: ctx.random() * Math.PI * 2,
@@ -181,9 +185,10 @@ export class SpeciesRules {
             const color = paletteName !== undefined ?
                 ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) :
                 undefined;
+            const meta = DecorationMetadata.elm;
             return {
-                groundRadius: 2.0 * scale,
-                canopyRadius: 6.0 * scale,
+                groundRadius: meta.groundRadius * scale,
+                canopyRadius: meta.canopyRadius * scale,
                 spacing: 15.0 * scale,
                 options: {
                     kind: 'elm',
@@ -201,9 +206,10 @@ export class SpeciesRules {
         return (ctx: WorldContext) => {
             const scale = 0.9 + ctx.random() * 0.4;
             const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.random()) : undefined;
+            const meta = DecorationMetadata.vase;
             return {
-                groundRadius: 1.5 * scale,
-                canopyRadius: 4.5 * scale,
+                groundRadius: meta.groundRadius * scale,
+                canopyRadius: meta.canopyRadius * scale,
                 options: { kind: 'vase', rotation: ctx.random() * Math.PI * 2, scale, color }
             };
         };
@@ -213,9 +219,10 @@ export class SpeciesRules {
         return (ctx: WorldContext) => {
             const scale = 2.0 + ctx.random() * 1.0;
             const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.random()) : undefined;
+            const meta = DecorationMetadata.willow;
             return {
-                groundRadius: 2 * scale,
-                canopyRadius: 5 * scale,
+                groundRadius: meta.groundRadius * scale,
+                canopyRadius: meta.canopyRadius * scale,
                 options: { kind: 'willow', rotation: ctx.random() * Math.PI * 2, scale, color }
             };
         };
@@ -225,9 +232,10 @@ export class SpeciesRules {
         return (ctx: WorldContext) => {
             const scale = 0.7 + ctx.random() * 0.6;
             const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.random()) : undefined;
+            const meta = DecorationMetadata.poplar;
             return {
-                groundRadius: 0.5 * scale,
-                canopyRadius: 1.5 * scale,
+                groundRadius: meta.groundRadius * scale,
+                canopyRadius: meta.canopyRadius * scale,
                 spacing: 2 * scale,
                 options: { kind: 'poplar', rotation: ctx.random() * Math.PI * 2, scale, color }
             }
@@ -238,9 +246,10 @@ export class SpeciesRules {
         return (ctx: WorldContext) => {
             const scale = 0.8 + ctx.random() * 0.6;
             const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.random()) : undefined;
+            const meta = DecorationMetadata.open;
             return {
-                groundRadius: 1.2 * scale,
-                canopyRadius: 4.0 * scale,
+                groundRadius: meta.groundRadius * scale,
+                canopyRadius: meta.canopyRadius * scale,
                 options: { kind: 'open', rotation: ctx.random() * Math.PI * 2, scale, color }
             };
         };
@@ -252,8 +261,9 @@ export class SpeciesRules {
             const scale = 0.7 + ctx.random() * 0.5;
             const palette = ColorPalettes.getPalette(paletteName);
             const color = ColorPalettes.getInterpolatedColor(palette, ctx.random());
+            const meta = DecorationMetadata.daisy;
             return {
-                groundRadius: 0.8 * scale,
+                groundRadius: meta.groundRadius * scale,
                 spacing: 2 * scale,
                 options: { kind: 'daisy', rotation: ctx.random() * Math.PI * 2, scale, color }
             };
@@ -266,8 +276,9 @@ export class SpeciesRules {
             const scale = 0.7 + ctx.random() * 0.5;
             const palette = ColorPalettes.getPalette(paletteName);
             const color = ColorPalettes.getInterpolatedColor(palette, ctx.random());
+            const meta = DecorationMetadata.lily;
             return {
-                groundRadius: 1 * scale,
+                groundRadius: meta.groundRadius * scale,
                 spacing: 2 * scale,
                 options: { kind: 'lily', rotation: ctx.random() * Math.PI * 2, scale, color }
             };
@@ -277,9 +288,10 @@ export class SpeciesRules {
     public static cactus() {
         return (ctx: WorldContext) => {
             const scale = 0.8 + ctx.random() * 0.4;
+            const meta = DecorationMetadata.cactus;
             return {
-                groundRadius: 1 * scale,
-                canopyRadius: 5 * scale,
+                groundRadius: meta.groundRadius * scale,
+                canopyRadius: meta.canopyRadius * scale,
                 spacing: 1 * scale,
                 options: { kind: 'cactus', rotation: ctx.random() * Math.PI * 2, scale }
             };
@@ -289,9 +301,10 @@ export class SpeciesRules {
     public static cycad() {
         return (ctx: WorldContext) => {
             const scale = 0.8 + ctx.random() * 0.4;
+            const meta = DecorationMetadata.cycad;
             return {
-                groundRadius: 1 * scale,
-                canopyRadius: 5 * scale,
+                groundRadius: meta.groundRadius * scale,
+                canopyRadius: meta.canopyRadius * scale,
                 spacing: 1 * scale,
                 options: { kind: 'cycad', rotation: ctx.random() * Math.PI * 2, scale }
             };
@@ -301,9 +314,10 @@ export class SpeciesRules {
     public static tree_fern() {
         return (ctx: WorldContext) => {
             const scale = 0.8 + ctx.random() * 0.4;
+            const meta = DecorationMetadata.treeFern;
             return {
-                groundRadius: 1 * scale,
-                canopyRadius: 6 * scale,
+                groundRadius: meta.groundRadius * scale,
+                canopyRadius: meta.canopyRadius * scale,
                 spacing: 1 * scale,
                 options: { kind: 'treeFern', rotation: ctx.random() * Math.PI * 2, scale }
             };

@@ -1,0 +1,21 @@
+export const DecorationMetadata = {
+    rock: { groundRadius: 5, canopyRadius: 0 },
+    elder: { groundRadius: 1, canopyRadius: 5 },
+    birch: { groundRadius: 1.2, canopyRadius: 6 },
+    oak: { groundRadius: 1.5, canopyRadius: 6 },
+    elm: { groundRadius: 2, canopyRadius: 6 },
+    vase: { groundRadius: 1.5, canopyRadius: 4.5 },
+    willow: { groundRadius: 2, canopyRadius: 5 },
+    poplar: { groundRadius: 0.5, canopyRadius: 1.5 },
+    open: { groundRadius: 1.2, canopyRadius: 4 },
+    umbrella: { groundRadius: 1, canopyRadius: 5 },
+    irregular: { groundRadius: 1.5, canopyRadius: 6 },
+    palm: { groundRadius: 1, canopyRadius: 4 },
+    bush: { groundRadius: 2, canopyRadius: 0 },
+    daisy: { groundRadius: 0.8, canopyRadius: 0 },
+    lily: { groundRadius: 1, canopyRadius: 0 },
+    waterlily: { groundRadius: 1, canopyRadius: 0 },
+    cactus: { groundRadius: 1, canopyRadius: 5 },
+    cycad: { groundRadius: 1, canopyRadius: 5 },
+    treeFern: { groundRadius: 1, canopyRadius: 6 }
+} as const;

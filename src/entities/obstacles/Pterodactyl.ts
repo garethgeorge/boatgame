@@ -7,8 +7,11 @@ import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { Entity } from '../../core/Entity';
 import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 
+import { EntityMetadata } from '../EntityMetadata';
+
 export class Pterodactyl extends Animal {
-    public static readonly RADIUS: number = 2.0;
+    public static readonly MODEL_SCALE: number = 3.0;
+    public static readonly RADIUS: number = EntityMetadata.pterodactyl.radius;
 
 
     constructor(
@@ -41,7 +44,8 @@ export class Pterodactyl extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        model.scale.set(3.0, 3.0, 3.0);
+        const scale = Pterodactyl.MODEL_SCALE;
+        model.scale.set(scale, scale, scale);
     }
 
     protected getAnimations(): AnimalAnimations {

@@ -7,8 +7,11 @@ import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { Entity } from '../../core/Entity';
 import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 
+import { EntityMetadata } from '../EntityMetadata';
+
 export class Dragonfly extends Animal {
-    public static readonly RADIUS: number = 1.5;
+    public static readonly MODEL_SCALE: number = 2.25;
+    public static readonly RADIUS: number = EntityMetadata.dragonfly.radius;
 
 
     constructor(
@@ -46,7 +49,8 @@ export class Dragonfly extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        model.scale.set(2.25, 2.25, 2.25);
+        const scale = Dragonfly.MODEL_SCALE;
+        model.scale.set(scale, scale, scale);
         // Dragonflies usually have their front at -Z in models, 
         // but if it's flipped we might need Math.PI.
         model.rotation.y = 0;

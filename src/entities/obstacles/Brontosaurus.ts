@@ -8,10 +8,13 @@ import { Entity } from '../../core/Entity';
 import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
+import { EntityMetadata } from '../EntityMetadata';
+
 export class Brontosaurus extends Animal {
 
     public static readonly HEIGHT_IN_WATER: number = -1.5;
-    public static readonly RADIUS: number = 5.0;
+    public static readonly MODEL_SCALE: number = 8.0;
+    public static readonly RADIUS: number = EntityMetadata.brontosaurus.radius;
 
     constructor(
         physicsEngine: PhysicsEngine,
@@ -45,7 +48,8 @@ export class Brontosaurus extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        model.scale.set(8.0, 8.0, 8.0);
+        const scale = Brontosaurus.MODEL_SCALE;
+        model.scale.set(scale, scale, scale);
         model.rotation.y = Math.PI;
     }
 

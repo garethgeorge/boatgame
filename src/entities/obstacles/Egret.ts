@@ -8,9 +8,12 @@ import { Entity } from '../../core/Entity';
 import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 import { AnimationPlayer, AnimationStep } from '../../core/AnimationPlayer';
 
+import { EntityMetadata } from '../EntityMetadata';
+
 export class Egret extends Animal {
     public static readonly HEIGHT_IN_WATER = -0.2;
-    public static readonly RADIUS: number = 3.0;
+    public static readonly MODEL_SCALE: number = 3.0;
+    public static readonly RADIUS: number = EntityMetadata.egret.radius;
 
     constructor(
         physicsEngine: PhysicsEngine,
@@ -43,7 +46,8 @@ export class Egret extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        model.scale.set(3.0, 3.0, 3.0);
+        const scale = Egret.MODEL_SCALE;
+        model.scale.set(scale, scale, scale);
         //model.position.y = -0.2;
     }
 

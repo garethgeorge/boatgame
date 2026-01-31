@@ -1,0 +1,23 @@
+export const EntityMetadata = {
+    alligator: { radius: 5 },
+    polarBear: { radius: 2 },
+    hippo: { radius: 5 },
+    trex: { radius: 5 },
+    brontosaurus: { radius: 5 },
+    brownBear: { radius: 2 },
+    monkey: { radius: 2 },
+    moose: { radius: 2 },
+    triceratops: { radius: 5 },
+    dolphin: { radius: 2 },
+    duckling: { radius: 1.5 },
+    butterfly: { radius: 0.5 },
+    pterodactyl: { radius: 2 },
+    bluebird: { radius: 1.5 },
+    egret: { radius: 3 },
+    dragonfly: { radius: 1.5 },
+    snake: { radius: 3 },
+    turtle: { radius: 1.5 },
+    penguinKayak: { radius: 1.5 },
+    swan: { radius: 2.0 },
+    unicorn: { radius: 3.0 }
+} as const;

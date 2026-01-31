@@ -75,6 +75,10 @@ export class Decorations {
     });
   }
 
+  static async preloadAll(): Promise<void> {
+    await DecorationRegistry.loadFiltered(() => true);
+  }
+
   /**
    * Triggers a load in the background without awaiting it.
    */

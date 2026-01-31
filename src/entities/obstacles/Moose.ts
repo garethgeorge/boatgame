@@ -8,10 +8,13 @@ import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
 import { AnimalLogic, AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimationPlayer, AnimationStep } from '../../core/AnimationPlayer';
 
+import { EntityMetadata } from '../EntityMetadata';
+
 export class Moose extends Animal {
 
     public static readonly HEIGHT_IN_WATER: number = -3.0;
-    public static readonly RADIUS: number = 2.0;
+    public static readonly MODEL_SCALE: number = 0.1;
+    public static readonly RADIUS: number = EntityMetadata.moose.radius;
 
 
     constructor(
@@ -47,7 +50,8 @@ export class Moose extends Animal {
 
     protected setupModel(model: THREE.Group): void {
         model.position.y = 3.0;
-        model.scale.set(0.1, 0.1, 0.1);
+        const scale = Moose.MODEL_SCALE;
+        model.scale.set(scale, scale, scale);
         model.rotation.y = Math.PI;
     }
 

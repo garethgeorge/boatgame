@@ -7,8 +7,11 @@ import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { Entity } from '../../core/Entity';
 import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 
+import { EntityMetadata } from '../EntityMetadata';
+
 export class Bluebird extends Animal {
-    public static readonly RADIUS: number = 1.5;
+    public static readonly MODEL_SCALE: number = 2.0;
+    public static readonly RADIUS: number = EntityMetadata.bluebird.radius;
 
 
     constructor(
@@ -45,7 +48,8 @@ export class Bluebird extends Animal {
         // If the bluebird model follows this convention, we might need a rotation.
         // Butterfly had 0, but most animals need Math.PI based on GEMINI.md.
         // I'll stick with 0 for now as it's similar to butterfly, but keep this in mind.
-        model.scale.set(2, 2, 2);
+        const scale = Bluebird.MODEL_SCALE;
+        model.scale.set(scale, scale, scale);
         model.rotation.y = 0;
     }
 

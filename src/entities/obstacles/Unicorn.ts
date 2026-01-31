@@ -8,8 +8,11 @@ import { ShoreBehaviorFactory } from '../behaviors/ShoreBehaviorFactory';
 import { AnimationStep } from '../../core/AnimationPlayer';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 
+import { EntityMetadata } from '../EntityMetadata';
+
 export class Unicorn extends Animal {
-    public static readonly RADIUS: number = 3.0;
+    public static readonly MODEL_SCALE: number = 6.0;
+    public static readonly RADIUS: number = EntityMetadata.unicorn.radius;
 
     constructor(
         physicsEngine: PhysicsEngine,
@@ -38,7 +41,8 @@ export class Unicorn extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        model.scale.set(6, 6, 6);
+        const scale = Unicorn.MODEL_SCALE;
+        model.scale.set(scale, scale, scale);
     }
 
     private static readonly animations: AnimalAnimations = {
