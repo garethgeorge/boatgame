@@ -231,28 +231,28 @@ export class MetadataExtractor {
         return { decorationResults, entityResults };
     }
 
+    static formatDecoration(name: string, data: DecorationRadii): string {
+        return `    ${name}: { groundRadius: ${data.groundRadius}, canopyRadius: ${data.canopyRadius} },`;
+    }
+
+    static formatEntity(name: string, data: EntityRadii): string {
+        return `    ${name}: { radius: ${data.radius} },`;
+    }
+
     static formatResults(results: { decorationResults: Record<string, DecorationRadii>, entityResults: Record<string, EntityRadii> }): string {
-        const formatDecoration = (name: string, data: DecorationRadii) => {
-            return `  ${name}: { groundRadius: ${data.groundRadius}, canopyRadius: ${data.canopyRadius} }`;
-        };
-
-        const formatEntity = (name: string, data: EntityRadii) => {
-            return `  ${name}: { radius: ${data.radius} }`;
-        };
-
         let output = "";
         output += "\n--- PASTE INTO src/world/DecorationMetadata.ts ---\n\n";
         output += "export const DecorationMetadata = {\n";
         output += Object.entries(results.decorationResults)
-            .map(([name, data]) => formatDecoration(name, data))
-            .join(",\n");
+            .map(([name, data]) => this.formatDecoration(name, data))
+            .join("\n");
         output += "\n} as const;\n";
 
         output += "\n--- PASTE INTO src/entities/EntityMetadata.ts ---\n\n";
         output += "export const EntityMetadata = {\n";
         output += Object.entries(results.entityResults)
-            .map(([name, data]) => formatEntity(name, data))
-            .join(",\n");
+            .map(([name, data]) => this.formatEntity(name, data))
+            .join("\n");
         output += "\n} as const;\n";
 
         return output;

@@ -145,8 +145,21 @@ class MetadataExtractorPage {
         this.localDecoMetadata = { ...DecorationMetadata };
         this.localEntityMetadata = { ...EntityMetadata };
 
-        this.decoMetadataArea.value = DesignerUtils.safeStringify(this.localDecoMetadata);
-        this.entityMetadataArea.value = DesignerUtils.safeStringify(this.localEntityMetadata);
+        this.updateMetadataAreas();
+    }
+
+    private updateMetadataAreas() {
+        this.decoMetadataArea.value = "{\n" +
+            Object.entries(this.localDecoMetadata)
+                .map(([name, data]: [string, any]) => MetadataExtractor.formatDecoration(name, data))
+                .join("\n") +
+            "\n}";
+
+        this.entityMetadataArea.value = "{\n" +
+            Object.entries(this.localEntityMetadata)
+                .map(([name, data]: [string, any]) => MetadataExtractor.formatEntity(name, data))
+                .join("\n") +
+            "\n}";
     }
 
     private populateItems() {
@@ -372,8 +385,7 @@ class MetadataExtractorPage {
             this.localDecoMetadata = results.decorationResults;
             this.localEntityMetadata = results.entityResults;
 
-            this.decoMetadataArea.value = DesignerUtils.safeStringify(this.localDecoMetadata);
-            this.entityMetadataArea.value = DesignerUtils.safeStringify(this.localEntityMetadata);
+            this.updateMetadataAreas();
 
             this.updateCircles();
             console.log("Extraction complete.");
