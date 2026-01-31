@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { DECORATION_MANIFEST, DecorationManifestEntry } from '../world/DecorationsManifest';
-import { ENTITY_MANIFEST, EntityManifestEntry } from '../entities/EntitiesManifest';
+import { ENTITY_MANIFEST, BOAT_MANIFEST, EntityManifestEntry } from '../entities/EntitiesManifest';
 import { DecorationMetadata } from '../world/DecorationMetadata';
-import { EntityMetadata } from '../entities/EntityMetadata';
+import { EntityMetadata, BoatMetadata } from '../entities/EntityMetadata';
 import { GraphicsUtils } from '../core/GraphicsUtils';
 import { DesignerUtils } from '../core/DesignerUtils';
 import { Decorations } from '../world/Decorations';
@@ -27,7 +27,9 @@ class MetadataExtractorPage {
     private typeSelect: HTMLSelectElement;
     private itemSelect: HTMLSelectElement;
     private animationGroup: HTMLElement;
+    private boatGroup: HTMLElement;
     private animationSelect: HTMLSelectElement;
+    private dividerInput: HTMLInputElement;
     private speedSlider: HTMLInputElement;
     private speedDisplay: HTMLElement;
 
@@ -108,7 +110,9 @@ class MetadataExtractorPage {
         this.itemSelect = document.getElementById('item-select') as HTMLSelectElement;
 
         this.animationGroup = document.getElementById('animation-group')!;
+        this.boatGroup = document.getElementById('boat-group')!;
         this.animationSelect = document.getElementById('animation-select') as HTMLSelectElement;
+        this.dividerInput = document.getElementById('divider-input') as HTMLInputElement;
         this.speedSlider = document.getElementById('speed-slider') as HTMLInputElement;
         this.speedDisplay = document.getElementById('speed-display')!;
 
@@ -143,6 +147,12 @@ class MetadataExtractorPage {
             }
         });
 
+        this.dividerInput.addEventListener('input', () => {
+            if (this.selectedName === 'boat') {
+                this.updateHull();
+            }
+        });
+
         this.decoMetadataArea.addEventListener('input', () => this.syncMetadata());
         this.entityMetadataArea.addEventListener('input', () => this.syncMetadata());
 
@@ -160,7 +170,7 @@ class MetadataExtractorPage {
 
     private loadInitialMetadata() {
         this.localDecoMetadata = { ...DecorationMetadata };
-        this.localEntityMetadata = { ...EntityMetadata };
+        this.localEntityMetadata = { ...EntityMetadata, boat: BoatMetadata };
 
         this.updateMetadataAreas();
     }
@@ -172,11 +182,26 @@ class MetadataExtractorPage {
                 .join("\n") +
             "\n}";
 
-        this.entityMetadataArea.value = "{\n" +
-            Object.entries(this.localEntityMetadata)
-                .map(([name, data]: [string, any]) => MetadataExtractor.formatEntity(name, data))
-                .join("\n") +
-            "\n}";
+        const entitiesStr = Object.entries(this.localEntityMetadata)
+            .filter(([name]) => name !== 'boat')
+            .map(([name, data]: [string, any]) => MetadataExtractor.formatEntity(name, data))
+            .join("\n");
+
+        const boatMeta = this.localEntityMetadata['boat'];
+        let boatStr = "";
+        if (boatMeta) {
+            boatStr = `\n\n// BoatMetadata\n{\n` +
+                `    radius: ${boatMeta.radius},\n` +
+                `    width: ${boatMeta.width},\n` +
+                `    length: ${boatMeta.length},\n` +
+                `    bow_y: ${boatMeta.bow_y},\n` +
+                `    stern_y: ${boatMeta.stern_y},\n` +
+                `    frontHull: [ ${boatMeta.frontHull?.join(', ')} ],\n` +
+                `    backHull: [ ${boatMeta.backHull?.join(', ')} ]\n` +
+                `}`;
+        }
+
+        this.entityMetadataArea.value = "{\n" + entitiesStr + "\n}" + boatStr;
     }
 
     private populateItems() {
@@ -184,8 +209,9 @@ class MetadataExtractorPage {
         this.selectedName = null;
         this.cleanupModel();
 
-        // Reset animation UI
+        // Reset UI
         this.animationGroup.style.display = 'none';
+        this.boatGroup.style.display = 'none';
 
         if (this.selectedType === 'decoration') {
             DECORATION_MANIFEST.forEach(d => {
@@ -195,7 +221,8 @@ class MetadataExtractorPage {
                 this.itemSelect.appendChild(opt);
             });
         } else {
-            ENTITY_MANIFEST.forEach(e => {
+            const entities = [...ENTITY_MANIFEST, BOAT_MANIFEST];
+            entities.forEach(e => {
                 const opt = document.createElement('option');
                 opt.value = e.name;
                 opt.textContent = e.name;
@@ -229,6 +256,10 @@ class MetadataExtractorPage {
                 this.loadDecoration(name);
             } else {
                 this.loadEntity(name);
+                if (name === 'boat') {
+                    this.boatGroup.style.display = 'block';
+                    this.dividerInput.value = BOAT_MANIFEST.frontZoneEndY?.toString() || "0";
+                }
             }
 
             this.updateCircles();
@@ -268,10 +299,12 @@ class MetadataExtractorPage {
     }
 
     private loadEntity(name: string) {
-        const entry = ENTITY_MANIFEST.find(e => e.name === name);
+        const entry = [...ENTITY_MANIFEST, BOAT_MANIFEST].find(e => e.name === name);
         if (entry) {
             try {
-                const { model, animations } = entry.model();
+                const modelResult = entry.model();
+                if (!modelResult) return;
+                const { model, animations } = modelResult;
                 this.currentModel = SkeletonUtils.clone(model);
                 GraphicsUtils.registerObject(this.currentModel);
 
@@ -378,7 +411,10 @@ class MetadataExtractorPage {
                 if (meta.radius > 0) {
                     this.addCircle(meta.radius, 0xff0000, 0.05);
                 }
-                if (meta.hull) {
+                if (name === 'boat') {
+                    if (meta.frontHull) this.addHull(meta.frontHull, 0xff00ff, 0.1);
+                    if (meta.backHull) this.addHull(meta.backHull, 0xff00ff, 0.1);
+                } else if (meta.hull) {
                     this.addHull(meta.hull, 0xff00ff, 0.1);
                 }
             }
@@ -425,22 +461,31 @@ class MetadataExtractorPage {
                 return;
             }
 
-            const hull = MetadataExtractor.computeHull(this.currentModel, 8);
-            if (hull.length > 0) {
-                this.localEntityMetadata[this.selectedName].hull = hull;
-                this.updateMetadataAreas();
-                this.updateCircles();
-                console.log(`Hull updated for ${this.selectedName}`);
+            if (this.selectedName === 'boat') {
+                const divider = parseFloat(this.dividerInput.value) || 0;
+                const hulls = MetadataExtractor.computeBoatHulls(this.currentModel, divider);
+                Object.assign(this.localEntityMetadata['boat'], hulls);
+            } else {
+                const hull = MetadataExtractor.computeHull(this.currentModel, 8);
+                if (hull.length > 0) {
+                    this.localEntityMetadata[this.selectedName].hull = hull;
+                }
             }
+            this.updateMetadataAreas();
+            this.updateCircles();
+            console.log(`Hull updated for ${this.selectedName}`);
         } else {
             this.updateHullBtn.disabled = true;
             this.updateHullBtn.textContent = 'Updating...';
 
             try {
-                for (const entry of ENTITY_MANIFEST) {
+                const entities = [...ENTITY_MANIFEST, BOAT_MANIFEST];
+                for (const entry of entities) {
                     console.log(`Computing hull for ${entry.name}...`);
                     try {
-                        const { model } = entry.model();
+                        const modelResult = entry.model();
+                        if (!modelResult) continue;
+                        const { model } = modelResult;
                         const clone = SkeletonUtils.clone(model);
                         const params = entry.params;
                         clone.scale.setScalar(params.scale);
@@ -449,10 +494,15 @@ class MetadataExtractorPage {
                         }
                         clone.updateMatrixWorld(true);
 
-                        const hull = MetadataExtractor.computeHull(clone, 8);
-                        if (hull.length > 0) {
-                            this.localEntityMetadata[entry.name] = this.localEntityMetadata[entry.name] || {};
-                            this.localEntityMetadata[entry.name].hull = hull;
+                        if (entry.name === 'boat') {
+                            const hulls = MetadataExtractor.computeBoatHulls(clone, entry.frontZoneEndY || -1.0);
+                            this.localEntityMetadata['boat'] = { ...this.localEntityMetadata['boat'], ...hulls };
+                        } else {
+                            const hull = MetadataExtractor.computeHull(clone, 8);
+                            if (hull.length > 0) {
+                                this.localEntityMetadata[entry.name] = this.localEntityMetadata[entry.name] || {};
+                                this.localEntityMetadata[entry.name].hull = hull;
+                            }
                         }
                     } catch (e) {
                         console.error(`Failed to update hull for ${entry.name}:`, e);

@@ -1,4 +1,5 @@
 import { Decorations } from '../world/Decorations';
+import { Boat } from './Boat';
 import { Alligator } from './obstacles/Alligator';
 import { PolarBear } from './obstacles/PolarBear';
 import { Hippo } from './obstacles/Hippo';
@@ -24,9 +25,17 @@ import * as THREE from 'three';
 
 export interface EntityManifestEntry {
     name: string;
-    model: () => { model: THREE.Object3D, animations: THREE.AnimationClip[] };
+    model: () => { model: THREE.Object3D, animations: THREE.AnimationClip[] } | null;
     params: { scale: number, angle?: number };
+    frontZoneEndY?: number;
 }
+
+export const BOAT_MANIFEST: EntityManifestEntry = {
+    name: 'boat',
+    model: () => Decorations.getBoat(),
+    params: Boat.MODEL_PARAMS,
+    frontZoneEndY: Boat.FRONT_ZONE_END_Y
+};
 
 export const ENTITY_MANIFEST: EntityManifestEntry[] = [
     { name: 'alligator', model: () => Decorations.getAlligator()!, params: Alligator.MODEL_PARAMS },

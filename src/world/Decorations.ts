@@ -102,7 +102,7 @@ export class Decorations {
    * The boat!
    */
   static getBoat() {
-    return DecorationRegistry.getFactory('boat').create();
+    return this.getModelAndAnimations('boat');
   }
 
   /**

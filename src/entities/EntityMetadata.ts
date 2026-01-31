@@ -21,3 +21,23 @@ export const EntityMetadata: Record<string, { radius: number, hull?: number[] }>
     swan: { radius: 2.7, hull: [-1.3, -0.7, -0.3, -2.2, 0.3, -2.2, 1.4, -0.7, 1, 1.5, 0, 3.1, -0.5, 2.5, -1.3, 0.5] },
     unicorn: { radius: 6.6, hull: [-1.9, 0.9, -1.2, -6.2, -0.3, -6.1, 2.4, -2.6, 2.5, -2, 2, 1.8, 0.8, 6.1, -1.4, 6.5] },
 };
+
+export interface BoatMetadata {
+    radius: number;
+    width: number;
+    length: number;
+    bow_y: number;
+    stern_y: number;
+    frontHull: number[];
+    backHull: number[];
+}
+
+export const BoatMetadata: BoatMetadata = {
+    radius: 4,
+    width: 3.1,
+    length: 6.1,
+    bow_y: -2.8,
+    stern_y: 3.3,
+    frontHull: [0.0, -2.8, 1.4, -0.4, -1.4, -0.4],
+    backHull: [-1.4, -0.4, 1.4, -0.4, 1.6, 0.8, 1.2, 3.2, -1.1, 3.3, -1.5, 1.2]
+};

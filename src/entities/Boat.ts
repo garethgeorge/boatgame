@@ -9,18 +9,21 @@ import { CollectedBottles } from './CollectedBottles';
 import { MessageInABottle } from './obstacles/MessageInABottle';
 import { Pier } from "./obstacles/Pier";
 import { GraphicsUtils } from '../core/GraphicsUtils';
+import { BoatMetadata } from './EntityMetadata';
 
 export class Boat extends Entity {
+    public static readonly MODEL_PARAMS = { scale: 3.0, angle: Math.PI * 0.5 };
+
     public collectedBottles: CollectedBottles;
     public score: number = 0;
     public fuel: number = 100;
 
     // Dimensions of the boat. Its also divided into front and back sections.
-    public static readonly WIDTH = 2.4;
-    public static readonly LENGTH = 6.0;
-    public static readonly BOW_Y = -3.0;
-    public static readonly STERN_Y = 3.0;
-    public static readonly FRONT_ZONE_END_Y = -1.0;
+    public static readonly FRONT_ZONE_END_Y = 0;
+    public static readonly WIDTH = BoatMetadata.width;
+    public static readonly LENGTH = BoatMetadata.length;
+    public static readonly BOW_Y = BoatMetadata.bow_y;
+    public static readonly STERN_Y = BoatMetadata.stern_y;
 
     // Fixture names for the front and back parts
     public static readonly PART_FRONT = 'front';
@@ -93,23 +96,16 @@ export class Boat extends Entity {
         // Vertices must be in Counter-Clockwise (CCW) order
 
         // Split the boat into two fixtures: Front and Back
-        // Front section (Bow to middle)
-        const halfWidth = Boat.WIDTH * 0.5;
-        const frontVertices = [
-            planck.Vec2(0, Boat.BOW_Y),   // Bow (Front)
-            planck.Vec2(halfWidth, Boat.FRONT_ZONE_END_Y), // Front Right Shoulder
-            planck.Vec2(-halfWidth, Boat.FRONT_ZONE_END_Y) // Front Left Shoulder
-        ];
+        // Uses generated metadata from the hull extractor
+        const frontVertices = [];
+        for (let i = 0; i < BoatMetadata.frontHull.length; i += 2) {
+            frontVertices.push(planck.Vec2(BoatMetadata.frontHull[i], BoatMetadata.frontHull[i + 1]));
+        }
 
-        // Back section (Middle to Stern)
-        const backVertices = [
-            planck.Vec2(halfWidth, Boat.FRONT_ZONE_END_Y), // Middle Right
-            planck.Vec2(halfWidth, 2.5),  // Back Right Side
-            planck.Vec2(0.9, Boat.STERN_Y),  // Stern Right (Back)
-            planck.Vec2(-0.9, Boat.STERN_Y), // Stern Left (Back)
-            planck.Vec2(-halfWidth, 2.5), // Back Left Side
-            planck.Vec2(-halfWidth, Boat.FRONT_ZONE_END_Y) // Middle Left
-        ];
+        const backVertices = [];
+        for (let i = 0; i < BoatMetadata.backHull.length; i += 2) {
+            backVertices.push(planck.Vec2(BoatMetadata.backHull[i], BoatMetadata.backHull[i + 1]));
+        }
 
         physicsBody.createFixture({
             shape: planck.Polygon(frontVertices),
@@ -143,19 +139,12 @@ export class Boat extends Entity {
         this.collectedBottles.mesh.scale.set(0.5, 0.5, 0.5);
         this.collectedBottles.mesh.position.set(-0.9, 0.8, 1.6);
 
-        const model = Decorations.getBoat();
-        if (model) {
-
-            // Adjust scale and rotation to match physics body
-            // Physics body is approx 2.4 wide x 6.0 long
-            // Model scale needs to be determined. Let's start with a reasonable guess and adjust.
-            // Usually models are huge or tiny.
-            // User requested double size (was 1.5) -> 3.0
-            model.scale.set(3.0, 3.0, 3.0);
-
-            // Rotate to face correct direction (Forward is -Z)
-            // User requested 180 degree rotation from previous 270 (backwards) -> 90 degrees (Math.PI * 0.5)
-            model.rotation.y = Math.PI * 0.5;
+        const modelResult = Decorations.getBoat();
+        if (modelResult) {
+            const model = modelResult.model;
+            const { scale, angle } = Boat.MODEL_PARAMS;
+            model.scale.set(scale, scale, scale);
+            model.rotation.y = angle;
 
             // Adjust vertical position
             // User requested 3/8ths of boat height (0.375)

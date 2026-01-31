@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { DECORATION_MANIFEST } from '../world/DecorationsManifest';
-import { ENTITY_MANIFEST } from '../entities/EntitiesManifest';
-import { EntityMetadata } from '../entities/EntityMetadata';
+import { ENTITY_MANIFEST, BOAT_MANIFEST } from '../entities/EntitiesManifest';
+import { EntityMetadata, BoatMetadata } from '../entities/EntityMetadata';
 import { GeometryVertexVisitor } from './GeometryVertexVisitor';
 import { ConvexHull } from './ConvexHull';
 import { DecimateHull } from './DecimateHull';
@@ -14,6 +14,13 @@ export interface DecorationRadii {
 export interface EntityRadii {
     radius: number;
     hull?: number[];
+    // Boat specific
+    width?: number;
+    length?: number;
+    bow_y?: number;
+    stern_y?: number;
+    frontHull?: number[];
+    backHull?: number[];
 }
 
 export class MetadataExtractor {
@@ -108,6 +115,36 @@ export class MetadataExtractor {
             points.push(pos.clone());
         });
 
+        return this.computeHullFromPoints(points, targetCount);
+    }
+
+    static computeBoatHulls(model: THREE.Object3D, frontZoneEndY: number): { frontHull: number[], backHull: number[], width: number, length: number, bow_y: number, stern_y: number } {
+        const points: THREE.Vector3[] = [];
+        GeometryVertexVisitor.visitVertices(model, (pos) => {
+            points.push(pos.clone());
+        });
+
+        const minZ = Math.min(...points.map(p => p.z));
+        const maxZ = Math.max(...points.map(p => p.z));
+        const minX = Math.min(...points.map(p => p.x));
+        const maxX = Math.max(...points.map(p => p.x));
+
+        const round = (val: number) => Math.round(val * 10) / 10;
+
+        const frontPoints = points.filter(p => p.z <= frontZoneEndY);
+        const backPoints = points.filter(p => p.z >= frontZoneEndY);
+
+        return {
+            frontHull: this.computeHullFromPoints(frontPoints, 3),
+            backHull: this.computeHullFromPoints(backPoints, 6),
+            width: round(maxX - minX),
+            length: round(maxZ - minZ),
+            bow_y: round(minZ),
+            stern_y: round(maxZ)
+        };
+    }
+
+    private static computeHullFromPoints(points: THREE.Vector3[], targetCount: number = 8): number[] {
         if (points.length === 0) return [];
 
         const hull = ConvexHull.compute(points);
@@ -162,7 +199,8 @@ export class MetadataExtractor {
         }
 
         console.log("--- Extracting Entity Metadata ---");
-        for (const entry of ENTITY_MANIFEST) {
+        const entitiesToExtract = [...ENTITY_MANIFEST, BOAT_MANIFEST];
+        for (const entry of entitiesToExtract) {
             if (filter && (filter.type !== 'entity' || filter.name !== entry.name)) continue;
 
             try {
@@ -191,14 +229,49 @@ export class MetadataExtractor {
                     console.warn(`Entity ${entry.name} is offset from origin: center=[${center.x.toFixed(2)}, ${center.y.toFixed(2)}, ${center.z.toFixed(2)}]`);
                 }
 
-                // Preserve existing hull if it exists
-                const existingMeta = EntityMetadata[entry.name];
-                const hull = existingMeta?.hull;
+                if (entry.name === 'boat') {
+                    // Special handling for the boat
+                    const frontZoneEndY = entry.frontZoneEndY ?? -1.0;
+                    const points: THREE.Vector3[] = [];
+                    GeometryVertexVisitor.visitVertices(model, (pos) => {
+                        points.push(pos.clone());
+                    });
 
-                entityResults[entry.name] = {
-                    radius: round(radii.canopyRadius),
-                    hull: hull
-                }; // Entities use canopy/max radius
+                    // Physics Y is Graphics Z.
+                    const minZ = Math.min(...points.map(p => p.z));
+                    const maxZ = Math.max(...points.map(p => p.z));
+                    const minX = Math.min(...points.map(p => p.x));
+                    const maxX = Math.max(...points.map(p => p.x));
+
+                    const width = round(maxX - minX);
+                    const length = round(maxZ - minZ);
+
+                    // Re-calculate hulls based on geometry
+                    const frontPoints = points.filter(p => p.z <= frontZoneEndY);
+                    const backPoints = points.filter(p => p.z >= frontZoneEndY);
+
+                    const frontHull = this.computeHullFromPoints(frontPoints, 3);
+                    const backHull = this.computeHullFromPoints(backPoints, 6);
+
+                    entityResults[entry.name] = {
+                        radius: round(radii.canopyRadius),
+                        width,
+                        length,
+                        bow_y: round(minZ),
+                        stern_y: round(maxZ),
+                        frontHull,
+                        backHull
+                    };
+                } else {
+                    // Preserve existing hull if it exists
+                    const existingMeta = EntityMetadata[entry.name];
+                    const hull = existingMeta?.hull;
+
+                    entityResults[entry.name] = {
+                        radius: round(radii.canopyRadius),
+                        hull: hull
+                    }; // Entities use canopy/max radius
+                }
                 console.log(`Extracted entity: ${entry.name} -> R:${entityResults[entry.name].radius}`);
             } catch (e) {
                 console.error(`Failed to extract entity ${entry.name}:`, e);
@@ -232,9 +305,23 @@ export class MetadataExtractor {
         output += "\n--- PASTE INTO src/entities/EntityMetadata.ts ---\n\n";
         output += "export const EntityMetadata = {\n";
         output += Object.entries(results.entityResults)
+            .filter(([name]) => name !== 'boat')
             .map(([name, data]) => this.formatEntity(name, data))
             .join("\n");
         output += "\n} as const;\n";
+
+        const boatData = results.entityResults['boat'];
+        if (boatData) {
+            output += "\nexport const BoatMetadata = {\n";
+            output += `    radius: ${boatData.radius},\n`;
+            output += `    width: ${boatData.width},\n`;
+            output += `    length: ${boatData.length},\n`;
+            output += `    bow_y: ${boatData.bow_y},\n`;
+            output += `    stern_y: ${boatData.stern_y},\n`;
+            output += `    frontHull: [ ${boatData.frontHull?.join(', ')} ],\n`;
+            output += `    backHull: [ ${boatData.backHull?.join(', ')} ]\n`;
+            output += "} as const;\n";
+        }
 
         return output;
     }
