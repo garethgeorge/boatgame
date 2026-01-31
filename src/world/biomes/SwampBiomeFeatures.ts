@@ -45,8 +45,8 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     protected skyTopColors: number[] = [0xf5674c, 0xb99d95, 0xcfcff3]; // [Night, Sunset, Noon]
     protected skyBottomColors: number[] = [0xf5674c, 0xf5674c, 0xbbc1f1]; // [Night, Sunset, Noon]
 
-    getAmplitudeMultiplier(): number {
-        return 0.1;
+    public override getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number {
+        return 0.1 * super.getAmplitudeMultiplier(wx, wz, distFromBank);
     }
 
     getRiverWidthMultiplier(): number {

@@ -23,16 +23,16 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
-        // Base desert color
-        const base = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 };
+        const c0 = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 };
+        const c1 = { r: 0xD3 / 255, g: 0x59 / 255, b: 0x24 / 255 };
 
         // Vary color based on height (elevation bands)
         // Higher ground is darker/redder
         const heightFactor = Math.max(0, Math.min(1, y / 20));
         return {
-            r: base.r * (1 - heightFactor * 0.1),
-            g: base.g * (1 - heightFactor * 0.4),
-            b: base.b * (1 - heightFactor * 0.5)
+            r: c0.r + (c1.r - c0.r) * heightFactor,
+            g: c0.g + (c1.g - c0.g) * heightFactor,
+            b: c0.b + (c1.b - c0.b) * heightFactor,
         };
     }
 

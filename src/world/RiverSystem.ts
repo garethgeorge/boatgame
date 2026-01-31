@@ -77,12 +77,13 @@ export class RiverSystem {
   /**
    * Returns the X coordinates for the left and right banks.
    */
-  public getBankPositions(worldZ: number): { left: number, right: number } {
+  public getBankPositions(worldZ: number): { center: number, left: number, right: number } {
     const center = this.getRiverCenter(worldZ);
     const width = this.getRiverWidth(worldZ);
     const halfWidth = width / 2;
 
     return {
+      center: center,
       left: center - halfWidth,
       right: center + halfWidth
     };

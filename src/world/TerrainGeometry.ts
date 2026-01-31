@@ -52,16 +52,8 @@ export class TerrainGeometry {
         // We add a base height (e.g. 2.0) and clamp
         rawLandHeight = Math.max(2.0, rawLandHeight + 2.0);
 
-        const amplitudeMultiplier = this.riverSystem.biomeManager.getAmplitudeMultiplier(wz);
+        const amplitudeMultiplier = this.riverSystem.biomeManager.getAmplitudeMultiplier(wx, wz, distFromBank);
         rawLandHeight *= amplitudeMultiplier;
-
-        // Ensure minimum height above water is maintained (swamps are low but not underwater)
-        rawLandHeight = Math.max(0.5, rawLandHeight);
-
-        // Apply Bank Taper: Force land height to 0 at the river edge
-        // Smoothly ramp up over 15 units
-        const bankTaper = MathUtils.smoothstep(0, 15, distFromBank);
-        rawLandHeight = rawLandHeight * bankTaper;
 
         return rawLandHeight;
     }

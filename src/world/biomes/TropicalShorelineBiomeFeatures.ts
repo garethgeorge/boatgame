@@ -9,6 +9,9 @@ import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
+import { RiverSystem } from '../RiverSystem';
+import { SimplexNoise } from '../SimplexNoise';
+import { MathUtils } from '../../core/MathUtils';
 
 /**
  * Tropical Shoreline Biome: A sunny coastal paradise with palm trees and marine life.
@@ -19,25 +22,50 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
 
     private decorationConfig: DecorationConfig | null = null;
     private layoutCache: BoatPathLayout | null = null;
+    private colorNoise = new SimplexNoise(42);
+    private readonly SAND_COLOR = new THREE.Color(0xf2d16b);
+    private readonly GRASS_COLOR = new THREE.Color(0x33aa33);
 
     constructor(index: number, z: number, direction: number) {
         super(index, z, TropicalShorelineBiomeFeatures.LENGTH, direction);
     }
 
-    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
-        // Sandy gold color
-        return { r: 0xf2 / 255, g: 0xd1 / 255, b: 0x6b / 255 };
-    }
+    protected skyTopColors: number[] = [0x1a2a44, 0xffa500, 0x00bfff]; // [Night, Sunset, Noon]
+    protected skyBottomColors: number[] = [0x0d1522, 0xff4500, 0x87ceeb]; // [Night, Sunset, Noon]
 
     getScreenTint(): { r: number, g: number, b: number } {
         return { r: 1.0, g: 0.98, b: 0.9 };
     }
 
-    protected skyTopColors: number[] = [0x1a2a44, 0xffa500, 0x00bfff]; // [Night, Sunset, Noon]
-    protected skyBottomColors: number[] = [0x0d1522, 0xff4500, 0x87ceeb]; // [Night, Sunset, Noon]
+    public override getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
+        const banks = RiverSystem.getInstance().getBankPositions(z);
+        const distToShore = x < banks.center ? banks.left - x : x - banks.right;
+        const t = this.getBeachFactor(z, distToShore);
 
-    public override getAmplitudeMultiplier(): number {
-        return 0.4; // Relatively flat terrain
+        // Mix the colors
+        const color = this.SAND_COLOR.clone().lerp(this.GRASS_COLOR, t);
+        return { r: color.r, g: color.g, b: color.b };
+    }
+
+    public override getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number {
+        const t = this.getBeachFactor(wz, distFromBank);
+
+        const m = 0.1 + 0.3 * t;
+        return m * super.getAmplitudeMultiplier(wx, wz, distFromBank);
+    }
+
+    private getBeachFactor(z: number, distToShore: number): number {
+        // Noise varies from -1 to 1, we normalize to [0, 1]
+        // Scale z by 0.05 for a smooth variation along the shoreline
+        const noiseVal = (this.colorNoise.noise2D(z * 0.01, 0) + 1) / 2;
+
+        // Transition distance varies
+        const transitionDist = 20 + noiseVal * 30;
+
+        // Calculate interpolation factor using smoothstep for a natural look
+        const t = MathUtils.smoothstep(transitionDist * 0.75, transitionDist, distToShore);
+
+        return t;
     }
 
     private shorelineRules(): DecorationRule[] {
@@ -47,7 +75,7 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                     {
                         id: 'palm',
                         preference: SpeciesRules.fitness({
-                            stepDistance: [2, 40],
+                            stepDistance: [5, 60],
                             slope: [0, 20]
                         }),
                         params: SpeciesRules.palm_tree()
@@ -93,7 +121,13 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 place: 'near-shore',
                 density: [0.3, 0.6],
                 types: [EntityIds.TURTLE]
-            }
+            },
+            'butterfly_swarms': {
+                logic: 'scatter',
+                place: 'on-shore',
+                density: [0.3, 0.6],
+                types: [EntityIds.BUTTERFLY]
+            },
         };
 
         const riverTrack: TrackConfig = {
@@ -118,9 +152,24 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
             ]
         };
 
+        const flyingTrack: TrackConfig = {
+            name: 'flying',
+            stages: [
+                {
+                    name: 'flying_animals',
+                    progress: [0.4, 1.0],
+                    patterns: [
+                        [
+                            { pattern: 'butterfly_swarms', weight: 1.0 }
+                        ]
+                    ]
+                }
+            ]
+        };
+
         this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: patterns,
-            tracks: [riverTrack, shoreTrack],
+            tracks: [riverTrack, shoreTrack, flyingTrack],
             waterAnimals
         });
 

@@ -60,8 +60,9 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     getScreenTint(): { r: number, g: number, b: number } {
         return { r: 0x88 / 255, g: 0x88 / 255, b: 0x88 / 255 };
     }
-    public getAmplitudeMultiplier(): number {
-        return 0.0;
+
+    public override getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number {
+        return 0.2 * super.getAmplitudeMultiplier(wx, wz, distFromBank);
     }
 
     *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {

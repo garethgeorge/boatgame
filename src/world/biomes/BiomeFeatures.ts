@@ -24,7 +24,7 @@ export interface BiomeFeatures {
     getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number };
     getScreenTint(): { r: number, g: number, b: number };
     getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color };
-    getAmplitudeMultiplier(): number;
+    getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number;
     getRiverWidthMultiplier(): number;
 
     /**

@@ -4,6 +4,7 @@ import { Spawnable, SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { MathUtils } from '../../core/MathUtils';
 
 export abstract class BaseBiomeFeatures implements BiomeFeatures {
     abstract id: BiomeType;
@@ -76,8 +77,11 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         };
     }
 
-    public getAmplitudeMultiplier(): number {
-        return 1.0;
+    public getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number {
+        // Apply Bank Taper: Force land height to 0 at the river edge
+        // Smoothly ramp up over 15 units
+        const bankTaper = MathUtils.smoothstep(0, 15, distFromBank);
+        return bankTaper;
     }
 
     public getRiverWidthMultiplier(): number {

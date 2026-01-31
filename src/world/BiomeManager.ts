@@ -266,20 +266,11 @@ export class BiomeManager {
     return segments;
   }
 
-  private getBiomeMixture(worldZ: number): {
-    features1: BiomeFeatures,
-    features2: BiomeFeatures,
-    weight1: number,
-    weight2: number
-  } {
+  private getBiomeMixture(worldZ: number): { biome: BiomeFeatures, weight: number }[] {
     const transitionWidth = this.BIOME_TRANSITION_WIDTH;
     const instance = this.getBiomeInstanceAt(worldZ);
 
-    let features1 = instance.features;
-    let features2 = instance.features;
-    let weight1 = 1.0;
-    let weight2 = 0.0;
-
+    const features1 = instance.features;
     const distFromMin = Math.abs(worldZ - instance.zMin);
     const distFromMax = Math.abs(worldZ - instance.zMax);
 
@@ -287,109 +278,115 @@ export class BiomeManager {
       // near to zMin of this biome
       const otherZ = instance.zMin - 0.001;
       const otherInstance = this.getBiomeInstanceAt(otherZ);
-      features2 = otherInstance.features;
+      const features2 = otherInstance.features;
 
       const t = distFromMin / (transitionWidth / 2);
-      weight1 = this.lerp(0.5, 1.0, t);
-      weight2 = 1.0 - weight1;
+      const weight1 = this.lerp(0.5, 1.0, t);
+      const weight2 = 1.0 - weight1;
+
+      return [{ biome: features1, weight: weight1 }, { biome: features2, weight: weight2 }];
     } else if (distFromMax < transitionWidth / 2) {
       // near to zMax of this biome
       const otherZ = instance.zMax + 0.001;
       const otherInstance = this.getBiomeInstanceAt(otherZ);
-      features2 = otherInstance.features;
+      const features2 = otherInstance.features;
 
       const t = (transitionWidth / 2 - distFromMax) / (transitionWidth / 2);
-      weight1 = this.lerp(1.0, 0.5, t);
-      weight2 = 1.0 - weight1;
+      const weight1 = this.lerp(1.0, 0.5, t);
+      const weight2 = 1.0 - weight1;
+
+      return [{ biome: features1, weight: weight1 }, { biome: features2, weight: weight2 }];
     }
 
-    return { features1, features2, weight1, weight2 };
+    return [{ biome: features1, weight: 1 }];
   }
 
   public getBiomeFogDensity(worldZ: number): number {
     const mixture = this.getBiomeMixture(worldZ);
-    const d1 = mixture.features1.getFogDensity();
-    const d2 = mixture.features2.getFogDensity();
-    return d1 * mixture.weight1 + d2 * mixture.weight2;
+    const d1 = mixture[0].biome.getFogDensity();
+    if (mixture.length === 1) return d1;
+    const d2 = mixture[1].biome.getFogDensity();
+    return d1 * mixture[0].weight + d2 * mixture[1].weight;
   }
 
   public getBiomeFogRange(worldZ: number): { near: number, far: number } {
     const mixture = this.getBiomeMixture(worldZ);
-    const range1 = mixture.features1.getFogRange();
-    const range2 = mixture.features2.getFogRange();
-
+    const r1 = mixture[0].biome.getFogRange();
+    if (mixture.length === 1) return r1;
+    const r2 = mixture[1].biome.getFogRange();
     return {
-      near: this.lerp(range1.near, range2.near, mixture.weight2), // weight2 is t from 1 to 2
-      far: this.lerp(range1.far, range2.far, mixture.weight2)
+      near: this.lerp(r1.near, r2.near, mixture[1].weight), // weight2 is t from 1 to 2
+      far: this.lerp(r1.far, r2.far, mixture[1].weight)
     };
   }
 
   public getBiomeGroundColor(worldX: number, worldY: number, worldZ: number): { r: number, g: number, b: number } {
     const mixture = this.getBiomeMixture(worldZ);
-
-    const color1 = mixture.features1.getGroundColor(worldX, worldY, worldZ);
-    const color2 = mixture.features2.getGroundColor(worldX, worldY, worldZ);
-
+    const c1 = mixture[0].biome.getGroundColor(worldX, worldY, worldZ);
+    if (mixture.length === 1) return c1;
+    const c2 = mixture[1].biome.getGroundColor(worldX, worldY, worldZ);
     return {
-      r: color1.r * mixture.weight1 + color2.r * mixture.weight2,
-      g: color1.g * mixture.weight1 + color2.g * mixture.weight2,
-      b: color1.b * mixture.weight1 + color2.b * mixture.weight2
+      r: c1.r * mixture[0].weight + c2.r * mixture[1].weight,
+      g: c1.g * mixture[0].weight + c2.g * mixture[1].weight,
+      b: c1.b * mixture[0].weight + c2.b * mixture[1].weight
     };
   }
 
   public getBiomeScreenTint(worldZ: number): { r: number, g: number, b: number } {
     const mixture = this.getBiomeMixture(worldZ);
-
-    const color1 = mixture.features1.getScreenTint();
-    const color2 = mixture.features2.getScreenTint();
-
+    const c1 = mixture[0].biome.getScreenTint();
+    if (mixture.length === 1) return c1;
+    const c2 = mixture[1].biome.getScreenTint();
     return {
-      r: color1.r * mixture.weight1 + color2.r * mixture.weight2,
-      g: color1.g * mixture.weight1 + color2.g * mixture.weight2,
-      b: color1.b * mixture.weight1 + color2.b * mixture.weight2
+      r: c1.r * mixture[0].weight + c2.r * mixture[1].weight,
+      g: c1.g * mixture[0].weight + c2.g * mixture[1].weight,
+      b: c1.b * mixture[0].weight + c2.b * mixture[1].weight
     };
   }
 
   public getBiomeSkyGradient(worldZ: number, dayness: number): { top: THREE.Color, bottom: THREE.Color } {
     const mixture = this.getBiomeMixture(worldZ);
-
-    // Get sky gradient for each biome
-    const sky1 = mixture.features1.getSkyColors(dayness);
-    const sky2 = mixture.features2.getSkyColors(dayness);
+    const sky1 = mixture[0].biome.getSkyColors(dayness);
+    if (mixture.length === 1) return sky1;
+    const sky2 = mixture[1].biome.getSkyColors(dayness);
 
     // Blend the two sky gradients based on mixture weights
-    const top = sky1.top.clone().multiplyScalar(mixture.weight1).add(sky2.top.clone().multiplyScalar(mixture.weight2));
-    const bottom = sky1.bottom.clone().multiplyScalar(mixture.weight1).add(sky2.bottom.clone().multiplyScalar(mixture.weight2));
+    const top = sky1.top.clone().multiplyScalar(mixture[0].weight).add(sky2.top.clone().multiplyScalar(mixture[1].weight));
+    const bottom = sky1.bottom.clone().multiplyScalar(mixture[0].weight).add(sky2.bottom.clone().multiplyScalar(mixture[1].weight));
 
     return { top, bottom };
   }
 
-  public getAmplitudeMultiplier(wz: number): number {
+  public getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number {
     const mixture = this.getBiomeMixture(wz);
-    const amplitude1 = mixture.features1.getAmplitudeMultiplier();
-    const amplitude2 = mixture.features2.getAmplitudeMultiplier();
+    const amplitude1 = mixture[0].biome.getAmplitudeMultiplier(wx, wz, distFromBank);
+    if (mixture.length === 1) return amplitude1;
+    const amplitude2 = mixture[1].biome.getAmplitudeMultiplier(wx, wz, distFromBank);
 
-    const amplitudeMultiplier = amplitude1 * mixture.weight1 + amplitude2 * mixture.weight2;
+    const amplitudeMultiplier = amplitude1 * mixture[0].weight + amplitude2 * mixture[1].weight;
     return amplitudeMultiplier;
   }
 
   public getRiverWidthMultiplier(worldZ: number): number {
-    // Apply Swamp Modifier: Widen river significantly
     const mixture = this.getBiomeMixture(worldZ);
-    const width1 = mixture.features1.getRiverWidthMultiplier();
-    const width2 = mixture.features2.getRiverWidthMultiplier();
+    const width1 = mixture[0].biome.getRiverWidthMultiplier();
+    if (mixture.length === 1) return width1;
+    const width2 = mixture[1].biome.getRiverWidthMultiplier();
 
-    const widthMultiplier = width1 * mixture.weight1 + width2 * mixture.weight2;
+    const widthMultiplier = width1 * mixture[0].weight + width2 * mixture[1].weight;
     return widthMultiplier;
   }
 
   public getRiverMaterialSwampFactor(worldZ: number): number {
     const mixture = this.getBiomeMixture(worldZ);
+
     let swampFactor = 0.0;
-    const type1 = mixture.features1.id;
-    const type2 = mixture.features2.id;
-    if (type1 === 'swamp') swampFactor += mixture.weight1;
-    if (type2 === 'swamp') swampFactor += mixture.weight2;
+    const type1 = mixture[0].biome.id;
+    if (type1 === 'swamp') swampFactor += mixture[0].weight;
+    if (mixture.length === 1) return swampFactor;
+
+    const type2 = mixture[1].biome.id;
+    if (type2 === 'swamp') swampFactor += mixture[1].weight;
     return swampFactor;
   }
 

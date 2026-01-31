@@ -31,10 +31,6 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     }
     protected skyBottomColors: number[] = [0x2b4f68, 0xede6da, 0xb1daec]; // [Night, Sunset, Noon]
 
-    public override getAmplitudeMultiplier(): number {
-        return 1.0;
-    }
-
     private decorationConfig: DecorationConfig = {
         maps: {},
         rules: [
