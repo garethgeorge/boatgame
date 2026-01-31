@@ -159,15 +159,28 @@
         <h1>Metadata Extractor</h1>
 
         <div class="control-group">
-            <h2>Decorations</h2>
-            <input type="text" id="decoration-search" class="search-box" placeholder="Search decorations...">
-            <div id="decoration-list" class="list-container"></div>
+            <h2>Selection</h2>
+            <div style="display: flex; gap: 5px;">
+                <select id="type-select" class="search-box" style="flex: 1;">
+                    <option value="decoration">Decoration</option>
+                    <option value="entity">Entity</option>
+                </select>
+                <select id="item-select" class="search-box" style="flex: 2;">
+                    <option value="">Select Item...</option>
+                </select>
+            </div>
         </div>
 
-        <div class="control-group">
-            <h2>Entities</h2>
-            <input type="text" id="entity-search" class="search-box" placeholder="Search entities...">
-            <div id="entity-list" class="list-container"></div>
+        <div id="animation-group" class="control-group" style="display: none;">
+            <h2>Animation</h2>
+            <select id="animation-select" class="search-box">
+                <option value="">None</option>
+            </select>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                <label for="speed-slider" style="font-size: 12px; color: #888;">Speed</label>
+                <input type="range" id="speed-slider" min="0" max="2" step="0.1" value="1" style="flex: 1;">
+                <span id="speed-display" style="font-size: 12px; color: #888; width: 30px;">1.0x</span>
+            </div>
         </div>
 
         <div class="control-group">

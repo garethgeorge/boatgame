@@ -37,6 +37,5 @@ export class DecorationRegistry {
                 promises.push(factory.load());
             }
         }
-        await Promise.all(promises);
     }
 }

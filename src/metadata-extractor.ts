@@ -18,23 +18,33 @@ class MetadataExtractorPage {
     private currentModel: THREE.Object3D | null = null;
     private circleGroup: THREE.Group;
 
-    private decorationList: HTMLElement;
-    private entityList: HTMLElement;
-    private decorationSearch: HTMLInputElement;
-    private entitySearch: HTMLInputElement;
+    // Animation state
+    private mixer: THREE.AnimationMixer | null = null;
+    private currentAction: THREE.AnimationAction | null = null;
+    private clock = new THREE.Clock();
+
+    // UI Elements
+    private typeSelect: HTMLSelectElement;
+    private itemSelect: HTMLSelectElement;
+    private animationGroup: HTMLElement;
+    private animationSelect: HTMLSelectElement;
+    private speedSlider: HTMLInputElement;
+    private speedDisplay: HTMLElement;
+
     private decoMetadataArea: HTMLTextAreaElement;
     private entityMetadataArea: HTMLTextAreaElement;
     private extractBtn: HTMLButtonElement;
 
     private localDecoMetadata: any;
     private localEntityMetadata: any;
-    private selectedItem: { type: 'decoration' | 'entity', name: string } | null = null;
+    private selectedType: 'decoration' | 'entity' = 'decoration';
+    private selectedName: string | null = null;
 
     constructor() {
         this.initThree();
         this.initUI();
         this.loadInitialMetadata();
-        this.renderLists();
+        this.populateItems();
         this.animate();
 
         // Register window resize
@@ -92,16 +102,38 @@ class MetadataExtractorPage {
     }
 
     private initUI() {
-        this.decorationList = document.getElementById('decoration-list')!;
-        this.entityList = document.getElementById('entity-list')!;
-        this.decorationSearch = document.getElementById('decoration-search') as HTMLInputElement;
-        this.entitySearch = document.getElementById('entity-search') as HTMLInputElement;
+        this.typeSelect = document.getElementById('type-select') as HTMLSelectElement;
+        this.itemSelect = document.getElementById('item-select') as HTMLSelectElement;
+
+        this.animationGroup = document.getElementById('animation-group')!;
+        this.animationSelect = document.getElementById('animation-select') as HTMLSelectElement;
+        this.speedSlider = document.getElementById('speed-slider') as HTMLInputElement;
+        this.speedDisplay = document.getElementById('speed-display')!;
+
         this.decoMetadataArea = document.getElementById('decoration-metadata-js') as HTMLTextAreaElement;
         this.entityMetadataArea = document.getElementById('entity-metadata-js') as HTMLTextAreaElement;
         this.extractBtn = document.getElementById('extract-btn') as HTMLButtonElement;
 
-        this.decorationSearch.addEventListener('input', () => this.renderLists());
-        this.entitySearch.addEventListener('input', () => this.renderLists());
+        this.typeSelect.addEventListener('change', () => {
+            this.selectedType = this.typeSelect.value as 'decoration' | 'entity';
+            this.populateItems();
+        });
+
+        this.itemSelect.addEventListener('change', () => {
+            this.selectItem(this.itemSelect.value);
+        });
+
+        this.animationSelect.addEventListener('change', () => {
+            this.playAnimation(this.animationSelect.value);
+        });
+
+        this.speedSlider.addEventListener('input', () => {
+            const speed = parseFloat(this.speedSlider.value);
+            this.speedDisplay.textContent = speed.toFixed(1) + 'x';
+            if (this.mixer) {
+                this.mixer.timeScale = speed;
+            }
+        });
 
         this.decoMetadataArea.addEventListener('input', () => this.syncMetadata());
         this.entityMetadataArea.addEventListener('input', () => this.syncMetadata());
@@ -117,104 +149,159 @@ class MetadataExtractorPage {
         this.entityMetadataArea.value = DesignerUtils.safeStringify(this.localEntityMetadata);
     }
 
-    private renderLists() {
-        const decoTerm = this.decorationSearch.value.toLowerCase();
-        const entityTerm = this.entitySearch.value.toLowerCase();
+    private populateItems() {
+        this.itemSelect.innerHTML = '<option value="">Select Item...</option>';
+        this.selectedName = null;
+        this.cleanupModel();
 
-        this.decorationList.innerHTML = '';
-        DECORATION_MANIFEST.filter(d => d.name.toLowerCase().includes(decoTerm)).forEach(d => {
-            const item = document.createElement('div');
-            item.className = 'list-item';
-            if (this.selectedItem?.type === 'decoration' && this.selectedItem.name === d.name) {
-                item.classList.add('selected');
-            }
-            item.textContent = d.name;
-            item.onclick = () => this.selectItem('decoration', d.name);
-            this.decorationList.appendChild(item);
-        });
+        // Reset animation UI
+        this.animationGroup.style.display = 'none';
 
-        this.entityList.innerHTML = '';
-        ENTITY_MANIFEST.filter(e => e.name.toLowerCase().includes(entityTerm)).forEach(e => {
-            const item = document.createElement('div');
-            item.className = 'list-item';
-            if (this.selectedItem?.type === 'entity' && this.selectedItem.name === e.name) {
-                item.classList.add('selected');
-            }
-            item.textContent = e.name;
-            item.onclick = () => this.selectItem('entity', e.name);
-            this.entityList.appendChild(item);
-        });
+        if (this.selectedType === 'decoration') {
+            DECORATION_MANIFEST.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.name;
+                opt.textContent = d.name;
+                this.itemSelect.appendChild(opt);
+            });
+        } else {
+            ENTITY_MANIFEST.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e.name;
+                opt.textContent = e.name;
+                this.itemSelect.appendChild(opt);
+            });
+        }
     }
 
-    private async selectItem(type: 'decoration' | 'entity', name: string) {
-        this.selectedItem = { type, name };
-        this.renderLists();
-
-        // Clear previous model
+    private cleanupModel() {
         if (this.currentModel) {
             this.scene.remove(this.currentModel);
+            // Dispose logic could be added here if needed
             this.currentModel = null;
         }
+        this.mixer = null;
+        this.currentAction = null;
+        this.updateCircles();
+    }
+
+    private async selectItem(name: string) {
+        if (!name) {
+            this.cleanupModel();
+            return;
+        }
+
+        this.selectedName = name;
+        this.cleanupModel();
 
         try {
-            if (type === 'decoration') {
-                const entry = DECORATION_MANIFEST.find(d => d.name === name);
-                if (entry) {
-                    const modelResult = entry.model();
-                    // Some models return arrays of instances (e.g. trees with branches and leaves)
-                    const results = Array.isArray(modelResult) ? modelResult : [modelResult];
-
-                    if (results.length > 0) {
-                        const group = new THREE.Group();
-                        results.forEach(res => {
-                            if (res instanceof THREE.Object3D) {
-                                group.add(GraphicsUtils.cloneObject(res));
-                            } else if (res && 'geometry' in res && 'material' in res) {
-                                const mesh = new THREE.Mesh(res.geometry, res.material);
-                                if (res.matrix) {
-                                    mesh.matrixAutoUpdate = false;
-                                    mesh.matrix.copy(res.matrix);
-                                }
-                                group.add(mesh);
-                            }
-                        });
-                        this.currentModel = group;
-                        this.scene.add(this.currentModel);
-                    }
-                }
+            if (this.selectedType === 'decoration') {
+                this.loadDecoration(name);
             } else {
-                const entry = ENTITY_MANIFEST.find(e => e.name === name);
-                if (entry) {
-                    const model = entry.model();
-                    // Entities are often skinned, use SkeletonUtils for safer cloning
-                    this.currentModel = SkeletonUtils.clone(model);
-                    GraphicsUtils.registerObject(this.currentModel);
-
-                    console.log(`Scaling entity ${name} by ${entry.scale}`);
-                    this.currentModel.scale.setScalar(entry.scale);
-                    this.currentModel.updateMatrixWorld(true);
-                    this.scene.add(this.currentModel);
-
-                    const box = new THREE.Box3().setFromObject(this.currentModel);
-                    console.log(`Scaled Bounding Box:`, box.min, box.max);
-                    const size = box.getSize(new THREE.Vector3());
-                    console.log(`Scaled Size:`, size);
-                }
+                this.loadEntity(name);
             }
 
             this.updateCircles();
-
-            if (this.currentModel) {
-                const box = new THREE.Box3().setFromObject(this.currentModel);
-                const center = box.getCenter(new THREE.Vector3());
-                const size = box.getSize(new THREE.Vector3());
-                const maxDim = Math.max(size.x, size.y, size.z);
-                this.controls.target.copy(center);
-                this.camera.position.set(center.x + maxDim * 2, center.y + maxDim, center.z + maxDim * 2);
-            }
+            this.centerCamera();
 
         } catch (e) {
             console.error(`Failed to load model for ${name}:`, e);
+        }
+    }
+
+    private loadDecoration(name: string) {
+        this.animationGroup.style.display = 'none';
+
+        const entry = DECORATION_MANIFEST.find(d => d.name === name);
+        if (entry) {
+            const modelResult = entry.model();
+            const results = Array.isArray(modelResult) ? modelResult : [modelResult];
+
+            if (results.length > 0) {
+                const group = new THREE.Group();
+                results.forEach(res => {
+                    if (res instanceof THREE.Object3D) {
+                        group.add(GraphicsUtils.cloneObject(res));
+                    } else if (res && 'geometry' in res && 'material' in res) {
+                        const mesh = new THREE.Mesh(res.geometry, res.material);
+                        if (res.matrix) {
+                            mesh.matrixAutoUpdate = false;
+                            mesh.matrix.copy(res.matrix);
+                        }
+                        group.add(mesh);
+                    }
+                });
+                this.currentModel = group;
+                this.scene.add(this.currentModel);
+            }
+        }
+    }
+
+    private loadEntity(name: string) {
+        const entry = ENTITY_MANIFEST.find(e => e.name === name);
+        if (entry) {
+            try {
+                const { model, animations } = entry.model();
+                this.currentModel = SkeletonUtils.clone(model);
+                GraphicsUtils.registerObject(this.currentModel);
+
+                this.currentModel.scale.setScalar(entry.scale);
+                this.currentModel.updateMatrixWorld(true);
+                this.scene.add(this.currentModel);
+
+                // Setup animations
+                this.animationSelect.innerHTML = '<option value="">None</option>';
+                if (animations && animations.length > 0) {
+                    this.animationGroup.style.display = 'block';
+                    this.mixer = new THREE.AnimationMixer(this.currentModel);
+
+                    animations.forEach(clip => {
+                        const opt = document.createElement('option');
+                        opt.value = clip.name;
+                        opt.textContent = clip.name;
+                        this.animationSelect.appendChild(opt);
+                    });
+
+                    // Store animations for lookup
+                    (this.currentModel as any)._animations = animations;
+                } else {
+                    this.animationGroup.style.display = 'none';
+                }
+
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+    }
+
+    private playAnimation(name: string) {
+        if (!this.mixer || !this.currentModel) return;
+
+        if (this.currentAction) {
+            this.currentAction.stop();
+            this.currentAction = null;
+        }
+
+        if (name) {
+            const animations = (this.currentModel as any)._animations || [];
+            const clipObj = animations.find((a: any) => a.name === name);
+
+            if (clipObj) {
+                this.currentAction = this.mixer.clipAction(clipObj);
+                this.currentAction!.play();
+                this.currentAction!.setEffectiveTimeScale(parseFloat(this.speedSlider.value));
+            }
+        }
+    }
+
+    private centerCamera() {
+        if (this.currentModel) {
+            const box = new THREE.Box3().setFromObject(this.currentModel);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            this.controls.target.copy(center);
+            this.camera.position.set(center.x + maxDim * 2, center.y + maxDim, center.z + maxDim * 2);
         }
     }
 
@@ -228,7 +315,6 @@ class MetadataExtractorPage {
     }
 
     private updateCircles() {
-        // ... (clear previous circles logic remains)
         while (this.circleGroup.children.length > 0) {
             const child = this.circleGroup.children[0];
             this.circleGroup.remove(child);
@@ -238,14 +324,13 @@ class MetadataExtractorPage {
             }
         }
 
-        if (!this.selectedItem) return;
+        if (!this.selectedName) return;
 
-        console.log(`Updating circles for ${this.selectedItem.name}...`);
-        const name = this.selectedItem.name;
-        if (this.selectedItem.type === 'decoration') {
+        console.log(`Updating circles for ${this.selectedName}...`);
+        const name = this.selectedName;
+        if (this.selectedType === 'decoration') {
             const meta = this.localDecoMetadata[name];
             if (meta) {
-                console.log(`  Deco Radii: Ground=${meta.groundRadius}, Canopy=${meta.canopyRadius}`);
                 if (meta.groundRadius > 0) {
                     this.addCircle(meta.groundRadius, 0x00ff00, 0.05);
                 }
@@ -256,7 +341,6 @@ class MetadataExtractorPage {
         } else {
             const meta = this.localEntityMetadata[name];
             if (meta) {
-                console.log(`  Entity Radius: ${meta.radius}`);
                 if (meta.radius > 0) {
                     this.addCircle(meta.radius, 0xff0000, 0.05);
                 }
@@ -311,6 +395,12 @@ class MetadataExtractorPage {
 
     private animate() {
         requestAnimationFrame(() => this.animate());
+
+        const delta = this.clock.getDelta();
+        if (this.mixer) {
+            this.mixer.update(delta);
+        }
+
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
     }

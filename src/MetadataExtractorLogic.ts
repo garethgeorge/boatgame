@@ -205,11 +205,12 @@ export class MetadataExtractor {
         console.log("--- Extracting Entity Metadata ---");
         for (const entry of ENTITY_MANIFEST) {
             try {
-                const model = entry.model();
-                if (!model) {
+                const modelResult = entry.model();
+                if (!modelResult) {
                     console.warn(`No model found for entity: ${entry.name}`);
                     continue;
                 }
+                const model = modelResult.model;
 
                 // NEW: Ensure world matrices are up to date
                 model.updateMatrixWorld(true);
