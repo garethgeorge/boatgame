@@ -53,10 +53,13 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         return this.decorationConfig;
     }
 
-    getGroundColor(): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         return { r: 0x88 / 255, g: 0x88 / 255, b: 0x88 / 255 };
     }
 
+    getScreenTint(): { r: number, g: number, b: number } {
+        return { r: 0x88 / 255, g: 0x88 / 255, b: 0x88 / 255 };
+    }
     public getAmplitudeMultiplier(): number {
         return 0.0;
     }

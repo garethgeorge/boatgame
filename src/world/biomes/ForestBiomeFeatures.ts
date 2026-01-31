@@ -22,11 +22,13 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
 
     private layoutCache: BoatPathLayout | null = null;
 
-    getGroundColor(): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         return { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 };
     }
 
-    protected skyTopColors: number[] = [0x0b1517, 0x455d96, 0x0067b6]; // [Night, Sunset, Noon]
+    getScreenTint(): { r: number, g: number, b: number } {
+        return { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 };
+    }
     protected skyBottomColors: number[] = [0x2b4f68, 0xede6da, 0xb1daec]; // [Night, Sunset, Noon]
 
     public override getAmplitudeMultiplier(): number {

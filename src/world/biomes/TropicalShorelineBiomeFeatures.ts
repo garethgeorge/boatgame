@@ -24,7 +24,7 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, TropicalShorelineBiomeFeatures.LENGTH, direction);
     }
 
-    getGroundColor(): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         // Sandy gold color
         return { r: 0xf2 / 255, g: 0xd1 / 255, b: 0x6b / 255 };
     }

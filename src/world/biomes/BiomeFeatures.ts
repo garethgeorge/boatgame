@@ -21,7 +21,7 @@ export interface BiomeFeatures {
 
     getFogDensity(): number;
     getFogRange(): { near: number, far: number };
-    getGroundColor(): { r: number, g: number, b: number };
+    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number };
     getScreenTint(): { r: number, g: number, b: number };
     getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color };
     getAmplitudeMultiplier(): number;

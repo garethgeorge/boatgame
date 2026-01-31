@@ -25,7 +25,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     private decorationConfig: DecorationConfig | null = null;
     private layoutCache: BoatPathLayout | null = null;
 
-    getGroundColor(): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         return { r: 0x2B / 255, g: 0x24 / 255, b: 0x1C / 255 }; // Muddy Dark Brown
     }
 

@@ -22,11 +22,23 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     private decorationConfig: DecorationConfig | null = null;
     private layoutCache: BoatPathLayout | null = null;
 
-    getGroundColor(): { r: number, g: number, b: number } {
-        return { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 };
+    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
+        // Base desert color
+        const base = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 };
+
+        // Vary color based on height (elevation bands)
+        // Higher ground is darker/redder
+        const heightFactor = Math.max(0, Math.min(1, y / 20));
+        return {
+            r: base.r * (1 - heightFactor * 0.1),
+            g: base.g * (1 - heightFactor * 0.4),
+            b: base.b * (1 - heightFactor * 0.5)
+        };
     }
 
-    protected skyTopColors: number[] = [0x04193c, 0x05559c, 0x058fea]; // [Night, Sunset, Noon]
+    getScreenTint(): { r: number, g: number, b: number } {
+        return { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 };
+    }
     protected skyBottomColors: number[] = [0x024b82, 0xafd9ae, 0x53baf5]; // [Night, Sunset, Noon]
 
     public getDecorationConfig(): DecorationConfig {

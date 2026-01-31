@@ -44,12 +44,15 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
     // Cache the material
     private static iceMaterial: THREE.Material | null = null;
 
-    getGroundColor(): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         // slightly bluer/darker water under ice? 
         // actually this is ground color (river bed). Ice biome uses white-ish.
         return { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 };
     }
 
+    getScreenTint(): { r: number, g: number, b: number } {
+        return { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 };
+    }
     getFogDensity(): number {
         return 0.9;
     }

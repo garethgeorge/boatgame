@@ -324,11 +324,11 @@ export class BiomeManager {
     };
   }
 
-  public getBiomeGroundColor(worldZ: number): { r: number, g: number, b: number } {
+  public getBiomeGroundColor(worldX: number, worldY: number, worldZ: number): { r: number, g: number, b: number } {
     const mixture = this.getBiomeMixture(worldZ);
 
-    const color1 = mixture.features1.getGroundColor();
-    const color2 = mixture.features2.getGroundColor();
+    const color1 = mixture.features1.getGroundColor(worldX, worldY, worldZ);
+    const color2 = mixture.features2.getGroundColor(worldX, worldY, worldZ);
 
     return {
       r: color1.r * mixture.weight1 + color2.r * mixture.weight2,

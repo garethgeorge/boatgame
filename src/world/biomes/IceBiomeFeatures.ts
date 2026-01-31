@@ -18,10 +18,13 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, IceBiomeFeatures.LENGTH, direction);
     }
 
-    getGroundColor(): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         return { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 };
     }
 
+    getScreenTint(): { r: number, g: number, b: number } {
+        return { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 };
+    }
     getFogDensity(): number {
         return 0.9;
     }
@@ -78,7 +81,7 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
             })
         ];
 
-        this.decorationConfig = { rules, maps:{}};
+        this.decorationConfig = { rules, maps: {} };
         return this.decorationConfig;
     }
 

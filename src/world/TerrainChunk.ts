@@ -215,9 +215,6 @@ export class TerrainChunk {
       const dz = tz * chunkSize;
       const wz = this.zOffset + dz;
 
-      // Biome properties are constant across the width of the chunk (constant worldZ)
-      const color = this.riverSystem.biomeManager.getBiomeGroundColor(wz);
-
       // Now iterate across chunk width
       for (let ix = 0; ix <= resX; ix++) {
         // tx is parametric [-1,1] from chunk edge to edge
@@ -229,6 +226,8 @@ export class TerrainChunk {
         const riverCenter = this.riverSystem.getRiverCenter(wz);
         const wx = dx + riverCenter;
         const height = this.riverSystem.terrainGeometry.calculateHeight(wx, wz);
+
+        const color = this.riverSystem.biomeManager.getBiomeGroundColor(wx, height, wz);
 
         const index = iz * (resX + 1) + ix;
         positions[index * 3] = wx;

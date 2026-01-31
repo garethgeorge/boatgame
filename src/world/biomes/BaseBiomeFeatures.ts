@@ -46,11 +46,9 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         return { near: 100, far: 800 };
     }
 
-    abstract getGroundColor(): { r: number, g: number, b: number };
+    abstract getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number };
 
-    getScreenTint(): { r: number, g: number, b: number } {
-        return this.getGroundColor();
-    }
+    abstract getScreenTint(): { r: number, g: number, b: number };
 
     protected skyTopColors: number[] = [0x1A1A3A, 0x967BB6, 0x4488ff]; // [Night, Sunset, Noon]
     protected skyBottomColors: number[] = [0x2D2D44, 0xFF9966, 0xccddff]; // [Night, Sunset, Noon]

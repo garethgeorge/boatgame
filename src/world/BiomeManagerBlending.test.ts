@@ -72,10 +72,10 @@ describe('BiomeManager Blending', () => {
         const z = 0;
         biomeManager.ensureWindow(z, z);
         const mixture = (biomeManager as any).getBiomeMixture(z);
-        const c1 = mixture.features1.getGroundColor();
-        const c2 = mixture.features2.getGroundColor();
+        const c1 = mixture.features1.getGroundColor(0, 0, z);
+        const c2 = mixture.features2.getGroundColor(0, 0, z);
 
-        const blendedColor = biomeManager.getBiomeGroundColor(z);
+        const blendedColor = biomeManager.getBiomeGroundColor(0, 0, z);
         expect(blendedColor.r).toBe((c1.r + c2.r) / 2);
         expect(blendedColor.g).toBe((c1.g + c2.g) / 2);
         expect(blendedColor.b).toBe((c1.b + c2.b) / 2);

@@ -23,10 +23,13 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     private decorationConfig: DecorationConfig | null = null;
     private layoutCache: BoatPathLayout | null = null;
 
-    getGroundColor(): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         return { r: 0x2E / 255, g: 0x4B / 255, b: 0x2E / 255 };
     }
 
+    getScreenTint(): { r: number, g: number, b: number } {
+        return { r: 0x2E / 255, g: 0x4B / 255, b: 0x2E / 255 };
+    }
     getFogDensity(): number {
         return 0.3;
     }
