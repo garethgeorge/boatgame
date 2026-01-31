@@ -37,6 +37,8 @@ interface BiomeInstance {
 class BiomeGenerator {
   public static DEBUG_BIOME: BiomeType = undefined;
 
+  private static readonly MAX_DECK_SIZE = 20;
+
   deck: BiomeType[] = [];
   index: Map<BiomeType, number> = new Map<BiomeType, number>;
   private overriddenRules: Map<string, any[]>;
@@ -45,6 +47,20 @@ class BiomeGenerator {
     this.overriddenRules = overriddenRules;
   }
 
+  /**
+   * Puts a biome instance back so that it will be the next one.
+   */
+  public putBack(type: BiomeType): void {
+    if (this.deck.length < BiomeGenerator.MAX_DECK_SIZE) {
+      this.deck.push(type);
+      const index = this.index.get(type) ?? 1;
+      this.index.set(type, Math.max(0, index - 1));
+    }
+  }
+
+  /**
+   * Gets the next biome instance.
+   */
   public next(z: number, direction: number): BiomeInstance {
 
     console.log('Biome', z, direction);
@@ -181,14 +197,16 @@ export class BiomeManager {
 
     // Prune: Remove if the 3rd instance already covers the prune boundary.
     while (this.activeInstances.length > 2 && this.activeInstances[2].zMin < minPruneZ) {
-      this.activeInstances.shift();
+      const pruned = this.activeInstances.shift()!;
+      this.negGenerator.putBack(pruned.type);
     }
 
     // --- Positive Z Side ---
 
     // Prune: Remove if the 3rd from end already covers the prune boundary.
     while (this.activeInstances.length > 2 && this.activeInstances[this.activeInstances.length - 3].zMax > maxPruneZ) {
-      this.activeInstances.pop();
+      const pruned = this.activeInstances.pop()!;
+      this.posGenerator.putBack(pruned.type);
     }
   }
 
