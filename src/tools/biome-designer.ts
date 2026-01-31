@@ -1,18 +1,18 @@
 import * as THREE from 'three';
 import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
-import { GameEngine } from './GameEngine.js';
-import { BiomeManager } from './world/BiomeManager.js';
-import { BiomeType } from './world/biomes/BiomeType.js';
-import { Decorations } from './world/Decorations.js';
-import { DesignerSettings } from './core/DesignerSettings.js';
-import { BaseMangrove } from './entities/obstacles/Mangrove.js';
-import { RiverSystem } from './world/RiverSystem.js';
-import { DebugSettings } from './core/DebugSettings.js';
-import { Profiler } from './core/Profiler.js';
-import { DebugConsole } from './core/DebugConsole.js';
-import { DesignerUtils, HistoryManager } from './core/DesignerUtils.js';
-import { TierRule, Combine, Signal } from './world/decorators/PoissonDecorationRules.js';
-import { SpeciesRules } from './world/biomes/decorations/SpeciesDecorationRules.js';
+import { GameEngine } from '../GameEngine.js';
+import { BiomeManager } from '../world/BiomeManager.js';
+import { BiomeType } from '../world/biomes/BiomeType.js';
+import { Decorations } from '../world/Decorations.js';
+import { DesignerSettings } from '../core/DesignerSettings.js';
+import { BaseMangrove } from '../entities/obstacles/Mangrove.js';
+import { RiverSystem } from '../world/RiverSystem.js';
+import { DebugSettings } from '../core/DebugSettings.js';
+import { Profiler } from '../core/Profiler.js';
+import { DebugConsole } from '../core/DebugConsole.js';
+import { DesignerUtils, HistoryManager } from '../core/DesignerUtils.js';
+import { TierRule, Combine, Signal } from '../world/decorators/PoissonDecorationRules.js';
+import { SpeciesRules } from '../world/biomes/decorations/SpeciesDecorationRules.js';
 
 class BiomeDesigner {
     private engine: GameEngine;
@@ -162,11 +162,41 @@ class BiomeDesigner {
         this.controls = new MapControls(this.engine.graphicsEngine.camera, this.engine.graphicsEngine.renderer.domElement);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
-        this.controls.target.set(0, 2, 0);
 
-        // Initial camera position for better view
-        this.engine.graphicsEngine.camera.position.set(20, 20, 20);
+        // Restore camera position and target
+        const savedPos = localStorage.getItem('biomeDesignerCameraPos');
+        const savedTarget = localStorage.getItem('biomeDesignerCameraTarget');
+
+        if (savedPos && savedTarget) {
+            try {
+                const pos = JSON.parse(savedPos);
+                const target = JSON.parse(savedTarget);
+                this.engine.graphicsEngine.camera.position.set(pos.x, pos.y, pos.z);
+                this.controls.target.set(target.x, target.y, target.z);
+            } catch (e) {
+                console.error('[BiomeDesigner] Error restoring camera state:', e);
+                this.controls.target.set(0, 2, 0);
+                this.engine.graphicsEngine.camera.position.set(20, 20, 20);
+            }
+        } else {
+            this.controls.target.set(0, 2, 0);
+            // Initial camera position for better view
+            this.engine.graphicsEngine.camera.position.set(20, 20, 20);
+        }
+
         this.controls.update();
+
+        // Save camera state on change
+        let saveTimeout: any;
+        this.controls.addEventListener('change', () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                const pos = this.engine.graphicsEngine.camera.position;
+                const target = this.controls.target;
+                localStorage.setItem('biomeDesignerCameraPos', JSON.stringify({ x: pos.x, y: pos.y, z: pos.z }));
+                localStorage.setItem('biomeDesignerCameraTarget', JSON.stringify({ x: target.x, y: target.y, z: target.z }));
+            }, 500);
+        });
 
         const originalOnUpdate = this.engine.onUpdate;
         this.engine.onUpdate = (dt) => {

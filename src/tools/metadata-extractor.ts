@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { DECORATION_MANIFEST, DecorationManifestEntry } from './world/DecorationsManifest';
-import { ENTITY_MANIFEST, EntityManifestEntry } from './entities/EntitiesManifest';
-import { DecorationMetadata } from './world/DecorationMetadata';
-import { EntityMetadata } from './entities/EntityMetadata';
-import { GraphicsUtils } from './core/GraphicsUtils';
-import { DesignerUtils } from './core/DesignerUtils';
-import { Decorations } from './world/Decorations';
+import { DECORATION_MANIFEST, DecorationManifestEntry } from '../world/DecorationsManifest';
+import { ENTITY_MANIFEST, EntityManifestEntry } from '../entities/EntitiesManifest';
+import { DecorationMetadata } from '../world/DecorationMetadata';
+import { EntityMetadata } from '../entities/EntityMetadata';
+import { GraphicsUtils } from '../core/GraphicsUtils';
+import { DesignerUtils } from '../core/DesignerUtils';
+import { Decorations } from '../world/Decorations';
 import { MetadataExtractor } from './MetadataExtractorLogic';
 
 class MetadataExtractorPage {

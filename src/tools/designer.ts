@@ -1,17 +1,17 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { ProceduralPlant } from './world/factories/LSystemPlantGenerator';
-import { LSystemPlantBuilder } from './world/factories/LSystemPlantBuilder';
-import { ARCHETYPES as TREE_ARCHETYPES, LSystemTreeKind } from './world/factories/LSystemTreeArchetypes';
-import { ARCHETYPES as FLOWER_ARCHETYPES, LSystemFlowerKind } from './world/factories/LSystemFlowerArchetypes';
-import { LeafShader } from './shaders/LeafShader';
+import { ProceduralPlant } from '../world/factories/LSystemPlantGenerator';
+import { LSystemPlantBuilder } from '../world/factories/LSystemPlantBuilder';
+import { ARCHETYPES as TREE_ARCHETYPES, LSystemTreeKind } from '../world/factories/LSystemTreeArchetypes';
+import { ARCHETYPES as FLOWER_ARCHETYPES, LSystemFlowerKind } from '../world/factories/LSystemFlowerArchetypes';
+import { LeafShader } from '../shaders/LeafShader';
 
 // Mock GraphicsUtils for the designer to avoid complexity of the tracker
 // if it's too tied to the main game state. Actually, let's try to use the real one
 // or a simplified version for the designer.
-import { GraphicsUtils } from './core/GraphicsUtils';
+import { GraphicsUtils } from '../core/GraphicsUtils';
 
-import { DesignerUtils, HistoryManager } from './core/DesignerUtils';
+import { DesignerUtils, HistoryManager } from '../core/DesignerUtils';
 
 class Designer {
     private scene: THREE.Scene;

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { DECORATION_MANIFEST } from './world/DecorationsManifest';
-import { ENTITY_MANIFEST } from './entities/EntitiesManifest';
+import { DECORATION_MANIFEST } from '../world/DecorationsManifest';
+import { ENTITY_MANIFEST } from '../entities/EntitiesManifest';
 
 export interface DecorationRadii {
     groundRadius: number;
