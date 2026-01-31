@@ -13,7 +13,7 @@ import { EntityMetadata } from '../EntityMetadata';
 export class Alligator extends Animal {
 
     public static readonly HEIGHT_IN_WATER: number = -1.0;
-    public static readonly MODEL_SCALE: number = 3.0;
+    public static readonly MODEL_PARAMS = { scale: 3.0, angle: Math.PI };
     public static readonly RADIUS: number = EntityMetadata.alligator.radius;
 
     constructor(
@@ -48,10 +48,9 @@ export class Alligator extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        const scale = Alligator.MODEL_SCALE;
+        const { scale, angle } = Alligator.MODEL_PARAMS;
         model.scale.set(scale, scale, scale);
-        // faces along -z axis
-        model.rotation.y = Math.PI;
+        model.rotation.y = angle;
     }
 
     private static readonly animations: AnimalAnimations = {

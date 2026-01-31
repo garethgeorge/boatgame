@@ -6,11 +6,12 @@ import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { Entity } from '../../core/Entity';
 import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
+import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
 
 import { EntityMetadata } from '../EntityMetadata';
 
 export class Bluebird extends Animal {
-    public static readonly MODEL_SCALE: number = 2.0;
+    public static readonly MODEL_PARAMS = { scale: 2.0 };
     public static readonly RADIUS: number = EntityMetadata.bluebird.radius;
 
 
@@ -44,11 +45,7 @@ export class Bluebird extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        // Models are typically rotated to face -Z.
-        // If the bluebird model follows this convention, we might need a rotation.
-        // Butterfly had 0, but most animals need Math.PI based on GEMINI.md.
-        // I'll stick with 0 for now as it's similar to butterfly, but keep this in mind.
-        const scale = Bluebird.MODEL_SCALE;
+        const scale = Bluebird.MODEL_PARAMS.scale;
         model.scale.set(scale, scale, scale);
         model.rotation.y = 0;
     }

@@ -10,7 +10,7 @@ import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 import { EntityMetadata } from '../EntityMetadata';
 
 export class Dragonfly extends Animal {
-    public static readonly MODEL_SCALE: number = 2.25;
+    public static readonly MODEL_PARAMS = { scale: 2.25 };
     public static readonly RADIUS: number = EntityMetadata.dragonfly.radius;
 
 
@@ -49,7 +49,7 @@ export class Dragonfly extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        const scale = Dragonfly.MODEL_SCALE;
+        const scale = Dragonfly.MODEL_PARAMS.scale;
         model.scale.set(scale, scale, scale);
         // Dragonflies usually have their front at -Z in models, 
         // but if it's flipped we might need Math.PI.

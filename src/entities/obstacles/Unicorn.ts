@@ -11,7 +11,7 @@ import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { EntityMetadata } from '../EntityMetadata';
 
 export class Unicorn extends Animal {
-    public static readonly MODEL_SCALE: number = 6.0;
+    public static readonly MODEL_PARAMS = { scale: 6.0 };
     public static readonly RADIUS: number = EntityMetadata.unicorn.radius;
 
     constructor(
@@ -41,7 +41,7 @@ export class Unicorn extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        const scale = Unicorn.MODEL_SCALE;
+        const scale = Unicorn.MODEL_PARAMS.scale;
         model.scale.set(scale, scale, scale);
     }
 

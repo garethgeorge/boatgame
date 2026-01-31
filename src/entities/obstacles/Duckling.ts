@@ -10,7 +10,7 @@ import { EntityMetadata } from '../EntityMetadata';
 
 export class Duckling extends Animal {
     public static readonly HEIGHT_IN_WATER: number = 0.0;
-    public static readonly MODEL_SCALE: number = 1.0;
+    public static readonly MODEL_PARAMS = { scale: 1.0, angle: Math.PI };
     public static readonly RADIUS: number = EntityMetadata.duckling.radius;
 
     constructor(physicsEngine: PhysicsEngine, options: AnimalOptions) {
@@ -37,9 +37,9 @@ export class Duckling extends Animal {
     }
 
     protected setupModel(model: THREE.Group) {
-        const scale = Duckling.MODEL_SCALE;
+        const { scale, angle } = Duckling.MODEL_PARAMS;
         model.scale.set(scale, scale, scale);
-        model.rotation.y = Math.PI;
+        model.rotation.y = angle;
         model.position.y = -0.75;
     }
 

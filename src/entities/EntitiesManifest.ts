@@ -25,29 +25,29 @@ import * as THREE from 'three';
 export interface EntityManifestEntry {
     name: string;
     model: () => { model: THREE.Object3D, animations: THREE.AnimationClip[] };
-    scale: number;
+    params: { scale: number, angle?: number };
 }
 
 export const ENTITY_MANIFEST: EntityManifestEntry[] = [
-    { name: 'alligator', model: () => Decorations.getAlligator()!, scale: Alligator.MODEL_SCALE },
-    { name: 'polarBear', model: () => Decorations.getPolarBear()!, scale: PolarBear.MODEL_SCALE },
-    { name: 'hippo', model: () => Decorations.getHippo()!, scale: Hippo.MODEL_SCALE },
-    { name: 'trex', model: () => Decorations.getTRex()!, scale: TRex.MODEL_SCALE },
-    { name: 'brontosaurus', model: () => Decorations.getBrontosaurus()!, scale: Brontosaurus.MODEL_SCALE },
-    { name: 'brownBear', model: () => Decorations.getBrownBear()!, scale: BrownBear.MODEL_SCALE },
-    { name: 'monkey', model: () => Decorations.getMonkey()!, scale: Monkey.MODEL_SCALE },
-    { name: 'moose', model: () => Decorations.getMoose()!, scale: Moose.MODEL_SCALE },
-    { name: 'triceratops', model: () => Decorations.getTriceratops()!, scale: Triceratops.MODEL_SCALE },
-    { name: 'dolphin', model: () => Decorations.getDolphin()!, scale: Dolphin.MODEL_SCALE },
-    { name: 'duckling', model: () => Decorations.getDuckling()!, scale: Duckling.MODEL_SCALE },
-    { name: 'butterfly', model: () => Decorations.getButterfly()!, scale: Butterfly.MODEL_SCALE },
-    { name: 'pterodactyl', model: () => Decorations.getPterodactyl()!, scale: Pterodactyl.MODEL_SCALE },
-    { name: 'bluebird', model: () => Decorations.getBluebird()!, scale: Bluebird.MODEL_SCALE },
-    { name: 'egret', model: () => Decorations.getEgret()!, scale: Egret.MODEL_SCALE },
-    { name: 'dragonfly', model: () => Decorations.getDragonfly()!, scale: Dragonfly.MODEL_SCALE },
-    { name: 'snake', model: () => Decorations.getSnake()!, scale: Snake.MODEL_SCALE },
-    { name: 'turtle', model: () => Decorations.getTurtle()!, scale: Turtle.MODEL_SCALE },
-    { name: 'penguinKayak', model: () => Decorations.getPenguinKayak()!, scale: PenguinKayak.MODEL_SCALE },
-    { name: 'swan', model: () => Decorations.getSwan()!, scale: Swan.MODEL_SCALE },
-    { name: 'unicorn', model: () => Decorations.getUnicorn()!, scale: Unicorn.MODEL_SCALE }
+    { name: 'alligator', model: () => Decorations.getAlligator()!, params: Alligator.MODEL_PARAMS },
+    { name: 'polarBear', model: () => Decorations.getPolarBear()!, params: PolarBear.MODEL_PARAMS },
+    { name: 'hippo', model: () => Decorations.getHippo()!, params: Hippo.MODEL_PARAMS },
+    { name: 'trex', model: () => Decorations.getTRex()!, params: TRex.MODEL_PARAMS },
+    { name: 'brontosaurus', model: () => Decorations.getBrontosaurus()!, params: Brontosaurus.MODEL_PARAMS },
+    { name: 'brownBear', model: () => Decorations.getBrownBear()!, params: BrownBear.MODEL_PARAMS },
+    { name: 'monkey', model: () => Decorations.getMonkey()!, params: Monkey.MODEL_PARAMS },
+    { name: 'moose', model: () => Decorations.getMoose()!, params: Moose.MODEL_PARAMS },
+    { name: 'triceratops', model: () => Decorations.getTriceratops()!, params: Triceratops.MODEL_PARAMS },
+    { name: 'dolphin', model: () => Decorations.getDolphin()!, params: Dolphin.MODEL_PARAMS },
+    { name: 'duckling', model: () => Decorations.getDuckling()!, params: Duckling.MODEL_PARAMS },
+    { name: 'butterfly', model: () => Decorations.getButterfly()!, params: Butterfly.MODEL_PARAMS },
+    { name: 'pterodactyl', model: () => Decorations.getPterodactyl()!, params: Pterodactyl.MODEL_PARAMS },
+    { name: 'bluebird', model: () => Decorations.getBluebird()!, params: Bluebird.MODEL_PARAMS },
+    { name: 'egret', model: () => Decorations.getEgret()!, params: Egret.MODEL_PARAMS },
+    { name: 'dragonfly', model: () => Decorations.getDragonfly()!, params: Dragonfly.MODEL_PARAMS },
+    { name: 'snake', model: () => Decorations.getSnake()!, params: Snake.MODEL_PARAMS },
+    { name: 'turtle', model: () => Decorations.getTurtle()!, params: Turtle.MODEL_PARAMS },
+    { name: 'penguinKayak', model: () => Decorations.getPenguinKayak()!, params: PenguinKayak.MODEL_PARAMS },
+    { name: 'swan', model: () => Decorations.getSwan()!, params: Swan.MODEL_PARAMS },
+    { name: 'unicorn', model: () => Decorations.getUnicorn()!, params: Unicorn.MODEL_PARAMS },
 ];

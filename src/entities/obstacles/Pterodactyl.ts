@@ -6,11 +6,12 @@ import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { Entity } from '../../core/Entity';
 import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
+import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
 
 import { EntityMetadata } from '../EntityMetadata';
 
 export class Pterodactyl extends Animal {
-    public static readonly MODEL_SCALE: number = 3.0;
+    public static readonly MODEL_PARAMS = { scale: 3.0 };
     public static readonly RADIUS: number = EntityMetadata.pterodactyl.radius;
 
 
@@ -44,7 +45,7 @@ export class Pterodactyl extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        const scale = Pterodactyl.MODEL_SCALE;
+        const scale = Pterodactyl.MODEL_PARAMS.scale;
         model.scale.set(scale, scale, scale);
     }
 

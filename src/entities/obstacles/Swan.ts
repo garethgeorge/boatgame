@@ -12,7 +12,7 @@ import { EntityMetadata } from '../EntityMetadata';
 
 export class Swan extends Animal {
     public static readonly HEIGHT_IN_WATER: number = 0.0;
-    public static readonly MODEL_SCALE: number = 3.0;
+    public static readonly MODEL_PARAMS = { scale: 3.0 };
     public static readonly RADIUS: number = EntityMetadata.swan.radius;
 
     constructor(physicsEngine: PhysicsEngine, options: AnimalOptions) {
@@ -39,7 +39,7 @@ export class Swan extends Animal {
     }
 
     protected setupModel(model: THREE.Group) {
-        const scale = Swan.MODEL_SCALE;
+        const scale = Swan.MODEL_PARAMS.scale;
         model.scale.set(scale, scale, scale);
         //model.rotation.y = Math.PI;
     }

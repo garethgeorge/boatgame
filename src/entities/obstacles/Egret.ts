@@ -12,7 +12,7 @@ import { EntityMetadata } from '../EntityMetadata';
 
 export class Egret extends Animal {
     public static readonly HEIGHT_IN_WATER = -0.2;
-    public static readonly MODEL_SCALE: number = 3.0;
+    public static readonly MODEL_PARAMS = { scale: 3.0 };
     public static readonly RADIUS: number = EntityMetadata.egret.radius;
 
     constructor(
@@ -46,7 +46,7 @@ export class Egret extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        const scale = Egret.MODEL_SCALE;
+        const scale = Egret.MODEL_PARAMS.scale;
         model.scale.set(scale, scale, scale);
         //model.position.y = -0.2;
     }

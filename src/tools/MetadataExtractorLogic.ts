@@ -121,7 +121,7 @@ export class MetadataExtractor {
         return result;
     }
 
-    static async generateMetadata(): Promise<{ decorationResults: Record<string, DecorationRadii>, entityResults: Record<string, EntityRadii> }> {
+    static async generateMetadata(filter?: { name: string, type: 'decoration' | 'entity' }): Promise<{ decorationResults: Record<string, DecorationRadii>, entityResults: Record<string, EntityRadii> }> {
         console.log("--- Preloading All Assets ---");
         //const { Decorations } = await import('./world/Decorations');
         //await Decorations.preloadAll();
@@ -132,6 +132,8 @@ export class MetadataExtractor {
 
         console.log("--- Extracting Decoration Metadata ---");
         for (const entry of DECORATION_MANIFEST) {
+            if (filter && (filter.type !== 'decoration' || filter.name !== entry.name)) continue;
+
             try {
                 let maxGround = 0;
                 let maxCanopy = 0;
@@ -161,6 +163,8 @@ export class MetadataExtractor {
 
         console.log("--- Extracting Entity Metadata ---");
         for (const entry of ENTITY_MANIFEST) {
+            if (filter && (filter.type !== 'entity' || filter.name !== entry.name)) continue;
+
             try {
                 const modelResult = entry.model();
                 if (!modelResult) {
@@ -169,10 +173,19 @@ export class MetadataExtractor {
                 }
                 const model = modelResult.model;
 
+                const params = entry.params;
+                const scale = params.scale;
+                const angle = params.angle;
+
+                model.scale.set(scale, scale, scale);
+                if (angle !== undefined) {
+                    model.rotation.y = angle;
+                }
+
                 // NEW: Ensure world matrices are up to date
                 model.updateMatrixWorld(true);
 
-                const radii = this.extractRadii(model, entry.scale, true);
+                const radii = this.extractRadii(model, 1.0, true);
                 const center = radii.center;
                 if (center.length() > 0.1) {
                     console.warn(`Entity ${entry.name} is offset from origin: center=[${center.x.toFixed(2)}, ${center.y.toFixed(2)}, ${center.z.toFixed(2)}]`);

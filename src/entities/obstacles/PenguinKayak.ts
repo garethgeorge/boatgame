@@ -11,7 +11,7 @@ import { EntityMetadata } from '../EntityMetadata';
 
 export class PenguinKayak extends Animal {
     public static readonly HEIGHT_IN_WATER: number = 0.5;
-    public static readonly MODEL_SCALE: number = 2.0;
+    public static readonly MODEL_PARAMS = { scale: 2.0, angle: Math.PI / 2.0 };
     public static readonly RADIUS: number = EntityMetadata.penguinKayak.radius;
 
     constructor(physicsEngine: PhysicsEngine, options: AnimalOptions) {
@@ -34,9 +34,9 @@ export class PenguinKayak extends Animal {
     }
 
     protected setupModel(model: THREE.Group) {
-        const scale = PenguinKayak.MODEL_SCALE;
+        const { scale, angle } = PenguinKayak.MODEL_PARAMS;
         model.scale.set(scale, scale, scale);
-        model.rotation.y = Math.PI / 2.0;
+        model.rotation.y = angle;
         model.position.y = -0.4;
     }
 

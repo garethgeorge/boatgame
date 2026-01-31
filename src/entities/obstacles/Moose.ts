@@ -13,7 +13,7 @@ import { EntityMetadata } from '../EntityMetadata';
 export class Moose extends Animal {
 
     public static readonly HEIGHT_IN_WATER: number = -3.0;
-    public static readonly MODEL_SCALE: number = 0.1;
+    public static readonly MODEL_PARAMS = { scale: 0.1, angle: Math.PI };
     public static readonly RADIUS: number = EntityMetadata.moose.radius;
 
 
@@ -50,9 +50,9 @@ export class Moose extends Animal {
 
     protected setupModel(model: THREE.Group): void {
         model.position.y = 3.0;
-        const scale = Moose.MODEL_SCALE;
+        const { scale, angle } = Moose.MODEL_PARAMS;
         model.scale.set(scale, scale, scale);
-        model.rotation.y = Math.PI;
+        model.rotation.y = angle;
     }
 
     private static readonly animations: AnimalAnimations = {

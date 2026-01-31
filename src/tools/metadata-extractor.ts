@@ -35,6 +35,7 @@ class MetadataExtractorPage {
     private entityMetadataArea: HTMLTextAreaElement;
     private extractBtn: HTMLButtonElement;
     private updateHullBtn: HTMLButtonElement;
+    private applyAllCheckbox: HTMLInputElement;
 
     private localDecoMetadata: any;
     private localEntityMetadata: any;
@@ -115,6 +116,11 @@ class MetadataExtractorPage {
         this.entityMetadataArea = document.getElementById('entity-metadata-js') as HTMLTextAreaElement;
         this.extractBtn = document.getElementById('extract-btn') as HTMLButtonElement;
         this.updateHullBtn = document.getElementById('update-hull-btn') as HTMLButtonElement;
+        this.applyAllCheckbox = document.getElementById('apply-all-checkbox') as HTMLInputElement;
+
+        this.applyAllCheckbox.addEventListener('change', () => {
+            this.updateButtonLabels();
+        });
 
         this.typeSelect.addEventListener('change', () => {
             this.selectedType = this.typeSelect.value as 'decoration' | 'entity';
@@ -142,6 +148,14 @@ class MetadataExtractorPage {
 
         this.extractBtn.addEventListener('click', () => this.extractAll());
         this.updateHullBtn.addEventListener('click', () => this.updateHull());
+
+        this.updateButtonLabels();
+    }
+
+    private updateButtonLabels() {
+        const all = this.applyAllCheckbox.checked;
+        this.updateHullBtn.textContent = all ? "Update Hulls (All Entities)" : "Update Hull (Current Entity)";
+        this.extractBtn.textContent = all ? "Extract Fresh Metadata (All)" : "Extract Fresh Metadata (Current)";
     }
 
     private loadInitialMetadata() {
@@ -261,7 +275,11 @@ class MetadataExtractorPage {
                 this.currentModel = SkeletonUtils.clone(model);
                 GraphicsUtils.registerObject(this.currentModel);
 
-                this.currentModel.scale.setScalar(entry.scale);
+                const params = entry.params;
+                this.currentModel.scale.setScalar(params.scale);
+                if (params.angle !== undefined) {
+                    this.currentModel.rotation.y = params.angle;
+                }
                 this.currentModel.updateMatrixWorld(true);
                 this.scene.add(this.currentModel);
 
@@ -399,17 +417,53 @@ class MetadataExtractorPage {
     }
 
     private async updateHull() {
-        if (this.selectedType !== 'entity' || !this.selectedName || !this.currentModel) {
-            alert("Please select an entity first.");
-            return;
-        }
+        const all = this.applyAllCheckbox.checked;
 
-        const hull = MetadataExtractor.computeHull(this.currentModel, 8);
-        if (hull.length > 0) {
-            this.localEntityMetadata[this.selectedName].hull = hull;
-            this.updateMetadataAreas();
-            this.updateCircles();
-            console.log(`Hull updated for ${this.selectedName}`);
+        if (!all) {
+            if (this.selectedType !== 'entity' || !this.selectedName || !this.currentModel) {
+                alert("Please select an entity first.");
+                return;
+            }
+
+            const hull = MetadataExtractor.computeHull(this.currentModel, 8);
+            if (hull.length > 0) {
+                this.localEntityMetadata[this.selectedName].hull = hull;
+                this.updateMetadataAreas();
+                this.updateCircles();
+                console.log(`Hull updated for ${this.selectedName}`);
+            }
+        } else {
+            this.updateHullBtn.disabled = true;
+            this.updateHullBtn.textContent = 'Updating...';
+
+            try {
+                for (const entry of ENTITY_MANIFEST) {
+                    console.log(`Computing hull for ${entry.name}...`);
+                    try {
+                        const { model } = entry.model();
+                        const clone = SkeletonUtils.clone(model);
+                        const params = entry.params;
+                        clone.scale.setScalar(params.scale);
+                        if (params.angle !== undefined) {
+                            clone.rotation.y = params.angle;
+                        }
+                        clone.updateMatrixWorld(true);
+
+                        const hull = MetadataExtractor.computeHull(clone, 8);
+                        if (hull.length > 0) {
+                            this.localEntityMetadata[entry.name] = this.localEntityMetadata[entry.name] || {};
+                            this.localEntityMetadata[entry.name].hull = hull;
+                        }
+                    } catch (e) {
+                        console.error(`Failed to update hull for ${entry.name}:`, e);
+                    }
+                }
+                this.updateMetadataAreas();
+                this.updateCircles();
+            } finally {
+                this.updateHullBtn.disabled = false;
+                this.updateButtonLabels();
+            }
         }
     }
 
@@ -417,14 +471,29 @@ class MetadataExtractorPage {
         this.extractBtn.disabled = true;
         this.extractBtn.textContent = 'Extracting...';
 
-        try {
-            const results = await MetadataExtractor.generateMetadata();
+        const all = this.applyAllCheckbox.checked;
+        const filter = all ? undefined : (this.selectedName ? { name: this.selectedName, type: this.selectedType } : undefined);
 
-            this.localDecoMetadata = results.decorationResults;
-            this.localEntityMetadata = results.entityResults;
+        if (!all && !filter) {
+            alert("Please select an item first or check 'Apply to All'.");
+            this.extractBtn.disabled = false;
+            this.updateButtonLabels();
+            return;
+        }
+
+        try {
+            const results = await MetadataExtractor.generateMetadata(filter);
+
+            // Merge results
+            if (all) {
+                this.localDecoMetadata = results.decorationResults;
+                this.localEntityMetadata = results.entityResults;
+            } else {
+                Object.assign(this.localDecoMetadata, results.decorationResults);
+                Object.assign(this.localEntityMetadata, results.entityResults);
+            }
 
             this.updateMetadataAreas();
-
             this.updateCircles();
             console.log("Extraction complete.");
 
@@ -432,7 +501,7 @@ class MetadataExtractorPage {
             console.error("Extraction failed:", e);
         } finally {
             this.extractBtn.disabled = false;
-            this.extractBtn.textContent = 'Extract Fresh Metadata';
+            this.updateButtonLabels();
         }
     }
 

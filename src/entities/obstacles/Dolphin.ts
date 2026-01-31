@@ -4,13 +4,14 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/Decorations';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { SwimAwayBehaviorFactory } from '../behaviors/SwimAwayBehaviorFactory';
+import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory'; // Added this import
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
 import { EntityMetadata } from '../EntityMetadata';
 
 export class Dolphin extends Animal {
     public static readonly HEIGHT_IN_WATER: number = 0.0;
-    public static readonly MODEL_SCALE: number = 4.0;
+    public static readonly MODEL_PARAMS = { scale: 4.0 };
     public static readonly RADIUS: number = EntityMetadata.dolphin.radius;
 
     constructor(physicsEngine: PhysicsEngine, options: AnimalOptions) {
@@ -37,7 +38,7 @@ export class Dolphin extends Animal {
     }
 
     protected setupModel(model: THREE.Group) {
-        const scale = Dolphin.MODEL_SCALE;
+        const scale = Dolphin.MODEL_PARAMS.scale;
         model.scale.set(scale, scale, scale);
     }
 

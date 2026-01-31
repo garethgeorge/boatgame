@@ -11,7 +11,7 @@ import { EntityMetadata } from '../EntityMetadata';
 
 export class Turtle extends Animal {
     public static readonly HEIGHT_IN_WATER: number = -0.8;
-    public static readonly MODEL_SCALE: number = 2.0;
+    public static readonly MODEL_PARAMS = { scale: 2.0 };
     public static readonly RADIUS: number = EntityMetadata.turtle.radius;
 
     constructor(physicsEngine: PhysicsEngine, options: AnimalOptions) {
@@ -46,7 +46,7 @@ export class Turtle extends Animal {
     }
 
     protected setupModel(model: THREE.Group) {
-        const scale = Turtle.MODEL_SCALE;
+        const scale = Turtle.MODEL_PARAMS.scale;
         model.scale.set(scale, scale, scale);
     }
 

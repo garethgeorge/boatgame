@@ -10,7 +10,7 @@ import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 import { EntityMetadata } from '../EntityMetadata';
 
 export class Butterfly extends Animal {
-    public static readonly MODEL_SCALE: number = 1.0;
+    public static readonly MODEL_PARAMS = { scale: 1.0 };
     public static readonly RADIUS: number = EntityMetadata.butterfly.radius;
 
 
@@ -44,7 +44,7 @@ export class Butterfly extends Animal {
     }
 
     protected setupModel(model: THREE.Group): void {
-        const scale = Butterfly.MODEL_SCALE;
+        const scale = Butterfly.MODEL_PARAMS.scale;
         model.scale.set(scale, scale, scale);
         model.rotation.y = 0;
     }
