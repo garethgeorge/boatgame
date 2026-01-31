@@ -7,7 +7,7 @@ export class MangroveFactory implements DecorationFactory {
     await BaseMangrove.preload();
   }
 
-  create(options?: { scale?: number }): THREE.Group {
+  create(options: { scale?: number } = {}): THREE.Group {
     const mesh = BaseMangrove.getMangroveMesh();
     if (options && options.scale) {
       mesh.scale.setScalar(options.scale);

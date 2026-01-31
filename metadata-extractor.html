@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metadata Extractor - Boat Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #111;
+            color: #eee;
+            display: flex;
+            height: 100vh;
+        }
+
+        #sidebar {
+            width: 400px;
+            background: rgba(20, 20, 25, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        #viewport {
+            flex: 1;
+            position: relative;
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin: 0;
+            color: #4488ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+        }
+
+        h2 {
+            font-size: 0.9rem;
+            margin-top: 10px;
+            color: #888;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .search-box {
+            background: #25252b;
+            color: white;
+            border: 1px solid #444;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .list-container {
+            height: 200px;
+            overflow-y: auto;
+            background: #1a1a1f;
+            border: 1px solid #333;
+            border-radius: 4px;
+        }
+
+        .list-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .list-item:hover {
+            background: #2a2a35;
+        }
+
+        .list-item.selected {
+            background: #4488ff;
+            color: white;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: #000;
+            color: #00ff00;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: #4488ff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #5599ff;
+        }
+
+        button.secondary {
+            background: #383842;
+            border: 1px solid #444;
+        }
+
+        button.secondary:hover {
+            background: #4a4a58;
+        }
+
+        .help-text {
+            font-size: 11px;
+            opacity: 0.6;
+            line-height: 1.4;
+        }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading-overlay">Loading Extractor...</div>
+
+    <div id="sidebar">
+        <h1>Metadata Extractor</h1>
+
+        <div class="control-group">
+            <h2>Decorations</h2>
+            <input type="text" id="decoration-search" class="search-box" placeholder="Search decorations...">
+            <div id="decoration-list" class="list-container"></div>
+        </div>
+
+        <div class="control-group">
+            <h2>Entities</h2>
+            <input type="text" id="entity-search" class="search-box" placeholder="Search entities...">
+            <div id="entity-list" class="list-container"></div>
+        </div>
+
+        <div class="control-group">
+            <h2>Decoration Metadata (JS)</h2>
+            <textarea id="decoration-metadata-js" spellcheck="false"></textarea>
+        </div>
+
+        <div class="control-group">
+            <h2>Entity Metadata (JS)</h2>
+            <textarea id="entity-metadata-js" spellcheck="false"></textarea>
+        </div>
+
+        <button id="extract-btn">Extract Fresh Metadata</button>
+
+        <div class="help-text">
+            Orbit: Left Click | Pan: Right Click | Zoom: Scroll<br>
+            Editing metadata updates circles in real-time.
+        </div>
+    </div>
+
+    <div id="viewport"></div>
+
+    <script type="module" src="/src/metadata-extractor.ts"></script>
+</body>
+
+</html>

@@ -52,8 +52,9 @@ export class RockFactory implements DecorationFactory {
         }
     }
 
-    createInstance(options: { size: number, biome: string }): DecorationInstance[] {
-        const { size, biome } = options;
+    createInstance(options: { size?: number, biome?: string } = {}): DecorationInstance[] {
+        const size = options.size ?? 0.5;
+        const biome = options.biome ?? 'forest';
         const isIcy = biome === 'ice';
 
         const candidates = this.archetypes.filter(a => a.isIcy === isIcy);
@@ -73,7 +74,7 @@ export class RockFactory implements DecorationFactory {
         }];
     }
 
-    create(options: { size: number, biome: string }): THREE.Group {
+    create(options: { size?: number, biome?: string } = {}): THREE.Group {
         const instances = this.createInstance(options);
         const group = new THREE.Group();
         for (const inst of instances) {

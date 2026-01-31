@@ -13,32 +13,30 @@ export interface EntityRadii {
 
 export class MetadataExtractor {
 
-    private static extractRadii(object: THREE.Object3D, scale: number = 1.0): DecorationRadii {
+    private static extractRawRadiiSq(object: THREE.Object3D, centerOffset: THREE.Vector3 = new THREE.Vector3()): { canopySq: number, groundSq: number } {
         let maxCanopySq = 0;
         let maxGroundSq = 0;
 
         const pos = new THREE.Vector3();
 
         object.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                const geometry = child.geometry;
+            if (child instanceof THREE.SkinnedMesh) {
+                child.skeleton.pose();
+            }
 
-                // 1. & 2. Radii (Vertex Sampling - XZ plane only)
-                // We iterate all vertices to find the max distance from origin in XZ.
-                // We also track max distance specifically for vertices "near the ground".
+            if (child instanceof THREE.Mesh && child.visible) {
+                const geometry = child.geometry;
                 const positionAttr = geometry.getAttribute('position');
                 if (positionAttr) {
                     for (let i = 0; i < positionAttr.count; i++) {
                         pos.fromBufferAttribute(positionAttr, i);
                         pos.applyMatrix4(child.matrixWorld);
 
-                        // We only care about XZ distance for "radius" in this game's physics
-                        const distSq = pos.x * pos.x + pos.z * pos.z;
-
-                        // Canopy is max distance of ANY vertex
+                        const dx = pos.x - centerOffset.x;
+                        const dz = pos.z - centerOffset.z;
+                        const distSq = dx * dx + dz * dz;
                         if (distSq > maxCanopySq) maxCanopySq = distSq;
 
-                        // Ground is max distance of vertices near the ground (low Y)
                         if (pos.y < 0.5) {
                             if (distSq > maxGroundSq) maxGroundSq = distSq;
                         }
@@ -47,58 +45,79 @@ export class MetadataExtractor {
             }
         });
 
-        const canopyRadius = Math.sqrt(maxCanopySq) * scale;
-        const groundRadius = Math.sqrt(maxGroundSq) * scale;
+        return { canopySq: maxCanopySq, groundSq: maxGroundSq };
+    }
+
+    private static extractRadii(object: THREE.Object3D, scale: number = 1.0, useTightBounds: boolean = false): DecorationRadii & { center: THREE.Vector3 } {
+        let center = new THREE.Vector3();
+        if (useTightBounds) {
+            const bbox = new THREE.Box3().setFromObject(object);
+            bbox.getCenter(center);
+        }
+
+        const { canopySq, groundSq } = this.extractRawRadiiSq(object, center);
 
         return {
-            groundRadius: groundRadius,
-            canopyRadius: canopyRadius
+            groundRadius: Math.sqrt(groundSq) * scale,
+            canopyRadius: Math.sqrt(canopySq) * scale,
+            center: center.multiplyScalar(scale)
         };
     }
 
     static extractFromInstances(models: any[] | any, hasCanopy: boolean): DecorationRadii {
         const objects = Array.isArray(models) ? models : [models];
-        let maxGround = 0;
-        let maxCanopy = 0;
 
-        for (const obj of objects) {
-            let radii: DecorationRadii;
-            if (obj.geometry && obj.matrix) {
+        let maxCanopySq = 0;
+        let maxGroundSq = 0;
+
+        for (let i = 0; i < objects.length; i++) {
+            const obj = objects[i];
+            let raw: { canopySq: number, groundSq: number };
+
+            if (obj && obj.geometry && obj.matrix) {
                 // DecorationInstance
-                const matrix = obj.matrix as THREE.Matrix4;
-                const geometry = obj.geometry as THREE.BufferGeometry;
-
-                const tempMesh = new THREE.Mesh(geometry);
-                tempMesh.matrixWorld.copy(matrix);
-                radii = this.extractRadii(tempMesh);
+                const mesh = new THREE.Mesh(obj.geometry);
+                mesh.matrix.copy(obj.matrix);
+                mesh.updateMatrixWorld(true);
+                raw = this.extractRawRadiiSq(mesh);
             } else if (obj instanceof THREE.Object3D) {
-                // THREE.Object3D (can be a Group/Mesh)
-                radii = this.extractRadii(obj);
+                // THREE.Object3D
+                obj.updateMatrixWorld(true);
+                raw = this.extractRawRadiiSq(obj);
             } else {
                 continue;
             }
 
-            maxGround = Math.max(maxGround, radii.groundRadius);
-            maxCanopy = Math.max(maxCanopy, radii.canopyRadius);
+            maxCanopySq = Math.max(maxCanopySq, raw.canopySq);
+
+            // Ground radius rule:
+            // If hasCanopy is true (e.g. Tree), only use the first instance (the trunk).
+            // If hasCanopy is false (e.g. Flower), use all instances.
+            if (!hasCanopy || i === 0) {
+                maxGroundSq = Math.max(maxGroundSq, raw.groundSq);
+            }
         }
 
+        const canopyRadius = Math.sqrt(maxCanopySq);
+        let groundRadius = Math.sqrt(maxGroundSq);
+
         // Final fallback: if no ground radius was found, use canopy
-        if (maxGround <= 0) maxGround = maxCanopy;
+        if (groundRadius <= 0) groundRadius = canopyRadius;
 
         if (!hasCanopy) {
-            return { groundRadius: maxCanopy, canopyRadius: 0 };
+            return { groundRadius: canopyRadius, canopyRadius: 0 };
         } else {
             return {
-                groundRadius: maxGround,
-                canopyRadius: maxCanopy
+                groundRadius: groundRadius,
+                canopyRadius: canopyRadius
             };
         }
     }
 
-    static async generateMetadata(): Promise<string> {
+    static async generateMetadata(): Promise<{ decorationResults: Record<string, DecorationRadii>, entityResults: Record<string, EntityRadii> }> {
         console.log("--- Preloading All Assets ---");
-        const { Decorations } = await import('./world/Decorations');
-        await Decorations.preloadAll();
+        //const { Decorations } = await import('./world/Decorations');
+        //await Decorations.preloadAll();
 
         const decorationResults: Record<string, DecorationRadii> = {};
         const entityResults: Record<string, EntityRadii> = {};
@@ -114,6 +133,10 @@ export class MetadataExtractor {
                 for (let i = 0; i < 30; i++) {
                     const model = entry.model();
                     if (!model) continue;
+
+                    // NEW: Ensure world matrices are up to date for vertex extraction
+                    if (model instanceof THREE.Object3D) model.updateMatrixWorld(true);
+
                     const radii = this.extractFromInstances(model as any, entry.hasCanopy);
                     maxGround = Math.max(maxGround, radii.groundRadius);
                     maxCanopy = Math.max(maxCanopy, radii.canopyRadius);
@@ -137,7 +160,16 @@ export class MetadataExtractor {
                     console.warn(`No model found for entity: ${entry.name}`);
                     continue;
                 }
-                const radii = this.extractRadii(model, entry.scale);
+
+                // NEW: Ensure world matrices are up to date
+                model.updateMatrixWorld(true);
+
+                const radii = this.extractRadii(model, entry.scale, true);
+                const center = radii.center;
+                if (center.length() > 0.1) {
+                    console.warn(`Entity ${entry.name} is offset from origin: center=[${center.x.toFixed(2)}, ${center.y.toFixed(2)}, ${center.z.toFixed(2)}]`);
+                }
+
                 entityResults[entry.name] = { radius: round(radii.canopyRadius) }; // Entities use canopy/max radius
                 console.log(`Extracted entity: ${entry.name} -> R:${entityResults[entry.name].radius}`);
             } catch (e) {
@@ -145,6 +177,10 @@ export class MetadataExtractor {
             }
         }
 
+        return { decorationResults, entityResults };
+    }
+
+    static formatResults(results: { decorationResults: Record<string, DecorationRadii>, entityResults: Record<string, EntityRadii> }): string {
         const formatDecoration = (name: string, data: DecorationRadii) => {
             return `  ${name}: { groundRadius: ${data.groundRadius}, canopyRadius: ${data.canopyRadius} }`;
         };
@@ -156,20 +192,18 @@ export class MetadataExtractor {
         let output = "";
         output += "\n--- PASTE INTO src/world/DecorationMetadata.ts ---\n\n";
         output += "export const DecorationMetadata = {\n";
-        output += Object.entries(decorationResults)
+        output += Object.entries(results.decorationResults)
             .map(([name, data]) => formatDecoration(name, data))
             .join(",\n");
         output += "\n} as const;\n";
 
         output += "\n--- PASTE INTO src/entities/EntityMetadata.ts ---\n\n";
         output += "export const EntityMetadata = {\n";
-        output += Object.entries(entityResults)
+        output += Object.entries(results.entityResults)
             .map(([name, data]) => formatEntity(name, data))
             .join(",\n");
         output += "\n} as const;\n";
 
-        console.log(output);
         return output;
     }
 }
-

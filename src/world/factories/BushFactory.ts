@@ -34,7 +34,7 @@ export class BushFactory implements DecorationFactory {
         }
     }
 
-    createInstance(wetness: number): DecorationInstance[] {
+    createInstance(wetness: number = 0.5): DecorationInstance[] {
         const isWet = wetness > 0.5;
         const candidates = this.archetypes.filter(a => a.isWet === isWet);
         if (candidates.length === 0) return [];
@@ -53,7 +53,7 @@ export class BushFactory implements DecorationFactory {
         }];
     }
 
-    create(wetness: number): THREE.Group {
+    create(wetness: number = 0.5): THREE.Group {
         const instances = this.createInstance(wetness);
         const group = new THREE.Group();
         for (const inst of instances) {

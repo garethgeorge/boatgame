@@ -13,7 +13,6 @@ import { DebugConsole } from './core/DebugConsole.js';
 import { DesignerUtils, HistoryManager } from './core/DesignerUtils.js';
 import { TierRule, Combine, Signal } from './world/decorators/PoissonDecorationRules.js';
 import { SpeciesRules } from './world/biomes/decorations/SpeciesDecorationRules.js';
-import { MetadataExtractor } from './MetadataExtractor.js';
 
 class BiomeDesigner {
     private engine: GameEngine;
@@ -76,50 +75,8 @@ class BiomeDesigner {
         this.engine.skyManager.isCyclePaused = true;
         this.engine.skyManager.setCycleTime(parseFloat(timeSlider.value));
 
-        this.initMetadataUI();
     }
 
-    private initMetadataUI() {
-        const sidebarBtn = document.getElementById('sidebar-log-metadata-btn');
-        const debugBtn = document.getElementById('log-metadata-btn');
-        const modal = document.getElementById('metadata-modal')!;
-        const output = document.getElementById('metadata-output') as HTMLTextAreaElement;
-        const closeBtn = document.getElementById('close-modal-btn')!;
-        const closeX = document.getElementById('close-modal-x')!;
-        const copyBtn = document.getElementById('copy-metadata-btn')!;
-
-        const showModal = async () => {
-            modal.style.display = 'flex';
-            output.value = "Preloading all assets... this may take a few seconds.";
-            const metadata = await MetadataExtractor.generateMetadata();
-            output.value = metadata;
-        };
-
-        const hideModal = () => {
-            modal.style.display = 'none';
-        };
-
-        if (sidebarBtn) sidebarBtn.addEventListener('click', showModal);
-        if (debugBtn) debugBtn.addEventListener('click', showModal);
-
-        closeBtn.addEventListener('click', hideModal);
-        closeX.addEventListener('click', hideModal);
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) hideModal();
-        });
-
-        copyBtn.addEventListener('click', () => {
-            output.select();
-            document.execCommand('copy');
-            const originalText = copyBtn.textContent;
-            copyBtn.textContent = 'Copied!';
-            copyBtn.style.background = '#22cc44';
-            setTimeout(() => {
-                copyBtn.textContent = originalText;
-                copyBtn.style.background = '';
-            }, 2000);
-        });
-    }
 
     private initDebugMenu() {
         this.debugMenu = document.getElementById('debug-menu') as HTMLElement;
