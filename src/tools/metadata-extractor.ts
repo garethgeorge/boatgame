@@ -34,6 +34,7 @@ class MetadataExtractorPage {
     private decoMetadataArea: HTMLTextAreaElement;
     private entityMetadataArea: HTMLTextAreaElement;
     private extractBtn: HTMLButtonElement;
+    private updateHullBtn: HTMLButtonElement;
 
     private localDecoMetadata: any;
     private localEntityMetadata: any;
@@ -113,6 +114,7 @@ class MetadataExtractorPage {
         this.decoMetadataArea = document.getElementById('decoration-metadata-js') as HTMLTextAreaElement;
         this.entityMetadataArea = document.getElementById('entity-metadata-js') as HTMLTextAreaElement;
         this.extractBtn = document.getElementById('extract-btn') as HTMLButtonElement;
+        this.updateHullBtn = document.getElementById('update-hull-btn') as HTMLButtonElement;
 
         this.typeSelect.addEventListener('change', () => {
             this.selectedType = this.typeSelect.value as 'decoration' | 'entity';
@@ -139,6 +141,7 @@ class MetadataExtractorPage {
         this.entityMetadataArea.addEventListener('input', () => this.syncMetadata());
 
         this.extractBtn.addEventListener('click', () => this.extractAll());
+        this.updateHullBtn.addEventListener('click', () => this.updateHull());
     }
 
     private loadInitialMetadata() {
@@ -357,8 +360,28 @@ class MetadataExtractorPage {
                 if (meta.radius > 0) {
                     this.addCircle(meta.radius, 0xff0000, 0.05);
                 }
+                if (meta.hull) {
+                    this.addHull(meta.hull, 0xff00ff, 0.1);
+                }
             }
         }
+    }
+
+    private addHull(hull: number[], color: number, y: number) {
+        if (!hull || hull.length < 6) return; // Need at least 3 points (6 numbers)
+
+        const geometry = new THREE.BufferGeometry();
+        const vertices = [];
+        for (let i = 0; i < hull.length; i += 2) {
+            vertices.push(hull[i], y, hull[i + 1]);
+        }
+        // Close the loop
+        vertices.push(hull[0], y, hull[1]);
+
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        const material = new THREE.LineBasicMaterial({ color: color, linewidth: 3 });
+        const line = new THREE.Line(geometry, material);
+        this.circleGroup.add(line);
     }
 
     private addCircle(radius: number, color: number, y: number) {
@@ -373,6 +396,21 @@ class MetadataExtractorPage {
         const material = new THREE.LineBasicMaterial({ color: color, linewidth: 2 });
         const line = new THREE.LineLoop(geometry, material);
         this.circleGroup.add(line);
+    }
+
+    private async updateHull() {
+        if (this.selectedType !== 'entity' || !this.selectedName || !this.currentModel) {
+            alert("Please select an entity first.");
+            return;
+        }
+
+        const hull = MetadataExtractor.computeHull(this.currentModel, 8);
+        if (hull.length > 0) {
+            this.localEntityMetadata[this.selectedName].hull = hull;
+            this.updateMetadataAreas();
+            this.updateCircles();
+            console.log(`Hull updated for ${this.selectedName}`);
+        }
     }
 
     private async extractAll() {

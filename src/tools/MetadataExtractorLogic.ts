@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { DECORATION_MANIFEST } from '../world/DecorationsManifest';
 import { ENTITY_MANIFEST } from '../entities/EntitiesManifest';
+import { EntityMetadata } from '../entities/EntityMetadata';
+import { GeometryVertexVisitor } from './GeometryVertexVisitor';
+import { ConvexHull } from './ConvexHull';
+import { DecimateHull } from './DecimateHull';
 
 export interface DecorationRadii {
     groundRadius: number;
@@ -9,6 +13,7 @@ export interface DecorationRadii {
 
 export interface EntityRadii {
     radius: number;
+    hull?: number[];
 }
 
 export class MetadataExtractor {
@@ -17,81 +22,14 @@ export class MetadataExtractor {
         let maxCanopySq = 0;
         let maxGroundSq = 0;
 
-        const boneMatrix = new THREE.Matrix4();
-        const skinMatrix = new THREE.Matrix4();
-        const totalMatrix = new THREE.Matrix4();
-        const skinnedPos = new THREE.Vector3();
-        const pos = new THREE.Vector3();
+        GeometryVertexVisitor.visitVertices(object, (pos) => {
+            const dx = pos.x - centerOffset.x;
+            const dz = pos.z - centerOffset.z;
+            const distSq = dx * dx + dz * dz;
+            if (distSq > maxCanopySq) maxCanopySq = distSq;
 
-        object.traverse((child) => {
-            if (child instanceof THREE.Mesh && child.visible) {
-                const geometry = child.geometry;
-                const positionAttr = geometry.getAttribute('position');
-                const skinWeightAttr = geometry.getAttribute('skinWeight');
-                const skinIndexAttr = geometry.getAttribute('skinIndex');
-
-                const isSkinned = child instanceof THREE.SkinnedMesh &&
-                    child.skeleton &&
-                    skinWeightAttr &&
-                    skinIndexAttr;
-
-                if (positionAttr) {
-                    for (let i = 0; i < positionAttr.count; i++) {
-                        pos.fromBufferAttribute(positionAttr, i);
-
-                        if (isSkinned) {
-                            const skinnedMesh = child as THREE.SkinnedMesh;
-                            const skeleton = skinnedMesh.skeleton;
-                            const boneInverses = skeleton.boneInverses;
-                            const bones = skeleton.bones;
-
-                            totalMatrix.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-
-                            const sw = new THREE.Vector4();
-                            const si = new THREE.Vector4();
-                            sw.fromBufferAttribute(skinWeightAttr, i);
-                            si.fromBufferAttribute(skinIndexAttr, i);
-
-                            for (let j = 0; j < 4; j++) {
-                                const weight = sw.getComponent(j);
-                                if (weight === 0) continue;
-
-                                const boneIndex = si.getComponent(j);
-                                const bone = bones[boneIndex];
-                                const inverse = boneInverses[boneIndex];
-
-                                // boneMatrix = bone.matrixWorld * inverseBindMatrix
-                                boneMatrix.multiplyMatrices(bone.matrixWorld, inverse);
-
-                                // skinMatrix = boneMatrix * weight
-                                // We manually accumulate the weighted matrix
-                                for (let k = 0; k < 16; k++) {
-                                    totalMatrix.elements[k] += boneMatrix.elements[k] * weight;
-                                }
-                            }
-
-                            // skinnedPos = totalMatrix * bindMatrix * pos
-                            // GLTF bindMatrix is usually Identity, so just totalMatrix * pos
-                            // But wait, totalMatrix maps from Local -> World directly because it uses bone.matrixWorld
-                            // So we don't need child.matrixWorld afterwards.
-                            // Applying matrix: pos -> world
-                            skinnedPos.copy(pos).applyMatrix4(totalMatrix);
-                            pos.copy(skinnedPos);
-
-                        } else {
-                            pos.applyMatrix4(child.matrixWorld);
-                        }
-
-                        const dx = pos.x - centerOffset.x;
-                        const dz = pos.z - centerOffset.z;
-                        const distSq = dx * dx + dz * dz;
-                        if (distSq > maxCanopySq) maxCanopySq = distSq;
-
-                        if (pos.y < 0.5) {
-                            if (distSq > maxGroundSq) maxGroundSq = distSq;
-                        }
-                    }
-                }
+            if (pos.y < 0.5) {
+                if (distSq > maxGroundSq) maxGroundSq = distSq;
             }
         });
 
@@ -164,6 +102,25 @@ export class MetadataExtractor {
         }
     }
 
+    static computeHull(object: THREE.Object3D, targetCount: number = 8): number[] {
+        const points: THREE.Vector3[] = [];
+        GeometryVertexVisitor.visitVertices(object, (pos) => {
+            points.push(pos.clone());
+        });
+
+        if (points.length === 0) return [];
+
+        const hull = ConvexHull.compute(points);
+        const decimated = DecimateHull.decimate(hull, targetCount);
+
+        const result: number[] = [];
+        for (const p of decimated) {
+            result.push(Math.round(p.x * 10) / 10);
+            result.push(Math.round(p.z * 10) / 10);
+        }
+        return result;
+    }
+
     static async generateMetadata(): Promise<{ decorationResults: Record<string, DecorationRadii>, entityResults: Record<string, EntityRadii> }> {
         console.log("--- Preloading All Assets ---");
         //const { Decorations } = await import('./world/Decorations');
@@ -221,7 +178,14 @@ export class MetadataExtractor {
                     console.warn(`Entity ${entry.name} is offset from origin: center=[${center.x.toFixed(2)}, ${center.y.toFixed(2)}, ${center.z.toFixed(2)}]`);
                 }
 
-                entityResults[entry.name] = { radius: round(radii.canopyRadius) }; // Entities use canopy/max radius
+                // Preserve existing hull if it exists
+                const existingMeta = EntityMetadata[entry.name];
+                const hull = existingMeta?.hull;
+
+                entityResults[entry.name] = {
+                    radius: round(radii.canopyRadius),
+                    hull: hull
+                }; // Entities use canopy/max radius
                 console.log(`Extracted entity: ${entry.name} -> R:${entityResults[entry.name].radius}`);
             } catch (e) {
                 console.error(`Failed to extract entity ${entry.name}:`, e);
@@ -236,7 +200,11 @@ export class MetadataExtractor {
     }
 
     static formatEntity(name: string, data: EntityRadii): string {
-        return `    ${name}: { radius: ${data.radius} },`;
+        let hullStr = "";
+        if (data.hull) {
+            hullStr = `, hull: [ ${data.hull.join(', ')} ]`;
+        }
+        return `    ${name}: { radius: ${data.radius}${hullStr} },`;
     }
 
     static formatResults(results: { decorationResults: Record<string, DecorationRadii>, entityResults: Record<string, EntityRadii> }): string {
