@@ -32,5 +32,6 @@ export const DECORATION_MANIFEST: DecorationManifestEntry[] = [
         hasCanopy: false
     })),
     { name: 'cycad', model: () => DecorationRegistry.getFactory('cycad').create(), hasCanopy: true },
-    { name: 'treeFern', model: () => DecorationRegistry.getFactory('treeFern').create(), hasCanopy: true }
+    { name: 'treeFern', model: () => DecorationRegistry.getFactory('treeFern').create(), hasCanopy: true },
+    { name: 'mangrove', model: () => Decorations.getMangrove(), hasCanopy: true }
 ];

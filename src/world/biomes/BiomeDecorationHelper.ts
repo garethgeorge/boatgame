@@ -181,7 +181,7 @@ export class BiomeDecorationHelper {
         }
     }
 
-    public calculateHeight(instances: DecorationInstance[]): number {
+    public calculateInstancesHeight(instances: DecorationInstance[]): number {
         let maxHeight = 0;
         for (const instance of instances) {
             if (!instance.geometry.boundingBox) {
@@ -199,5 +199,10 @@ export class BiomeDecorationHelper {
             }
         }
         return maxHeight;
+    }
+
+    public calculateObjectHeight(object: THREE.Object3D): number {
+        const box = new THREE.Box3().setFromObject(object);
+        return box.max.y - box.min.y;
     }
 }

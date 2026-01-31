@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { PoissonDecorationStrategy, DecorationRule, WorldMap } from './PoissonDecorationStrategy';
 import { PlacementManifest, SpatialGrid } from '../../managers/SpatialGrid';
 export type { DecorationRule, PlacementManifest };
@@ -43,7 +44,8 @@ export type DecorationOptions =
     | RockDecorationOptions
     | CactusDecorationOptions
     | { kind: 'cycad', rotation: number, scale: number }
-    | { kind: 'treeFern', rotation: number, scale: number };
+    | { kind: 'treeFern', rotation: number, scale: number }
+    | { kind: 'mangrove', rotation: number, scale: number };
 
 export class NoiseMap implements WorldMap {
     private noise: SimplexNoise;
@@ -163,40 +165,6 @@ export class TerrainDecorator {
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
     ): Generator<void | Promise<void>, void, unknown> {
 
-        // Similar logic to BiomeDecorationHelper, this instances with
-        // distance from river and a visibility check
-        const tryPlace = (instances: DecorationInstance[], pos: { worldX: number, worldZ: number, height: number }, opts: DecorationOptions) => {
-            const riverSystem = this.riverSystem;
-            const riverWidth = riverSystem.getRiverWidth(pos.worldZ);
-            const riverCenter = riverSystem.getRiverCenter(pos.worldZ);
-            const distFromCenter = Math.abs(pos.worldX - riverCenter);
-            const distFromBank = distFromCenter - riverWidth / 2;
-
-            // Apply distance-based probability bias
-            const fadeStart = 30;
-            if (distFromBank > fadeStart) {
-                const fadeDistance = 200 - (fadeStart + riverWidth / 2);
-                // 0 at 60 units from bank, 1 at edge of chunk
-                const t = MathUtils.clamp(0, 1, (distFromBank - fadeStart) / fadeDistance);
-                const probability = Math.max(0.1, Math.pow(1 - t, 2));
-                if (Math.random() > probability) return false;
-            }
-
-            const height = context.decoHelper.calculateHeight(instances);
-            const queryHeight = height + (height * 1.2);
-
-            if (!riverSystem.terrainGeometry.checkVisibility(pos.worldX, queryHeight, pos.worldZ, /* visibilitySteps=*/8)) {
-                return;
-            }
-            context.decoHelper.addInstancedDecoration(context, instances, pos, opts.rotation, opts.scale);
-
-            // Record stats
-            if (context.stats) {
-                const species = opts.kind;
-                context.stats.set(species, (context.stats.get(species) || 0) + 1);
-            }
-        }
-
         let countSinceYield = 0;
         for (const manifest of decorations) {
             countSinceYield++;
@@ -237,7 +205,7 @@ export class TerrainDecorator {
                         isSnowy: opts.isSnowy,
                         isLeafLess: opts.isLeafLess
                     });
-                    tryPlace(treeInstances, pos, opts);
+                    this.tryPlaceInstances(context, treeInstances, pos, opts);
                     break;
                 }
                 case 'daisy':
@@ -247,30 +215,116 @@ export class TerrainDecorator {
                         kind: opts.kind,
                         petalColor: opts.color ?? 0xffffff
                     });
-                    tryPlace(flowerInstances, pos, opts);
+                    this.tryPlaceInstances(context, flowerInstances, pos, opts);
                     break;
                 }
                 case 'rock': {
                     const rockInstances = Decorations.getRockInstance(opts.rockBiome ?? 'happy', opts.scale);
-                    tryPlace(rockInstances, pos, opts);
+                    this.tryPlaceInstances(context, rockInstances, pos, opts);
                     break;
                 }
                 case 'cactus': {
                     const cactusInstances = Decorations.getCactusInstance();
-                    tryPlace(cactusInstances, pos, opts);
+                    this.tryPlaceInstances(context, cactusInstances, pos, opts);
                     break;
                 }
                 case 'cycad': {
                     const cycadInstances = Decorations.getCycadInstance();
-                    tryPlace(cycadInstances, pos, opts);
+                    this.tryPlaceInstances(context, cycadInstances, pos, opts);
                     break;
                 }
                 case 'treeFern': {
                     const treeFernInstances = Decorations.getTreeFernInstance();
-                    tryPlace(treeFernInstances, pos, opts);
+                    this.tryPlaceInstances(context, treeFernInstances, pos, opts);
+                    break;
+                }
+                case 'mangrove': {
+                    const mangrove = Decorations.getMangrove(opts.scale);
+                    this.tryPlaceObject(context, mangrove, pos, opts);
                     break;
                 }
             }
         }
+    }
+
+    private tryPlaceObject(
+        context: DecorationContext,
+        object: THREE.Object3D,
+        pos: { worldX: number, worldZ: number, height: number },
+        opts: DecorationOptions
+    ) {
+        if (!this.distanceFilter(pos))
+            return false;
+
+        const height = context.decoHelper.calculateObjectHeight(object);
+        if (!this.visibilityFilter(pos, height))
+            return false;
+
+        context.decoHelper.positionAndCollectGeometry(object, pos, context);
+
+        // Record stats
+        if (context.stats) {
+            const species = opts.kind;
+            context.stats.set(species, (context.stats.get(species) || 0) + 1);
+        }
+    }
+
+    private tryPlaceInstances(
+        context: DecorationContext,
+        instances: DecorationInstance[],
+        pos: { worldX: number, worldZ: number, height: number },
+        opts: DecorationOptions
+    ) {
+        if (!this.distanceFilter(pos))
+            return false;
+
+        const height = context.decoHelper.calculateInstancesHeight(instances);
+        if (!this.visibilityFilter(pos, height))
+            return false;
+
+        context.decoHelper.addInstancedDecoration(context, instances, pos, opts.rotation, opts.scale);
+
+        // Record stats
+        if (context.stats) {
+            const species = opts.kind;
+            context.stats.set(species, (context.stats.get(species) || 0) + 1);
+        }
+    }
+
+    private distanceFilter(
+        pos: { worldX: number, worldZ: number, height: number }
+    ): boolean {
+        const riverSystem = this.riverSystem;
+        const riverWidth = riverSystem.getRiverWidth(pos.worldZ);
+        const riverCenter = riverSystem.getRiverCenter(pos.worldZ);
+        const distFromCenter = Math.abs(pos.worldX - riverCenter);
+        const distFromBank = distFromCenter - riverWidth / 2;
+
+        // Apply distance-based probability bias
+        const fadeStart = 30;
+        if (distFromBank > fadeStart) {
+            // Sometimes the river can be very wide
+            const fadeDistance = Math.max(200 - (fadeStart + riverWidth / 2), 30);
+            // 0 at 60 units from bank, 1 at edge of chunk
+            const t = MathUtils.clamp(0, 1, (distFromBank - fadeStart) / fadeDistance);
+            const probability = Math.max(0.1, Math.pow(1 - t, 2));
+            if (Math.random() > probability) return false;
+        }
+
+        return true;
+    }
+
+    private visibilityFilter(
+        pos: { worldX: number, worldZ: number, height: number },
+        height: number
+    ) {
+        const riverSystem = this.riverSystem;
+        const queryHeight = pos.height + (height * 1.2);
+
+        if (!riverSystem.terrainGeometry.checkVisibility(pos.worldX, queryHeight, pos.worldZ, /* visibilitySteps=*/8)) {
+            return false;
+        }
+
+        return true;
     }
 }

@@ -10,6 +10,9 @@ import { RiverGeometry } from '../RiverGeometry';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { AnimalSpawnOptions } from '../../entities/spawners/AnimalSpawner';
+import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
+import { TierRule } from '../decorators/PoissonDecorationRules';
+import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
@@ -19,6 +22,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, SwampBiomeFeatures.LENGTH, direction);
     }
 
+    private decorationConfig: DecorationConfig | null = null;
     private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(): { r: number, g: number, b: number } {
@@ -210,38 +214,38 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         return this.layoutCache;
     }
 
+    public getDecorationConfig(): DecorationConfig {
+        if (!this.decorationConfig) {
+            const rules: DecorationRule[] = [
+                new TierRule({
+                    species: [
+                        {
+                            id: 'mangrove',
+                            preference: SpeciesRules.fitness({
+                                fitness: 1.0,
+                                stepDistance: [5, 55],
+                            }),
+                            params: SpeciesRules.mangrove()
+                        }
+                    ]
+                }),
+            ];
+            this.decorationConfig = { rules, maps: {} };
+        }
+        return this.decorationConfig;
+    }
+
 
     *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        const riverSystem = context.chunk.riverSystem;
-
-        const length = zEnd - zStart;
-        // Increase count to cover the wider area
-        // River density is ~30 per 100m (concentrated).
-        // Shore area is much wider (~150m per side).
-        // Let's try 40 per 100m segment to give decent scattered coverage.
-        const count = Math.ceil(length * 0.4);
-
-        for (let i = 0; i < count; i++) {
-            if (i % 20 === 0) yield;
-            const z = zStart + Math.random() * length;
-            const riverWidth = riverSystem.getRiverWidth(z);
-            const riverCenter = riverSystem.getRiverCenter(z);
-
-            // Pick side
-            const side = Math.random() > 0.5 ? 1 : -1;
-
-            // Distance from bank: 5m to 140m
-            // Avoid immediate bank to reduce clip with gameplay elements, spread far out
-            const distFromBank = 5 + Math.random() * 50;
-
-            const x = riverCenter + side * (riverWidth / 2 + distFromBank);
-
-            const height = riverSystem.terrainGeometry.calculateHeight(x, z);
-
-            const mangrove = Decorations.getMangrove(1.0 + Math.random() * 0.5);
-
-            context.decoHelper.positionAndCollectGeometry(mangrove, { worldX: x, worldZ: z, height }, context);
-        }
+        const decorationConfig = this.getDecorationConfig();
+        const spatialGrid = context.chunk.spatialGrid;
+        yield* TerrainDecorator.decorateIterator(
+            context,
+            decorationConfig,
+            { xMin: -250, xMax: 250, zMin: zStart, zMax: zEnd },
+            spatialGrid,
+            42 // Deep Thought
+        );
     }
 
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {

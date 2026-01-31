@@ -19,4 +19,5 @@ export const DecorationMetadata =
     waterlily: { groundRadius: 2.7, canopyRadius: 0 },
     cycad: { groundRadius: 0.4, canopyRadius: 4.4 },
     treeFern: { groundRadius: 0.2, canopyRadius: 4.7 },
+    mangrove: { groundRadius: 12.8, canopyRadius: 18.1 },
 };

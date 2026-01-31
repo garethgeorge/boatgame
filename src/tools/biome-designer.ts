@@ -323,6 +323,8 @@ class BiomeDesigner {
         const statsContent = document.getElementById('stats-content');
         if (!statsContent) return;
 
+        if (!this.engine.terrainManager || !this.engine.entityManager) return;
+
         const decorationStats = this.engine.terrainManager.getDecorationStats();
         const entityStats = this.engine.entityManager.getEntityStats();
 

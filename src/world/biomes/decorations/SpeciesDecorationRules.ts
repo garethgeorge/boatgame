@@ -323,4 +323,16 @@ export class SpeciesRules {
             };
         };
     }
+
+    public static mangrove() {
+        return (ctx: WorldContext) => {
+            const scale = 1.5 + ctx.random() * 0.5;
+            const meta = DecorationMetadata.mangrove;
+            return {
+                groundRadius: meta.groundRadius * scale,
+                canopyRadius: meta.canopyRadius * scale,
+                options: { kind: 'mangrove', rotation: ctx.random() * Math.PI * 2, scale }
+            };
+        }
+    }
 }
