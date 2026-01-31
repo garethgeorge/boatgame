@@ -20,7 +20,9 @@ export class Duckling extends Animal {
             Entity.TYPE_COLLECTABLE,
             false,
             { height: 0.5, ...options },
-            {});
+            {
+                hull: EntityMetadata.duckling.hull
+            });
 
         this.setBehavior(SwimAwayBehaviorFactory.create(
             this,

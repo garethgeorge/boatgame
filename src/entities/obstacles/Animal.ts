@@ -26,8 +26,7 @@ export interface AnimalOptions {
 
 
 export interface AnimalPhysicsOptions {
-    halfWidth?: number;
-    halfLength?: number;
+    hull: number[];
     density?: number;
     friction?: number;
     restitution?: number;
@@ -89,33 +88,13 @@ export abstract class Animal extends Entity implements AnyAnimal {
         physicsOptions: AnimalPhysicsOptions
     ): planck.Body {
         let {
-            halfWidth,
-            halfLength,
+            hull,
             density = 5.0,
             friction = 0.1,
             restitution = 0.0,
             linearDamping = 2.0,
             angularDamping = 1.0
         } = physicsOptions;
-
-        let centerX = 0;
-        let centerY = 0;
-
-        if (halfWidth === undefined || halfLength === undefined) {
-            // Auto-calculate from model
-            const model = this.meshes.length > 0 ? this.meshes[0] : null;
-            if (model) {
-                const bbox = GraphicsUtils.calculateBoundingBox2D(model);
-                halfWidth = halfWidth ?? bbox.halfWidth;
-                halfLength = halfLength ?? bbox.halfHeight;
-                centerX = bbox.centerX;
-                centerY = bbox.centerY;
-            } else {
-                // Fallback
-                halfWidth = halfWidth ?? 1.0;
-                halfLength = halfLength ?? 1.0;
-            }
-        }
 
         const physicsBody = physicsEngine.world.createBody({
             type: 'dynamic',
@@ -125,8 +104,14 @@ export abstract class Animal extends Entity implements AnyAnimal {
             angularDamping: angularDamping
         });
 
+        // Create polygon shape from hull points
+        const vertices: planck.Vec2[] = [];
+        for (let i = 0; i < hull.length; i += 2) {
+            vertices.push(planck.Vec2(hull[i], hull[i + 1]));
+        }
+
         physicsBody.createFixture({
-            shape: planck.Box(halfWidth, halfLength, planck.Vec2(centerX, centerY), 0),
+            shape: planck.Polygon(vertices),
             density: density,
             friction: friction,
             restitution: restitution

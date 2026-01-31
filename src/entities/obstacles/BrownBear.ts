@@ -23,6 +23,7 @@ export class BrownBear extends Animal {
         super(physicsEngine, 'brownBear', Entity.TYPE_OBSTACLE, true,
             options,
             {
+                hull: EntityMetadata.brownBear.hull,
                 density: 5.0,
                 friction: 0.3,
                 linearDamping: 3.0,

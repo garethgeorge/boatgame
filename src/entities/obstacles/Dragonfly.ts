@@ -21,6 +21,7 @@ export class Dragonfly extends Animal {
         super(physicsEngine, 'dragonfly', Entity.TYPE_OBSTACLE, false,
             options,
             {
+                hull: EntityMetadata.dragonfly.hull,
                 density: 0.1,
                 friction: 0.1
             });

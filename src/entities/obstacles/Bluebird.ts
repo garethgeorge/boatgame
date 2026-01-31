@@ -22,6 +22,7 @@ export class Bluebird extends Animal {
         super(physicsEngine, 'bluebird', Entity.TYPE_OBSTACLE, false,
             options,
             {
+                hull: EntityMetadata.bluebird.hull,
                 density: 0.2,
                 friction: 0.1
             });

@@ -23,6 +23,7 @@ export class Triceratops extends Animal {
         super(physicsEngine, 'triceratops', Entity.TYPE_OBSTACLE, true,
             options,
             {
+                hull: EntityMetadata.triceratops.hull,
                 density: 5.0,
                 friction: 0.3,
                 linearDamping: 3.0,

@@ -23,6 +23,7 @@ export class Brontosaurus extends Animal {
         super(physicsEngine, 'brontosaurus', Entity.TYPE_OBSTACLE, true,
             options,
             {
+                hull: EntityMetadata.brontosaurus.hull,
                 density: 5.0,
                 friction: 0.3,
                 linearDamping: 3.0,

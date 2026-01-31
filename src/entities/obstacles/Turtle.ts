@@ -22,6 +22,7 @@ export class Turtle extends Animal {
             true,
             options,
             {
+                hull: EntityMetadata.turtle.hull,
                 density: 8.0,
                 friction: 0.1,
                 linearDamping: 1.0,

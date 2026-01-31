@@ -21,7 +21,9 @@ export class PenguinKayak extends Animal {
             Entity.TYPE_OBSTACLE,
             false,
             { height: 0.5, ...options },
-            {});
+            {
+                hull: EntityMetadata.penguinKayak.hull
+            });
 
         this.setBehavior(SwimAwayBehaviorFactory.create(
             this,

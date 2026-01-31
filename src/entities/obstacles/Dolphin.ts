@@ -21,7 +21,9 @@ export class Dolphin extends Animal {
             Entity.TYPE_OBSTACLE,
             false,
             { height: 0.2, ...options },
-            {});
+            {
+                hull: EntityMetadata.dolphin.hull
+            });
 
         this.setBehavior(SwimAwayBehaviorFactory.create(
             this,

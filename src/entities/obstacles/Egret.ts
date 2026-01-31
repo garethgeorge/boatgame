@@ -22,6 +22,7 @@ export class Egret extends Animal {
         super(physicsEngine, 'egret', Entity.TYPE_OBSTACLE, false,
             options,
             {
+                hull: EntityMetadata.egret.hull,
                 density: 1.0,
                 friction: 0.1
             });

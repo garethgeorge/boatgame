@@ -23,6 +23,7 @@ export class TRex extends Animal {
         super(physicsEngine, 'trex', Entity.TYPE_OBSTACLE, true,
             options,
             {
+                hull: EntityMetadata.trex.hull,
                 density: 10.0,
                 friction: 0.1
             });

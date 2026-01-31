@@ -21,6 +21,7 @@ export class Butterfly extends Animal {
         super(physicsEngine, 'butterfly', Entity.TYPE_OBSTACLE, false,
             options,
             {
+                hull: EntityMetadata.butterfly.hull,
                 density: 0.1,
                 friction: 0.1
             });

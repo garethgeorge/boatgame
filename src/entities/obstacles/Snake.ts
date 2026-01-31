@@ -24,6 +24,7 @@ export class Snake extends Animal {
         super(physicsEngine, 'snake', Entity.TYPE_OBSTACLE, true,
             options,
             {
+                hull: EntityMetadata.snake.hull,
                 density: 3.0,
                 friction: 0.1,
                 linearDamping: 2.0,

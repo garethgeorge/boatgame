@@ -23,6 +23,7 @@ export class Alligator extends Animal {
         super(physicsEngine, 'alligator', Entity.TYPE_OBSTACLE, true,
             options,
             {
+                hull: EntityMetadata.alligator.hull,
                 density: 5.0,
                 friction: 0.1,
                 linearDamping: 2.0,

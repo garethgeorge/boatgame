@@ -21,6 +21,7 @@ export class Unicorn extends Animal {
         super(physicsEngine, 'unicorn', Entity.TYPE_OBSTACLE, true,
             options,
             {
+                hull: EntityMetadata.unicorn.hull,
                 density: 5.0,
                 friction: 0.3,
                 linearDamping: 3.0,

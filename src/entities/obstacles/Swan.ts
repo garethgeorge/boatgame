@@ -22,7 +22,9 @@ export class Swan extends Animal {
             Entity.TYPE_OBSTACLE,
             false,
             { height: 0.2, ...options },
-            {});
+            {
+                hull: EntityMetadata.swan.hull
+            });
 
         this.setBehavior(SwimAwayBehaviorFactory.create(
             this,

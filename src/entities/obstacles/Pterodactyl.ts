@@ -22,6 +22,7 @@ export class Pterodactyl extends Animal {
         super(physicsEngine, 'pterodactyl', Entity.TYPE_OBSTACLE, false,
             options,
             {
+                hull: EntityMetadata.pterodactyl.hull,
                 density: 1.0,
                 friction: 0.1
             });

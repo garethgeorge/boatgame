@@ -23,6 +23,7 @@ export class Hippo extends Animal {
         super(physicsEngine, 'hippo', Entity.TYPE_OBSTACLE, true,
             options,
             {
+                hull: EntityMetadata.hippo.hull,
                 density: 5.0,
                 friction: 0.1,
                 linearDamping: 2.0,

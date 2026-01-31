@@ -23,6 +23,7 @@ export class PolarBear extends Animal {
         super(physicsEngine, 'polarBear', Entity.TYPE_OBSTACLE, true,
             options,
             {
+                hull: EntityMetadata.polarBear.hull,
                 density: 5.0,
                 friction: 0.3,
                 linearDamping: 3.0,

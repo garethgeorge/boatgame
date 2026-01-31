@@ -23,6 +23,7 @@ export class Monkey extends Animal {
         super(physicsEngine, 'monkey', Entity.TYPE_OBSTACLE, true,
             options,
             {
+                hull: EntityMetadata.monkey.hull,
                 density: 5.0,
                 friction: 0.3,
                 linearDamping: 3.0,

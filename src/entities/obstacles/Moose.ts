@@ -24,6 +24,7 @@ export class Moose extends Animal {
         super(physicsEngine, 'moose', Entity.TYPE_OBSTACLE, true,
             options,
             {
+                hull: EntityMetadata.moose.hull,
                 density: 5.0,
                 friction: 0.3,
                 linearDamping: 3.0,
