@@ -17,20 +17,70 @@ export class MetadataExtractor {
         let maxCanopySq = 0;
         let maxGroundSq = 0;
 
+        const boneMatrix = new THREE.Matrix4();
+        const skinMatrix = new THREE.Matrix4();
+        const totalMatrix = new THREE.Matrix4();
+        const skinnedPos = new THREE.Vector3();
         const pos = new THREE.Vector3();
 
         object.traverse((child) => {
-            if (child instanceof THREE.SkinnedMesh) {
-                child.skeleton.pose();
-            }
-
             if (child instanceof THREE.Mesh && child.visible) {
                 const geometry = child.geometry;
                 const positionAttr = geometry.getAttribute('position');
+                const skinWeightAttr = geometry.getAttribute('skinWeight');
+                const skinIndexAttr = geometry.getAttribute('skinIndex');
+
+                const isSkinned = child instanceof THREE.SkinnedMesh &&
+                    child.skeleton &&
+                    skinWeightAttr &&
+                    skinIndexAttr;
+
                 if (positionAttr) {
                     for (let i = 0; i < positionAttr.count; i++) {
                         pos.fromBufferAttribute(positionAttr, i);
-                        pos.applyMatrix4(child.matrixWorld);
+
+                        if (isSkinned) {
+                            const skinnedMesh = child as THREE.SkinnedMesh;
+                            const skeleton = skinnedMesh.skeleton;
+                            const boneInverses = skeleton.boneInverses;
+                            const bones = skeleton.bones;
+
+                            totalMatrix.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+                            const sw = new THREE.Vector4();
+                            const si = new THREE.Vector4();
+                            sw.fromBufferAttribute(skinWeightAttr, i);
+                            si.fromBufferAttribute(skinIndexAttr, i);
+
+                            for (let j = 0; j < 4; j++) {
+                                const weight = sw.getComponent(j);
+                                if (weight === 0) continue;
+
+                                const boneIndex = si.getComponent(j);
+                                const bone = bones[boneIndex];
+                                const inverse = boneInverses[boneIndex];
+
+                                // boneMatrix = bone.matrixWorld * inverseBindMatrix
+                                boneMatrix.multiplyMatrices(bone.matrixWorld, inverse);
+
+                                // skinMatrix = boneMatrix * weight
+                                // We manually accumulate the weighted matrix
+                                for (let k = 0; k < 16; k++) {
+                                    totalMatrix.elements[k] += boneMatrix.elements[k] * weight;
+                                }
+                            }
+
+                            // skinnedPos = totalMatrix * bindMatrix * pos
+                            // GLTF bindMatrix is usually Identity, so just totalMatrix * pos
+                            // But wait, totalMatrix maps from Local -> World directly because it uses bone.matrixWorld
+                            // So we don't need child.matrixWorld afterwards.
+                            // Applying matrix: pos -> world
+                            skinnedPos.copy(pos).applyMatrix4(totalMatrix);
+                            pos.copy(skinnedPos);
+
+                        } else {
+                            pos.applyMatrix4(child.matrixWorld);
+                        }
 
                         const dx = pos.x - centerOffset.x;
                         const dz = pos.z - centerOffset.z;
