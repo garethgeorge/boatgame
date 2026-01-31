@@ -198,7 +198,8 @@ export class TerrainDecorator {
                 case 'umbrella':
                 case 'open':
                 case 'irregular':
-                case 'vase': {
+                case 'vase':
+                case 'palm': {
                     const treeInstances = Decorations.getLSystemTreeInstance({
                         kind: opts.kind,
                         leafColor: opts.color,

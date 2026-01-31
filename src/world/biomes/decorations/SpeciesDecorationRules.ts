@@ -335,4 +335,16 @@ export class SpeciesRules {
             };
         }
     }
+
+    public static palm_tree() {
+        return (ctx: WorldContext) => {
+            const scale = 1.5 + ctx.random() * 1.0;
+            const meta = DecorationMetadata.palm;
+            return {
+                groundRadius: meta.groundRadius * scale,
+                canopyRadius: meta.canopyRadius * scale,
+                options: { kind: 'palm', rotation: ctx.random() * Math.PI * 2, scale }
+            };
+        };
+    }
 }

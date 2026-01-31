@@ -72,7 +72,7 @@ export class InstructionManager {
 
         if (!hasBeenShown) {
             // Check if we have an instruction file for this biome
-            const supportedBiomes: BiomeType[] = ['desert', 'forest', 'ice', 'jurassic', 'swamp'];
+            const supportedBiomes: BiomeType[] = ['desert', 'forest', 'ice', 'jurassic', 'swamp', 'tropical_shoreline'];
             if (supportedBiomes.includes(biomeId)) {
                 localStorage.setItem(storageKey, 'true');
                 onTrigger(`assets/instructions/${biomeId}.html`);

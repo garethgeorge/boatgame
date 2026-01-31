@@ -9,6 +9,7 @@ import { JurassicBiomeFeatures } from './biomes/JurassicBiomeFeatures';
 import { TestBiomeFeatures } from './biomes/TestBiomeFeatures';
 import { FracturedIceBiomeFeatures } from './biomes/FracturedIceBiomeFeatures';
 import { HappyBiomeFeatures } from './biomes/HappyBiomeFeatures';
+import { TropicalShorelineBiomeFeatures } from './biomes/TropicalShorelineBiomeFeatures';
 import { NullBiomeFeatures } from './biomes/NullBiomeFeatures';
 import { BiomeType } from './biomes/BiomeType';
 import { DesignerSettings } from '../core/DesignerSettings';
@@ -22,6 +23,7 @@ const BIOME_CONSTRUCTORS: Record<BiomeType, any> = {
   'test': TestBiomeFeatures,
   'fractured_ice': FracturedIceBiomeFeatures,
   'happy': HappyBiomeFeatures,
+  'tropical_shoreline': TropicalShorelineBiomeFeatures,
   'null': NullBiomeFeatures
 };
 
@@ -81,7 +83,7 @@ class BiomeGenerator {
     // type1, happy, type2, happy,  ...
     // deck is popped from the top
     if (this.deck.length === 0) {
-      const otherTypes: BiomeType[] = ['desert', 'forest', 'ice', 'swamp', 'jurassic'];
+      const otherTypes: BiomeType[] = ['desert', 'forest', 'ice', 'swamp', 'jurassic', 'tropical_shoreline'];
       const shuffled = [...otherTypes].sort(() => Math.random() - 0.5);
 
       for (const type of shuffled) {
