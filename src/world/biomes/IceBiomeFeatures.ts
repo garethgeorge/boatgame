@@ -9,6 +9,7 @@ import { TierRule, Combine, Signal } from '../decorators/PoissonDecorationRules'
 import { EntityIds } from '../../entities/EntityIds';
 import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
+import { SkyBiome } from './BiomeFeatures';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'ice';
@@ -33,11 +34,11 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         return { near: 0, far: 400 };
     }
 
-    public override getSkyBiome(): any {
+    public override getSkyBiome(): SkyBiome {
         return {
-            noon: { top: '#a0c0f0', bottom: '#e0f0ff' },
-            sunset: { top: '#203050', mid: '#9370db', bottom: '#ffb6c1' },
-            night: { top: '#010510', bottom: '#102040' },
+            noon: { top: 0xa0c0f0, bottom: 0xe0f0ff },
+            sunset: { top: 0x203050, mid: 0x9370db, bottom: 0xffb6c1 },
+            night: { top: 0x010510, bottom: 0x102040 },
             haze: 0.1
         };
     }

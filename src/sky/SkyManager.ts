@@ -6,6 +6,7 @@ import { ScreenOverlay } from './ScreenOverlay';
 import { Boat } from '../entities/Boat';
 import { RiverSystem } from '../world/RiverSystem';
 import { DesignerSettings } from '../core/DesignerSettings';
+import { DebugSettings } from '../core/DebugSettings';
 
 export class SkyManager {
     private scene: THREE.Scene;
@@ -20,6 +21,21 @@ export class SkyManager {
     // Lighting
     private hemiLight: THREE.HemisphereLight;
     private ambientLight: THREE.AmbientLight;
+
+    // Scratch colors for zero-allocation blending
+    private scratchColor1 = new THREE.Color();
+    private scratchColor2 = new THREE.Color();
+    private scratchColor3 = new THREE.Color();
+    private scratchColor4 = new THREE.Color();
+    private static readonly MOON_COLOR = 0xb0c0d0;
+
+    // Persistent color objects for zero-allocation blending
+    private interpolatedLightTop = new THREE.Color();
+    private interpolatedLightMid = new THREE.Color();
+    private interpolatedLightBot = new THREE.Color();
+    private interpolatedDarkTop = new THREE.Color();
+    private interpolatedDarkBot = new THREE.Color();
+    private moonColor = new THREE.Color(SkyManager.MOON_COLOR);
 
     // Day/Night Cycle Config
     public isCyclePaused: boolean = false;
@@ -95,7 +111,7 @@ export class SkyManager {
 
         // Update Day/Night Cycle
         if (!this.isCyclePaused) {
-            this.cycleTime += dt;
+            this.cycleTime += dt * DebugSettings.cycleSpeedMultiplier;
             if (this.cycleTime > this.cycleDuration) {
                 this.cycleTime -= this.cycleDuration;
             }
@@ -131,23 +147,22 @@ export class SkyManager {
         // Sun intensity: 1 at Noon, 0 at Sunset/Rise, 0 at Night
         const sunIntensity = Math.max(0, dayness);
 
-        // Interpolate Sun-side colors (Light side)
-        const lerpColors = (noon: any, sunset: any, t: number) => {
-            const top = new THREE.Color(noon.top).lerp(new THREE.Color(sunset.top), 1 - t);
-            const bottom = new THREE.Color(noon.bottom).lerp(new THREE.Color(sunset.bottom), 1 - t);
-            const getMid = (c: any) => {
-                if (c.mid) return new THREE.Color(c.mid);
-                return new THREE.Color(c.top).lerp(new THREE.Color(c.bottom), 0.5);
-            };
-            const mid = getMid(noon).lerp(getMid(sunset), 1 - t);
-            return { top, mid, bottom };
+        // Zero-allocation interpolation for sun-side colors
+        const t = 1 - sunIntensity;
+        this.interpolatedLightTop.set(skyBiome.noon.top).lerp(this.scratchColor1.set(skyBiome.sunset.top), t);
+        this.interpolatedLightBot.set(skyBiome.noon.bottom).lerp(this.scratchColor1.set(skyBiome.sunset.bottom), t);
+
+        const getMid = (c: any, color: THREE.Color) => {
+            if (c.mid !== undefined) return color.set(c.mid);
+            return color.set(c.top).lerp(this.scratchColor2.set(c.bottom), 0.5);
         };
 
-        const lightColors = lerpColors(skyBiome.noon, skyBiome.sunset, sunIntensity);
-        const darkColors = {
-            top: new THREE.Color(skyBiome.night.top),
-            bottom: new THREE.Color(skyBiome.night.bottom)
-        };
+        const midNoon = getMid(skyBiome.noon, this.scratchColor1);
+        const midSunset = getMid(skyBiome.sunset, this.scratchColor2);
+        this.interpolatedLightMid.lerpColors(midNoon, midSunset, t);
+
+        this.interpolatedDarkTop.set(skyBiome.night.top);
+        this.interpolatedDarkBot.set(skyBiome.night.bottom);
 
         // Update Skybox
         this.skybox.update(
@@ -155,12 +170,12 @@ export class SkyManager {
             this.sun.direction,
             this.moon.direction,
             {
-                lightTop: lightColors.top,
-                lightMid: lightColors.mid,
-                lightBot: lightColors.bottom,
-                darkTop: darkColors.top,
-                darkBot: darkColors.bottom,
-                moonColor: new THREE.Color('#b0c0d0')
+                lightTop: this.interpolatedLightTop,
+                lightMid: this.interpolatedLightMid,
+                lightBot: this.interpolatedLightBot,
+                darkTop: this.interpolatedDarkTop,
+                darkBot: this.interpolatedDarkBot,
+                moonColor: this.moonColor
             },
             skyBiome.haze,
             dayness
@@ -168,13 +183,11 @@ export class SkyManager {
 
         // Update Fog Color to match horizon (Light side bottom color if sun is up, else Night side bottom)
         if (this.scene.fog) {
-            const fogColor = new THREE.Color();
             if (dayness > 0) {
-                fogColor.copy(lightColors.bottom);
+                this.scene.fog.color.copy(this.interpolatedLightBot);
             } else {
-                fogColor.copy(darkColors.bottom);
+                this.scene.fog.color.copy(this.interpolatedDarkBot);
             }
-            this.scene.fog.color.copy(fogColor);
         }
 
         // Update Fog Density based on biome and height

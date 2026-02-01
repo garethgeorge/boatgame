@@ -11,6 +11,7 @@ import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
 import { Decorations } from '../Decorations';
+import { SkyBiome } from './BiomeFeatures';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';
@@ -30,11 +31,11 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
         return { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 };
     }
 
-    public override getSkyBiome(): any {
+    public override getSkyBiome(): SkyBiome {
         return {
-            noon: { top: '#4080ff', bottom: '#c0d8ff' },
-            sunset: { top: '#2e1a47', mid: '#c71585', bottom: '#ff8c00' },
-            night: { top: '#050a15', bottom: '#1a1a2e' },
+            noon: { top: 0x4080ff, bottom: 0xc0d8ff },
+            sunset: { top: 0x2e1a47, mid: 0xc71585, bottom: 0xff8c00 },
+            night: { top: 0x050a15, bottom: 0x1a1a2e },
             haze: 0.5
         };
     }

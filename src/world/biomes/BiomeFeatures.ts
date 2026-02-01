@@ -5,9 +5,9 @@ import { BiomeType } from './BiomeType';
 import { DecorationConfig } from '../decorators/TerrainDecorator';
 
 export interface SkyColors {
-    top: string;
-    mid?: string; // Optional: Only used for rich sunsets
-    bottom: string;
+    top: number;
+    mid?: number; // Optional: Only used for rich sunsets
+    bottom: number;
 }
 
 export interface SkyBiome {

@@ -12,6 +12,7 @@ import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../SimplexNoise';
 import { MathUtils } from '../../core/MathUtils';
+import { SkyBiome } from './BiomeFeatures';
 
 /**
  * Tropical Shoreline Biome: A sunny coastal paradise with palm trees and marine life.
@@ -30,11 +31,11 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, TropicalShorelineBiomeFeatures.LENGTH, direction);
     }
 
-    public override getSkyBiome(): any {
+    public override getSkyBiome(): SkyBiome {
         return {
-            noon: { top: '#00bfff', bottom: '#7fffd4' },
-            sunset: { top: '#483d8b', mid: '#ff1493', bottom: '#ffa07a' },
-            night: { top: '#010b1a', bottom: '#004466' },
+            noon: { top: 0x00bfff, bottom: 0x7fffd4 },
+            sunset: { top: 0x483d8b, mid: 0xff1493, bottom: 0xffa07a },
+            night: { top: 0x010b1a, bottom: 0x004466 },
             haze: 0.6
         };
     }

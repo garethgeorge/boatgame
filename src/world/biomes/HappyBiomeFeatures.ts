@@ -9,6 +9,7 @@ import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, NoiseMap, DecorationConfig } from '../decorators/TerrainDecorator';
 import { TierRule, Signal, Combine } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
+import { SkyBiome } from './BiomeFeatures';
 
 
 /**
@@ -35,11 +36,11 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return { r: 0.9, g: 0.95, b: 1.0 };
     }
 
-    public override getSkyBiome(): any {
+    public override getSkyBiome(): SkyBiome {
         return {
-            noon: { top: '#00ccff', bottom: '#ffffff' },
-            sunset: { top: '#4b0082', mid: '#ff69b4', bottom: '#f0e68c' },
-            night: { top: '#0a1a33', bottom: '#334466' },
+            noon: { top: 0x00ccff, bottom: 0xffffff },
+            sunset: { top: 0x4b0082, mid: 0xff69b4, bottom: 0xf0e68c },
+            night: { top: 0x0a1a33, bottom: 0x334466 },
             haze: 0.4
         };
     }

@@ -10,7 +10,7 @@ import { RiverSystem } from '../world/RiverSystem.js';
 import { DebugSettings } from '../core/DebugSettings.js';
 import { Profiler } from '../core/Profiler.js';
 import { DebugConsole } from '../core/DebugConsole.js';
-import { DesignerUtils, HistoryManager } from '../core/DesignerUtils.js';
+import { DesignerUtils, HistoryManager } from './DesignerUtils.js';
 import { TierRule, Combine, Signal } from '../world/decorators/PoissonDecorationRules.js';
 import { SpeciesRules } from '../world/biomes/decorations/SpeciesDecorationRules.js';
 

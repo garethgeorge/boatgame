@@ -6,7 +6,7 @@ import { ENTITY_MANIFEST, BOAT_MANIFEST, EntityManifestEntry } from '../entities
 import { DecorationMetadata } from '../world/DecorationMetadata';
 import { EntityMetadata, BoatMetadata } from '../entities/EntityMetadata';
 import { GraphicsUtils } from '../core/GraphicsUtils';
-import { DesignerUtils } from '../core/DesignerUtils';
+import { DesignerUtils } from './DesignerUtils';
 import { Decorations } from '../world/Decorations';
 import { MetadataExtractor } from './MetadataExtractorLogic';
 

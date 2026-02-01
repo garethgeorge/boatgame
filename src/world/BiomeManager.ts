@@ -121,6 +121,12 @@ export class BiomeManager {
   private posGenerator: BiomeGenerator = new BiomeGenerator(this.overriddenRules);
   private negGenerator: BiomeGenerator = new BiomeGenerator(this.overriddenRules);
 
+  // Scratch colors for zero-allocation blending
+  private scratchColor1 = new THREE.Color();
+  private scratchColor2 = new THREE.Color();
+  private scratchColor3 = new THREE.Color();
+  private scratchColor4 = new THREE.Color();
+
   constructor() {
     this.ensureWindow(-1, 1);
   }
@@ -378,21 +384,26 @@ export class BiomeManager {
     };
   }
 
-  private lerpSkyColors(c1: SkyColors, c2: SkyColors, t: number): SkyColors {
-    const colorTop = new THREE.Color(c1.top).lerp(new THREE.Color(c2.top), t);
-    const colorBottom = new THREE.Color(c1.bottom).lerp(new THREE.Color(c2.bottom), t);
+  private lerpSkyColors(c1: SkyColors, c2: SkyColors, t: number): { top: number, mid: number, bottom: number } {
+    const colorTop = this.scratchColor1.set(c1.top).lerp(this.scratchColor2.set(c2.top), t);
+    const hexTop = colorTop.getHex();
 
-    const getMid = (c: SkyColors) => {
-      if (c.mid) return new THREE.Color(c.mid);
-      return new THREE.Color(c.top).lerp(new THREE.Color(c.bottom), 0.5);
+    const colorBottom = this.scratchColor3.set(c1.bottom).lerp(this.scratchColor4.set(c2.bottom), t);
+    const hexBottom = colorBottom.getHex();
+
+    const getMid = (c: SkyColors, color: THREE.Color) => {
+      if (c.mid !== undefined) return color.set(c.mid);
+      return color.set(c.top).lerp(this.scratchColor2.set(c.bottom), 0.5);
     };
 
-    const colorMid = getMid(c1).lerp(getMid(c2), t);
+    // Reuse scratchColor1 after getting its hex
+    const colorMid = getMid(c1, this.scratchColor1).lerp(getMid(c2, this.scratchColor2), t);
+    const hexMid = colorMid.getHex();
 
     return {
-      top: '#' + colorTop.getHexString(),
-      mid: '#' + colorMid.getHexString(),
-      bottom: '#' + colorBottom.getHexString()
+      top: hexTop,
+      mid: hexMid,
+      bottom: hexBottom
     };
   }
 

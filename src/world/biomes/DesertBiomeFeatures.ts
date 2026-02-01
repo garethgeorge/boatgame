@@ -10,6 +10,7 @@ import { AnimalSpawnOptions } from '../../entities/spawners/AnimalSpawner';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
+import { SkyBiome } from './BiomeFeatures';
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';
@@ -40,11 +41,11 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         return { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 };
     }
 
-    public getSkyBiome(): any {
+    public getSkyBiome(): SkyBiome {
         return {
-            noon: { top: '#00aaff', bottom: '#b0e0ff' },
-            sunset: { top: '#1a2b4d', mid: '#ff4500', bottom: '#ffd700' },
-            night: { top: '#02040a', bottom: '#0a1128' },
+            noon: { top: 0x00aaff, bottom: 0xb0e0ff },
+            sunset: { top: 0x1a2b4d, mid: 0xff4500, bottom: 0xffd700 },
+            night: { top: 0x02040a, bottom: 0x0a1128 },
             haze: 0.2
         };
     }

@@ -11,7 +11,7 @@ import { LeafShader } from '../shaders/LeafShader';
 // or a simplified version for the designer.
 import { GraphicsUtils } from '../core/GraphicsUtils';
 
-import { DesignerUtils, HistoryManager } from '../core/DesignerUtils';
+import { DesignerUtils, HistoryManager } from './DesignerUtils';
 
 class Designer {
     private scene: THREE.Scene;

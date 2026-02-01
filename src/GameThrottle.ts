@@ -74,9 +74,13 @@ export class GameThrottle {
         const startGlobalTouch = (e: TouchEvent) => {
             if (this.isPausedCallback() || this.isDragging) return;
 
-            // Ignore if touching UI elements (like instructions)
+            // Ignore if touching UI elements (like instructions or debug menu)
             const target = e.target as HTMLElement;
-            if (target && target.closest && (target.closest('#instructions-overlay') || target.closest('#debug-console-overlay'))) {
+            if (target && target.closest && (
+                target.closest('#instructions-overlay') ||
+                target.closest('#debug-console-overlay') ||
+                target.closest('#debug-menu')
+            )) {
                 return;
             }
 
@@ -93,7 +97,11 @@ export class GameThrottle {
 
             // Ignore if touching UI elements
             const target = e.target as HTMLElement;
-            if (target && target.closest && (target.closest('#instructions-overlay') || target.closest('#debug-console-overlay'))) {
+            if (target && target.closest && (
+                target.closest('#instructions-overlay') ||
+                target.closest('#debug-console-overlay') ||
+                target.closest('#debug-menu')
+            )) {
                 return;
             }
 

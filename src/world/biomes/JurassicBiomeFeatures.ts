@@ -11,6 +11,7 @@ import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { WorldMap } from '../decorators/PoissonDecorationStrategy';
 import { SimplexNoise } from '../SimplexNoise';
+import { SkyBiome } from './BiomeFeatures';
 
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'jurassic';
@@ -38,11 +39,11 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         return { near: 50, far: 600 };
     }
 
-    public override getSkyBiome(): any {
+    public override getSkyBiome(): SkyBiome {
         return {
-            noon: { top: '#2f4f4f', bottom: '#9eb05d' },
-            sunset: { top: '#1a0f00', mid: '#8b0000', bottom: '#4b5320' },
-            night: { top: '#020502', bottom: '#0d1a0d' },
+            noon: { top: 0x2f4f4f, bottom: 0x9eb05d },
+            sunset: { top: 0x1a0f00, mid: 0x8b0000, bottom: 0x4b5320 },
+            night: { top: 0x020502, bottom: 0x0d1a0d },
             haze: 0.9
         };
     }

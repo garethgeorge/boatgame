@@ -13,6 +13,7 @@ import { AnimalSpawnOptions } from '../../entities/spawners/AnimalSpawner';
 import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
+import { SkyBiome } from './BiomeFeatures';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
@@ -42,11 +43,11 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     }
 
 
-    public override getSkyBiome(): any {
+    public override getSkyBiome(): SkyBiome {
         return {
-            noon: { top: '#556b2f', bottom: '#f5f5dc' },
-            sunset: { top: '#221100', mid: '#808000', bottom: '#bdb76b' },
-            night: { top: '#050805', bottom: '#1e2410' },
+            noon: { top: 0x556b2f, bottom: 0xf5f5dc },
+            sunset: { top: 0x221100, mid: 0x808000, bottom: 0xbdb76b },
+            night: { top: 0x050805, bottom: 0x1e2410 },
             haze: 1.0
         };
     }

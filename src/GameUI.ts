@@ -72,6 +72,8 @@ export class GameUI {
         const consoleToggle = document.getElementById('debug-console') as HTMLInputElement;
         const resetBtn = document.getElementById('debug-reset-instructions') as HTMLButtonElement;
         const mobileSelect = document.getElementById('debug-mobile-mode') as HTMLSelectElement;
+        const cycleSpeedSlider = document.getElementById('debug-cycle-speed') as HTMLInputElement;
+        const cycleSpeedVal = document.getElementById('debug-cycle-speed-val') as HTMLElement;
 
         geometryToggle.checked = DebugSettings.geometryVisible;
         profilerToggle.checked = DebugSettings.profilerVisible;
@@ -102,6 +104,17 @@ export class GameUI {
             else if (val === 'mobile') listeners.onSetMobileOverride(true);
             else if (val === 'desktop') listeners.onSetMobileOverride(false);
         });
+
+        if (cycleSpeedSlider && cycleSpeedVal) {
+            cycleSpeedSlider.value = DebugSettings.cycleSpeedMultiplier.toString();
+            cycleSpeedVal.innerText = `${DebugSettings.cycleSpeedMultiplier}x`;
+
+            cycleSpeedSlider.addEventListener('input', () => {
+                const val = parseFloat(cycleSpeedSlider.value);
+                DebugSettings.cycleSpeedMultiplier = val;
+                cycleSpeedVal.innerText = `${val}x`;
+            });
+        }
     }
 
     public toggleDebugMenu() {
