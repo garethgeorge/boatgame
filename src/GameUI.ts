@@ -63,6 +63,12 @@ export class GameUI {
             this.startScreen.appendChild(instructions);
         }
 
+        this.scoreElement.addEventListener('click', () => {
+            if (!DebugSettings.isRelease) {
+                this.toggleDebugMenu();
+            }
+        });
+
         this.debugMenu = document.getElementById('debug-menu') as HTMLElement;
         this.initDebugMenu(listeners);
     }
