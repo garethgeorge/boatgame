@@ -268,6 +268,15 @@
 
     .debug-option {
       display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 5px;
+      font-size: 14px;
+    }
+
+    .debug-row {
+      display: flex;
+      flex-direction: row;
       align-items: center;
       gap: 10px;
       cursor: pointer;
@@ -343,34 +352,44 @@
   </div>
   <div id="debug-menu">
     <h3>DEBUG MENU</h3>
-    <label class="debug-option">
+    <label class="debug-row">
       <input type="checkbox" id="debug-geometry"> Geometry (Collisions)
     </label>
-    <label class="debug-option">
+    <label class="debug-row">
       <input type="checkbox" id="debug-profiler"> Profiler
     </label>
-    <label class="debug-option">
+    <label class="debug-row">
       <input type="checkbox" id="debug-console"> Console
     </label>
     <hr style="border: 0; border-top: 1px solid #00ff00; width: 100%;">
     <button id="debug-reset-instructions">Reset Instructions</button>
-    <label class="debug-option" style="margin-top: 5px;">
+    <div class="debug-option">
       Mode:
-      <select id="debug-mobile-mode">
+      <select id="debug-mobile-mode" style="width: 100%;">
         <option value="auto">Auto</option>
         <option value="mobile">Mobile</option>
         <option value="desktop">Desktop</option>
       </select>
-    </label>
-    <label class="debug-option" style="margin-top: 5px;">
-      Cycle Speed: <input type="range" id="debug-cycle-speed" min="0" max="100" step="1" value="1"
-        style="width: 80px; accent-color: #00ff00;">
-      <span id="debug-cycle-speed-val">1x</span>
-    </label>
+    </div>
+    <div class="debug-option">
+      Cycle Speed: <span id="debug-cycle-speed-val">1x</span>
+      <input type="range" id="debug-cycle-speed" min="0" max="100" step="1" value="1"
+        style="width: 100%; accent-color: #00ff00;">
+    </div>
     <hr style="border: 0; border-top: 1px solid #00ff00; width: 100%;">
-    <a href="designer.html"
-      style="color: #bb86fc; text-decoration: none; font-size: 14px; text-align: center; display: block; margin-top: 5px; border: 1px solid #bb86fc; padding: 5px; border-radius: 5px;">Open
-      Plant Designer</a>
+    <div class="debug-option">
+      Jump to:
+      <select id="debug-jump-biome" style="width: 100%;">
+        <option value="">Select Biome</option>
+        <option value="desert">Desert</option>
+        <option value="forest">Forest</option>
+        <option value="ice">Ice</option>
+        <option value="swamp">Swamp</option>
+        <option value="jurassic">Jurassic</option>
+        <option value="tropical_shoreline">Tropical</option>
+        <option value="fantasy">Fantasy</option>
+      </select>
+    </div>
   </div>
 
   <script>

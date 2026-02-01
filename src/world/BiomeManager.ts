@@ -247,6 +247,10 @@ export class BiomeManager {
     return this.activeInstances[this.activeInstances.length - 1];
   }
 
+  public getBiomeAt(worldZ: number): BiomeFeatures {
+    return this.getBiomeInstanceAt(worldZ).features;
+  }
+
   public getBiomeBoundaries(worldZ: number): { zMin: number, zMax: number } {
     const instance = this.getBiomeInstanceAt(worldZ);
     return {

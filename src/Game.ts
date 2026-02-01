@@ -19,7 +19,8 @@ export class Game {
             setBoatThrottle: (val: number) => { if (this.engine.boat) this.engine.boat.setThrottle(val); },
             isPaused: () => this.engine.isPaused,
             onResetInstructions: () => this.instructionManager.reset(),
-            onSetMobileOverride: (val: boolean | null) => this.engine.inputManager.setMobileOverride(val)
+            onSetMobileOverride: (val: boolean | null) => this.engine.inputManager.setMobileOverride(val),
+            onJumpToBiome: (biomeType) => this.engine.jumpToBiome(biomeType)
         });
 
         this.instructionManager = new InstructionManager();

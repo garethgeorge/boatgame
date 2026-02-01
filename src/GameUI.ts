@@ -2,6 +2,8 @@ import { GameThrottle } from './GameThrottle';
 import { DebugSettings } from './core/DebugSettings';
 import { Profiler } from './core/Profiler';
 import { DebugConsole } from './core/DebugConsole';
+import { BiomeType } from './world/biomes/BiomeType';
+
 
 export interface GameUIListeners {
     onStart: () => Promise<void>;
@@ -10,6 +12,7 @@ export interface GameUIListeners {
     isPaused: () => boolean;
     onResetInstructions: () => void;
     onSetMobileOverride: (isMobile: boolean | null) => void;
+    onJumpToBiome: (biomeType: BiomeType) => void;
 }
 
 export class GameUI {
@@ -113,6 +116,18 @@ export class GameUI {
                 const val = parseFloat(cycleSpeedSlider.value);
                 DebugSettings.cycleSpeedMultiplier = val;
                 cycleSpeedVal.innerText = `${val}x`;
+            });
+        }
+
+        const jumpSelect = document.getElementById('debug-jump-biome') as HTMLSelectElement;
+        if (jumpSelect) {
+            jumpSelect.addEventListener('change', () => {
+                const val = jumpSelect.value as BiomeType;
+                if (val) {
+                    listeners.onJumpToBiome(val);
+                    // Reset dropdown after choice
+                    jumpSelect.value = '';
+                }
             });
         }
     }

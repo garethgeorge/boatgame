@@ -15,6 +15,8 @@ import { TerrainChunk } from './world/TerrainChunk';
 import { RiverSystem } from './world/RiverSystem';
 import { DebugConsole } from './core/DebugConsole';
 import { DesignerSettings } from './core/DesignerSettings';
+import { BiomeType } from './world/biomes/BiomeType';
+
 
 export class GameEngine {
     physicsEngine: PhysicsEngine;
@@ -290,12 +292,43 @@ export class GameEngine {
 
     private skipToNextBiome() {
         if (!this.boat || this.boat.meshes.length === 0) return;
+
         const riverSystem = RiverSystem.getInstance();
+
         const currentZ = this.boat.meshes[0].position.z;
         const boundaries = riverSystem.biomeManager.getBiomeBoundaries(currentZ - 1.0);
         const nextZ = boundaries.zMin;
+
+        // ensure biomes are loaded from here to the target z
+        riverSystem.biomeManager.ensureWindow(nextZ - 100, currentZ + 100);
+
         const nextX = riverSystem.getRiverCenter(nextZ);
         this.boat.teleport(nextX, nextZ);
+    }
+
+    public jumpToBiome(targetType: BiomeType) {
+        if (!this.boat || this.boat.meshes.length === 0) return;
+        const riverSystem = RiverSystem.getInstance();
+
+        let maxSteps = 30;
+        while (maxSteps > 0) {
+            const currentZ = this.boat.meshes[0].position.z;
+
+            // Check if we are already in the target biome
+            if (riverSystem.biomeManager.getBiomeAt(currentZ).id === targetType) {
+                break;
+            }
+            this.skipToNextBiome();
+            maxSteps--;
+        }
+
+        const currentZ = this.engineZPos();
+        riverSystem.biomeManager.ensureWindow(currentZ - 500, currentZ + 500);
+        this.terrainManager.update(this.boat, 0.016);
+    }
+
+    private engineZPos(): number {
+        return this.boat.meshes[0].position.z;
     }
 
     public setPaused(paused: boolean) {
