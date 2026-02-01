@@ -4,6 +4,19 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationConfig } from '../decorators/TerrainDecorator';
 
+export interface SkyColors {
+    top: string;
+    mid?: string; // Optional: Only used for rich sunsets
+    bottom: string;
+}
+
+export interface SkyBiome {
+    noon: SkyColors;
+    sunset: SkyColors;
+    night: SkyColors;
+    haze: number; // 0.0 to 1.0
+}
+
 export interface BiomeFeatures {
     id: BiomeType;
 
@@ -23,7 +36,7 @@ export interface BiomeFeatures {
     getFogRange(): { near: number, far: number };
     getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number };
     getScreenTint(): { r: number, g: number, b: number };
-    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color };
+    getSkyBiome(): SkyBiome;
     getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number;
     getRiverWidthMultiplier(): number;
 

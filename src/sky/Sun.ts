@@ -4,6 +4,7 @@ import { GraphicsUtils } from '../core/GraphicsUtils';
 export class Sun {
     public mesh: THREE.Sprite;
     public light: THREE.DirectionalLight;
+    public direction: THREE.Vector3 = new THREE.Vector3();
 
     constructor(scene: THREE.Scene) {
         // Create Sun Sprite
@@ -57,6 +58,7 @@ export class Sun {
 
         // Update Sun Mesh Position
         const sunDir = new THREE.Vector3(x, yInclined, zInclined).normalize();
+        this.direction.copy(sunDir);
         this.mesh.position.copy(cameraPosition).add(sunDir.multiplyScalar(300)); // Inside skybox (360)
 
         // Calculate Intensity

@@ -38,8 +38,14 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         return { near: 50, far: 600 };
     }
 
-    protected skyTopColors: number[] = [0x101510, 0x667755, 0x88aa88]; // [Night, Sunset, Noon]
-    protected skyBottomColors: number[] = [0x151A15, 0x889977, 0xaabb99]; // [Night, Sunset, Noon]
+    public override getSkyBiome(): any {
+        return {
+            noon: { top: '#2f4f4f', bottom: '#9eb05d' },
+            sunset: { top: '#1a0f00', mid: '#8b0000', bottom: '#4b5320' },
+            night: { top: '#020502', bottom: '#0d1a0d' },
+            haze: 0.9
+        };
+    }
 
     getRiverWidthMultiplier(): number {
         return 1.7;

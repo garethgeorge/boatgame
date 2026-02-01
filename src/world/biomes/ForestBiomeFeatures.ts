@@ -29,7 +29,15 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     getScreenTint(): { r: number, g: number, b: number } {
         return { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 };
     }
-    protected skyBottomColors: number[] = [0x2b4f68, 0xede6da, 0xb1daec]; // [Night, Sunset, Noon]
+
+    public override getSkyBiome(): any {
+        return {
+            noon: { top: '#4080ff', bottom: '#c0d8ff' },
+            sunset: { top: '#2e1a47', mid: '#c71585', bottom: '#ff8c00' },
+            night: { top: '#050a15', bottom: '#1a1a2e' },
+            haze: 0.5
+        };
+    }
 
     private decorationConfig: DecorationConfig = {
         maps: {},

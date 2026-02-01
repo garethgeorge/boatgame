@@ -1,5 +1,4 @@
-import * as THREE from 'three';
-import { BiomeFeatures } from './BiomeFeatures';
+import { BiomeFeatures, SkyBiome } from './BiomeFeatures';
 import { Spawnable, SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
@@ -51,29 +50,12 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
 
     abstract getScreenTint(): { r: number, g: number, b: number };
 
-    protected skyTopColors: number[] = [0x1A1A3A, 0x967BB6, 0x4488ff]; // [Night, Sunset, Noon]
-    protected skyBottomColors: number[] = [0x2D2D44, 0xFF9966, 0xccddff]; // [Night, Sunset, Noon]
-
-    protected interpolateSkyColors(dayness: number, colors: number[]): THREE.Color {
-
-        if (dayness > 0) {
-            // Lerp between Sunset (0) and Noon (1)
-            const sunset = new THREE.Color(colors[1]);
-            const noon = new THREE.Color(colors[2]);
-            return sunset.lerp(noon, dayness);
-        } else {
-            // Lerp between Sunset (0) and Night (-1)
-            // dayness is -1 to 0, so -dayness is 0 to 1
-            const sunset = new THREE.Color(colors[1]);
-            const night = new THREE.Color(colors[0]);
-            return sunset.lerp(night, -dayness);
-        }
-    }
-
-    getSkyColors(dayness: number): { top: THREE.Color, bottom: THREE.Color } {
+    public getSkyBiome(): SkyBiome {
         return {
-            top: this.interpolateSkyColors(dayness, this.skyTopColors),
-            bottom: this.interpolateSkyColors(dayness, this.skyBottomColors)
+            noon: { top: '#4488ff', bottom: '#ccddff' },
+            sunset: { top: '#967BB6', bottom: '#FF9966' },
+            night: { top: '#1A1A3A', bottom: '#2D2D44' },
+            haze: 0.5
         };
     }
 

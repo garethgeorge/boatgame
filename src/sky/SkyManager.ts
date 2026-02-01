@@ -115,27 +115,66 @@ export class SkyManager {
     }
 
     private updateSkyAndFog(boatZ: number, dayness: number, cameraPosition: THREE.Vector3) {
-        const biomeSkyGradient = RiverSystem.getInstance().biomeManager.getBiomeSkyGradient(boatZ, dayness);
+        const skyBiome = RiverSystem.getInstance().biomeManager.getBiomeSkyBiome(boatZ);
         const biomeFogDensity = RiverSystem.getInstance().biomeManager.getBiomeFogDensity(boatZ);
         const biomeScreenTint = RiverSystem.getInstance().biomeManager.getBiomeScreenTint(boatZ);
 
         // Height-based scaling logic
-        // Birds view is at y=40, BirdsFar is at y=300
-        // We start scaling at y=50 and reach maximum clear at y=250
         const MIN_HEIGHT = 50;
         const MAX_HEIGHT = 250;
         const heightFactor = Math.min(1.0, Math.max(0.0, (cameraPosition.y - MIN_HEIGHT) / (MAX_HEIGHT - MIN_HEIGHT)));
 
         // Screen overlay: Reduce desaturation and tint as we go higher
-        const overlayIntensity = 1.0 - heightFactor * 0.8; // Don't clear completely, but reduce significantly
+        const overlayIntensity = 1.0 - heightFactor * 0.8;
         this.screenOverlay.update(biomeScreenTint, biomeFogDensity * 0.75 * overlayIntensity);
 
-        // Sky gradient
-        this.skybox.update(cameraPosition, biomeSkyGradient.top, biomeSkyGradient.bottom);
+        // Sun intensity: 1 at Noon, 0 at Sunset/Rise, 0 at Night
+        const sunIntensity = Math.max(0, dayness);
 
-        // Update Fog Color to match horizon (bottom color)
+        // Interpolate Sun-side colors (Light side)
+        const lerpColors = (noon: any, sunset: any, t: number) => {
+            const top = new THREE.Color(noon.top).lerp(new THREE.Color(sunset.top), 1 - t);
+            const bottom = new THREE.Color(noon.bottom).lerp(new THREE.Color(sunset.bottom), 1 - t);
+            const getMid = (c: any) => {
+                if (c.mid) return new THREE.Color(c.mid);
+                return new THREE.Color(c.top).lerp(new THREE.Color(c.bottom), 0.5);
+            };
+            const mid = getMid(noon).lerp(getMid(sunset), 1 - t);
+            return { top, mid, bottom };
+        };
+
+        const lightColors = lerpColors(skyBiome.noon, skyBiome.sunset, sunIntensity);
+        const darkColors = {
+            top: new THREE.Color(skyBiome.night.top),
+            bottom: new THREE.Color(skyBiome.night.bottom)
+        };
+
+        // Update Skybox
+        this.skybox.update(
+            cameraPosition,
+            this.sun.direction,
+            this.moon.direction,
+            {
+                lightTop: lightColors.top,
+                lightMid: lightColors.mid,
+                lightBot: lightColors.bottom,
+                darkTop: darkColors.top,
+                darkBot: darkColors.bottom,
+                moonColor: new THREE.Color('#b0c0d0')
+            },
+            skyBiome.haze,
+            dayness
+        );
+
+        // Update Fog Color to match horizon (Light side bottom color if sun is up, else Night side bottom)
         if (this.scene.fog) {
-            this.scene.fog.color.copy(biomeSkyGradient.bottom);
+            const fogColor = new THREE.Color();
+            if (dayness > 0) {
+                fogColor.copy(lightColors.bottom);
+            } else {
+                fogColor.copy(darkColors.bottom);
+            }
+            this.scene.fog.color.copy(fogColor);
         }
 
         // Update Fog Density based on biome and height

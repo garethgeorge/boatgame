@@ -30,8 +30,14 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, TropicalShorelineBiomeFeatures.LENGTH, direction);
     }
 
-    protected skyTopColors: number[] = [0x1a2a44, 0xffa500, 0x00bfff]; // [Night, Sunset, Noon]
-    protected skyBottomColors: number[] = [0x0d1522, 0xff4500, 0x87ceeb]; // [Night, Sunset, Noon]
+    public override getSkyBiome(): any {
+        return {
+            noon: { top: '#00bfff', bottom: '#7fffd4' },
+            sunset: { top: '#483d8b', mid: '#ff1493', bottom: '#ffa07a' },
+            night: { top: '#010b1a', bottom: '#004466' },
+            haze: 0.6
+        };
+    }
 
     getScreenTint(): { r: number, g: number, b: number } {
         return { r: 1.0, g: 0.98, b: 0.9 };

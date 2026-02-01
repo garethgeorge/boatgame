@@ -1,6 +1,6 @@
 import { smoothstep } from 'three/src/math/MathUtils';
 import * as THREE from 'three';
-import { BiomeFeatures } from './biomes/BiomeFeatures';
+import { BiomeFeatures, SkyBiome, SkyColors } from './biomes/BiomeFeatures';
 import { DesertBiomeFeatures } from './biomes/DesertBiomeFeatures';
 import { ForestBiomeFeatures } from './biomes/ForestBiomeFeatures';
 import { IceBiomeFeatures } from './biomes/IceBiomeFeatures';
@@ -362,17 +362,38 @@ export class BiomeManager {
     };
   }
 
-  public getBiomeSkyGradient(worldZ: number, dayness: number): { top: THREE.Color, bottom: THREE.Color } {
+  public getBiomeSkyBiome(worldZ: number): SkyBiome {
     const mixture = this.getBiomeMixture(worldZ);
-    const sky1 = mixture[0].biome.getSkyColors(dayness);
-    if (mixture.length === 1) return sky1;
-    const sky2 = mixture[1].biome.getSkyColors(dayness);
+    const s1 = mixture[0].biome.getSkyBiome();
+    if (mixture.length === 1) return s1;
+    const s2 = mixture[1].biome.getSkyBiome();
 
-    // Blend the two sky gradients based on mixture weights
-    const top = sky1.top.clone().multiplyScalar(mixture[0].weight).add(sky2.top.clone().multiplyScalar(mixture[1].weight));
-    const bottom = sky1.bottom.clone().multiplyScalar(mixture[0].weight).add(sky2.bottom.clone().multiplyScalar(mixture[1].weight));
+    const w2 = mixture[1].weight;
 
-    return { top, bottom };
+    return {
+      noon: this.lerpSkyColors(s1.noon, s2.noon, w2),
+      sunset: this.lerpSkyColors(s1.sunset, s2.sunset, w2),
+      night: this.lerpSkyColors(s1.night, s2.night, w2),
+      haze: this.lerp(s1.haze, s2.haze, w2)
+    };
+  }
+
+  private lerpSkyColors(c1: SkyColors, c2: SkyColors, t: number): SkyColors {
+    const colorTop = new THREE.Color(c1.top).lerp(new THREE.Color(c2.top), t);
+    const colorBottom = new THREE.Color(c1.bottom).lerp(new THREE.Color(c2.bottom), t);
+
+    const getMid = (c: SkyColors) => {
+      if (c.mid) return new THREE.Color(c.mid);
+      return new THREE.Color(c.top).lerp(new THREE.Color(c.bottom), 0.5);
+    };
+
+    const colorMid = getMid(c1).lerp(getMid(c2), t);
+
+    return {
+      top: '#' + colorTop.getHexString(),
+      mid: '#' + colorMid.getHexString(),
+      bottom: '#' + colorBottom.getHexString()
+    };
   }
 
   public getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number {

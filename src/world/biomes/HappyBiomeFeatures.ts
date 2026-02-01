@@ -35,8 +35,14 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return { r: 0.9, g: 0.95, b: 1.0 };
     }
 
-    protected skyTopColors: number[] = [0x303948, 0xf6b581, 0x01cad1]; // [Night, Sunset, Noon]
-    protected skyBottomColors: number[] = [0x5b6831, 0xf7efbc, 0xb0ece6]; // [Night, Sunset, Noon]
+    public override getSkyBiome(): any {
+        return {
+            noon: { top: '#00ccff', bottom: '#ffffff' },
+            sunset: { top: '#4b0082', mid: '#ff69b4', bottom: '#f0e68c' },
+            night: { top: '#0a1a33', bottom: '#334466' },
+            haze: 0.4
+        };
+    }
 
     public override getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number {
         return 0.5 * super.getAmplitudeMultiplier(wx, wz, distFromBank);

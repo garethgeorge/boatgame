@@ -4,6 +4,7 @@ import { GraphicsUtils } from '../core/GraphicsUtils';
 export class Moon {
     public mesh: THREE.Sprite;
     public light: THREE.DirectionalLight;
+    public direction: THREE.Vector3 = new THREE.Vector3();
 
     constructor(scene: THREE.Scene, sunLight: THREE.DirectionalLight) {
         // Create Moon Sprite
@@ -51,6 +52,7 @@ export class Moon {
         this.light.target.updateMatrixWorld();
 
         const moonDir = new THREE.Vector3(x, yInclined, zInclined).normalize();
+        this.direction.copy(moonDir);
         this.mesh.position.copy(cameraPosition).add(moonDir.multiplyScalar(300));
 
         // Update Moon Light Intensity

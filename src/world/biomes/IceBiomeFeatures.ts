@@ -33,8 +33,14 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         return { near: 0, far: 400 };
     }
 
-    protected skyTopColors: number[] = [0x0c1424, 0x888b8f, 0xc2c7da]; // [Night, Sunset, Noon]
-    protected skyBottomColors: number[] = [0x20283d, 0x85a2bd, 0xe5d9b2]; // [Night, Sunset, Noon]
+    public override getSkyBiome(): any {
+        return {
+            noon: { top: '#a0c0f0', bottom: '#e0f0ff' },
+            sunset: { top: '#203050', mid: '#9370db', bottom: '#ffb6c1' },
+            night: { top: '#010510', bottom: '#102040' },
+            haze: 0.1
+        };
+    }
 
     getRiverWidthMultiplier(): number {
         return 2.3;
