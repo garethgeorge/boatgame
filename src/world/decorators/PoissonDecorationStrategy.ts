@@ -194,11 +194,11 @@ export class PoissonDecorationStrategy {
         let spacing;
 
         if (canopyRadius <= 0.0) {
-            spacing = groundRadius + (params.spacing ?? 0);
+            spacing = Math.max(0.01, groundRadius + (params.spacing ?? 0));
             if (spatialGrid.checkGroundCollision(x, z, spacing))
                 return null;
         } else {
-            spacing = canopyRadius + (params.spacing ?? 0);
+            spacing = Math.max(0.01, canopyRadius + (params.spacing ?? 0));
             if (spatialGrid.checkCollision(x, z, groundRadius, spacing)) {
                 return null;
             }

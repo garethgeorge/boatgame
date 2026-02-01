@@ -14,6 +14,7 @@ export interface TreeDecorationOptions {
     rotation: number;
     scale: number;
     color?: number;
+    woodColor?: number;
     isSnowy?: boolean;
     isLeafLess?: boolean;
 }
@@ -203,6 +204,7 @@ export class TerrainDecorator {
                     const treeInstances = Decorations.getLSystemTreeInstance({
                         kind: opts.kind,
                         leafColor: opts.color,
+                        woodColor: opts.woodColor,
                         isSnowy: opts.isSnowy,
                         isLeafLess: opts.isLeafLess
                     });

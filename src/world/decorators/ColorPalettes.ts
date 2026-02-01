@@ -46,11 +46,32 @@ export class ColorPalettes {
         ]
     };
 
+    public static readonly FANTASY_LEAVES: ColorPalette = {
+        colors: [
+            0x4949c0, // #4949c0
+            0x6fffb7, // #6fffb7
+            0xff6078, // #ff6078
+            0x4d9fbb, // #4d9fbb
+            0xfbea50, // #fbea50
+        ]
+    };
+
+    public static readonly FANTASY_TRUNK: ColorPalette = {
+        colors: [
+            0x251b65, // #251b65
+            0xd09406, // #d09406
+            0xF8F8FF, // #F8F8FF
+            0xdc6767, // #dc6767
+        ]
+    };
+
     private static readonly PALETTES: Record<string, ColorPalette> = {
         'daisy': this.DAISY,
         'lily': this.LILY,
         'fall_yellow': this.FALL_YELLOW,
         'fall_red_orange': this.FALL_RED_ORANGE,
+        'fantasy_leaves': this.FANTASY_LEAVES,
+        'fantasy_trunk': this.FANTASY_TRUNK,
     };
 
     /**
