@@ -7,6 +7,8 @@ export interface PlantParams {
     lengthDecay: number;        // length decay factor
     thickness: number;          // base thickness for the trunk
     thicknessDecay: number;     // thickness decay factor (typically 0.5 to 1.0)
+    taperRate?: number;         // radius reduction per unit length
+    minTwigRadius?: number;     // minimum radius floor
 }
 
 export interface BranchParams {
@@ -50,7 +52,7 @@ export interface ExpansionRuleResult {
     weights?: number[];    // their weights (probabilities)
 }
 
-export type ExpansionRuleDefinition = ExpansionRuleResult | ((val: number) => ExpansionRuleResult);
+export type ExpansionRuleDefinition = ExpansionRuleResult | ((val: number, count: number) => ExpansionRuleResult);
 export type BranchRuleDefinition = BranchParams | ((val: number) => BranchParams);
 export type LeafRuleDefinition = LeafParams;
 
@@ -58,6 +60,20 @@ export type LeafRuleDefinition = LeafParams;
  * Defines the rules for generating a plant. There are two steps:
  * 1) Generate a string using a set of simple grammar substitution rules.
  * 2) Interpret the string as a set of instructions to a 3d turtle graphics system.
+ * 
+ * The grammar substition rule can either be one of the forms:
+ * { successor: 'replacement string' }
+ * { successor: ['string1', 'string2' ..], weights: [ p1, p2, ..] }
+ * (level: number, count: number) => one of the above
+ * 
+ * The level parameter to the function is the iteration level.
+ * 
+ * The L-system string is usually interpreted one character at a time. But
+ * a character can be followed by {<number>}. The number is parsed and
+ * passed as the count parameter to the rule function. The successor string
+ * from the function is also parsed and occurrences of {+} and {-} are replaced
+ * with {<count+1} and {count-1} respectively. This provides a way to control
+ * the application of recursive rules.
  * 
  * Some characters have built-in meanings in the result string. All others are
  * non-terminal symbols. The built ins are:
@@ -155,7 +171,8 @@ class PlantNode {
     leafWeightSum: number = 0;   // Sum of weights of leaves attached directly to this node
     branchWeight: number = 0;    // Weight of the branch segment leading to this node
     load: number = 0;            // The total "Pipe" value (sum of leaves and branch weights above)
-    radius: number = 0;          // Calculated in Pass 2
+    radiusStart: number = 0;     // Calculated in Pass 2
+    radiusEnd: number = 0;       // Calculated in Pass 2
     quat: THREE.Quaternion = new THREE.Quaternion(); // Orientation leading to this node
 
     constructor(
@@ -467,7 +484,20 @@ export class ProceduralPlant {
         for (let i = 0; i < config.params.iterations; i++) {
             const isLast = i === config.params.iterations - 1;
             let next = "";
-            for (const symbol of current) {
+            for (let j = 0; j < current.length; j++) {
+                const symbol = current[j];
+                let count = 0;
+
+                // Look ahead for {count}
+                if (j + 1 < current.length && current[j + 1] === '{') {
+                    let start = j + 2;
+                    let end = current.indexOf('}', start);
+                    if (end !== -1) {
+                        count = parseInt(current.substring(start, end));
+                        j = end; // Skip the {count} part
+                    }
+                }
+
                 const rule = config.rules[symbol];
 
                 if (!rule) {
@@ -478,7 +508,7 @@ export class ProceduralPlant {
                     continue;
                 }
 
-                const result = typeof rule === 'function' ? rule(i) : rule;
+                const result = typeof rule === 'function' ? rule(i, count) : rule;
 
                 let successor = "";
                 if (result.successor) {
@@ -488,14 +518,21 @@ export class ProceduralPlant {
                     const totalWeight = weights.reduce((a, b) => a + b, 0);
                     const roll = Math.random() * totalWeight;
                     let acc = 0;
-                    for (let j = 0; j < result.successors.length; j++) {
-                        acc += weights[j];
+                    for (let k = 0; k < result.successors.length; k++) {
+                        acc += weights[k];
                         if (roll < acc) {
-                            successor = result.successors[j];
+                            successor = result.successors[k];
                             break;
                         }
                     }
                 }
+
+                // Process {+} and {-} in successor
+                if (successor.includes('{+') || successor.includes('{-')) {
+                    successor = successor.replace(/\{\+\}/g, `{${count + 1}}`);
+                    successor = successor.replace(/\{\-\}/g, `{${count - 1}}`);
+                }
+
                 next += successor;
             }
             current = next;
@@ -552,7 +589,16 @@ export class ProceduralPlant {
         const root = new PlantNode(new THREE.Vector3(0, 0, 0), 0);
         const turtle = new Turtle(root, config.params, defaultBranch);
 
-        for (const symbol of instructions) {
+        for (let i = 0; i < instructions.length; i++) {
+            const symbol = instructions[i];
+
+            // Skip {count} tokens
+            if (i + 1 < instructions.length && instructions[i + 1] === '{') {
+                let end = instructions.indexOf('}', i + 2);
+                if (end !== -1) {
+                    i = end;
+                }
+            }
 
             // first try for a symbol function
             const rule = symbolRules[symbol];
@@ -592,19 +638,7 @@ export class ProceduralPlant {
         };
         calculateLoad(root);
 
-        // 2b. Apply Radii (Area Preservation)
-        const trunkThickness = config.params.thickness || 1.0;
-        const power = config.params.thicknessDecay || 0.5;
-        const rootLoad = root.load;
-        const scaler = rootLoad > 0 ? trunkThickness / Math.pow(rootLoad, power) : trunkThickness;
-
-        const applyRadii = (node: PlantNode) => {
-            node.radius = scaler * Math.pow(node.load, power);
-            for (let child of node.children) {
-                applyRadii(child);
-            }
-        };
-        applyRadii(root);
+        // 2b. This is now handled after Pass 3 because tapering depends on final lengths.
 
 
         // --- PASS 3: LENGTH ADJUSTMENT (Vigor) ---
@@ -652,6 +686,41 @@ export class ProceduralPlant {
         adjustNodesForLength(root);
 
 
+        // --- PASS 3.5: APPLY RADII (With Tapering) ---
+        const trunkThickness = config.params.thickness || 1.0;
+        const power = config.params.thicknessDecay || 0.5;
+        const taperRate = config.params.taperRate || 0.0;
+        const minTwigRadius = config.params.minTwigRadius || 0.01;
+        const rootLoad = root.load;
+        const scaler = rootLoad > 0 ? trunkThickness / Math.pow(rootLoad, power) : trunkThickness;
+
+        const applyRadii = (node: PlantNode, parentPos: THREE.Vector3, parentEndRadius?: number) => {
+            // 1. Get standard pipe load radius
+            let baseRadius = scaler * Math.pow(node.load, power);
+
+            // 2. Connectivity constraint: don't be wider than parent
+            if (parentEndRadius !== undefined) {
+                baseRadius = Math.min(baseRadius, parentEndRadius);
+            }
+
+            // 3. Apply taper
+            const length = node.position.distanceTo(parentPos);
+            const taperReduction = length * taperRate;
+            let endRadius = baseRadius - taperReduction;
+
+            // 4. Enforce floor
+            endRadius = Math.max(endRadius, minTwigRadius);
+
+            node.radiusStart = baseRadius;
+            node.radiusEnd = endRadius;
+
+            for (let child of node.children) {
+                applyRadii(child, node.position, endRadius);
+            }
+        };
+        applyRadii(root, new THREE.Vector3(0, 0, 0));
+
+
         // --- PASS 4: GEOMETRY AND LEAF COLLECTION ---
         const generateBranchList = (node: PlantNode, parentBranch?: BranchData) => {
             // Collect leaves on this node
@@ -664,8 +733,8 @@ export class ProceduralPlant {
                 const branch: BranchData = {
                     start: node.position.clone(),
                     end: child.position.clone(),
-                    radiusStart: node.radius,
-                    radiusEnd: child.radius,
+                    radiusStart: child.radiusStart,
+                    radiusEnd: child.radiusEnd,
                     level: child.level,
                     quat: child.quat.clone(),
                     opts: child.opts,

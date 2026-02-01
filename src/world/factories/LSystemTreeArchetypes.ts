@@ -224,7 +224,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         },
         axiom: "=X",
         rules: {
-            'X': (i: number) => {
+            'X': (i: number, n: number) => {
                 if (i === 0) return { successors: ["&=/&=X", "/&=/&=X"], weights: [0.5, 0.5] };
                 if (i <= 3) return { successors: ["=[&X]/[&X]", "=[&X]"], weights: [0.8, 0.2] };
                 return { successors: ["=[&X]/[&=+]", "=[&=+]/[&X]"], weights: [0.5, 0.5] };
@@ -258,7 +258,7 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
         },
         axiom: "X",
         rules: {
-            'X': (level: number) => {
+            'X': (level: number, count: number) => {
                 if (level < 2) return { successor: "##[&X][X]" };
                 if (level < 3) return { successor: "===[&&X]/[&&X]" };
                 if (level < 4) return { successor: "==[&&X]/[&&X]" };
@@ -418,14 +418,17 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
                 thickness: 1,
             },
             leafColor: 0x4a7a2a,
-            woodColor: 0x6b4423
+            woodColor: 0x736D45
         },
         axiom: "T",
         rules: {
             // base of trunk, has a bend at the bottom
-            T: { successor: "#[==C]" },
+            T: { successors: ["#==U{4}", "#==U{3}", "#==U{2}"] },
             // trunk, heliotropism to straighten up
-            U: { successors: ["[==U]", "[==C]", "C"] },
+            U: (level: number, count: number) => {
+                if (count > 0) return { successor: "[=U{-}]" };
+                return { successor: "C" };
+            },
         },
         symbols: {
             "#": (turtle) => {
@@ -436,18 +439,23 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
                 turtle.branch({ scale: 0.5, heliotropism: 0.2 });
             },
             "C": (turtle) => {
+                const w0 = 4;
+                const w1 = 30;
                 for (let l = 0; l < 3; l++) {
                     for (let j = 0; j < 5 + l; j++) {
                         turtle.rotate();
                         turtle.push();
                         turtle.bend({ spread: 20 + 20 * l });
                         turtle.branch({ scale: 0.1 });
-                        for (let i = 0; i < 3 + l; i++) {
+                        for (let i = 0; i <= 2 + l; i++) {
+                            const t = i / (2 + l);
+                            const u = t < 0.5 ? t * 2 : (1 - t) * 2;
+                            const w = w0 + (w1 - w0) * u;
                             turtle.rotate({ angle: 0, jitter: 20 });
                             turtle.branch({
                                 gravity: 0.15, scale: 0.5, geomIndex: 1,
                                 opts: {
-                                    kind: 'rectangle', widthScale: [10, 10],
+                                    kind: 'rectangle', widthScale: [w, w],
                                     variation: { h: 0.05, s: 0.1, l: 0.1 }
                                 }
                             });
@@ -462,7 +470,8 @@ export const ARCHETYPES: Record<LSystemTreeKind, TreeConfig> = {
             length: 3,
             lengthDecay: 0.8,
             thickness: 0.3,
-            thicknessDecay: 1.0
+            thicknessDecay: 1.0,
+            taperRate: 0.015
         }
     }
 };
