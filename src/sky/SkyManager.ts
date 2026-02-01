@@ -25,8 +25,6 @@ export class SkyManager {
     // Scratch colors for zero-allocation blending
     private scratchColor1 = new THREE.Color();
     private scratchColor2 = new THREE.Color();
-    private scratchColor3 = new THREE.Color();
-    private scratchColor4 = new THREE.Color();
     private static readonly MOON_COLOR = 0xb0c0d0;
 
     // Persistent color objects for zero-allocation blending
@@ -147,7 +145,8 @@ export class SkyManager {
         // Sun intensity: 1 at Noon, 0 at Sunset/Rise, 0 at Night
         const sunIntensity = Math.max(0, dayness);
 
-        // Zero-allocation interpolation for sun-side colors
+        // There are 3 daytime sky colors, bottom, mid, top
+        // They are interpolated between noon and sunset values
         const t = 1 - sunIntensity;
         this.interpolatedLightTop.set(skyBiome.noon.top).lerp(this.scratchColor1.set(skyBiome.sunset.top), t);
         this.interpolatedLightBot.set(skyBiome.noon.bottom).lerp(this.scratchColor1.set(skyBiome.sunset.bottom), t);
@@ -161,6 +160,7 @@ export class SkyManager {
         const midSunset = getMid(skyBiome.sunset, this.scratchColor2);
         this.interpolatedLightMid.lerpColors(midNoon, midSunset, t);
 
+        // There are two night colors
         this.interpolatedDarkTop.set(skyBiome.night.top);
         this.interpolatedDarkBot.set(skyBiome.night.bottom);
 
@@ -181,12 +181,15 @@ export class SkyManager {
             dayness
         );
 
-        // Update Fog Color to match horizon (Light side bottom color if sun is up, else Night side bottom)
+        // Update Fog Color to match horizon (Light side bottom color if sun is up,
+        // else Night side bottom)
         if (this.scene.fog) {
-            if (dayness > 0) {
+            if (dayness < -0.5) {
+                this.scene.fog.color.copy(this.interpolatedDarkBot);
+            } else if (dayness > 0.5) {
                 this.scene.fog.color.copy(this.interpolatedLightBot);
             } else {
-                this.scene.fog.color.copy(this.interpolatedDarkBot);
+                this.scene.fog.color.set(this.interpolatedDarkBot).lerp(this.interpolatedLightBot, dayness + 0.5);
             }
         }
 
