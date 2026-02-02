@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy, PatternConfigs, TrackConfig } from './BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, Patterns, TrackConfig } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
@@ -116,25 +116,22 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
         if (this.layoutCache) return this.layoutCache;
 
         const waterAnimals = [EntityIds.DOLPHIN];
-        const patterns: PatternConfigs = {
-            'dolphin_pods': {
-                logic: 'scatter',
+        const patterns = {
+            'dolphin_pods': Patterns.scatter({
                 place: 'slalom',
                 density: [0.4, 0.7],
                 types: [EntityIds.DOLPHIN]
-            },
-            'turtle_beaches': {
-                logic: 'scatter',
+            }),
+            'turtle_beaches': Patterns.scatter({
                 place: 'near-shore',
                 density: [0.3, 0.6],
                 types: [EntityIds.TURTLE]
-            },
-            'butterfly_swarms': {
-                logic: 'scatter',
+            }),
+            'butterfly_swarms': Patterns.scatter({
                 place: 'on-shore',
                 density: [0.3, 0.6],
                 types: [EntityIds.BUTTERFLY]
-            },
+            }),
         };
 
         const riverTrack: TrackConfig = {

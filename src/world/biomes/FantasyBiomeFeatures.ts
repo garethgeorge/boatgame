@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy, PatternConfigs, TrackConfig } from './BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, Patterns, TrackConfig } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
@@ -144,31 +144,27 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
         if (this.layoutCache) return this.layoutCache;
 
         const waterAnimals = [EntityIds.SWAN];
-        const patterns: PatternConfigs = {
-            'swan_bevies': {
-                logic: 'scatter',
+        const patterns = {
+            'swan_bevies': Patterns.scatter({
                 place: 'slalom',
                 density: [0.3, 0.6],
                 types: [EntityIds.SWAN]
-            },
-            'unicorn_herd': {
-                logic: 'scatter',
+            }),
+            'unicorn_herd': Patterns.scatter({
                 place: 'on-shore',
                 density: [0.2, 0.4],
                 types: [EntityIds.UNICORN]
-            },
-            'bluebird_flocks': {
-                logic: 'scatter',
+            }),
+            'bluebird_flocks': Patterns.scatter({
                 place: 'on-shore',
                 density: [0.3, 0.5],
                 types: [EntityIds.BLUEBIRD]
-            },
-            'gingerman_parade': {
-                logic: 'scatter',
+            }),
+            'gingerman_parade': Patterns.scatter({
                 place: 'on-shore',
                 density: [0.3, 0.6],
                 types: [EntityIds.GINGERMAN]
-            },
+            }),
         };
 
         const tracks: TrackConfig[] = [

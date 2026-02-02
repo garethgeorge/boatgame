@@ -3,7 +3,7 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations } from '../Decorations';
-import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, Patterns } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { AnimalSpawnOptions } from '../../entities/spawners/AnimalSpawner';
@@ -110,41 +110,36 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
 
         this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: {
-                'animal_corridor': {
-                    logic: 'sequence',
+                'animal_corridor': Patterns.sequence({
                     place: 'near-shore',
                     density: [0.5, 4.0],
                     types: [EntityIds.ALLIGATOR, EntityIds.MONKEY],
                     options: spawnOptions
-                },
-                'hippo_pod': {
-                    logic: 'cluster',
+                }),
+                'hippo_pod': Patterns.cluster({
                     place: 'near-shore',
                     density: [0.3, 2.0],
                     types: [EntityIds.HIPPO],
                     minCount: 2,
                     options: spawnOptions
-                },
-                'rocky_slalom': {
-                    logic: 'sequence',
+                }),
+                'rocky_slalom': Patterns.sequence({
                     place: 'slalom',
                     density: [0.5, 2.0],
                     types: [EntityIds.ROCK]
-                },
-                'rock_stagger': {
-                    logic: 'staggered',
+                }),
+                'rock_stagger': Patterns.staggered({
                     place: 'slalom',
                     density: [0.5, 2.0],
                     types: [EntityIds.ROCK],
                     minCount: 3
-                },
-                'bottle_cluster': {
-                    logic: 'cluster',
+                }),
+                'bottle_cluster': Patterns.cluster({
                     place: 'path',
                     density: [1.5, 0.5],
                     types: [EntityIds.BOTTLE],
                     minCount: 3
-                }
+                })
             },
             tracks: [
                 {
@@ -171,7 +166,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 {
                     name: 'unique_elements',
                     placements: [
-                        { name: 'dock', place: 'near-shore', at: 0.95, type: EntityIds.PIER }
+                        { name: 'dock', at: 0.95, range: [1, 1], type: EntityIds.PIER }
                     ]
                 },
                 {

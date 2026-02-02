@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, Patterns } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
@@ -94,45 +94,39 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
 
         this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: {
-                'forest_slalom': {
-                    logic: 'scatter',
+                'forest_slalom': Patterns.scatter({
                     place: 'slalom',
                     density: [1.0, 2.0],
                     types: [EntityIds.LOG, EntityIds.ROCK, EntityIds.BUOY]
-                },
-                'rock_gates': {
-                    logic: 'gate',
+                }),
+                'rock_gates': Patterns.gate({
                     place: 'slalom',
                     density: [1.0, 2.0],
                     types: [EntityIds.ROCK],
                     minCount: 2
-                },
-                'piers': {
-                    logic: 'staggered',
+                }),
+                'piers': Patterns.staggered({
                     place: 'slalom',
                     density: [0.3, 0.9],
                     types: [EntityIds.PIER],
                     minCount: 2
-                },
-                'forest_animals': {
-                    logic: 'scatter',
+                }),
+                'forest_animals': Patterns.scatter({
                     place: 'near-shore',
                     density: [0.8, 2.5],
                     types: [EntityIds.BROWN_BEAR, EntityIds.MOOSE]
-                },
-                'duckling_train': {
-                    logic: 'sequence',
+                }),
+                'duckling_train': Patterns.sequence({
                     place: 'path',
                     density: [0.5, 1.5],
                     types: [EntityIds.DUCKLING],
                     minCount: 3
-                },
-                'grass_patches': {
-                    logic: 'scatter',
+                }),
+                'grass_patches': Patterns.scatter({
                     place: 'near-shore',
                     density: [1.0, 2.0],
                     types: [EntityIds.WATER_GRASS]
-                }
+                })
             },
             tracks: [
                 {

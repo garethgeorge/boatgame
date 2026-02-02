@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BoatPathLayoutStrategy, BoatPathLayoutConfig } from './BoatPathLayoutStrategy';
+import { BoatPathLayoutStrategy, BoatPathLayoutConfig, Patterns } from './BoatPathLayoutStrategy';
 import { RiverSystem } from '../RiverSystem';
 import { EntityIds } from '../../entities/EntityIds';
 
@@ -20,12 +20,11 @@ vi.mock('../RiverSystem', () => ({
 describe('BoatPathLayoutStrategy', () => {
     const mockConfig: BoatPathLayoutConfig = {
         patterns: {
-            'test_pattern': {
-                logic: 'scatter',
+            'test_pattern': Patterns.scatter({
                 place: 'slalom',
                 density: [1.0, 1.0],
                 types: [EntityIds.ROCK]
-            }
+            })
         },
         tracks: [
             {

@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy, PatternConfigs, TrackConfig } from './BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, Patterns, TrackConfig } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, NoiseMap, DecorationConfig } from '../decorators/TerrainDecorator';
@@ -98,13 +98,12 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         if (this.layoutCache) return this.layoutCache;
 
         const waterAnimals = [];
-        const patterns: PatternConfigs = {
-            'dragonfly_swarms': {
-                logic: 'scatter',
+        const patterns = {
+            'dragonfly_swarms': Patterns.scatter({
                 place: 'path',
                 density: [0.3, 0.6],
                 types: [EntityIds.DRAGONFLY]
-            },
+            }),
         };
 
         let tracks: TrackConfig[] = [];

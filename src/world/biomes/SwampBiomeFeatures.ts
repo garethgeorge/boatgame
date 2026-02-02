@@ -5,7 +5,7 @@ import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { EntitySpawners } from '../../entities/EntitySpawners';
 import { Decorations } from '../Decorations';
-import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, Patterns } from './BoatPathLayoutStrategy';
 import { RiverGeometry } from '../RiverGeometry';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
@@ -77,59 +77,51 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
 
         this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: {
-                'dense_shore_mangroves': {
-                    logic: 'scatter',
+                'dense_shore_mangroves': Patterns.scatter({
                     place: 'near-shore',
                     density: [20, 40],
                     types: [EntityIds.MANGROVE],
                     minCount: 15
-                },
-                'clear_channel_bottles': {
-                    logic: 'sequence',
+                }),
+                'clear_channel_bottles': Patterns.sequence({
                     place: 'path',
                     density: [0.5, 0.5],
                     types: [EntityIds.BOTTLE]
-                },
-                'log_scatter': {
-                    logic: 'scatter',
+                }),
+                'log_scatter': Patterns.scatter({
                     place: 'slalom',
                     density: [0.5, 2.0],
                     types: [EntityIds.LOG]
-                },
-                'threat_ambush': {
-                    logic: 'scatter',
+                }),
+                'threat_ambush': Patterns.scatter({
                     place: 'path',
                     density: [0.2, 0.6],
                     types: [EntityIds.ALLIGATOR, EntityIds.SNAKE],
                     options: spawnOptions
-                },
-                'egret_flight': {
-                    logic: 'scatter',
+                }),
+                'egret_flight': Patterns.scatter({
                     place: 'path',
                     density: [1, 2],
                     types: [EntityIds.EGRET]
-                },
-                'dragonfly_buzz': {
-                    logic: 'cluster',
+                }),
+                'dragonfly_buzz': Patterns.cluster({
                     place: 'path',
                     density: [0.5, 1],
                     minCount: 2.0,
                     maxCount: 3.0,
                     types: [EntityIds.DRAGONFLY]
-                },
-                'grass_patches': {
-                    logic: 'scatter',
+                }),
+                'grass_patches': Patterns.scatter({
                     place: 'near-shore',
                     density: [1.5, 3.0],
                     types: [EntityIds.WATER_GRASS]
-                },
-                'lilly_patches': {
-                    logic: 'scatter',
+                }),
+                'lilly_patches': Patterns.scatter({
                     place: 'middle',
                     density: [5.0, 10.0],
                     minCount: 100,
                     types: [EntityIds.LILLY_PAD_PATCH]
-                }
+                })
             },
             tracks: [
                 {

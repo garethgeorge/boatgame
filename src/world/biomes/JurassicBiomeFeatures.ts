@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy, PatternConfigs } from './BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, Patterns } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, NoiseMap, TerrainDecorator } from '../decorators/TerrainDecorator';
@@ -100,50 +100,43 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const patterns: PatternConfigs = {
-            'scattered_rocks': {
-                logic: 'scatter',
+        const patterns = {
+            'scattered_rocks': Patterns.scatter({
                 place: 'slalom',
                 density: [1.0, 3.0],
                 types: [EntityIds.ROCK]
-            },
-            'staggered_logs': {
-                logic: 'staggered',
+            }),
+            'staggered_logs': Patterns.staggered({
                 place: 'slalom',
                 density: [0.5, 1.5],
                 types: [EntityIds.LOG],
                 minCount: 4
-            },
-            'dino_scatter': {
-                logic: 'scatter',
+            }),
+            'dino_scatter': Patterns.scatter({
                 place: 'near-shore',
                 density: [0.5, 1.5],
                 types: [EntityIds.TREX, EntityIds.TRICERATOPS]
-            },
-            'ptero_scatter': {
-                logic: 'scatter',
+            }),
+            'ptero_scatter': Patterns.scatter({
                 place: 'on-shore',
                 density: [0.5, 1.5],
                 types: [EntityIds.PTERODACTYL]
-            },
-            'bronto_migration': {
-                logic: 'sequence',
+            }),
+            'bronto_migration': Patterns.sequence({
                 place: 'near-shore',
                 density: [0.4, 0.4],
                 types: [EntityIds.BRONTOSAURUS]
-            },
-            'bottle_hunt': {
-                logic: 'scatter',
+            }),
+            'bottle_hunt': Patterns.scatter({
                 place: 'path',
                 density: [0.25, 0.5],
                 types: [EntityIds.BOTTLE]
-            },
-            'grass_patches': {
-                logic: 'scatter',
+            }),
+            'grass_patches': Patterns.scatter({
                 place: 'near-shore',
                 density: [1.5, 3.0],
                 types: [EntityIds.WATER_GRASS]
-            }
+            })
         };
 
         this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {

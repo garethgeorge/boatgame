@@ -40,15 +40,22 @@ export interface BoatPathLayout {
     placements: ObstaclePlacement[];
 }
 
-export type PatternLogic = 'scatter' | 'sequence' | 'gate' | 'staggered' | 'cluster';
 export type PlacementType = 'on-shore' | 'path' | 'slalom' | 'near-shore' | 'middle';
 
-/**
- * Configuration for a single behavioral pattern of obstacle placement.
+/** Context passed to the pattern function for generating entity placements
  */
-export interface PatternConfig {
-    /** Distribution logic (scattered, ordered, etc.) */
-    logic: PatternLogic;
+export interface PatternContext {
+    placements: ObstaclePlacement[];
+    path: PathPoint[];
+    config: BoatPathLayoutConfig;
+    range: [number, number];        // index range in path array
+    progress: number;               // progress [0-1] along river
+    length: number;                 // arc length of the segment
+}
+
+export type PatternConfig = (context: PatternContext) => void;
+
+export interface CommonPatternOptions {
     /** Target area (near path, across river, or on shore) */
     place: PlacementType;
     /** Min and Max density in instances per 100m. Scales from start to end of biome. */
@@ -63,18 +70,217 @@ export interface PatternConfig {
     options?: SpawnOptionsFn;
 }
 
+export class Patterns {
+    public static scatter(opts: CommonPatternOptions): PatternConfig {
+        return (context: PatternContext) => this._scatter(context, opts);
+    }
+
+    public static sequence(opts: CommonPatternOptions): PatternConfig {
+        return (context: PatternContext) => this._sequence(context, opts);
+    }
+
+    public static staggered(opts: CommonPatternOptions): PatternConfig {
+        return (context: PatternContext) => this._staggered(context, opts);
+    }
+
+    public static gate(opts: CommonPatternOptions): PatternConfig {
+        return (context: PatternContext) => this._gate(context, opts);
+    }
+
+    public static cluster(opts: CommonPatternOptions): PatternConfig {
+        return (context: PatternContext) => this._cluster(context, opts);
+    }
+
+    private static _scatter(context: PatternContext, opts: CommonPatternOptions) {
+        const density = this.getDensity(opts.density, context.progress);
+        const expected = (context.length / 100) * density;
+        let count = Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
+
+        if (opts.minCount !== undefined) count = Math.max(count, opts.minCount);
+        if (opts.maxCount !== undefined) count = Math.min(count, opts.maxCount);
+
+        for (let j = 0; j < count; j++) {
+            const pathIndex = context.range[0] + Math.random() * (context.range[1] - context.range[0]);
+            context.placements.push(this.applyIndividualPlacement(
+                context,
+                opts.place,
+                opts.types[Math.floor(Math.random() * opts.types.length)],
+                opts.options,
+                pathIndex,
+            ));
+        }
+    }
+
+    private static _sequence(context: PatternContext, opts: CommonPatternOptions) {
+        const density = this.getDensity(opts.density, context.progress);
+        const expected = (context.length / 100) * density;
+        let count = Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
+
+        if (opts.minCount !== undefined) count = Math.max(count, opts.minCount);
+        if (opts.maxCount !== undefined) count = Math.min(count, opts.maxCount);
+
+        for (let j = 0; j < count; j++) {
+            const pathIndex = context.range[0] + (j + 0.5) * (context.range[1] - context.range[0]) / count;
+            context.placements.push(this.applyIndividualPlacement(
+                context,
+                opts.place,
+                opts.types[Math.floor(Math.random() * opts.types.length)],
+                opts.options,
+                pathIndex,
+            ));
+        }
+    }
+
+    private static _staggered(context: PatternContext, opts: CommonPatternOptions) {
+        const density = this.getDensity(opts.density, context.progress);
+        const expected = (context.length / 100) * density;
+        let count = Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
+
+        if (opts.minCount !== undefined) count = Math.max(count, opts.minCount);
+        if (opts.maxCount !== undefined) count = Math.min(count, opts.maxCount);
+
+        for (let j = 0; j < count; j++) {
+            const pathIndex = context.range[0] + (j + 0.5) * (context.range[1] - context.range[0]) / count;
+            context.placements.push(this.applyIndividualPlacement(
+                context,
+                opts.place,
+                opts.types[Math.floor(Math.random() * opts.types.length)],
+                opts.options,
+                pathIndex,
+                j % 2 === 0 ? 'left' : 'right',
+            ));
+        }
+    }
+
+    private static _gate(context: PatternContext, opts: CommonPatternOptions) {
+        const density = this.getDensity(opts.density, context.progress);
+        const expected = (context.length / 100) * density;
+        let count = Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
+
+        if (opts.minCount !== undefined) count = Math.max(count, opts.minCount);
+        if (opts.maxCount !== undefined) count = Math.min(count, opts.maxCount);
+
+        for (let j = 0; j < count; j++) {
+            const subCount = Math.ceil(count / 2);
+            const step = Math.floor(j / 2);
+            const pathIndex = context.range[0] + (step + 0.5) * (context.range[1] - context.range[0]) / subCount;
+            context.placements.push(this.applyIndividualPlacement(
+                context,
+                opts.place,
+                opts.types[Math.floor(Math.random() * opts.types.length)],
+                opts.options,
+                pathIndex,
+                j % 2 === 0 ? 'left' : 'right',
+            ));
+        }
+    }
+
+    private static _cluster(context: PatternContext, opts: CommonPatternOptions) {
+        const density = this.getDensity(opts.density, context.progress);
+        const expected = (context.length / 100) * density;
+        let count = Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
+
+        if (opts.minCount !== undefined) count = Math.max(count, opts.minCount);
+        if (opts.maxCount !== undefined) count = Math.min(count, opts.maxCount);
+
+        for (let j = 0; j < count; j++) {
+            const center = context.range[0] + Math.random() * (context.range[1] - context.range[0]);
+            const jitter = (Math.random() - 0.5) * 5.0;
+            const pathIndex = Math.max(context.range[0], Math.min(context.range[1], center + jitter));
+
+            context.placements.push(this.applyIndividualPlacement(
+                context,
+                opts.place,
+                opts.types[Math.floor(Math.random() * opts.types.length)],
+                opts.options,
+                pathIndex
+            ));
+        }
+    }
+
+    public static applyIndividualPlacement(
+        context: PatternContext,
+        place: PlacementType,
+        type: EntityIds,
+        spawnOptions: SpawnOptionsFn | undefined,
+        pathIndex: number,
+        side?: 'left' | 'right'
+    ): ObstaclePlacement {
+        const pathPoint = RiverGeometry.getPathPoint(context.path, pathIndex);
+        if (side === undefined) {
+            if (place === 'path') {
+                side = 0.5 < Math.random() ? 'left' : 'right';
+            } else {
+                const boatSide = pathPoint.boatXOffset > 0 ? 'right' : 'left';
+                side = boatSide === 'right' ? 'left' : 'right';
+            }
+        }
+
+        const range = this.placementRange(pathPoint, type, side, place, context.config);
+        const aggressiveness = Math.min(1.0, context.progress * 0.7 + Math.random() * 0.3);
+
+        return {
+            type,
+            index: pathIndex,
+            range,
+            aggressiveness,
+            options: spawnOptions
+        };
+    }
+
+    public static placementRange(
+        pathPoint: PathPoint,
+        type: EntityIds,
+        side: 'left' | 'right',
+        place: PlacementType,
+        config: BoatPathLayoutConfig
+    ): [number, number] {
+        if (place === 'on-shore') {
+            return side === 'right' ?
+                [pathPoint.bankDist, pathPoint.bankDist + 15] :
+                [-pathPoint.bankDist - 15, -pathPoint.bankDist];
+        } else if (place === 'slalom') {
+            return side === 'right' ?
+                [pathPoint.boatXOffset + 5.0, pathPoint.bankDist - 2.0] :
+                [-pathPoint.bankDist + 2.0, pathPoint.boatXOffset - 5.0];
+        } else if (place === 'near-shore') {
+            const isWaterAnimal = config.waterAnimals.includes(type);
+            if (isWaterAnimal) {
+                return side === 'right' ?
+                    [0.5 * pathPoint.bankDist, pathPoint.bankDist] :
+                    [-pathPoint.bankDist, 0.5 * -pathPoint.bankDist];
+            } else {
+                return side === 'right' ?
+                    [0.5 * pathPoint.bankDist, pathPoint.bankDist + 15] :
+                    [-pathPoint.bankDist - 15, 0.5 * -pathPoint.bankDist];
+            }
+        } else if (place === 'middle') {
+            return side === 'right' ?
+                [0, 0.5 * pathPoint.bankDist] :
+                [0.5 * -pathPoint.bankDist, 0];
+        } else {
+            // path, random position offset by +/-2
+            return [pathPoint.boatXOffset - 2, pathPoint.boatXOffset + 2];
+        }
+    }
+
+    public static getDensity(density: [number, number] | undefined, progress: number): number {
+        if (density === undefined) return 1.0;
+        return density[0] + progress * (density[1] - density[0]);
+    }
+}
+
 /**
  * Configuration for a specific, non-procedural placement on a track.
  */
 export interface ExplicitPlacementConfig {
     /** Unique name for this placement */
     name: string;
-    /** Area for placement (path, slalom, shore) */
-    place: PlacementType;
-    /** Progress [0-1] along the biome length */
-    at: number;
     /** The obstacle type to spawn */
     type: EntityIds;
+    /** Progress [0-1] along the biome length, distance from center to bank [0-1] */
+    at: number;
+    range: [number, number];
     /** Function called at spawn time to get placement parameters */
     options?: SpawnOptionsFn;
 }
@@ -275,189 +481,47 @@ export class BoatPathLayoutStrategy {
                     const sceneIStart = Math.floor((scene.sStart / totalArcLength) * (path.length - 1));
                     const sceneIEnd = Math.floor((scene.sEnd / totalArcLength) * (path.length - 1));
 
-                    this.resolvePattern(
+                    const context: PatternContext = {
+                        placements,
                         path,
                         config,
-                        pattern,
-                        [sceneIStart, sceneIEnd],
+                        range: [sceneIStart, sceneIEnd],
                         progress,
-                        sceneLenMeters,
-                        placements
-                    );
+                        length: sceneLenMeters
+                    };
+                    pattern(context);
                 }
             }
 
             // Explicit placements
             for (const ep of track.explicitPlacements) {
                 const pathIndex = ep.at * (path.length - 1);
-                placements.push(this.applyIndividualPlacement(
-                    path,
-                    ep.type,
-                    ep.place,
-                    ep.options,
-                    pathIndex,
-                    config,
-                    { lastStaggerSide: 'right' },
-                    ep.at
-                ));
+                const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
+
+                // determine placement range on wide side of path
+                let range: [number, number] = [0, 0];
+                if (pathPoint.boatXOffset < 0) {
+                    const width = pathPoint.bankDist - pathPoint.boatXOffset;
+                    range[0] = pathPoint.boatXOffset + width * ep.range[0];
+                    range[1] = pathPoint.boatXOffset + width * ep.range[1];
+                } else {
+                    const width = pathPoint.bankDist + pathPoint.boatXOffset;
+                    range[0] = pathPoint.boatXOffset - width * ep.range[0];
+                    range[1] = pathPoint.boatXOffset - width * ep.range[1];
+                }
+
+                const aggressiveness = Math.min(1.0, ep.at * 0.7 + Math.random() * 0.3);
+
+                placements.push({
+                    index: pathIndex,
+                    type: ep.type,
+                    range,
+                    aggressiveness,
+                    options: ep.options
+                });
             }
         }
 
         return placements;
-    }
-
-    private static resolvePattern(
-        path: PathPoint[],
-        config: BoatPathLayoutConfig,
-        pattern: PatternConfig,
-        range: [number, number],        // range of pattern in path
-        progress: number,
-        length: number,                 // length of pattern
-        placements: ObstaclePlacement[]
-    ) {
-        const density = this.getDensity(pattern, progress);
-        const expected = (length / 100) * density;
-        let count = Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
-
-        if (pattern.minCount !== undefined) count = Math.max(count, pattern.minCount);
-        if (pattern.maxCount !== undefined) count = Math.min(count, pattern.maxCount);
-
-        const state = { lastStaggerSide: 'right' as 'left' | 'right' };
-
-        for (let j = 0; j < count; j++) {
-            let pathIndex = 0;
-            let logic: PatternLogic | undefined = pattern.logic;
-            let gateIndex: number | undefined = undefined;
-
-            switch (pattern.logic) {
-                case 'scatter':
-                    pathIndex = range[0] + Math.random() * (range[1] - range[0]);
-                    break;
-                case 'sequence':
-                    pathIndex = range[0] + (j + 0.5) * (range[1] - range[0]) / count;
-                    break;
-                case 'staggered':
-                    pathIndex = range[0] + (j + 0.5) * (range[1] - range[0]) / count;
-                    break;
-                case 'gate':
-                    const subCount = Math.ceil(count / 2);
-                    const step = Math.floor(j / 2);
-                    pathIndex = range[0] + (step + 0.5) * (range[1] - range[0]) / subCount;
-                    gateIndex = j % 2;
-                    break;
-                case 'cluster':
-                    const center = range[0] + Math.random() * (range[1] - range[0]);
-                    const jitter = (Math.random() - 0.5) * 5.0;
-                    pathIndex = Math.max(range[0], Math.min(range[1], center + jitter));
-                    break;
-            }
-
-            placements.push(this.applyIndividualPlacement(
-                path,
-                pattern.types[Math.floor(Math.random() * pattern.types.length)],
-                pattern.place,
-                pattern.options,
-                pathIndex,
-                config,
-                state,
-                progress,
-                logic,
-                gateIndex
-            ));
-        }
-    }
-
-    /**
-     * Logic for deciding exactly where a single obstacle should be placed.
-     * Resolves the side (left/right) relative to the boat path and pattern logic.
-     */
-    private static applyIndividualPlacement(
-        path: PathPoint[],
-        type: EntityIds,
-        place: PlacementType,
-        spawnOptions: SpawnOptionsFn | undefined,
-        pathIndex: number,
-        config: BoatPathLayoutConfig,
-        state: { lastStaggerSide: 'left' | 'right' },
-        progress: number,
-        logic?: PatternLogic,
-        gateIndex?: number
-    ): ObstaclePlacement {
-        const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
-        const boatSide = pathPoint.boatXOffset > 0 ? 'right' : 'left';
-
-        let side: 'left' | 'right';
-
-        if (place === 'path') {
-            side = Math.random() > 0.5 ? 'left' : 'right';
-        } else if (logic === 'staggered') {
-            state.lastStaggerSide = state.lastStaggerSide === 'left' ? 'right' : 'left';
-            side = state.lastStaggerSide;
-        } else if (logic === 'gate') {
-            if (gateIndex === 0) {
-                side = boatSide === 'right' ? 'left' : 'right'; // opposite to boat
-            } else {
-                side = boatSide === 'right' ? 'right' : 'left'; // same as boat
-            }
-        } else {
-            // Default: opposite to boat
-            side = boatSide === 'right' ? 'left' : 'right';
-        }
-
-        const range = this.placementRange(pathPoint, type, side, place, config);
-        const aggressiveness = Math.min(1.0, progress * 0.7 + Math.random() * 0.3);
-
-        return {
-            type,
-            index: pathIndex,
-            range,
-            aggressiveness,
-            options: spawnOptions
-        };
-    }
-
-    /**
-     * Calculates the world-coordinate offset range along the normal vector
-     * for a given placement type and side.
-     */
-    private static placementRange(
-        pathPoint: PathPoint,
-        type: EntityIds,
-        side: 'left' | 'right',
-        place: PlacementType,
-        config: BoatPathLayoutConfig
-    ): [number, number] {
-        if (place === 'on-shore') {
-            return side === 'right' ?
-                [pathPoint.bankDist, pathPoint.bankDist + 15] :
-                [-pathPoint.bankDist - 15, -pathPoint.bankDist];
-        } else if (place === 'slalom') {
-            return side === 'right' ?
-                [pathPoint.boatXOffset + 5.0, pathPoint.bankDist - 2.0] :
-                [-pathPoint.bankDist + 2.0, pathPoint.boatXOffset - 5.0];
-        } else if (place === 'near-shore') {
-            const isWaterAnimal = config.waterAnimals.includes(type);
-            if (isWaterAnimal) {
-                return side === 'right' ?
-                    [0.5 * pathPoint.bankDist, pathPoint.bankDist] :
-                    [-pathPoint.bankDist, 0.5 * -pathPoint.bankDist];
-            } else {
-                return side === 'right' ?
-                    [0.5 * pathPoint.bankDist, pathPoint.bankDist + 15] :
-                    [-pathPoint.bankDist - 15, 0.5 * -pathPoint.bankDist];
-            }
-        } else if (place === 'middle') {
-            return side === 'right' ?
-                [0, 0.5 * pathPoint.bankDist] :
-                [0.5 * -pathPoint.bankDist, 0];
-        } else {
-            // path, random position offset by +/-2
-            return [pathPoint.boatXOffset - 2, pathPoint.boatXOffset + 2];
-        }
-    }
-
-    private static getDensity(pattern: PatternConfig, progress: number): number {
-        if (pattern.density === undefined) return 1.0;
-        return pattern.density[0] + progress * (pattern.density[1] - pattern.density[0]);
     }
 }
