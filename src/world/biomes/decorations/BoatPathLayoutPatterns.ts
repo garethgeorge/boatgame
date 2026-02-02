@@ -2,7 +2,12 @@ import { EntityIds } from "../../../entities/EntityIds";
 import { RiverGeometry } from "../../RiverGeometry";
 import { BoatPathLayoutConfig, ObstaclePlacement, PathPoint, PatternConfig, PatternContext, SpawnOptionsFn } from "./BoatPathLayoutStrategy";
 
-export type PlacementType = 'on-shore' | 'path' | 'slalom' | 'near-shore' | 'middle';
+export type PlacementType =
+    'on-shore' |        // on the river banks within 15m
+    'path' |            // close to the boat path +/- 2m
+    'slalom' |          // between 5m from boat and 2m from bank on one side of the path
+    'near-shore' |      // between bank and 1/2 way to center on one side
+    'middle';           // between center and 1/2 way to bank on one side
 
 export interface CommonPatternOptions {
     /** Target area (near path, across river, or on shore) */
