@@ -1,7 +1,7 @@
-import { EntityIds } from '../../entities/EntityIds';
-import { AnimalSpawnOptions } from '../../entities/spawners/AnimalSpawner';
-import { RiverGeometry, RiverGeometrySample } from '../RiverGeometry';
-import { RiverSystem } from '../RiverSystem';
+import { EntityIds } from '../../../entities/EntityIds';
+import { AnimalSpawnOptions } from '../../../entities/spawners/AnimalSpawner';
+import { RiverGeometry, RiverGeometrySample } from '../../RiverGeometry';
+import { RiverSystem } from '../../RiverSystem';
 
 export type SpawnOptionsFn = (id: EntityIds, inRiver: boolean) => AnimalSpawnOptions;
 

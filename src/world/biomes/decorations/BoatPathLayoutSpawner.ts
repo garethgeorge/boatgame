@@ -1,10 +1,10 @@
-import { SpawnContext } from '../../entities/Spawnable';
-import { BiomeType } from './BiomeType';
+import { SpawnContext } from '../../../entities/Spawnable';
+import { BiomeType } from '../BiomeType';
 import { BoatPathLayout } from './BoatPathLayoutStrategy';
-import { EntityIds } from '../../entities/EntityIds';
-import { RiverGeometry } from '../RiverGeometry';
-import { EntitySpawners } from '../../entities/EntitySpawners';
-import { AnimalBehaviorConfig } from '../../entities/behaviors/AnimalBehaviorConfigs';
+import { EntityIds } from '../../../entities/EntityIds';
+import { RiverGeometry } from '../../RiverGeometry';
+import { EntitySpawners } from '../../../entities/EntitySpawners';
+import { AnimalBehaviorConfig } from '../../../entities/behaviors/AnimalBehaviorConfigs';
 
 
 
