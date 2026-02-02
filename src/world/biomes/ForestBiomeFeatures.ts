@@ -141,16 +141,11 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                         {
                             name: 'forest_mix',
                             progress: [0, 1.0],
-                            patterns: [
-                                [
-                                    { pattern: 'forest_slalom', weight: 1.0 },
-                                    { pattern: 'rock_gates', weight: 0.5 },
-                                    { pattern: 'piers', weight: 0.3 },
-                                    { pattern: 'grass_patches', weight: 1.0 }
-                                ],
-                                [
-                                    { pattern: 'forest_animals', weight: 1.0 }
-                                ]
+                            scenes: [
+                                { length: [100, 200], patterns: ['forest_slalom', 'forest_animals'] },
+                                { length: [100, 200], patterns: ['rock_gates', 'forest_animals'] },
+                                { length: [100, 200], patterns: ['grass_patches', 'forest_animals'] },
+                                { length: [100, 200], patterns: ['piers', 'forest_animals'] }
                             ]
                         }
                     ]
@@ -161,16 +156,17 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                         {
                             name: 'ducklings',
                             progress: [0.3, 1.0],
-                            patterns: [
-                                [
-                                    { pattern: 'duckling_train', weight: 1.0 }
-                                ]
+                            scenes: [
+                                { length: [100, 300], patterns: ['duckling_train'] }
                             ]
                         }
                     ]
                 }
             ],
-            waterAnimals: [EntityIds.DUCKLING]
+            waterAnimals: [EntityIds.DUCKLING],
+            path: {
+                length: [200, 100]
+            }
         });
 
         return this.layoutCache;

@@ -178,7 +178,7 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                     {
                         name: 'swans',
                         progress: [0.0, 1.0],
-                        patterns: [[{ pattern: 'swan_bevies', weight: 1.0 }]]
+                        scenes: [{ length: [100, 300], patterns: ['swan_bevies'] }]
                     }
                 ]
             },
@@ -188,10 +188,10 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                     {
                         name: 'unicorns_and_gingermen',
                         progress: [0.0, 1.0],
-                        patterns: [[
-                            { pattern: 'unicorn_herd', weight: 0.5 },
-                            { pattern: 'gingerman_parade', weight: 0.5 }
-                        ]]
+                        scenes: [
+                            { length: [150, 350], patterns: ['unicorn_herd'] },
+                            { length: [150, 350], patterns: ['gingerman_parade'] }
+                        ]
                     }
                 ]
             },
@@ -201,7 +201,7 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                     {
                         name: 'bluebirds',
                         progress: [0.0, 1.0],
-                        patterns: [[{ pattern: 'bluebird_flocks', weight: 1.0 }]]
+                        scenes: [{ length: [200, 400], patterns: ['bluebird_flocks'] }]
                     }
                 ]
             }
@@ -210,7 +210,10 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
         this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: patterns,
             tracks: tracks,
-            waterAnimals
+            waterAnimals,
+            path: {
+                length: [200, 100]
+            }
         });
 
         return this.layoutCache;

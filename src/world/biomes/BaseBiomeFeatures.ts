@@ -52,9 +52,9 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
 
     public getSkyBiome(): SkyBiome {
         return {
-            noon: { top: '#4488ff', bottom: '#ccddff' },
-            sunset: { top: '#967BB6', bottom: '#FF9966' },
-            night: { top: '#1A1A3A', bottom: '#2D2D44' },
+            noon: { top: 0x4488ff, bottom: 0xccddff },
+            sunset: { top: 0x967BB6, bottom: 0xFF9966 },
+            night: { top: 0x1A1A3A, bottom: 0x2D2D44 },
             haze: 0.5
         };
     }

@@ -143,7 +143,7 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 {
                     name: 'dolphins',
                     progress: [0.0, 1.0],
-                    patterns: [[{ pattern: 'dolphin_pods', weight: 1.0 }]]
+                    scenes: [{ length: [100, 300], patterns: ['dolphin_pods'] }]
                 }
             ]
         };
@@ -154,7 +154,7 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 {
                     name: 'turtles',
                     progress: [0.0, 1.0],
-                    patterns: [[{ pattern: 'turtle_beaches', weight: 1.0 }]]
+                    scenes: [{ length: [100, 300], patterns: ['turtle_beaches'] }]
                 }
             ]
         };
@@ -165,11 +165,7 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 {
                     name: 'flying_animals',
                     progress: [0.4, 1.0],
-                    patterns: [
-                        [
-                            { pattern: 'butterfly_swarms', weight: 1.0 }
-                        ]
-                    ]
+                    scenes: [{ length: [100, 300], patterns: ['butterfly_swarms'] }]
                 }
             ]
         };
@@ -177,7 +173,10 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
         this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: patterns,
             tracks: [riverTrack, shoreTrack, flyingTrack],
-            waterAnimals
+            waterAnimals,
+            path: {
+                length: [200, 100]
+            }
         });
 
         return this.layoutCache;

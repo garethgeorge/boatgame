@@ -136,21 +136,10 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     name: 'vegetation',
                     stages: [
                         {
-                            name: 'ramp_up',
-                            progress: [0.0, 0.2],
-                            patterns: [
-                                [
-                                    { pattern: 'dense_shore_mangroves', weight: 1 }
-                                ]
-                            ]
-                        },
-                        {
-                            name: 'full_jungle',
-                            progress: [0.2, 1.0],
-                            patterns: [
-                                [
-                                    { pattern: 'dense_shore_mangroves', weight: 1 }
-                                ]
+                            name: 'mangroves',
+                            progress: [0.0, 1.0],
+                            scenes: [
+                                { length: [50, 150], patterns: ['dense_shore_mangroves'] }
                             ]
                         }
                     ]
@@ -161,12 +150,9 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                         {
                             name: 'standard',
                             progress: [0.0, 1.0],
-                            patterns: [
-                                [
-                                    { pattern: 'log_scatter', weight: 3 },
-                                    { pattern: 'grass_patches', weight: 1.5 },
-                                    { pattern: 'lilly_patches', weight: 6.0 }
-                                ]
+                            scenes: [
+                                { length: [100, 200], patterns: ['log_scatter', 'lilly_patches', 'grass_patches'] },
+                                { length: [100, 200], patterns: ['lilly_patches'] }
                             ]
                         }
                     ]
@@ -177,10 +163,8 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                         {
                             name: 'bottles',
                             progress: [0.0, 1.0],
-                            patterns: [
-                                [
-                                    { pattern: 'clear_channel_bottles', weight: 1 }
-                                ]
+                            scenes: [
+                                { length: [200, 500], patterns: ['clear_channel_bottles'] }
                             ]
                         }
                     ]
@@ -191,10 +175,8 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                         {
                             name: 'threats',
                             progress: [0.2, 1.0],
-                            patterns: [
-                                [
-                                    { pattern: 'threat_ambush', weight: 1 },
-                                ]
+                            scenes: [
+                                { length: [150, 300], patterns: ['threat_ambush'] }
                             ]
                         }
                     ]
@@ -203,19 +185,20 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     name: 'friends',
                     stages: [
                         {
-                            name: 'threats',
+                            name: 'friends',
                             progress: [0.0, 1.0],
-                            patterns: [
-                                [
-                                    { pattern: 'egret_flight', weight: 1 },
-                                    { pattern: 'dragonfly_buzz', weight: 1 }
-                                ]
+                            scenes: [
+                                { length: [100, 300], patterns: ['egret_flight'] },
+                                { length: [100, 300], patterns: ['dragonfly_buzz'] }
                             ]
                         }
                     ]
                 }
             ],
-            waterAnimals: [EntityIds.ALLIGATOR, EntityIds.SNAKE, EntityIds.EGRET, EntityIds.DRAGONFLY]
+            waterAnimals: [EntityIds.ALLIGATOR, EntityIds.SNAKE, EntityIds.EGRET, EntityIds.DRAGONFLY],
+            path: {
+                length: [200, 100]
+            }
         });
 
         return this.layoutCache;

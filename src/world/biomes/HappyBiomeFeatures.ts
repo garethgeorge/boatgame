@@ -115,11 +115,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                 {
                     name: 'flying_animals',
                     progress: [0.4, 1.0],
-                    patterns: [
-                        [
-                            { pattern: 'dragonfly_swarms', weight: 1.0 }
-                        ]
-                    ]
+                    scenes: [{ length: [200, 400], patterns: ['dragonfly_swarms'] }]
                 }
             ]
         });
@@ -127,7 +123,10 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         const boatPathLayout = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: patterns,
             tracks: tracks,
-            waterAnimals
+            waterAnimals,
+            path: {
+                length: [200, 100]
+            }
         });
 
         this.layoutCache = boatPathLayout;

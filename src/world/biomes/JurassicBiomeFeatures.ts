@@ -155,19 +155,10 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                         {
                             name: 'danger_zone',
                             progress: [0, 1.0],
-                            patterns: [
-                                [
-                                    { pattern: 'scattered_rocks', weight: 1.0 },
-                                    { pattern: 'staggered_logs', weight: 0.5 },
-                                    { pattern: 'grass_patches', weight: 1.5 }
-                                ],
-                                [
-                                    { pattern: 'dino_scatter', weight: 1.0 },
-                                    { pattern: 'bronto_migration', weight: 0.4 }
-                                ],
-                                [
-                                    { pattern: 'ptero_scatter', weight: 1.0 }
-                                ]
+                            scenes: [
+                                { length: [100, 200], patterns: ['scattered_rocks', 'dino_scatter', 'grass_patches'] },
+                                { length: [100, 200], patterns: ['staggered_logs', 'ptero_scatter'] },
+                                { length: [100, 200], patterns: ['bronto_migration', 'grass_patches'] }
                             ]
                         }
                     ]
@@ -178,16 +169,17 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                         {
                             name: 'bottles',
                             progress: [0, 1.0],
-                            patterns: [
-                                [
-                                    { pattern: 'bottle_hunt', weight: 1.0 }
-                                ]
+                            scenes: [
+                                { length: [150, 400], patterns: ['bottle_hunt'] }
                             ]
                         }
                     ]
                 }
             ],
-            waterAnimals: [EntityIds.BRONTOSAURUS]
+            waterAnimals: [EntityIds.BRONTOSAURUS],
+            path: {
+                length: [200, 100]
+            }
         });
 
         return this.layoutCache;

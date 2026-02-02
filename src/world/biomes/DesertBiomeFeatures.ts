@@ -153,25 +153,17 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                         {
                             name: 'intro',
                             progress: [0, 0.4],
-                            patterns: [
-                                [
-                                    { pattern: 'rocky_slalom', weight: 1 },
-                                    { pattern: 'rock_stagger', weight: 1 }
-                                ]
+                            scenes: [
+                                { length: [50, 100], patterns: ['rocky_slalom'] },
+                                { length: [50, 100], patterns: ['rock_stagger'] }
                             ]
                         },
                         {
                             name: 'gauntlet',
                             progress: [0.3, 0.9],
-                            patterns: [
-                                [
-                                    { pattern: 'animal_corridor', weight: 2 },
-                                    { pattern: 'hippo_pod', weight: 1 }
-                                ],
-                                [
-                                    { pattern: 'rocky_slalom', weight: 1 },
-                                    { pattern: 'rock_stagger', weight: 1 }
-                                ]
+                            scenes: [
+                                { length: [100, 200], patterns: ['animal_corridor', 'rocky_slalom'] },
+                                { length: [100, 200], patterns: ['hippo_pod', 'rock_stagger'] }
                             ]
                         }
                     ]
@@ -188,16 +180,17 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                         {
                             name: 'bottles',
                             progress: [0.0, 0.9],
-                            patterns: [
-                                [
-                                    { pattern: 'bottle_cluster', weight: 1 }
-                                ]
+                            scenes: [
+                                { length: [100, 300], patterns: ['bottle_cluster'] }
                             ]
                         }
                     ]
                 }
             ],
-            waterAnimals: [EntityIds.HIPPO]
+            waterAnimals: [EntityIds.HIPPO],
+            path: {
+                length: [200, 100]
+            }
         });
 
         return this.layoutCache;
