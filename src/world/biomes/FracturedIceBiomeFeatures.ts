@@ -9,7 +9,7 @@ import { GraphicsUtils } from '../../core/GraphicsUtils';
 import Delaunator from 'delaunator';
 
 
-import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
+import { EntitySpawners } from '../../entities/EntitySpawners';
 import { EntityIds } from '../../entities/EntityIds';
 import { FracturedIceberg } from '../../entities/obstacles/FracturedIceberg';
 import { Decorations } from '../Decorations';

@@ -3,7 +3,7 @@ import { EntityIds } from '../../entities/EntityIds';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
+import { EntitySpawners } from '../../entities/EntitySpawners';
 import { DecorationRule } from '../decorators/PoissonDecorationStrategy';
 import { Combine, Signal, TierRule } from '../decorators/PoissonDecorationRules';
 import { RiverSystem } from '../RiverSystem';

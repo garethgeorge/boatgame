@@ -7,7 +7,7 @@ import { Decorations } from '../Decorations';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule, Combine, Signal } from '../decorators/PoissonDecorationRules';
 import { EntityIds } from '../../entities/EntityIds';
-import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
+import { EntitySpawners } from '../../entities/EntitySpawners';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 

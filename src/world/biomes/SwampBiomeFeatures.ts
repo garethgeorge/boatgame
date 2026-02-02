@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
+import { EntitySpawners } from '../../entities/EntitySpawners';
 import { Decorations } from '../Decorations';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { RiverGeometry } from '../RiverGeometry';

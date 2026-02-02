@@ -9,7 +9,7 @@ import { BoatPathLayoutSpawner } from './BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
-import { EntitySpawners } from '../../entities/spawners/EntitySpawners';
+import { EntitySpawners } from '../../entities/EntitySpawners';
 import { Decorations } from '../Decorations';
 import { SkyBiome } from './BiomeFeatures';
 
