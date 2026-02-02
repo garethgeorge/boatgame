@@ -5,7 +5,7 @@ import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { EntitySpawners } from '../../entities/EntitySpawners';
 import { Decorations } from '../Decorations';
-import { BoatPathLayout, BoatPathLayoutStrategy, Patterns } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
 import { RiverGeometry } from '../RiverGeometry';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
@@ -14,6 +14,7 @@ import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorator
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
+import { Patterns } from './decorations/BoatPathLayoutPatterns';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';

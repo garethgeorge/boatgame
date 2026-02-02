@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy, Patterns, TrackConfig } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
@@ -13,6 +13,7 @@ import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../SimplexNoise';
 import { MathUtils } from '../../core/MathUtils';
 import { SkyBiome } from './BiomeFeatures';
+import { Patterns } from './decorations/BoatPathLayoutPatterns';
 
 /**
  * Tropical Shoreline Biome: A sunny coastal paradise with palm trees and marine life.

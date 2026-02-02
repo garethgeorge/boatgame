@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy, Patterns } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
@@ -12,6 +12,7 @@ import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { EntitySpawners } from '../../entities/EntitySpawners';
 import { Decorations } from '../Decorations';
 import { SkyBiome } from './BiomeFeatures';
+import { Patterns } from './decorations/BoatPathLayoutPatterns';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';

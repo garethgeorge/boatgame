@@ -3,7 +3,7 @@ import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations } from '../Decorations';
-import { BoatPathLayout, BoatPathLayoutStrategy, Patterns } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
 import { AnimalSpawnOptions } from '../../entities/spawners/AnimalSpawner';
@@ -11,6 +11,7 @@ import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorator
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
+import { Patterns } from './decorations/BoatPathLayoutPatterns';
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';

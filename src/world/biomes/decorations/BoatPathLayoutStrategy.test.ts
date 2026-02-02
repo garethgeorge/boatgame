@@ -1,8 +1,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BoatPathLayoutStrategy, BoatPathLayoutConfig, Patterns } from './BoatPathLayoutStrategy';
-import { RiverSystem } from '../RiverSystem';
-import { EntityIds } from '../../entities/EntityIds';
+import { Patterns } from './BoatPathLayoutPatterns';
+import { EntityIds } from '../../../entities/EntityIds';
+import { BoatPathLayoutConfig, BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 
 vi.mock('../RiverSystem', () => ({
     RiverSystem: {

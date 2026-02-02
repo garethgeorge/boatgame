@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy, Patterns, TrackConfig } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
@@ -12,6 +12,7 @@ import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SimplexNoise } from '../SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
 import { RiverSystem } from '../RiverSystem';
+import { Patterns } from './decorations/BoatPathLayoutPatterns';
 
 /**
  * Fantasy Land Biome: A magical realm with pastel-colored patches and mystical creatures.
