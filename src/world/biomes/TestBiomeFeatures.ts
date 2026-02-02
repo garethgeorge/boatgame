@@ -9,6 +9,7 @@ import { Combine, Signal, TierRule } from '../decorators/PoissonDecorationRules'
 import { RiverSystem } from '../RiverSystem';
 import { RiverGeometry } from '../RiverGeometry';
 import { DecorationConfig, TerrainDecorator } from '../decorators/TerrainDecorator';
+import { Decorations } from '../Decorations';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -21,6 +22,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     private decorationConfig: DecorationConfig = {
         maps: {},
         rules: [
+            /*
             new TierRule({
                 species: [
                     {
@@ -46,6 +48,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                     },
                 ]
             })
+                */
         ]
     };
 
@@ -76,88 +79,24 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         );
     }
 
-
-    /**
-     * This can be used to check the animal models
-     */
-    private spawnAllAnimals(context: SpawnContext, z: number) {
-        const animalIds = [
-            EntityIds.ALLIGATOR,
-            EntityIds.BRONTOSAURUS,
-            EntityIds.TREX,
-            EntityIds.BROWN_BEAR,
-            EntityIds.POLAR_BEAR,
-            EntityIds.HIPPO,
-            EntityIds.MONKEY,
-            EntityIds.MOOSE,
-            EntityIds.TRICERATOPS,
-            EntityIds.BUTTERFLY,
-            EntityIds.PTERODACTYL,
-            EntityIds.BLUEBIRD,
-        ];
-        const waterIds = [
-            EntityIds.DOLPHIN,
-            EntityIds.DRAGONFLY,
-            EntityIds.DUCKLING,
-            EntityIds.EGRET,
-            EntityIds.PENGUIN_KAYAK,
-            EntityIds.SNAKE,
-            EntityIds.SWAN
-        ];
-
-        let currentZ = z;
-        const spacing = 15;
-        const xOffset = 15; // Offset from river bank
-
-        for (const id of animalIds) {
-            const spawner = EntitySpawners.getInstance().animal(id);
-            if (spawner) {
-                // We use fixed sample to place them in a line
-                const riverSystem = RiverSystem.getInstance();
-                const sample = RiverGeometry.getRiverGeometrySample(riverSystem, currentZ);
-
-                // Place on bank
-                const right: [number, number] = [sample.bankDist + xOffset, sample.bankDist + xOffset + 5];
-                const left: [number, number] = [-sample.bankDist - xOffset - 5, -sample.bankDist - xOffset];
-                spawner.spawnOnLand(context, sample, {
-                    distanceRange: left,
-                    aggressiveness: 0.5,
-                    disableLogic: true,
-                    fixedAngle: 0,
-                    fixedHeight: 3.0,
-                    biomeZRange: [this.zMin, this.zMax]
-                });
-            }
-            currentZ -= spacing;
-        }
-        for (const id of waterIds) {
-            const spawner = EntitySpawners.getInstance().animal(id);
-            if (spawner) {
-                // We use fixed sample to place them in a line
-                const riverSystem = RiverSystem.getInstance();
-                const sample = RiverGeometry.getRiverGeometrySample(riverSystem, currentZ);
-
-                spawner.spawnInRiver(context, sample, {
-                    distanceRange: [-5, 5],
-                    aggressiveness: 0.5,
-                    disableLogic: true,
-                    fixedAngle: 0,
-                    fixedHeight: 3.0,
-                    biomeZRange: [this.zMin, this.zMax]
-                });
-            }
-            currentZ -= spacing;
-        }
-    }
-
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+
         // if (true && zStart === 0) {
         //     this.spawnAllAnimals(context, -50);
         // }
 
-        // yield* EntitySpawners.getInstance().messageInABottle().spawn(context, 4, zStart, zEnd);
+        const biomeRange: [number, number] = [this.zMin, this.zMax];
+
+        const river = RiverSystem.getInstance();
+        const sample = RiverGeometry.getRiverGeometrySample(river, (zStart + zEnd) / 2);
+        const distanceRange: [number, number] = [sample.bankDist, sample.bankDist + 10];
+
+        yield* Decorations.ensureAllLoaded(['monkey']);
+        EntitySpawners.getInstance().animal(EntityIds.MONKEY).
+            spawnOnLand(context, sample, { distanceRange });
+
+        yield* EntitySpawners.getInstance().messageInABottle().spawn(context, 4, zStart, zEnd, biomeRange);
         // yield* EntitySpawners.getInstance().animal(EntityIds.MONKEY)!.spawn(context, 1, zStart, zEnd);
-        // yield* EntitySpawners.getInstance().animal(EntityIds.ALLIGATOR).spawn(context, 1, zStart, zEnd);
         // yield* EntitySpawners.getInstance().animal(EntityIds.TRICERATOPS).spawn(context, 1, zStart, zEnd);
 
         // yield* EntitySpawners.getInstance().animal(EntityIds.PTERODACTYL).spawn(context, 1, zStart, zEnd);

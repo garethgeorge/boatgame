@@ -60,7 +60,7 @@ export class EntitySpawners {
             entityRadius: Alligator.RADIUS,
             heightInWater: Alligator.HEIGHT_IN_WATER,
             waterPlacement: { minDistFromBank: 3.0 },
-            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultShoreBehavior: { type: 'wait-attack', logicName: 'WolfAttack' },
             defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
@@ -72,7 +72,7 @@ export class EntitySpawners {
             entityRadius: Brontosaurus.RADIUS,
             heightInWater: Brontosaurus.HEIGHT_IN_WATER,
             waterPlacement: { minDistFromBank: 3.0 },
-            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultShoreBehavior: { type: 'wait-attack', logicName: 'WolfAttack' },
             defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
@@ -84,7 +84,7 @@ export class EntitySpawners {
             entityRadius: TRex.RADIUS,
             heightInWater: TRex.HEIGHT_IN_WATER,
             waterPlacement: { minDistFromBank: 3.0 },
-            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultShoreBehavior: { type: 'wait-attack', logicName: 'WolfAttack' },
             defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
@@ -96,7 +96,7 @@ export class EntitySpawners {
             shorePlacement: { minDistFromBank: 2.5, maxDistFromBank: 3.0 },
             entityRadius: BrownBear.RADIUS,
             heightInWater: BrownBear.HEIGHT_IN_WATER,
-            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultShoreBehavior: { type: 'wait-attack', logicName: 'WolfAttack' },
             defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
@@ -108,7 +108,7 @@ export class EntitySpawners {
             shorePlacement: { minDistFromBank: 2.5, maxDistFromBank: 4.0 },
             entityRadius: PolarBear.RADIUS,
             heightInWater: PolarBear.HEIGHT_IN_WATER,
-            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultShoreBehavior: { type: 'wait-attack', logicName: 'WolfAttack' },
             defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
@@ -152,7 +152,7 @@ export class EntitySpawners {
             shoreProbability: 0.6,
             entityRadius: Moose.RADIUS,
             heightInWater: Moose.HEIGHT_IN_WATER,
-            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultShoreBehavior: { type: 'wait-attack', logicName: 'WolfAttack' },
             defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {
@@ -165,7 +165,7 @@ export class EntitySpawners {
             heightInWater: Triceratops.HEIGHT_IN_WATER,
             shorePlacement: { minDistFromBank: 3.0, maxDistFromBank: 6.0 },
             waterPlacement: { minDistFromBank: 3.0 },
-            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+            defaultShoreBehavior: { type: 'wait-attack', logicName: 'WolfAttack' },
             defaultWaterBehavior: { type: 'attack', logicName: 'WolfAttack' }
         },
         {

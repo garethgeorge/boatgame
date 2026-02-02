@@ -62,7 +62,7 @@ export class AttackBehaviorFactory {
             return AnimalLogicStep.sequence([
                 {
                     name: 'WaitForBoat',
-                    params: { phase: AnimalLogicPhase.IDLE_SHORE }
+                    params: { phase: AnimalLogicPhase.IDLE_SHORE, forwardMax: 50 }
                 },
                 {
                     name: 'EnteringWater',
@@ -76,14 +76,15 @@ export class AttackBehaviorFactory {
                     AnimalLogicStep.random([
                         {
                             name: 'WaitForBoat',
-                            params: { phase: AnimalLogicPhase.IDLE_SHORE },
+                            params: { phase: AnimalLogicPhase.IDLE_SHORE, forwardMax: 50 },
                             timeout: 5.0
                         },
                         {
                             name: 'ShoreWalk',
                             params: {
                                 walkDistance: 10 + Math.random() * 10,
-                                speed: 0.8 + Math.random() * 0.4
+                                speed: 0.8 + Math.random() * 0.4,
+                                finishWithinDistanceOfBoat: 50
                             }
                         },
                     ])

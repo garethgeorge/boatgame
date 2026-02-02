@@ -7,10 +7,10 @@ export interface WaitForBoatParams {
     phase: AnimalLogicPhase;
     waitOnShore?: boolean;
     ignoreBottles?: boolean;
-    forwardMin?: number;
-    forwardMax?: number;
-    backwardMin?: number;
-    backwardMax?: number;
+    forwardMin?: number;    // ends when forward distance is > than this
+    forwardMax?: number;    // ends when forward distance is < that this
+    backwardMin?: number;   // ends when backward distance is > than this
+    backwardMax?: number;   // ends when backward distance is < than this
 }
 
 /**
