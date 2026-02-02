@@ -219,10 +219,17 @@ export class SpeciesRules {
         };
     }
 
-    public static box_elder(options: { paletteName?: string } = {}) {
+    public static box_elder(options: {
+        size?: number,
+        paletteName?: string
+    } = {}) {
+        const {
+            size = 1,
+            paletteName = undefined
+        } = options;
         return (ctx: WorldContext) => {
-            const scale = 0.9 + ctx.random() * 0.4;
-            const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.random()) : undefined;
+            const scale = size * 0.9 + ctx.random() * 0.4;
+            const color = paletteName !== undefined ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
             const meta = DecorationMetadata.vase;
             return {
                 groundRadius: meta.groundRadius * scale,

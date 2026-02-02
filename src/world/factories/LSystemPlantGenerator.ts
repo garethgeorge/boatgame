@@ -733,7 +733,7 @@ export class ProceduralPlant {
                 const branch: BranchData = {
                     start: node.position.clone(),
                     end: child.position.clone(),
-                    radiusStart: Math.max(node.radiusEnd, child.radiusStart),
+                    radiusStart: node.radiusEnd,
                     radiusEnd: child.radiusEnd,
                     level: child.level,
                     quat: child.quat.clone(),
