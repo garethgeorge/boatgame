@@ -143,7 +143,8 @@ export class BoatPathLayoutSpawner {
                             case EntityIds.TREX:
                             case EntityIds.TRICERATOPS:
                             case EntityIds.TURTLE:
-                            case EntityIds.UNICORN: {
+                            case EntityIds.UNICORN:
+                            case EntityIds.GINGERMAN: {
                                 const animalSpawner = spawners.animal(entityType);
                                 if (animalSpawner) {
                                     const baseOptions = {

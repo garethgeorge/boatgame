@@ -14,9 +14,9 @@ export class GeometryVertexVisitor {
      * Traverses the object and visits all vertices in world space.
      * Handles CPU-side skinning for SkinnedMesh.
      */
-    static visitVertices(object: THREE.Object3D, visitor: VertexVisitor) {
+    static visitVertices(object: THREE.Object3D, visitor: VertexVisitor, ignoreVisibility: boolean = false) {
         object.traverse((child) => {
-            if (child instanceof THREE.Mesh && child.visible) {
+            if (child instanceof THREE.Mesh && (ignoreVisibility || child.visible)) {
                 const geometry = child.geometry;
                 const positionAttr = geometry.getAttribute('position');
                 const skinWeightAttr = geometry.getAttribute('skinWeight');

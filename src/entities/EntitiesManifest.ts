@@ -21,6 +21,7 @@ import { Turtle } from './obstacles/Turtle';
 import { PenguinKayak } from './obstacles/PenguinKayak';
 import { Swan } from './obstacles/Swan';
 import { Unicorn } from './obstacles/Unicorn';
+import { GingerMan } from './obstacles/GingerMan';
 import * as THREE from 'three';
 
 export interface EntityManifestEntry {
@@ -59,4 +60,5 @@ export const ENTITY_MANIFEST: EntityManifestEntry[] = [
     { name: 'penguinKayak', model: () => Decorations.getPenguinKayak()!, params: PenguinKayak.MODEL_PARAMS },
     { name: 'swan', model: () => Decorations.getSwan()!, params: Swan.MODEL_PARAMS },
     { name: 'unicorn', model: () => Decorations.getUnicorn()!, params: Unicorn.MODEL_PARAMS },
+    { name: 'gingerman', model: () => Decorations.getGingerMan()!, params: GingerMan.MODEL_PARAMS },
 ];

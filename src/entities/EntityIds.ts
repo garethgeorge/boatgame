@@ -31,5 +31,6 @@ export enum EntityIds {
     ICEBERG = 'iceberg',
     PENGUIN_KAYAK = 'penguinKayak',
     SWAN = 'swan',
-    UNICORN = 'unicorn'
+    UNICORN = 'unicorn',
+    GINGERMAN = 'gingerman'
 }

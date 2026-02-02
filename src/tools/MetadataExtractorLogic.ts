@@ -38,7 +38,7 @@ export class MetadataExtractor {
             if (pos.y < 0.5) {
                 if (distSq > maxGroundSq) maxGroundSq = distSq;
             }
-        });
+        }, true);
 
         return { canopySq: maxCanopySq, groundSq: maxGroundSq };
     }
@@ -113,7 +113,7 @@ export class MetadataExtractor {
         const points: THREE.Vector3[] = [];
         GeometryVertexVisitor.visitVertices(object, (pos) => {
             points.push(pos.clone());
-        });
+        }, true);
 
         return this.computeHullFromPoints(points, targetCount);
     }
@@ -122,7 +122,7 @@ export class MetadataExtractor {
         const points: THREE.Vector3[] = [];
         GeometryVertexVisitor.visitVertices(model, (pos) => {
             points.push(pos.clone());
-        });
+        }, true);
 
         const minZ = Math.min(...points.map(p => p.z));
         const maxZ = Math.max(...points.map(p => p.z));
@@ -235,7 +235,7 @@ export class MetadataExtractor {
                     const points: THREE.Vector3[] = [];
                     GeometryVertexVisitor.visitVertices(model, (pos) => {
                         points.push(pos.clone());
-                    });
+                    }, true);
 
                     // Physics Y is Graphics Z.
                     const minZ = Math.min(...points.map(p => p.z));

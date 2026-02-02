@@ -18,7 +18,7 @@ import { RiverSystem } from '../RiverSystem';
  */
 export class FantasyBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'fantasy';
-    private static readonly LENGTH = 1000;
+    private static readonly LENGTH = 1500;
 
     private decorationConfig: DecorationConfig | null = null;
     private layoutCache: BoatPathLayout | null = null;
@@ -163,6 +163,12 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                 density: [0.3, 0.5],
                 types: [EntityIds.BLUEBIRD]
             },
+            'gingerman_parade': {
+                logic: 'scatter',
+                place: 'on-shore',
+                density: [0.3, 0.6],
+                types: [EntityIds.GINGERMAN]
+            },
         };
 
         const tracks: TrackConfig[] = [
@@ -180,9 +186,12 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                 name: 'shore',
                 stages: [
                     {
-                        name: 'unicorns',
+                        name: 'unicorns_and_gingermen',
                         progress: [0.0, 1.0],
-                        patterns: [[{ pattern: 'unicorn_herd', weight: 1.0 }]]
+                        patterns: [[
+                            { pattern: 'unicorn_herd', weight: 0.5 },
+                            { pattern: 'gingerman_parade', weight: 0.5 }
+                        ]]
                     }
                 ]
             },

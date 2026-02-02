@@ -20,6 +20,7 @@ export const EntityMetadata: Record<string, { radius: number, hull?: number[] }>
     penguinKayak: { radius: 3.5, hull: [-3.5, 0, -3.4, -0.1, 0.8, -2.6, 1.2, -2.6, 3.5, 0, 3.5, 0, 1.1, 2.6, 0.8, 2.6] },
     swan: { radius: 2.7, hull: [-1.3, -0.7, -0.3, -2.2, 0.3, -2.2, 1.4, -0.7, 1, 1.5, 0, 3.1, -0.5, 2.5, -1.3, 0.5] },
     unicorn: { radius: 6.6, hull: [-1.9, 0.9, -1.2, -6.2, -0.3, -6.1, 2.4, -2.6, 2.5, -2, 2, 1.8, 0.8, 6.1, -1.4, 6.5] },
+    gingerman: { radius: 4.3, hull: [-3.9, -2.1, -3.1, -2.8, 0.7, -2.6, 3.6, -2, 4.4, -1.4, 3, 4.6, -2.1, 4.8, -2.8, 4.6] },
 };
 
 export interface BoatMetadata {

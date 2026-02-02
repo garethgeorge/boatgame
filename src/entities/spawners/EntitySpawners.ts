@@ -32,6 +32,7 @@ import { BaseSpawner } from './BaseSpawner';
 import { Bluebird } from '../obstacles/Bluebird';
 import { Egret } from '../obstacles/Egret';
 import { Swan } from '../obstacles/Swan';
+import { GingerMan } from '../obstacles/GingerMan';
 
 export class EntitySpawners {
     private static instance: EntitySpawners;
@@ -131,6 +132,17 @@ export class EntitySpawners {
             entityRadius: Monkey.RADIUS,
             heightInWater: Monkey.HEIGHT_IN_WATER,
             defaultShoreBehavior: { type: 'walk-attack', logicName: 'AmbushAttack' },
+        },
+        {
+            id: EntityIds.GINGERMAN,
+            decorationIds: ['gingerman'],
+            getDensity: () => 0.1 / 15,
+            factory: (physicsEngine, options) => new GingerMan(physicsEngine, options),
+            shoreProbability: 1.0,
+            shorePlacement: { minDistFromBank: 0.5, maxDistFromBank: 3.0 },
+            entityRadius: GingerMan.RADIUS,
+            heightInWater: GingerMan.HEIGHT_IN_WATER,
+            defaultShoreBehavior: { type: 'walk-attack', logicName: 'WolfAttack' },
         },
         {
             id: EntityIds.MOOSE,
