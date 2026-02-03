@@ -13,6 +13,7 @@ import { WorldMap } from '../decorators/PoissonDecorationStrategy';
 import { SimplexNoise } from '../SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { EntityRules } from './decorations/EntityLayoutRules';
 
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'jurassic';
@@ -105,38 +106,38 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
             'scattered_rocks': Patterns.scatter({
                 place: 'slalom',
                 density: [1.0, 3.0],
-                types: [EntityIds.ROCK]
+                entity: EntityRules.choose([EntityRules.rock()])
             }),
             'staggered_logs': Patterns.staggered({
                 place: 'slalom',
                 density: [0.5, 1.5],
-                types: [EntityIds.LOG],
+                entity: EntityRules.choose([EntityRules.log()]),
                 minCount: 4
             }),
             'dino_scatter': Patterns.scatter({
                 place: 'near-shore',
                 density: [0.5, 1.5],
-                types: [EntityIds.TREX, EntityIds.TRICERATOPS]
+                entity: EntityRules.choose([EntityRules.trex(), EntityRules.triceratops()])
             }),
             'ptero_scatter': Patterns.scatter({
                 place: 'on-shore',
                 density: [0.5, 1.5],
-                types: [EntityIds.PTERODACTYL]
+                entity: EntityRules.choose([EntityRules.pterodactyl()])
             }),
             'bronto_migration': Patterns.sequence({
                 place: 'near-shore',
                 density: [0.4, 0.4],
-                types: [EntityIds.BRONTOSAURUS]
+                entity: EntityRules.choose([EntityRules.brontosaurus()])
             }),
             'bottle_hunt': Patterns.scatter({
                 place: 'path',
                 density: [0.25, 0.5],
-                types: [EntityIds.BOTTLE]
+                entity: EntityRules.choose([EntityRules.bottle()])
             }),
             'grass_patches': Patterns.scatter({
                 place: 'near-shore',
                 density: [1.5, 3.0],
-                types: [EntityIds.WATER_GRASS]
+                entity: EntityRules.choose([EntityRules.water_grass()])
             })
         };
 
@@ -170,7 +171,6 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                     ]
                 }
             ],
-            waterAnimals: [EntityIds.BRONTOSAURUS],
             path: {
                 length: [200, 100]
             }

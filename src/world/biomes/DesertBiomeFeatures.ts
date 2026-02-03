@@ -2,7 +2,6 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { Decorations } from '../Decorations';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
@@ -12,6 +11,7 @@ import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { EntityRules } from './decorations/EntityLayoutRules';
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';
@@ -90,55 +90,34 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        // Behaviors for spawning
-        const spawnOptions = (id: EntityIds, inRiver: boolean): AnimalSpawnOptions => {
-            if (!inRiver) {
-                return {
-                    behavior: {
-                        type: id === EntityIds.MONKEY ? 'walk-attack' : 'wait-attack',
-                        logicName: Math.random() < 0.5 ? 'WolfAttack' : 'AmbushAttack'
-                    }
-                };
-            } else {
-                return {
-                    behavior: {
-                        type: 'attack',
-                        logicName: Math.random() < 0.5 ? 'WolfAttack' : 'AmbushAttack'
-                    }
-                }
-            }
-        };
-
         this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: {
                 'animal_corridor': Patterns.sequence({
                     place: 'near-shore',
                     density: [0.5, 4.0],
-                    types: [EntityIds.ALLIGATOR, EntityIds.MONKEY],
-                    options: spawnOptions
+                    entity: EntityRules.choose([EntityRules.alligator(), EntityRules.monkey()]),
                 }),
                 'hippo_pod': Patterns.cluster({
                     place: 'near-shore',
                     density: [0.3, 2.0],
-                    types: [EntityIds.HIPPO],
+                    entity: EntityRules.choose([EntityRules.hippo()]),
                     minCount: 2,
-                    options: spawnOptions
                 }),
                 'rocky_slalom': Patterns.sequence({
                     place: 'slalom',
                     density: [0.5, 2.0],
-                    types: [EntityIds.ROCK]
+                    entity: EntityRules.choose([EntityRules.rock()])
                 }),
                 'rock_stagger': Patterns.staggered({
                     place: 'slalom',
                     density: [0.5, 2.0],
-                    types: [EntityIds.ROCK],
+                    entity: EntityRules.choose([EntityRules.rock()]),
                     minCount: 3
                 }),
                 'bottle_cluster': Patterns.cluster({
                     place: 'path',
                     density: [1.5, 0.5],
-                    types: [EntityIds.BOTTLE],
+                    entity: EntityRules.choose([EntityRules.bottle()]),
                     minCount: 3
                 })
             },
@@ -183,7 +162,6 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                     ]
                 }
             ],
-            waterAnimals: [EntityIds.HIPPO],
             path: {
                 length: [200, 100]
             }

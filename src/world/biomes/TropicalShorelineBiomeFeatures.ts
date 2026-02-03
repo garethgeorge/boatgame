@@ -14,6 +14,7 @@ import { SimplexNoise } from '../SimplexNoise';
 import { MathUtils } from '../../core/MathUtils';
 import { SkyBiome } from './BiomeFeatures';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { EntityRules } from './decorations/EntityLayoutRules';
 
 /**
  * Tropical Shoreline Biome: A sunny coastal paradise with palm trees and marine life.
@@ -116,22 +117,21 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const waterAnimals = [EntityIds.DOLPHIN];
         const patterns = {
             'dolphin_pods': Patterns.scatter({
                 place: 'slalom',
                 density: [0.4, 0.7],
-                types: [EntityIds.DOLPHIN]
+                entity: EntityRules.choose([EntityRules.dolphin()])
             }),
             'turtle_beaches': Patterns.scatter({
                 place: 'near-shore',
                 density: [0.3, 0.6],
-                types: [EntityIds.TURTLE]
+                entity: EntityRules.choose([EntityRules.turtle()])
             }),
             'butterfly_swarms': Patterns.scatter({
                 place: 'on-shore',
                 density: [0.3, 0.6],
-                types: [EntityIds.BUTTERFLY]
+                entity: EntityRules.choose([EntityRules.butterfly()])
             }),
         };
 
@@ -171,7 +171,6 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
         this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: patterns,
             tracks: [riverTrack, shoreTrack, flyingTrack],
-            waterAnimals,
             path: {
                 length: [200, 100]
             }

@@ -5,6 +5,7 @@ import { EntityIds } from '../../../entities/EntityIds';
 import { RiverGeometry } from '../../RiverGeometry';
 import { EntitySpawners } from '../../../entities/EntitySpawners';
 import { AnimalBehaviorConfig } from '../../../entities/behaviors/AnimalBehaviorConfigs';
+import { AnimalPlacementOptions } from './EntityLayoutRules';
 
 
 
@@ -43,7 +44,7 @@ export class BoatPathLayoutSpawner {
         const neededIds = new Set<EntityIds>();
         for (const p of layout.placements) {
             if (p.index >= iChunkMin && p.index < iChunkMax) {
-                neededIds.add(p.type);
+                neededIds.add(p.entity.type);
             }
         }
         yield* spawners.ensureAllLoaded(Array.from(neededIds));
@@ -60,7 +61,7 @@ export class BoatPathLayoutSpawner {
 
                 const sample = RiverGeometry.getPathPoint(layout.path, p.index);
 
-                switch (p.type) {
+                switch (p.entity.type) {
                     case EntityIds.LOG:
                         spawners.log().spawnInRiverAbsolute(context, sample, p.range);
                         break;
@@ -130,7 +131,8 @@ export class BoatPathLayoutSpawner {
                     case EntityIds.TURTLE:
                     case EntityIds.UNICORN:
                     case EntityIds.GINGERMAN: {
-                        const animalSpawner = spawners.animal(p.type);
+                        const animal = p.entity as AnimalPlacementOptions;
+                        const animalSpawner = spawners.animal(animal.type);
                         if (animalSpawner) {
                             const baseOptions = {
                                 distanceRange: p.range,
@@ -138,13 +140,13 @@ export class BoatPathLayoutSpawner {
                                 biomeZRange
                             };
 
-                            const landOptions = p.options ? p.options(p.type, false) : {};
+                            const landOptions = animal.options ? animal.options('land') : {};
                             const spawned = animalSpawner.spawnOnLand(context, sample, {
                                 ...baseOptions,
                                 ...landOptions
                             });
                             if (!spawned) {
-                                const riverOptions = p.options ? p.options(p.type, true) : {};
+                                const riverOptions = animal.options ? animal.options('water') : {};
                                 animalSpawner.spawnInRiver(context, sample, {
                                     ...baseOptions,
                                     ...riverOptions

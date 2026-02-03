@@ -13,6 +13,7 @@ import { EntitySpawners } from '../../entities/EntitySpawners';
 import { Decorations } from '../Decorations';
 import { SkyBiome } from './BiomeFeatures';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { EntityRules } from './decorations/EntityLayoutRules';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';
@@ -98,35 +99,35 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                 'forest_slalom': Patterns.scatter({
                     place: 'slalom',
                     density: [1.0, 2.0],
-                    types: [EntityIds.LOG, EntityIds.ROCK, EntityIds.BUOY]
+                    entity: EntityRules.choose([EntityRules.log(), EntityRules.rock(), EntityRules.buoy()])
                 }),
                 'rock_gates': Patterns.gate({
                     place: 'slalom',
                     density: [1.0, 2.0],
-                    types: [EntityIds.ROCK],
+                    entity: EntityRules.choose([EntityRules.rock()]),
                     minCount: 2
                 }),
                 'piers': Patterns.staggered({
                     place: 'slalom',
                     density: [0.3, 0.9],
-                    types: [EntityIds.PIER],
+                    entity: EntityRules.choose([EntityRules.pier()]),
                     minCount: 2
                 }),
                 'forest_animals': Patterns.scatter({
                     place: 'near-shore',
                     density: [0.8, 2.5],
-                    types: [EntityIds.BROWN_BEAR, EntityIds.MOOSE]
+                    entity: EntityRules.choose([EntityRules.brown_bear(), EntityRules.moose()])
                 }),
                 'duckling_train': Patterns.sequence({
                     place: 'path',
                     density: [0.5, 1.5],
-                    types: [EntityIds.DUCKLING],
+                    entity: EntityRules.choose([EntityRules.duckling()]),
                     minCount: 3
                 }),
                 'grass_patches': Patterns.scatter({
                     place: 'near-shore',
                     density: [1.0, 2.0],
-                    types: [EntityIds.WATER_GRASS]
+                    entity: EntityRules.choose([EntityRules.water_grass()])
                 })
             },
             tracks: [
@@ -158,7 +159,6 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                     ]
                 }
             ],
-            waterAnimals: [EntityIds.DUCKLING],
             path: {
                 length: [200, 100]
             }

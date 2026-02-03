@@ -15,6 +15,7 @@ import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { EntityRules } from './decorations/EntityLayoutRules';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
@@ -64,64 +65,51 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        // Behaviors for spawning
-        const spawnOptions = (id: EntityIds, inRiver: boolean): AnimalSpawnOptions => {
-            if (id !== EntityIds.ALLIGATOR) return {};
-            return {
-                distanceRange: [-10, 10],
-                behavior: {
-                    type: 'attack',
-                    logicName: 'AmbushAttack'
-                }
-            };
-        };
-
         this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: {
                 'dense_shore_mangroves': Patterns.scatter({
                     place: 'near-shore',
                     density: [20, 40],
-                    types: [EntityIds.MANGROVE],
+                    entity: EntityRules.choose([EntityRules.mangrove()]),
                     minCount: 15
                 }),
                 'clear_channel_bottles': Patterns.sequence({
                     place: 'path',
                     density: [0.5, 0.5],
-                    types: [EntityIds.BOTTLE]
+                    entity: EntityRules.choose([EntityRules.bottle()])
                 }),
                 'log_scatter': Patterns.scatter({
                     place: 'slalom',
                     density: [0.5, 2.0],
-                    types: [EntityIds.LOG]
+                    entity: EntityRules.choose([EntityRules.log()])
                 }),
                 'threat_ambush': Patterns.scatter({
                     place: 'path',
                     density: [0.2, 0.6],
-                    types: [EntityIds.ALLIGATOR, EntityIds.SNAKE],
-                    options: spawnOptions
+                    entity: EntityRules.choose([EntityRules.swamp_gator(), EntityRules.snake()]),
                 }),
                 'egret_flight': Patterns.scatter({
                     place: 'path',
                     density: [1, 2],
-                    types: [EntityIds.EGRET]
+                    entity: EntityRules.choose([EntityRules.egret()])
                 }),
                 'dragonfly_buzz': Patterns.cluster({
                     place: 'path',
                     density: [0.5, 1],
                     minCount: 2.0,
                     maxCount: 3.0,
-                    types: [EntityIds.DRAGONFLY]
+                    entity: EntityRules.choose([EntityRules.dragonfly()])
                 }),
                 'grass_patches': Patterns.scatter({
                     place: 'near-shore',
                     density: [1.5, 3.0],
-                    types: [EntityIds.WATER_GRASS]
+                    entity: EntityRules.choose([EntityRules.water_grass()])
                 }),
                 'lilly_patches': Patterns.scatter({
                     place: 'middle',
                     density: [5.0, 10.0],
                     minCount: 100,
-                    types: [EntityIds.LILLY_PAD_PATCH]
+                    entity: EntityRules.choose([EntityRules.lily_pad_patch()])
                 })
             },
             tracks: [
@@ -188,7 +176,6 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     ]
                 }
             ],
-            waterAnimals: [EntityIds.ALLIGATOR, EntityIds.SNAKE, EntityIds.EGRET, EntityIds.DRAGONFLY],
             path: {
                 length: [200, 100]
             }

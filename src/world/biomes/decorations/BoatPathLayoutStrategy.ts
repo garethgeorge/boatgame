@@ -2,6 +2,7 @@ import { EntityIds } from '../../../entities/EntityIds';
 import { AnimalSpawnOptions } from '../../../entities/spawners/AnimalSpawner';
 import { RiverGeometry, RiverGeometrySample } from '../../RiverGeometry';
 import { RiverSystem } from '../../RiverSystem';
+import { EntityPlacement } from './EntityLayoutRules';
 
 /**
  * Represents a point on the boat path, extending the basic river geometry
@@ -12,24 +13,6 @@ export interface PathPoint extends RiverGeometrySample {
     boatXOffset: number;
 }
 
-export type SpawnOptionsFn = (id: EntityIds, inRiver: boolean) => AnimalSpawnOptions;
-
-/**
- * Details for placing a single obstacle instance along the boat path.
- */
-export interface ObstaclePlacement {
-    /** The type of entity to spawn */
-    type: EntityIds;
-    /** Index + fractional offset in the path array */
-    index: number;
-    /** Allowed distance range [-bankDist, bankDist] along the normal vector */
-    range: [number, number];
-    /** Optional behavior scaling for attack animals */
-    aggressiveness?: number;
-    /** Function called at spawn time to get placement parameters */
-    options?: SpawnOptionsFn;
-}
-
 /**
  * The final generated boat path and its associated obstacle layout.
  */
@@ -37,13 +20,13 @@ export interface BoatPathLayout {
     /** Array of geometry and boat offset samples */
     path: PathPoint[];
     /** Flattened list of obstacle placements */
-    placements: ObstaclePlacement[];
+    placements: EntityPlacement[];
 }
 
 /** Context passed to the pattern function for generating entity placements
  */
 export interface PatternContext {
-    placements: ObstaclePlacement[];
+    placements: EntityPlacement[];
     path: PathPoint[];
     config: BoatPathLayoutConfig;
     range: [number, number];        // index range in path array
@@ -64,8 +47,6 @@ export interface ExplicitPlacementConfig {
     /** Progress [0-1] along the biome length, distance from center to bank [0-1] */
     at: number;
     range: [number, number];
-    /** Function called at spawn time to get placement parameters */
-    options?: SpawnOptionsFn;
 }
 
 export type PatternConfigs = Record<string, PatternConfig>;
@@ -108,8 +89,6 @@ export interface BoatPathLayoutConfig {
     patterns: PatternConfigs;
     /** Array of tracks. Each track generates stages independently to fill the biome. */
     tracks: TrackConfig[];
-    /** List of entity types that are considered 'water animals' for 'near-shore' placement */
-    waterAnimals: EntityIds[];
     /** Path weaving parameters */
     path: {
         /** [startLength, endLength] of weaving segments */
@@ -248,8 +227,8 @@ export class BoatPathLayoutStrategy {
         tracks: GeneratedTrack[],
         config: BoatPathLayoutConfig,
         totalArcLength: number
-    ): ObstaclePlacement[] {
-        const placements: ObstaclePlacement[] = [];
+    ): EntityPlacement[] {
+        const placements: EntityPlacement[] = [];
 
         for (const track of tracks) {
             // Procedural scenes
@@ -297,10 +276,9 @@ export class BoatPathLayoutStrategy {
 
                 placements.push({
                     index: pathIndex,
-                    type: ep.type,
                     range,
                     aggressiveness,
-                    options: ep.options
+                    entity: { type: ep.type, habitat: 'water' }
                 });
             }
         }

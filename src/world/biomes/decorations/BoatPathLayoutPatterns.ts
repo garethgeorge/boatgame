@@ -1,6 +1,6 @@
-import { EntityIds } from "../../../entities/EntityIds";
 import { RiverGeometry } from "../../RiverGeometry";
-import { BoatPathLayoutConfig, ObstaclePlacement, PathPoint, PatternConfig, PatternContext, SpawnOptionsFn } from "./BoatPathLayoutStrategy";
+import { PatternConfig, PatternContext } from "./BoatPathLayoutStrategy";
+import { EntityGeneratorFn, Habitat } from "./EntityLayoutRules";
 
 export type PlacementType =
     'on-shore' |        // on the river banks within 15m
@@ -14,14 +14,12 @@ export interface CommonPatternOptions {
     place: PlacementType;
     /** Min and Max density in instances per 100m. Scales from start to end of biome. */
     density?: [number, number];
-    /** Candidate obstacle types for this pattern */
-    types: EntityIds[];
+    /** Generates a candidate entity */
+    entity: EntityGeneratorFn;
     /** Minimum required instances */
     minCount?: number;
     /** Maximum allowed instances */
     maxCount?: number;
-    /** Function called at spawn time to get placement parameters */
-    options?: SpawnOptionsFn;
 }
 
 export class Patterns {
@@ -55,13 +53,19 @@ export class Patterns {
 
         for (let j = 0; j < count; j++) {
             const pathIndex = context.range[0] + Math.random() * (context.range[1] - context.range[0]);
-            context.placements.push(this.applyIndividualPlacement(
-                context,
-                opts.place,
-                opts.types[Math.floor(Math.random() * opts.types.length)],
-                opts.options,
-                pathIndex,
-            ));
+
+            const entity = opts.entity(context);
+            const aggressiveness = Math.min(1.0, context.progress * 0.7 + Math.random() * 0.3);
+
+            const range = this.placementRange(
+                context, opts.place, entity.habitat, pathIndex);
+
+            context.placements.push({
+                index: pathIndex,
+                range,
+                aggressiveness,
+                entity: entity
+            });
         }
     }
 
@@ -75,13 +79,19 @@ export class Patterns {
 
         for (let j = 0; j < count; j++) {
             const pathIndex = context.range[0] + (j + 0.5) * (context.range[1] - context.range[0]) / count;
-            context.placements.push(this.applyIndividualPlacement(
-                context,
-                opts.place,
-                opts.types[Math.floor(Math.random() * opts.types.length)],
-                opts.options,
-                pathIndex,
-            ));
+
+            const entity = opts.entity(context);
+            const aggressiveness = Math.min(1.0, context.progress * 0.7 + Math.random() * 0.3);
+
+            const range = this.placementRange(
+                context, opts.place, entity.habitat, pathIndex);
+
+            context.placements.push({
+                index: pathIndex,
+                range,
+                aggressiveness,
+                entity: entity
+            });
         }
     }
 
@@ -95,14 +105,20 @@ export class Patterns {
 
         for (let j = 0; j < count; j++) {
             const pathIndex = context.range[0] + (j + 0.5) * (context.range[1] - context.range[0]) / count;
-            context.placements.push(this.applyIndividualPlacement(
-                context,
-                opts.place,
-                opts.types[Math.floor(Math.random() * opts.types.length)],
-                opts.options,
-                pathIndex,
-                j % 2 === 0 ? 'left' : 'right',
-            ));
+
+            const entity = opts.entity(context);
+            const aggressiveness = Math.min(1.0, context.progress * 0.7 + Math.random() * 0.3);
+
+            const range = this.placementRange(
+                context, opts.place, entity.habitat, pathIndex,
+                j % 2 === 0 ? 'left' : 'right');
+
+            context.placements.push({
+                index: pathIndex,
+                range,
+                aggressiveness,
+                entity: entity
+            });
         }
     }
 
@@ -118,14 +134,20 @@ export class Patterns {
             const subCount = Math.ceil(count / 2);
             const step = Math.floor(j / 2);
             const pathIndex = context.range[0] + (step + 0.5) * (context.range[1] - context.range[0]) / subCount;
-            context.placements.push(this.applyIndividualPlacement(
-                context,
-                opts.place,
-                opts.types[Math.floor(Math.random() * opts.types.length)],
-                opts.options,
-                pathIndex,
-                j % 2 === 0 ? 'left' : 'right',
-            ));
+
+            const entity = opts.entity(context);
+            const aggressiveness = Math.min(1.0, context.progress * 0.7 + Math.random() * 0.3);
+
+            const range = this.placementRange(
+                context, opts.place, entity.habitat, pathIndex,
+                j % 2 === 0 ? 'left' : 'right');
+
+            context.placements.push({
+                index: pathIndex,
+                range,
+                aggressiveness,
+                entity: entity
+            });
         }
     }
 
@@ -142,24 +164,28 @@ export class Patterns {
             const jitter = (Math.random() - 0.5) * 5.0;
             const pathIndex = Math.max(context.range[0], Math.min(context.range[1], center + jitter));
 
-            context.placements.push(this.applyIndividualPlacement(
-                context,
-                opts.place,
-                opts.types[Math.floor(Math.random() * opts.types.length)],
-                opts.options,
-                pathIndex
-            ));
+            const entity = opts.entity(context);
+            const aggressiveness = Math.min(1.0, context.progress * 0.7 + Math.random() * 0.3);
+
+            const range = this.placementRange(
+                context, opts.place, entity.habitat, pathIndex);
+
+            context.placements.push({
+                index: pathIndex,
+                range,
+                aggressiveness,
+                entity: entity
+            });
         }
     }
 
-    public static applyIndividualPlacement(
+    public static placementRange(
         context: PatternContext,
         place: PlacementType,
-        type: EntityIds,
-        spawnOptions: SpawnOptionsFn | undefined,
+        habitat: Habitat,
         pathIndex: number,
         side?: 'left' | 'right'
-    ): ObstaclePlacement {
+    ): [number, number] {
         const pathPoint = RiverGeometry.getPathPoint(context.path, pathIndex);
         if (side === undefined) {
             if (place === 'path') {
@@ -170,25 +196,6 @@ export class Patterns {
             }
         }
 
-        const range = this.placementRange(pathPoint, type, side, place, context.config);
-        const aggressiveness = Math.min(1.0, context.progress * 0.7 + Math.random() * 0.3);
-
-        return {
-            type,
-            index: pathIndex,
-            range,
-            aggressiveness,
-            options: spawnOptions
-        };
-    }
-
-    public static placementRange(
-        pathPoint: PathPoint,
-        type: EntityIds,
-        side: 'left' | 'right',
-        place: PlacementType,
-        config: BoatPathLayoutConfig
-    ): [number, number] {
         if (place === 'on-shore') {
             return side === 'right' ?
                 [pathPoint.bankDist, pathPoint.bankDist + 15] :
@@ -198,8 +205,7 @@ export class Patterns {
                 [pathPoint.boatXOffset + 5.0, pathPoint.bankDist - 2.0] :
                 [-pathPoint.bankDist + 2.0, pathPoint.boatXOffset - 5.0];
         } else if (place === 'near-shore') {
-            const isWaterAnimal = config.waterAnimals.includes(type);
-            if (isWaterAnimal) {
+            if (habitat === 'water') {
                 return side === 'right' ?
                     [0.5 * pathPoint.bankDist, pathPoint.bankDist] :
                     [-pathPoint.bankDist, 0.5 * -pathPoint.bankDist];

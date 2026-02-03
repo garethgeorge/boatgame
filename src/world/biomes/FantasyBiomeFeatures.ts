@@ -13,6 +13,7 @@ import { SimplexNoise } from '../SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
 import { RiverSystem } from '../RiverSystem';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { EntityRules } from './decorations/EntityLayoutRules';
 
 /**
  * Fantasy Land Biome: A magical realm with pastel-colored patches and mystical creatures.
@@ -144,27 +145,26 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const waterAnimals = [EntityIds.SWAN];
         const patterns = {
             'swan_bevies': Patterns.scatter({
                 place: 'slalom',
                 density: [0.3, 0.6],
-                types: [EntityIds.SWAN]
+                entity: EntityRules.choose([EntityRules.swan()])
             }),
             'unicorn_herd': Patterns.scatter({
                 place: 'on-shore',
                 density: [0.2, 0.4],
-                types: [EntityIds.UNICORN]
+                entity: EntityRules.choose([EntityRules.unicorn()])
             }),
             'bluebird_flocks': Patterns.scatter({
                 place: 'on-shore',
                 density: [0.3, 0.5],
-                types: [EntityIds.BLUEBIRD]
+                entity: EntityRules.choose([EntityRules.bluebird()])
             }),
             'gingerman_parade': Patterns.scatter({
                 place: 'on-shore',
                 density: [0.3, 0.6],
-                types: [EntityIds.GINGERMAN]
+                entity: EntityRules.choose([EntityRules.gingerman()])
             }),
         };
 
@@ -207,7 +207,6 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
         this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: patterns,
             tracks: tracks,
-            waterAnimals,
             path: {
                 length: [200, 100]
             }

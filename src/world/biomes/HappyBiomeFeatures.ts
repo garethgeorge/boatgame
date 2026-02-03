@@ -11,6 +11,7 @@ import { TierRule, Signal, Combine } from '../decorators/PoissonDecorationRules'
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { EntityRules } from './decorations/EntityLayoutRules';
 
 
 /**
@@ -98,12 +99,11 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const waterAnimals = [];
         const patterns = {
             'dragonfly_swarms': Patterns.scatter({
                 place: 'path',
                 density: [0.3, 0.6],
-                types: [EntityIds.DRAGONFLY]
+                entity: EntityRules.choose([EntityRules.dragonfly()])
             }),
         };
 
@@ -123,7 +123,6 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         const boatPathLayout = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
             patterns: patterns,
             tracks: tracks,
-            waterAnimals,
             path: {
                 length: [200, 100]
             }
