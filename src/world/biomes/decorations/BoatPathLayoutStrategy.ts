@@ -1,7 +1,8 @@
 import { EntityIds } from '../../../entities/EntityIds';
 import { RiverGeometry, RiverGeometrySample } from '../../RiverGeometry';
 import { RiverSystem } from '../../RiverSystem';
-import { EntityPlacement, PathPoint } from './EntityLayoutRules';
+import { EntityGeneratorFn, EntityPlacement, PathPoint } from './EntityLayoutRules';
+import { SpatialGrid } from '../../../managers/SpatialGrid';
 
 /**
  * The final generated boat path and its associated obstacle layout.
@@ -22,6 +23,8 @@ export interface PatternContext {
     range: [number, number];        // index range in path array
     progress: number;               // progress [0-1] along river
     length: number;                 // arc length of the segment
+    spatialGrid: SpatialGrid;
+    biomeZRange: [number, number];
 }
 
 export type PatternConfig = (context: PatternContext) => void;
@@ -33,7 +36,7 @@ export interface ExplicitPlacementConfig {
     /** Unique name for this placement */
     name: string;
     /** The obstacle type to spawn */
-    type: EntityIds;
+    entity: EntityGeneratorFn;
     /** Progress [0-1] along the biome length, distance from center to bank [0-1] */
     at: number;
     range: [number, number];
@@ -104,12 +107,11 @@ interface GeneratedTrack {
  */
 export class BoatPathLayoutStrategy {
     public static createLayout(
-        zMin: number,
-        zMax: number,
+        biomeZRange: [number, number],
         config: BoatPathLayoutConfig
     ): BoatPathLayout {
         // 1. Sample the river
-        const path = this.sampleRiver(zMax, zMin);
+        const path = this.sampleRiver(biomeZRange[1], biomeZRange[0]);
         if (path.length < 2) return { path, placements: [] };
 
         const totalArcLength = path[path.length - 1].arcLength;
@@ -121,7 +123,12 @@ export class BoatPathLayoutStrategy {
         this.generateWeavingPath(path, config, totalArcLength);
 
         // 4. Determine obstacle placements
-        const placements = this.resolvePlacements(path, tracks, config, totalArcLength);
+        // Initialize spatial grid for collision checking
+        const spatialGrid = new SpatialGrid(20);
+
+        const placements = this.resolvePlacements(
+            path, tracks, config, totalArcLength,
+            spatialGrid, biomeZRange);
 
         return { path, placements };
     }
@@ -216,7 +223,9 @@ export class BoatPathLayoutStrategy {
         path: PathPoint[],
         tracks: GeneratedTrack[],
         config: BoatPathLayoutConfig,
-        totalArcLength: number
+        totalArcLength: number,
+        spatialGrid: SpatialGrid,
+        biomeZRange: [number, number]
     ): EntityPlacement[] {
         const placements: EntityPlacement[] = [];
 
@@ -239,7 +248,9 @@ export class BoatPathLayoutStrategy {
                         config,
                         range: [sceneIStart, sceneIEnd],
                         progress,
-                        length: sceneLenMeters
+                        length: sceneLenMeters,
+                        spatialGrid,
+                        biomeZRange
                     };
                     pattern(context);
                 }
@@ -262,14 +273,24 @@ export class BoatPathLayoutStrategy {
                     range[1] = pathPoint.boatXOffset - width * ep.range[1];
                 }
 
-                const aggressiveness = Math.min(1.0, ep.at * 0.7 + Math.random() * 0.3);
+                // Randomly pick an offset in the range
+                const offset = range[0] + Math.random() * (range[1] - range[0]);
 
-                placements.push({
-                    index: pathIndex,
-                    range,
-                    aggressiveness,
-                    entity: { type: ep.type, habitat: 'water' }
+                const entity = ep.entity({
+                    sample: pathPoint,
+                    offset: offset,
+                    habitat: Math.abs(offset) < pathPoint.bankDist ? 'water' : 'land',
+                    progress: ep.at,
+                    biomeZRange: biomeZRange
                 });
+
+                if (entity) {
+                    placements.push({
+                        index: pathIndex,
+                        offset,
+                        entity
+                    });
+                }
             }
         }
 

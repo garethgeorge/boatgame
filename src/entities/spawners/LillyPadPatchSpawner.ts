@@ -1,57 +1,11 @@
-
-import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { LillyPadPatch } from '../../entities/obstacles/LillyPadPatch';
-import { RiverGeometrySample } from '../../world/RiverGeometry';
-import { EntityIds } from '../EntityIds';
-import { Decorations } from '../../world/Decorations';
 
-export class LillyPadPatchSpawner extends BaseSpawner {
-    id = EntityIds.LILLY_PAD_PATCH;
+export class LillyPadPatchSpawner {
 
-    protected getDensity(difficulty: number, zStart: number): number {
-        return 0.005;
+    public static *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
     }
-
-    *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
-    }
-
-    spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {
-        return false;
-    }
-
-    spawnInRiverAbsolute(
-        context: SpawnContext,
-        sample: RiverGeometrySample,
-        distanceRange: [number, number]
-    ): boolean {
-        // Lilly pad patches are typically smaller and rounder than reed patches
-        // User requested ~2x bigger
-        const length = 16.0 + Math.random() * 16.0;
-        const width = 16.0 + Math.random() * 16.0;
-
-        const radius = Math.max(width, length) / 2.0;
-        // Console log enabled for debugging
-        // console.log('LillyPadPatchSpawner: Attempting spawn', { z: sample.centerPos.z, radius, distRange: distanceRange });
-        const minSpacing = radius * 1.5;
-        const minDistFromShore = 1.0;
-
-        const pos = context.placementHelper.tryRiverPlaceAbsolute(
-            sample,
-            radius,
-            minSpacing,
-            minDistFromShore,
-            distanceRange
-        );
-
-        if (pos) {
-            this.createEntity(context, pos.worldX, pos.worldZ, width, length, sample.tangent);
-            return true;
-        }
-        return false;
-    }
-
-    public createEntity(
+    public static createEntity(
         context: SpawnContext,
         x: number, z: number, width: number, length: number,
         tangent: { x: number, z: number }

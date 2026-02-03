@@ -204,7 +204,7 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
             }
         ];
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
+        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
             patterns: patterns,
             tracks: tracks,
             path: {

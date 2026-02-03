@@ -3,7 +3,6 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { EntitySpawners } from '../../entities/EntitySpawners';
 import { Decorations } from '../Decorations';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
 import { RiverGeometry } from '../RiverGeometry';
@@ -65,7 +64,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
+        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
             patterns: {
                 'dense_shore_mangroves': Patterns.scatter({
                     place: 'near-shore',

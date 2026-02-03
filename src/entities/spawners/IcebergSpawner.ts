@@ -1,20 +1,23 @@
-import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { Iceberg } from '../../entities/obstacles/Iceberg';
 import { Decorations } from '../../world/Decorations';
 
-export class IcebergSpawner extends BaseSpawner {
+export class IcebergSpawner {
   id = 'iceberg';
 
-  protected getDensity(difficulty: number, zStart: number): number {
-    return 0.05;
-  }
-
-  *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+  public static *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
     yield* Decorations.ensureAllLoaded(['polarBear']);
   }
 
-  spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {
+  public static *spawn(context: SpawnContext, count: number, zStart: number, zEnd: number, biomeZRange: [number, number]): Generator<void, void, unknown> {
+    for (let i = 0; i < count; i++) {
+      if (i % 5 === 0) yield;
+      const z = zStart + Math.random() * (zEnd - zStart);
+      this.spawnAt(context, z, biomeZRange);
+    }
+  }
+
+  public static spawnAt(context: SpawnContext, z: number, biomeZRange: [number, number]): boolean {
     let radius = 4.0 + Math.random();
 
     // Size Variance

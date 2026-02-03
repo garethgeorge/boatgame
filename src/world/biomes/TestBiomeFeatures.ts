@@ -1,15 +1,17 @@
+import * as THREE from 'three'
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { EntityIds } from '../../entities/EntityIds';
 import { SpawnContext } from '../../entities/Spawnable';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { EntitySpawners } from '../../entities/EntitySpawners';
 import { DecorationRule } from '../decorators/PoissonDecorationStrategy';
 import { Combine, Signal, TierRule } from '../decorators/PoissonDecorationRules';
 import { RiverSystem } from '../RiverSystem';
 import { RiverGeometry } from '../RiverGeometry';
 import { DecorationConfig, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { Decorations } from '../Decorations';
+import { off } from 'node:cluster';
+import { EntityRules } from './decorations/EntityLayoutRules';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -90,24 +92,19 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         const river = RiverSystem.getInstance();
         const sample = RiverGeometry.getRiverGeometrySample(river, (zStart + zEnd) / 2);
         const distanceRange: [number, number] = [sample.bankDist, sample.bankDist + 10];
+        const offset = distanceRange[0] + Math.random() * (distanceRange[1] - distanceRange[0]);
 
-        yield* Decorations.ensureAllLoaded(['monkey']);
-        EntitySpawners.getInstance().animal(EntityIds.MONKEY).
-            spawnOnLand(context, sample, { distanceRange });
+        const monkeyMaker = EntityRules.monkey();
+        const monkey = monkeyMaker({
+            sample: { ...sample, boatXOffset: 0 },
+            progress: 0.5,
+            offset: offset,
+            habitat: 'land',
+            biomeZRange: biomeRange
+        });
 
-        yield* EntitySpawners.getInstance().messageInABottle().spawn(context, 4, zStart, zEnd, biomeRange);
-        // yield* EntitySpawners.getInstance().animal(EntityIds.MONKEY)!.spawn(context, 1, zStart, zEnd);
-        // yield* EntitySpawners.getInstance().animal(EntityIds.TRICERATOPS).spawn(context, 1, zStart, zEnd);
+        yield* Decorations.ensureAllLoaded(monkey.config.decorationIds);
 
-        // yield* EntitySpawners.getInstance().animal(EntityIds.PTERODACTYL).spawn(context, 1, zStart, zEnd);
-        // yield* EntitySpawners.getInstance().animal(EntityIds.BUTTERFLY).spawn(context, 1, zStart, zEnd);
-        // yield* EntitySpawners.getInstance().animal(EntityIds.BLUEBIRD).spawn(context, 1, zStart, zEnd);
-
-        // yield* EntitySpawners.getInstance().animal(EntityIds.DUCKLING).spawn(context, 1, zStart, zEnd);
-        // yield* EntitySpawners.getInstance().animal(EntityIds.DOLPHIN).spawn(context, 1, zStart, zEnd);
-        // yield* EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK).spawn(context, 1, zStart, zEnd);
-        // yield* EntitySpawners.getInstance().animal(EntityIds.SWAN).spawn(context, 1, zStart, zEnd);
-        // yield* EntitySpawners.getInstance().animal(EntityIds.EGRET).spawn(context, 2, zStart, zEnd);
-        // yield* EntitySpawners.getInstance().animal(EntityIds.DRAGONFLY).spawn(context, 1, zStart, zEnd, [this.zMin, this.zMax]);
+        monkey.config.spawn(context, { config: monkey.config, radius: monkey.radius }, sample, offset);
     }
 }

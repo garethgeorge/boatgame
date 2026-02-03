@@ -90,7 +90,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
+        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
             patterns: {
                 'animal_corridor': Patterns.sequence({
                     place: 'near-shore',
@@ -106,12 +106,12 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 'rocky_slalom': Patterns.sequence({
                     place: 'slalom',
                     density: [0.5, 2.0],
-                    entity: EntityRules.choose([EntityRules.rock()])
+                    entity: EntityRules.choose([EntityRules.rock('desert')])
                 }),
                 'rock_stagger': Patterns.staggered({
                     place: 'slalom',
                     density: [0.5, 2.0],
-                    entity: EntityRules.choose([EntityRules.rock()]),
+                    entity: EntityRules.choose([EntityRules.rock('desert')]),
                     minCount: 3
                 }),
                 'bottle_cluster': Patterns.cluster({
@@ -146,7 +146,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 {
                     name: 'unique_elements',
                     placements: [
-                        { name: 'dock', at: 0.95, range: [1, 1], type: EntityIds.PIER }
+                        { name: 'dock', at: 0.95, range: [1, 1], entity: EntityRules.pier(true) }
                     ]
                 },
                 {

@@ -1,30 +1,15 @@
 import * as planck from 'planck';
-import { BaseSpawner } from './BaseSpawner';
 import { SpawnContext } from '../Spawnable';
 import { Pier } from '../../entities/obstacles/Pier';
 import { RiverSystem } from '../../world/RiverSystem';
 import { Decorations } from '../../world/Decorations';
 
-export class PierSpawner extends BaseSpawner {
-  id = 'pier';
-
-  protected getDensity(difficulty: number, zStart: number): number {
-    const dist = Math.abs(zStart);
-    if (dist < 200) return 0;
-    return 0.0026;
-  }
-
+export class PierSpawner {
   *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
     yield* Decorations.ensureAllLoaded(['depot']);
   }
 
-  spawnAt(context: SpawnContext, worldZ: number, biomeZRange: [number, number], forceDepot?: boolean): boolean {
-    const isLeft = Math.random() > 0.5;
-    this.createEntity(context, worldZ, isLeft, forceDepot);
-    return true;
-  }
-
-  public createEntity(
+  public static createEntity(
     context: SpawnContext,
     worldZ: number,
     isLeft: boolean,

@@ -42,6 +42,10 @@ export interface AnimalAnimations {
     }[];
 }
 
+export type AnimalClass =
+    new (physicsEngine: PhysicsEngine, options: AnimalOptions) => Animal;
+
+
 export abstract class Animal extends Entity implements AnyAnimal {
     private behavior: EntityBehavior | null = null;
     private player: AnimationPlayer | null = null;

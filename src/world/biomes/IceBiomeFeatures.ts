@@ -7,9 +7,12 @@ import { Decorations } from '../Decorations';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule, Combine, Signal } from '../decorators/PoissonDecorationRules';
 import { EntityIds } from '../../entities/EntityIds';
-import { EntitySpawners } from '../../entities/EntitySpawners';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
+import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { EntityRules } from './decorations/EntityLayoutRules';
+import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
+import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'ice';
@@ -48,6 +51,7 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
     }
 
     private decorationConfig: DecorationConfig | null = null;
+    private layoutCache: BoatPathLayout | null = null;
 
     public getDecorationConfig(): DecorationConfig {
         if (this.decorationConfig) return this.decorationConfig;
@@ -92,6 +96,79 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         return this.decorationConfig;
     }
 
+    private getLayout(): BoatPathLayout {
+        if (this.layoutCache) return this.layoutCache;
+
+        const patterns = {
+            'buoys': Patterns.scatter({
+                place: 'near-shore',
+                density: [0.3, 0.5],
+                entity: EntityRules.choose([EntityRules.buoy()])
+            }),
+            'bottles': Patterns.cluster({
+                place: 'path',
+                density: [1.5, 0.5],
+                entity: EntityRules.choose([EntityRules.bottle()]),
+                minCount: 3
+            }),
+            'animals': Patterns.scatter({
+                place: 'near-shore',
+                density: [0.5, 0.5],
+                entity: EntityRules.choose([EntityRules.polar_bear(), EntityRules.penguin_kayak()])
+            })
+        };
+
+        const tracks: TrackConfig[] = [
+            {
+                name: 'rewards',
+                stages: [
+                    {
+                        name: 'bottles',
+                        progress: [0, 1.0],
+                        scenes: [
+                            { length: [100, 200], patterns: ['bottles'] },
+                        ]
+                    }
+                ]
+            },
+            {
+                name: 'obstacles',
+                stages: [
+                    {
+                        name: 'buoys',
+                        progress: [0, 1.0],
+                        scenes: [
+                            { length: [100, 200], patterns: ['buoys'] },
+                        ]
+                    }
+                ]
+            },
+            {
+                name: 'animals',
+                stages: [
+                    {
+                        name: 'animals',
+                        progress: [0, 1.0],
+                        scenes: [
+                            { length: [100, 200], patterns: ['animals'] },
+                        ]
+                    }
+                ]
+            },
+        ];
+
+        const boatPathLayout = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
+            patterns: patterns,
+            tracks: tracks,
+            path: {
+                length: [200, 100]
+            }
+        });
+
+        this.layoutCache = boatPathLayout;
+        return this.layoutCache;
+    }
+
     *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
         const config = this.getDecorationConfig();
         yield* TerrainDecorator.decorateIterator(
@@ -104,17 +181,10 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
     }
 
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // Gatekeeping for spawner assets
-        yield* EntitySpawners.getInstance().ensureAllLoaded([
-            EntityIds.BUOY, EntityIds.BOTTLE, EntityIds.ICEBERG,
-            EntityIds.PENGUIN_KAYAK, EntityIds.POLAR_BEAR
-        ]);
+        const layout = this.getLayout();
+        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
+            context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
 
-        yield* this.spawnObstacles(EntitySpawners.getInstance().buoy(), context, difficulty, zStart, zEnd);
-        yield* this.spawnObstacles(EntitySpawners.getInstance().messageInABottle(), context, difficulty, zStart, zEnd);
-
-        yield* this.spawnObstacles(EntitySpawners.getInstance().iceBerg(), context, difficulty, zStart, zEnd);
-        yield* this.spawnObstacles(EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK)!, context, difficulty, zStart, zEnd);
-        yield* this.spawnObstacles(EntitySpawners.getInstance().animal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
+        //yield* this.spawnObstacles(EntitySpawners.getInstance().iceBerg(), context, difficulty, zStart, zEnd);
     }
 }

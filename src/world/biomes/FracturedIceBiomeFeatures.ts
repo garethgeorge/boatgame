@@ -8,12 +8,11 @@ import { RiverSystem } from '../RiverSystem';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import Delaunator from 'delaunator';
 
-
-import { EntitySpawners } from '../../entities/EntitySpawners';
 import { EntityIds } from '../../entities/EntityIds';
 import { FracturedIceberg } from '../../entities/obstacles/FracturedIceberg';
 import { Decorations } from '../Decorations';
 import { SkyBiome } from './BiomeFeatures';
+import { IcebergSpawner } from '../../entities/spawners/IcebergSpawner';
 
 interface Point {
     x: number;
@@ -348,11 +347,11 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
     *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
         // Gatekeeping
-        yield* EntitySpawners.getInstance().ensureAllLoaded([
-            EntityIds.ICEBERG,
-            EntityIds.PENGUIN_KAYAK,
-            EntityIds.POLAR_BEAR
-        ]);
+        // yield* EntitySpawners.getInstance().ensureAllLoaded([
+        //     EntityIds.ICEBERG,
+        //     EntityIds.PENGUIN_KAYAK,
+        //     EntityIds.POLAR_BEAR
+        // ]);
 
         const boundarySize = 50.0;
 
@@ -403,19 +402,19 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         const startOverlapStart = Math.max(zStart, this.zMin);
         const startOverlapEnd = Math.min(zEnd, fracturedStart);
         if (startOverlapStart < startOverlapEnd) {
-            yield* EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd, [this.zMin, this.zMax]);
+            yield* IcebergSpawner.spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd, [this.zMin, this.zMax]);
         }
 
         // End Boundary
         const endOverlapStart = Math.max(zStart, fracturedEnd);
         const endOverlapEnd = Math.min(zEnd, this.zMax);
         if (endOverlapStart < endOverlapEnd) {
-            yield* EntitySpawners.getInstance().iceBerg().spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd, [this.zMin, this.zMax]);
+            yield* IcebergSpawner.spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd, [this.zMin, this.zMax]);
         }
 
         // 3. Spawn bears/penguins
-        yield* this.spawnObstacles(EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK)!, context, difficulty, zStart, zEnd);
-        yield* this.spawnObstacles(EntitySpawners.getInstance().animal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
+        // yield* this.spawnObstacles(EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK)!, context, difficulty, zStart, zEnd);
+        // yield* this.spawnObstacles(EntitySpawners.getInstance().animal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
     }
 
     private nextHalfedge(e: number): number {

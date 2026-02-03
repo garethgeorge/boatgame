@@ -9,7 +9,6 @@ import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
-import { EntitySpawners } from '../../entities/EntitySpawners';
 import { Decorations } from '../Decorations';
 import { SkyBiome } from './BiomeFeatures';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
@@ -94,17 +93,17 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
+        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
             patterns: {
                 'forest_slalom': Patterns.scatter({
                     place: 'slalom',
                     density: [1.0, 2.0],
-                    entity: EntityRules.choose([EntityRules.log(), EntityRules.rock(), EntityRules.buoy()])
+                    entity: EntityRules.choose([EntityRules.log(), EntityRules.rock('forest'), EntityRules.buoy()])
                 }),
                 'rock_gates': Patterns.gate({
                     place: 'slalom',
                     density: [1.0, 2.0],
-                    entity: EntityRules.choose([EntityRules.rock()]),
+                    entity: EntityRules.choose([EntityRules.rock('forest')]),
                     minCount: 2
                 }),
                 'piers': Patterns.staggered({

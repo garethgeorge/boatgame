@@ -120,7 +120,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             ]
         });
 
-        const boatPathLayout = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
+        const boatPathLayout = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
             patterns: patterns,
             tracks: tracks,
             path: {

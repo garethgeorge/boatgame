@@ -168,7 +168,7 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
             ]
         };
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
+        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
             patterns: patterns,
             tracks: [riverTrack, shoreTrack, flyingTrack],
             path: {

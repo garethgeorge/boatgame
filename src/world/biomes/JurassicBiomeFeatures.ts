@@ -106,7 +106,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
             'scattered_rocks': Patterns.scatter({
                 place: 'slalom',
                 density: [1.0, 3.0],
-                entity: EntityRules.choose([EntityRules.rock()])
+                entity: EntityRules.choose([EntityRules.rock('jurassic')])
             }),
             'staggered_logs': Patterns.staggered({
                 place: 'slalom',
@@ -141,7 +141,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
             })
         };
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout(this.zMin, this.zMax, {
+        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
             patterns: patterns,
             tracks: [
                 {
