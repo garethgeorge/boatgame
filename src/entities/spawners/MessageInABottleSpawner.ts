@@ -37,8 +37,7 @@ export class MessageInABottleSpawner extends BaseSpawner {
       const bz = zStart + i * zStep;
       const pos = context.placementHelper.tryPlace(bz, bz, 1.0, { range: [-0.2, 0.2] });
       if (pos) {
-        const bottle = new MessageInABottle(pos.x, pos.z, context.physicsEngine, 0x00FF88, 50);
-        context.entityManager.add(bottle);
+        this.createEntity(context, pos.x, pos.z, 0x00FF88, 50);
       }
     }
   }
@@ -50,8 +49,7 @@ export class MessageInABottleSpawner extends BaseSpawner {
     };
     const pos = context.placementHelper.tryPlace(z, z, 1.0, opts);
     if (pos) {
-      const bottle = new MessageInABottle(pos.x, pos.z, context.physicsEngine);
-      context.entityManager.add(bottle);
+      this.createEntity(context, pos.x, pos.z);
       return true;
     }
     return false;
@@ -74,8 +72,7 @@ export class MessageInABottleSpawner extends BaseSpawner {
     );
 
     if (pos) {
-      const bottle = new MessageInABottle(pos.worldX, pos.worldZ, context.physicsEngine);
-      context.entityManager.add(bottle);
+      this.createEntity(context, pos.worldX, pos.worldZ);
       return true;
     }
     return false;
@@ -102,8 +99,14 @@ export class MessageInABottleSpawner extends BaseSpawner {
       // No collision check for bonus arc (they are collectibles, can overlap obstacles slightly or just be placed)
       // But better to check?
       // Let's just place them.
-      const entity = new MessageInABottle(currentCenter + offsetX, currentZ, context.physicsEngine, 0x0088FF, 50);
-      context.entityManager.add(entity);
+      this.createEntity(context, currentCenter + offsetX, currentZ, 0x0088FF, 50);
     }
+  }
+
+  public createEntity(
+    context: SpawnContext, x: number, z: number, color?: number, points?: number
+  ) {
+    const bottle = new MessageInABottle(x, z, context.physicsEngine, color, points);
+    context.entityManager.add(bottle);
   }
 }

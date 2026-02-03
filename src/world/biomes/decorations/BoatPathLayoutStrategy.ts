@@ -1,17 +1,7 @@
 import { EntityIds } from '../../../entities/EntityIds';
-import { AnimalSpawnOptions } from '../../../entities/spawners/AnimalSpawner';
 import { RiverGeometry, RiverGeometrySample } from '../../RiverGeometry';
 import { RiverSystem } from '../../RiverSystem';
-import { EntityPlacement } from './EntityLayoutRules';
-
-/**
- * Represents a point on the boat path, extending the basic river geometry
- * with a boat-specific X offset for weaving.
- */
-export interface PathPoint extends RiverGeometrySample {
-    /** Offset from river center along the normal vector (negative is left, positive is right) */
-    boatXOffset: number;
-}
+import { EntityPlacement, PathPoint } from './EntityLayoutRules';
 
 /**
  * The final generated boat path and its associated obstacle layout.

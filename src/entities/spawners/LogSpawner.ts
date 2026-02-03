@@ -27,9 +27,7 @@ export class LogSpawner extends BaseSpawner {
     const length = 10 + Math.random() * 10;
     const pos = context.placementHelper.tryPlace(z, z, length / 2, opts);
     if (pos) {
-      const log = new Log(pos.x, pos.z, length, context.physicsEngine);
-      context.entityManager.add(log);
-
+      this.createEntity(context, pos.x, pos.z, length);
       return true;
     }
     return false;
@@ -54,11 +52,15 @@ export class LogSpawner extends BaseSpawner {
     );
 
     if (pos) {
-      const log = new Log(pos.worldX, pos.worldZ, length, context.physicsEngine);
-      context.entityManager.add(log);
+      this.createEntity(context, pos.worldX, pos.worldZ, length);
       return true;
     }
     return false;
+  }
+
+  public createEntity(context: SpawnContext, x: number, z: number, length: number) {
+    const log = new Log(x, z, length, context.physicsEngine);
+    context.entityManager.add(log);
   }
 
 }

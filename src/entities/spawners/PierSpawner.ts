@@ -19,10 +19,20 @@ export class PierSpawner extends BaseSpawner {
   }
 
   spawnAt(context: SpawnContext, worldZ: number, biomeZRange: [number, number], forceDepot?: boolean): boolean {
+    const isLeft = Math.random() > 0.5;
+    this.createEntity(context, worldZ, isLeft, forceDepot);
+    return true;
+  }
+
+  public createEntity(
+    context: SpawnContext,
+    worldZ: number,
+    isLeft: boolean,
+    forceDepot?: boolean
+  ): boolean {
     const riverSystem = RiverSystem.getInstance();
     const minDepotPierLength = 13.0;
 
-    const isLeft = Math.random() > 0.5;
     const width = riverSystem.getRiverWidth(worldZ);
     const center = riverSystem.getRiverCenter(worldZ);
     const slope = riverSystem.getRiverDerivative(worldZ);

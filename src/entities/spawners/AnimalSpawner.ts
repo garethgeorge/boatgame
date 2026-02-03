@@ -134,7 +134,7 @@ export class AnimalSpawner extends BaseSpawner {
 
         if (placement) {
             const finalBehavior = behavior ?? this.config.defaultShoreBehavior;
-            const entity = this.config.factory(context.physicsEngine, {
+            return this.createEntity(context, {
                 x: placement.worldX,
                 y: placement.worldZ,
                 angle: fixedAngle !== undefined ? fixedAngle : placement.rotation,
@@ -145,10 +145,6 @@ export class AnimalSpawner extends BaseSpawner {
                 disableLogic,
                 zRange: options.biomeZRange
             });
-            if (entity) {
-                context.entityManager.add(entity);
-                return true;
-            }
         }
         return false;
     }
@@ -199,7 +195,7 @@ export class AnimalSpawner extends BaseSpawner {
                 normal: new THREE.Vector3(0, 1, 0)
             };
 
-            const entity = this.config.factory(context.physicsEngine, {
+            return this.createEntity(context, {
                 x: placement.worldX,
                 y: placement.worldZ,
                 angle: fixedAngle !== undefined ? fixedAngle : placement.rotation,
@@ -210,12 +206,16 @@ export class AnimalSpawner extends BaseSpawner {
                 disableLogic,
                 zRange: options.biomeZRange
             });
-            if (entity) {
-                context.entityManager.add(entity);
-                return true;
-            }
+        }
+        return false;
+    }
+
+    public createEntity(context: SpawnContext, options: AnimalOptions) {
+        const entity = this.config.factory(context.physicsEngine, options);
+        if (entity) {
+            context.entityManager.add(entity);
+            return true;
         }
         return false;
     }
 }
-

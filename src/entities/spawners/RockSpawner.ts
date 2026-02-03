@@ -35,8 +35,7 @@ export class RockSpawner extends BaseSpawner {
     const radius = 1.5 + Math.random() * 3.0; // 1.5 to 4.5m
     const pos = context.placementHelper.tryPlace(z, z, radius, opts);
     if (pos) {
-      const rock = new RiverRock(pos.x, pos.z, radius, pillars, biome, context.physicsEngine);
-      context.entityManager.add(rock);
+      this.createEntity(context, pos.x, pos.z, radius, pillars, biome);
       return true;
     }
     return false;
@@ -62,10 +61,18 @@ export class RockSpawner extends BaseSpawner {
     );
 
     if (pos) {
-      const rock = new RiverRock(pos.worldX, pos.worldZ, radius, pillars, biome, context.physicsEngine);
-      context.entityManager.add(rock);
+      this.createEntity(context, pos.worldX, pos.worldZ, radius, pillars, biome);
       return true;
     }
     return false;
+  }
+
+  public createEntity(
+    context: SpawnContext,
+    x: number, z: number, radius: number,
+    pillars: boolean, biome: string
+  ) {
+    const rock = new RiverRock(x, z, radius, pillars, biome, context.physicsEngine);
+    context.entityManager.add(rock);
   }
 }

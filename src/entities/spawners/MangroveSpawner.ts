@@ -73,14 +73,7 @@ export class MangroveSpawner extends BaseSpawner {
     const jitter = 0.8 + Math.random() * 0.4;
     const finalScale = baseScale * jitter;
 
-    if (baseScale > 1.05) {
-      const mangrove = new LargeMangrove(x, z, finalScale, context.physicsEngine);
-      context.entityManager.add(mangrove);
-    } else {
-      const mangrove = new SmallMangrove(x, z, finalScale, context.physicsEngine);
-      context.entityManager.add(mangrove);
-    }
-
+    this.createEntity(context, x, z, finalScale);
     return true;
   }
 
@@ -108,14 +101,18 @@ export class MangroveSpawner extends BaseSpawner {
     const jitter = 0.8 + Math.random() * 0.4;
     const finalScale = baseScale * jitter;
 
-    if (baseScale > 1.05) {
-      const mangrove = new LargeMangrove(x, z, finalScale, context.physicsEngine);
+    this.createEntity(context, x, z, finalScale);
+    return true;
+  }
+
+  public createEntity(context: SpawnContext, x: number, z: number, scale: number) {
+    if (scale > 1.05) {
+      const mangrove = new LargeMangrove(x, z, scale, context.physicsEngine);
       context.entityManager.add(mangrove);
     } else {
-      const mangrove = new SmallMangrove(x, z, finalScale, context.physicsEngine);
+      const mangrove = new SmallMangrove(x, z, scale, context.physicsEngine);
       context.entityManager.add(mangrove);
     }
-    return true;
   }
 }
 

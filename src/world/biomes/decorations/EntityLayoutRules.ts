@@ -1,16 +1,24 @@
-import { AnimalBehaviorConfig } from "../../../entities/behaviors/AnimalBehaviorConfigs";
 import { EntityIds } from "../../../entities/EntityIds";
 import { AnimalSpawnOptions } from "../../../entities/spawners/AnimalSpawner";
-import { BoatPathLayoutConfig } from "./BoatPathLayoutStrategy";
+import { RiverGeometrySample } from "../../RiverGeometry";
 
 export type Habitat = 'land' | 'water' | 'any';
+
+/**
+ * Represents a point on the boat path, extending the basic river geometry
+ * with a boat-specific X offset for weaving.
+ */
+export interface PathPoint extends RiverGeometrySample {
+    /** Offset from river center along the normal vector (negative is left, positive is right) */
+    boatXOffset: number;
+}
 
 /**
  * EntityGeneratorFn is called with context to generate a set of placement
  * options.
  */
 export interface EntityGeneratorContext {
-    config: BoatPathLayoutConfig;
+    sample: PathPoint,
 };
 
 export type EntityGeneratorFn = (ctx: EntityGeneratorContext) =>

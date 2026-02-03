@@ -78,7 +78,7 @@ export class BoatPathLayoutSpawner {
                     }
 
                     case EntityIds.BUOY:
-                        spawners.buoy().spawnInRiverAbsolute(context, sample, p.range);
+                        spawners.buoy().createEntity(context, sample, p.range);
                         break;
 
                     case EntityIds.BOTTLE:

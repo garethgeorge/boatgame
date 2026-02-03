@@ -1,13 +1,13 @@
 import { RiverGeometry } from "../../RiverGeometry";
 import { PatternConfig, PatternContext } from "./BoatPathLayoutStrategy";
-import { EntityGeneratorFn, Habitat } from "./EntityLayoutRules";
+import { EntityGeneratorContext, EntityGeneratorFn, Habitat, PathPoint } from "./EntityLayoutRules";
 
 export type PlacementType =
     'on-shore' |        // on the river banks within 15m
-    'path' |            // close to the boat path +/- 2m
-    'slalom' |          // between 5m from boat and 2m from bank on one side of the path
+    'path' |            // water, close to the boat path +/- 2m
+    'slalom' |          // water, between 5m from boat and 2m from bank on one side of the path
     'near-shore' |      // between bank and 1/2 way to center on one side
-    'middle';           // between center and 1/2 way to bank on one side
+    'middle';           // water, between center and 1/2 way to bank on one side
 
 export interface CommonPatternOptions {
     /** Target area (near path, across river, or on shore) */
@@ -51,18 +51,24 @@ export class Patterns {
         if (opts.minCount !== undefined) count = Math.max(count, opts.minCount);
         if (opts.maxCount !== undefined) count = Math.min(count, opts.maxCount);
 
+        let ctx: EntityGeneratorContext = {
+            sample: undefined,
+        };
+
         for (let j = 0; j < count; j++) {
             const pathIndex = context.range[0] + Math.random() * (context.range[1] - context.range[0]);
+            ctx.sample = RiverGeometry.getPathPoint(context.path, pathIndex);
 
-            const entity = opts.entity(context);
+            const range = this.placementRange(context, opts.place, ctx.sample);
+
+            const entity = opts.entity(ctx);
             const aggressiveness = Math.min(1.0, context.progress * 0.7 + Math.random() * 0.3);
 
-            const range = this.placementRange(
-                context, opts.place, entity.habitat, pathIndex);
+            this.clipRange(ctx.sample, range, entity.habitat);
 
             context.placements.push({
                 index: pathIndex,
-                range,
+                range: range,
                 aggressiveness,
                 entity: entity
             });
@@ -77,18 +83,24 @@ export class Patterns {
         if (opts.minCount !== undefined) count = Math.max(count, opts.minCount);
         if (opts.maxCount !== undefined) count = Math.min(count, opts.maxCount);
 
+        let ctx: EntityGeneratorContext = {
+            sample: undefined,
+        };
+
         for (let j = 0; j < count; j++) {
             const pathIndex = context.range[0] + (j + 0.5) * (context.range[1] - context.range[0]) / count;
+            ctx.sample = RiverGeometry.getPathPoint(context.path, pathIndex);
 
-            const entity = opts.entity(context);
+            const range = this.placementRange(context, opts.place, ctx.sample);
+
+            const entity = opts.entity(ctx);
             const aggressiveness = Math.min(1.0, context.progress * 0.7 + Math.random() * 0.3);
 
-            const range = this.placementRange(
-                context, opts.place, entity.habitat, pathIndex);
+            this.clipRange(ctx.sample, range, entity.habitat);
 
             context.placements.push({
                 index: pathIndex,
-                range,
+                range: range,
                 aggressiveness,
                 entity: entity
             });
@@ -103,19 +115,25 @@ export class Patterns {
         if (opts.minCount !== undefined) count = Math.max(count, opts.minCount);
         if (opts.maxCount !== undefined) count = Math.min(count, opts.maxCount);
 
+        let ctx: EntityGeneratorContext = {
+            sample: undefined,
+        };
+
         for (let j = 0; j < count; j++) {
             const pathIndex = context.range[0] + (j + 0.5) * (context.range[1] - context.range[0]) / count;
+            ctx.sample = RiverGeometry.getPathPoint(context.path, pathIndex);
 
-            const entity = opts.entity(context);
+            const range = this.placementRange(context, opts.place, ctx.sample,
+                j % 2 === 0 ? 'left' : 'right');
+
+            const entity = opts.entity(ctx);
             const aggressiveness = Math.min(1.0, context.progress * 0.7 + Math.random() * 0.3);
 
-            const range = this.placementRange(
-                context, opts.place, entity.habitat, pathIndex,
-                j % 2 === 0 ? 'left' : 'right');
+            this.clipRange(ctx.sample, range, entity.habitat);
 
             context.placements.push({
                 index: pathIndex,
-                range,
+                range: range,
                 aggressiveness,
                 entity: entity
             });
@@ -130,21 +148,27 @@ export class Patterns {
         if (opts.minCount !== undefined) count = Math.max(count, opts.minCount);
         if (opts.maxCount !== undefined) count = Math.min(count, opts.maxCount);
 
+        let ctx: EntityGeneratorContext = {
+            sample: undefined,
+        };
+
         for (let j = 0; j < count; j++) {
             const subCount = Math.ceil(count / 2);
             const step = Math.floor(j / 2);
             const pathIndex = context.range[0] + (step + 0.5) * (context.range[1] - context.range[0]) / subCount;
+            ctx.sample = RiverGeometry.getPathPoint(context.path, pathIndex);
 
-            const entity = opts.entity(context);
+            const range = this.placementRange(context, opts.place, ctx.sample,
+                j % 2 === 0 ? 'left' : 'right');
+
+            const entity = opts.entity(ctx);
             const aggressiveness = Math.min(1.0, context.progress * 0.7 + Math.random() * 0.3);
 
-            const range = this.placementRange(
-                context, opts.place, entity.habitat, pathIndex,
-                j % 2 === 0 ? 'left' : 'right');
+            this.clipRange(ctx.sample, range, entity.habitat);
 
             context.placements.push({
                 index: pathIndex,
-                range,
+                range: range,
                 aggressiveness,
                 entity: entity
             });
@@ -159,34 +183,54 @@ export class Patterns {
         if (opts.minCount !== undefined) count = Math.max(count, opts.minCount);
         if (opts.maxCount !== undefined) count = Math.min(count, opts.maxCount);
 
+        let ctx: EntityGeneratorContext = {
+            sample: undefined,
+        };
+
         for (let j = 0; j < count; j++) {
             const center = context.range[0] + Math.random() * (context.range[1] - context.range[0]);
             const jitter = (Math.random() - 0.5) * 5.0;
             const pathIndex = Math.max(context.range[0], Math.min(context.range[1], center + jitter));
+            ctx.sample = RiverGeometry.getPathPoint(context.path, pathIndex);
 
-            const entity = opts.entity(context);
+            const range = this.placementRange(context, opts.place, ctx.sample);
+
+            const entity = opts.entity(ctx);
             const aggressiveness = Math.min(1.0, context.progress * 0.7 + Math.random() * 0.3);
 
-            const range = this.placementRange(
-                context, opts.place, entity.habitat, pathIndex);
+            this.clipRange(ctx.sample, range, entity.habitat);
 
             context.placements.push({
                 index: pathIndex,
-                range,
+                range: range,
                 aggressiveness,
                 entity: entity
             });
         }
     }
 
-    public static placementRange(
+    private static clipRange(
+        pathPoint: PathPoint,
+        range: [number, number],
+        habitat: Habitat
+    ) {
+        if (habitat === 'water') {
+            range[0] = Math.max(-pathPoint.bankDist, range[0]);
+            range[1] = Math.min(range[1], pathPoint.bankDist);
+        } else if (habitat === 'land') {
+            if (range[0] < -pathPoint.bankDist)
+                range[1] = Math.min(-pathPoint.bankDist, range[1]);
+            if (range[1] > pathPoint.bankDist)
+                range[0] = Math.max(range[0], pathPoint.bankDist);
+        }
+    }
+
+    private static placementRange(
         context: PatternContext,
         place: PlacementType,
-        habitat: Habitat,
-        pathIndex: number,
+        pathPoint: PathPoint,
         side?: 'left' | 'right'
     ): [number, number] {
-        const pathPoint = RiverGeometry.getPathPoint(context.path, pathIndex);
         if (side === undefined) {
             if (place === 'path') {
                 side = 0.5 < Math.random() ? 'left' : 'right';
@@ -205,15 +249,9 @@ export class Patterns {
                 [pathPoint.boatXOffset + 5.0, pathPoint.bankDist - 2.0] :
                 [-pathPoint.bankDist + 2.0, pathPoint.boatXOffset - 5.0];
         } else if (place === 'near-shore') {
-            if (habitat === 'water') {
-                return side === 'right' ?
-                    [0.5 * pathPoint.bankDist, pathPoint.bankDist] :
-                    [-pathPoint.bankDist, 0.5 * -pathPoint.bankDist];
-            } else {
-                return side === 'right' ?
-                    [0.5 * pathPoint.bankDist, pathPoint.bankDist + 15] :
-                    [-pathPoint.bankDist - 15, 0.5 * -pathPoint.bankDist];
-            }
+            return side === 'right' ?
+                [0.5 * pathPoint.bankDist, pathPoint.bankDist + 15] :
+                [-pathPoint.bankDist - 15, 0.5 * -pathPoint.bankDist];
         } else if (place === 'middle') {
             return side === 'right' ?
                 [0, 0.5 * pathPoint.bankDist] :
@@ -224,7 +262,7 @@ export class Patterns {
         }
     }
 
-    public static getDensity(density: [number, number] | undefined, progress: number): number {
+    private static getDensity(density: [number, number] | undefined, progress: number): number {
         if (density === undefined) return 1.0;
         return density[0] + progress * (density[1] - density[0]);
     }

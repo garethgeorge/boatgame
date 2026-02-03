@@ -61,13 +61,19 @@ export class WaterGrassSpawner extends BaseSpawner {
         );
 
         if (pos) {
-            const rotation = Math.atan2(sample.tangent.z, sample.tangent.x) - Math.PI / 2;
-
-            const grass = new WaterGrass(pos.worldX, pos.worldZ, width, length, rotation, context.physicsEngine);
-
-            context.entityManager.add(grass);
+            this.createEntity(context, pos.worldX, pos.worldZ, width, length, sample.tangent);
             return true;
         }
         return false;
+    }
+
+    public createEntity(
+        context: SpawnContext,
+        x: number, z: number, width: number, length: number,
+        tangent: { x: number, z: number }
+    ) {
+        const rotation = Math.atan2(tangent.z, tangent.x) - Math.PI / 2;
+        const grass = new WaterGrass(x, z, width, length, rotation, context.physicsEngine);
+        context.entityManager.add(grass);
     }
 }

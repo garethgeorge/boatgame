@@ -71,7 +71,12 @@ export class BuoySpawner extends BaseSpawner {
     return true;
   }
 
-  spawnInRiverAbsolute(
+  /**
+   * Create buoy chain at river sample location running across the river
+   * starting at distanceRange[0] and ending at distanceRange[1] relative
+   * to the river center
+   */
+  createEntity(
     context: SpawnContext,
     sample: RiverGeometrySample,
     distanceRange: [number, number]
