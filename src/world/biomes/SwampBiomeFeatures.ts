@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
-import { SpawnContext } from '../../entities/Spawnable';
+import { SpawnContext } from '../../entities/SpawnContext';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations } from '../Decorations';
@@ -15,6 +15,8 @@ import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
+import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
+import { StaticEntityRules } from '../../entities/StaticEntityRules';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
@@ -69,46 +71,46 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                 'dense_shore_mangroves': Patterns.scatter({
                     place: 'near-shore',
                     density: [20, 40],
-                    entity: EntityRules.choose([EntityRules.mangrove()]),
+                    entity: EntityRules.choose([StaticEntityRules.mangrove()]),
                     minCount: 15
                 }),
                 'clear_channel_bottles': Patterns.sequence({
                     place: 'path',
                     density: [0.5, 0.5],
-                    entity: EntityRules.choose([EntityRules.bottle()])
+                    entity: EntityRules.choose([StaticEntityRules.bottle()])
                 }),
                 'log_scatter': Patterns.scatter({
                     place: 'slalom',
                     density: [0.5, 2.0],
-                    entity: EntityRules.choose([EntityRules.log()])
+                    entity: EntityRules.choose([StaticEntityRules.log()])
                 }),
                 'threat_ambush': Patterns.scatter({
                     place: 'path',
                     density: [0.2, 0.6],
-                    entity: EntityRules.choose([EntityRules.swamp_gator(), EntityRules.snake()]),
+                    entity: EntityRules.choose([AnimalEntityRules.swamp_gator(), AnimalEntityRules.snake()]),
                 }),
                 'egret_flight': Patterns.scatter({
                     place: 'path',
                     density: [1, 2],
-                    entity: EntityRules.choose([EntityRules.egret()])
+                    entity: EntityRules.choose([AnimalEntityRules.egret()])
                 }),
                 'dragonfly_buzz': Patterns.cluster({
                     place: 'path',
                     density: [0.5, 1],
                     minCount: 2.0,
                     maxCount: 3.0,
-                    entity: EntityRules.choose([EntityRules.dragonfly()])
+                    entity: EntityRules.choose([AnimalEntityRules.dragonfly()])
                 }),
                 'grass_patches': Patterns.scatter({
                     place: 'near-shore',
                     density: [1.5, 3.0],
-                    entity: EntityRules.choose([EntityRules.water_grass()])
+                    entity: EntityRules.choose([StaticEntityRules.water_grass()])
                 }),
                 'lilly_patches': Patterns.scatter({
                     place: 'middle',
                     density: [5.0, 10.0],
                     minCount: 100,
-                    entity: EntityRules.choose([EntityRules.lily_pad_patch()])
+                    entity: EntityRules.choose([StaticEntityRules.lily_pad_patch()])
                 })
             },
             tracks: [

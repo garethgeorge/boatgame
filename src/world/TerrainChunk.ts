@@ -8,7 +8,7 @@ import { GraphicsUtils } from '../core/GraphicsUtils';
 import { BiomeDecorationHelper } from './biomes/BiomeDecorationHelper';
 import { SpatialGrid } from '../managers/SpatialGrid';
 import { PlacementHelper } from '../managers/PlacementHelper';
-import { SpawnContext } from '../entities/Spawnable';
+import { SpawnContext } from '../entities/SpawnContext';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 import { EntityManager } from '../core/EntityManager';
 

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
-import { SpawnContext } from '../../entities/Spawnable';
+import { SpawnContext } from '../../entities/SpawnContext';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
@@ -13,6 +13,8 @@ import { Decorations } from '../Decorations';
 import { SkyBiome } from './BiomeFeatures';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
+import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
+import { StaticEntityRules } from '../../entities/StaticEntityRules';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';
@@ -98,35 +100,35 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                 'forest_slalom': Patterns.scatter({
                     place: 'slalom',
                     density: [1.0, 2.0],
-                    entity: EntityRules.choose([EntityRules.log(), EntityRules.rock('forest'), EntityRules.buoy()])
+                    entity: EntityRules.choose([StaticEntityRules.log(), StaticEntityRules.rock('forest'), StaticEntityRules.buoy()]),
                 }),
                 'rock_gates': Patterns.gate({
                     place: 'slalom',
                     density: [1.0, 2.0],
-                    entity: EntityRules.choose([EntityRules.rock('forest')]),
+                    entity: EntityRules.choose([StaticEntityRules.rock('forest')]),
                     minCount: 2
                 }),
                 'piers': Patterns.staggered({
                     place: 'slalom',
                     density: [0.3, 0.9],
-                    entity: EntityRules.choose([EntityRules.pier()]),
+                    entity: EntityRules.choose([StaticEntityRules.pier()]),
                     minCount: 2
                 }),
                 'forest_animals': Patterns.scatter({
                     place: 'near-shore',
                     density: [0.8, 2.5],
-                    entity: EntityRules.choose([EntityRules.brown_bear(), EntityRules.moose()])
+                    entity: EntityRules.choose([AnimalEntityRules.brown_bear(), AnimalEntityRules.moose()])
                 }),
                 'duckling_train': Patterns.sequence({
                     place: 'path',
                     density: [0.5, 1.5],
-                    entity: EntityRules.choose([EntityRules.duckling()]),
+                    entity: EntityRules.choose([AnimalEntityRules.duckling()]),
                     minCount: 3
                 }),
                 'grass_patches': Patterns.scatter({
                     place: 'near-shore',
                     density: [1.0, 2.0],
-                    entity: EntityRules.choose([EntityRules.water_grass()])
+                    entity: EntityRules.choose([StaticEntityRules.water_grass()])
                 })
             },
             tracks: [

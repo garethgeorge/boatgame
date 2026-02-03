@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SpawnContext } from '../Spawnable';
+import { SpawnContext } from '../SpawnContext';
 import { AnimalBehaviorConfig } from '../behaviors/AnimalBehaviorConfigs';
 import { AnimalClass } from '../obstacles/Animal';
 /**

@@ -1,4 +1,4 @@
-import { SpawnContext } from '../Spawnable';
+import { SpawnContext } from '../SpawnContext';
 import { MessageInABottle } from '../../entities/obstacles/MessageInABottle';
 import { RiverSystem } from '../../world/RiverSystem';
 

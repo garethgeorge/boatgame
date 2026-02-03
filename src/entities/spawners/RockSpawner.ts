@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SpawnContext } from '../Spawnable';
+import { SpawnContext } from '../SpawnContext';
 import { RiverRock } from '../../entities/obstacles/RiverRock';
 
 export class RockSpawner {

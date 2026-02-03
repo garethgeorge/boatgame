@@ -1,4 +1,4 @@
-import { SpawnContext } from '../Spawnable';
+import { SpawnContext } from '../SpawnContext';
 import { Iceberg } from '../../entities/obstacles/Iceberg';
 import { Decorations } from '../../world/Decorations';
 

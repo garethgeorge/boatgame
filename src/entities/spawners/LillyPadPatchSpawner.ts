@@ -1,4 +1,4 @@
-import { SpawnContext } from '../Spawnable';
+import { SpawnContext } from '../SpawnContext';
 import { LillyPadPatch } from '../../entities/obstacles/LillyPadPatch';
 
 export class LillyPadPatchSpawner {

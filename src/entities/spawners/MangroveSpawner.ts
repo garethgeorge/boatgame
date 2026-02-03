@@ -1,4 +1,4 @@
-import { SpawnContext } from '../Spawnable';
+import { SpawnContext } from '../SpawnContext';
 import { SmallMangrove, LargeMangrove } from '../../entities/obstacles/Mangrove';
 
 export class MangroveSpawner {

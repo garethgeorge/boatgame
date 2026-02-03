@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
-import { SpawnContext } from '../../entities/Spawnable';
+import { SpawnContext } from '../../entities/SpawnContext';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { Decorations } from '../Decorations';
@@ -11,6 +11,8 @@ import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
+import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
+import { StaticEntityRules } from '../../entities/StaticEntityRules';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
 import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
 
@@ -103,18 +105,18 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
             'buoys': Patterns.scatter({
                 place: 'near-shore',
                 density: [0.3, 0.5],
-                entity: EntityRules.choose([EntityRules.buoy()])
+                entity: EntityRules.choose([StaticEntityRules.buoy()])
             }),
             'bottles': Patterns.cluster({
                 place: 'path',
                 density: [1.5, 0.5],
-                entity: EntityRules.choose([EntityRules.bottle()]),
+                entity: EntityRules.choose([StaticEntityRules.bottle()]),
                 minCount: 3
             }),
             'animals': Patterns.scatter({
                 place: 'near-shore',
                 density: [0.5, 0.5],
-                entity: EntityRules.choose([EntityRules.polar_bear(), EntityRules.penguin_kayak()])
+                entity: EntityRules.choose([AnimalEntityRules.polar_bear(), AnimalEntityRules.penguin_kayak()])
             })
         };
 

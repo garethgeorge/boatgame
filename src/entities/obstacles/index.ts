@@ -9,5 +9,23 @@ export { Hippo } from './Hippo';
 export { BrownBear } from './BrownBear';
 export { Butterfly } from './Butterfly';
 export { Bluebird } from './Bluebird';
-
-
+export { Brontosaurus } from './Brontosaurus';
+export { Dolphin } from './Dolphin';
+export { Dragonfly } from './Dragonfly';
+export { Duckling } from './Duckling';
+export { Egret } from './Egret';
+export { GingerMan } from './GingerMan';
+export { Monkey } from './Monkey';
+export { Moose } from './Moose';
+export { PenguinKayak } from './PenguinKayak';
+export { PolarBear } from './PolarBear';
+export { Pterodactyl } from './Pterodactyl';
+export { Snake } from './Snake';
+export { Swan } from './Swan';
+export { TRex } from './TRex';
+export { Triceratops } from './Triceratops';
+export { Unicorn } from './Unicorn';
+export { WaterGrass } from './WaterGrass';
+export { LillyPadPatch } from './LillyPadPatch';
+export { GasCan } from './GasCan';
+export { MessageInABottle } from './MessageInABottle';

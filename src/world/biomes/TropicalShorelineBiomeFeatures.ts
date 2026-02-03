@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
-import { SpawnContext } from '../../entities/Spawnable';
+import { SpawnContext } from '../../entities/SpawnContext';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
@@ -15,6 +15,8 @@ import { MathUtils } from '../../core/MathUtils';
 import { SkyBiome } from './BiomeFeatures';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
+import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
+import { StaticEntityRules } from '../../entities/StaticEntityRules';
 
 /**
  * Tropical Shoreline Biome: A sunny coastal paradise with palm trees and marine life.
@@ -121,17 +123,17 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
             'dolphin_pods': Patterns.scatter({
                 place: 'slalom',
                 density: [0.4, 0.7],
-                entity: EntityRules.choose([EntityRules.dolphin()])
+                entity: EntityRules.choose([AnimalEntityRules.dolphin()])
             }),
             'turtle_beaches': Patterns.scatter({
                 place: 'near-shore',
                 density: [0.3, 0.6],
-                entity: EntityRules.choose([EntityRules.turtle()])
+                entity: EntityRules.choose([AnimalEntityRules.turtle()])
             }),
             'butterfly_swarms': Patterns.scatter({
                 place: 'on-shore',
                 density: [0.3, 0.6],
-                entity: EntityRules.choose([EntityRules.butterfly()])
+                entity: EntityRules.choose([AnimalEntityRules.butterfly()])
             }),
         };
 

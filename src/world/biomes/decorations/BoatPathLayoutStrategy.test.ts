@@ -5,6 +5,7 @@ import { EntityIds } from '../../../entities/EntityIds';
 import { EntityRules } from './EntityLayoutRules';
 import { Patterns } from './BoatPathLayoutPatterns';
 import { RiverGeometry } from '../../RiverGeometry';
+import { StaticEntityRules } from '../../../entities/StaticEntityRules';
 
 describe('BoatPathLayoutStrategy', () => {
     beforeEach(() => {
@@ -30,7 +31,7 @@ describe('BoatPathLayoutStrategy', () => {
         const scatterOpts = {
             place: 'path' as any,
             density: [10, 10] as [number, number],
-            entity: EntityRules.rock('test')
+            entity: StaticEntityRules.rock('test')
         };
         const config = {
             biomeType: 'happy',
@@ -71,7 +72,7 @@ describe('BoatPathLayoutStrategy', () => {
         const sequenceOpts = {
             place: 'path' as any,
             density: [100, 100] as [number, number],
-            entity: EntityRules.rock('test')
+            entity: StaticEntityRules.rock('test')
         };
         const config = {
             biomeType: 'happy',
@@ -131,7 +132,7 @@ describe('BoatPathLayoutStrategy', () => {
                 {
                     name: 'unique',
                     placements: [
-                        { name: 'b1', at: 0.5, range: [0.1, 0.2] as [number, number], type: EntityIds.BOTTLE }
+                        { name: 'b1', at: 0.5, range: [0.1, 0.2] as [number, number], entity: StaticEntityRules.bottle() }
                     ]
                 }
             ],

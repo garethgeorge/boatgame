@@ -1,5 +1,5 @@
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
-import { SpawnContext } from '../../entities/Spawnable';
+import { SpawnContext } from '../../entities/SpawnContext';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
@@ -12,6 +12,8 @@ import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
+import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
+import { StaticEntityRules } from '../../entities/StaticEntityRules';
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';
@@ -95,29 +97,29 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 'animal_corridor': Patterns.sequence({
                     place: 'near-shore',
                     density: [0.5, 4.0],
-                    entity: EntityRules.choose([EntityRules.alligator(), EntityRules.monkey()]),
+                    entity: EntityRules.choose([AnimalEntityRules.alligator(), AnimalEntityRules.monkey()]),
                 }),
                 'hippo_pod': Patterns.cluster({
                     place: 'near-shore',
                     density: [0.3, 2.0],
-                    entity: EntityRules.choose([EntityRules.hippo()]),
+                    entity: EntityRules.choose([AnimalEntityRules.hippo()]),
                     minCount: 2,
                 }),
                 'rocky_slalom': Patterns.sequence({
                     place: 'slalom',
                     density: [0.5, 2.0],
-                    entity: EntityRules.choose([EntityRules.rock('desert')])
+                    entity: EntityRules.choose([StaticEntityRules.rock('desert')])
                 }),
                 'rock_stagger': Patterns.staggered({
                     place: 'slalom',
                     density: [0.5, 2.0],
-                    entity: EntityRules.choose([EntityRules.rock('desert')]),
+                    entity: EntityRules.choose([StaticEntityRules.rock('desert')]),
                     minCount: 3
                 }),
                 'bottle_cluster': Patterns.cluster({
                     place: 'path',
                     density: [1.5, 0.5],
-                    entity: EntityRules.choose([EntityRules.bottle()]),
+                    entity: EntityRules.choose([StaticEntityRules.bottle()]),
                     minCount: 3
                 })
             },
@@ -146,7 +148,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 {
                     name: 'unique_elements',
                     placements: [
-                        { name: 'dock', at: 0.95, range: [1, 1], entity: EntityRules.pier(true) }
+                        { name: 'dock', at: 0.95, range: [1, 1], entity: StaticEntityRules.pier(true) }
                     ]
                 },
                 {

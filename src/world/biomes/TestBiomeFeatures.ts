@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { EntityIds } from '../../entities/EntityIds';
-import { SpawnContext } from '../../entities/Spawnable';
+import { SpawnContext } from '../../entities/SpawnContext';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { DecorationRule } from '../decorators/PoissonDecorationStrategy';
@@ -12,6 +12,8 @@ import { DecorationConfig, TerrainDecorator } from '../decorators/TerrainDecorat
 import { Decorations } from '../Decorations';
 import { off } from 'node:cluster';
 import { EntityRules } from './decorations/EntityLayoutRules';
+import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
+import { StaticEntityRules } from '../../entities/StaticEntityRules';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -94,7 +96,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         const distanceRange: [number, number] = [sample.bankDist, sample.bankDist + 10];
         const offset = distanceRange[0] + Math.random() * (distanceRange[1] - distanceRange[0]);
 
-        const monkeyMaker = EntityRules.monkey();
+        const monkeyMaker = AnimalEntityRules.monkey();
         const monkey = monkeyMaker({
             sample: { ...sample, boatXOffset: 0 },
             progress: 0.5,

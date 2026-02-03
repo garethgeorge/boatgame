@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
-import { SpawnContext } from '../../entities/Spawnable';
+import { SpawnContext } from '../../entities/SpawnContext';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
@@ -12,6 +12,8 @@ import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
+import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
+import { StaticEntityRules } from '../../entities/StaticEntityRules';
 
 
 /**
@@ -103,7 +105,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             'dragonfly_swarms': Patterns.scatter({
                 place: 'path',
                 density: [0.3, 0.6],
-                entity: EntityRules.choose([EntityRules.dragonfly()])
+                entity: EntityRules.choose([AnimalEntityRules.dragonfly()])
             }),
         };
 

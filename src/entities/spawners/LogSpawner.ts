@@ -1,4 +1,4 @@
-import { SpawnContext } from '../Spawnable';
+import { SpawnContext } from '../SpawnContext';
 import { Log } from '../../entities/obstacles/Log';
 
 export class LogSpawner {

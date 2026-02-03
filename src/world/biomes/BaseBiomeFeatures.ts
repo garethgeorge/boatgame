@@ -1,5 +1,5 @@
 import { BiomeFeatures, SkyBiome } from './BiomeFeatures';
-import { Spawnable, SpawnContext } from '../../entities/Spawnable';
+import { SpawnContext } from '../../entities/SpawnContext';
 import { BiomeType } from './BiomeType';
 import { DecorationContext } from '../decorators/DecorationContext';
 import { DecorationConfig } from '../decorators/TerrainDecorator';
@@ -32,11 +32,6 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
 
     abstract decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown>;
     abstract spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown>;
-
-    protected *spawnObstacles(spawner: Spawnable, context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        const count = spawner.getSpawnCount(context, difficulty, zStart, zEnd);
-        return yield* spawner.spawn(context, count, zStart, zEnd, [this.zMin, this.zMax]);
-    }
 
     getFogDensity(): number {
         return 0.0;

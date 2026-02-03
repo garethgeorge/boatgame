@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { DecorationContext } from '../decorators/DecorationContext';
-import { SpawnContext } from '../../entities/Spawnable';
+import { SpawnContext } from '../../entities/SpawnContext';
 import { BiomeType } from './BiomeType';
 import { DecorationConfig } from '../decorators/TerrainDecorator';
 

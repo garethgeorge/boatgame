@@ -1,4 +1,4 @@
-import { SpawnContext } from '../Spawnable';
+import { SpawnContext } from '../SpawnContext';
 import { WaterGrass } from '../../entities/obstacles/WaterGrass';
 
 export class WaterGrassSpawner {

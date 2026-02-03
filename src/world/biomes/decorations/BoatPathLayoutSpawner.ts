@@ -1,14 +1,9 @@
-import { SpawnContext } from '../../../entities/Spawnable';
+import { SpawnContext } from '../../../entities/SpawnContext';
 import { BiomeType } from '../BiomeType';
 import { BoatPathLayout } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../../entities/EntityIds';
 import { RiverGeometry } from '../../RiverGeometry';
-import { RiverSystem } from '../../RiverSystem';
-import * as THREE from 'three';
-import { AnimalPlacementOptions, EntitySpawnConfig } from './EntityLayoutRules';
-import { DecorationId, Decorations } from '../../Decorations';
-
-
+import { EntitySpawnConfig } from './EntityLayoutRules';
 
 export class BoatPathLayoutSpawner {
     private static instance: BoatPathLayoutSpawner;
