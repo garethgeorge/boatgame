@@ -115,7 +115,7 @@ export class EntityRules {
 
     public static min_bank_distance(min: number): PlacementPredicate {
         return (ctx: EntityGeneratorContext, radius: number) => {
-            return Math.abs(ctx.offset - ctx.sample.bankDist) > radius + min;
+            return Math.abs(Math.abs(ctx.offset) - ctx.sample.bankDist) > radius + min;
         }
     }
 }

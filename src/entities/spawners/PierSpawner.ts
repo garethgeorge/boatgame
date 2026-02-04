@@ -5,18 +5,18 @@ import { RiverSystem } from '../../world/RiverSystem';
 import { Decorations } from '../../world/Decorations';
 
 export class PierSpawner {
-  *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+  public static *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
     yield* Decorations.ensureAllLoaded(['depot']);
   }
 
   public static createEntity(
     context: SpawnContext,
     worldZ: number,
+    pierLength: number,
     isLeft: boolean,
-    forceDepot?: boolean
+    hasDepot: boolean
   ): boolean {
     const riverSystem = RiverSystem.getInstance();
-    const minDepotPierLength = 13.0;
 
     const width = riverSystem.getRiverWidth(worldZ);
     const center = riverSystem.getRiverCenter(worldZ);
@@ -24,14 +24,6 @@ export class PierSpawner {
 
     // Calculate Pier Geometry
     const bankX = center + (isLeft ? -width / 2 : width / 2);
-    const maxPierLength = width * 0.6;
-
-    // Randomly decide if this pier should have a depot
-    const hasDepot = forceDepot ?? (maxPierLength > minDepotPierLength && Math.random() > 0.5);
-    const minPierLength = hasDepot ? minDepotPierLength : 10.0;
-    const pierLength = Math.min(minPierLength + Math.random() * 10, maxPierLength);
-
-    if (pierLength < minPierLength && forceDepot) return false;
 
     // Calculate Angle
     let N = planck.Vec2(1.0, -slope);

@@ -19,7 +19,7 @@ export interface RockPlacementOptions extends EntityPlacementOptions {
 };
 
 export interface PierPlacementOptions extends EntityPlacementOptions {
-    forceDepot: boolean;
+    hasDepot: boolean;
 };
 
 class BuoySpawnConfig extends EntitySpawnConfig {
@@ -40,7 +40,11 @@ class PierSpawnConfig extends EntitySpawnConfig {
         const opts = options as PierPlacementOptions;
         const isLeft = offset < 0;
         PierSpawner.createEntity(
-            context, sample.centerPos.z, isLeft, opts.forceDepot);
+            context, sample.centerPos.z, options.radius * 2, isLeft, opts.hasDepot);
+    }
+
+    override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+        yield* PierSpawner.ensureLoaded();
     }
 }
 
@@ -150,6 +154,11 @@ export class StaticEntityRules {
         EntityRules.select({ water: EntityRules.true() })
     ]);
 
+    // used for pier, assumes its always placed at water edge
+    private static shorePredicate = EntityRules.all([
+        EntityRules.select({ water: EntityRules.true() })
+    ]);
+
     public static bottle(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): EntityPlacementOptions | null => {
             const radius = EntityMetadata.bottle.radius;
@@ -203,13 +212,26 @@ export class StaticEntityRules {
 
     private static buoy_config = new BuoySpawnConfig();
 
-    public static pier(forceDepot: boolean = false, predicate: PlacementPredicate = this.waterPredicate) {
+    public static pier(forceDepot: boolean = false, predicate: PlacementPredicate = this.shorePredicate) {
         return (ctx: EntityGeneratorContext): PierPlacementOptions | null => {
-            const radius = EntityMetadata.pier.radius;
+
+            const width = 2 * ctx.sample.bankDist;
+            const maxPierLength = Math.min(30, width * 0.6);
+
+            const minDepotPierLength = 13.0;
+            const minPierLength = Math.max(forceDepot ? minDepotPierLength : 0, width * 0.2);
+
+            let pierLength = minPierLength + Math.random() * (maxPierLength - minPierLength);
+
+            const radius = pierLength / 2;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
+
+            const hasDepot = forceDepot ?
+                forceDepot : (pierLength > minDepotPierLength && Math.random() > 0.5);
+
             return {
                 radius: radius,
-                forceDepot: forceDepot,
+                hasDepot: hasDepot,
                 config: this.pier_config
             };
         }
