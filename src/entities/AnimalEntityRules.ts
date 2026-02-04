@@ -70,8 +70,17 @@ export class AnimalSpawnConfig extends EntitySpawnConfig {
             const terrainHeight = riverSystem.terrainGeometry.calculateHeight(x, z);
             const terrainNormal = riverSystem.terrainGeometry.calculateNormal(x, z);
 
+            // Calculate rotation (facing the river)
+            const d = x < sample.centerPos.x ? -1 : 1;
+            const riverAngle = Math.atan2(sample.tangent.x, sample.tangent.z);
+            // d < 0 is left bank, should face right (PI/2)
+            // d > 0 is right bank, should face left (-PI/2)
+            let rotation = (d > 0) ? Math.PI / 2 : -Math.PI / 2;
+            rotation += riverAngle;
+            rotation += (Math.random() - 0.5) * (Math.PI / 4);
+
             AnimalSpawner.createEntity(animalClass, context,
-                x, z, Math.random() * Math.PI * 2,
+                x, z, rotation,
                 terrainHeight, terrainNormal,
                 animal.options);
         }

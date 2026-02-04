@@ -105,8 +105,9 @@ export class EntityRules {
         return (ctx: EntityGeneratorContext, radius: number) => {
             const normal = ctx.riverSystem.terrainGeometry.calculateNormal(ctx.x, ctx.z);
             const up = new THREE.Vector3(0, 1, 0);
-            const angle = normal.angleTo(up);
-            return (min <= angle && angle <= max);
+            const angleRad = normal.angleTo(up);
+            const angleDeg = angleRad * 180 / Math.PI;
+            return (min <= angleDeg && angleDeg <= max);
         };
     }
 

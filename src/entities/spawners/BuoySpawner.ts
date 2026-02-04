@@ -62,9 +62,6 @@ export class BuoySpawner {
       const bx = sample.centerPos.x + offset * sample.normal.x + jitterAmount * sample.tangent.x;
       const bz = sample.centerPos.z + offset * sample.normal.z + jitterAmount * sample.tangent.z;
 
-      // Register placement
-      context.placementHelper.registerPlacement(bx, bz, 1.0);
-
       const buoy = new Buoy(bx, bz, context.physicsEngine);
       context.entityManager.add(buoy);
 
