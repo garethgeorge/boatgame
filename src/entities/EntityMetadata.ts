@@ -23,15 +23,8 @@ export const EntityMetadata: Record<string, { radius: number, hull?: number[] }>
     gingerman: { radius: 4.3, hull: [-3.9, -2.1, -3.1, -2.8, 0.7, -2.6, 3.6, -2, 4.4, -1.4, 3, 4.6, -2.1, 4.8, -2.8, 4.6] },
 
     // Obstacles
-    rock: { radius: 3.0 },
-    log: { radius: 7.5 },
-    buoy: { radius: 10.0 }, // Representing a chain
     bottle: { radius: 0.4 },
-    pier: { radius: 7.5 },
-    iceberg: { radius: 7.5 },
     mangrove: { radius: 4.5 },
-    water_grass: { radius: 15.0 },
-    lilly_pad_patch: { radius: 12.0 },
 };
 
 export interface BoatMetadata {

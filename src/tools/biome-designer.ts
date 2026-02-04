@@ -5,7 +5,6 @@ import { BiomeManager } from '../world/BiomeManager.js';
 import { BiomeType } from '../world/biomes/BiomeType.js';
 import { Decorations } from '../world/Decorations.js';
 import { DesignerSettings } from '../core/DesignerSettings.js';
-import { BaseMangrove } from '../entities/obstacles/Mangrove.js';
 import { RiverSystem } from '../world/RiverSystem.js';
 import { DebugSettings } from '../core/DebugSettings.js';
 import { Profiler } from '../core/Profiler.js';
@@ -144,7 +143,6 @@ class BiomeDesigner {
         // Preload essential assets
         await Promise.all([
             Decorations.preload(['boat']),
-            BaseMangrove.preload(),
         ]);
 
         this.engine.init(() => {
