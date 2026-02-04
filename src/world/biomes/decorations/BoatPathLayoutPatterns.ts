@@ -114,8 +114,10 @@ export class Patterns {
         const range = this._placementRange(context, opts.place, sample, side);
 
         const ctx: EntityGeneratorContext = {
+            riverSystem: context.riverSystem,
             sample,
             offset: 0,
+            x: 0, z: 0,
             habitat: 'land',
             progress: context.progress,
             biomeZRange: context.biomeZRange
@@ -124,16 +126,17 @@ export class Patterns {
         const attempts = 10;
         for (let i = 0; i < attempts; i++) {
             const offset = range[0] + Math.random() * (range[1] - range[0]);
+            const x = sample.centerPos.x + sample.normal.x * offset;
+            const z = sample.centerPos.z + sample.normal.z * offset;
             const habitat: Habitat = Math.abs(offset) > sample.bankDist ? 'land' : 'water';
 
             ctx.offset = offset;
+            ctx.x = x;
+            ctx.z = z;
             ctx.habitat = habitat;
 
             const options = opts.entity(ctx);
             if (!options) continue;
-
-            const x = sample.centerPos.x + sample.normal.x * offset;
-            const z = sample.centerPos.z + sample.normal.z * offset;
 
             if (!context.spatialGrid.checkCollision(x, z, options.radius, 0)) {
                 context.placements.push({

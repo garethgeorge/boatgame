@@ -14,6 +14,8 @@ import { off } from 'node:cluster';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
 import { StaticEntityRules } from '../../entities/StaticEntityRules';
+import { AnimalSpawner } from '../../entities/spawners/AnimalSpawner';
+import { Monkey } from '../../entities/obstacles';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -95,18 +97,18 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         const sample = RiverGeometry.getRiverGeometrySample(river, (zStart + zEnd) / 2);
         const distanceRange: [number, number] = [sample.bankDist, sample.bankDist + 10];
         const offset = distanceRange[0] + Math.random() * (distanceRange[1] - distanceRange[0]);
+        const x = sample.centerPos.x + sample.normal.x * offset;
+        const z = sample.centerPos.z + sample.normal.z * offset;
 
-        const monkeyMaker = AnimalEntityRules.monkey();
-        const monkey = monkeyMaker({
-            sample: { ...sample, boatXOffset: 0 },
-            progress: 0.5,
-            offset: offset,
-            habitat: 'land',
-            biomeZRange: biomeRange
-        });
+        yield* Decorations.ensureAllLoaded(['monkey']);
 
-        yield* Decorations.ensureAllLoaded(monkey.config.decorationIds);
-
-        monkey.config.spawn(context, { config: monkey.config, radius: monkey.radius }, sample, offset);
+        AnimalSpawner.createEntity(Monkey, context,
+            x, z, 0, 0, new THREE.Vector3(0, 1, 0),
+            {
+                aggressiveness: 0.5,
+                behavior: { type: 'walk-attack', logicName: 'WolfAttack' },
+                biomeZRange: biomeRange
+            }
+        );
     }
 }

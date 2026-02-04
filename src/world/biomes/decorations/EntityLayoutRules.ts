@@ -2,6 +2,7 @@ import { EntityIds } from "../../../entities/EntityIds";
 import { RiverGeometrySample } from "../../RiverGeometry";
 import { SpawnContext } from "../../../entities/SpawnContext";
 import { DecorationId } from '../../Decorations';
+import { RiverSystem } from "../../RiverSystem";
 
 export type Habitat = 'land' | 'water';
 
@@ -19,8 +20,10 @@ export interface PathPoint extends RiverGeometrySample {
  * an entity that can be placed at a position along the river.
  */
 export interface EntityGeneratorContext {
+    riverSystem: RiverSystem;
     sample: PathPoint;
     offset: number;
+    x: number, z: number,
     habitat: Habitat;
     progress: number,
     biomeZRange: [number, number]

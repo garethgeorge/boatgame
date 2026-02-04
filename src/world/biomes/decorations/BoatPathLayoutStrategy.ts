@@ -1,7 +1,7 @@
 import { EntityIds } from '../../../entities/EntityIds';
 import { RiverGeometry, RiverGeometrySample } from '../../RiverGeometry';
 import { RiverSystem } from '../../RiverSystem';
-import { EntityGeneratorFn, EntityPlacement, PathPoint } from './EntityLayoutRules';
+import { EntityGeneratorFn, EntityPlacement, Habitat, PathPoint } from './EntityLayoutRules';
 import { SpatialGrid } from '../../../managers/SpatialGrid';
 
 /**
@@ -17,6 +17,7 @@ export interface BoatPathLayout {
 /** Context passed to the pattern function for generating entity placements
  */
 export interface PatternContext {
+    riverSystem: RiverSystem,
     placements: EntityPlacement[];
     path: PathPoint[];
     config: BoatPathLayoutConfig;
@@ -110,8 +111,10 @@ export class BoatPathLayoutStrategy {
         biomeZRange: [number, number],
         config: BoatPathLayoutConfig
     ): BoatPathLayout {
+        const riverSystem = RiverSystem.getInstance();
+
         // 1. Sample the river
-        const path = this.sampleRiver(biomeZRange[1], biomeZRange[0]);
+        const path = this.sampleRiver(riverSystem, biomeZRange[1], biomeZRange[0]);
         if (path.length < 2) return { path, placements: [] };
 
         const totalArcLength = path[path.length - 1].arcLength;
@@ -127,14 +130,16 @@ export class BoatPathLayoutStrategy {
         const spatialGrid = new SpatialGrid(20);
 
         const placements = this.resolvePlacements(
+            riverSystem,
             path, tracks, config, totalArcLength,
             spatialGrid, biomeZRange);
 
         return { path, placements };
     }
 
-    private static sampleRiver(zStart: number, zEnd: number): PathPoint[] {
-        const riverSystem = RiverSystem.getInstance();
+    private static sampleRiver(
+        riverSystem: RiverSystem, zStart: number, zEnd: number
+    ): PathPoint[] {
         return RiverGeometry.sampleRiver(riverSystem, zStart, zEnd, 10.0).map((sample) => {
             return { ...sample, boatXOffset: 0 };
         });
@@ -220,6 +225,7 @@ export class BoatPathLayoutStrategy {
     }
 
     private static resolvePlacements(
+        riverSystem: RiverSystem,
         path: PathPoint[],
         tracks: GeneratedTrack[],
         config: BoatPathLayoutConfig,
@@ -243,6 +249,7 @@ export class BoatPathLayoutStrategy {
                     const sceneIEnd = Math.floor((scene.sEnd / totalArcLength) * (path.length - 1));
 
                     const context: PatternContext = {
+                        riverSystem,
                         placements,
                         path,
                         config,
@@ -275,11 +282,16 @@ export class BoatPathLayoutStrategy {
 
                 // Randomly pick an offset in the range
                 const offset = range[0] + Math.random() * (range[1] - range[0]);
+                const x = pathPoint.centerPos.x + pathPoint.normal.x * offset;
+                const z = pathPoint.centerPos.z + pathPoint.normal.z * offset;
+                const habitat: Habitat = Math.abs(offset) > pathPoint.bankDist ? 'land' : 'water';
 
                 const entity = ep.entity({
+                    riverSystem: riverSystem,
                     sample: pathPoint,
                     offset: offset,
-                    habitat: Math.abs(offset) < pathPoint.bankDist ? 'water' : 'land',
+                    x: x, z: z,
+                    habitat: habitat,
                     progress: ep.at,
                     biomeZRange: biomeZRange
                 });
