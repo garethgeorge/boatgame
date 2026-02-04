@@ -61,10 +61,10 @@ describe('BoatPathLayoutStrategy', () => {
 
         expect(layout.placements.length).toBeGreaterThan(0);
         layout.placements.forEach(p => {
-            expect(p.offset).toBeDefined();
-            expect(typeof p.offset).toBe('number');
+            expect(p.x).toBeDefined();
+            expect(p.z).toBeDefined();
             expect((p as any).range).toBeUndefined();
-            expect(p.entity.radius).toBeGreaterThan(0);
+            expect(p.radius).toBeGreaterThan(0);
         });
     });
 
@@ -109,17 +109,17 @@ describe('BoatPathLayoutStrategy', () => {
                 const s1 = RiverGeometry.getPathPoint(layout.path, p1.index);
                 const s2 = RiverGeometry.getPathPoint(layout.path, p2.index);
 
-                const x1 = s1.centerPos.x + s1.normal.x * p1.offset;
-                const z1 = s1.centerPos.z + s1.normal.z * p1.offset;
-                const x2 = s2.centerPos.x + s2.normal.x * p2.offset;
-                const z2 = s2.centerPos.z + s2.normal.z * p2.offset;
+                const x1 = p1.x;
+                const z1 = p1.z;
+                const x2 = p2.x;
+                const z2 = p2.z;
 
                 const dx = x1 - x2;
                 const dz = z1 - z2;
                 const dist = Math.sqrt(dx * dx + dz * dz);
 
                 // Allow a tiny epsilon for floating point
-                expect(dist).toBeGreaterThanOrEqual(p1.entity.radius + p2.entity.radius - 0.01);
+                expect(dist).toBeGreaterThanOrEqual(p1.radius + p2.radius - 0.01);
             }
         }
     });
@@ -147,8 +147,8 @@ describe('BoatPathLayoutStrategy', () => {
 
         const layout = BoatPathLayoutStrategy.createLayout([0, 100], config as any);
 
-        const bottle = layout.placements.find(p => p.entity.config.id === EntityIds.BOTTLE);
+        const bottle = layout.placements.find(p => p.config.id === EntityIds.BOTTLE);
         expect(bottle).toBeDefined();
-        expect(bottle!.offset).toBeDefined();
+        expect(bottle!.x).toBeDefined();
     });
 });

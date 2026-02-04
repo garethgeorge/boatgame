@@ -50,12 +50,17 @@ class PierSpawnConfig extends EntitySpawnConfig {
     }
 }
 
+export interface IcebergPlacement extends EntityPlacement {
+    hasBear: boolean;
+};
+
 class IcebergSpawnConfig extends EntitySpawnConfig {
     id = EntityIds.ICEBERG;
 
     override spawn(context: SpawnContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
-        IcebergSpawner.createEntity(context, options.x, options.z, options.radius, false);
+        const opts = options as IcebergPlacement;
+        IcebergSpawner.createEntity(context, options.x, options.z, options.radius, opts.hasBear);
     }
 
     override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
@@ -68,18 +73,23 @@ class MangroveSpawnConfig extends EntitySpawnConfig {
 
     override spawn(context: SpawnContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
-        const scale = options.radius / 4.5;
-        MangroveSpawner.createEntity(context, options.x, options.z, scale);
+        MangroveSpawner.createEntity(context, options.x, options.z, options.radius);
     }
 }
+
+export interface PatchPlacement extends EntityPlacement {
+    width: number;
+    length: number;
+};
 
 class LilyPadPatchSpawnConfig extends EntitySpawnConfig {
     id = EntityIds.LILLY_PAD_PATCH;
 
     override spawn(context: SpawnContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
+        const opts = options as PatchPlacement;
         LillyPadPatchSpawner.createEntity(context, options.x, options.z,
-            options.radius * 2, options.radius * 2, sample.tangent);
+            opts.width, opts.length, sample.tangent);
     }
 
     override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
@@ -92,8 +102,9 @@ class WaterGrassSpawnConfig extends EntitySpawnConfig {
 
     override spawn(context: SpawnContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
+        const opts = options as PatchPlacement;
         WaterGrassSpawner.createEntity(context, options.x, options.z,
-            options.radius * 2, options.radius * 2, sample.tangent);
+            opts.width, opts.length, sample.tangent);
     }
 
     override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
@@ -166,7 +177,7 @@ export class StaticEntityRules {
 
     public static rock(biomeType: BiomeType, predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): RockPlacement | null => {
-            const radius = EntityMetadata.rock.radius;
+            const radius = 1.5 + Math.random() * 3.0; // 1.5 to 4.5m
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
                 index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
@@ -180,7 +191,8 @@ export class StaticEntityRules {
 
     public static log(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): EntityPlacement | null => {
-            const radius = EntityMetadata.log.radius;
+            const length = 10 + Math.random() * 10;
+            const radius = length / 2;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
                 index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
@@ -193,7 +205,9 @@ export class StaticEntityRules {
 
     public static buoy(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): BuoyPlacement | null => {
-            const radius = EntityMetadata.buoy.radius;
+            // Pick a random length 30-50% width
+            const chainLength = (0.3 + Math.random() * 0.2) * ctx.sample.bankDist * 2;
+            const radius = chainLength / 2;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
                 index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
@@ -246,7 +260,7 @@ export class StaticEntityRules {
     private static pier_config = new PierSpawnConfig();
 
     public static iceberg(predicate: PlacementPredicate = this.waterPredicate) {
-        return (ctx: EntityGeneratorContext): EntityPlacement | null => {
+        return (ctx: EntityGeneratorContext): IcebergPlacement | null => {
 
             let scale = 4.0 + Math.random();
             let hasBear = false;
@@ -265,6 +279,7 @@ export class StaticEntityRules {
 
             return {
                 index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
+                hasBear: hasBear,
                 config: this.iceberg_config
             };
         }
@@ -274,8 +289,24 @@ export class StaticEntityRules {
 
     public static mangrove(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): EntityPlacement | null => {
-            const radius = EntityMetadata.mangrove.radius;
+
+            // Size Variance
+            let baseScale = 1.0;
+            const rand = Math.random();
+            if (rand < 0.05) {
+                baseScale = 2.0;
+            } else if (rand < 0.30) {
+                baseScale = 1.3;
+            }
+
+            // Jitter: +/- 20% (0.8 to 1.2)
+            const jitter = 0.8 + Math.random() * 0.4;
+            const finalScale = baseScale * jitter;
+
+            const radius = 4.5 * finalScale;
+
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
+
             return {
                 index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
                 config: this.mangrove_config
@@ -286,11 +317,17 @@ export class StaticEntityRules {
     private static mangrove_config = new MangroveSpawnConfig();
 
     public static lily_pad_patch(predicate: PlacementPredicate = this.waterPredicate) {
-        return (ctx: EntityGeneratorContext): EntityPlacement | null => {
-            const radius = EntityMetadata.lilly_pad_patch.radius;
+        return (ctx: EntityGeneratorContext): PatchPlacement | null => {
+            const length = 16.0 + Math.random() * 16.0;
+            const width = 16.0 + Math.random() * 16.0;
+
+            const radius = Math.max(width, length) / 2.0;
+
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
+
             return {
                 index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
+                width: width, length: length,
                 config: this.lily_pad_patch_config
             };
         }
@@ -299,11 +336,17 @@ export class StaticEntityRules {
     private static lily_pad_patch_config = new LilyPadPatchSpawnConfig();
 
     public static water_grass(predicate: PlacementPredicate = this.waterPredicate) {
-        return (ctx: EntityGeneratorContext): EntityPlacement | null => {
-            const radius = EntityMetadata.water_grass.radius;
+        return (ctx: EntityGeneratorContext): PatchPlacement | null => {
+            const length = 20.0 + Math.random() * 30.0;
+            const width = 10.0 + Math.random() * 15.0;
+
+            // Radius for collision check (approximate as max dimension / 2)
+            const radius = Math.max(width, length) / 2.0;
+
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
                 index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
+                width: width, length: length,
                 config: this.water_grass_config
             };
         }
