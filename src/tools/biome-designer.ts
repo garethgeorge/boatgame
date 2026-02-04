@@ -230,7 +230,7 @@ class BiomeDesigner {
 
         const updateEditorVisibility = () => {
             const features = RiverSystem.getInstance().biomeManager.getDesignerBiome();
-            const rules = (features && features.getDecorationConfig) ? features.getDecorationConfig().rules : undefined;
+            const rules = (features && features.getDecorationConfig()) ? features.getDecorationConfig().rules : undefined;
 
             if (rules) {
                 container.style.display = 'flex';
@@ -390,7 +390,7 @@ class BiomeDesigner {
             );
 
             const features = RiverSystem.getInstance().biomeManager.getDesignerBiome();
-            if (features && features.getDecorationConfig) {
+            if (features && features.getDecorationConfig() !== undefined) {
                 features.getDecorationConfig().rules = evalRules;
                 RiverSystem.getInstance().biomeManager.setOverriddenRules(features.id, evalRules);
 

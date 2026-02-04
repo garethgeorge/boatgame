@@ -1,5 +1,6 @@
-import { SpawnContext } from '../SpawnContext';
-import { WaterGrass } from '../../entities/obstacles/WaterGrass';
+import * as THREE from 'three';
+import { PopulationContext } from '../../world/biomes/PopulationContext';
+import { WaterGrass } from '../obstacles/WaterGrass';
 
 export class WaterGrassSpawner {
     id = 'water_grass';
@@ -10,7 +11,7 @@ export class WaterGrassSpawner {
     }
 
     public static createEntity(
-        context: SpawnContext,
+        context: PopulationContext,
         x: number, z: number, width: number, length: number,
         tangent: { x: number, z: number }
     ) {

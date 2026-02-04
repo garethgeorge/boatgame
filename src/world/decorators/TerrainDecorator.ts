@@ -4,7 +4,7 @@ import { PlacementManifest, SpatialGrid } from '../../managers/SpatialGrid';
 export type { DecorationRule, PlacementManifest };
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../SimplexNoise';
-import { DecorationContext } from './DecorationContext';
+import { PopulationContext } from '../biomes/PopulationContext';
 import { DecorationInstance, Decorations, LSystemTreeKind, LSystemFlowerKind } from '../Decorations';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { MathUtils } from '../../core/MathUtils';
@@ -86,7 +86,7 @@ export class TerrainDecorator {
     }
 
     public static *decorateIterator(
-        context: DecorationContext,
+        context: PopulationContext,
         config: DecorationConfig,
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
         spatialGrid: SpatialGrid,
@@ -106,7 +106,7 @@ export class TerrainDecorator {
     }
 
     public static populateIterator(
-        context: DecorationContext, decorations: PlacementManifest[],
+        context: PopulationContext, decorations: PlacementManifest[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
     ): Generator<void | Promise<void>, void, unknown> {
         return this.instance().populateIterator(context, decorations, region);
@@ -162,7 +162,7 @@ export class TerrainDecorator {
     }
 
     private *populateIterator(
-        context: DecorationContext, decorations: PlacementManifest[],
+        context: PopulationContext, decorations: PlacementManifest[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
     ): Generator<void | Promise<void>, void, unknown> {
 
@@ -251,7 +251,7 @@ export class TerrainDecorator {
     }
 
     private tryPlaceObject(
-        context: DecorationContext,
+        context: PopulationContext,
         object: THREE.Object3D,
         pos: { worldX: number, worldZ: number, height: number },
         opts: DecorationOptions
@@ -273,7 +273,7 @@ export class TerrainDecorator {
     }
 
     private tryPlaceInstances(
-        context: DecorationContext,
+        context: PopulationContext,
         instances: DecorationInstance[],
         pos: { worldX: number, worldZ: number, height: number },
         opts: DecorationOptions

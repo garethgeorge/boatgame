@@ -1,9 +1,8 @@
-import * as THREE from 'three'
+import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
-import { EntityIds } from '../../entities/EntityIds';
-import { SpawnContext } from '../../entities/SpawnContext';
+import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
-import { DecorationContext } from '../decorators/DecorationContext';
+import { EntityIds } from '../../entities/EntityIds';
 import { DecorationRule } from '../decorators/PoissonDecorationStrategy';
 import { Combine, Signal, TierRule } from '../decorators/PoissonDecorationRules';
 import { RiverSystem } from '../RiverSystem';
@@ -74,7 +73,8 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         return 0.2 * super.getAmplitudeMultiplier(wx, wz, distFromBank);
     }
 
-    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+    * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+        // 1. Decorate
         const spatialGrid = context.chunk.spatialGrid;
         yield* TerrainDecorator.decorateIterator(
             context,
@@ -83,14 +83,8 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
             spatialGrid,
             12345 // Fixed seed for now
         );
-    }
 
-    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-
-        // if (true && zStart === 0) {
-        //     this.spawnAllAnimals(context, -50);
-        // }
-
+        // 2. Spawn
         const biomeRange: [number, number] = [this.zMin, this.zMax];
 
         const river = RiverSystem.getInstance();

@@ -1,7 +1,6 @@
 import { BiomeFeatures, SkyBiome } from './BiomeFeatures';
-import { SpawnContext } from '../../entities/SpawnContext';
 import { BiomeType } from './BiomeType';
-import { DecorationContext } from '../decorators/DecorationContext';
+import { PopulationContext } from './PopulationContext';
 import { DecorationConfig } from '../decorators/TerrainDecorator';
 import { MathUtils } from '../../core/MathUtils';
 
@@ -30,8 +29,7 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         return { zMin: this.zMin, zMax: this.zMax };
     }
 
-    abstract decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown>;
-    abstract spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown>;
+    abstract populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown>;
 
     getFogDensity(): number {
         return 0.0;

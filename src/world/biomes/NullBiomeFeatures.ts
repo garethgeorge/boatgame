@@ -1,7 +1,6 @@
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
-import { SpawnContext } from '../../entities/SpawnContext';
 import { BiomeType } from './BiomeType';
-import { DecorationContext } from '../decorators/DecorationContext';
+import { PopulationContext } from './PopulationContext';
 
 export class NullBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'null';
@@ -23,11 +22,7 @@ export class NullBiomeFeatures extends BaseBiomeFeatures {
         return { near: 1000, far: 10000 };
     }
 
-    * decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // No decorations
-    }
-
-    * spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // No spawning
+    * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+        // No population
     }
 }

@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { DecorationContext } from '../decorators/DecorationContext';
-import { SpawnContext } from '../../entities/SpawnContext';
+import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
 import { DecorationConfig } from '../decorators/TerrainDecorator';
 
@@ -23,14 +22,9 @@ export interface BiomeFeatures {
     getRange(): { zMin: number, zMax: number };
 
     /**
-     * Decorate the terrain with static meshes (trees, rocks, etc.)
+     * Populate the terrain with static decorations and entities.
      */
-    decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown>;
-
-    /**
-     * Spawn entities (animals, obstacles, etc.)
-     */
-    spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown>;
+    populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown>;
 
     getFogDensity(): number;
     getFogRange(): { near: number, far: number };

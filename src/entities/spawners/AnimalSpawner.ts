@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SpawnContext } from '../SpawnContext';
+import { PopulationContext } from '../../world/biomes/PopulationContext';
 import { AnimalBehaviorConfig } from '../behaviors/AnimalBehaviorConfigs';
 import { AnimalClass } from '../obstacles/Animal';
 /**
@@ -16,7 +16,7 @@ export interface AnimalSpawnOptions {
  * Concrete implementation for all animal-related spawners (Attack, Swimming, Shore).
  */
 export class AnimalSpawner {
-    public static createEntity(factory: AnimalClass, context: SpawnContext,
+    public static createEntity(factory: AnimalClass, context: PopulationContext,
         x: number, z: number, angle: number, height: number, normal: THREE.Vector3,
         options: AnimalSpawnOptions) {
         const entity = new factory(context.physicsEngine, {

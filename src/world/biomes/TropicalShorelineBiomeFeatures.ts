@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
-import { SpawnContext } from '../../entities/SpawnContext';
 import { BiomeType } from './BiomeType';
-import { DecorationContext } from '../decorators/DecorationContext';
+import { PopulationContext } from './PopulationContext';
 import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
@@ -184,7 +183,8 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
         return this.layoutCache;
     }
 
-    * decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+    * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+        // 1. Decorate
         const decorationConfig = this.getDecorationConfig();
         const spatialGrid = context.chunk.spatialGrid;
         yield* TerrainDecorator.decorateIterator(
@@ -194,9 +194,8 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
             spatialGrid,
             Date.now()
         );
-    }
 
-    * spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+        // 2. Spawn
         const layout = this.getLayout();
         yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
             context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);

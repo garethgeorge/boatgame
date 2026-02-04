@@ -1,7 +1,7 @@
 import { EntityIds } from "./EntityIds";
 import { RiverGeometrySample } from "../world/RiverGeometry";
 import { EntityMetadata } from "./EntityMetadata";
-import { SpawnContext } from "./SpawnContext";
+import { PopulationContext } from "../world/biomes/PopulationContext";
 import { BiomeType } from '../world/biomes/BiomeType';
 import { WaterGrassSpawner } from './spawners/WaterGrassSpawner';
 import { LillyPadPatchSpawner } from './spawners/LillyPadPatchSpawner';
@@ -21,7 +21,7 @@ export interface BuoyPlacement extends EntityPlacement {
 class BuoySpawnConfig extends EntitySpawnConfig {
     id = EntityIds.BUOY;
 
-    override spawn(context: SpawnContext, options: EntityPlacement,
+    override spawn(context: PopulationContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
         const opts = options as BuoyPlacement;
         const radius = opts.radius;
@@ -38,7 +38,7 @@ export interface PierPlacement extends EntityPlacement {
 class PierSpawnConfig extends EntitySpawnConfig {
     id = EntityIds.PIER;
 
-    override spawn(context: SpawnContext, options: EntityPlacement,
+    override spawn(context: PopulationContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
         const opts = options as PierPlacement;
         PierSpawner.createEntity(
@@ -57,7 +57,7 @@ export interface IcebergPlacement extends EntityPlacement {
 class IcebergSpawnConfig extends EntitySpawnConfig {
     id = EntityIds.ICEBERG;
 
-    override spawn(context: SpawnContext, options: EntityPlacement,
+    override spawn(context: PopulationContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
         const opts = options as IcebergPlacement;
         IcebergSpawner.createEntity(context, options.x, options.z, options.radius, opts.hasBear);
@@ -71,7 +71,7 @@ class IcebergSpawnConfig extends EntitySpawnConfig {
 class MangroveSpawnConfig extends EntitySpawnConfig {
     id = EntityIds.MANGROVE;
 
-    override spawn(context: SpawnContext, options: EntityPlacement,
+    override spawn(context: PopulationContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
         MangroveSpawner.createEntity(context, options.x, options.z, options.radius);
     }
@@ -85,7 +85,7 @@ export interface PatchPlacement extends EntityPlacement {
 class LilyPadPatchSpawnConfig extends EntitySpawnConfig {
     id = EntityIds.LILLY_PAD_PATCH;
 
-    override spawn(context: SpawnContext, options: EntityPlacement,
+    override spawn(context: PopulationContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
         const opts = options as PatchPlacement;
         LillyPadPatchSpawner.createEntity(context, options.x, options.z,
@@ -100,7 +100,7 @@ class LilyPadPatchSpawnConfig extends EntitySpawnConfig {
 class WaterGrassSpawnConfig extends EntitySpawnConfig {
     id = EntityIds.WATER_GRASS;
 
-    override spawn(context: SpawnContext, options: EntityPlacement,
+    override spawn(context: PopulationContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
         const opts = options as PatchPlacement;
         WaterGrassSpawner.createEntity(context, options.x, options.z,
@@ -115,7 +115,7 @@ class WaterGrassSpawnConfig extends EntitySpawnConfig {
 class BottleSpawnConfig extends EntitySpawnConfig {
     id = EntityIds.BOTTLE;
 
-    override spawn(context: SpawnContext, options: EntityPlacement,
+    override spawn(context: PopulationContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
         MessageInABottleSpawner.createEntity(context, options.x, options.z);
     }
@@ -128,7 +128,7 @@ export interface RockPlacement extends EntityPlacement {
 class RockSpawnConfig extends EntitySpawnConfig {
     id = EntityIds.ROCK;
 
-    override spawn(context: SpawnContext, options: EntityPlacement,
+    override spawn(context: PopulationContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
         const opts = options as RockPlacement;
 
@@ -145,7 +145,7 @@ class RockSpawnConfig extends EntitySpawnConfig {
 class LogSpawnConfig extends EntitySpawnConfig {
     id = EntityIds.ROCK; // Note: Original code had ROCK here, keeping for consistency but it might be a bug.
 
-    override spawn(context: SpawnContext, options: EntityPlacement,
+    override spawn(context: PopulationContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
         LogSpawner.createEntity(context, options.x, options.z, options.radius * 2);
     }

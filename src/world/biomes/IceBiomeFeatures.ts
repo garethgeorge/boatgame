@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
-import { SpawnContext } from '../../entities/SpawnContext';
 import { BiomeType } from './BiomeType';
-import { DecorationContext } from '../decorators/DecorationContext';
+import { PopulationContext } from './PopulationContext';
 import { Decorations } from '../Decorations';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule, Combine, Signal } from '../decorators/PoissonDecorationRules';
@@ -180,7 +179,8 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         return this.layoutCache;
     }
 
-    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+    * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+        // 1. Decorate
         const config = this.getDecorationConfig();
         yield* TerrainDecorator.decorateIterator(
             context,
@@ -189,13 +189,10 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
             context.chunk.spatialGrid,
             this.index
         );
-    }
 
-    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+        // 2. Spawn
         const layout = this.getLayout();
         yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
             context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
-
-        //yield* this.spawnObstacles(EntitySpawners.getInstance().iceBerg(), context, difficulty, zStart, zEnd);
     }
 }

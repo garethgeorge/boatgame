@@ -1,8 +1,8 @@
 import * as planck from 'planck';
-import { SpawnContext } from '../SpawnContext';
 import { Buoy } from '../../entities/obstacles/Buoy';
 import { Entity } from '../../core/Entity';
 import { RiverSystem } from '../../world/RiverSystem';
+import { PopulationContext } from '../../world/biomes/PopulationContext';
 import { RiverGeometrySample } from '../../world/RiverGeometry';
 
 export class BuoySpawner {
@@ -12,7 +12,7 @@ export class BuoySpawner {
    * to the river center
    */
   public static createEntity(
-    context: SpawnContext,
+    context: PopulationContext,
     sample: RiverGeometrySample,
     distanceRange: [number, number]
   ): boolean {

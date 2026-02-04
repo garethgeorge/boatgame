@@ -1,4 +1,4 @@
-import { SpawnContext } from '../../../entities/SpawnContext';
+import { PopulationContext } from '../PopulationContext';
 import { BiomeType } from '../BiomeType';
 import { BoatPathLayout } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../../entities/EntityIds';
@@ -20,7 +20,7 @@ export class BoatPathLayoutSpawner {
      * Consolidates spawning logic from all biomes into a single place.
      */
     public *spawnIterator(
-        context: SpawnContext,
+        context: PopulationContext,
         layout: BoatPathLayout,
         biomeType: BiomeType,
         zStart: number,

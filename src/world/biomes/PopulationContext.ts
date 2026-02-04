@@ -1,9 +1,14 @@
 import * as THREE from 'three';
 import { TerrainChunk } from '../TerrainChunk';
-import { RiverSystem } from '../RiverSystem';
-import { BiomeDecorationHelper } from '../biomes/BiomeDecorationHelper';
+import { BiomeDecorationHelper } from './BiomeDecorationHelper';
+import { EntityManager } from '../../core/EntityManager';
+import { PhysicsEngine } from '../../core/PhysicsEngine';
 
-export interface DecorationContext {
+export interface PopulationContext {
+    // Entity management
+    entityManager: EntityManager;
+    physicsEngine: PhysicsEngine;
+
     // The chunk we are decorating
     chunk: TerrainChunk;
 

@@ -4,7 +4,7 @@ import { AnimalSpawner, AnimalSpawnOptions } from "./spawners/AnimalSpawner";
 import { RiverGeometrySample } from "../world/RiverGeometry";
 import { EntityMetadata } from "./EntityMetadata";
 import { AnimalBehaviorConfig } from "./behaviors/AnimalBehaviorConfigs";
-import { SpawnContext } from "./SpawnContext";
+import { PopulationContext } from "../world/biomes/PopulationContext";
 import { RiverSystem } from "../world/RiverSystem";
 import { BiomeType } from '../world/biomes/BiomeType';
 import { AnimalClass } from './obstacles/Animal';
@@ -49,7 +49,7 @@ export class AnimalSpawnConfig extends EntitySpawnConfig {
         this.decorationIds = decorationIds;
     }
 
-    public spawn(context: SpawnContext, options: EntityPlacement,
+    public spawn(context: PopulationContext, options: EntityPlacement,
         sample: RiverGeometrySample
     ) {
         const x = options.x;

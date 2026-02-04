@@ -1,4 +1,4 @@
-import { SpawnContext } from '../SpawnContext';
+import { PopulationContext } from '../../world/biomes/PopulationContext';
 import { Iceberg } from '../../entities/obstacles/Iceberg';
 import { Decorations } from '../../world/Decorations';
 
@@ -10,7 +10,7 @@ export class IcebergSpawner {
   }
 
   public static createEntity(
-    context: SpawnContext,
+    context: PopulationContext,
     x: number, z: number, radius: number, hasBear: boolean
   ) {
     const iceberg = new Iceberg(x, z, radius, hasBear, context.physicsEngine);

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { EntityIds } from "../../../entities/EntityIds";
 import { RiverGeometrySample } from "../../RiverGeometry";
-import { SpawnContext } from "../../../entities/SpawnContext";
+import { PopulationContext } from "../../biomes/PopulationContext";
 import { DecorationId } from '../../Decorations';
 import { RiverSystem } from "../../RiverSystem";
 
@@ -44,7 +44,7 @@ export class EntitySpawnConfig {
     public id: EntityIds;
     public decorationIds: DecorationId[] = [];
 
-    public spawn(context: SpawnContext, options: EntityPlacement,
+    public spawn(context: PopulationContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
     }
 

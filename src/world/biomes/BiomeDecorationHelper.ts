@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { DecorationContext } from '../decorators/DecorationContext';
+import { PopulationContext } from './PopulationContext';
 import { DecorationInstance } from '../factories/DecorationFactory';
 import { TerrainChunk } from '../TerrainChunk';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
@@ -13,7 +13,7 @@ export class BiomeDecorationHelper {
     public positionAndCollectGeometry(
         object: THREE.Object3D,
         position: { worldX: number; height: number; worldZ: number },
-        context: DecorationContext
+        context: PopulationContext
     ): void {
         object.position.set(position.worldX, position.height, position.worldZ);
         object.rotation.y = Math.random() * Math.PI * 2;
@@ -44,7 +44,7 @@ export class BiomeDecorationHelper {
      * Registers an instance for instanced rendering.
      */
     public addInstance(
-        context: DecorationContext,
+        context: PopulationContext,
         geometry: THREE.BufferGeometry,
         material: THREE.Material,
         matrix: THREE.Matrix4,
@@ -61,7 +61,7 @@ export class BiomeDecorationHelper {
     }
 
     public mergeAndAddGeometries(
-        context: DecorationContext
+        context: PopulationContext
     ): void {
         const geometriesByMaterial = context.geometriesByMaterial;
         const group = context.geometryGroup;
@@ -117,7 +117,7 @@ export class BiomeDecorationHelper {
         }
     }
     public addInstancedDecoration(
-        context: DecorationContext,
+        context: PopulationContext,
         instances: DecorationInstance[],
         position: { worldX: number; height: number; worldZ: number },
         rotationY: number = Math.random() * Math.PI * 2,

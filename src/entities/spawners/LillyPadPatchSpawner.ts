@@ -1,12 +1,13 @@
-import { SpawnContext } from '../SpawnContext';
-import { LillyPadPatch } from '../../entities/obstacles/LillyPadPatch';
+import * as THREE from 'three';
+import { PopulationContext } from '../../world/biomes/PopulationContext';
+import { LillyPadPatch } from '../obstacles/LillyPadPatch';
 
 export class LillyPadPatchSpawner {
 
     public static *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
     }
     public static createEntity(
-        context: SpawnContext,
+        context: PopulationContext,
         x: number, z: number, width: number, length: number,
         tangent: { x: number, z: number }
     ) {

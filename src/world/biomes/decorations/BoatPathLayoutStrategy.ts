@@ -15,10 +15,11 @@ export interface BoatPathLayout {
     placements: EntityPlacement[];
 }
 
-/** Context passed to the pattern function for generating entity placements
+/**
+ * Context provided to pattern generators during placement.
  */
 export interface PatternContext {
-    riverSystem: RiverSystem,
+    riverSystem: RiverSystem;
     placements: EntityPlacement[];
     path: PathPoint[];
     config: BoatPathLayoutConfig;

@@ -3,13 +3,13 @@ import { GraphicsEngine } from '../core/GraphicsEngine';
 import { RiverSystem } from './RiverSystem';
 import { Profiler } from '../core/Profiler';
 import { WaterShader } from '../shaders/WaterShader';
-import { DecorationContext } from './decorators/DecorationContext';
-import { GraphicsUtils } from '../core/GraphicsUtils';
+import { PopulationContext } from './biomes/PopulationContext';
 import { BiomeDecorationHelper } from './biomes/BiomeDecorationHelper';
-import { SpatialGrid } from '../managers/SpatialGrid';
-import { SpawnContext } from '../entities/SpawnContext';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 import { EntityManager } from '../core/EntityManager';
+import { SpatialGrid } from '../managers/SpatialGrid';
+import { GraphicsUtils } from '../core/GraphicsUtils';
+import { RiverGeometry } from './RiverGeometry';
 
 export class TerrainChunk {
 
@@ -94,71 +94,29 @@ export class TerrainChunk {
       GraphicsUtils.disposeObject(this.waterMesh);
       this.waterMesh = waterMesh;
 
-      Profiler.start('GenDecoBatch');
-      const decoIterator = this.generateDecorationsIterator();
-      let decoResult = decoIterator.next();
-      while (!decoResult.done) {
-        Profiler.pause('GenDecoBatch');
-        yield decoResult.value as void | Promise<void>;
-        Profiler.resume('GenDecoBatch');
-        decoResult = decoIterator.next();
+      Profiler.start('PopulateChunk');
+      const populateIterator = this.populateIterator(physicsEngine, entityManager);
+      let populateResult = populateIterator.next();
+      while (!populateResult.done) {
+        Profiler.pause('PopulateChunk');
+        yield populateResult.value;
+        Profiler.resume('PopulateChunk');
+        populateResult = populateIterator.next();
       }
-      const decorations = decoResult.value;
-      Profiler.end('GenDecoBatch');
-
-      GraphicsUtils.disposeObject(this.decorations);
-      this.decorations = decorations;
-
-      this.graphicsEngine.add(this.mesh);
-      this.graphicsEngine.add(this.waterMesh);
-      this.graphicsEngine.add(this.decorations);
-
-      // 4. Spawn Obstacles
-      Profiler.start('SpawnObstacles');
-      const spawnIterator = this.spawnObstaclesIterator(physicsEngine, entityManager);
-      let spawnResult = spawnIterator.next();
-      while (!spawnResult.done) {
-        Profiler.pause('SpawnObstacles');
-        yield spawnResult.value;
-        Profiler.resume('SpawnObstacles');
-        spawnResult = spawnIterator.next();
-      }
-      Profiler.end('SpawnObstacles');
+      Profiler.end('PopulateChunk');
 
     } finally {
       console.log('Chunk init done');
     }
   }
 
-  private *generateDecorationsIterator(): Generator<void | Promise<void>, THREE.Group, unknown> {
+  private *populateIterator(physicsEngine: PhysicsEngine, entityManager: EntityManager): Generator<void | Promise<void>, void, unknown> {
+    const zMin = this.zOffset;
+    const zMax = zMin + TerrainChunk.CHUNK_SIZE;
+
     const geometryGroup = new THREE.Group();
     const geometriesByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
     const instancedData = new Map<THREE.BufferGeometry, Map<THREE.Material, { matrix: THREE.Matrix4, color?: THREE.Color }[]>>();
-
-    const segments = this.riverSystem.biomeManager.getFeatureSegments(this.zOffset, this.zOffset + TerrainChunk.CHUNK_SIZE);
-
-    const context: DecorationContext = {
-      chunk: this,
-      geometriesByMaterial: geometriesByMaterial,
-      instancedData: instancedData,
-      geometryGroup: geometryGroup,
-      decoHelper: new BiomeDecorationHelper(),
-      stats: this.decorationStats
-    };
-
-    for (const segment of segments) {
-      yield* segment.features.decorate(context, segment.zMin, segment.zMax);
-    }
-
-    // Merge geometries and create meshes
-    context.decoHelper.mergeAndAddGeometries(context);
-
-    return geometryGroup;
-  }
-
-  public *spawnObstaclesIterator(physicsEngine: PhysicsEngine, entityManager: EntityManager): Generator<void | Promise<void>, void, unknown> {
-    const zMin = this.zOffset;
-    const zMax = zMin + TerrainChunk.CHUNK_SIZE;
 
     const segments = this.riverSystem.biomeManager.getFeatureSegments(zMin, zMax);
 
@@ -167,14 +125,30 @@ export class TerrainChunk {
     const distance = Math.abs(centerZ);
     const difficulty = Math.min(distance / 7500, 1.0);
 
-    const context: SpawnContext = {
+    const context: PopulationContext = {
+      chunk: this,
+      geometriesByMaterial: geometriesByMaterial,
+      instancedData: instancedData,
+      geometryGroup: geometryGroup,
+      decoHelper: new BiomeDecorationHelper(),
+      stats: this.decorationStats,
       entityManager: entityManager,
       physicsEngine: physicsEngine,
     };
 
     for (const segment of segments) {
-      yield* segment.features.spawn(context, difficulty, segment.zMin, segment.zMax);
+      yield* segment.features.populate(context, difficulty, segment.zMin, segment.zMax);
     }
+
+    // Merge geometries and create meshes
+    context.decoHelper.mergeAndAddGeometries(context);
+
+    GraphicsUtils.disposeObject(this.decorations);
+    this.decorations = geometryGroup;
+
+    this.graphicsEngine.add(this.mesh);
+    this.graphicsEngine.add(this.waterMesh);
+    this.graphicsEngine.add(this.decorations);
   }
 
   private *generateMeshIterator(): Generator<void | Promise<void>, THREE.Mesh, unknown> {

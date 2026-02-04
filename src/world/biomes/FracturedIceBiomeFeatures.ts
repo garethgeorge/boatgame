@@ -1,9 +1,8 @@
 
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
-import { SpawnContext } from '../../entities/SpawnContext';
+import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
-import { DecorationContext } from '../decorators/DecorationContext';
 import { RiverSystem } from '../RiverSystem';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import Delaunator from 'delaunator';
@@ -340,19 +339,8 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         return { x: ux, y: uy };
     }
 
-    *decorate(context: DecorationContext, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // Decoration is now empty as icebergs are spawned as entities
-        return;
-    }
-
-    *spawn(context: SpawnContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // Gatekeeping
-        // yield* EntitySpawners.getInstance().ensureAllLoaded([
-        //     EntityIds.ICEBERG,
-        //     EntityIds.PENGUIN_KAYAK,
-        //     EntityIds.POLAR_BEAR
-        // ]);
-
+    * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+        // Fractured ice is unique as it doesn't use the standard decorate/spawn separation for its main elements
         const boundarySize = 50.0;
 
         const fracturedStart = this.zMin + boundarySize;
@@ -396,25 +384,6 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
                 context.entityManager.add(iceberg);
             }
         }
-
-        // 2. Spawn Standard Boundary Icebergs
-        // Start Boundary
-        // const startOverlapStart = Math.max(zStart, this.zMin);
-        // const startOverlapEnd = Math.min(zEnd, fracturedStart);
-        // if (startOverlapStart < startOverlapEnd) {
-        //     yield* IcebergSpawner.spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd, [this.zMin, this.zMax]);
-        // }
-
-        // End Boundary
-        // const endOverlapStart = Math.max(zStart, fracturedEnd);
-        // const endOverlapEnd = Math.min(zEnd, this.zMax);
-        // if (endOverlapStart < endOverlapEnd) {
-        //     yield* IcebergSpawner.spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd, [this.zMin, this.zMax]);
-        // }
-
-        // 3. Spawn bears/penguins
-        // yield* this.spawnObstacles(EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK)!, context, difficulty, zStart, zEnd);
-        // yield* this.spawnObstacles(EntitySpawners.getInstance().animal(EntityIds.POLAR_BEAR)!, context, difficulty, zStart, zEnd);
     }
 
     private nextHalfedge(e: number): number {

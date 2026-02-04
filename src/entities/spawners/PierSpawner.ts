@@ -1,7 +1,6 @@
 import * as planck from 'planck';
-import { SpawnContext } from '../SpawnContext';
-import { Pier } from '../../entities/obstacles/Pier';
-import { RiverSystem } from '../../world/RiverSystem';
+import { PopulationContext } from '../../world/biomes/PopulationContext';
+import { Pier } from '../obstacles/Pier';
 import { Decorations } from '../../world/Decorations';
 
 export class PierSpawner {
@@ -10,7 +9,7 @@ export class PierSpawner {
   }
 
   public static createEntity(
-    context: SpawnContext,
+    context: PopulationContext,
     x: number, z: number, length: number, angle: number,
     hasDepot: boolean
   ): boolean {

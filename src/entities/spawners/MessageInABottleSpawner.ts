@@ -1,10 +1,10 @@
-import { SpawnContext } from '../SpawnContext';
+import { PopulationContext } from '../../world/biomes/PopulationContext';
 import { MessageInABottle } from '../../entities/obstacles/MessageInABottle';
 import { RiverSystem } from '../../world/RiverSystem';
 
 export class MessageInABottleSpawner {
 
-  public static spawnBonusArc(context: SpawnContext, zStart: number, zEnd: number) {
+  public static spawnBonusArc(context: PopulationContext, zStart: number, zEnd: number) {
     const riverSystem = RiverSystem.getInstance();
     const worldZ = zStart + Math.random() * (zEnd - zStart - 60); // Ensure space for arc
 
@@ -30,7 +30,7 @@ export class MessageInABottleSpawner {
   }
 
   public static createEntity(
-    context: SpawnContext, x: number, z: number, color?: number, points?: number
+    context: PopulationContext, x: number, z: number, color?: number, points?: number
   ) {
     const bottle = new MessageInABottle(x, z, context.physicsEngine, color, points);
     context.entityManager.add(bottle);
