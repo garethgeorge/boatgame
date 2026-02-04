@@ -3,19 +3,14 @@ import { RiverGeometry } from "../../RiverGeometry";
 import { PatternConfig, PatternContext } from "./BoatPathLayoutStrategy";
 import { EntityGeneratorContext, EntityGeneratorFn, Habitat, PathPoint } from "./EntityLayoutRules";
 
-export type PlacementType =
-    'on-shore' |        // on the river banks within 15m
-    'scatter' |         // water, anywhere
-    'path' |            // water, close to the boat path +/- 2m
-    'slalom' |          // water, between 5m from boat and 2m from bank on one side of the path
-    'middle' |          // water, between center and 1/2 way to bank on one side
-    'near-shore';       // between bank and 1/2 way to center on one side
+/** Function that tries to place a single instance at a position along the path.
+ * Returns true if placement was successful.
+ */
+export type PlacementConfig = (context: PatternContext, pathIndex: number, side: 'left' | 'right') => boolean;
 
 export interface CommonPatternOptions {
-    /** Target area (near path, across river, or on shore) */
-    place: PlacementType;
-    /** Generates a candidate entity */
-    entity: EntityGeneratorFn;
+    /** Placement logic used to position the entity */
+    placement: PlacementConfig;
     /** Min and Max density in instances per 100m. Scales from start to end of biome. */
     density?: [number, number];
     /** Minimum required instances */
@@ -24,95 +19,53 @@ export interface CommonPatternOptions {
     maxCount?: number;
 }
 
-export class Patterns {
-    public static scatter(opts: CommonPatternOptions): PatternConfig {
-        return (context: PatternContext) => this._scatter(context, opts);
+export interface CommonPlacementOptions {
+    /** Generates a candidate entity */
+    entity: EntityGeneratorFn;
+}
+
+type PlacementRangeFn = (context: PatternContext, pathPoint: PathPoint, side?: 'left' | 'right') => [number, number];
+
+export class Placements {
+    public static scatter(opts: CommonPlacementOptions): PlacementConfig {
+        return (context: PatternContext, pathIndex: number, side: 'left' | 'right') =>
+            this._tryPlace(context, this._scatterRange, opts, pathIndex, side);
     }
 
-    public static sequence(opts: CommonPatternOptions): PatternConfig {
-        return (context: PatternContext) => this._sequence(context, opts);
+    public static path(opts: CommonPlacementOptions): PlacementConfig {
+        return (context: PatternContext, pathIndex: number, side: 'left' | 'right') =>
+            this._tryPlace(context, this._pathRange, opts, pathIndex, side);
     }
 
-    public static staggered(opts: CommonPatternOptions): PatternConfig {
-        return (context: PatternContext) => this._staggered(context, opts);
+    public static slalom(opts: CommonPlacementOptions): PlacementConfig {
+        return (context: PatternContext, pathIndex: number, side: 'left' | 'right') =>
+            this._tryPlace(context, this._slalomRange, opts, pathIndex, side);
     }
 
-    public static gate(opts: CommonPatternOptions): PatternConfig {
-        return (context: PatternContext) => this._gate(context, opts);
+    public static onShore(opts: CommonPlacementOptions): PlacementConfig {
+        return (context: PatternContext, pathIndex: number, side: 'left' | 'right') =>
+            this._tryPlace(context, this._onShoreRange, opts, pathIndex, side);
     }
 
-    public static cluster(opts: CommonPatternOptions): PatternConfig {
-        return (context: PatternContext) => this._cluster(context, opts);
+    public static nearShore(opts: CommonPlacementOptions): PlacementConfig {
+        return (context: PatternContext, pathIndex: number, side: 'left' | 'right') =>
+            this._tryPlace(context, this._nearShoreRange, opts, pathIndex, side);
     }
 
-    private static _scatter(context: PatternContext, opts: CommonPatternOptions) {
-        const count = this.getCount(context, opts);
-        for (let j = 0; j < count; j++) {
-            const pathIndex = context.range[0] + Math.random() * (context.range[1] - context.range[0]);
-            this._tryPlace(context, opts, pathIndex);
-        }
-    }
-
-    private static _sequence(context: PatternContext, opts: CommonPatternOptions) {
-        const count = this.getCount(context, opts);
-        for (let j = 0; j < count; j++) {
-            const pathIndex = context.range[0] + (j + 0.5) * (context.range[1] - context.range[0]) / count;
-            this._tryPlace(context, opts, pathIndex);
-        }
-    }
-
-    private static _staggered(context: PatternContext, opts: CommonPatternOptions) {
-        const count = this.getCount(context, opts);
-        for (let j = 0; j < count; j++) {
-            const pathIndex = context.range[0] + (j + 0.5) * (context.range[1] - context.range[0]) / count;
-            this._tryPlace(context, opts, pathIndex, j % 2 === 0 ? 'left' : 'right');
-        }
-    }
-
-    private static _gate(context: PatternContext, opts: CommonPatternOptions) {
-        const count = this.getCount(context, opts);
-        for (let j = 0; j < count; j++) {
-            const subCount = Math.ceil(count / 2);
-            const step = Math.floor(j / 2);
-            const pathIndex = context.range[0] + (step + 0.5) * (context.range[1] - context.range[0]) / subCount;
-            this._tryPlace(context, opts, pathIndex, j % 2 === 0 ? 'left' : 'right');
-        }
-    }
-
-    private static _cluster(context: PatternContext, opts: CommonPatternOptions) {
-        const count = this.getCount(context, opts);
-        for (let j = 0; j < count; j++) {
-            const center = context.range[0] + Math.random() * (context.range[1] - context.range[0]);
-            const jitter = (Math.random() - 0.5) * 5.0;
-            const pathIndex = Math.max(context.range[0], Math.min(context.range[1], center + jitter));
-            this._tryPlace(context, opts, pathIndex);
-        }
-    }
-
-    private static getCount(context: PatternContext, opts: CommonPatternOptions): number {
-        const density = this._getDensity(opts.density, context.progress);
-        const expected = (context.length / 100) * density;
-        let count = Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
-
-        if (opts.minCount !== undefined) count = Math.max(count, opts.minCount);
-        if (opts.maxCount !== undefined) count = Math.min(count, opts.maxCount);
-
-        return count;
-    }
-
-    private static _getDensity(density: [number, number] | undefined, progress: number): number {
-        if (density === undefined) return 1.0;
-        return density[0] + progress * (density[1] - density[0]);
+    public static middle(opts: CommonPlacementOptions): PlacementConfig {
+        return (context: PatternContext, pathIndex: number, side: 'left' | 'right') =>
+            this._tryPlace(context, this._middleRange, opts, pathIndex, side);
     }
 
     private static _tryPlace(
         context: PatternContext,
-        opts: CommonPatternOptions,
+        rangeFn: PlacementRangeFn,
+        opts: CommonPlacementOptions,
         pathIndex: number,
         side?: 'left' | 'right'
     ): boolean {
         const sample = RiverGeometry.getPathPoint(context.path, pathIndex);
-        const range = this._placementRange(context, opts.place, sample, side);
+        const range = rangeFn(context, sample, side);
 
         const ctx: EntityGeneratorContext = {
             riverSystem: context.riverSystem,
@@ -156,42 +109,124 @@ export class Patterns {
         return false;
     }
 
-    private static _placementRange(
-        context: PatternContext,
-        place: PlacementType,
-        pathPoint: PathPoint,
-        side?: 'left' | 'right'
-    ): [number, number] {
-        if (side === undefined) {
-            if (place === 'path') {
-                side = 0.5 < Math.random() ? 'left' : 'right';
-            } else {
-                const boatSide = pathPoint.boatXOffset > 0 ? 'right' : 'left';
-                side = boatSide === 'right' ? 'left' : 'right';
-            }
-        }
+    private static _scatterRange(context: PatternContext, pathPoint: PathPoint, side?: 'left' | 'right'): [number, number] {
+        return [-pathPoint.bankDist, pathPoint.bankDist];
+    }
 
-        if (place === 'on-shore') {
-            return side === 'right' ?
-                [pathPoint.bankDist, pathPoint.bankDist + 15] :
-                [-pathPoint.bankDist - 15, -pathPoint.bankDist];
-        } else if (place === 'scatter') {
-            return [-pathPoint.bankDist, pathPoint.bankDist];
-        } else if (place === 'slalom') {
-            return side === 'right' ?
-                [pathPoint.boatXOffset + 5.0, pathPoint.bankDist - 2.0] :
-                [-pathPoint.bankDist + 2.0, pathPoint.boatXOffset - 5.0];
-        } else if (place === 'near-shore') {
-            return side === 'right' ?
-                [0.5 * pathPoint.bankDist, pathPoint.bankDist + 15] :
-                [-pathPoint.bankDist - 15, 0.5 * -pathPoint.bankDist];
-        } else if (place === 'middle') {
-            return side === 'right' ?
-                [0, 0.5 * pathPoint.bankDist] :
-                [0.5 * -pathPoint.bankDist, 0];
-        } else {
-            // path, random position offset by +/-2
-            return [pathPoint.boatXOffset - 2, pathPoint.boatXOffset + 2];
+    private static _pathRange(context: PatternContext, pathPoint: PathPoint, side?: 'left' | 'right'): [number, number] {
+        return [pathPoint.boatXOffset - 2, pathPoint.boatXOffset + 2];
+    }
+
+    private static _slalomRange(context: PatternContext, pathPoint: PathPoint, side?: 'left' | 'right'): [number, number] {
+        if (side === undefined) {
+            const boatSide = pathPoint.boatXOffset > 0 ? 'right' : 'left';
+            side = boatSide === 'right' ? 'left' : 'right';
         }
+        return side === 'right' ?
+            [pathPoint.boatXOffset + 5.0, pathPoint.bankDist - 2.0] :
+            [-pathPoint.bankDist + 2.0, pathPoint.boatXOffset - 5.0];
+    }
+
+    private static _onShoreRange(context: PatternContext, pathPoint: PathPoint, side?: 'left' | 'right'): [number, number] {
+        side = side ?? (pathPoint.boatXOffset > 0 ? 'left' : 'right');
+        return side === 'right' ?
+            [pathPoint.bankDist, pathPoint.bankDist + 15] :
+            [-pathPoint.bankDist - 15, -pathPoint.bankDist];
+    }
+
+    private static _nearShoreRange(context: PatternContext, pathPoint: PathPoint, side?: 'left' | 'right'): [number, number] {
+        side = side ?? (pathPoint.boatXOffset > 0 ? 'left' : 'right');
+        return side === 'right' ?
+            [0.5 * pathPoint.bankDist, pathPoint.bankDist + 15] :
+            [-pathPoint.bankDist - 15, 0.5 * -pathPoint.bankDist];
+    }
+
+    private static _middleRange(context: PatternContext, pathPoint: PathPoint, side?: 'left' | 'right'): [number, number] {
+        side = side ?? (pathPoint.boatXOffset > 0 ? 'left' : 'right');
+        return side === 'right' ?
+            [0, 0.5 * pathPoint.bankDist] :
+            [0.5 * -pathPoint.bankDist, 0];
+    }
+}
+
+export class Patterns {
+    public static scatter(opts: CommonPatternOptions): PatternConfig {
+        return (context: PatternContext) => this._scatter(context, opts);
+    }
+
+    public static sequence(opts: CommonPatternOptions): PatternConfig {
+        return (context: PatternContext) => this._sequence(context, opts);
+    }
+
+    public static staggered(opts: CommonPatternOptions): PatternConfig {
+        return (context: PatternContext) => this._staggered(context, opts);
+    }
+
+    public static gate(opts: CommonPatternOptions): PatternConfig {
+        return (context: PatternContext) => this._gate(context, opts);
+    }
+
+    public static cluster(opts: CommonPatternOptions): PatternConfig {
+        return (context: PatternContext) => this._cluster(context, opts);
+    }
+
+    private static _scatter(context: PatternContext, opts: CommonPatternOptions) {
+        const count = this.getCount(context, opts);
+        for (let j = 0; j < count; j++) {
+            const pathIndex = context.range[0] + Math.random() * (context.range[1] - context.range[0]);
+            opts.placement(context, pathIndex, Math.random() < 0.5 ? 'left' : 'right');
+        }
+    }
+
+    private static _sequence(context: PatternContext, opts: CommonPatternOptions) {
+        const count = this.getCount(context, opts);
+        for (let j = 0; j < count; j++) {
+            const pathIndex = context.range[0] + (j + 0.5) * (context.range[1] - context.range[0]) / count;
+            opts.placement(context, pathIndex, Math.random() < 0.5 ? 'left' : 'right');
+        }
+    }
+
+    private static _staggered(context: PatternContext, opts: CommonPatternOptions) {
+        const count = this.getCount(context, opts);
+        for (let j = 0; j < count; j++) {
+            const pathIndex = context.range[0] + (j + 0.5) * (context.range[1] - context.range[0]) / count;
+            opts.placement(context, pathIndex, j % 2 === 0 ? 'left' : 'right');
+        }
+    }
+
+    private static _gate(context: PatternContext, opts: CommonPatternOptions) {
+        const count = this.getCount(context, opts);
+        for (let j = 0; j < count; j++) {
+            const subCount = Math.ceil(count / 2);
+            const step = Math.floor(j / 2);
+            const pathIndex = context.range[0] + (step + 0.5) * (context.range[1] - context.range[0]) / subCount;
+            opts.placement(context, pathIndex, j % 2 === 0 ? 'left' : 'right');
+        }
+    }
+
+    private static _cluster(context: PatternContext, opts: CommonPatternOptions) {
+        const count = this.getCount(context, opts);
+        for (let j = 0; j < count; j++) {
+            const center = context.range[0] + Math.random() * (context.range[1] - context.range[0]);
+            const jitter = (Math.random() - 0.5) * 5.0;
+            const pathIndex = Math.max(context.range[0], Math.min(context.range[1], center + jitter));
+            opts.placement(context, pathIndex, Math.random() < 0.5 ? 'left' : 'right');
+        }
+    }
+
+    private static getCount(context: PatternContext, opts: CommonPatternOptions): number {
+        const density = this._getDensity(opts.density, context.progress);
+        const expected = (context.length / 100) * density;
+        let count = Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
+
+        if (opts.minCount !== undefined) count = Math.max(count, opts.minCount);
+        if (opts.maxCount !== undefined) count = Math.min(count, opts.maxCount);
+
+        return count;
+    }
+
+    private static _getDensity(density: [number, number] | undefined, progress: number): number {
+        if (density === undefined) return 1.0;
+        return density[0] + progress * (density[1] - density[0]);
     }
 }

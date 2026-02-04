@@ -10,7 +10,7 @@ import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorator
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
-import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
 import { StaticEntityRules } from '../../entities/StaticEntityRules';
@@ -95,31 +95,36 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
             patterns: {
                 'animal_corridor': Patterns.sequence({
-                    place: 'near-shore',
+                    placement: Placements.nearShore({
+                        entity: EntityRules.choose([AnimalEntityRules.alligator(), AnimalEntityRules.monkey()])
+                    }),
                     density: [0.5, 4.0],
-                    entity: EntityRules.choose([AnimalEntityRules.alligator(), AnimalEntityRules.monkey()]),
                 }),
                 'hippo_pod': Patterns.cluster({
-                    place: 'near-shore',
+                    placement: Placements.nearShore({
+                        entity: EntityRules.choose([AnimalEntityRules.hippo()])
+                    }),
                     density: [0.3, 2.0],
-                    entity: EntityRules.choose([AnimalEntityRules.hippo()]),
                     minCount: 2,
                 }),
                 'rocky_slalom': Patterns.sequence({
-                    place: 'slalom',
+                    placement: Placements.slalom({
+                        entity: EntityRules.choose([StaticEntityRules.rock('desert')])
+                    }),
                     density: [0.5, 2.0],
-                    entity: EntityRules.choose([StaticEntityRules.rock('desert')])
                 }),
                 'rock_stagger': Patterns.staggered({
-                    place: 'slalom',
+                    placement: Placements.slalom({
+                        entity: EntityRules.choose([StaticEntityRules.rock('desert')])
+                    }),
                     density: [0.5, 2.0],
-                    entity: EntityRules.choose([StaticEntityRules.rock('desert')]),
                     minCount: 3
                 }),
                 'bottle_cluster': Patterns.cluster({
-                    place: 'path',
+                    placement: Placements.path({
+                        entity: EntityRules.choose([StaticEntityRules.bottle()])
+                    }),
                     density: [1.5, 0.5],
-                    entity: EntityRules.choose([StaticEntityRules.bottle()]),
                     minCount: 3
                 })
             },

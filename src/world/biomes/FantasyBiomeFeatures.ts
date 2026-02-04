@@ -12,7 +12,7 @@ import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SimplexNoise } from '../SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
 import { RiverSystem } from '../RiverSystem';
-import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
 import { StaticEntityRules } from '../../entities/StaticEntityRules';
@@ -149,24 +149,28 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
 
         const patterns = {
             'swan_bevies': Patterns.scatter({
-                place: 'slalom',
+                placement: Placements.slalom({
+                    entity: EntityRules.choose([AnimalEntityRules.swan()])
+                }),
                 density: [0.3, 0.6],
-                entity: EntityRules.choose([AnimalEntityRules.swan()])
             }),
             'unicorn_herd': Patterns.scatter({
-                place: 'on-shore',
+                placement: Placements.onShore({
+                    entity: EntityRules.choose([AnimalEntityRules.unicorn()])
+                }),
                 density: [0.2, 0.4],
-                entity: EntityRules.choose([AnimalEntityRules.unicorn()])
             }),
             'bluebird_flocks': Patterns.scatter({
-                place: 'on-shore',
+                placement: Placements.onShore({
+                    entity: EntityRules.choose([AnimalEntityRules.bluebird()])
+                }),
                 density: [0.3, 0.5],
-                entity: EntityRules.choose([AnimalEntityRules.bluebird()])
             }),
             'gingerman_parade': Patterns.scatter({
-                place: 'on-shore',
+                placement: Placements.onShore({
+                    entity: EntityRules.choose([AnimalEntityRules.gingerman()])
+                }),
                 density: [0.3, 0.6],
-                entity: EntityRules.choose([AnimalEntityRules.gingerman()])
             }),
         };
 

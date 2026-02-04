@@ -10,7 +10,7 @@ import { DecorationRule, TerrainDecorator, NoiseMap, DecorationConfig } from '..
 import { TierRule, Signal, Combine } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
-import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
 import { StaticEntityRules } from '../../entities/StaticEntityRules';
@@ -103,9 +103,10 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
 
         const patterns = {
             'dragonfly_swarms': Patterns.scatter({
-                place: 'path',
+                placement: Placements.path({
+                    entity: EntityRules.choose([AnimalEntityRules.dragonfly()])
+                }),
                 density: [0.3, 0.6],
-                entity: EntityRules.choose([AnimalEntityRules.dragonfly()])
             }),
         };
 

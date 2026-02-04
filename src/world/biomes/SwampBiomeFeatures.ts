@@ -13,7 +13,7 @@ import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorator
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
-import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
 import { StaticEntityRules } from '../../entities/StaticEntityRules';
@@ -69,48 +69,56 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
             patterns: {
                 'dense_shore_mangroves': Patterns.scatter({
-                    place: 'near-shore',
+                    placement: Placements.nearShore({
+                        entity: EntityRules.choose([StaticEntityRules.mangrove()])
+                    }),
                     density: [20, 40],
-                    entity: EntityRules.choose([StaticEntityRules.mangrove()]),
                     minCount: 15
                 }),
                 'clear_channel_bottles': Patterns.sequence({
-                    place: 'path',
+                    placement: Placements.path({
+                        entity: EntityRules.choose([StaticEntityRules.bottle()])
+                    }),
                     density: [0.5, 0.5],
-                    entity: EntityRules.choose([StaticEntityRules.bottle()])
                 }),
                 'log_scatter': Patterns.scatter({
-                    place: 'slalom',
+                    placement: Placements.slalom({
+                        entity: EntityRules.choose([StaticEntityRules.log()])
+                    }),
                     density: [0.5, 2.0],
-                    entity: EntityRules.choose([StaticEntityRules.log()])
                 }),
                 'threat_ambush': Patterns.scatter({
-                    place: 'path',
+                    placement: Placements.path({
+                        entity: EntityRules.choose([AnimalEntityRules.swamp_gator(), AnimalEntityRules.snake()])
+                    }),
                     density: [0.2, 0.6],
-                    entity: EntityRules.choose([AnimalEntityRules.swamp_gator(), AnimalEntityRules.snake()]),
                 }),
                 'egret_flight': Patterns.scatter({
-                    place: 'path',
+                    placement: Placements.path({
+                        entity: EntityRules.choose([AnimalEntityRules.egret()])
+                    }),
                     density: [1, 2],
-                    entity: EntityRules.choose([AnimalEntityRules.egret()])
                 }),
                 'dragonfly_buzz': Patterns.cluster({
-                    place: 'path',
+                    placement: Placements.path({
+                        entity: EntityRules.choose([AnimalEntityRules.dragonfly()])
+                    }),
                     density: [0.5, 1],
                     minCount: 2.0,
                     maxCount: 3.0,
-                    entity: EntityRules.choose([AnimalEntityRules.dragonfly()])
                 }),
                 'grass_patches': Patterns.scatter({
-                    place: 'near-shore',
+                    placement: Placements.nearShore({
+                        entity: EntityRules.choose([StaticEntityRules.water_grass()])
+                    }),
                     density: [1.5, 3.0],
-                    entity: EntityRules.choose([StaticEntityRules.water_grass()])
                 }),
                 'lilly_patches': Patterns.scatter({
-                    place: 'middle',
+                    placement: Placements.middle({
+                        entity: EntityRules.choose([StaticEntityRules.lily_pad_patch()])
+                    }),
                     density: [5.0, 10.0],
                     minCount: 100,
-                    entity: EntityRules.choose([StaticEntityRules.lily_pad_patch()])
                 })
             },
             tracks: [

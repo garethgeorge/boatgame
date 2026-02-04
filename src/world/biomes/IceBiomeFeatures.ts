@@ -9,7 +9,7 @@ import { TierRule, Combine, Signal } from '../decorators/PoissonDecorationRules'
 import { EntityIds } from '../../entities/EntityIds';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
-import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
 import { StaticEntityRules } from '../../entities/StaticEntityRules';
@@ -103,25 +103,29 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
 
         const patterns = {
             'icebergs': Patterns.scatter({
-                place: 'scatter',
+                placement: Placements.scatter({
+                    entity: EntityRules.choose([StaticEntityRules.iceberg()])
+                }),
                 density: [20, 20],
-                entity: EntityRules.choose([StaticEntityRules.iceberg()])
             }),
             'buoys': Patterns.scatter({
-                place: 'near-shore',
+                placement: Placements.nearShore({
+                    entity: EntityRules.choose([StaticEntityRules.buoy()])
+                }),
                 density: [0.3, 0.5],
-                entity: EntityRules.choose([StaticEntityRules.buoy()])
             }),
             'bottles': Patterns.cluster({
-                place: 'path',
+                placement: Placements.path({
+                    entity: EntityRules.choose([StaticEntityRules.bottle()])
+                }),
                 density: [1.5, 0.5],
-                entity: EntityRules.choose([StaticEntityRules.bottle()]),
                 minCount: 3
             }),
             'animals': Patterns.scatter({
-                place: 'near-shore',
+                placement: Placements.nearShore({
+                    entity: EntityRules.choose([AnimalEntityRules.polar_bear(), AnimalEntityRules.penguin_kayak()])
+                }),
                 density: [0.5, 0.5],
-                entity: EntityRules.choose([AnimalEntityRules.polar_bear(), AnimalEntityRules.penguin_kayak()])
             })
         };
 

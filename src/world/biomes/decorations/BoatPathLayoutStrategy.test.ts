@@ -3,7 +3,7 @@ import { BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { RiverSystem } from '../../RiverSystem';
 import { EntityIds } from '../../../entities/EntityIds';
 import { EntityRules } from './EntityLayoutRules';
-import { Patterns } from './BoatPathLayoutPatterns';
+import { Placements, Patterns } from './BoatPathLayoutPatterns';
 import { RiverGeometry } from '../../RiverGeometry';
 import { StaticEntityRules } from '../../../entities/StaticEntityRules';
 
@@ -28,11 +28,6 @@ describe('BoatPathLayoutStrategy', () => {
     });
 
     it('should generate a layout with explicit offsets and no ranges', () => {
-        const scatterOpts = {
-            place: 'path' as any,
-            density: [10, 10] as [number, number],
-            entity: StaticEntityRules.rock('test')
-        };
         const config = {
             biomeType: 'happy',
             difficulty: 1,
@@ -52,7 +47,12 @@ describe('BoatPathLayoutStrategy', () => {
                 }
             ],
             patterns: {
-                scatter: Patterns.scatter(scatterOpts)
+                scatter: Patterns.scatter({
+                    placement: Placements.path({
+                        entity: StaticEntityRules.rock('test')
+                    }),
+                    density: [10, 10] as [number, number],
+                })
             },
             path: { length: [10, 20] as [number, number] }
         };
@@ -69,11 +69,6 @@ describe('BoatPathLayoutStrategy', () => {
     });
 
     it('should prevent overlapping placements using SpatialGrid', () => {
-        const sequenceOpts = {
-            place: 'path' as any,
-            density: [100, 100] as [number, number],
-            entity: StaticEntityRules.rock('test')
-        };
         const config = {
             biomeType: 'happy',
             difficulty: 1,
@@ -93,7 +88,12 @@ describe('BoatPathLayoutStrategy', () => {
                 }
             ],
             patterns: {
-                sequence: Patterns.sequence(sequenceOpts)
+                sequence: Patterns.sequence({
+                    placement: Placements.path({
+                        entity: StaticEntityRules.rock('test')
+                    }),
+                    density: [100, 100] as [number, number],
+                })
             },
             path: { length: [10, 20] as [number, number] }
         };

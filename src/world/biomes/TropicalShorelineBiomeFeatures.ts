@@ -13,7 +13,7 @@ import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../SimplexNoise';
 import { MathUtils } from '../../core/MathUtils';
 import { SkyBiome } from './BiomeFeatures';
-import { Patterns } from './decorations/BoatPathLayoutPatterns';
+import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
 import { StaticEntityRules } from '../../entities/StaticEntityRules';
@@ -121,19 +121,22 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
 
         const patterns = {
             'dolphin_pods': Patterns.scatter({
-                place: 'slalom',
+                placement: Placements.slalom({
+                    entity: EntityRules.choose([AnimalEntityRules.dolphin()])
+                }),
                 density: [0.4, 0.7],
-                entity: EntityRules.choose([AnimalEntityRules.dolphin()])
             }),
             'turtle_beaches': Patterns.scatter({
-                place: 'near-shore',
+                placement: Placements.nearShore({
+                    entity: EntityRules.choose([AnimalEntityRules.turtle()])
+                }),
                 density: [0.3, 0.6],
-                entity: EntityRules.choose([AnimalEntityRules.turtle()])
             }),
             'butterfly_swarms': Patterns.scatter({
-                place: 'on-shore',
+                placement: Placements.onShore({
+                    entity: EntityRules.choose([AnimalEntityRules.butterfly()])
+                }),
                 density: [0.3, 0.6],
-                entity: EntityRules.choose([AnimalEntityRules.butterfly()])
             }),
         };
 
