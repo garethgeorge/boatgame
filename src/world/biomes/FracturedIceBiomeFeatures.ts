@@ -399,18 +399,18 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
 
         // 2. Spawn Standard Boundary Icebergs
         // Start Boundary
-        const startOverlapStart = Math.max(zStart, this.zMin);
-        const startOverlapEnd = Math.min(zEnd, fracturedStart);
-        if (startOverlapStart < startOverlapEnd) {
-            yield* IcebergSpawner.spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd, [this.zMin, this.zMax]);
-        }
+        // const startOverlapStart = Math.max(zStart, this.zMin);
+        // const startOverlapEnd = Math.min(zEnd, fracturedStart);
+        // if (startOverlapStart < startOverlapEnd) {
+        //     yield* IcebergSpawner.spawn(context, Math.ceil((startOverlapEnd - startOverlapStart) / 10), startOverlapStart, startOverlapEnd, [this.zMin, this.zMax]);
+        // }
 
         // End Boundary
-        const endOverlapStart = Math.max(zStart, fracturedEnd);
-        const endOverlapEnd = Math.min(zEnd, this.zMax);
-        if (endOverlapStart < endOverlapEnd) {
-            yield* IcebergSpawner.spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd, [this.zMin, this.zMax]);
-        }
+        // const endOverlapStart = Math.max(zStart, fracturedEnd);
+        // const endOverlapEnd = Math.min(zEnd, this.zMax);
+        // if (endOverlapStart < endOverlapEnd) {
+        //     yield* IcebergSpawner.spawn(context, Math.ceil((endOverlapEnd - endOverlapStart) / 10), endOverlapStart, endOverlapEnd, [this.zMin, this.zMax]);
+        // }
 
         // 3. Spawn bears/penguins
         // yield* this.spawnObstacles(EntitySpawners.getInstance().animal(EntityIds.PENGUIN_KAYAK)!, context, difficulty, zStart, zEnd);

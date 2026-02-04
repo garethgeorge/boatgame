@@ -6,52 +6,6 @@ import { TerrainChunk } from '../TerrainChunk';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class BiomeDecorationHelper {
-    public generateRandomPositionInRange(context: DecorationContext, zStart: number, zEnd: number): { worldX: number; worldZ: number; height: number } {
-        const riverSystem = context.chunk.riverSystem;
-        const dz = Math.random() * (zEnd - zStart);
-        const wz = zStart + dz;
-        const u = Math.random() * 2 - 1;
-        const dx = u * (TerrainChunk.CHUNK_WIDTH / 2);
-        const riverCenter = riverSystem.getRiverCenter(wz);
-        const wx = dx + riverCenter;
-        const height = riverSystem.terrainGeometry.calculateHeight(wx, wz);
-
-        return { worldX: wx, worldZ: wz, height };
-    }
-
-    public isValidDecorationPosition(
-        context: DecorationContext,
-        position: { worldX: number; worldZ: number; height: number },
-        minHeight: number = 2.0,
-        objectHeight: number = 10.0 // Default to a reasonable tree height
-    ): boolean {
-        const riverSystem = context.chunk.riverSystem;
-        const riverWidth = riverSystem.getRiverWidth(position.worldZ);
-        const riverCenter = riverSystem.getRiverCenter(position.worldZ);
-        const distFromCenter = Math.abs(position.worldX - riverCenter);
-        const distFromBank = distFromCenter - riverWidth / 2;
-
-        // Apply distance-based probability bias
-        if (distFromBank > 0) {
-            const biasDistance = 240; // Tripled from 80 per user request
-            const normalizedDist = Math.min(1.0, distFromBank / biasDistance);
-            const probability = Math.pow(1.0 - normalizedDist, 2);
-            if (Math.random() > probability) return false;
-        }
-
-        // Check minimum height
-        if (position.height < minHeight) return false;
-
-        // Check visibility
-        // Query at 1.5x the object height to be permissive for large objects behind hills
-        const queryHeight = position.height + (objectHeight * 1.2);
-        if (!riverSystem.terrainGeometry.checkVisibility(position.worldX, queryHeight, position.worldZ)) {
-            return false;
-        }
-
-        return true;
-    }
-
     /**
      * Assumes it is passed an object that should be disposed. Collects
      * copies of the geometry from the object.

@@ -7,7 +7,6 @@ import { DecorationContext } from './decorators/DecorationContext';
 import { GraphicsUtils } from '../core/GraphicsUtils';
 import { BiomeDecorationHelper } from './biomes/BiomeDecorationHelper';
 import { SpatialGrid } from '../managers/SpatialGrid';
-import { PlacementHelper } from '../managers/PlacementHelper';
 import { SpawnContext } from '../entities/SpawnContext';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 import { EntityManager } from '../core/EntityManager';
@@ -161,7 +160,6 @@ export class TerrainChunk {
     const zMin = this.zOffset;
     const zMax = zMin + TerrainChunk.CHUNK_SIZE;
 
-    const placementHelper = new PlacementHelper(physicsEngine.world, this.spatialGrid, this.riverSystem);
     const segments = this.riverSystem.biomeManager.getFeatureSegments(zMin, zMax);
 
     // Calculate Difficulty
@@ -172,7 +170,6 @@ export class TerrainChunk {
     const context: SpawnContext = {
       entityManager: entityManager,
       physicsEngine: physicsEngine,
-      placementHelper: placementHelper,
     };
 
     for (const segment of segments) {
