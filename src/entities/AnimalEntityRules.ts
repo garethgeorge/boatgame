@@ -31,7 +31,7 @@ import { Unicorn } from './obstacles/Unicorn';
 import { Dragonfly } from './obstacles/Dragonfly';
 import { Pterodactyl } from './obstacles/Pterodactyl';
 import { Decorations, DecorationId } from '../world/Decorations';
-import { Habitat, EntityGeneratorContext, EntitySpawnConfig, EntityPlacementOptions } from '../world/biomes/decorations/EntityLayoutRules';
+import { Habitat, EntityGeneratorContext, EntitySpawnConfig, EntityPlacementOptions, PlacementPredicate, EntityRules } from '../world/biomes/decorations/EntityLayoutRules';
 
 export interface AnimalPlacementOptions extends EntityPlacementOptions {
     heightInWater: number;
@@ -84,74 +84,33 @@ export class AnimalSpawnConfig extends EntitySpawnConfig {
     }
 }
 
-export type AnimalPredicate = (ctx: EntityGeneratorContext, radius: number) => boolean;
-
 export class AnimalEntityRules {
-    public static all(predicates: AnimalPredicate[]): AnimalPredicate {
-        return (ctx: EntityGeneratorContext, radius: number) => {
-            for (const p of predicates) {
-                if (!p(ctx, radius)) return false;
-            }
-            return true;
-        };
-    }
-
-    public static select(choice: { water?: AnimalPredicate, land?: AnimalPredicate }): AnimalPredicate {
-        return (ctx: EntityGeneratorContext, radius: number) => {
-            if (ctx.habitat === 'water' && choice.water !== undefined) {
-                return choice.water(ctx, radius);
-            } else if (ctx.habitat === 'land' && choice.land !== undefined) {
-                return choice.land(ctx, radius);
-            }
-            return false;
-        }
-    }
-
-    public static true(): AnimalPredicate {
-        return (ctx: EntityGeneratorContext, radius: number) => true;
-    }
-
-    public static slope_in_range(min: number, max: number): AnimalPredicate {
-        return (ctx: EntityGeneratorContext, radius: number) => {
-            const normal = ctx.riverSystem.terrainGeometry.calculateNormal(ctx.x, ctx.z);
-            const up = new THREE.Vector3(0, 1, 0);
-            const angle = normal.angleTo(up);
-            return (min <= angle && angle <= max);
-        };
-    }
-
-    public static min_bank_distance(min: number): AnimalPredicate {
-        return (ctx: EntityGeneratorContext, radius: number) => {
-            return Math.abs(ctx.offset - ctx.sample.bankDist) > radius + min;
-        }
-    }
-
     private static defaultPredicate =
-        this.all([
-            this.min_bank_distance(1.0),
-            this.select({
-                land: this.slope_in_range(0, 20),
-                water: this.true()
+        EntityRules.all([
+            EntityRules.min_bank_distance(1.0),
+            EntityRules.select({
+                land: EntityRules.slope_in_range(0, 20),
+                water: EntityRules.true()
             })
         ]);
 
     private static landPredicate =
-        this.all([
-            this.min_bank_distance(1.0),
-            this.select({
-                land: this.slope_in_range(0, 20),
+        EntityRules.all([
+            EntityRules.min_bank_distance(1.0),
+            EntityRules.select({
+                land: EntityRules.slope_in_range(0, 20),
             })
         ]);
 
     private static waterPredicate =
-        this.all([
-            this.min_bank_distance(1.0),
-            this.select({
-                water: this.true()
+        EntityRules.all([
+            EntityRules.min_bank_distance(1.0),
+            EntityRules.select({
+                water: EntityRules.true()
             })
         ]);
 
-    public static alligator(predicate: AnimalPredicate = this.defaultPredicate) {
+    public static alligator(predicate: PlacementPredicate = this.defaultPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.alligator.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -187,7 +146,7 @@ export class AnimalEntityRules {
         };
     }
 
-    public static hippo(predicate: AnimalPredicate = this.waterPredicate) {
+    public static hippo(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.hippo.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -206,7 +165,7 @@ export class AnimalEntityRules {
 
     private static hippo_config = new AnimalSpawnConfig(EntityIds.HIPPO, Hippo, ['hippo']);
 
-    public static swan(predicate: AnimalPredicate = this.waterPredicate) {
+    public static swan(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.swan.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -225,7 +184,7 @@ export class AnimalEntityRules {
 
     private static swan_config = new AnimalSpawnConfig(EntityIds.SWAN, Swan, ['swan']);
 
-    public static unicorn(predicate: AnimalPredicate = this.landPredicate) {
+    public static unicorn(predicate: PlacementPredicate = this.landPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.unicorn.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -244,7 +203,7 @@ export class AnimalEntityRules {
 
     private static unicorn_config = new AnimalSpawnConfig(EntityIds.UNICORN, Unicorn, ['unicorn']);
 
-    public static bluebird(predicate: AnimalPredicate = this.landPredicate) {
+    public static bluebird(predicate: PlacementPredicate = this.landPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.bluebird.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -263,7 +222,7 @@ export class AnimalEntityRules {
 
     private static bluebird_config = new AnimalSpawnConfig(EntityIds.BLUEBIRD, Bluebird, ['bluebird']);
 
-    public static brown_bear(predicate: AnimalPredicate = this.defaultPredicate) {
+    public static brown_bear(predicate: PlacementPredicate = this.defaultPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.brownBear.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -282,9 +241,9 @@ export class AnimalEntityRules {
 
     private static brown_bear_config = new AnimalSpawnConfig(EntityIds.BROWN_BEAR, BrownBear, ['brownBear']);
 
-    public static polar_bear(predicate: AnimalPredicate = this.defaultPredicate) {
+    public static polar_bear(predicate: PlacementPredicate = this.defaultPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
-            const radius = EntityMetadata.polar_bear.radius;
+            const radius = EntityMetadata.polarBear.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
                 radius: radius,
@@ -301,7 +260,7 @@ export class AnimalEntityRules {
 
     private static polar_bear_config = new AnimalSpawnConfig(EntityIds.POLAR_BEAR, PolarBear, ['polarBear']);
 
-    public static moose(predicate: AnimalPredicate = this.defaultPredicate) {
+    public static moose(predicate: PlacementPredicate = this.defaultPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.moose.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -320,7 +279,7 @@ export class AnimalEntityRules {
 
     private static moose_config = new AnimalSpawnConfig(EntityIds.MOOSE, Moose, ['moose']);
 
-    public static duckling(predicate: AnimalPredicate = this.waterPredicate) {
+    public static duckling(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.duckling.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -339,9 +298,9 @@ export class AnimalEntityRules {
 
     private static duckling_config = new AnimalSpawnConfig(EntityIds.DUCKLING, Duckling, ['duckling']);
 
-    public static penguin_kayak(predicate: AnimalPredicate = this.waterPredicate) {
+    public static penguin_kayak(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
-            const radius = EntityMetadata.penguin_kayak.radius;
+            const radius = EntityMetadata.penguinKayak.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
                 radius: radius,
@@ -358,7 +317,7 @@ export class AnimalEntityRules {
 
     private static penguin_kayak_config = new AnimalSpawnConfig(EntityIds.PENGUIN_KAYAK, PenguinKayak, ['penguinKayak']);
 
-    public static dragonfly(predicate: AnimalPredicate = this.waterPredicate) {
+    public static dragonfly(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.dragonfly.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -377,7 +336,7 @@ export class AnimalEntityRules {
 
     private static dragonfly_config = new AnimalSpawnConfig(EntityIds.DRAGONFLY, Dragonfly, ['dragonfly']);
 
-    public static trex(predicate: AnimalPredicate = this.defaultPredicate) {
+    public static trex(predicate: PlacementPredicate = this.defaultPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.trex.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -396,7 +355,7 @@ export class AnimalEntityRules {
 
     private static trex_config = new AnimalSpawnConfig(EntityIds.TREX, TRex, ['trex']);
 
-    public static triceratops(predicate: AnimalPredicate = this.defaultPredicate) {
+    public static triceratops(predicate: PlacementPredicate = this.defaultPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.triceratops.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -415,7 +374,7 @@ export class AnimalEntityRules {
 
     private static triceratops_config = new AnimalSpawnConfig(EntityIds.TRICERATOPS, Triceratops, ['triceratops']);
 
-    public static brontosaurus(predicate: AnimalPredicate = this.defaultPredicate) {
+    public static brontosaurus(predicate: PlacementPredicate = this.defaultPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.brontosaurus.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -434,7 +393,7 @@ export class AnimalEntityRules {
 
     private static brontosaurus_config = new AnimalSpawnConfig(EntityIds.BRONTOSAURUS, Brontosaurus, ['brontosaurus']);
 
-    public static pterodactyl(predicate: AnimalPredicate = this.defaultPredicate) {
+    public static pterodactyl(predicate: PlacementPredicate = this.defaultPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.pterodactyl.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -453,7 +412,7 @@ export class AnimalEntityRules {
 
     private static pterodactyl_config = new AnimalSpawnConfig(EntityIds.PTERODACTYL, Pterodactyl, ['pterodactyl']);
 
-    public static snake(predicate: AnimalPredicate = this.waterPredicate) {
+    public static snake(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.snake.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -472,7 +431,7 @@ export class AnimalEntityRules {
 
     private static snake_config = new AnimalSpawnConfig(EntityIds.SNAKE, Snake, ['snake']);
 
-    public static egret(predicate: AnimalPredicate = this.waterPredicate) {
+    public static egret(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.egret.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -491,7 +450,7 @@ export class AnimalEntityRules {
 
     private static egret_config = new AnimalSpawnConfig(EntityIds.EGRET, Egret, ['egret']);
 
-    public static dolphin(predicate: AnimalPredicate = this.waterPredicate) {
+    public static dolphin(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.dolphin.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -510,7 +469,7 @@ export class AnimalEntityRules {
 
     private static dolphin_config = new AnimalSpawnConfig(EntityIds.DOLPHIN, Dolphin, ['dolphin']);
 
-    public static turtle(predicate: AnimalPredicate = this.defaultPredicate) {
+    public static turtle(predicate: PlacementPredicate = this.defaultPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.turtle.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -529,7 +488,7 @@ export class AnimalEntityRules {
 
     private static turtle_config = new AnimalSpawnConfig(EntityIds.TURTLE, Turtle, ['turtle']);
 
-    public static butterfly(predicate: AnimalPredicate = this.landPredicate) {
+    public static butterfly(predicate: PlacementPredicate = this.landPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.butterfly.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -548,7 +507,7 @@ export class AnimalEntityRules {
 
     private static butterfly_config = new AnimalSpawnConfig(EntityIds.BUTTERFLY, Butterfly, ['butterfly']);
 
-    public static gingerman(predicate: AnimalPredicate = this.defaultPredicate) {
+    public static gingerman(predicate: PlacementPredicate = this.defaultPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.gingerman.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -567,7 +526,7 @@ export class AnimalEntityRules {
 
     private static gingerman_config = new AnimalSpawnConfig(EntityIds.GINGERMAN, GingerMan, ['gingerman']);
 
-    public static monkey(predicate: AnimalPredicate = this.defaultPredicate) {
+    public static monkey(predicate: PlacementPredicate = this.defaultPredicate) {
         return (ctx: EntityGeneratorContext): AnimalPlacementOptions | null => {
             const radius = EntityMetadata.monkey.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;

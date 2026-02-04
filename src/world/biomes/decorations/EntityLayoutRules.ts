@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { EntityIds } from "../../../entities/EntityIds";
 import { RiverGeometrySample } from "../../RiverGeometry";
 import { SpawnContext } from "../../../entities/SpawnContext";
@@ -69,11 +70,52 @@ export interface EntityPlacement {
     entity: EntityPlacementOptions
 }
 
+export type PlacementPredicate = (ctx: EntityGeneratorContext, radius: number) => boolean;
+
 export class EntityRules {
     public static choose(types: EntityGeneratorFn[]) {
         return (ctx: EntityGeneratorContext) => {
             const type = types[Math.floor(Math.random() * types.length)];
             return type(ctx);
+        }
+    }
+
+    public static all(predicates: PlacementPredicate[]): PlacementPredicate {
+        return (ctx: EntityGeneratorContext, radius: number) => {
+            for (const p of predicates) {
+                if (!p(ctx, radius)) return false;
+            }
+            return true;
+        };
+    }
+
+    public static select(choice: { water?: PlacementPredicate, land?: PlacementPredicate }): PlacementPredicate {
+        return (ctx: EntityGeneratorContext, radius: number) => {
+            if (ctx.habitat === 'water' && choice.water !== undefined) {
+                return choice.water(ctx, radius);
+            } else if (ctx.habitat === 'land' && choice.land !== undefined) {
+                return choice.land(ctx, radius);
+            }
+            return false;
+        }
+    }
+
+    public static true(): PlacementPredicate {
+        return (ctx: EntityGeneratorContext, radius: number) => true;
+    }
+
+    public static slope_in_range(min: number, max: number): PlacementPredicate {
+        return (ctx: EntityGeneratorContext, radius: number) => {
+            const normal = ctx.riverSystem.terrainGeometry.calculateNormal(ctx.x, ctx.z);
+            const up = new THREE.Vector3(0, 1, 0);
+            const angle = normal.angleTo(up);
+            return (min <= angle && angle <= max);
+        };
+    }
+
+    public static min_bank_distance(min: number): PlacementPredicate {
+        return (ctx: EntityGeneratorContext, radius: number) => {
+            return Math.abs(ctx.offset - ctx.sample.bankDist) > radius + min;
         }
     }
 }

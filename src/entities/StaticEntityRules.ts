@@ -11,7 +11,8 @@ import { MangroveSpawner } from './spawners/MangroveSpawner';
 import { PierSpawner } from './spawners/PierSpawner';
 import { BuoySpawner } from './spawners/BuoySpawner';
 import { LogSpawner } from './spawners/LogSpawner';
-import { EntitySpawnConfig, EntityPlacementOptions, EntityGeneratorContext } from '../world/biomes/decorations/EntityLayoutRules';
+import { EntitySpawnConfig, EntityPlacementOptions, EntityGeneratorContext, PlacementPredicate, EntityRules } from '../world/biomes/decorations/EntityLayoutRules';
+import { IcebergSpawner } from "./spawners/IcebergSpawner";
 
 export interface RockPlacementOptions extends EntityPlacementOptions {
     biomeType: BiomeType;
@@ -40,6 +41,21 @@ class PierSpawnConfig extends EntitySpawnConfig {
         const isLeft = offset < 0;
         PierSpawner.createEntity(
             context, sample.centerPos.z, isLeft, opts.forceDepot);
+    }
+}
+
+class IcebergSpawnConfig extends EntitySpawnConfig {
+    id = EntityIds.ICEBERG;
+
+    override spawn(context: SpawnContext, options: EntityPlacementOptions,
+        sample: RiverGeometrySample, offset: number) {
+        const x = sample.centerPos.x + sample.normal.x * offset;
+        const z = sample.centerPos.z + sample.normal.z * offset;
+        IcebergSpawner.createEntity(context, x, z, options.radius, false);
+    }
+
+    override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+        yield* IcebergSpawner.ensureLoaded();
     }
 }
 
@@ -129,11 +145,17 @@ class LogSpawnConfig extends EntitySpawnConfig {
 };
 
 export class StaticEntityRules {
-    public static bottle() {
+    private static waterPredicate = EntityRules.all([
+        EntityRules.min_bank_distance(0.0),
+        EntityRules.select({ water: EntityRules.true() })
+    ]);
+
+    public static bottle(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): EntityPlacementOptions | null => {
-            if (ctx.habitat !== 'water') return null;
+            const radius = EntityMetadata.bottle.radius;
+            if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
-                radius: EntityMetadata.bottle.radius,
+                radius: radius,
                 config: this.bottle_config
             };
         }
@@ -141,11 +163,12 @@ export class StaticEntityRules {
 
     private static bottle_config = new BottleSpawnConfig;
 
-    public static rock(biomeType: BiomeType) {
+    public static rock(biomeType: BiomeType, predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): RockPlacementOptions | null => {
-            if (ctx.habitat !== 'water') return null;
+            const radius = EntityMetadata.rock.radius;
+            if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
-                radius: EntityMetadata.rock.radius,
+                radius: radius,
                 biomeType: biomeType,
                 config: this.rock_config,
             };
@@ -154,11 +177,12 @@ export class StaticEntityRules {
 
     private static rock_config = new RockSpawnConfig();
 
-    public static log() {
+    public static log(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): EntityPlacementOptions | null => {
-            if (ctx.habitat !== 'water') return null;
+            const radius = EntityMetadata.log.radius;
+            if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
-                radius: EntityMetadata.log.radius,
+                radius: radius,
                 config: this.log_config
             };
         }
@@ -166,11 +190,12 @@ export class StaticEntityRules {
 
     private static log_config = new LogSpawnConfig();
 
-    public static buoy() {
+    public static buoy(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): EntityPlacementOptions | null => {
-            if (ctx.habitat !== 'water') return null;
+            const radius = EntityMetadata.buoy.radius;
+            if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
-                radius: EntityMetadata.buoy.radius,
+                radius: radius,
                 config: this.buoy_config
             };
         }
@@ -178,11 +203,12 @@ export class StaticEntityRules {
 
     private static buoy_config = new BuoySpawnConfig();
 
-    public static pier(forceDepot: boolean = false) {
+    public static pier(forceDepot: boolean = false, predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): PierPlacementOptions | null => {
-            if (ctx.habitat !== 'water') return null;
+            const radius = EntityMetadata.pier.radius;
+            if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
-                radius: EntityMetadata.pier.radius,
+                radius: radius,
                 forceDepot: forceDepot,
                 config: this.pier_config
             };
@@ -191,11 +217,39 @@ export class StaticEntityRules {
 
     private static pier_config = new PierSpawnConfig();
 
-    public static mangrove() {
+    public static iceberg(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): EntityPlacementOptions | null => {
-            if (ctx.habitat !== 'water') return null;
+
+            let scale = 4.0 + Math.random();
+            let hasBear = false;
+            const r = Math.random();
+            if (r < 0.05) {
+                scale = 3.0;
+                hasBear = Math.random() < 0.5;
+            } else if (r < 0.30) {
+                scale = 1.5;
+            }
+
+            const radius = EntityMetadata.iceberg.radius * scale;
+
+            // check predicate
+            if (predicate !== undefined && !predicate(ctx, radius)) return null;
+
             return {
-                radius: EntityMetadata.mangrove.radius,
+                radius: radius,
+                config: this.iceberg_config
+            };
+        }
+    }
+
+    private static iceberg_config = new IcebergSpawnConfig();
+
+    public static mangrove(predicate: PlacementPredicate = this.waterPredicate) {
+        return (ctx: EntityGeneratorContext): EntityPlacementOptions | null => {
+            const radius = EntityMetadata.mangrove.radius;
+            if (predicate !== undefined && !predicate(ctx, radius)) return null;
+            return {
+                radius: radius,
                 config: this.mangrove_config
             };
         }
@@ -203,11 +257,12 @@ export class StaticEntityRules {
 
     private static mangrove_config = new MangroveSpawnConfig();
 
-    public static lily_pad_patch() {
+    public static lily_pad_patch(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): EntityPlacementOptions | null => {
-            if (ctx.habitat !== 'water') return null;
+            const radius = EntityMetadata.lilly_pad_patch.radius;
+            if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
-                radius: EntityMetadata.lilly_pad_patch.radius,
+                radius: radius,
                 config: this.lily_pad_patch_config
             };
         }
@@ -215,11 +270,12 @@ export class StaticEntityRules {
 
     private static lily_pad_patch_config = new LilyPadPatchSpawnConfig();
 
-    public static water_grass() {
+    public static water_grass(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): EntityPlacementOptions | null => {
-            if (ctx.habitat !== 'water') return null;
+            const radius = EntityMetadata.water_grass.radius;
+            if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
-                radius: EntityMetadata.water_grass.radius,
+                radius: radius,
                 config: this.water_grass_config
             };
         }

@@ -5,10 +5,11 @@ import { EntityGeneratorContext, EntityGeneratorFn, Habitat, PathPoint } from ".
 
 export type PlacementType =
     'on-shore' |        // on the river banks within 15m
+    'scatter' |         // water, anywhere
     'path' |            // water, close to the boat path +/- 2m
     'slalom' |          // water, between 5m from boat and 2m from bank on one side of the path
-    'near-shore' |      // between bank and 1/2 way to center on one side
-    'middle';           // water, between center and 1/2 way to bank on one side
+    'middle' |          // water, between center and 1/2 way to bank on one side
+    'near-shore';       // between bank and 1/2 way to center on one side
 
 export interface CommonPatternOptions {
     /** Target area (near path, across river, or on shore) */
@@ -174,6 +175,8 @@ export class Patterns {
             return side === 'right' ?
                 [pathPoint.bankDist, pathPoint.bankDist + 15] :
                 [-pathPoint.bankDist - 15, -pathPoint.bankDist];
+        } else if (place === 'scatter') {
+            return [-pathPoint.bankDist, pathPoint.bankDist];
         } else if (place === 'slalom') {
             return side === 'right' ?
                 [pathPoint.boatXOffset + 5.0, pathPoint.bankDist - 2.0] :

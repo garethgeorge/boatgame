@@ -28,6 +28,7 @@ export const EntityMetadata: Record<string, { radius: number, hull?: number[] }>
     buoy: { radius: 10.0 }, // Representing a chain
     bottle: { radius: 0.4 },
     pier: { radius: 7.5 },
+    iceberg: { radius: 7.5 },
     mangrove: { radius: 4.5 },
     water_grass: { radius: 15.0 },
     lilly_pad_patch: { radius: 12.0 },

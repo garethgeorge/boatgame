@@ -102,6 +102,11 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         if (this.layoutCache) return this.layoutCache;
 
         const patterns = {
+            'icebergs': Patterns.scatter({
+                place: 'scatter',
+                density: [20, 20],
+                entity: EntityRules.choose([StaticEntityRules.iceberg()])
+            }),
             'buoys': Patterns.scatter({
                 place: 'near-shore',
                 density: [0.3, 0.5],
@@ -125,11 +130,8 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 name: 'rewards',
                 stages: [
                     {
-                        name: 'bottles',
-                        progress: [0, 1.0],
-                        scenes: [
-                            { length: [100, 200], patterns: ['bottles'] },
-                        ]
+                        name: 'bottles', progress: [0, 1.0],
+                        scenes: [{ length: [100, 200], patterns: ['bottles'] }]
                     }
                 ]
             },
@@ -137,11 +139,8 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 name: 'obstacles',
                 stages: [
                     {
-                        name: 'buoys',
-                        progress: [0, 1.0],
-                        scenes: [
-                            { length: [100, 200], patterns: ['buoys'] },
-                        ]
+                        name: 'buoys', progress: [0, 1.0],
+                        scenes: [{ length: [100, 200], patterns: ['buoys'] }]
                     }
                 ]
             },
@@ -149,14 +148,20 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 name: 'animals',
                 stages: [
                     {
-                        name: 'animals',
-                        progress: [0, 1.0],
-                        scenes: [
-                            { length: [100, 200], patterns: ['animals'] },
-                        ]
+                        name: 'animals', progress: [0, 1.0],
+                        scenes: [{ length: [100, 200], patterns: ['animals'] }]
                     }
                 ]
             },
+            {
+                name: 'bergs',
+                stages: [
+                    {
+                        name: 'icebergs', progress: [0, 1.0],
+                        scenes: [{ length: [100, 200], patterns: ['icebergs'] }]
+                    }
+                ]
+            }
         ];
 
         const boatPathLayout = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {

@@ -38,11 +38,17 @@ export class IcebergSpawner {
 
     if (pos) {
 
-      const iceberg = new Iceberg(pos.x, pos.z, radius, hasBear, context.physicsEngine);
-      context.entityManager.add(iceberg);
-
+      this.createEntity(context, pos.x, pos.z, radius, hasBear);
       return true;
     }
     return false;
+  }
+
+  public static createEntity(
+    context: SpawnContext,
+    x: number, z: number, radius: number, hasBear: boolean
+  ) {
+    const iceberg = new Iceberg(x, z, radius, hasBear, context.physicsEngine);
+    context.entityManager.add(iceberg);
   }
 }
