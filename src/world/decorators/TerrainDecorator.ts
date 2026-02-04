@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { PoissonDecorationStrategy, DecorationRule, WorldMap } from './PoissonDecorationStrategy';
-import { PlacementManifest, SpatialGrid } from '../../managers/SpatialGrid';
+import { PlacementManifest, AnySpatialGrid } from '../../core/SpatialGrid';
 export type { DecorationRule, PlacementManifest };
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../SimplexNoise';
@@ -89,7 +89,7 @@ export class TerrainDecorator {
         context: PopulationContext,
         config: DecorationConfig,
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-        spatialGrid: SpatialGrid,
+        spatialGrid: AnySpatialGrid,
         seed: number = 0,
     ): Generator<void | Promise<void>, void, unknown> {
         const placements = yield* this.generateIterator(config, region, spatialGrid, seed);
@@ -99,7 +99,7 @@ export class TerrainDecorator {
     public static generateIterator(
         config: DecorationConfig,
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-        spatialGrid: SpatialGrid,
+        spatialGrid: AnySpatialGrid,
         seed: number = 0,
     ): Generator<void | Promise<void>, PlacementManifest[], unknown> {
         return this.instance().generateIterator(config, region, spatialGrid, seed);
@@ -121,7 +121,7 @@ export class TerrainDecorator {
     private *generateIterator(
         config: DecorationConfig,
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-        spatialGrid: SpatialGrid,
+        spatialGrid: AnySpatialGrid,
         seed: number = 0,
     ): Generator<void | Promise<void>, PlacementManifest[], unknown> {
 

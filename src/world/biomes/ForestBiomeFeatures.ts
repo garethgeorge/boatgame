@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
-import { BoatPathLayout, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
@@ -14,6 +14,7 @@ import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
 import { StaticEntityRules } from '../../entities/StaticEntityRules';
+import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';
@@ -23,6 +24,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, ForestBiomeFeatures.LENGTH, direction);
     }
 
+    private spatialGrid: SpatialGrid = new SpatialGrid(20);
     private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
@@ -94,7 +96,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
+        const config: BoatPathLayoutConfig = {
             patterns: {
                 'forest_slalom': Patterns.scatter({
                     placement: Placements.slalom({
@@ -168,23 +170,37 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
             path: {
                 length: [200, 100]
             }
-        });
+        };
 
+        this.layoutCache = BoatPathLayoutStrategy.createLayout(
+            [this.zMin, this.zMax], config, this.spatialGrid);
         return this.layoutCache;
     }
 
     * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // 1. Decorate
-        const spatialGrid = context.chunk.spatialGrid;
+        // 1. Get entity layout creating it if needed
+        const layout = this.getLayout();
+
+        // 2. Decorate
+        const decorationConfig = this.getDecorationConfig();
+
+        // decorations are inserted into the chunk grid but checked for
+        // collisions against the layout grid for the entire biome
+        const spatialGrid = new SpatialGridPair(
+            context.chunk.spatialGrid,
+            this.spatialGrid
+        );
+
         yield* TerrainDecorator.decorateIterator(
             context,
-            this.decorationConfig,
-            { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
+            decorationConfig,
+            { xMin: -250, xMax: 250, zMin: zStart, zMax: zEnd },
             spatialGrid,
             12345 + zStart // Seed variation
         );
 
-        // 2. Spawn
-        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, this.getLayout(), this.id, zStart, zEnd, [this.zMin, this.zMax]);
+        // 3. Spawn
+        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
+            context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
     }
 }

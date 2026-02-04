@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { PopulationContext } from './PopulationContext';
 import { Decorations } from '../Decorations';
-import { BoatPathLayout, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
 import { RiverGeometry } from '../RiverGeometry';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
@@ -16,6 +16,7 @@ import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
 import { StaticEntityRules } from '../../entities/StaticEntityRules';
+import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
@@ -25,6 +26,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, SwampBiomeFeatures.LENGTH, direction);
     }
 
+    private spatialGrid: SpatialGrid = new SpatialGrid(20);
     private decorationConfig: DecorationConfig | null = null;
     private layoutCache: BoatPathLayout | null = null;
 
@@ -65,7 +67,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
+        const config: BoatPathLayoutConfig = {
             patterns: {
                 'dense_shore_mangroves': Patterns.scatter({
                     placement: Placements.nearShore({
@@ -187,8 +189,10 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
             path: {
                 length: [200, 100]
             }
-        });
+        };
 
+        this.layoutCache = BoatPathLayoutStrategy.createLayout(
+            [this.zMin, this.zMax], config, this.spatialGrid);
         return this.layoutCache;
     }
 
@@ -215,18 +219,30 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
 
 
     * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // 1. Decorate
+        // 1. Get entity layout creating it if needed
+        const layout = this.getLayout();
+
+        // 2. Decorate
         const decorationConfig = this.getDecorationConfig();
-        const spatialGrid = context.chunk.spatialGrid;
+
+        // decorations are inserted into the chunk grid but checked for
+        // collisions against the layout grid for the entire biome
+        const spatialGrid = new SpatialGridPair(
+            context.chunk.spatialGrid,
+            this.spatialGrid
+        );
+
         yield* TerrainDecorator.decorateIterator(
             context,
             decorationConfig,
             { xMin: -250, xMax: 250, zMin: zStart, zMax: zEnd },
             spatialGrid,
-            42 // Deep Thought
+            12345 + zStart // Seed variation
         );
 
-        // 2. Spawn
+        // 3. Spawn
+        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
+            context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
     }
 }
 

@@ -2,7 +2,7 @@ import { EntityIds } from '../../../entities/EntityIds';
 import { RiverGeometry, RiverGeometrySample } from '../../RiverGeometry';
 import { RiverSystem } from '../../RiverSystem';
 import { EntityGeneratorFn, EntityPlacement, Habitat, PathPoint } from './EntityLayoutRules';
-import { SpatialGrid } from '../../../managers/SpatialGrid';
+import { AnySpatialGrid, SpatialGrid } from '../../../core/SpatialGrid';
 import { PlacementConfig } from './BoatPathLayoutPatterns';
 
 /**
@@ -26,7 +26,7 @@ export interface PatternContext {
     range: [number, number];        // index range in path array
     progress: number;               // progress [0-1] along river
     length: number;                 // arc length of the segment
-    spatialGrid: SpatialGrid;
+    spatialGrid: AnySpatialGrid;
     biomeZRange: [number, number];
 }
 
@@ -110,7 +110,8 @@ interface GeneratedTrack {
 export class BoatPathLayoutStrategy {
     public static createLayout(
         biomeZRange: [number, number],
-        config: BoatPathLayoutConfig
+        config: BoatPathLayoutConfig,
+        spatialGrid: AnySpatialGrid
     ): BoatPathLayout {
         const riverSystem = RiverSystem.getInstance();
 
@@ -127,9 +128,6 @@ export class BoatPathLayoutStrategy {
         this.generateWeavingPath(path, config, totalArcLength);
 
         // 4. Determine obstacle placements
-        // Initialize spatial grid for collision checking
-        const spatialGrid = new SpatialGrid(20);
-
         const placements = this.resolvePlacements(
             riverSystem,
             path, tracks, config, totalArcLength,
@@ -231,7 +229,7 @@ export class BoatPathLayoutStrategy {
         tracks: GeneratedTrack[],
         config: BoatPathLayoutConfig,
         totalArcLength: number,
-        spatialGrid: SpatialGrid,
+        spatialGrid: AnySpatialGrid,
         biomeZRange: [number, number]
     ): EntityPlacement[] {
         const placements: EntityPlacement[] = [];

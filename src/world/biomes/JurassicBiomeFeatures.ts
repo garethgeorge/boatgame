@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { PopulationContext } from './PopulationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, NoiseMap, TerrainDecorator } from '../decorators/TerrainDecorator';
@@ -15,6 +15,7 @@ import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
 import { StaticEntityRules } from '../../entities/StaticEntityRules';
+import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'jurassic';
@@ -24,6 +25,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, JurassicBiomeFeatures.LENGTH, direction);
     }
 
+    private spatialGrid: SpatialGrid = new SpatialGrid(20);
     private decorationConfig: DecorationConfig | null = null;
     private layoutCache: BoatPathLayout | null = null;
 
@@ -149,7 +151,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
             })
         };
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
+        const config: BoatPathLayoutConfig = {
             patterns: patterns,
             tracks: [
                 {
@@ -182,24 +184,37 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
             path: {
                 length: [200, 100]
             }
-        });
+        };
 
+        this.layoutCache = BoatPathLayoutStrategy.createLayout(
+            [this.zMin, this.zMax], config, this.spatialGrid);
         return this.layoutCache;
     }
 
     * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // 1. Decorate
+        // 1. Get entity layout creating it if needed
+        const layout = this.getLayout();
+
+        // 2. Decorate
         const decorationConfig = this.getDecorationConfig();
-        const spatialGrid = context.chunk.spatialGrid;
+
+        // decorations are inserted into the chunk grid but checked for
+        // collisions against the layout grid for the entire biome
+        const spatialGrid = new SpatialGridPair(
+            context.chunk.spatialGrid,
+            this.spatialGrid
+        );
+
         yield* TerrainDecorator.decorateIterator(
             context,
             decorationConfig,
-            { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
+            { xMin: -250, xMax: 250, zMin: zStart, zMax: zEnd },
             spatialGrid,
-            42 // Use a specific seed
+            12345 + zStart // Seed variation
         );
 
-        // 2. Spawn
-        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(context, this.getLayout(), this.id, zStart, zEnd, [this.zMin, this.zMax]);
+        // 3. Spawn
+        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
+            context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
     }
 }

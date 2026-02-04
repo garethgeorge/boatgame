@@ -14,6 +14,7 @@ import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
 import { StaticEntityRules } from '../../entities/StaticEntityRules';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
 import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
+import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'ice';
@@ -51,6 +52,7 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         return 2.3;
     }
 
+    private spatialGrid: SpatialGrid = new SpatialGrid(20);
     private decorationConfig: DecorationConfig | null = null;
     private layoutCache: BoatPathLayout | null = null;
 
@@ -173,25 +175,35 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
             path: {
                 length: [200, 100]
             }
-        });
+        }, this.spatialGrid);
 
         this.layoutCache = boatPathLayout;
         return this.layoutCache;
     }
 
     * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // 1. Decorate
-        const config = this.getDecorationConfig();
-        yield* TerrainDecorator.decorateIterator(
-            context,
-            config,
-            { xMin: -200, xMax: 200, zMin: zStart, zMax: zEnd },
+        // 1. Get entity layout creating it if needed
+        const layout = this.getLayout();
+
+        // 2. Decorate
+        const decorationConfig = this.getDecorationConfig();
+
+        // decorations are inserted into the chunk grid but checked for
+        // collisions against the layout grid for the entire biome
+        const spatialGrid = new SpatialGridPair(
             context.chunk.spatialGrid,
-            this.index
+            this.spatialGrid
         );
 
-        // 2. Spawn
-        const layout = this.getLayout();
+        yield* TerrainDecorator.decorateIterator(
+            context,
+            decorationConfig,
+            { xMin: -250, xMax: 250, zMin: zStart, zMax: zEnd },
+            spatialGrid,
+            12345 + zStart // Seed variation
+        );
+
+        // 3. Spawn
         yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
             context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
     }

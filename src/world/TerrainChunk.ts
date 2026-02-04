@@ -7,7 +7,7 @@ import { PopulationContext } from './biomes/PopulationContext';
 import { BiomeDecorationHelper } from './biomes/BiomeDecorationHelper';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 import { EntityManager } from '../core/EntityManager';
-import { SpatialGrid } from '../managers/SpatialGrid';
+import { SpatialGrid } from '../core/SpatialGrid';
 import { GraphicsUtils } from '../core/GraphicsUtils';
 import { RiverGeometry } from './RiverGeometry';
 

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PlacementManifest, SpatialGrid } from '../../managers/SpatialGrid';
+import { PlacementManifest, AnySpatialGrid } from '../../core/SpatialGrid';
 import { SimplexNoise } from '../SimplexNoise';
 import { MathUtils } from '../../core/MathUtils';
 
@@ -58,7 +58,7 @@ export class PoissonDecorationStrategy {
     public *generateIterator(
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-        spatialGrid: SpatialGrid,
+        spatialGrid: AnySpatialGrid,
         terrainProvider: (x: number, z: number) => { height: number, slope: number, distToRiver: number },
         biomeProgressProvider: (z: number) => number,
         seed: number = 0,
@@ -161,7 +161,7 @@ export class PoissonDecorationStrategy {
         x: number,
         z: number,
         rule: DecorationRule,
-        spatialGrid: SpatialGrid,
+        spatialGrid: AnySpatialGrid,
         terrainProvider: (x: number, z: number) => { height: number, slope: number, distToRiver: number },
         biomeProgressProvider: (z: number) => number,
         ctx: WorldContext

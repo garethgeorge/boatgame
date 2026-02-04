@@ -10,9 +10,55 @@ export interface PlacementManifest {
 
     // type specific options
     options?: any;
-}
+};
 
-export class SpatialGrid {
+export interface AnySpatialGrid {
+    getCellSize(): number;
+
+    insert(item: PlacementManifest);
+
+    /**
+     * Check collision for an object with given clearance radii at ground and
+     * canopy levels. True => there is a collision.
+     */
+    checkCollision(x: number, y: number, groundRadius: number, canopyRadius: number): boolean;
+
+    /**
+     * Check whether there is a placement whose ground radius intersects the
+     * circle.
+     */
+    checkGroundCollision(x: number, y: number, groundRadius: number): boolean;
+};
+
+export class SpatialGridPair implements AnySpatialGrid {
+    private grid1: AnySpatialGrid;
+    private grid2: AnySpatialGrid;
+
+    constructor(grid1: AnySpatialGrid, grid2: AnySpatialGrid) {
+        this.grid1 = grid1;
+        this.grid2 = grid2;
+    }
+
+    public getCellSize(): number {
+        return this.grid1.getCellSize();
+    }
+
+    public insert(item: PlacementManifest) {
+        this.grid1.insert(item);
+    }
+
+    public checkCollision(x: number, y: number, groundRadius: number, canopyRadius: number): boolean {
+        return this.grid1.checkCollision(x, y, groundRadius, canopyRadius) ||
+            this.grid2.checkCollision(x, y, groundRadius, canopyRadius);
+    }
+
+    public checkGroundCollision(x: number, y: number, groundRadius: number): boolean {
+        return this.grid1.checkGroundCollision(x, y, groundRadius) ||
+            this.grid2.checkGroundCollision(x, y, groundRadius);
+    }
+};
+
+export class SpatialGrid implements AnySpatialGrid {
     private cellSize: number;
     private cellSizeInv: number;
     private grid: Map<string, PlacementManifest[]> = new Map();
