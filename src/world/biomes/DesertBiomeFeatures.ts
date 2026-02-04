@@ -153,7 +153,10 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                 {
                     name: 'unique_elements',
                     placements: [
-                        { name: 'dock', at: 0.95, range: [1, 1], entity: StaticEntityRules.pier(true) }
+                        {
+                            name: 'dock', at: 0.95,
+                            placement: Placements.atShore({ entity: StaticEntityRules.pier(true) })
+                        }
                     ]
                 },
                 {

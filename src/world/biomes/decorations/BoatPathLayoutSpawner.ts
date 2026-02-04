@@ -38,8 +38,8 @@ export class BoatPathLayoutSpawner {
         const neededIds = new Map<EntityIds, EntitySpawnConfig>();
         for (const p of layout.placements) {
             if (p.index >= iChunkMin && p.index < iChunkMax &&
-                !neededIds.has(p.entity.config.id)) {
-                neededIds.set(p.entity.config.id, p.entity.config);
+                !neededIds.has(p.config.id)) {
+                neededIds.set(p.config.id, p.config);
             }
         }
         for (const [id, config] of neededIds) {
@@ -58,7 +58,7 @@ export class BoatPathLayoutSpawner {
                 }
 
                 const sample = RiverGeometry.getPathPoint(layout.path, p.index);
-                p.entity.config.spawn(context, p.entity, sample, p.offset);
+                p.config.spawn(context, p, sample);
             }
         }
     }

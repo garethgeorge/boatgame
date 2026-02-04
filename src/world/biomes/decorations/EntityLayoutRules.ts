@@ -23,15 +23,17 @@ export interface PathPoint extends RiverGeometrySample {
 export interface EntityGeneratorContext {
     riverSystem: RiverSystem;
     sample: PathPoint;
+    index: number;
     offset: number;
-    x: number, z: number,
+    x: number;
+    z: number;
     habitat: Habitat;
     progress: number,
     biomeZRange: [number, number]
 };
 
 export type EntityGeneratorFn = (ctx: EntityGeneratorContext) =>
-    EntityPlacementOptions | null;
+    EntityPlacement | null;
 
 
 /**
@@ -42,8 +44,8 @@ export class EntitySpawnConfig {
     public id: EntityIds;
     public decorationIds: DecorationId[] = [];
 
-    public spawn(context: SpawnContext, options: EntityPlacementOptions,
-        sample: RiverGeometrySample, offset: number) {
+    public spawn(context: SpawnContext, options: EntityPlacement,
+        sample: RiverGeometrySample) {
     }
 
     public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
@@ -51,24 +53,19 @@ export class EntitySpawnConfig {
 };
 
 /**
- * The entity description is comprised of its radius and spawn config.
- */
-export interface EntityPlacementOptions {
-    radius: number;
-    config: EntitySpawnConfig;
-};
-
-/**
- * Details for placing a single obstacle instance along the boat path.
+ * The entity placement is minimally comprised of the x,y position of the
+ * entity center, its radius and spawn config. Note that the center need
+ * not be the same as the offset position passed since objets such as piers
+ * or buoys may extend from the offset in a specific direction.
  */
 export interface EntityPlacement {
-    /** Index + fractional offset in the path array */
+    /** Fractional index in river path. */
     index: number;
-    /** Distance from river center [-bankDist, bankDist] along the normal vector */
-    offset: number;
-    /** Options for entity to place */
-    entity: EntityPlacementOptions
-}
+    /** Center and radius */
+    x: number, z: number, radius: number;
+    /** Spawner */
+    config: EntitySpawnConfig;
+};
 
 export type PlacementPredicate = (ctx: EntityGeneratorContext, radius: number) => boolean;
 

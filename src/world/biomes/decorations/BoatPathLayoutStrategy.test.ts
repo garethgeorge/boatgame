@@ -132,7 +132,12 @@ describe('BoatPathLayoutStrategy', () => {
                 {
                     name: 'unique',
                     placements: [
-                        { name: 'b1', at: 0.5, range: [0.1, 0.2] as [number, number], entity: StaticEntityRules.bottle() }
+                        {
+                            name: 'b1', at: 0.5,
+                            placement: Placements.path({
+                                entity: StaticEntityRules.bottle()
+                            })
+                        }
                     ]
                 }
             ],

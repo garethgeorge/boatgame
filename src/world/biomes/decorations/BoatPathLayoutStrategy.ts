@@ -3,6 +3,7 @@ import { RiverGeometry, RiverGeometrySample } from '../../RiverGeometry';
 import { RiverSystem } from '../../RiverSystem';
 import { EntityGeneratorFn, EntityPlacement, Habitat, PathPoint } from './EntityLayoutRules';
 import { SpatialGrid } from '../../../managers/SpatialGrid';
+import { PlacementConfig } from './BoatPathLayoutPatterns';
 
 /**
  * The final generated boat path and its associated obstacle layout.
@@ -36,11 +37,10 @@ export type PatternConfig = (context: PatternContext) => void;
 export interface ExplicitPlacementConfig {
     /** Unique name for this placement */
     name: string;
-    /** The obstacle type to spawn */
-    entity: EntityGeneratorFn;
-    /** Progress [0-1] along the biome length, distance from center to bank [0-1] */
+    /** The placement logic to use */
+    placement: PlacementConfig;
+    /** Progress [0-1] along the biome length */
     at: number;
-    range: [number, number];
 }
 
 export type PatternConfigs = Record<string, PatternConfig>;
@@ -266,43 +266,21 @@ export class BoatPathLayoutStrategy {
             // Explicit placements
             for (const ep of track.explicitPlacements) {
                 const pathIndex = ep.at * (path.length - 1);
-                const pathPoint = RiverGeometry.getPathPoint(path, pathIndex);
 
-                // determine placement range on wide side of path
-                let range: [number, number] = [0, 0];
-                if (pathPoint.boatXOffset < 0) {
-                    const width = pathPoint.bankDist - pathPoint.boatXOffset;
-                    range[0] = pathPoint.boatXOffset + width * ep.range[0];
-                    range[1] = pathPoint.boatXOffset + width * ep.range[1];
-                } else {
-                    const width = pathPoint.bankDist + pathPoint.boatXOffset;
-                    range[0] = pathPoint.boatXOffset - width * ep.range[0];
-                    range[1] = pathPoint.boatXOffset - width * ep.range[1];
-                }
-
-                // Randomly pick an offset in the range
-                const offset = range[0] + Math.random() * (range[1] - range[0]);
-                const x = pathPoint.centerPos.x + pathPoint.normal.x * offset;
-                const z = pathPoint.centerPos.z + pathPoint.normal.z * offset;
-                const habitat: Habitat = Math.abs(offset) > pathPoint.bankDist ? 'land' : 'water';
-
-                const entity = ep.entity({
-                    riverSystem: riverSystem,
-                    sample: pathPoint,
-                    offset: offset,
-                    x: x, z: z,
-                    habitat: habitat,
+                const context: PatternContext = {
+                    riverSystem,
+                    placements,
+                    path,
+                    config,
+                    range: [0, path.length],
                     progress: ep.at,
-                    biomeZRange: biomeZRange
-                });
+                    length: path[path.length - 1].arcLength,
+                    spatialGrid,
+                    biomeZRange
+                };
 
-                if (entity) {
-                    placements.push({
-                        index: pathIndex,
-                        offset,
-                        entity
-                    });
-                }
+                const side = Math.random() < 0.5 ? 'left' : 'right';
+                ep.placement(context, pathIndex, side);
             }
         }
 

@@ -1,13 +1,11 @@
 import * as THREE from 'three';
 import { RiverGeometry } from "../../RiverGeometry";
 import { PatternConfig, PatternContext } from "./BoatPathLayoutStrategy";
-import { EntityGeneratorContext, EntityGeneratorFn, Habitat, PathPoint } from "./EntityLayoutRules";
+import { EntityGeneratorContext, EntityGeneratorFn, EntityPlacement, Habitat, PathPoint } from "./EntityLayoutRules";
 
-/** Function that tries to place a single instance at a position along the path.
- * Returns true if placement was successful.
+/**
+ * Options shared by the various types of patterns.
  */
-export type PlacementConfig = (context: PatternContext, pathIndex: number, side: 'left' | 'right') => boolean;
-
 export interface CommonPatternOptions {
     /** Placement logic used to position the entity */
     placement: PlacementConfig;
@@ -18,6 +16,11 @@ export interface CommonPatternOptions {
     /** Maximum allowed instances */
     maxCount?: number;
 }
+
+/** Function that tries to place a single instance at a position along the path.
+ * Returns true if placement was successful.
+ */
+export type PlacementConfig = (context: PatternContext, pathIndex: number, side: 'left' | 'right') => boolean;
 
 export interface CommonPlacementOptions {
     /** Generates a candidate entity */
@@ -57,6 +60,47 @@ export class Placements {
             this._tryPlace(context, this._middleRange, opts, pathIndex, side);
     }
 
+    public static atShore(opts: CommonPlacementOptions): PlacementConfig {
+        return (context: PatternContext, pathIndex: number, side: 'left' | 'right') =>
+            this._tryAtShorePlace(context, opts, pathIndex, side);
+    }
+
+    private static _tryAtShorePlace(
+        context: PatternContext,
+        opts: CommonPlacementOptions,
+        pathIndex: number,
+        side?: 'left' | 'right'
+    ): boolean {
+        const sample = RiverGeometry.getPathPoint(context.path, pathIndex);
+        if (side === undefined)
+            side = Math.random() < 0.5 ? 'left' : 'right';
+
+        const offset = side === 'left' ? sample.bankDist : -sample.bankDist;
+        const x = sample.centerPos.x + sample.normal.x * offset;
+        const z = sample.centerPos.z + sample.normal.z * offset;
+        const habitat: Habitat = 'water';
+
+        const ctx: EntityGeneratorContext = {
+            riverSystem: context.riverSystem,
+            sample,
+            index: pathIndex,
+            offset,
+            x, z,
+            habitat,
+            progress: context.progress,
+            biomeZRange: context.biomeZRange
+        };
+
+        const options = opts.entity(ctx);
+        if (!options) return false;
+
+        // todo: ? make placement info entirely type specific except for
+        // something to identify the chunk ?
+
+        const placed = this._tryPlaceEntity(context, options, pathIndex, offset, x, z);
+        return placed;
+    }
+
     private static _tryPlace(
         context: PatternContext,
         rangeFn: PlacementRangeFn,
@@ -70,6 +114,7 @@ export class Placements {
         const ctx: EntityGeneratorContext = {
             riverSystem: context.riverSystem,
             sample,
+            index: pathIndex,
             offset: 0,
             x: 0, z: 0,
             habitat: 'land',
@@ -92,21 +137,28 @@ export class Placements {
             const options = opts.entity(ctx);
             if (!options) continue;
 
-            if (!context.spatialGrid.checkCollision(x, z, options.radius, 0)) {
-                context.placements.push({
-                    index: pathIndex,
-                    offset,
-                    entity: options
-                });
-                context.spatialGrid.insert({
-                    position: new THREE.Vector3(x, 0, z),
-                    groundRadius: options.radius,
-                    canopyRadius: 0
-                });
+            if (this._tryPlaceEntity(context, options, pathIndex, offset, x, z))
                 return true;
-            }
         }
         return false;
+    }
+
+    private static _tryPlaceEntity(
+        context: PatternContext,
+        options: EntityPlacement,
+        pathIndex: number, offset: number,
+        x: number, z: number,
+    ): boolean {
+        if (context.spatialGrid.checkCollision(x, z, options.radius, 0)) return false;
+
+        context.placements.push(options);
+        context.spatialGrid.insert({
+            position: new THREE.Vector3(x, 0, z),
+            groundRadius: options.radius,
+            canopyRadius: 0
+        });
+
+        return true;
     }
 
     private static _scatterRange(context: PatternContext, pathPoint: PathPoint, side?: 'left' | 'right'): [number, number] {

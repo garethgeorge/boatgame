@@ -111,7 +111,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                     minCount: 2
                 }),
                 'piers': Patterns.staggered({
-                    placement: Placements.slalom({
+                    placement: Placements.atShore({
                         entity: EntityRules.choose([StaticEntityRules.pier()])
                     }),
                     density: [0.3, 0.9],
