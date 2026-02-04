@@ -68,12 +68,17 @@ class IcebergSpawnConfig extends EntitySpawnConfig {
     }
 }
 
+export interface MangrovePlacement extends EntityPlacement {
+    size: number;
+}
+
 class MangroveSpawnConfig extends EntitySpawnConfig {
     id = EntityIds.MANGROVE;
 
     override spawn(context: PopulationContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
-        MangroveSpawner.createEntity(context, options.x, options.z, options.radius);
+        const opts = options as MangrovePlacement;
+        MangroveSpawner.createEntity(context, options.x, options.z, opts.size);
     }
 }
 
@@ -164,7 +169,7 @@ export class StaticEntityRules {
 
     public static bottle(predicate: PlacementPredicate = this.waterPredicate) {
         return (ctx: EntityGeneratorContext): EntityPlacement | null => {
-            const radius = EntityMetadata.bottle.radius;
+            const radius = EntityMetadata.messageInABottle.radius;
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {
                 index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
@@ -272,7 +277,7 @@ export class StaticEntityRules {
                 scale = 1.5;
             }
 
-            const radius = EntityMetadata.iceberg.radius * scale;
+            const radius = 4.0 + Math.random() * scale;
 
             // check predicate
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -288,7 +293,7 @@ export class StaticEntityRules {
     private static iceberg_config = new IcebergSpawnConfig();
 
     public static mangrove(predicate: PlacementPredicate = this.waterPredicate) {
-        return (ctx: EntityGeneratorContext): EntityPlacement | null => {
+        return (ctx: EntityGeneratorContext): MangrovePlacement | null => {
 
             // Size Variance
             let baseScale = 1.0;
@@ -303,12 +308,15 @@ export class StaticEntityRules {
             const jitter = 0.8 + Math.random() * 0.4;
             const finalScale = baseScale * jitter;
 
-            const radius = 4.5 * finalScale;
+            // Making size bigger than radius packs more tightly
+            const radius = 15.0 * finalScale;
+            const size = radius * 1.5;
 
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
 
             return {
                 index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
+                size: size,
                 config: this.mangrove_config
             };
         }

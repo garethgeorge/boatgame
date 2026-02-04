@@ -23,6 +23,8 @@ import { Swan } from './obstacles/Swan';
 import { Unicorn } from './obstacles/Unicorn';
 import { GingerMan } from './obstacles/GingerMan';
 import * as THREE from 'three';
+import { BaseMangrove } from './obstacles/Mangrove';
+import { MessageInABottle } from './obstacles/MessageInABottle';
 
 export interface EntityManifestEntry {
     name: string;
@@ -61,4 +63,6 @@ export const ENTITY_MANIFEST: EntityManifestEntry[] = [
     { name: 'swan', model: () => Decorations.getSwan()!, params: Swan.MODEL_PARAMS },
     { name: 'unicorn', model: () => Decorations.getUnicorn()!, params: Unicorn.MODEL_PARAMS },
     { name: 'gingerman', model: () => Decorations.getGingerMan()!, params: GingerMan.MODEL_PARAMS },
+    { name: 'messageInABottle', model: () => ({ model: Decorations.getBottle(0x88FF88), animations: [] }), params: { scale: 1 } },
+    { name: 'mangrove', model: () => ({ model: Decorations.getMangrove(1), animations: [] }), params: { scale: 1 } },
 ];
