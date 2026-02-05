@@ -4,6 +4,10 @@ export class MathUtils {
         return Math.max(min, Math.min(x, max));
     }
 
+    public static lerp(a: number, b: number, t: number): number {
+        return a + (b - a) * t;
+    }
+
     public static linearstep(edge0: number, edge1: number, x: number): number {
         const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
         return t;

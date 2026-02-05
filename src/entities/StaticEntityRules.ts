@@ -343,7 +343,7 @@ export class StaticEntityRules {
 
     private static lily_pad_patch_config = new LilyPadPatchSpawnConfig();
 
-    public static water_grass(predicate: PlacementPredicate = this.waterPredicate) {
+    public static water_grass() {
         return (ctx: EntityGeneratorContext): PatchPlacement | null => {
             const length = 20.0 + Math.random() * 30.0;
             const width = 10.0 + Math.random() * 15.0;
@@ -351,7 +351,11 @@ export class StaticEntityRules {
             // Radius for collision check (approximate as max dimension / 2)
             const radius = Math.max(width, length) / 2.0;
 
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
+            // Not using a predicate because water grass isn't
+            // round and collision is ok
+            if (ctx.sample.bankDist - Math.abs(ctx.offset) < width / 2)
+                return null;
+
             return {
                 index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
                 width: width, length: length,

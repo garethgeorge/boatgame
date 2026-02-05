@@ -202,6 +202,10 @@ export class Placements {
 }
 
 export class Patterns {
+    public static none(): PatternConfig {
+        return (context: PatternContext) => { };
+    }
+
     public static scatter(opts: CommonPatternOptions): PatternConfig {
         return (context: PatternContext) => this._scatter(context, opts);
     }
