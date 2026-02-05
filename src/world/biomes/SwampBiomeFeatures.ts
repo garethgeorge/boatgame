@@ -14,8 +14,8 @@ import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
-import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
-import { StaticEntityRules } from '../../entities/StaticEntityRules';
+import { SnakeRule, EgretRule, DragonflyRule, SwampGatorRule } from '../../entities/AnimalEntityRules';
+import { MangroveRule, BottleRule, LogRule, WaterGrassRule, LilyPadPatchRule } from '../../entities/StaticEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
@@ -67,61 +67,60 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
+        const dense_shore_mangroves = Patterns.scatter({
+            placement: Placements.nearShore({
+                entity: EntityRules.choose([MangroveRule.get()])
+            }),
+            density: [20, 40],
+            minCount: 15
+        });
+        const clear_channel_bottles = Patterns.sequence({
+            placement: Placements.path({
+                entity: EntityRules.choose([BottleRule.get()])
+            }),
+            density: [0.5, 0.5],
+        });
+        const log_scatter = Patterns.scatter({
+            placement: Placements.slalom({
+                entity: EntityRules.choose([LogRule.get()])
+            }),
+            density: [0.5, 2.0],
+        });
+        const threat_ambush = Patterns.scatter({
+            placement: Placements.path({
+                entity: EntityRules.choose([SwampGatorRule.get(), SnakeRule.get()])
+            }),
+            density: [0.2, 0.6],
+        });
+        const egret_flight = Patterns.scatter({
+            placement: Placements.path({
+                entity: EntityRules.choose([EgretRule.get()])
+            }),
+            density: [1, 2],
+        });
+        const dragonfly_buzz = Patterns.cluster({
+            placement: Placements.path({
+                entity: EntityRules.choose([DragonflyRule.get()])
+            }),
+            density: [0.5, 1],
+            minCount: 2.0,
+            maxCount: 3.0,
+        });
+        const grass_patches = Patterns.scatter({
+            placement: Placements.nearShore({
+                entity: EntityRules.choose([WaterGrassRule.get()])
+            }),
+            density: [1.5, 3.0],
+        });
+        const lilly_patches = Patterns.scatter({
+            placement: Placements.middle({
+                entity: EntityRules.choose([LilyPadPatchRule.get()])
+            }),
+            density: [5.0, 10.0],
+            minCount: 100,
+        });
+
         const config: BoatPathLayoutConfig = {
-            patterns: {
-                'dense_shore_mangroves': Patterns.scatter({
-                    placement: Placements.nearShore({
-                        entity: EntityRules.choose([StaticEntityRules.mangrove()])
-                    }),
-                    density: [20, 40],
-                    minCount: 15
-                }),
-                'clear_channel_bottles': Patterns.sequence({
-                    placement: Placements.path({
-                        entity: EntityRules.choose([StaticEntityRules.bottle()])
-                    }),
-                    density: [0.5, 0.5],
-                }),
-                'log_scatter': Patterns.scatter({
-                    placement: Placements.slalom({
-                        entity: EntityRules.choose([StaticEntityRules.log()])
-                    }),
-                    density: [0.5, 2.0],
-                }),
-                'threat_ambush': Patterns.scatter({
-                    placement: Placements.path({
-                        entity: EntityRules.choose([AnimalEntityRules.swamp_gator(), AnimalEntityRules.snake()])
-                    }),
-                    density: [0.2, 0.6],
-                }),
-                'egret_flight': Patterns.scatter({
-                    placement: Placements.path({
-                        entity: EntityRules.choose([AnimalEntityRules.egret()])
-                    }),
-                    density: [1, 2],
-                }),
-                'dragonfly_buzz': Patterns.cluster({
-                    placement: Placements.path({
-                        entity: EntityRules.choose([AnimalEntityRules.dragonfly()])
-                    }),
-                    density: [0.5, 1],
-                    minCount: 2.0,
-                    maxCount: 3.0,
-                }),
-                'grass_patches': Patterns.scatter({
-                    placement: Placements.nearShore({
-                        entity: EntityRules.choose([StaticEntityRules.water_grass()])
-                    }),
-                    density: [1.5, 3.0],
-                }),
-                'lilly_patches': Patterns.scatter({
-                    placement: Placements.middle({
-                        entity: EntityRules.choose([StaticEntityRules.lily_pad_patch()])
-                    }),
-                    density: [5.0, 10.0],
-                    minCount: 100,
-                })
-            },
             tracks: [
                 {
                     name: 'vegetation',
@@ -130,7 +129,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                             name: 'mangroves',
                             progress: [0.0, 1.0],
                             scenes: [
-                                { length: [50, 150], patterns: ['dense_shore_mangroves'] }
+                                { length: [50, 150], patterns: [dense_shore_mangroves] }
                             ]
                         }
                     ]
@@ -142,8 +141,8 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                             name: 'standard',
                             progress: [0.0, 1.0],
                             scenes: [
-                                { length: [100, 200], patterns: ['log_scatter', 'lilly_patches', 'grass_patches'] },
-                                { length: [100, 200], patterns: ['lilly_patches'] }
+                                { length: [100, 200], patterns: [log_scatter, lilly_patches, grass_patches] },
+                                { length: [100, 200], patterns: [lilly_patches] }
                             ]
                         }
                     ]
@@ -155,7 +154,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                             name: 'bottles',
                             progress: [0.0, 1.0],
                             scenes: [
-                                { length: [200, 500], patterns: ['clear_channel_bottles'] }
+                                { length: [200, 500], patterns: [clear_channel_bottles] }
                             ]
                         }
                     ]
@@ -167,7 +166,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                             name: 'threats',
                             progress: [0.2, 1.0],
                             scenes: [
-                                { length: [150, 300], patterns: ['threat_ambush'] }
+                                { length: [150, 300], patterns: [threat_ambush] }
                             ]
                         }
                     ]
@@ -179,8 +178,8 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                             name: 'friends',
                             progress: [0.0, 1.0],
                             scenes: [
-                                { length: [100, 300], patterns: ['egret_flight'] },
-                                { length: [100, 300], patterns: ['dragonfly_buzz'] }
+                                { length: [100, 300], patterns: [egret_flight] },
+                                { length: [100, 300], patterns: [dragonfly_buzz] }
                             ]
                         }
                     ]

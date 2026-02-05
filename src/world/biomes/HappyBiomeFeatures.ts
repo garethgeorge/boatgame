@@ -11,8 +11,7 @@ import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
-import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
-import { StaticEntityRules } from '../../entities/StaticEntityRules';
+import { DragonflyRule } from '../../entities/AnimalEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 
@@ -102,30 +101,27 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const patterns = {
-            'dragonfly_swarms': Patterns.scatter({
-                placement: Placements.path({
-                    entity: EntityRules.choose([AnimalEntityRules.dragonfly()])
-                }),
-                density: [0.3, 0.6],
+        const dragonfly_swarms = Patterns.scatter({
+            placement: Placements.path({
+                entity: EntityRules.choose([DragonflyRule.get()])
             }),
-        };
-
-        let tracks: TrackConfig[] = [];
-
-        tracks.push({
-            name: 'flying',
-            stages: [
-                {
-                    name: 'flying_animals',
-                    progress: [0.4, 1.0],
-                    scenes: [{ length: [200, 400], patterns: ['dragonfly_swarms'] }]
-                }
-            ]
+            density: [0.3, 0.6],
         });
 
+        const tracks: TrackConfig[] = [
+            {
+                name: 'flying',
+                stages: [
+                    {
+                        name: 'flying_animals',
+                        progress: [0.4, 1.0],
+                        scenes: [{ length: [200, 400], patterns: [dragonfly_swarms] }]
+                    }
+                ]
+            }
+        ];
+
         const boatPathLayout = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
-            patterns: patterns,
             tracks: tracks,
             path: {
                 length: [200, 100]

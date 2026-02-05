@@ -14,8 +14,7 @@ import { MathUtils } from '../../core/MathUtils';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
-import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
-import { StaticEntityRules } from '../../entities/StaticEntityRules';
+import { DolphinRule, TurtleRule, ButterflyRule } from '../../entities/AnimalEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 /**
@@ -121,26 +120,24 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const patterns = {
-            'dolphin_pods': Patterns.scatter({
-                placement: Placements.slalom({
-                    entity: EntityRules.choose([AnimalEntityRules.dolphin()])
-                }),
-                density: [0.4, 0.7],
+        const dolphin_pods = Patterns.scatter({
+            placement: Placements.slalom({
+                entity: EntityRules.choose([DolphinRule.get()])
             }),
-            'turtle_beaches': Patterns.scatter({
-                placement: Placements.nearShore({
-                    entity: EntityRules.choose([AnimalEntityRules.turtle()])
-                }),
-                density: [0.3, 0.6],
+            density: [0.4, 0.7],
+        });
+        const turtle_beaches = Patterns.scatter({
+            placement: Placements.nearShore({
+                entity: EntityRules.choose([TurtleRule.get()])
             }),
-            'butterfly_swarms': Patterns.scatter({
-                placement: Placements.onShore({
-                    entity: EntityRules.choose([AnimalEntityRules.butterfly()])
-                }),
-                density: [0.3, 0.6],
+            density: [0.3, 0.6],
+        });
+        const butterfly_swarms = Patterns.scatter({
+            placement: Placements.onShore({
+                entity: EntityRules.choose([ButterflyRule.get()])
             }),
-        };
+            density: [0.3, 0.6],
+        });
 
         const riverTrack: TrackConfig = {
             name: 'river',
@@ -148,7 +145,7 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 {
                     name: 'dolphins',
                     progress: [0.0, 1.0],
-                    scenes: [{ length: [100, 300], patterns: ['dolphin_pods'] }]
+                    scenes: [{ length: [100, 300], patterns: [dolphin_pods] }]
                 }
             ]
         };
@@ -159,7 +156,7 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 {
                     name: 'turtles',
                     progress: [0.0, 1.0],
-                    scenes: [{ length: [100, 300], patterns: ['turtle_beaches'] }]
+                    scenes: [{ length: [100, 300], patterns: [turtle_beaches] }]
                 }
             ]
         };
@@ -170,13 +167,12 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 {
                     name: 'flying_animals',
                     progress: [0.4, 1.0],
-                    scenes: [{ length: [100, 300], patterns: ['butterfly_swarms'] }]
+                    scenes: [{ length: [100, 300], patterns: [butterfly_swarms] }]
                 }
             ]
         };
 
         this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
-            patterns: patterns,
             tracks: [riverTrack, shoreTrack, flyingTrack],
             path: {
                 length: [200, 100]

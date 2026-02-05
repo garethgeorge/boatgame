@@ -10,8 +10,8 @@ import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
-import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
-import { StaticEntityRules } from '../../entities/StaticEntityRules';
+import { AlligatorRule, MonkeyRule, HippoRule } from '../../entities/AnimalEntityRules';
+import { BottleRule, RockRule, PierRule } from '../../entities/StaticEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
@@ -92,42 +92,41 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
+        const animal_corridor = Patterns.sequence({
+            placement: Placements.nearShore({
+                entity: EntityRules.choose([AlligatorRule.get(), MonkeyRule.get()])
+            }),
+            density: [0.5, 4.0],
+        });
+        const hippo_pod = Patterns.cluster({
+            placement: Placements.nearShore({
+                entity: EntityRules.choose([HippoRule.get()])
+            }),
+            density: [0.3, 2.0],
+            minCount: 2,
+        });
+        const rocky_slalom = Patterns.sequence({
+            placement: Placements.slalom({
+                entity: EntityRules.choose([RockRule.get('desert')])
+            }),
+            density: [0.5, 2.0],
+        });
+        const rock_stagger = Patterns.staggered({
+            placement: Placements.slalom({
+                entity: EntityRules.choose([RockRule.get('desert')])
+            }),
+            density: [0.5, 2.0],
+            minCount: 3
+        });
+        const bottle_cluster = Patterns.cluster({
+            placement: Placements.path({
+                entity: EntityRules.choose([BottleRule.get()])
+            }),
+            density: [1.5, 0.5],
+            minCount: 3
+        });
+
         const config: BoatPathLayoutConfig = {
-            patterns: {
-                'animal_corridor': Patterns.sequence({
-                    placement: Placements.nearShore({
-                        entity: EntityRules.choose([AnimalEntityRules.alligator(), AnimalEntityRules.monkey()])
-                    }),
-                    density: [0.5, 4.0],
-                }),
-                'hippo_pod': Patterns.cluster({
-                    placement: Placements.nearShore({
-                        entity: EntityRules.choose([AnimalEntityRules.hippo()])
-                    }),
-                    density: [0.3, 2.0],
-                    minCount: 2,
-                }),
-                'rocky_slalom': Patterns.sequence({
-                    placement: Placements.slalom({
-                        entity: EntityRules.choose([StaticEntityRules.rock('desert')])
-                    }),
-                    density: [0.5, 2.0],
-                }),
-                'rock_stagger': Patterns.staggered({
-                    placement: Placements.slalom({
-                        entity: EntityRules.choose([StaticEntityRules.rock('desert')])
-                    }),
-                    density: [0.5, 2.0],
-                    minCount: 3
-                }),
-                'bottle_cluster': Patterns.cluster({
-                    placement: Placements.path({
-                        entity: EntityRules.choose([StaticEntityRules.bottle()])
-                    }),
-                    density: [1.5, 0.5],
-                    minCount: 3
-                })
-            },
             tracks: [
                 {
                     name: 'main',
@@ -136,16 +135,16 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                             name: 'intro',
                             progress: [0, 0.4],
                             scenes: [
-                                { length: [50, 100], patterns: ['rocky_slalom'] },
-                                { length: [50, 100], patterns: ['rock_stagger'] }
+                                { length: [50, 100], patterns: [rocky_slalom] },
+                                { length: [50, 100], patterns: [rock_stagger] }
                             ]
                         },
                         {
                             name: 'gauntlet',
                             progress: [0.3, 0.9],
                             scenes: [
-                                { length: [100, 200], patterns: ['animal_corridor', 'rocky_slalom'] },
-                                { length: [100, 200], patterns: ['hippo_pod', 'rock_stagger'] }
+                                { length: [100, 200], patterns: [animal_corridor, rocky_slalom] },
+                                { length: [100, 200], patterns: [hippo_pod, rock_stagger] }
                             ]
                         }
                     ]
@@ -155,7 +154,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                     placements: [
                         {
                             name: 'dock', at: 0.95,
-                            placement: Placements.atShore({ entity: StaticEntityRules.pier(true) })
+                            placement: Placements.atShore({ entity: PierRule.get(true) })
                         }
                     ]
                 },
@@ -166,7 +165,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                             name: 'bottles',
                             progress: [0.0, 0.9],
                             scenes: [
-                                { length: [100, 300], patterns: ['bottle_cluster'] }
+                                { length: [100, 300], patterns: [bottle_cluster] }
                             ]
                         }
                     ]

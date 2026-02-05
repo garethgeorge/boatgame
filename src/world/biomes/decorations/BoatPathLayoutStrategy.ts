@@ -15,14 +15,10 @@ export interface BoatPathLayout {
     placements: EntityPlacement[];
 }
 
-/**
- * Context provided to pattern generators during placement.
- */
 export interface PatternContext {
     riverSystem: RiverSystem;
     placements: EntityPlacement[];
     path: PathPoint[];
-    config: BoatPathLayoutConfig;
     range: [number, number];        // index range in path array
     progress: number;               // progress [0-1] along river
     length: number;                 // arc length of the segment
@@ -44,13 +40,11 @@ export interface ExplicitPlacementConfig {
     at: number;
 }
 
-export type PatternConfigs = Record<string, PatternConfig>;
-
 export interface SceneConfig {
     /** Length of this scene in meters */
     length: [number, number];
     /** Patterns applied within this scene */
-    patterns: string[];
+    patterns: PatternConfig[];
 }
 
 /**
@@ -80,8 +74,6 @@ export interface TrackConfig {
  * Top-level configuration for the BoatPathLayoutStrategy and Biome features.
  */
 export interface BoatPathLayoutConfig {
-    /** Record of all named pattern configurations available in this biome */
-    patterns: PatternConfigs;
     /** Array of tracks. Each track generates stages independently to fill the biome. */
     tracks: TrackConfig[];
     /** Path weaving parameters */
@@ -239,10 +231,7 @@ export class BoatPathLayoutStrategy {
             for (const scene of track.scenes) {
                 const sceneLenMeters = scene.sEnd - scene.sStart;
 
-                for (const patternName of scene.config.patterns) {
-                    const pattern = config.patterns[patternName];
-                    if (!pattern) continue;
-
+                for (const pattern of scene.config.patterns) {
                     const progress = (scene.sStart + scene.sEnd) / (2 * totalArcLength);
                     const sceneIStart = Math.floor((scene.sStart / totalArcLength) * (path.length - 1));
                     const sceneIEnd = Math.floor((scene.sEnd / totalArcLength) * (path.length - 1));
@@ -251,7 +240,6 @@ export class BoatPathLayoutStrategy {
                         riverSystem,
                         placements,
                         path,
-                        config,
                         range: [sceneIStart, sceneIEnd],
                         progress,
                         length: sceneLenMeters,
@@ -270,7 +258,6 @@ export class BoatPathLayoutStrategy {
                     riverSystem,
                     placements,
                     path,
-                    config,
                     range: [0, path.length],
                     progress: ep.at,
                     length: path[path.length - 1].arcLength,

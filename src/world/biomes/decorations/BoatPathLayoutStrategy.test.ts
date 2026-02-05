@@ -5,7 +5,8 @@ import { EntityIds } from '../../../entities/EntityIds';
 import { EntityRules } from './EntityLayoutRules';
 import { Placements, Patterns } from './BoatPathLayoutPatterns';
 import { RiverGeometry } from '../../RiverGeometry';
-import { StaticEntityRules } from '../../../entities/StaticEntityRules';
+import { RockRule, BottleRule } from '../../../entities/StaticEntityRules';
+import { SpatialGrid } from '../../../core/SpatialGrid';
 
 describe('BoatPathLayoutStrategy', () => {
     beforeEach(() => {
@@ -28,6 +29,13 @@ describe('BoatPathLayoutStrategy', () => {
     });
 
     it('should generate a layout with explicit offsets and no ranges', () => {
+        const scatterPattern = Patterns.scatter({
+            placement: Placements.path({
+                entity: RockRule.get('test')
+            }),
+            density: [10, 10] as [number, number],
+        });
+
         const config = {
             biomeType: 'happy',
             difficulty: 1,
@@ -40,24 +48,16 @@ describe('BoatPathLayoutStrategy', () => {
                             progress: [0, 1] as [number, number],
                             scenes: [{
                                 length: [100, 100] as [number, number],
-                                patterns: ['scatter']
+                                patterns: [scatterPattern]
                             }]
                         }
                     ]
                 }
             ],
-            patterns: {
-                scatter: Patterns.scatter({
-                    placement: Placements.path({
-                        entity: StaticEntityRules.rock('test')
-                    }),
-                    density: [10, 10] as [number, number],
-                })
-            },
             path: { length: [10, 20] as [number, number] }
         };
 
-        const layout = BoatPathLayoutStrategy.createLayout([0, 100], config as any);
+        const layout = BoatPathLayoutStrategy.createLayout([0, 100], config as any, new SpatialGrid(20));
 
         expect(layout.placements.length).toBeGreaterThan(0);
         layout.placements.forEach(p => {
@@ -69,6 +69,13 @@ describe('BoatPathLayoutStrategy', () => {
     });
 
     it('should prevent overlapping placements using SpatialGrid', () => {
+        const sequencePattern = Patterns.sequence({
+            placement: Placements.path({
+                entity: RockRule.get('test')
+            }),
+            density: [100, 100] as [number, number],
+        });
+
         const config = {
             biomeType: 'happy',
             difficulty: 1,
@@ -81,24 +88,16 @@ describe('BoatPathLayoutStrategy', () => {
                             progress: [0, 1] as [number, number],
                             scenes: [{
                                 length: [100, 100] as [number, number],
-                                patterns: ['sequence']
+                                patterns: [sequencePattern]
                             }]
                         }
                     ]
                 }
             ],
-            patterns: {
-                sequence: Patterns.sequence({
-                    placement: Placements.path({
-                        entity: StaticEntityRules.rock('test')
-                    }),
-                    density: [100, 100] as [number, number],
-                })
-            },
             path: { length: [10, 20] as [number, number] }
         };
 
-        const layout = BoatPathLayoutStrategy.createLayout([0, 100], config as any);
+        const layout = BoatPathLayoutStrategy.createLayout([0, 100], config as any, new SpatialGrid(20));
 
         // Check for collisions between any two placements
         for (let i = 0; i < layout.placements.length; i++) {
@@ -135,17 +134,16 @@ describe('BoatPathLayoutStrategy', () => {
                         {
                             name: 'b1', at: 0.5,
                             placement: Placements.path({
-                                entity: StaticEntityRules.bottle()
+                                entity: BottleRule.get()
                             })
                         }
                     ]
                 }
             ],
-            patterns: {},
             path: { length: [10, 20] as [number, number] }
         };
 
-        const layout = BoatPathLayoutStrategy.createLayout([0, 100], config as any);
+        const layout = BoatPathLayoutStrategy.createLayout([0, 100], config as any, new SpatialGrid(20));
 
         const bottle = layout.placements.find(p => p.config.id === EntityIds.BOTTLE);
         expect(bottle).toBeDefined();

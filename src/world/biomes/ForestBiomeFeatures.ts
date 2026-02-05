@@ -12,8 +12,8 @@ import { Decorations } from '../Decorations';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
-import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
-import { StaticEntityRules } from '../../entities/StaticEntityRules';
+import { MooseRule, BrownBearRule, DucklingRule } from '../../entities/AnimalEntityRules';
+import { LogRule, RockRule, PierRule, WaterGrassRule, BottleRule } from '../../entities/StaticEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
@@ -96,62 +96,54 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
+        const nothing = Patterns.none();
+        const log_scatter = Patterns.scatter({
+            placement: Placements.slalom({
+                entity: EntityRules.choose([LogRule.get()])
+            }),
+            density: [0.5, 2.0],
+        });
+        const rock_scatter = Patterns.scatter({
+            placement: Placements.nearShore({
+                entity: EntityRules.choose([RockRule.get('forest')])
+            }),
+            density: [0.5, 2.0],
+        });
+        const test_dock = Patterns.none(); // used to be pier
+        const grass_patches = Patterns.scatter({
+            placement: Placements.nearShore({
+                entity: EntityRules.choose([WaterGrassRule.get()])
+            }),
+            density: [1.5, 3.0],
+        });
+        const moose = Patterns.cluster({
+            placement: Placements.nearShore({
+                entity: EntityRules.choose([MooseRule.get()])
+            }),
+            density: [0.3, 3.0],
+        });
+        const bear = Patterns.cluster({
+            placement: Placements.nearShore({
+                entity: EntityRules.choose([BrownBearRule.get()])
+            }),
+            density: [0.3, 3.0],
+        });
+        const duckling_train = Patterns.cluster({
+            placement: Placements.path({
+                entity: EntityRules.choose([DucklingRule.get()])
+            }),
+            density: [0.5, 1.5],
+            minCount: 3
+        });
+        const bottle_train = Patterns.cluster({
+            placement: Placements.path({
+                entity: EntityRules.choose([BottleRule.get()])
+            }),
+            density: [0.5, 1.5],
+            minCount: 3
+        });
+
         const config: BoatPathLayoutConfig = {
-            patterns: {
-                'nothing': Patterns.none(),
-                'log_slalom': Patterns.scatter({
-                    placement: Placements.slalom({
-                        entity: EntityRules.choose([StaticEntityRules.log()])
-                    }),
-                    density: [3.0, 3.0],
-                }),
-                'rock_gates': Patterns.gate({
-                    placement: Placements.slalom({
-                        entity: EntityRules.choose([StaticEntityRules.rock('forest')])
-                    }),
-                    density: [2.0, 2.0],
-                    minCount: 2
-                }),
-                'piers': Patterns.staggered({
-                    placement: Placements.atShore({
-                        entity: EntityRules.choose([StaticEntityRules.pier()])
-                    }),
-                    density: [0.001, 0.001],    // low density means 2 per segment
-                    minCount: 2
-                }),
-                'grass_patches': Patterns.scatter({
-                    placement: Placements.nearShore({
-                        entity: EntityRules.choose([StaticEntityRules.water_grass()])
-                    }),
-                    density: [2.0, 2.0],
-                }),
-                'moose': Patterns.cluster({
-                    placement: Placements.nearShore({
-                        entity: EntityRules.choose([AnimalEntityRules.moose()])
-                    }),
-                    density: [0.3, 3.0],
-                }),
-                'bear': Patterns.cluster({
-                    placement: Placements.nearShore({
-                        entity: EntityRules.choose([AnimalEntityRules.brown_bear()])
-                    }),
-                    density: [0.3, 3.0],
-                }),
-                'duckling_train': Patterns.cluster({
-                    placement: Placements.path({
-                        entity: EntityRules.choose([AnimalEntityRules.duckling()])
-                    }),
-                    density: [0.5, 1.5],
-                    minCount: 3
-                }),
-                'bottle_train': Patterns.cluster({
-                    placement: Placements.path({
-                        entity: EntityRules.choose([StaticEntityRules.bottle()])
-                    }),
-                    density: [0.5, 1.5],
-                    minCount: 3
-                }),
-            },
             tracks: [
                 {
                     name: 'obstacles',
@@ -159,15 +151,15 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                         {
                             name: 'arrival', progress: [0, 0.2],
                             scenes: [
-                                { length: [100, 150], patterns: ['log_slalom'] },
-                                { length: [100, 150], patterns: ['rock_gates'] },
+                                { length: [100, 150], patterns: [log_scatter] },
+                                { length: [100, 150], patterns: [rock_scatter] },
                             ]
                         },
                         {
                             name: 'grass+piers', progress: [0.2, 0.7],
                             scenes: [
-                                { length: [60, 100], patterns: ['grass_patches'] },
-                                { length: [200, 300], patterns: ['piers'] }
+                                { length: [60, 100], patterns: [grass_patches] },
+                                { length: [200, 300], patterns: [test_dock] }
                             ]
                         }
                     ]
@@ -179,8 +171,8 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                             name: 'forest_mix',
                             progress: [0.2, 0.8],
                             scenes: [
-                                { length: [100, 200], patterns: ['moose'] },
-                                { length: [100, 200], patterns: ['bear'] },
+                                { length: [100, 200], patterns: [moose] },
+                                { length: [100, 200], patterns: [bear] },
                             ]
                         }
                     ]
@@ -192,9 +184,9 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                             name: 'ducklings',
                             progress: [0.3, 1.0],
                             scenes: [
-                                { length: [20, 50], patterns: ['duckling_train'] },
-                                { length: [20, 50], patterns: ['bottle_train'] },
-                                { length: [200, 300], patterns: ['nothing'] }
+                                { length: [20, 50], patterns: [duckling_train] },
+                                { length: [20, 50], patterns: [bottle_train] },
+                                { length: [200, 300], patterns: [nothing] }
                             ]
                         }
                     ]

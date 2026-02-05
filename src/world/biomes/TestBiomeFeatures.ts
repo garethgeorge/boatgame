@@ -11,8 +11,8 @@ import { DecorationConfig, TerrainDecorator } from '../decorators/TerrainDecorat
 import { Decorations } from '../Decorations';
 import { off } from 'node:cluster';
 import { EntityRules } from './decorations/EntityLayoutRules';
-import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
-import { StaticEntityRules } from '../../entities/StaticEntityRules';
+// AnimalEntityRules removed as it was unused here
+import { DragonflyRule } from '../../entities/AnimalEntityRules';
 import { AnimalSpawner } from '../../entities/spawners/AnimalSpawner';
 import { Monkey } from '../../entities/obstacles';
 

@@ -10,8 +10,8 @@ import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
-import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
-import { StaticEntityRules } from '../../entities/StaticEntityRules';
+import { PolarBearRule, PenguinKayakRule } from '../../entities/AnimalEntityRules';
+import { IcebergRule, BuoyRule, BottleRule } from '../../entities/StaticEntityRules';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
 import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
@@ -102,33 +102,30 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const patterns = {
-            'icebergs': Patterns.scatter({
-                placement: Placements.scatter({
-                    entity: EntityRules.choose([StaticEntityRules.iceberg()])
-                }),
-                density: [20, 20],
+        const iceberg_scatter = Patterns.scatter({
+            placement: Placements.slalom({
+                entity: EntityRules.choose([IcebergRule.get()])
             }),
-            'buoys': Patterns.scatter({
-                placement: Placements.nearShore({
-                    entity: EntityRules.choose([StaticEntityRules.buoy()])
-                }),
-                density: [0.3, 0.5],
+            density: [1.0, 3.0],
+        });
+        const buoys = Patterns.scatter({
+            placement: Placements.middle({
+                entity: EntityRules.choose([BuoyRule.get()])
             }),
-            'bottles': Patterns.cluster({
-                placement: Placements.path({
-                    entity: EntityRules.choose([StaticEntityRules.bottle()])
-                }),
-                density: [1.5, 0.5],
-                minCount: 3
+            density: [0.5, 1.5],
+        });
+        const bottle_hunt = Patterns.scatter({
+            placement: Placements.path({
+                entity: EntityRules.choose([BottleRule.get()])
             }),
-            'animals': Patterns.scatter({
-                placement: Placements.nearShore({
-                    entity: EntityRules.choose([AnimalEntityRules.polar_bear(), AnimalEntityRules.penguin_kayak()])
-                }),
-                density: [0.5, 0.5],
-            })
-        };
+            density: [0.25, 0.25],
+        });
+        const animals = Patterns.scatter({
+            placement: Placements.nearShore({
+                entity: EntityRules.choose([PolarBearRule.get(), PenguinKayakRule.get()])
+            }),
+            density: [0.5, 0.5],
+        });
 
         const tracks: TrackConfig[] = [
             {
@@ -136,7 +133,7 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 stages: [
                     {
                         name: 'bottles', progress: [0, 1.0],
-                        scenes: [{ length: [100, 200], patterns: ['bottles'] }]
+                        scenes: [{ length: [100, 200], patterns: [bottle_hunt] }]
                     }
                 ]
             },
@@ -145,7 +142,7 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 stages: [
                     {
                         name: 'buoys', progress: [0, 1.0],
-                        scenes: [{ length: [100, 200], patterns: ['buoys'] }]
+                        scenes: [{ length: [100, 200], patterns: [buoys] }]
                     }
                 ]
             },
@@ -154,7 +151,7 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 stages: [
                     {
                         name: 'animals', progress: [0, 1.0],
-                        scenes: [{ length: [100, 200], patterns: ['animals'] }]
+                        scenes: [{ length: [100, 200], patterns: [animals] }]
                     }
                 ]
             },
@@ -163,14 +160,13 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 stages: [
                     {
                         name: 'icebergs', progress: [0, 1.0],
-                        scenes: [{ length: [100, 200], patterns: ['icebergs'] }]
+                        scenes: [{ length: [100, 200], patterns: [iceberg_scatter] }]
                     }
                 ]
             }
         ];
 
         const boatPathLayout = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
-            patterns: patterns,
             tracks: tracks,
             path: {
                 length: [200, 100]

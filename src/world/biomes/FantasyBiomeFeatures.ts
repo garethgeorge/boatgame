@@ -13,8 +13,7 @@ import { SkyBiome } from './BiomeFeatures';
 import { RiverSystem } from '../RiverSystem';
 import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { EntityRules } from './decorations/EntityLayoutRules';
-import { AnimalEntityRules } from '../../entities/AnimalEntityRules';
-import { StaticEntityRules } from '../../entities/StaticEntityRules';
+import { SwanRule, UnicornRule, BluebirdRule, GingerManRule } from '../../entities/AnimalEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 /**
@@ -148,32 +147,30 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const patterns = {
-            'swan_bevies': Patterns.scatter({
-                placement: Placements.slalom({
-                    entity: EntityRules.choose([AnimalEntityRules.swan()])
-                }),
-                density: [0.3, 0.6],
+        const swan_bevies = Patterns.scatter({
+            placement: Placements.slalom({
+                entity: EntityRules.choose([SwanRule.get()])
             }),
-            'unicorn_herd': Patterns.scatter({
-                placement: Placements.onShore({
-                    entity: EntityRules.choose([AnimalEntityRules.unicorn()])
-                }),
-                density: [0.2, 0.4],
+            density: [0.3, 0.6],
+        });
+        const unicorn_herd = Patterns.scatter({
+            placement: Placements.onShore({
+                entity: EntityRules.choose([UnicornRule.get()])
             }),
-            'bluebird_flocks': Patterns.scatter({
-                placement: Placements.onShore({
-                    entity: EntityRules.choose([AnimalEntityRules.bluebird()])
-                }),
-                density: [0.3, 0.5],
+            density: [0.2, 0.4],
+        });
+        const bluebird_flocks = Patterns.scatter({
+            placement: Placements.onShore({
+                entity: EntityRules.choose([BluebirdRule.get()])
             }),
-            'gingerman_parade': Patterns.scatter({
-                placement: Placements.onShore({
-                    entity: EntityRules.choose([AnimalEntityRules.gingerman()])
-                }),
-                density: [0.3, 0.6],
+            density: [0.3, 0.5],
+        });
+        const gingerman_parade = Patterns.scatter({
+            placement: Placements.onShore({
+                entity: EntityRules.choose([GingerManRule.get()])
             }),
-        };
+            density: [0.3, 0.6],
+        });
 
         const tracks: TrackConfig[] = [
             {
@@ -182,7 +179,7 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                     {
                         name: 'swans',
                         progress: [0.0, 1.0],
-                        scenes: [{ length: [100, 300], patterns: ['swan_bevies'] }]
+                        scenes: [{ length: [100, 300], patterns: [swan_bevies] }]
                     }
                 ]
             },
@@ -193,8 +190,8 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                         name: 'unicorns_and_gingermen',
                         progress: [0.0, 1.0],
                         scenes: [
-                            { length: [150, 350], patterns: ['unicorn_herd'] },
-                            { length: [150, 350], patterns: ['gingerman_parade'] }
+                            { length: [150, 350], patterns: [unicorn_herd] },
+                            { length: [150, 350], patterns: [gingerman_parade] }
                         ]
                     }
                 ]
@@ -205,14 +202,13 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                     {
                         name: 'bluebirds',
                         progress: [0.0, 1.0],
-                        scenes: [{ length: [200, 400], patterns: ['bluebird_flocks'] }]
+                        scenes: [{ length: [200, 400], patterns: [bluebird_flocks] }]
                     }
                 ]
             }
         ];
 
         this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
-            patterns: patterns,
             tracks: tracks,
             path: {
                 length: [200, 100]

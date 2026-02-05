@@ -11,111 +11,21 @@ import { MangroveSpawner } from './spawners/MangroveSpawner';
 import { PierSpawner } from './spawners/PierSpawner';
 import { BuoySpawner } from './spawners/BuoySpawner';
 import { LogSpawner } from './spawners/LogSpawner';
-import { EntitySpawnConfig, EntityPlacement, EntityGeneratorContext, PlacementPredicate, EntityRules } from '../world/biomes/decorations/EntityLayoutRules';
+import { EntitySpawnConfig, EntityPlacement, EntityGeneratorContext, PlacementPredicate, EntityRules, EntityGeneratorFn } from '../world/biomes/decorations/EntityLayoutRules';
 import { IcebergSpawner } from "./spawners/IcebergSpawner";
 
-export interface BuoyPlacement extends EntityPlacement {
-    offset: number;
-};
+class Details {
+    public static readonly waterPredicate = EntityRules.all([
+        EntityRules.min_bank_distance(0.0),
+        EntityRules.select({ water: EntityRules.true() })
+    ]);
 
-class BuoySpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.BUOY;
-
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        const opts = options as BuoyPlacement;
-        const radius = opts.radius;
-        const offset = opts.offset;
-        BuoySpawner.createEntity(context, sample, [offset - radius, offset + radius]);
-    }
+    public static readonly shorePredicate = EntityRules.all([
+        EntityRules.select({ water: EntityRules.true() })
+    ]);
 }
 
-export interface PierPlacement extends EntityPlacement {
-    angle: number;
-    hasDepot: boolean;
-};
-
-class PierSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.PIER;
-
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        const opts = options as PierPlacement;
-        PierSpawner.createEntity(
-            context, opts.x, opts.z, opts.radius * 2, opts.angle, opts.hasDepot);
-    }
-
-    override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
-        yield* PierSpawner.ensureLoaded();
-    }
-}
-
-export interface IcebergPlacement extends EntityPlacement {
-    hasBear: boolean;
-};
-
-class IcebergSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.ICEBERG;
-
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        const opts = options as IcebergPlacement;
-        IcebergSpawner.createEntity(context, options.x, options.z, options.radius, opts.hasBear);
-    }
-
-    override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
-        yield* IcebergSpawner.ensureLoaded();
-    }
-}
-
-export interface MangrovePlacement extends EntityPlacement {
-    size: number;
-}
-
-class MangroveSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.MANGROVE;
-
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        const opts = options as MangrovePlacement;
-        MangroveSpawner.createEntity(context, options.x, options.z, opts.size);
-    }
-}
-
-export interface PatchPlacement extends EntityPlacement {
-    width: number;
-    length: number;
-};
-
-class LilyPadPatchSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.LILLY_PAD_PATCH;
-
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        const opts = options as PatchPlacement;
-        LillyPadPatchSpawner.createEntity(context, options.x, options.z,
-            opts.width, opts.length, sample.tangent);
-    }
-
-    override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
-        yield* LillyPadPatchSpawner.ensureLoaded();
-    }
-}
-
-class WaterGrassSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.WATER_GRASS;
-
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        const opts = options as PatchPlacement;
-        WaterGrassSpawner.createEntity(context, options.x, options.z,
-            opts.width, opts.length, sample.tangent);
-    }
-
-    override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
-        yield* WaterGrassSpawner.ensureLoaded();
-    }
-}
+////////
 
 class BottleSpawnConfig extends EntitySpawnConfig {
     id = EntityIds.BOTTLE;
@@ -125,6 +35,25 @@ class BottleSpawnConfig extends EntitySpawnConfig {
         MessageInABottleSpawner.createEntity(context, options.x, options.z);
     }
 };
+
+export class BottleRule extends Details {
+    private static _instance: BottleRule;
+    private static bottle_config = new BottleSpawnConfig();
+
+    public static get(predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new BottleRule();
+        return (ctx: EntityGeneratorContext): EntityPlacement | null => {
+            const radius = EntityMetadata.messageInABottle.radius;
+            if (predicate !== undefined && !predicate(ctx, radius)) return null;
+            return {
+                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
+                config: this.bottle_config
+            };
+        }
+    }
+}
+
+////////
 
 export interface RockPlacement extends EntityPlacement {
     biomeType: BiomeType;
@@ -147,40 +76,12 @@ class RockSpawnConfig extends EntitySpawnConfig {
     }
 };
 
-class LogSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.ROCK; // Note: Original code had ROCK here, keeping for consistency but it might be a bug.
+export class RockRule extends Details {
+    private static _instance: RockRule;
+    private static rock_config = new RockSpawnConfig();
 
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        LogSpawner.createEntity(context, options.x, options.z, options.radius * 2);
-    }
-};
-
-export class StaticEntityRules {
-    private static waterPredicate = EntityRules.all([
-        EntityRules.min_bank_distance(0.0),
-        EntityRules.select({ water: EntityRules.true() })
-    ]);
-
-    // used for pier, assumes its always placed at water edge
-    private static shorePredicate = EntityRules.all([
-        EntityRules.select({ water: EntityRules.true() })
-    ]);
-
-    public static bottle(predicate: PlacementPredicate = this.waterPredicate) {
-        return (ctx: EntityGeneratorContext): EntityPlacement | null => {
-            const radius = EntityMetadata.messageInABottle.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
-                config: this.bottle_config
-            };
-        }
-    }
-
-    private static bottle_config = new BottleSpawnConfig;
-
-    public static rock(biomeType: BiomeType, predicate: PlacementPredicate = this.waterPredicate) {
+    public static get(biomeType: BiomeType, predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new RockRule();
         return (ctx: EntityGeneratorContext): RockPlacement | null => {
             const radius = 1.5 + Math.random() * 3.0; // 1.5 to 4.5m
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
@@ -191,10 +92,25 @@ export class StaticEntityRules {
             };
         }
     }
+}
 
-    private static rock_config = new RockSpawnConfig();
+////////
 
-    public static log(predicate: PlacementPredicate = this.waterPredicate) {
+class LogSpawnConfig extends EntitySpawnConfig {
+    id = EntityIds.LOG;
+
+    override spawn(context: PopulationContext, options: EntityPlacement,
+        sample: RiverGeometrySample) {
+        LogSpawner.createEntity(context, options.x, options.z, options.radius * 2);
+    }
+};
+
+export class LogRule extends Details {
+    private static _instance: LogRule;
+    private static log_config = new LogSpawnConfig();
+
+    public static get(predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new LogRule();
         return (ctx: EntityGeneratorContext): EntityPlacement | null => {
             const length = 10 + Math.random() * 10;
             const radius = length / 2;
@@ -205,10 +121,32 @@ export class StaticEntityRules {
             };
         }
     }
+}
 
-    private static log_config = new LogSpawnConfig();
+////////
 
-    public static buoy(predicate: PlacementPredicate = this.waterPredicate) {
+export interface BuoyPlacement extends EntityPlacement {
+    offset: number;
+};
+
+class BuoySpawnConfig extends EntitySpawnConfig {
+    id = EntityIds.BUOY;
+
+    override spawn(context: PopulationContext, options: EntityPlacement,
+        sample: RiverGeometrySample) {
+        const opts = options as BuoyPlacement;
+        const radius = opts.radius;
+        const offset = opts.offset;
+        BuoySpawner.createEntity(context, sample, [offset - radius, offset + radius]);
+    }
+}
+
+export class BuoyRule extends Details {
+    private static _instance: BuoyRule;
+    private static buoy_config = new BuoySpawnConfig();
+
+    public static get(predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new BuoyRule();
         return (ctx: EntityGeneratorContext): BuoyPlacement | null => {
             // Pick a random length 30-50% width
             const chainLength = (0.3 + Math.random() * 0.2) * ctx.sample.bankDist * 2;
@@ -221,10 +159,36 @@ export class StaticEntityRules {
             };
         }
     }
+}
 
-    private static buoy_config = new BuoySpawnConfig();
+////////
 
-    public static pier(forceDepot: boolean = false, predicate: PlacementPredicate = this.shorePredicate) {
+export interface PierPlacement extends EntityPlacement {
+    angle: number;
+    hasDepot: boolean;
+};
+
+class PierSpawnConfig extends EntitySpawnConfig {
+    id = EntityIds.PIER;
+
+    override spawn(context: PopulationContext, options: EntityPlacement,
+        sample: RiverGeometrySample) {
+        const opts = options as PierPlacement;
+        PierSpawner.createEntity(
+            context, opts.x, opts.z, opts.radius * 2, opts.angle, opts.hasDepot);
+    }
+
+    override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+        yield* PierSpawner.ensureLoaded();
+    }
+}
+
+export class PierRule extends Details {
+    private static _instance: PierRule;
+    private static pier_config = new PierSpawnConfig();
+
+    public static get(forceDepot: boolean = false, predicate: PlacementPredicate = this.shorePredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new PierRule();
         return (ctx: EntityGeneratorContext): PierPlacement | null => {
 
             const width = 2 * ctx.sample.bankDist;
@@ -261,10 +225,34 @@ export class StaticEntityRules {
             };
         }
     }
+}
 
-    private static pier_config = new PierSpawnConfig();
+////////
 
-    public static iceberg(predicate: PlacementPredicate = this.waterPredicate) {
+export interface IcebergPlacement extends EntityPlacement {
+    hasBear: boolean;
+};
+
+class IcebergSpawnConfig extends EntitySpawnConfig {
+    id = EntityIds.ICEBERG;
+
+    override spawn(context: PopulationContext, options: EntityPlacement,
+        sample: RiverGeometrySample) {
+        const opts = options as IcebergPlacement;
+        IcebergSpawner.createEntity(context, options.x, options.z, options.radius, opts.hasBear);
+    }
+
+    override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+        yield* IcebergSpawner.ensureLoaded();
+    }
+}
+
+export class IcebergRule extends Details {
+    private static _instance: IcebergRule;
+    private static iceberg_config = new IcebergSpawnConfig();
+
+    public static get(predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new IcebergRule();
         return (ctx: EntityGeneratorContext): IcebergPlacement | null => {
 
             let scale = 4.0 + Math.random();
@@ -289,10 +277,30 @@ export class StaticEntityRules {
             };
         }
     }
+}
 
-    private static iceberg_config = new IcebergSpawnConfig();
+////////
 
-    public static mangrove(predicate: PlacementPredicate = this.waterPredicate) {
+export interface MangrovePlacement extends EntityPlacement {
+    size: number;
+}
+
+class MangroveSpawnConfig extends EntitySpawnConfig {
+    id = EntityIds.MANGROVE;
+
+    override spawn(context: PopulationContext, options: EntityPlacement,
+        sample: RiverGeometrySample) {
+        const opts = options as MangrovePlacement;
+        MangroveSpawner.createEntity(context, options.x, options.z, opts.size);
+    }
+}
+
+export class MangroveRule extends Details {
+    private static _instance: MangroveRule;
+    private static mangrove_config = new MangroveSpawnConfig();
+
+    public static get(predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new MangroveRule();
         return (ctx: EntityGeneratorContext): MangrovePlacement | null => {
 
             // Size Variance
@@ -321,10 +329,36 @@ export class StaticEntityRules {
             };
         }
     }
+}
 
-    private static mangrove_config = new MangroveSpawnConfig();
+////////
 
-    public static lily_pad_patch(predicate: PlacementPredicate = this.waterPredicate) {
+export interface PatchPlacement extends EntityPlacement {
+    width: number;
+    length: number;
+};
+
+class LilyPadPatchSpawnConfig extends EntitySpawnConfig {
+    id = EntityIds.LILLY_PAD_PATCH;
+
+    override spawn(context: PopulationContext, options: EntityPlacement,
+        sample: RiverGeometrySample) {
+        const opts = options as PatchPlacement;
+        LillyPadPatchSpawner.createEntity(context, options.x, options.z,
+            opts.width, opts.length, sample.tangent);
+    }
+
+    override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+        yield* LillyPadPatchSpawner.ensureLoaded();
+    }
+}
+
+export class LilyPadPatchRule extends Details {
+    private static _instance: LilyPadPatchRule;
+    private static lily_pad_patch_config = new LilyPadPatchSpawnConfig();
+
+    public static get(predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new LilyPadPatchRule();
         return (ctx: EntityGeneratorContext): PatchPlacement | null => {
             const length = 16.0 + Math.random() * 16.0;
             const width = 16.0 + Math.random() * 16.0;
@@ -340,10 +374,31 @@ export class StaticEntityRules {
             };
         }
     }
+}
 
-    private static lily_pad_patch_config = new LilyPadPatchSpawnConfig();
+////////
 
-    public static water_grass() {
+class WaterGrassSpawnConfig extends EntitySpawnConfig {
+    id = EntityIds.WATER_GRASS;
+
+    override spawn(context: PopulationContext, options: EntityPlacement,
+        sample: RiverGeometrySample) {
+        const opts = options as PatchPlacement;
+        WaterGrassSpawner.createEntity(context, options.x, options.z,
+            opts.width, opts.length, sample.tangent);
+    }
+
+    override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+        yield* WaterGrassSpawner.ensureLoaded();
+    }
+}
+
+export class WaterGrassRule extends Details {
+    private static _instance: WaterGrassRule;
+    private static water_grass_config = new WaterGrassSpawnConfig();
+
+    public static get(): EntityGeneratorFn {
+        if (!this._instance) this._instance = new WaterGrassRule();
         return (ctx: EntityGeneratorContext): PatchPlacement | null => {
             const length = 20.0 + Math.random() * 30.0;
             const width = 10.0 + Math.random() * 15.0;
@@ -363,6 +418,4 @@ export class StaticEntityRules {
             };
         }
     }
-
-    private static water_grass_config = new WaterGrassSpawnConfig();
 }

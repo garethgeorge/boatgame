@@ -31,7 +31,7 @@ import { Unicorn } from './obstacles/Unicorn';
 import { Dragonfly } from './obstacles/Dragonfly';
 import { Pterodactyl } from './obstacles/Pterodactyl';
 import { Decorations, DecorationId } from '../world/Decorations';
-import { Habitat, EntityGeneratorContext, EntitySpawnConfig, EntityPlacement, PlacementPredicate, EntityRules } from '../world/biomes/decorations/EntityLayoutRules';
+import { Habitat, EntityGeneratorContext, EntitySpawnConfig, EntityPlacement, PlacementPredicate, EntityRules, EntityGeneratorFn } from '../world/biomes/decorations/EntityLayoutRules';
 
 export interface AnimalPlacement extends EntityPlacement {
     habitat: Habitat;
@@ -93,449 +93,38 @@ export class AnimalSpawnConfig extends EntitySpawnConfig {
     }
 }
 
-class Rules {
-    public alligator(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.alligator.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.alligator_config,
-                heightInWater: Alligator.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: this.behavior_wait_attack(ctx.habitat)
-                }
-            };
-        }
-    }
+class Details {
+    protected static defaultPredicate =
+        EntityRules.all([
+            EntityRules.min_bank_distance(1.0),
+            EntityRules.select({
+                land: EntityRules.slope_in_range(0, 20),
+                water: EntityRules.true()
+            })
+        ]);
 
-    private alligator_config = new AnimalSpawnConfig(EntityIds.ALLIGATOR, Alligator, ['alligator']);
+    protected static landPredicate =
+        EntityRules.all([
+            EntityRules.min_bank_distance(1.0),
+            EntityRules.select({
+                land: EntityRules.slope_in_range(0, 20),
+            })
+        ]);
 
-    public swamp_gator() {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.alligator.radius;
-            if (ctx.habitat !== 'water') return null;
-            if (!(-10 <= ctx.offset && ctx.offset < 10)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.alligator_config,
-                heightInWater: Alligator.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: { type: 'attack', logicName: 'AmbushAttack' }
-                }
-            }
-        };
-    }
+    protected static waterPredicate =
+        EntityRules.all([
+            EntityRules.min_bank_distance(1.0),
+            EntityRules.select({
+                water: EntityRules.true()
+            })
+        ]);
 
-    public hippo(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.hippo.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.hippo_config,
-                heightInWater: Hippo.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: this.behavior_wait_attack(ctx.habitat)
-                }
-            };
-        }
-    }
-
-    private hippo_config = new AnimalSpawnConfig(EntityIds.HIPPO, Hippo, ['hippo']);
-
-    public swan(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.swan.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.swan_config,
-                heightInWater: Swan.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: { type: 'swim' }
-                }
-            };
-        }
-    }
-
-    private swan_config = new AnimalSpawnConfig(EntityIds.SWAN, Swan, ['swan']);
-
-    public unicorn(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.unicorn.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.unicorn_config,
-                heightInWater: 0,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: { type: 'unicorn' }
-                }
-            };
-        }
-    }
-
-    private unicorn_config = new AnimalSpawnConfig(EntityIds.UNICORN, Unicorn, ['unicorn']);
-
-    public bluebird(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.bluebird.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.bluebird_config,
-                heightInWater: 0,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: { type: 'none' }    // ignored
-                }
-            };
-        }
-    }
-
-    private bluebird_config = new AnimalSpawnConfig(EntityIds.BLUEBIRD, Bluebird, ['bluebird']);
-
-    public brown_bear(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.brownBear.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.brown_bear_config,
-                heightInWater: BrownBear.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: this.behavior_wait_attack(ctx.habitat, 'WolfAttack')
-                }
-            };
-        }
-    }
-
-    private brown_bear_config = new AnimalSpawnConfig(EntityIds.BROWN_BEAR, BrownBear, ['brownBear']);
-
-    public polar_bear(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.polarBear.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.polar_bear_config,
-                heightInWater: PolarBear.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: this.behavior_wait_attack(ctx.habitat, 'WolfAttack')
-                }
-            };
-        }
-    }
-
-    private polar_bear_config = new AnimalSpawnConfig(EntityIds.POLAR_BEAR, PolarBear, ['polarBear']);
-
-    public moose(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.moose.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.moose_config,
-                heightInWater: Moose.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: this.behavior_wait_attack(ctx.habitat, 'WolfAttack')
-                }
-            };
-        }
-    }
-
-    private moose_config = new AnimalSpawnConfig(EntityIds.MOOSE, Moose, ['moose']);
-
-    public duckling(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.duckling.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.duckling_config,
-                heightInWater: Duckling.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: { type: 'swim' }
-                }
-            };
-        }
-    }
-
-    private duckling_config = new AnimalSpawnConfig(EntityIds.DUCKLING, Duckling, ['duckling']);
-
-    public penguin_kayak(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.penguinKayak.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.penguin_kayak_config,
-                heightInWater: PenguinKayak.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: { type: 'swim' }
-                }
-            };
-        }
-    }
-
-    private penguin_kayak_config = new AnimalSpawnConfig(EntityIds.PENGUIN_KAYAK, PenguinKayak, ['penguinKayak']);
-
-    public dragonfly(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.dragonfly.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.dragonfly_config,
-                heightInWater: 0,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: { type: 'none' }    // ignored
-                }
-            };
-        }
-    }
-
-    private dragonfly_config = new AnimalSpawnConfig(EntityIds.DRAGONFLY, Dragonfly, ['dragonfly']);
-
-    public trex(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.trex.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.trex_config,
-                heightInWater: TRex.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: this.behavior_wait_attack(ctx.habitat, 'WolfAttack')
-                }
-            };
-        }
-    }
-
-    private trex_config = new AnimalSpawnConfig(EntityIds.TREX, TRex, ['trex']);
-
-    public triceratops(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.triceratops.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.triceratops_config,
-                heightInWater: Triceratops.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: this.behavior_wait_attack(ctx.habitat, 'WolfAttack')
-                }
-            };
-        }
-    }
-
-    private triceratops_config = new AnimalSpawnConfig(EntityIds.TRICERATOPS, Triceratops, ['triceratops']);
-
-    public brontosaurus(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.brontosaurus.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.brontosaurus_config,
-                heightInWater: Brontosaurus.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: this.behavior_wait_attack(ctx.habitat, 'WolfAttack')
-                }
-            };
-        }
-    }
-
-    private brontosaurus_config = new AnimalSpawnConfig(EntityIds.BRONTOSAURUS, Brontosaurus, ['brontosaurus']);
-
-    public pterodactyl(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.pterodactyl.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.pterodactyl_config,
-                heightInWater: 0,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: { type: 'none' }    // ignored
-                }
-            };
-        }
-    }
-
-    private pterodactyl_config = new AnimalSpawnConfig(EntityIds.PTERODACTYL, Pterodactyl, ['pterodactyl']);
-
-    public snake(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.snake.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.snake_config,
-                heightInWater: Snake.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: { type: 'attack', logicName: 'WolfAttack' }
-                }
-            };
-        }
-    }
-
-    private snake_config = new AnimalSpawnConfig(EntityIds.SNAKE, Snake, ['snake']);
-
-    public egret(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.egret.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.egret_config,
-                heightInWater: Egret.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: { type: 'none' }    // ignored
-                }
-            };
-        }
-    }
-
-    private egret_config = new AnimalSpawnConfig(EntityIds.EGRET, Egret, ['egret']);
-
-    public dolphin(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.dolphin.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.dolphin_config,
-                heightInWater: Dolphin.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: { type: 'swim' }
-                }
-            };
-        }
-    }
-
-    private dolphin_config = new AnimalSpawnConfig(EntityIds.DOLPHIN, Dolphin, ['dolphin']);
-
-    public turtle(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.turtle.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.turtle_config,
-                heightInWater: Turtle.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: ctx.habitat === 'land' ? { type: 'wait-swim' } : { type: 'swim' }
-                }
-            };
-        }
-    }
-
-    private turtle_config = new AnimalSpawnConfig(EntityIds.TURTLE, Turtle, ['turtle']);
-
-    public butterfly(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.butterfly.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.butterfly_config,
-                heightInWater: 0,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: { type: 'none' }    // ignored
-                }
-            };
-        }
-    }
-
-    private butterfly_config = new AnimalSpawnConfig(EntityIds.BUTTERFLY, Butterfly, ['butterfly']);
-
-    public gingerman(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.gingerman.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.gingerman_config,
-                heightInWater: GingerMan.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: { type: 'walk-attack', logicName: 'WolfAttack' }
-                }
-            }
-        }
-    }
-
-    private gingerman_config = new AnimalSpawnConfig(EntityIds.GINGERMAN, GingerMan, ['gingerman']);
-
-    public monkey(predicate: PlacementPredicate) {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = EntityMetadata.monkey.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.monkey_config,
-                heightInWater: Monkey.HEIGHT_IN_WATER,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: this.behavior_walk_attack(ctx.habitat),
-                }
-            }
-        }
-    }
-
-    private monkey_config = new AnimalSpawnConfig(EntityIds.MONKEY, Monkey, ['monkey']);
-
-    private aggressiveness(ctx: EntityGeneratorContext): number {
+    protected aggressiveness(ctx: EntityGeneratorContext): number {
         const aggressiveness = Math.min(1.0, ctx.progress * 0.7 + Math.random() * 0.3);
         return aggressiveness;
     }
 
-    private behavior_wait_attack(
+    protected behavior_wait_attack(
         habitat: Habitat,
         logicName?: 'WolfAttack' | 'AmbushAttack'
     ): AnimalBehaviorConfig {
@@ -548,7 +137,7 @@ class Rules {
         }
     }
 
-    private behavior_walk_attack(
+    protected behavior_walk_attack(
         habitat: Habitat,
         logicName?: 'WolfAttack' | 'AmbushAttack'
     ): AnimalBehaviorConfig {
@@ -562,131 +151,524 @@ class Rules {
     }
 }
 
-///////////
+abstract class AnimalRule extends Details {
+    private config: AnimalSpawnConfig;
+    private radius: number;
+    private heightInWater: number;
 
-export class AnimalEntityRules {
-
-    private static defaultPredicate =
-        EntityRules.all([
-            EntityRules.min_bank_distance(1.0),
-            EntityRules.select({
-                land: EntityRules.slope_in_range(0, 20),
-                water: EntityRules.true()
-            })
-        ]);
-
-    private static landPredicate =
-        EntityRules.all([
-            EntityRules.min_bank_distance(1.0),
-            EntityRules.select({
-                land: EntityRules.slope_in_range(0, 20),
-            })
-        ]);
-
-    private static waterPredicate =
-        EntityRules.all([
-            EntityRules.min_bank_distance(1.0),
-            EntityRules.select({
-                water: EntityRules.true()
-            })
-        ]);
-
-    private static rules: Rules = null;
-
-    private static get(): Rules {
-        if (!this.rules) this.rules = new Rules;
-        return this.rules;
+    constructor(config: AnimalSpawnConfig, radius: number, heightInWater: number) {
+        super();
+        this.config = config;
+        this.radius = radius;
+        this.heightInWater = heightInWater;
     }
 
-    public static alligator(predicate: PlacementPredicate = this.defaultPredicate) {
-        return this.get().alligator(predicate);
+    protected abstract behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig;
+
+    public get(predicate: PlacementPredicate): EntityGeneratorFn {
+        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
+            const radius = this.radius;
+            if (predicate !== undefined && !predicate(ctx, radius)) return null;
+            return {
+                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
+                config: this.config,
+                heightInWater: this.heightInWater,
+                options: {
+                    aggressiveness: this.aggressiveness(ctx),
+                    biomeZRange: ctx.biomeZRange,
+                    behavior: this.behavior(ctx)
+                }
+            };
+        }
+    }
+}
+
+export class AlligatorRule extends AnimalRule {
+    private static _instance: AlligatorRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new AlligatorRule;
+        return this._instance.get(predicate);
     }
 
-    public static swamp_gator() {
-        return this.get().swamp_gator();
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.ALLIGATOR, Alligator, ['alligator']),
+            EntityMetadata.alligator.radius,
+            Alligator.HEIGHT_IN_WATER
+        );
     }
 
-    public static hippo(predicate: PlacementPredicate = this.waterPredicate) {
-        return this.get().hippo(predicate);
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return this.behavior_wait_attack(ctx.habitat);
+    }
+}
+
+export class SwampGatorRule extends AnimalRule {
+    private static _instance: SwampGatorRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new SwampGatorRule;
+
+        const finalPredicate = (ctx: EntityGeneratorContext, radius: number) => {
+            if (ctx.habitat != 'water') return false;
+            if (!(-10 <= ctx.offset && ctx.offset < 10)) return false;
+            return predicate(ctx, radius);
+        };
+
+        return this._instance.get(finalPredicate);
     }
 
-    public static swan(predicate: PlacementPredicate = this.waterPredicate) {
-        return this.get().swan(predicate);
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.ALLIGATOR, Alligator, ['alligator']),
+            EntityMetadata.alligator.radius,
+            Alligator.HEIGHT_IN_WATER
+        );
     }
 
-    public static unicorn(predicate: PlacementPredicate = this.landPredicate) {
-        return this.get().unicorn(predicate);
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'attack', logicName: 'AmbushAttack' };
+    }
+}
+
+export class HippoRule extends AnimalRule {
+    private static _instance: HippoRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new HippoRule;
+        return this._instance.get(predicate);
     }
 
-    public static bluebird(predicate: PlacementPredicate = this.landPredicate) {
-        return this.get().bluebird(predicate);
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.HIPPO, Hippo, ['hippo']),
+            EntityMetadata.hippo.radius,
+            Hippo.HEIGHT_IN_WATER
+        );
     }
 
-    public static brown_bear(predicate: PlacementPredicate = this.defaultPredicate) {
-        return this.get().brown_bear(predicate);
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return this.behavior_wait_attack(ctx.habitat);
+    }
+}
+
+export class SwanRule extends AnimalRule {
+    private static _instance: SwanRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new SwanRule;
+        return this._instance.get(predicate);
     }
 
-    public static polar_bear(predicate: PlacementPredicate = this.defaultPredicate) {
-        return this.get().polar_bear(predicate);
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.SWAN, Swan, ['swan']),
+            EntityMetadata.swan.radius,
+            Swan.HEIGHT_IN_WATER
+        );
     }
 
-    public static moose(predicate: PlacementPredicate = this.defaultPredicate) {
-        return this.get().moose(predicate);
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'swim' };
+    }
+}
+
+export class UnicornRule extends AnimalRule {
+    private static _instance: UnicornRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.landPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new UnicornRule;
+        return this._instance.get(predicate);
     }
 
-    public static duckling(predicate: PlacementPredicate = this.waterPredicate) {
-        return this.get().duckling(predicate);
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.UNICORN, Unicorn, ['unicorn']),
+            EntityMetadata.unicorn.radius,
+            0
+        );
     }
 
-    public static penguin_kayak(predicate: PlacementPredicate = this.waterPredicate) {
-        return this.get().penguin_kayak(predicate);
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'unicorn' };
+    }
+}
+
+export class BluebirdRule extends AnimalRule {
+    private static _instance: BluebirdRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.landPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new BluebirdRule;
+        return this._instance.get(predicate);
     }
 
-    public static dragonfly(predicate: PlacementPredicate = this.waterPredicate) {
-        return this.get().dragonfly(predicate);
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.BLUEBIRD, Bluebird, ['bluebird']),
+            EntityMetadata.bluebird.radius,
+            0
+        );
     }
 
-    public static trex(predicate: PlacementPredicate = this.defaultPredicate) {
-        return this.get().trex(predicate);
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'none' }; // ignored
+    }
+}
+
+export class BrownBearRule extends AnimalRule {
+    private static _instance: BrownBearRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new BrownBearRule;
+        return this._instance.get(predicate);
     }
 
-    public static triceratops(predicate: PlacementPredicate = this.defaultPredicate) {
-        return this.get().triceratops(predicate);
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.BROWN_BEAR, BrownBear, ['brownBear']),
+            EntityMetadata.brownBear.radius,
+            BrownBear.HEIGHT_IN_WATER
+        );
     }
 
-    public static brontosaurus(predicate: PlacementPredicate = this.defaultPredicate) {
-        return this.get().brontosaurus(predicate);
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
+    }
+}
+
+export class PolarBearRule extends AnimalRule {
+    private static _instance: PolarBearRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new PolarBearRule;
+        return this._instance.get(predicate);
     }
 
-    public static pterodactyl(predicate: PlacementPredicate = this.defaultPredicate) {
-        return this.get().pterodactyl(predicate);
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.POLAR_BEAR, PolarBear, ['polarBear']),
+            EntityMetadata.polarBear.radius,
+            PolarBear.HEIGHT_IN_WATER
+        );
     }
 
-    public static snake(predicate: PlacementPredicate = this.waterPredicate) {
-        return this.get().snake(predicate);
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
+    }
+}
+
+export class MooseRule extends AnimalRule {
+    private static _instance: MooseRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new MooseRule;
+        return this._instance.get(predicate);
     }
 
-    public static egret(predicate: PlacementPredicate = this.waterPredicate) {
-        return this.get().egret(predicate);
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.MOOSE, Moose, ['moose']),
+            EntityMetadata.moose.radius,
+            Moose.HEIGHT_IN_WATER
+        );
     }
 
-    public static dolphin(predicate: PlacementPredicate = this.waterPredicate) {
-        return this.get().dolphin(predicate);
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
+    }
+}
+
+export class DucklingRule extends AnimalRule {
+    private static _instance: DucklingRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new DucklingRule;
+        return this._instance.get(predicate);
     }
 
-    public static turtle(predicate: PlacementPredicate = this.defaultPredicate) {
-        return this.get().turtle(predicate);
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.DUCKLING, Duckling, ['duckling']),
+            EntityMetadata.duckling.radius,
+            Duckling.HEIGHT_IN_WATER
+        );
     }
 
-    public static butterfly(predicate: PlacementPredicate = this.landPredicate) {
-        return this.get().butterfly(predicate);
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'swim' };
+    }
+}
+
+export class PenguinKayakRule extends AnimalRule {
+    private static _instance: PenguinKayakRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new PenguinKayakRule;
+        return this._instance.get(predicate);
     }
 
-    public static gingerman(predicate: PlacementPredicate = this.defaultPredicate) {
-        return this.get().gingerman(predicate);
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.PENGUIN_KAYAK, PenguinKayak, ['penguinKayak']),
+            EntityMetadata.penguinKayak.radius,
+            PenguinKayak.HEIGHT_IN_WATER
+        );
     }
 
-    public static monkey(predicate: PlacementPredicate = this.defaultPredicate) {
-        return this.get().monkey(predicate);
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'swim' };
+    }
+}
+
+export class DragonflyRule extends AnimalRule {
+    private static _instance: DragonflyRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new DragonflyRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.DRAGONFLY, Dragonfly, ['dragonfly']),
+            EntityMetadata.dragonfly.radius,
+            0
+        );
+    }
+
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'none' }; // ignored
+    }
+}
+
+export class TRexRule extends AnimalRule {
+    private static _instance: TRexRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new TRexRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.TREX, TRex, ['trex']),
+            EntityMetadata.trex.radius,
+            TRex.HEIGHT_IN_WATER
+        );
+    }
+
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
+    }
+}
+
+export class TriceratopsRule extends AnimalRule {
+    private static _instance: TriceratopsRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new TriceratopsRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.TRICERATOPS, Triceratops, ['triceratops']),
+            EntityMetadata.triceratops.radius,
+            Triceratops.HEIGHT_IN_WATER
+        );
+    }
+
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
+    }
+}
+
+export class BrontosaurusRule extends AnimalRule {
+    private static _instance: BrontosaurusRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new BrontosaurusRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.BRONTOSAURUS, Brontosaurus, ['brontosaurus']),
+            EntityMetadata.brontosaurus.radius,
+            Brontosaurus.HEIGHT_IN_WATER
+        );
+    }
+
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
+    }
+}
+
+export class PterodactylRule extends AnimalRule {
+    private static _instance: PterodactylRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new PterodactylRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.PTERODACTYL, Pterodactyl, ['pterodactyl']),
+            EntityMetadata.pterodactyl.radius,
+            0
+        );
+    }
+
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'none' }; // ignored
+    }
+}
+
+export class SnakeRule extends AnimalRule {
+    private static _instance: SnakeRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new SnakeRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.SNAKE, Snake, ['snake']),
+            EntityMetadata.snake.radius,
+            Snake.HEIGHT_IN_WATER
+        );
+    }
+
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'attack', logicName: 'WolfAttack' };
+    }
+}
+
+export class EgretRule extends AnimalRule {
+    private static _instance: EgretRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new EgretRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.EGRET, Egret, ['egret']),
+            EntityMetadata.egret.radius,
+            Egret.HEIGHT_IN_WATER
+        );
+    }
+
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'none' }; // ignored
+    }
+}
+
+export class DolphinRule extends AnimalRule {
+    private static _instance: DolphinRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new DolphinRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.DOLPHIN, Dolphin, ['dolphin']),
+            EntityMetadata.dolphin.radius,
+            Dolphin.HEIGHT_IN_WATER
+        );
+    }
+
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'swim' };
+    }
+}
+
+export class TurtleRule extends AnimalRule {
+    private static _instance: TurtleRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new TurtleRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.TURTLE, Turtle, ['turtle']),
+            EntityMetadata.turtle.radius,
+            Turtle.HEIGHT_IN_WATER
+        );
+    }
+
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return ctx.habitat === 'land' ? { type: 'wait-swim' } : { type: 'swim' };
+    }
+}
+
+export class ButterflyRule extends AnimalRule {
+    private static _instance: ButterflyRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.landPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new ButterflyRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.BUTTERFLY, Butterfly, ['butterfly']),
+            EntityMetadata.butterfly.radius,
+            0
+        );
+    }
+
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'none' }; // ignored
+    }
+}
+
+export class GingerManRule extends AnimalRule {
+    private static _instance: GingerManRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new GingerManRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.GINGERMAN, GingerMan, ['gingerman']),
+            EntityMetadata.gingerman.radius,
+            GingerMan.HEIGHT_IN_WATER
+        );
+    }
+
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'walk-attack', logicName: 'WolfAttack' };
+    }
+}
+
+export class MonkeyRule extends AnimalRule {
+    private static _instance: MonkeyRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new MonkeyRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.MONKEY, Monkey, ['monkey']),
+            EntityMetadata.monkey.radius,
+            Monkey.HEIGHT_IN_WATER
+        );
+    }
+
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return this.behavior_walk_attack(ctx.habitat);
     }
 }
