@@ -567,6 +567,10 @@ export class MangroveParams {
     }
 }
 
+export interface UmbrellaWithChairsOptions extends CommonDecorationOptions {
+    numChairs: number;
+}
+
 export class PropParams {
     public static beach_chair() {
         return (ctx: WorldContext) => {
@@ -604,6 +608,24 @@ export class PropParams {
         };
     }
 
+    public static umbrella_with_chairs(numChairs: number) {
+        return (ctx: WorldContext) => {
+            const scale = 3.0;
+            const chairRadius = DecorationMetadata.beachChair.groundRadius;
+            return {
+                groundRadius: 2 * chairRadius * scale,
+                options: {
+                    place: PropParams.place_umbrella_with_chairs,
+                    ensureLoaded: () => Decorations.ensureAllLoaded(['beachUmbrella', 'beachChair']),
+                    kind: 'umbrellaWithChairs',
+                    numChairs,
+                    scale,
+                    rotation: 0
+                } as UmbrellaWithChairsOptions
+            };
+        };
+    }
+
     public static place(
         ctx: DecorationContext,
         pos: { worldX: number, worldZ: number, height: number },
@@ -622,16 +644,7 @@ export class PropParams {
         pos: { worldX: number, worldZ: number, height: number },
         options: DecorationOptions) {
         const opts = options as CommonDecorationOptions;
-
-        const riverSystem = RiverSystem.getInstance();
-        const closest = riverSystem.getClosestCenterPoint({ x: pos.worldX, z: pos.worldZ });
-
-        // Vector from the chair to the closest river center point
-        const vx = closest.x - pos.worldX;
-        const vz = closest.z - pos.worldZ;
-
-        // Assumes the model faces +z
-        const rotation = Math.PI / 2 - Math.atan2(vz, vx);
+        const rotation = PropParams.calculateShoreRotation(pos);
 
         let model: THREE.Object3D | undefined;
         switch (options.kind) {
@@ -639,5 +652,64 @@ export class PropParams {
             case 'beachUmbrella': model = Decorations.getBeachUmbrella()?.model; break;
         }
         if (model) ctx.tryPlaceObject(model, opts.kind, pos, opts.scale, rotation);
+    }
+
+    public static place_umbrella_with_chairs(
+        ctx: DecorationContext,
+        pos: { worldX: number, worldZ: number, height: number },
+        options: DecorationOptions) {
+        const opts = options as UmbrellaWithChairsOptions;
+
+        // 1. Place Umbrella at center
+        const umbrellaModel = Decorations.getBeachUmbrella()?.model;
+        if (umbrellaModel) {
+            // Umbrella rotation can be random
+            const umbrellaScale = opts.scale * 1.5;
+            const umbrellaRot = Math.random() * Math.PI * 2;
+            ctx.tryPlaceObject(umbrellaModel, 'beachUmbrella', pos, umbrellaScale, umbrellaRot);
+        }
+
+        // 2. Calculate shore rotation for chairs
+        const shoreRot = PropParams.calculateShoreRotation(pos);
+
+        // 3. Determine chair positions
+        const chairModel = Decorations.getBeachChair()?.model;
+        if (chairModel) {
+            const chairScale = opts.scale;
+            const chairRadius = DecorationMetadata.beachChair.groundRadius;
+            const offsetDist = chairRadius * chairScale;
+
+            const dx = Math.cos(shoreRot) * offsetDist;
+            const dz = -Math.sin(shoreRot) * offsetDist;
+
+            const placeChair = (isLeft: boolean) => {
+                const side = isLeft ? -1 : 1;
+                const chairPos = {
+                    worldX: pos.worldX + dx * side,
+                    worldZ: pos.worldZ + dz * side,
+                    height: pos.height
+                };
+                ctx.tryPlaceObject(chairModel, 'beachChair', chairPos, chairScale, shoreRot);
+            }
+
+            if (opts.numChairs === 1) {
+                placeChair(Math.random() > 0.5);
+            } else if (opts.numChairs >= 2) {
+                placeChair(true);
+                placeChair(false);
+            }
+        }
+    }
+
+    public static calculateShoreRotation(pos: { worldX: number, worldZ: number }) {
+        const riverSystem = RiverSystem.getInstance();
+        const closest = riverSystem.getClosestCenterPoint({ x: pos.worldX, z: pos.worldZ });
+
+        // Vector from the point to the closest river center point
+        const vx = closest.x - pos.worldX;
+        const vz = closest.z - pos.worldZ;
+
+        // Assumes the model faces +z
+        return Math.PI / 2 - Math.atan2(vz, vx);
     }
 }

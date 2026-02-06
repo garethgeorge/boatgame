@@ -6,7 +6,7 @@ import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from '../layout/B
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
-import { TierRule } from '../decorators/PoissonDecorationRules';
+import { Select, TierRule } from '../decorators/PoissonDecorationRules';
 import { Fitness, PropParams, RockParams, TreeParams } from '../decorations/DecorationRules';
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../../core/SimplexNoise';
@@ -104,7 +104,11 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                             slope: [0, 10],
                             stepNoise: { scale: 20, threshold: 0.7 }
                         }),
-                        params: PropParams.beach_chair()
+                        params: Select.choose([
+                            PropParams.beach_chair(),
+                            PropParams.umbrella_with_chairs(1),
+                            PropParams.umbrella_with_chairs(2)
+                        ])
                     }
                 ]
             }),

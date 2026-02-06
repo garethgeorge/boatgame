@@ -91,17 +91,27 @@ export const Combine = {
         Math.max(...fns.map(f => f(ctx))),
 };
 
+export type SpeciesGeneratorFn = (ctx: WorldContext) => {
+    groundRadius: number,
+    canopyRadius?: number,
+    spacing?: number,
+    options: any
+};
+
+export const Select = {
+    choose: (species: SpeciesGeneratorFn[]) => {
+        return (ctx: WorldContext) => {
+            return species[Math.floor(Math.random() * species.length)](ctx);
+        };
+    }
+};
+
 export interface Species {
     id: string;
     // This defines BOTH where it can live and its selection probability
     preference: (ctx: WorldContext) => number;
     // Return placement manifest for an instance
-    params: (ctx: WorldContext) => {
-        groundRadius: number,
-        canopyRadius?: number,
-        spacing?: number,
-        options: any
-    };
+    params: SpeciesGeneratorFn;
 }
 
 // A "Tier" groups similarly sized species
