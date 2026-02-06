@@ -50,40 +50,49 @@ export class LSystemFlowerFactory implements DecorationFactory {
     });
 
     private archetypes: Map<LSystemFlowerKind, FlowerArchetype[]> = new Map();
+    private loadingPromise: Promise<void> | null = null;
 
     async load(): Promise<void> {
-        GraphicsUtils.registerObject(LSystemFlowerFactory.stalkMaterial);
-        GraphicsUtils.registerObject(LSystemFlowerFactory.petalMaterial);
+        if (this.archetypes.size > 0) return Promise.resolve();
+        if (this.loadingPromise) return this.loadingPromise;
 
-        const plantGen = new ProceduralPlant();
+        this.loadingPromise = (async () => {
+            GraphicsUtils.registerObject(LSystemFlowerFactory.stalkMaterial);
+            GraphicsUtils.registerObject(LSystemFlowerFactory.petalMaterial);
 
-        for (const kind of Object.keys(ARCHETYPES) as LSystemFlowerKind[]) {
-            const params = ARCHETYPES[kind];
-            const list: FlowerArchetype[] = [];
-            let totalTriangles = 0;
+            const plantGen = new ProceduralPlant();
 
-            for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
-                plantGen.generate(params);
-                const variation = i / (NUM_DECORATION_ARCHETYPES || 10);
-                const result = LSystemPlantBuilder.build(`LSystemFlower_${kind}_${variation}`, plantGen, { kind: 'rectangle' });
+            for (const kind of Object.keys(ARCHETYPES) as LSystemFlowerKind[]) {
+                const params = ARCHETYPES[kind];
+                const list: FlowerArchetype[] = [];
+                let totalTriangles = 0;
 
-                const archetype: FlowerArchetype = {
-                    stalkGeo: result.primaryGeo,
-                    stalkColor: params.visuals.stalkColor,
-                    secondaryGeo: result.secondaryGeo,
-                    petalColor: params.visuals.petalColor,
-                    tertiaryGeo: result.tertiaryGeo,
-                    centerColor: params.visuals.centerColor,
-                    kind,
-                    variation
-                };
+                for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
+                    plantGen.generate(params);
+                    const variation = i / (NUM_DECORATION_ARCHETYPES || 10);
+                    const result = LSystemPlantBuilder.build(`LSystemFlower_${kind}_${variation}`, plantGen, { kind: 'rectangle' });
 
-                list.push(archetype);
-                totalTriangles += this.getTriangleCount(archetype.stalkGeo) + this.getTriangleCount(archetype.secondaryGeo);
+                    const archetype: FlowerArchetype = {
+                        stalkGeo: result.primaryGeo,
+                        stalkColor: params.visuals.stalkColor,
+                        secondaryGeo: result.secondaryGeo,
+                        petalColor: params.visuals.petalColor,
+                        tertiaryGeo: result.tertiaryGeo,
+                        centerColor: params.visuals.centerColor,
+                        kind,
+                        variation
+                    };
+
+                    list.push(archetype);
+                    totalTriangles += this.getTriangleCount(archetype.stalkGeo) + this.getTriangleCount(archetype.secondaryGeo);
+                }
+                this.archetypes.set(kind, list);
+                console.log(`[FLOWER:${kind.toUpperCase()}] Avg Triangles: ${Math.round(totalTriangles / (NUM_DECORATION_ARCHETYPES || 10))}`);
             }
-            this.archetypes.set(kind, list);
-            console.log(`[FLOWER:${kind.toUpperCase()}] Avg Triangles: ${Math.round(totalTriangles / (NUM_DECORATION_ARCHETYPES || 10))}`);
-        }
+            this.loadingPromise = null;
+        })();
+
+        return this.loadingPromise;
     }
 
     private getTriangleCount(geo: THREE.BufferGeometry): number {

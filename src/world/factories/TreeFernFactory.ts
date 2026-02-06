@@ -13,23 +13,25 @@ export class TreeFernFactory implements DecorationFactory {
     private static readonly frondMaterial = new THREE.MeshToonMaterial({ color: 0x4a7023, name: 'TreeFern - Frond Material' }); // Fern Green
 
     private archetypes: TreeFernArchetype[] = [];
+    private loadingPromise: Promise<void> | null = null;
 
     async load(): Promise<void> {
-        // Register static materials
-        GraphicsUtils.registerObject(TreeFernFactory.trunkMaterial);
-        GraphicsUtils.registerObject(TreeFernFactory.frondMaterial);
+        if (this.archetypes.length > 0) return Promise.resolve();
+        if (this.loadingPromise) return this.loadingPromise;
 
-        // Clear existing archetypes
-        this.archetypes.forEach(a => {
-            GraphicsUtils.disposeObject(a.trunkGeo);
-            GraphicsUtils.disposeObject(a.frondGeo);
-        });
-        this.archetypes = [];
+        this.loadingPromise = (async () => {
+            // Register static materials
+            GraphicsUtils.registerObject(TreeFernFactory.trunkMaterial);
+            GraphicsUtils.registerObject(TreeFernFactory.frondMaterial);
 
-        console.log("Generating Tree Fern Archetypes...");
-        for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
-            this.archetypes.push(this.generateArchetype());
-        }
+            console.log("Generating Tree Fern Archetypes...");
+            for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
+                this.archetypes.push(this.generateArchetype());
+            }
+            this.loadingPromise = null;
+        })();
+
+        return this.loadingPromise;
     }
 
     createInstance(): DecorationInstance[] {

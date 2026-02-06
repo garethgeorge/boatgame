@@ -336,7 +336,13 @@ export class TreeParams {
             return {
                 groundRadius: meta.groundRadius * scale,
                 canopyRadius: meta.canopyRadius * scale,
-                options: { place: TreeParams.place, ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-tree']), kind: 'palm', rotation: ctx.random() * Math.PI * 2, scale } as TreeDecorationOptions
+                options: {
+                    place: TreeParams.place,
+                    ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-tree']),
+                    kind: 'palm',
+                    rotation: ctx.random() * Math.PI * 2,
+                    scale
+                } as TreeDecorationOptions
             };
         };
     }

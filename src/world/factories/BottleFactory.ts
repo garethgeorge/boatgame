@@ -5,23 +5,33 @@ import { GraphicsUtils } from '../../core/GraphicsUtils';
 export class BottleFactory implements DecorationFactory {
     private cache: Map<number, THREE.Group> = new Map();
     private animations: THREE.AnimationClip[] = [];
+    private loadingPromise: Promise<void> | null = null;
 
     async load(): Promise<void> {
-        // Pre-generate bottles (Green and Blue)
-        const greenBottle = this.createBottleMesh(0x88FF88);
-        const blueBottle = this.createBottleMesh(0x0088FF);
+        if (this.cache.size > 0) return Promise.resolve();
+        if (this.loadingPromise) return this.loadingPromise;
 
-        this.cache.set(0x88FF88, greenBottle);
-        this.cache.set(0x0088FF, blueBottle);
+        this.loadingPromise = (async () => {
+            // Pre-generate bottles (Green and Blue)
+            const greenBottle = this.createBottleMesh(0x88FF88);
+            const blueBottle = this.createBottleMesh(0x0088FF);
 
-        // Pin cache entries
-        GraphicsUtils.markAsCache(greenBottle);
-        GraphicsUtils.markAsCache(blueBottle);
+            this.cache.set(0x88FF88, greenBottle);
+            this.cache.set(0x0088FF, blueBottle);
 
-        this.animations.push(this.createFadeAnimation());
-        this.animations.push(this.createDropAnimation());
-        this.animations.push(this.createArcAnimation(-1));
-        this.animations.push(this.createArcAnimation(1));
+            // Pin cache entries
+            GraphicsUtils.markAsCache(greenBottle);
+            GraphicsUtils.markAsCache(blueBottle);
+
+            this.animations.push(this.createFadeAnimation());
+            this.animations.push(this.createDropAnimation());
+            this.animations.push(this.createArcAnimation(-1));
+            this.animations.push(this.createArcAnimation(1));
+
+            this.loadingPromise = null;
+        })();
+
+        return this.loadingPromise;
     }
 
     create(color: number): THREE.Group {

@@ -29,27 +29,32 @@ export class RockFactory implements DecorationFactory {
     }
 
     private archetypes: RockArchetype[] = [];
+    private loadingPromise: Promise<void> | null = null;
 
     async load(): Promise<void> {
-        // Retain static materials
-        GraphicsUtils.registerObject(RockFactory.rockMaterialDesert);
-        GraphicsUtils.registerObject(RockFactory.rockMaterialForest);
-        GraphicsUtils.registerObject(RockFactory.rockMaterialSwamp);
-        GraphicsUtils.registerObject(RockFactory.iceRockMaterial);
+        if (this.archetypes.length > 0) return Promise.resolve();
+        if (this.loadingPromise) return this.loadingPromise;
 
-        // Clear existing archetypes
-        this.archetypes.forEach(a => GraphicsUtils.disposeObject(a.geometry));
-        this.archetypes = [];
+        this.loadingPromise = (async () => {
+            // Retain static materials
+            GraphicsUtils.registerObject(RockFactory.rockMaterialDesert);
+            GraphicsUtils.registerObject(RockFactory.rockMaterialForest);
+            GraphicsUtils.registerObject(RockFactory.rockMaterialSwamp);
+            GraphicsUtils.registerObject(RockFactory.iceRockMaterial);
 
-        console.log("Generating Rock Archetypes...");
-        // Generate Standard Rocks
-        for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
-            this.archetypes.push(this.generateArchetype(false));
-        }
-        // Generate Icy Rocks
-        for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
-            this.archetypes.push(this.generateArchetype(true));
-        }
+            console.log("Generating Rock Archetypes...");
+            // Generate Standard Rocks
+            for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
+                this.archetypes.push(this.generateArchetype(false));
+            }
+            // Generate Icy Rocks
+            for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
+                this.archetypes.push(this.generateArchetype(true));
+            }
+            this.loadingPromise = null;
+        })();
+
+        return this.loadingPromise;
     }
 
     createInstance(options: { size?: number, biome?: string } = {}): DecorationInstance[] {

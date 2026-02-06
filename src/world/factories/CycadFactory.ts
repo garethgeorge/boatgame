@@ -15,26 +15,27 @@ export class CycadFactory implements DecorationFactory {
     private static readonly coneMaterial = new THREE.MeshToonMaterial({ color: 0xCD853F, name: 'Cycad - Cone Material' }); // Peru (brownish orange)
 
     private archetypes: CycadArchetype[] = [];
+    private loadingPromise: Promise<void> | null = null;
 
     async load(): Promise<void> {
-        // Register static materials
-        GraphicsUtils.registerObject(CycadFactory.trunkMaterial);
-        GraphicsUtils.registerObject(CycadFactory.frondMaterial);
-        GraphicsUtils.registerObject(CycadFactory.coneMaterial);
+        if (this.archetypes.length > 0) return Promise.resolve();
+        if (this.loadingPromise) return this.loadingPromise;
 
-        // Clear existing archetypes
-        this.archetypes.forEach(a => {
-            GraphicsUtils.disposeObject(a.trunkGeo);
-            GraphicsUtils.disposeObject(a.frondGeo);
-            if (a.coneGeo) GraphicsUtils.disposeObject(a.coneGeo);
-        });
-        this.archetypes = [];
+        this.loadingPromise = (async () => {
+            // Register static materials
+            GraphicsUtils.registerObject(CycadFactory.trunkMaterial);
+            GraphicsUtils.registerObject(CycadFactory.frondMaterial);
+            GraphicsUtils.registerObject(CycadFactory.coneMaterial);
 
-        // Pre-generate cycad archetypes
-        console.log("Generating Cycad Archetypes...");
-        for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
-            this.archetypes.push(this.generateArchetype());
-        }
+            // Pre-generate cycad archetypes
+            console.log("Generating Cycad Archetypes...");
+            for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
+                this.archetypes.push(this.generateArchetype());
+            }
+            this.loadingPromise = null;
+        })();
+
+        return this.loadingPromise;
     }
 
     createInstance(): DecorationInstance[] {

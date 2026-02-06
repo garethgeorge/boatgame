@@ -7,6 +7,7 @@ import { GraphicsUtils } from '../../core/GraphicsUtils';
 export class MangroveFactory implements DecorationFactory {
   private cache: THREE.Group[] = [];
   private readonly CACHE_SIZE = 20;
+  private loadingPromise: Promise<void> | null = null;
 
   // Materials
   private trunkMaterial = new THREE.MeshToonMaterial({ color: 0x5D5346, name: 'Mangrove - Trunk Material' }); // Darker swamp wood
@@ -20,12 +21,18 @@ export class MangroveFactory implements DecorationFactory {
   });
 
   async load(): Promise<void> {
-    GraphicsUtils.registerObject(this.trunkMaterial);
-    GraphicsUtils.registerObject(this.leafMaterial);
+    if (this.cache.length > 0) return Promise.resolve();
+    if (this.loadingPromise) return this.loadingPromise;
 
-    if (this.cache.length === 0) {
+    this.loadingPromise = (async () => {
+      GraphicsUtils.registerObject(this.trunkMaterial);
+      GraphicsUtils.registerObject(this.leafMaterial);
+
       this.generateCache();
-    }
+      this.loadingPromise = null;
+    })();
+
+    return this.loadingPromise;
   }
 
   create(options: { scale?: number } = {}): THREE.Group {

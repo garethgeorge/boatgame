@@ -50,53 +50,62 @@ export class LSystemTreeFactory implements DecorationFactory {
     });
 
     private archetypes: Map<LSystemTreeKind, TreeArchetype[]> = new Map();
+    private loadingPromise: Promise<void> | null = null;
 
     async load(): Promise<void> {
-        GraphicsUtils.registerObject(LSystemTreeFactory.woodMaterial);
-        GraphicsUtils.registerObject(LSystemTreeFactory.leafMaterial);
+        if (this.archetypes.size > 0) return Promise.resolve();
+        if (this.loadingPromise) return this.loadingPromise;
 
-        const treeGen = new ProceduralPlant();
+        this.loadingPromise = (async () => {
+            GraphicsUtils.registerObject(LSystemTreeFactory.woodMaterial);
+            GraphicsUtils.registerObject(LSystemTreeFactory.leafMaterial);
 
-        console.log("--- Tree Archetype Triangle Counts ---");
-        for (const kind of Object.keys(ARCHETYPES) as LSystemTreeKind[]) {
-            const params = ARCHETYPES[kind];
-            const list: TreeArchetype[] = [];
-            let totalTriangles = 0;
-            let minTriangles = Infinity;
-            let maxTriangles = -Infinity;
+            const treeGen = new ProceduralPlant();
 
-            for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
-                treeGen.generate(params);
-                const variation = i / (NUM_DECORATION_ARCHETYPES || 10);
-                const result = LSystemPlantBuilder.build(
-                    `LSystemTree_${kind}_${variation}`,
-                    treeGen,
-                    params.visuals.leafKind
-                );
+            console.log("--- Tree Archetype Triangle Counts ---");
+            for (const kind of Object.keys(ARCHETYPES) as LSystemTreeKind[]) {
+                const params = ARCHETYPES[kind];
+                const list: TreeArchetype[] = [];
+                let totalTriangles = 0;
+                let minTriangles = Infinity;
+                let maxTriangles = -Infinity;
 
-                const archetype: TreeArchetype = {
-                    woodGeo: result.primaryGeo,
-                    woodColor: params.visuals.woodColor,
-                    leafGeo: result.secondaryGeo,
-                    leafColor: params.visuals.leafColor,
-                    kind,
-                    variation,
-                    canCullLeaves: result.canCullSecondary ?? true
-                };
+                for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
+                    treeGen.generate(params);
+                    const variation = i / (NUM_DECORATION_ARCHETYPES || 10);
+                    const result = LSystemPlantBuilder.build(
+                        `LSystemTree_${kind}_${variation}`,
+                        treeGen,
+                        params.visuals.leafKind
+                    );
 
-                list.push(archetype);
+                    const archetype: TreeArchetype = {
+                        woodGeo: result.primaryGeo,
+                        woodColor: params.visuals.woodColor,
+                        leafGeo: result.secondaryGeo,
+                        leafColor: params.visuals.leafColor,
+                        kind,
+                        variation,
+                        canCullLeaves: result.canCullSecondary ?? true
+                    };
 
-                const triCount = this.getTriangleCount(archetype.woodGeo) + this.getTriangleCount(archetype.leafGeo);
-                totalTriangles += triCount;
-                minTriangles = Math.min(minTriangles, triCount);
-                maxTriangles = Math.max(maxTriangles, triCount);
+                    list.push(archetype);
+
+                    const triCount = this.getTriangleCount(archetype.woodGeo) + this.getTriangleCount(archetype.leafGeo);
+                    totalTriangles += triCount;
+                    minTriangles = Math.min(minTriangles, triCount);
+                    maxTriangles = Math.max(maxTriangles, triCount);
+                }
+                this.archetypes.set(kind, list);
+
+                const avg = totalTriangles / (NUM_DECORATION_ARCHETYPES || 10);
+                console.log(`[${kind.toUpperCase()}] Avg: ${avg.toFixed(0)}, Min: ${minTriangles}, Max: ${maxTriangles}`);
             }
-            this.archetypes.set(kind, list);
+            console.log("---------------------------------------");
+            this.loadingPromise = null;
+        })();
 
-            const avg = totalTriangles / (NUM_DECORATION_ARCHETYPES || 10);
-            console.log(`[${kind.toUpperCase()}] Avg: ${avg.toFixed(0)}, Min: ${minTriangles}, Max: ${maxTriangles}`);
-        }
-        console.log("---------------------------------------");
+        return this.loadingPromise;
     }
 
     private getTriangleCount(geo: THREE.BufferGeometry): number {

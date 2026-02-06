@@ -11,19 +11,24 @@ export class CactusFactory implements DecorationFactory {
     private static readonly cactusMaterial = new THREE.MeshToonMaterial({ color: 0x6B8E23, name: 'Cactus - Material' }); // Olive Drab
 
     private archetypes: CactusArchetype[] = [];
+    private loadingPromise: Promise<void> | null = null;
 
     async load(): Promise<void> {
-        // Register material
-        GraphicsUtils.registerObject(CactusFactory.cactusMaterial);
+        if (this.archetypes.length > 0) return Promise.resolve();
+        if (this.loadingPromise) return this.loadingPromise;
 
-        // Clear existing archetypes
-        this.archetypes.forEach(a => GraphicsUtils.disposeObject(a.cactusGeo));
-        this.archetypes = [];
+        this.loadingPromise = (async () => {
+            // Register material
+            GraphicsUtils.registerObject(CactusFactory.cactusMaterial);
 
-        console.log("Generating Cactus Archetypes...");
-        for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
-            this.archetypes.push(this.generateArchetype());
-        }
+            console.log("Generating Cactus Archetypes...");
+            for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
+                this.archetypes.push(this.generateArchetype());
+            }
+            this.loadingPromise = null;
+        })();
+
+        return this.loadingPromise;
     }
 
     createInstance(): DecorationInstance[] {

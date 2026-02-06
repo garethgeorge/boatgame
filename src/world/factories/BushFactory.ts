@@ -13,25 +13,30 @@ export class BushFactory implements DecorationFactory {
     private static readonly greenBushMaterial = new THREE.MeshToonMaterial({ color: 0x32CD32, name: 'Bush - Green Material', side: THREE.DoubleSide }); // Lime Green
 
     private archetypes: BushArchetype[] = [];
+    private loadingPromise: Promise<void> | null = null;
 
     async load(): Promise<void> {
-        // Retain static materials
-        GraphicsUtils.registerObject(BushFactory.dryBushMaterial);
-        GraphicsUtils.registerObject(BushFactory.greenBushMaterial);
+        if (this.archetypes.length > 0) return Promise.resolve();
+        if (this.loadingPromise) return this.loadingPromise;
 
-        // Clear existing archetypes
-        this.archetypes.forEach(a => GraphicsUtils.disposeObject(a.geometry));
-        this.archetypes = [];
+        this.loadingPromise = (async () => {
+            // Retain static materials
+            GraphicsUtils.registerObject(BushFactory.dryBushMaterial);
+            GraphicsUtils.registerObject(BushFactory.greenBushMaterial);
 
-        console.log("Generating Bush Archetypes...");
-        // Generate Wet Bushes (Ferns)
-        for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
-            this.archetypes.push(this.generateArchetype(true));
-        }
-        // Generate Dry Bushes (Dead)
-        for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
-            this.archetypes.push(this.generateArchetype(false));
-        }
+            console.log("Generating Bush Archetypes...");
+            // Generate Wet Bushes (Ferns)
+            for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
+                this.archetypes.push(this.generateArchetype(true));
+            }
+            // Generate Dry Bushes (Dead)
+            for (let i = 0; i < NUM_DECORATION_ARCHETYPES; i++) {
+                this.archetypes.push(this.generateArchetype(false));
+            }
+            this.loadingPromise = null;
+        })();
+
+        return this.loadingPromise;
     }
 
     createInstance(wetness: number = 0.5): DecorationInstance[] {
