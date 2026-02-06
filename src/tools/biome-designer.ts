@@ -14,7 +14,7 @@ import { TierRule, Combine, Signal } from '../world/decorators/PoissonDecoration
 import {
     Fitness, RockParams, TreeParams, FlowerParams,
     PlantParams, MangroveParams, PropParams
-} from '../world/decorations/DecoRules.js';
+} from '../world/decorations/DecorationRules.js';
 
 class BiomeDesigner {
     private engine: GameEngine;

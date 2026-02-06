@@ -11,12 +11,15 @@ export class BiomeDecorationHelper {
      * copies of the geometry from the object.
      */
     public positionAndCollectGeometry(
+        context: PopulationContext,
         object: THREE.Object3D,
         position: { worldX: number; height: number; worldZ: number },
-        context: PopulationContext
+        scale: number,
+        rotation: number
     ): void {
         object.position.set(position.worldX, position.height, position.worldZ);
-        object.rotation.y = Math.random() * Math.PI * 2;
+        object.scale.set(scale, scale, scale);
+        object.rotation.y = rotation;
         object.updateMatrixWorld(true);
 
         // Collect geometries for merging. The cloned geometries

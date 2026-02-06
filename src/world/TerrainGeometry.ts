@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { SimplexNoise } from '../core/SimplexNoise';
 import { RiverSystem } from './RiverSystem';
-import { MathUtils } from '../core/MathUtils';
+import { CoreMath } from '../core/CoreMath';
 
 export class TerrainGeometry {
     private noise: SimplexNoise;
@@ -103,7 +103,7 @@ export class TerrainGeometry {
         // 2. Blend Land and River
         // We blend over a small zone around the edge to avoid hard creases
         const transitionWidth = 8.0; // Slightly wider transition for smoother visuals
-        const mixFactor = MathUtils.smoothstep(riverEdge - transitionWidth / 2, riverEdge + transitionWidth / 2, distFromCenter);
+        const mixFactor = CoreMath.smoothstep(riverEdge - transitionWidth / 2, riverEdge + transitionWidth / 2, distFromCenter);
 
         // mixFactor is 0 inside river (bed), 1 outside (land)
         return (1 - mixFactor) * rawRiverHeight + mixFactor * rawLandHeight;

@@ -6,7 +6,7 @@ import { Decorations } from '../decorations/Decorations';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule, Combine, Signal } from '../decorators/PoissonDecorationRules';
 import { EntityIds } from '../../entities/EntityIds';
-import { Fitness, RockParams, TreeParams } from '../decorations/DecoRules';
+import { Fitness, RockParams, TreeParams } from '../decorations/DecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';

@@ -1,4 +1,4 @@
-import { MathUtils } from "../../core/MathUtils";
+import { CoreMath } from "../../core/CoreMath";
 import { DecorationRule, WorldContext } from "./PoissonDecorationStrategy";
 
 export const Signal = {
@@ -51,7 +51,7 @@ export const Signal = {
         const v = f(ctx);
         if (v <= min0) return 0;
         if (v >= min1) return 1;
-        return MathUtils.linearstep(min0, min1, v);
+        return CoreMath.linearstep(min0, min1, v);
     },
 
     linearEaseOut: (
@@ -61,7 +61,7 @@ export const Signal = {
         const v = f(ctx);
         if (v >= max0) return 0;
         if (v <= max1) return 1;
-        return MathUtils.linearstep(max1, max0, v);
+        return CoreMath.linearstep(max1, max0, v);
     },
 
     smoothRange: (
@@ -72,10 +72,10 @@ export const Signal = {
         if (v <= min0 || v >= max0) return 0;
         if (v >= min1 && v <= max1) return 1;
         if (v < min1) {
-            return MathUtils.smoothstep(min0, min1, v);
+            return CoreMath.smoothstep(min0, min1, v);
         }
         if (v > max1) {
-            return MathUtils.smoothstep(max1, max0, v);
+            return CoreMath.smoothstep(max1, max0, v);
         }
         return v;
     },

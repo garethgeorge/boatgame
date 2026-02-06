@@ -13,7 +13,7 @@ import { EntityRules } from '../layout/EntityLayoutRules';
 import { AlligatorRule, MonkeyRule, HippoRule } from '../../entities/AnimalEntityRules';
 import { BottleRule, RiverRockRule, PierRule } from '../../entities/StaticEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
-import { Fitness, RockParams, PlantParams } from '../decorations/DecoRules';
+import { Fitness, RockParams, PlantParams } from '../decorations/DecorationRules';
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';

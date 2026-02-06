@@ -7,7 +7,7 @@ import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, NoiseMap, DecorationConfig } from '../decorators/TerrainDecorator';
 import { TierRule, Signal, Combine } from '../decorators/PoissonDecorationRules';
-import { Fitness, TreeParams, FlowerParams } from '../decorations/DecoRules';
+import { Fitness, TreeParams, FlowerParams } from '../decorations/DecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';

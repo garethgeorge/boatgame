@@ -7,19 +7,22 @@ import { SimplexNoise } from '../../core/SimplexNoise';
 import { PopulationContext } from '../biomes/PopulationContext';
 import { DecorationInstance, Decorations, LSystemTreeKind, LSystemFlowerKind } from '../decorations/Decorations';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
-import { MathUtils } from '../../core/MathUtils';
+import { CoreMath } from '../../core/CoreMath';
 
 
 export interface DecorationContext {
     tryPlaceInstances(
         instances: DecorationInstance[],
+        kind: string,
         pos: { worldX: number, worldZ: number, height: number },
-        opts: DecorationOptions);
+        scale: number, rotation: number
+    );
 
     tryPlaceObject(
         object: THREE.Object3D,
+        kind: string,
         pos: { worldX: number, worldZ: number, height: number },
-        opts: DecorationOptions
+        scale: number, rotation: number
     );
 }
 
@@ -27,25 +30,13 @@ export type DecoratorFunction = (ctx: DecorationContext,
     pos: { worldX: number, worldZ: number, height: number },
     opts: DecorationOptions) => void;
 
-export type DecorationKind =
-    LSystemTreeKind
-    | LSystemFlowerKind
-    | 'rock'
-    | 'cactus'
-    | 'cycad'
-    | 'treeFern'
-    | 'mangrove'
-    | 'beachChair'
-    | 'beachUmbrella';
-
 /**
  * Type specific options have a function to place the instance
  */
 export interface DecorationOptions {
     place: DecoratorFunction;
-    kind: DecorationKind,
-    rotation: number;
-    scale: number;
+    ensureLoaded?: () => Generator<void | Promise<void>, void, unknown>;
+    kind: string
 }
 
 export class NoiseMap implements WorldMap {
@@ -170,18 +161,37 @@ export class TerrainDecorator {
         const ctx: DecorationContext = {
             tryPlaceInstances(
                 instances: DecorationInstance[],
+                kind: string,
                 pos: { worldX: number, worldZ: number, height: number },
-                opts: DecorationOptions) {
-                self.tryPlaceInstances(context, instances, pos, opts);
+                scale: number, rotation: number
+            ) {
+                self.tryPlaceInstances(context, instances, kind, pos, scale, rotation);
             },
             tryPlaceObject(
                 object: THREE.Object3D,
+                kind: string,
                 pos: { worldX: number, worldZ: number, height: number },
-                opts: DecorationOptions
+                scale: number, rotation: number
             ) {
-                self.tryPlaceObject(context, object, pos, opts);
+                self.tryPlaceObject(context, object, kind, pos, scale, rotation);
             }
         };
+
+        // Gatekeeping: identify needed models and ensure all loaded
+        const uniqueLoaded = new Set<() => Generator<void | Promise<void>, void, unknown>>();
+        for (const manifest of decorations) {
+            if (!(region.xMin <= manifest.position.x && manifest.position.x < region.xMax)) continue;
+            if (!(region.zMin <= manifest.position.z && manifest.position.z < region.zMax)) continue;
+
+            const options = manifest.options as DecorationOptions;
+            if (options.ensureLoaded) {
+                uniqueLoaded.add(options.ensureLoaded);
+            }
+        }
+
+        for (const ensureLoaded of uniqueLoaded) {
+            yield* ensureLoaded();
+        }
 
         let countSinceYield = 0;
         for (const manifest of decorations) {
@@ -212,8 +222,10 @@ export class TerrainDecorator {
     private tryPlaceObject(
         context: PopulationContext,
         object: THREE.Object3D,
+        kind: string,
         pos: { worldX: number, worldZ: number, height: number },
-        opts: DecorationOptions
+        scale: number,
+        rotation: number
     ) {
         if (!this.distanceFilter(pos))
             return false;
@@ -222,11 +234,11 @@ export class TerrainDecorator {
         if (!this.visibilityFilter(pos, height))
             return false;
 
-        context.decoHelper.positionAndCollectGeometry(object, pos, context);
+        context.decoHelper.positionAndCollectGeometry(context, object, pos, scale, rotation);
 
         // Record stats
         if (context.stats) {
-            const species = opts.kind;
+            const species = kind;
             context.stats.set(species, (context.stats.get(species) || 0) + 1);
         }
     }
@@ -234,8 +246,10 @@ export class TerrainDecorator {
     private tryPlaceInstances(
         context: PopulationContext,
         instances: DecorationInstance[],
+        kind: string,
         pos: { worldX: number, worldZ: number, height: number },
-        opts: DecorationOptions
+        scale: number,
+        rotation: number
     ) {
         if (!this.distanceFilter(pos))
             return false;
@@ -244,11 +258,11 @@ export class TerrainDecorator {
         if (!this.visibilityFilter(pos, height))
             return false;
 
-        context.decoHelper.addInstancedDecoration(context, instances, pos, opts.rotation, opts.scale);
+        context.decoHelper.addInstancedDecoration(context, instances, pos, rotation, scale);
 
         // Record stats
         if (context.stats) {
-            const species = opts.kind;
+            const species = kind;
             context.stats.set(species, (context.stats.get(species) || 0) + 1);
         }
     }
@@ -268,7 +282,7 @@ export class TerrainDecorator {
             // Sometimes the river can be very wide
             const fadeDistance = Math.max(200 - (fadeStart + riverWidth / 2), 30);
             // 0 at 60 units from bank, 1 at edge of chunk
-            const t = MathUtils.clamp(0, 1, (distFromBank - fadeStart) / fadeDistance);
+            const t = CoreMath.clamp(0, 1, (distFromBank - fadeStart) / fadeDistance);
             const probability = Math.max(0.1, Math.pow(1 - t, 2));
             if (Math.random() > probability) return false;
         }

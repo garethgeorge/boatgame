@@ -7,10 +7,10 @@ import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { Fitness, RockParams, TreeParams } from '../decorations/DecoRules';
+import { Fitness, PropParams, RockParams, TreeParams } from '../decorations/DecorationRules';
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../../core/SimplexNoise';
-import { MathUtils } from '../../core/MathUtils';
+import { CoreMath } from '../../core/CoreMath';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
@@ -76,7 +76,7 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
         const transitionDist = 20 + noiseVal * 30;
 
         // Calculate interpolation factor using smoothstep for a natural look
-        const t = MathUtils.smoothstep(transitionDist * 0.75, transitionDist, distToShore);
+        const t = CoreMath.smoothstep(transitionDist * 0.75, transitionDist, distToShore);
 
         return t;
     }
@@ -92,6 +92,19 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                             slope: [0, 20]
                         }),
                         params: TreeParams.palm()
+                    }
+                ]
+            }),
+            new TierRule({
+                species: [
+                    {
+                        id: 'chair',
+                        preference: Fitness.make({
+                            stepDistance: [5, 20],
+                            slope: [0, 10],
+                            stepNoise: { scale: 20, threshold: 0.7 }
+                        }),
+                        params: PropParams.beach_chair()
                     }
                 ]
             }),

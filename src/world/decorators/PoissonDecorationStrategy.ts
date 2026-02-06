@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PlacementManifest, AnySpatialGrid } from '../../core/SpatialGrid';
 import { SimplexNoise } from '../../core/SimplexNoise';
-import { MathUtils } from '../../core/MathUtils';
+import { CoreMath } from '../../core/CoreMath';
 
 export interface WorldMap {
     sample(x: number, y: number): number;
@@ -77,7 +77,7 @@ export class PoissonDecorationStrategy {
             distanceToRiver: 0,
             biomeProgress: 0,
             random: Math.random,
-            gaussian: MathUtils.createGaussianRNG(Math.random),
+            gaussian: CoreMath.createGaussianRNG(Math.random),
             noise2D: (x, y) => this.noise2D.noise2D(x, y),
             sampleMap: (name, x, y) => {
                 const map = maps[name];

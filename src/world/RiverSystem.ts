@@ -2,6 +2,7 @@ import { SimplexNoise } from '../core/SimplexNoise';
 import { BiomeManager } from './BiomeManager';
 import { TerrainGeometry } from './TerrainGeometry';
 import { RiverGeometrySample } from './RiverGeometry';
+import { CoreMath } from '../core/CoreMath';
 
 export class RiverSystem {
   private static readonly MAKE_STRAIGHT_RIVER = false;
@@ -123,6 +124,15 @@ export class RiverSystem {
     }
 
     return -1;
+  }
+
+  /**
+   * Finds the closest point on the river center to a given world position.
+   * Optimizes for speed by using an iterative search, assuming monotonicity in Z.
+   */
+  public getClosestCenterPoint(pos: { x: number, z: number }): { x: number, z: number, distSq: number } {
+    const result = CoreMath.findClosestPoint((z) => this.getRiverCenter(z), pos.x, pos.z);
+    return { x: result.x, z: result.y, distSq: result.distSq };
   }
 
   private lerp(start: number, end: number, t: number): number {

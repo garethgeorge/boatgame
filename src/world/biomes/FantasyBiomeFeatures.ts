@@ -7,7 +7,7 @@ import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { Fitness, TreeParams, FlowerParams } from '../decorations/DecoRules';
+import { Fitness, TreeParams, FlowerParams } from '../decorations/DecorationRules';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
 import { RiverSystem } from '../RiverSystem';

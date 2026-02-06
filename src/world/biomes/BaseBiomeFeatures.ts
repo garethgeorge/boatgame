@@ -2,7 +2,7 @@ import { BiomeFeatures, SkyBiome } from './BiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { PopulationContext } from './PopulationContext';
 import { DecorationConfig } from '../decorators/TerrainDecorator';
-import { MathUtils } from '../../core/MathUtils';
+import { CoreMath } from '../../core/CoreMath';
 
 export abstract class BaseBiomeFeatures implements BiomeFeatures {
     abstract id: BiomeType;
@@ -55,7 +55,7 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
     public getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number {
         // Apply Bank Taper: Force land height to 0 at the river edge
         // Smoothly ramp up over 15 units
-        const bankTaper = MathUtils.smoothstep(0, 15, distFromBank);
+        const bankTaper = CoreMath.smoothstep(0, 15, distFromBank);
         return bankTaper;
     }
 
