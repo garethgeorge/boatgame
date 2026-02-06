@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SimplexNoise } from './SimplexNoise';
+import { SimplexNoise } from '../core/SimplexNoise';
 import { RiverSystem } from './RiverSystem';
 import { MathUtils } from '../core/MathUtils';
 

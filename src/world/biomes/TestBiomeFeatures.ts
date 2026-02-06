@@ -8,9 +8,9 @@ import { Combine, Signal, TierRule } from '../decorators/PoissonDecorationRules'
 import { RiverSystem } from '../RiverSystem';
 import { RiverGeometry } from '../RiverGeometry';
 import { DecorationConfig, TerrainDecorator } from '../decorators/TerrainDecorator';
-import { Decorations } from '../Decorations';
+import { Decorations } from '../decorations/Decorations';
 import { off } from 'node:cluster';
-import { EntityRules } from './decorations/EntityLayoutRules';
+import { EntityRules } from '../layout/EntityLayoutRules';
 // AnimalEntityRules removed as it was unused here
 import { DragonflyRule } from '../../entities/AnimalEntityRules';
 import { AnimalSpawner } from '../../entities/spawners/AnimalSpawner';

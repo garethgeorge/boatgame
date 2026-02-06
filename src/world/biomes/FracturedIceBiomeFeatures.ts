@@ -9,7 +9,7 @@ import Delaunator from 'delaunator';
 
 import { EntityIds } from '../../entities/EntityIds';
 import { FracturedIceberg } from '../../entities/obstacles/FracturedIceberg';
-import { Decorations } from '../Decorations';
+import { Decorations } from '../decorations/Decorations';
 import { SkyBiome } from './BiomeFeatures';
 import { IcebergSpawner } from '../../entities/spawners/IcebergSpawner';
 

@@ -1,8 +1,8 @@
-import { MathUtils } from "../../../core/MathUtils";
-import { Combine, Signal } from "../../decorators/PoissonDecorationRules";
-import { WorldContext } from "../../decorators/PoissonDecorationStrategy";
-import { ColorPalettes } from "../../decorators/ColorPalettes";
-import { DecorationMetadata } from "../../DecorationMetadata";
+import { MathUtils } from "../../core/MathUtils";
+import { Combine, Signal } from "../decorators/PoissonDecorationRules";
+import { WorldContext } from "../decorators/PoissonDecorationStrategy";
+import { ColorPalettes } from "../decorators/ColorPalettes";
+import { DecorationMetadata } from "./DecorationMetadata";
 
 /** 
  * Parameters for building a fitness function that is the product
@@ -38,7 +38,7 @@ export interface FitnessParams {
     slope?: [number, number]
 }
 
-export class SpeciesRules {
+export class DecoRules {
 
     public static fitness(params: FitnessParams) {
 

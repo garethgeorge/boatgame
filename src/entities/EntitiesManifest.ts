@@ -1,4 +1,4 @@
-import { Decorations } from '../world/Decorations';
+import { Decorations } from '../world/decorations/Decorations';
 import { Boat } from './Boat';
 import { Alligator } from './obstacles/Alligator';
 import { PolarBear } from './obstacles/PolarBear';

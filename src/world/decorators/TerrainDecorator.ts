@@ -3,9 +3,9 @@ import { PoissonDecorationStrategy, DecorationRule, WorldMap } from './PoissonDe
 import { PlacementManifest, AnySpatialGrid } from '../../core/SpatialGrid';
 export type { DecorationRule, PlacementManifest };
 import { RiverSystem } from '../RiverSystem';
-import { SimplexNoise } from '../SimplexNoise';
+import { SimplexNoise } from '../../core/SimplexNoise';
 import { PopulationContext } from '../biomes/PopulationContext';
-import { DecorationInstance, Decorations, LSystemTreeKind, LSystemFlowerKind } from '../Decorations';
+import { DecorationInstance, Decorations, LSystemTreeKind, LSystemFlowerKind } from '../decorations/Decorations';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { MathUtils } from '../../core/MathUtils';
 

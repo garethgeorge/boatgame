@@ -1,8 +1,8 @@
-import { PopulationContext } from '../PopulationContext';
-import { BiomeType } from '../BiomeType';
+import { PopulationContext } from '../biomes/PopulationContext';
+import { BiomeType } from '../biomes/BiomeType';
 import { BoatPathLayout } from './BoatPathLayoutStrategy';
-import { EntityIds } from '../../../entities/EntityIds';
-import { RiverGeometry } from '../../RiverGeometry';
+import { EntityIds } from '../../entities/EntityIds';
+import { RiverGeometry } from '../RiverGeometry';
 import { EntitySpawnConfig } from './EntityLayoutRules';
 
 export class BoatPathLayoutSpawner {

@@ -1,4 +1,4 @@
-import { SimplexNoise } from './SimplexNoise';
+import { SimplexNoise } from '../core/SimplexNoise';
 import { BiomeManager } from './BiomeManager';
 import { TerrainGeometry } from './TerrainGeometry';
 import { RiverGeometrySample } from './RiverGeometry';

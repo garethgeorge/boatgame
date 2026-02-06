@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { PlacementManifest, AnySpatialGrid } from '../../core/SpatialGrid';
-import { SimplexNoise } from '../SimplexNoise';
+import { SimplexNoise } from '../../core/SimplexNoise';
 import { MathUtils } from '../../core/MathUtils';
 
 export interface WorldMap {

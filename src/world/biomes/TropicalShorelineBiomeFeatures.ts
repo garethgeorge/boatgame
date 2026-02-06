@@ -2,19 +2,19 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { PopulationContext } from './PopulationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
-import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
+import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { SpeciesRules } from './decorations/SpeciesDecorationRules';
+import { DecoRules } from '../decorations/DecoRules';
 import { RiverSystem } from '../RiverSystem';
-import { SimplexNoise } from '../SimplexNoise';
+import { SimplexNoise } from '../../core/SimplexNoise';
 import { MathUtils } from '../../core/MathUtils';
 import { SkyBiome } from './BiomeFeatures';
-import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
-import { Place } from './decorations/BoatPathLayoutShortcuts';
-import { EntityRules } from './decorations/EntityLayoutRules';
+import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
+import { Place } from '../layout/BoatPathLayoutShortcuts';
+import { EntityRules } from '../layout/EntityLayoutRules';
 import { DolphinRule, TurtleRule, ButterflyRule } from '../../entities/AnimalEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
@@ -87,11 +87,11 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'palm',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             stepDistance: [5, 60],
                             slope: [0, 20]
                         }),
-                        params: SpeciesRules.palm_tree()
+                        params: DecoRules.palm_tree()
                     }
                 ]
             }),
@@ -99,12 +99,12 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'rock',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             stepDistance: [0, 15],
                             slope: [10, 60],
                             fitness: 0.5
                         }),
-                        params: SpeciesRules.rock()
+                        params: DecoRules.rock()
                     }
                 ]
             })

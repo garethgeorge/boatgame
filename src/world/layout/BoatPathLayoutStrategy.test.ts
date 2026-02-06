@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
-import { RiverSystem } from '../../RiverSystem';
-import { EntityIds } from '../../../entities/EntityIds';
+import { RiverSystem } from '../RiverSystem';
+import { EntityIds } from '../../entities/EntityIds';
 import { EntityRules } from './EntityLayoutRules';
 import { Placements, Patterns } from './BoatPathLayoutPatterns';
-import { RiverGeometry } from '../../RiverGeometry';
-import { RockRule, BottleRule } from '../../../entities/StaticEntityRules';
-import { SpatialGrid } from '../../../core/SpatialGrid';
+import { RiverGeometry } from '../RiverGeometry';
+import { RockRule, BottleRule } from '../../entities/StaticEntityRules';
+import { SpatialGrid } from '../../core/SpatialGrid';
 
 describe('BoatPathLayoutStrategy', () => {
     beforeEach(() => {

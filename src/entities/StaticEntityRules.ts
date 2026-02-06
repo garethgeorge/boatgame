@@ -11,7 +11,10 @@ import { MangroveSpawner } from './spawners/MangroveSpawner';
 import { PierSpawner } from './spawners/PierSpawner';
 import { BuoySpawner } from './spawners/BuoySpawner';
 import { LogSpawner } from './spawners/LogSpawner';
-import { EntitySpawnConfig, EntityPlacement, EntityGeneratorContext, PlacementPredicate, EntityRules, EntityGeneratorFn } from '../world/biomes/decorations/EntityLayoutRules';
+import {
+    EntitySpawnConfig, EntityPlacement, EntityGeneratorContext,
+    PlacementPredicate, EntityRules, EntityGeneratorFn
+} from '../world/layout/EntityLayoutRules';
 import { IcebergSpawner } from "./spawners/IcebergSpawner";
 
 class Details {

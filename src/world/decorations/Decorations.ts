@@ -1,19 +1,19 @@
 import * as THREE from 'three';
 import { DecorationRegistry } from './DecorationRegistry';
-import { BushFactory } from './factories/BushFactory';
-import { CactusFactory } from './factories/CactusFactory';
-import { RockFactory } from './factories/RockFactory';
-import { BottleFactory } from './factories/BottleFactory';
-import { GLTFModelFactory } from './factories/GLTFModelFactory';
-import { CycadFactory } from './factories/CycadFactory';
-import { TreeFernFactory } from './factories/TreeFernFactory';
-import { RiverRockFactory } from './factories/RiverRockFactory';
-import { DecorationInstance } from './factories/DecorationFactory';
-import { MangroveFactory } from './factories/MangroveFactory';
-import { LSystemTreeFactory, LSystemTreeInstanceOptions } from './factories/LSystemTreeFactory';
-import { LSystemTreeKind } from './factories/LSystemTreeArchetypes';
-import { LSystemFlowerFactory, LSystemFlowerInstanceOptions } from './factories/LSystemFlowerFactory';
-import { LSystemFlowerKind } from './factories/LSystemFlowerArchetypes';
+import { BushFactory } from '../factories/BushFactory';
+import { CactusFactory } from '../factories/CactusFactory';
+import { RockFactory } from '../factories/RockFactory';
+import { BottleFactory } from '../factories/BottleFactory';
+import { GLTFModelFactory } from '../factories/GLTFModelFactory';
+import { CycadFactory } from '../factories/CycadFactory';
+import { TreeFernFactory } from '../factories/TreeFernFactory';
+import { RiverRockFactory } from '../factories/RiverRockFactory';
+import { DecorationInstance } from '../factories/DecorationFactory';
+import { MangroveFactory } from '../factories/MangroveFactory';
+import { LSystemTreeFactory, LSystemTreeInstanceOptions } from '../factories/LSystemTreeFactory';
+import { LSystemTreeKind } from '../factories/LSystemTreeArchetypes';
+import { LSystemFlowerFactory, LSystemFlowerInstanceOptions } from '../factories/LSystemFlowerFactory';
+import { LSystemFlowerKind } from '../factories/LSystemFlowerArchetypes';
 
 export type { DecorationInstance, LSystemTreeKind, LSystemTreeInstanceOptions, LSystemFlowerKind, LSystemFlowerInstanceOptions };
 

@@ -1,7 +1,10 @@
 import * as THREE from 'three';
-import { RiverGeometry } from "../../RiverGeometry";
+import { RiverGeometry } from "../RiverGeometry";
 import { PatternConfig, PatternContext } from "./BoatPathLayoutStrategy";
-import { EntityGeneratorContext, EntityGeneratorFn, EntityPlacement, Habitat, PathPoint } from "./EntityLayoutRules";
+import {
+    EntityGeneratorContext, EntityGeneratorFn,
+    EntityPlacement, Habitat, PathPoint
+} from "./EntityLayoutRules";
 
 /**
  * Options shared by the various types of patterns.

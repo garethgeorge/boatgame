@@ -2,18 +2,18 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { PopulationContext } from './PopulationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
-import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
+import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { SpeciesRules } from './decorations/SpeciesDecorationRules';
-import { SimplexNoise } from '../SimplexNoise';
+import { DecoRules } from '../decorations/DecoRules';
+import { SimplexNoise } from '../../core/SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
 import { RiverSystem } from '../RiverSystem';
-import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
-import { Place } from './decorations/BoatPathLayoutShortcuts';
-import { EntityRules } from './decorations/EntityLayoutRules';
+import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
+import { Place } from '../layout/BoatPathLayoutShortcuts';
+import { EntityRules } from '../layout/EntityLayoutRules';
 import { SwanRule, UnicornRule, BluebirdRule, GingerManRule } from '../../entities/AnimalEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
@@ -97,11 +97,11 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'willow_tree',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             stepDistance: [2, 25], // Near shore
                             slope: [3, 20]
                         }),
-                        params: SpeciesRules.willow_tree({
+                        params: DecoRules.willow_tree({
                             spacing: 10,
                             paletteName: 'fantasy_leaves',
                             woodPaletteName: 'fantasy_trunk'
@@ -109,11 +109,11 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                     },
                     {
                         id: 'elm_tree',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             stepDistance: [30, 80], // Further inland
                             slope: [0, 30]
                         }),
-                        params: SpeciesRules.elm_tree({
+                        params: DecoRules.elm_tree({
                             size: 4,
                             spacing: 30,
                             paletteName: 'fantasy_leaves',
@@ -126,12 +126,12 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'daisy',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             stepDistance: [3, 25], // Along the banks
                             slope: [0, 30],
                             stepNoise: { scale: 100, threshold: 0.6 }
                         }),
-                        params: SpeciesRules.daisy({ pack: 0.6, spacing: 0, paletteName: 'daisy' })
+                        params: DecoRules.daisy({ pack: 0.6, spacing: 0, paletteName: 'daisy' })
                     }
                 ]
             })

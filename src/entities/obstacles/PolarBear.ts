@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { Decorations } from '../../world/Decorations';
+import { Decorations } from '../../world/decorations/Decorations';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';

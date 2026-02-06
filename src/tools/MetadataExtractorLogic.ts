@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DECORATION_MANIFEST } from '../world/DecorationsManifest';
+import { DECORATION_MANIFEST } from '../world/decorations/DecorationsManifest';
 import { ENTITY_MANIFEST, BOAT_MANIFEST } from '../entities/EntitiesManifest';
 import { EntityMetadata, BoatMetadata } from '../entities/EntityMetadata';
 import { GeometryVertexVisitor } from './GeometryVertexVisitor';

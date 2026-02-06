@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import { PopulationContext } from '../../world/biomes/PopulationContext';
 import { Pier } from '../obstacles/Pier';
-import { Decorations } from '../../world/Decorations';
+import { Decorations } from '../../world/decorations/Decorations';
 
 export class PierSpawner {
   public static *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {

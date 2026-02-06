@@ -30,8 +30,12 @@ import { Monkey } from './obstacles/Monkey';
 import { Unicorn } from './obstacles/Unicorn';
 import { Dragonfly } from './obstacles/Dragonfly';
 import { Pterodactyl } from './obstacles/Pterodactyl';
-import { Decorations, DecorationId } from '../world/Decorations';
-import { Habitat, EntityGeneratorContext, EntitySpawnConfig, EntityPlacement, PlacementPredicate, EntityRules, EntityGeneratorFn } from '../world/biomes/decorations/EntityLayoutRules';
+import { Decorations, DecorationId } from '../world/decorations/Decorations';
+import {
+    Habitat, EntityGeneratorContext, EntitySpawnConfig,
+    EntityPlacement, PlacementPredicate, EntityRules,
+    EntityGeneratorFn
+} from '../world/layout/EntityLayoutRules';
 
 export interface AnimalPlacement extends EntityPlacement {
     habitat: Habitat;

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { Decorations } from '../../world/Decorations';
+import { Decorations } from '../../world/decorations/Decorations';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';

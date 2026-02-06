@@ -6,7 +6,7 @@ import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
 import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
-import { Decorations } from '../../world/Decorations';
+import { Decorations } from '../../world/decorations/Decorations';
 
 import { EntityMetadata } from '../EntityMetadata';
 

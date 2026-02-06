@@ -2,18 +2,18 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { PopulationContext } from './PopulationContext';
-import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
-import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
+import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, NoiseMap, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { SpeciesRules } from './decorations/SpeciesDecorationRules';
+import { DecoRules } from '../decorations/DecoRules';
 import { WorldMap } from '../decorators/PoissonDecorationStrategy';
-import { SimplexNoise } from '../SimplexNoise';
+import { SimplexNoise } from '../../core/SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
-import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
-import { Place } from './decorations/BoatPathLayoutShortcuts';
-import { EntityRules } from './decorations/EntityLayoutRules';
+import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
+import { Place } from '../layout/BoatPathLayoutShortcuts';
+import { EntityRules } from '../layout/EntityLayoutRules';
 import { TRexRule, TriceratopsRule, PterodactylRule, BrontosaurusRule } from '../../entities/AnimalEntityRules';
 import { RockRule, LogRule, BottleRule, WaterGrassRule } from '../../entities/StaticEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
@@ -69,30 +69,30 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                     species: [
                         {
                             id: 'cycad',
-                            preference: SpeciesRules.fitness({
+                            preference: DecoRules.fitness({
                                 map: { name: 'trees', range: [0, 0.5] },
                                 stepDistance: [5, 100],
                                 slope: [0, 30]
                             }),
-                            params: SpeciesRules.cycad()
+                            params: DecoRules.cycad()
                         },
                         {
                             id: 'tree_fern',
-                            preference: SpeciesRules.fitness({
+                            preference: DecoRules.fitness({
                                 map: { name: 'trees', range: [0.5, 1] },
                                 stepDistance: [10, 100],
                                 slope: [0, 25]
                             }),
-                            params: SpeciesRules.tree_fern()
+                            params: DecoRules.tree_fern()
                         },
                         {
                             id: 'rock',
-                            preference: SpeciesRules.fitness({
+                            preference: DecoRules.fitness({
                                 fitness: 0.5,
                                 stepDistance: [3, 40],
                                 slope: [30, 90]
                             }),
-                            params: SpeciesRules.rock({ rockBiome: this.id })
+                            params: DecoRules.rock({ rockBiome: this.id })
                         }
                     ]
                 })

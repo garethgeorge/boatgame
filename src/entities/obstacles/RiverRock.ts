@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
-import { Decorations } from '../../world/Decorations';
+import { Decorations } from '../../world/decorations/Decorations';
 
 export class RiverRock extends Entity {
 

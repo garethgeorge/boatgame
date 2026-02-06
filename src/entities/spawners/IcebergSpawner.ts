@@ -1,6 +1,6 @@
 import { PopulationContext } from '../../world/biomes/PopulationContext';
 import { Iceberg } from '../../entities/obstacles/Iceberg';
-import { Decorations } from '../../world/Decorations';
+import { Decorations } from '../../world/decorations/Decorations';
 
 export class IcebergSpawner {
   id = 'iceberg';

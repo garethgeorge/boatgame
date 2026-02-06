@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { Decorations } from '../../world/Decorations';
+import { Decorations } from '../../world/decorations/Decorations';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { SwimAwayBehaviorFactory } from '../behaviors/SwimAwayBehaviorFactory';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';

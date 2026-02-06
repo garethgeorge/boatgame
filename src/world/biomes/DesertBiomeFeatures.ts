@@ -2,15 +2,15 @@ import { PopulationContext } from './PopulationContext';
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
-import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
-import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
+import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
+import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationConfig, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { SpeciesRules } from './decorations/SpeciesDecorationRules';
+import { DecoRules } from '../decorations/DecoRules';
 import { SkyBiome } from './BiomeFeatures';
-import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
-import { Place } from './decorations/BoatPathLayoutShortcuts';
-import { EntityRules } from './decorations/EntityLayoutRules';
+import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
+import { Place } from '../layout/BoatPathLayoutShortcuts';
+import { EntityRules } from '../layout/EntityLayoutRules';
 import { AlligatorRule, MonkeyRule, HippoRule } from '../../entities/AnimalEntityRules';
 import { BottleRule, RockRule, PierRule } from '../../entities/StaticEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
@@ -61,12 +61,12 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                     species: [
                         {
                             id: 'cactus',
-                            preference: SpeciesRules.fitness({
+                            preference: DecoRules.fitness({
                                 fitness: 0.2,
                                 stepDistance: [5, 100],
                                 slope: [0, 30]
                             }),
-                            params: SpeciesRules.cactus()
+                            params: DecoRules.cactus()
                         }
                     ]
                 }),
@@ -74,12 +74,12 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                     species: [
                         {
                             id: 'rock',
-                            preference: SpeciesRules.fitness({
+                            preference: DecoRules.fitness({
                                 fitness: 0.1,
                                 stepDistance: [3, 20],
                                 slope: [0, 70]
                             }),
-                            params: SpeciesRules.rock({ rockBiome: 'desert' })
+                            params: DecoRules.rock({ rockBiome: 'desert' })
                         }
                     ]
                 })

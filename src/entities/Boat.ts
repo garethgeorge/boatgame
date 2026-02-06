@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Entity } from '../core/Entity';
 import { InputManager } from '../managers/InputManager';
 import { PhysicsEngine } from '../core/PhysicsEngine';
-import { Decorations } from '../world/Decorations';
+import { Decorations } from '../world/decorations/Decorations';
 import { CollectedBottles } from './CollectedBottles';
 import { MessageInABottle } from './obstacles/MessageInABottle';
 import { Pier } from "./obstacles/Pier";

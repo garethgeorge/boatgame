@@ -2,16 +2,16 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
-import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
-import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
+import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, NoiseMap, DecorationConfig } from '../decorators/TerrainDecorator';
 import { TierRule, Signal, Combine } from '../decorators/PoissonDecorationRules';
-import { SpeciesRules } from './decorations/SpeciesDecorationRules';
+import { DecoRules } from '../decorations/DecoRules';
 import { SkyBiome } from './BiomeFeatures';
-import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
-import { Place } from './decorations/BoatPathLayoutShortcuts';
-import { EntityRules } from './decorations/EntityLayoutRules';
+import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
+import { Place } from '../layout/BoatPathLayoutShortcuts';
+import { EntityRules } from '../layout/EntityLayoutRules';
 import { DragonflyRule } from '../../entities/AnimalEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
@@ -65,13 +65,13 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'trees',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             fitness: 0.02,
                             stepDistance: [5, 100]
                         }),
                         params: r < 0.5 ?
-                            SpeciesRules.box_elder({ size: 3 }) :
-                            SpeciesRules.elm_tree()
+                            DecoRules.box_elder({ size: 3 }) :
+                            DecoRules.elm_tree()
                     }
                 ]
             }));
@@ -82,14 +82,14 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'lilies',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             fitness: 1,
                             stepDistance: [5, 20],
                             stepNoise: { scale: 50, threshold: 0.7 }
                         }),
                         params: r < 0.5 ?
-                            SpeciesRules.lily() :
-                            SpeciesRules.daisy()
+                            DecoRules.lily() :
+                            DecoRules.daisy()
                     }
                 ]
             }));

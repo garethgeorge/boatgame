@@ -2,17 +2,17 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
-import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
-import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
+import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { SpeciesRules } from './decorations/SpeciesDecorationRules';
-import { Decorations } from '../Decorations';
+import { DecoRules } from '../decorations/DecoRules';
+import { Decorations } from '../decorations/Decorations';
 import { SkyBiome } from './BiomeFeatures';
-import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
-import { Place } from './decorations/BoatPathLayoutShortcuts';
-import { EntityRules } from './decorations/EntityLayoutRules';
+import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
+import { Place } from '../layout/BoatPathLayoutShortcuts';
+import { EntityRules } from '../layout/EntityLayoutRules';
 import { MooseRule, BrownBearRule, DucklingRule } from '../../entities/AnimalEntityRules';
 import { LogRule, RockRule, PierRule, WaterGrassRule, BottleRule } from '../../entities/StaticEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
@@ -52,27 +52,27 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'elder_tree',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             stepDistance: [60, 70],
                             stepNoise: { scale: 123.4, threshold: 0.95 }
                         }),
-                        params: SpeciesRules.elder_tree({ paletteName: 'fall_yellow' })
+                        params: DecoRules.elder_tree({ paletteName: 'fall_yellow' })
                     },
                     {
                         id: 'birch_tree',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             stepNoise: { scale: 50, threshold: 0.5 },
                             stepDistance: [5, 200]
                         }),
-                        params: SpeciesRules.birch_tree({ paletteName: 'fall_yellow' })
+                        params: DecoRules.birch_tree({ paletteName: 'fall_yellow' })
                     },
                     {
                         id: 'oak_tree',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             fitness: 0.9,
                             stepDistance: [5, 200]
                         }),
-                        params: SpeciesRules.oak_tree({ paletteName: 'fall_red_orange' })
+                        params: DecoRules.oak_tree({ paletteName: 'fall_red_orange' })
                     }
                 ]
             }),
@@ -80,10 +80,10 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'rock',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             fitness: 0.2, minFitness: 0.02, stepDistance: [2, 10]
                         }),
-                        params: SpeciesRules.rock()
+                        params: DecoRules.rock()
                     }
                 ]
             })

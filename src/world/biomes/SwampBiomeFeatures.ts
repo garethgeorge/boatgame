@@ -2,13 +2,13 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { PopulationContext } from './PopulationContext';
-import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
-import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
+import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
+import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { SpeciesRules } from './decorations/SpeciesDecorationRules';
+import { DecoRules } from '../decorations/DecoRules';
 import { SkyBiome } from './BiomeFeatures';
-import { Place } from './decorations/BoatPathLayoutShortcuts';
+import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { SnakeRule, EgretRule, DragonflyRule, AlligatorRule } from '../../entities/AnimalEntityRules';
 import { MangroveRule, BottleRule, LogRule, WaterGrassRule, LilyPadPatchRule } from '../../entities/StaticEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
@@ -154,11 +154,11 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     species: [
                         {
                             id: 'mangrove',
-                            preference: SpeciesRules.fitness({
+                            preference: DecoRules.fitness({
                                 fitness: 1.0,
                                 stepDistance: [5, 55],
                             }),
-                            params: SpeciesRules.mangrove()
+                            params: DecoRules.mangrove()
                         }
                     ]
                 }),

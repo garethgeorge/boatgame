@@ -1,7 +1,7 @@
 import { GameEngine } from './GameEngine';
 import { GameUI } from './GameUI';
 import { GraphicsUtils } from './core/GraphicsUtils';
-import { Decorations } from './world/Decorations';
+import { Decorations } from './world/decorations/Decorations';
 import { DebugConsole } from './core/DebugConsole';
 import { InstructionManager } from './managers/InstructionManager';
 import { DebugSettings } from './core/DebugSettings';

@@ -3,7 +3,7 @@ import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { GameEngine } from '../GameEngine.js';
 import { BiomeManager } from '../world/BiomeManager.js';
 import { BiomeType } from '../world/biomes/BiomeType.js';
-import { Decorations } from '../world/Decorations.js';
+import { Decorations } from '../world/decorations/Decorations.js';
 import { DesignerSettings } from '../core/DesignerSettings.js';
 import { RiverSystem } from '../world/RiverSystem.js';
 import { DebugSettings } from '../core/DebugSettings.js';
@@ -11,7 +11,7 @@ import { Profiler } from '../core/Profiler.js';
 import { DebugConsole } from '../core/DebugConsole.js';
 import { DesignerUtils, HistoryManager } from './DesignerUtils.js';
 import { TierRule, Combine, Signal } from '../world/decorators/PoissonDecorationRules.js';
-import { SpeciesRules } from '../world/biomes/decorations/SpeciesDecorationRules.js';
+import { DecoRules } from '../world/decorations/DecoRules.js';
 
 class BiomeDesigner {
     private engine: GameEngine;
@@ -395,12 +395,12 @@ class BiomeDesigner {
                 TierRule,
                 Combine,
                 Signal,
-                SpeciesRules
+                DecoRules: DecoRules
             };
 
             // Re-evaluate with full context
-            const evalRules = new Function('THREE', 'TierRule', 'Combine', 'Signal', 'SpeciesRules', 'return ' + text)(
-                context.THREE, context.TierRule, context.Combine, context.Signal, context.SpeciesRules
+            const evalRules = new Function('THREE', 'TierRule', 'Combine', 'Signal', 'DecoRules', 'return ' + text)(
+                context.THREE, context.TierRule, context.Combine, context.Signal, context.DecoRules
             );
 
             const features = RiverSystem.getInstance().biomeManager.getDesignerBiome();

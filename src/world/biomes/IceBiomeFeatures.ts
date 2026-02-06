@@ -2,19 +2,19 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { PopulationContext } from './PopulationContext';
-import { Decorations } from '../Decorations';
+import { Decorations } from '../decorations/Decorations';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule, Combine, Signal } from '../decorators/PoissonDecorationRules';
 import { EntityIds } from '../../entities/EntityIds';
-import { SpeciesRules } from './decorations/SpeciesDecorationRules';
+import { DecoRules } from '../decorations/DecoRules';
 import { SkyBiome } from './BiomeFeatures';
-import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
-import { Place } from './decorations/BoatPathLayoutShortcuts';
-import { EntityRules } from './decorations/EntityLayoutRules';
+import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
+import { Place } from '../layout/BoatPathLayoutShortcuts';
+import { EntityRules } from '../layout/EntityLayoutRules';
 import { PolarBearRule, PenguinKayakRule } from '../../entities/AnimalEntityRules';
 import { IcebergRule, BuoyRule, BottleRule } from '../../entities/StaticEntityRules';
-import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
-import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
+import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
@@ -65,21 +65,21 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'oak_tree',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             fitness: 0.6,
                             stepDistance: [10, 200],
                             slope: [0, 30]
                         }),
-                        params: SpeciesRules.oak_tree({ snow: true, leaves: 0.5 })
+                        params: DecoRules.oak_tree({ snow: true, leaves: 0.5 })
                     },
                     {
                         id: 'elm_tree',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             fitness: 0.4,
                             stepDistance: [10, 60],
                             slope: [0, 25]
                         }),
-                        params: SpeciesRules.elm_tree()
+                        params: DecoRules.elm_tree()
                     },
                 ]
             }),
@@ -87,10 +87,10 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'rock',
-                        preference: SpeciesRules.fitness({
+                        preference: DecoRules.fitness({
                             fitness: 0.1
                         }),
-                        params: SpeciesRules.rock({ rockBiome: 'ice' })
+                        params: DecoRules.rock({ rockBiome: 'ice' })
                     },
                 ]
             })

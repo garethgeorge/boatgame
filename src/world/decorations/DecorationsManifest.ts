@@ -1,7 +1,7 @@
 import { Decorations } from './Decorations';
 import { DecorationRegistry } from './DecorationRegistry';
-import { ARCHETYPES as TREE_ARCHETYPES, LSystemTreeKind } from './factories/LSystemTreeArchetypes';
-import { ARCHETYPES as FLOWER_ARCHETYPES, LSystemFlowerKind } from './factories/LSystemFlowerArchetypes';
+import { ARCHETYPES as TREE_ARCHETYPES, LSystemTreeKind } from '../factories/LSystemTreeArchetypes';
+import { ARCHETYPES as FLOWER_ARCHETYPES, LSystemFlowerKind } from '../factories/LSystemFlowerArchetypes';
 
 export interface DecorationManifestEntry {
     name: string;

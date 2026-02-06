@@ -1,8 +1,8 @@
-import { EntityIds } from '../../../entities/EntityIds';
-import { RiverGeometry, RiverGeometrySample } from '../../RiverGeometry';
-import { RiverSystem } from '../../RiverSystem';
+import { EntityIds } from '../../entities/EntityIds';
+import { RiverGeometry, RiverGeometrySample } from '../RiverGeometry';
+import { RiverSystem } from '../RiverSystem';
 import { EntityGeneratorFn, EntityPlacement, Habitat, PathPoint } from './EntityLayoutRules';
-import { AnySpatialGrid, SpatialGrid } from '../../../core/SpatialGrid';
+import { AnySpatialGrid, SpatialGrid } from '../../core/SpatialGrid';
 import { PlacementConfig } from './BoatPathLayoutPatterns';
 
 /**

@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { EntityIds } from "../../../entities/EntityIds";
-import { RiverGeometrySample } from "../../RiverGeometry";
-import { PopulationContext } from "../../biomes/PopulationContext";
-import { DecorationId } from '../../Decorations';
-import { RiverSystem } from "../../RiverSystem";
+import { EntityIds } from "../../entities/EntityIds";
+import { RiverGeometrySample } from "../RiverGeometry";
+import { PopulationContext } from "../biomes/PopulationContext";
+import { DecorationId } from '../decorations/Decorations';
+import { RiverSystem } from "../RiverSystem";
 
 export type Habitat = 'land' | 'water';
 

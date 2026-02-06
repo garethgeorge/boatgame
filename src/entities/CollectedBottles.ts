@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Decorations } from '../world/Decorations';
+import { Decorations } from '../world/decorations/Decorations';
 import { GraphicsUtils } from '../core/GraphicsUtils';
 
 export class CollectedBottles {

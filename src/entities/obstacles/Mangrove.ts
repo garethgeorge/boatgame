@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as planck from 'planck';
 import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { Decorations } from '../../world/Decorations';
+import { Decorations } from '../../world/decorations/Decorations';
 import { MangroveFactory } from '../../world/factories/MangroveFactory';
 
 export abstract class BaseMangrove extends Entity {
