@@ -2,13 +2,14 @@ import { PopulationContext } from './PopulationContext';
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
-import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
 import { DecorationConfig, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
+import { Place } from './decorations/BoatPathLayoutShortcuts';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { AlligatorRule, MonkeyRule, HippoRule } from '../../entities/AnimalEntityRules';
 import { BottleRule, RockRule, PierRule } from '../../entities/StaticEntityRules';
@@ -92,85 +93,63 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const animal_corridor = Patterns.sequence({
-            placement: Placements.nearShore({
-                entity: EntityRules.choose([AlligatorRule.get(), MonkeyRule.get()])
-            }),
-            density: [0.5, 4.0],
-        });
-        const hippo_pod = Patterns.cluster({
-            placement: Placements.nearShore({
-                entity: EntityRules.choose([HippoRule.get()])
-            }),
-            density: [0.3, 2.0],
-            minCount: 2,
-        });
-        const rocky_slalom = Patterns.sequence({
-            placement: Placements.slalom({
-                entity: EntityRules.choose([RockRule.get('desert')])
-            }),
-            density: [0.5, 2.0],
-        });
-        const rock_stagger = Patterns.staggered({
-            placement: Placements.slalom({
-                entity: EntityRules.choose([RockRule.get('desert')])
-            }),
-            density: [0.5, 2.0],
-            minCount: 3
-        });
-        const bottle_cluster = Patterns.cluster({
-            placement: Placements.path({
-                entity: EntityRules.choose([BottleRule.get()])
-            }),
-            density: [1.5, 0.5],
-            minCount: 3
-        });
+        const tracks: TrackConfig[] = [
+            {
+                name: 'main',
+                stages: [{
+                    name: 'intro',
+                    progress: [0, 0.4], scenes: [{
+                        length: [50, 100], patterns: [
+                            Place.sequence_slalom(RockRule.get('desert'), [0.5, 2.0])
+                        ]
+                    },
+                    {
+                        length: [50, 100], patterns: [
+                            Place.staggered_slalom(RockRule.get('desert'), [0.5, 2.0], { minCount: 3 })
+                        ]
+                    }]
+                },
+                {
+                    name: 'gauntlet',
+                    progress: [0.3, 0.9], scenes: [{
+                        length: [100, 200], patterns: [
+                            Place.sequence_nearShore([AlligatorRule.get(), MonkeyRule.get()], [0.5, 4.0]),
+                            Place.sequence_slalom(RockRule.get('desert'), [0.5, 2.0])
+                        ]
+                    },
+                    {
+                        length: [100, 200], patterns: [
+                            Place.cluster_nearShore(HippoRule.get(), [0.3, 2.0], { minCount: 2 }),
+                            Place.staggered_slalom(RockRule.get('desert'), [0.5, 2.0], { minCount: 3 })
+                        ]
+                    }]
+                }]
+            },
+            {
+                name: 'unique_elements',
+                placements: [
+                    {
+                        name: 'dock', at: 0.95,
+                        placement: Placements.atShore({ entity: PierRule.get(true) })
+                    }
+                ]
+            },
+            {
+                name: 'rewards',
+                stages: [{
+                    name: 'bottles',
+                    progress: [0.0, 0.9],
+                    scenes: [{
+                        length: [100, 300], patterns: [
+                            Place.cluster_path(BottleRule.get(), [1.5, 0.5], { minCount: 3 })
+                        ]
+                    }]
+                }]
+            }
+        ];
 
         const config: BoatPathLayoutConfig = {
-            tracks: [
-                {
-                    name: 'main',
-                    stages: [
-                        {
-                            name: 'intro',
-                            progress: [0, 0.4],
-                            scenes: [
-                                { length: [50, 100], patterns: [rocky_slalom] },
-                                { length: [50, 100], patterns: [rock_stagger] }
-                            ]
-                        },
-                        {
-                            name: 'gauntlet',
-                            progress: [0.3, 0.9],
-                            scenes: [
-                                { length: [100, 200], patterns: [animal_corridor, rocky_slalom] },
-                                { length: [100, 200], patterns: [hippo_pod, rock_stagger] }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    name: 'unique_elements',
-                    placements: [
-                        {
-                            name: 'dock', at: 0.95,
-                            placement: Placements.atShore({ entity: PierRule.get(true) })
-                        }
-                    ]
-                },
-                {
-                    name: 'rewards',
-                    stages: [
-                        {
-                            name: 'bottles',
-                            progress: [0.0, 0.9],
-                            scenes: [
-                                { length: [100, 300], patterns: [bottle_cluster] }
-                            ]
-                        }
-                    ]
-                }
-            ],
+            tracks,
             path: {
                 length: [200, 100]
             }

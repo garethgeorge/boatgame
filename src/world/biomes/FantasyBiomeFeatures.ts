@@ -12,6 +12,7 @@ import { SimplexNoise } from '../SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
 import { RiverSystem } from '../RiverSystem';
 import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
+import { Place } from './decorations/BoatPathLayoutShortcuts';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { SwanRule, UnicornRule, BluebirdRule, GingerManRule } from '../../entities/AnimalEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
@@ -147,72 +148,44 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const swan_bevies = Patterns.scatter({
-            placement: Placements.slalom({
-                entity: EntityRules.choose([SwanRule.get()])
-            }),
-            density: [0.3, 0.6],
-        });
-        const unicorn_herd = Patterns.scatter({
-            placement: Placements.onShore({
-                entity: EntityRules.choose([UnicornRule.get()])
-            }),
-            density: [0.2, 0.4],
-        });
-        const bluebird_flocks = Patterns.scatter({
-            placement: Placements.onShore({
-                entity: EntityRules.choose([BluebirdRule.get()])
-            }),
-            density: [0.3, 0.5],
-        });
-        const gingerman_parade = Patterns.scatter({
-            placement: Placements.onShore({
-                entity: EntityRules.choose([GingerManRule.get()])
-            }),
-            density: [0.3, 0.6],
-        });
-
         const tracks: TrackConfig[] = [
             {
-                name: 'river',
-                stages: [
-                    {
-                        name: 'swans',
-                        progress: [0.0, 1.0],
-                        scenes: [{ length: [100, 300], patterns: [swan_bevies] }]
-                    }
-                ]
-            },
-            {
-                name: 'shore',
-                stages: [
-                    {
-                        name: 'unicorns_and_gingermen',
-                        progress: [0.0, 1.0],
-                        scenes: [
-                            { length: [150, 350], patterns: [unicorn_herd] },
-                            { length: [150, 350], patterns: [gingerman_parade] }
+                name: 'animals',
+                stages: [{
+                    name: 'fantasy_life',
+                    progress: [0, 1.0],
+                    scenes: [{
+                        length: [100, 300], patterns: [
+                            Place.scatter_slalom(SwanRule.get(), [0.3, 0.6]),
+                            Place.scatter_onShore(UnicornRule.get(), [0.2, 0.4])
                         ]
-                    }
-                ]
+                    },
+                    {
+                        length: [100, 300], patterns: [
+                            Place.scatter_onShore(GingerManRule.get(), [0.3, 0.6])
+                        ]
+                    }]
+                }]
             },
             {
                 name: 'flying',
-                stages: [
-                    {
-                        name: 'bluebirds',
-                        progress: [0.0, 1.0],
-                        scenes: [{ length: [200, 400], patterns: [bluebird_flocks] }]
-                    }
-                ]
+                stages: [{
+                    name: 'bluebirds',
+                    progress: [0.0, 1.0],
+                    scenes: [{
+                        length: [200, 400], patterns: [
+                            Place.scatter_onShore(BluebirdRule.get(), [0.3, 0.5])
+                        ]
+                    }]
+                }]
             }
         ];
 
         this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
-            tracks: tracks,
+            tracks,
             path: {
                 length: [200, 100]
-            },
+            }
         }, this.spatialGrid);
 
         return this.layoutCache;

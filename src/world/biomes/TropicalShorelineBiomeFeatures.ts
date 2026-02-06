@@ -13,6 +13,7 @@ import { SimplexNoise } from '../SimplexNoise';
 import { MathUtils } from '../../core/MathUtils';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
+import { Place } from './decorations/BoatPathLayoutShortcuts';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { DolphinRule, TurtleRule, ButterflyRule } from '../../entities/AnimalEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
@@ -120,60 +121,32 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const dolphin_pods = Patterns.scatter({
-            placement: Placements.slalom({
-                entity: EntityRules.choose([DolphinRule.get()])
-            }),
-            density: [0.4, 0.7],
-        });
-        const turtle_beaches = Patterns.scatter({
-            placement: Placements.nearShore({
-                entity: EntityRules.choose([TurtleRule.get()])
-            }),
-            density: [0.3, 0.6],
-        });
-        const butterfly_swarms = Patterns.scatter({
-            placement: Placements.onShore({
-                entity: EntityRules.choose([ButterflyRule.get()])
-            }),
-            density: [0.3, 0.6],
-        });
-
-        const riverTrack: TrackConfig = {
-            name: 'river',
-            stages: [
-                {
+        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
+            tracks: [{
+                name: 'river',
+                stages: [{
                     name: 'dolphins',
                     progress: [0.0, 1.0],
-                    scenes: [{ length: [100, 300], patterns: [dolphin_pods] }]
-                }
-            ]
-        };
-
-        const shoreTrack: TrackConfig = {
-            name: 'near-shore',
-            stages: [
-                {
+                    scenes: [{ length: [100, 300], patterns: [Place.scatter_slalom(DolphinRule.get(), [0.4, 0.7])] }]
+                }]
+            },
+            {
+                name: 'near-shore',
+                stages: [{
                     name: 'turtles',
                     progress: [0.0, 1.0],
-                    scenes: [{ length: [100, 300], patterns: [turtle_beaches] }]
-                }
-            ]
-        };
-
-        const flyingTrack: TrackConfig = {
-            name: 'flying',
-            stages: [
-                {
+                    scenes: [{ length: [100, 300], patterns: [Place.scatter_nearShore(TurtleRule.get(), [0.3, 0.6])] }]
+                }]
+            },
+            {
+                name: 'flying',
+                stages: [{
                     name: 'flying_animals',
                     progress: [0.4, 1.0],
-                    scenes: [{ length: [100, 300], patterns: [butterfly_swarms] }]
-                }
-            ]
-        };
-
-        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
-            tracks: [riverTrack, shoreTrack, flyingTrack],
+                    scenes: [{ length: [100, 300], patterns: [Place.scatter_onShore(ButterflyRule.get(), [0.3, 0.6])] }]
+                }]
+            }
+            ],
             path: {
                 length: [200, 100]
             }

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
-import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
@@ -11,6 +11,7 @@ import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { Decorations } from '../Decorations';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
+import { Place } from './decorations/BoatPathLayoutShortcuts';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { MooseRule, BrownBearRule, DucklingRule } from '../../entities/AnimalEntityRules';
 import { LogRule, RockRule, PierRule, WaterGrassRule, BottleRule } from '../../entities/StaticEntityRules';
@@ -96,109 +97,51 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const nothing = Patterns.none();
-        const log_scatter = Patterns.scatter({
-            placement: Placements.slalom({
-                entity: EntityRules.choose([LogRule.get()])
-            }),
-            density: [0.5, 2.0],
-        });
-        const rock_scatter = Patterns.scatter({
-            placement: Placements.nearShore({
-                entity: EntityRules.choose([RockRule.get('forest')])
-            }),
-            density: [0.5, 2.0],
-        });
-        const test_dock = Patterns.none(); // used to be pier
-        const grass_patches = Patterns.scatter({
-            placement: Placements.nearShore({
-                entity: EntityRules.choose([WaterGrassRule.get()])
-            }),
-            density: [1.5, 3.0],
-        });
-        const moose = Patterns.cluster({
-            placement: Placements.nearShore({
-                entity: EntityRules.choose([MooseRule.get()])
-            }),
-            density: [0.3, 3.0],
-        });
-        const bear = Patterns.cluster({
-            placement: Placements.nearShore({
-                entity: EntityRules.choose([BrownBearRule.get()])
-            }),
-            density: [0.3, 3.0],
-        });
-        const duckling_train = Patterns.cluster({
-            placement: Placements.path({
-                entity: EntityRules.choose([DucklingRule.get()])
-            }),
-            density: [0.5, 1.5],
-            minCount: 3
-        });
-        const bottle_train = Patterns.cluster({
-            placement: Placements.path({
-                entity: EntityRules.choose([BottleRule.get()])
-            }),
-            density: [0.5, 1.5],
-            minCount: 3
-        });
+        const tracks: TrackConfig[] = [{
+            name: 'obstacles',
+            stages: [{
+                name: 'forest_chaos',
+                progress: [0, 1.0],
+                scenes: [{
+                    length: [100, 200], patterns: [
+                        Place.sequence_path(LogRule.get(), [0.3, 0.4]),
+                        Place.scatter_slalom(RockRule.get('forest'), [1.0, 3.0])
+                    ]
+                },
+                {
+                    length: [100, 200], patterns: [
+                        Place.scatter_nearShore([MooseRule.get(), BrownBearRule.get()], [0.5, 1.0]),
+                        Place.scatter_middle(WaterGrassRule.get(), [1.5, 3.0])
+                    ]
+                },
+                {
+                    length: [100, 200], patterns: [
+                        Place.sequence_nearShore(DucklingRule.get(), [0.3, 0.3]),
+                        Place.scatter_middle(WaterGrassRule.get(), [1.5, 3.0])
+                    ]
+                }]
+            }]
+        },
+        {
+            name: 'collectables',
+            stages: [{
+                name: 'bottles',
+                progress: [0, 1.0],
+                scenes: [{
+                    length: [200, 500], patterns: [
+                        Place.scatter_path(BottleRule.get(), [0.2, 0.5])
+                    ]
+                }]
+            }]
+        }];
 
-        const config: BoatPathLayoutConfig = {
-            tracks: [
-                {
-                    name: 'obstacles',
-                    stages: [
-                        {
-                            name: 'arrival', progress: [0, 0.2],
-                            scenes: [
-                                { length: [100, 150], patterns: [log_scatter] },
-                                { length: [100, 150], patterns: [rock_scatter] },
-                            ]
-                        },
-                        {
-                            name: 'grass+piers', progress: [0.2, 0.7],
-                            scenes: [
-                                { length: [60, 100], patterns: [grass_patches] },
-                                { length: [200, 300], patterns: [test_dock] }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    name: 'animals',
-                    stages: [
-                        {
-                            name: 'forest_mix',
-                            progress: [0.2, 0.8],
-                            scenes: [
-                                { length: [100, 200], patterns: [moose] },
-                                { length: [100, 200], patterns: [bear] },
-                            ]
-                        }
-                    ]
-                },
-                {
-                    name: 'path_life',
-                    stages: [
-                        {
-                            name: 'ducklings',
-                            progress: [0.3, 1.0],
-                            scenes: [
-                                { length: [20, 50], patterns: [duckling_train] },
-                                { length: [20, 50], patterns: [bottle_train] },
-                                { length: [200, 300], patterns: [nothing] }
-                            ]
-                        }
-                    ]
-                }
-            ],
+        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
+            tracks,
             path: {
                 length: [200, 100]
             }
-        };
+        }, this.spatialGrid);
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout(
-            [this.zMin, this.zMax], config, this.spatialGrid);
         return this.layoutCache;
     }
 

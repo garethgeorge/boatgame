@@ -9,11 +9,12 @@ import { EntityIds } from '../../entities/EntityIds';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
+import { Place } from './decorations/BoatPathLayoutShortcuts';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { PolarBearRule, PenguinKayakRule } from '../../entities/AnimalEntityRules';
 import { IcebergRule, BuoyRule, BottleRule } from '../../entities/StaticEntityRules';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
-import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
@@ -102,78 +103,33 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const iceberg_scatter = Patterns.scatter({
-            placement: Placements.slalom({
-                entity: EntityRules.choose([IcebergRule.get()])
-            }),
-            density: [1.0, 3.0],
-        });
-        const buoys = Patterns.scatter({
-            placement: Placements.middle({
-                entity: EntityRules.choose([BuoyRule.get()])
-            }),
-            density: [0.5, 1.5],
-        });
-        const bottle_hunt = Patterns.scatter({
-            placement: Placements.path({
-                entity: EntityRules.choose([BottleRule.get()])
-            }),
-            density: [0.25, 0.25],
-        });
-        const animals = Patterns.scatter({
-            placement: Placements.nearShore({
-                entity: EntityRules.choose([PolarBearRule.get(), PenguinKayakRule.get()])
-            }),
-            density: [0.5, 0.5],
-        });
+        const tracks: TrackConfig[] = [{
+            name: 'obstacles',
+            stages: [{
+                name: 'ice_gauntlet',
+                progress: [0, 1.0],
+                scenes: [{
+                    length: [100, 200], patterns: [
+                        Place.scatter_slalom(IcebergRule.get(), [1.0, 3.0]),
+                        Place.scatter_middle(BuoyRule.get(), [0.5, 1.5])
+                    ]
+                },
+                {
+                    length: [100, 200], patterns: [
+                        Place.scatter_path(BottleRule.get(), [0.25, 0.25]),
+                        Place.scatter_nearShore([PolarBearRule.get(), PenguinKayakRule.get()], [0.5, 0.5])
+                    ]
+                }]
+            }],
+        }];
 
-        const tracks: TrackConfig[] = [
-            {
-                name: 'rewards',
-                stages: [
-                    {
-                        name: 'bottles', progress: [0, 1.0],
-                        scenes: [{ length: [100, 200], patterns: [bottle_hunt] }]
-                    }
-                ]
-            },
-            {
-                name: 'obstacles',
-                stages: [
-                    {
-                        name: 'buoys', progress: [0, 1.0],
-                        scenes: [{ length: [100, 200], patterns: [buoys] }]
-                    }
-                ]
-            },
-            {
-                name: 'animals',
-                stages: [
-                    {
-                        name: 'animals', progress: [0, 1.0],
-                        scenes: [{ length: [100, 200], patterns: [animals] }]
-                    }
-                ]
-            },
-            {
-                name: 'bergs',
-                stages: [
-                    {
-                        name: 'icebergs', progress: [0, 1.0],
-                        scenes: [{ length: [100, 200], patterns: [iceberg_scatter] }]
-                    }
-                ]
-            }
-        ];
-
-        const boatPathLayout = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
-            tracks: tracks,
+        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
+            tracks,
             path: {
                 length: [200, 100]
             }
         }, this.spatialGrid);
 
-        this.layoutCache = boatPathLayout;
         return this.layoutCache;
     }
 

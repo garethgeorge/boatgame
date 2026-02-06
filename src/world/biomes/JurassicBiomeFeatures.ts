@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { PopulationContext } from './PopulationContext';
-import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy } from './decorations/BoatPathLayoutStrategy';
+import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, NoiseMap, TerrainDecorator } from '../decorators/TerrainDecorator';
@@ -12,6 +12,7 @@ import { WorldMap } from '../decorators/PoissonDecorationStrategy';
 import { SimplexNoise } from '../SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
+import { Place } from './decorations/BoatPathLayoutShortcuts';
 import { EntityRules } from './decorations/EntityLayoutRules';
 import { TRexRule, TriceratopsRule, PterodactylRule, BrontosaurusRule } from '../../entities/AnimalEntityRules';
 import { RockRule, LogRule, BottleRule, WaterGrassRule } from '../../entities/StaticEntityRules';
@@ -105,79 +106,49 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     private getLayout(): BoatPathLayout {
         if (this.layoutCache) return this.layoutCache;
 
-        const scattered_rocks = Patterns.scatter({
-            placement: Placements.slalom({
-                entity: EntityRules.choose([RockRule.get('jurassic')])
-            }),
-            density: [1.0, 3.0],
-        });
-        const staggered_logs = Patterns.staggered({
-            placement: Placements.slalom({
-                entity: EntityRules.choose([LogRule.get()])
-            }),
-            density: [0.5, 1.5],
-            minCount: 4
-        });
-        const dino_scatter = Patterns.scatter({
-            placement: Placements.nearShore({
-                entity: EntityRules.choose([TRexRule.get(), TriceratopsRule.get()])
-            }),
-            density: [0.5, 1.5],
-        });
-        const ptero_scatter = Patterns.scatter({
-            placement: Placements.onShore({
-                entity: EntityRules.choose([PterodactylRule.get()])
-            }),
-            density: [0.5, 1.5],
-        });
-        const bronto_migration = Patterns.sequence({
-            placement: Placements.nearShore({
-                entity: EntityRules.choose([BrontosaurusRule.get()])
-            }),
-            density: [0.4, 0.4],
-        });
-        const bottle_hunt = Patterns.scatter({
-            placement: Placements.path({
-                entity: EntityRules.choose([BottleRule.get()])
-            }),
-            density: [0.25, 0.5],
-        });
-        const grass_patches = Patterns.scatter({
-            placement: Placements.nearShore({
-                entity: EntityRules.choose([WaterGrassRule.get()])
-            }),
-            density: [1.5, 3.0],
-        });
+        const tracks: TrackConfig[] = [
+            {
+                name: 'obstacles',
+                stages: [{
+                    name: 'danger_zone',
+                    progress: [0, 1.0],
+                    scenes: [{
+                        length: [100, 200], patterns: [
+                            Place.scatter_slalom(RockRule.get('jurassic'), [1.0, 3.0]),
+                            Place.scatter_nearShore([TRexRule.get(), TriceratopsRule.get()], [0.5, 1.5]),
+                            Place.scatter_nearShore(WaterGrassRule.get(), [1.5, 3.0])
+                        ]
+                    },
+                    {
+                        length: [100, 200], patterns: [
+                            Place.staggered_slalom(LogRule.get(), [0.5, 1.5], { minCount: 4 }),
+                            Place.scatter_onShore(PterodactylRule.get(), [0.5, 1.5])
+                        ]
+                    },
+                    {
+                        length: [100, 200], patterns: [
+                            Place.sequence_nearShore(BrontosaurusRule.get(), [0.4, 0.4]),
+                            Place.scatter_nearShore(WaterGrassRule.get(), [1.5, 3.0])
+                        ]
+                    }]
+                }]
+            },
+            {
+                name: 'collectables',
+                stages: [{
+                    name: 'bottles',
+                    progress: [0, 1.0],
+                    scenes: [{
+                        length: [150, 400], patterns: [
+                            Place.scatter_path(BottleRule.get(), [0.25, 0.5])
+                        ]
+                    }]
+                }]
+            }
+        ];
 
         const config: BoatPathLayoutConfig = {
-            tracks: [
-                {
-                    name: 'obstacles',
-                    stages: [
-                        {
-                            name: 'danger_zone',
-                            progress: [0, 1.0],
-                            scenes: [
-                                { length: [100, 200], patterns: [scattered_rocks, dino_scatter, grass_patches] },
-                                { length: [100, 200], patterns: [staggered_logs, ptero_scatter] },
-                                { length: [100, 200], patterns: [bronto_migration, grass_patches] }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    name: 'collectables',
-                    stages: [
-                        {
-                            name: 'bottles',
-                            progress: [0, 1.0],
-                            scenes: [
-                                { length: [150, 400], patterns: [bottle_hunt] }
-                            ]
-                        }
-                    ]
-                }
-            ],
+            tracks,
             path: {
                 length: [200, 100]
             }

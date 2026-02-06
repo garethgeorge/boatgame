@@ -84,15 +84,17 @@ export class TerrainChunk {
       }
       const groundMesh = meshResult.value;
       Profiler.end('GenMeshBatch');
-
-      GraphicsUtils.disposeObject(this.mesh);
-      this.mesh = groundMesh;
       yield;
 
       const waterMesh = yield* this.generateWaterIterator();
 
+      GraphicsUtils.disposeObject(this.mesh);
+      this.mesh = groundMesh;
+      this.graphicsEngine.add(this.mesh);
+
       GraphicsUtils.disposeObject(this.waterMesh);
       this.waterMesh = waterMesh;
+      this.graphicsEngine.add(this.waterMesh);
 
       Profiler.start('PopulateChunk');
       const populateIterator = this.populateIterator(physicsEngine, entityManager);
@@ -145,9 +147,6 @@ export class TerrainChunk {
 
     GraphicsUtils.disposeObject(this.decorations);
     this.decorations = geometryGroup;
-
-    this.graphicsEngine.add(this.mesh);
-    this.graphicsEngine.add(this.waterMesh);
     this.graphicsEngine.add(this.decorations);
   }
 
