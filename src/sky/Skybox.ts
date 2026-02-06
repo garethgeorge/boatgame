@@ -68,7 +68,8 @@ export class Skybox {
             float sunDot = dot(viewDir, sDir);
             
             // How much the sun affects this specific pixel (Directional Base)
-            float sunWeight = smoothstep(-0.5, 1.0 - haze, sunDot);
+            //float sunWeight = smoothstep(-0.5, 1.0 - haze, sunDot);
+            float sunWeight = (sunDot + 1.0)/2.0;
 
             // Noon Expansion: Fills the sky at midday
             sunWeight = mix(sunWeight, 1.0, smoothstep(0.0, 0.5, dayness));

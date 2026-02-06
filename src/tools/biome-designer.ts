@@ -44,6 +44,7 @@ class BiomeDesigner {
         const biomeSelect = document.getElementById('biome-select') as HTMLSelectElement;
         const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
         const reloadBtn = document.getElementById('reload-btn') as HTMLButtonElement;
+        const resetCameraBtn = document.getElementById('reset-camera-btn') as HTMLButtonElement;
 
         biomeSelect.value = currentBiome;
         biomeSelect.addEventListener('change', () => {
@@ -63,6 +64,10 @@ class BiomeDesigner {
                 RiverSystem.getInstance().biomeManager.resetDesignerBiome();
                 this.engine.terrainManager.regenerateDesignerTerrain();
             }
+        });
+
+        resetCameraBtn.addEventListener('click', () => {
+            this.resetCamera();
         });
 
         timeSlider.addEventListener('input', () => {
@@ -201,6 +206,17 @@ class BiomeDesigner {
             this.controls.update();
             if (originalOnUpdate) originalOnUpdate(dt);
         };
+    }
+
+    private resetCamera() {
+        this.controls.target.set(0, 2, 0);
+        this.engine.graphicsEngine.camera.position.set(20, 20, 20);
+        this.controls.update();
+
+        // Clear saved state so it doesn't immediately overwrite on next change with old values
+        // though the controls.update() might trigger a change event.
+        localStorage.removeItem('biomeDesignerCameraPos');
+        localStorage.removeItem('biomeDesignerCameraTarget');
     }
 
     private initRulesEditor() {
