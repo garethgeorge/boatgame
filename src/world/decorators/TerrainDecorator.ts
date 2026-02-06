@@ -9,44 +9,44 @@ import { DecorationInstance, Decorations, LSystemTreeKind, LSystemFlowerKind } f
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { MathUtils } from '../../core/MathUtils';
 
-export interface TreeDecorationOptions {
-    kind: LSystemTreeKind
-    rotation: number;
-    scale: number;
-    color?: number;
-    woodColor?: number;
-    isSnowy?: boolean;
-    isLeafLess?: boolean;
+
+export interface DecorationContext {
+    tryPlaceInstances(
+        instances: DecorationInstance[],
+        pos: { worldX: number, worldZ: number, height: number },
+        opts: DecorationOptions);
+
+    tryPlaceObject(
+        object: THREE.Object3D,
+        pos: { worldX: number, worldZ: number, height: number },
+        opts: DecorationOptions
+    );
 }
 
-export interface FlowerDecorationOptions {
-    kind: LSystemFlowerKind
+export type DecoratorFunction = (ctx: DecorationContext,
+    pos: { worldX: number, worldZ: number, height: number },
+    opts: DecorationOptions) => void;
+
+export type DecorationKind =
+    LSystemTreeKind
+    | LSystemFlowerKind
+    | 'rock'
+    | 'cactus'
+    | 'cycad'
+    | 'treeFern'
+    | 'mangrove'
+    | 'beachChair'
+    | 'beachUmbrella';
+
+/**
+ * Type specific options have a function to place the instance
+ */
+export interface DecorationOptions {
+    place: DecoratorFunction;
+    kind: DecorationKind,
     rotation: number;
     scale: number;
-    color?: number;
 }
-
-export interface RockDecorationOptions {
-    kind: 'rock';
-    rotation: number;
-    scale: number;
-    rockBiome?: string;
-}
-
-export interface CactusDecorationOptions {
-    kind: 'cactus';
-    rotation: number;
-    scale: number;
-}
-
-export type DecorationOptions =
-    TreeDecorationOptions
-    | FlowerDecorationOptions
-    | RockDecorationOptions
-    | CactusDecorationOptions
-    | { kind: 'cycad', rotation: number, scale: number }
-    | { kind: 'treeFern', rotation: number, scale: number }
-    | { kind: 'mangrove', rotation: number, scale: number };
 
 export class NoiseMap implements WorldMap {
     private noise: SimplexNoise;
@@ -166,6 +166,23 @@ export class TerrainDecorator {
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
     ): Generator<void | Promise<void>, void, unknown> {
 
+        const self = this;
+        const ctx: DecorationContext = {
+            tryPlaceInstances(
+                instances: DecorationInstance[],
+                pos: { worldX: number, worldZ: number, height: number },
+                opts: DecorationOptions) {
+                self.tryPlaceInstances(context, instances, pos, opts);
+            },
+            tryPlaceObject(
+                object: THREE.Object3D,
+                pos: { worldX: number, worldZ: number, height: number },
+                opts: DecorationOptions
+            ) {
+                self.tryPlaceObject(context, object, pos, opts);
+            }
+        };
+
         let countSinceYield = 0;
         for (const manifest of decorations) {
             countSinceYield++;
@@ -187,66 +204,8 @@ export class TerrainDecorator {
                 height: height
             };
 
-            const opts: DecorationOptions = manifest.options as DecorationOptions;
-
-            switch (opts.kind) {
-                case 'oak':
-                case 'willow':
-                case 'poplar':
-                case 'birch':
-                case 'elder':
-                case 'elm':
-                case 'umbrella':
-                case 'open':
-                case 'irregular':
-                case 'vase':
-                case 'palm': {
-                    const treeInstances = Decorations.getLSystemTreeInstance({
-                        kind: opts.kind,
-                        leafColor: opts.color,
-                        woodColor: opts.woodColor,
-                        isSnowy: opts.isSnowy,
-                        isLeafLess: opts.isLeafLess
-                    });
-                    this.tryPlaceInstances(context, treeInstances, pos, opts);
-                    break;
-                }
-                case 'daisy':
-                case 'lily':
-                case 'waterlily': {
-                    const flowerInstances = Decorations.getLSystemFlowerInstance({
-                        kind: opts.kind,
-                        petalColor: opts.color ?? 0xffffff
-                    });
-                    this.tryPlaceInstances(context, flowerInstances, pos, opts);
-                    break;
-                }
-                case 'rock': {
-                    const rockInstances = Decorations.getRockInstance(opts.rockBiome ?? 'happy', opts.scale);
-                    this.tryPlaceInstances(context, rockInstances, pos, opts);
-                    break;
-                }
-                case 'cactus': {
-                    const cactusInstances = Decorations.getCactusInstance();
-                    this.tryPlaceInstances(context, cactusInstances, pos, opts);
-                    break;
-                }
-                case 'cycad': {
-                    const cycadInstances = Decorations.getCycadInstance();
-                    this.tryPlaceInstances(context, cycadInstances, pos, opts);
-                    break;
-                }
-                case 'treeFern': {
-                    const treeFernInstances = Decorations.getTreeFernInstance();
-                    this.tryPlaceInstances(context, treeFernInstances, pos, opts);
-                    break;
-                }
-                case 'mangrove': {
-                    const mangrove = Decorations.getMangrove(opts.scale);
-                    this.tryPlaceObject(context, mangrove, pos, opts);
-                    break;
-                }
-            }
+            const options: DecorationOptions = manifest.options as DecorationOptions;
+            options.place(ctx, pos, options);
         }
     }
 

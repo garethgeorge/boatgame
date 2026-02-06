@@ -49,6 +49,8 @@ const DECORATION_FACTORIES = {
   'turtle': new GLTFModelFactory('assets/turtle-model-1.glb'),
   'unicorn': new GLTFModelFactory('assets/unicorn-model-1.glb'),
   'gingerman': new GLTFModelFactory('assets/gingerman-model-1.glb'),
+  'beachChair': new GLTFModelFactory('assets/beach-chair-model-1.glb'),
+  'beachUmbrella': new GLTFModelFactory('assets/umbrella-model-1.glb'),
   'mangrove': new MangroveFactory(),
   'lsystem-tree': new LSystemTreeFactory(),
   'lsystem-flower': new LSystemFlowerFactory(),
@@ -204,6 +206,8 @@ export class Decorations {
   static getTurtle() { return this.getModelAndAnimations('turtle'); }
   static getUnicorn() { return this.getModelAndAnimations('unicorn'); }
   static getGingerMan() { return this.getModelAndAnimations('gingerman'); }
+  static getBeachChair() { return this.getModelAndAnimations('beachChair'); }
+  static getBeachUmbrella() { return this.getModelAndAnimations('beachUmbrella'); }
 
   private static getModelAndAnimations(name: DecorationId): { model: THREE.Group, animations: THREE.AnimationClip[] } | null {
     try {

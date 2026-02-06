@@ -7,7 +7,7 @@ import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { DecoRules } from '../decorations/DecoRules';
+import { Fitness, TreeParams, FlowerParams } from '../decorations/DecoRules';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
 import { RiverSystem } from '../RiverSystem';
@@ -97,11 +97,11 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'willow_tree',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             stepDistance: [2, 25], // Near shore
                             slope: [3, 20]
                         }),
-                        params: DecoRules.willow_tree({
+                        params: TreeParams.willow({
                             spacing: 10,
                             paletteName: 'fantasy_leaves',
                             woodPaletteName: 'fantasy_trunk'
@@ -109,11 +109,11 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                     },
                     {
                         id: 'elm_tree',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             stepDistance: [30, 80], // Further inland
                             slope: [0, 30]
                         }),
-                        params: DecoRules.elm_tree({
+                        params: TreeParams.elm({
                             size: 4,
                             spacing: 30,
                             paletteName: 'fantasy_leaves',
@@ -126,12 +126,12 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'daisy',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             stepDistance: [3, 25], // Along the banks
                             slope: [0, 30],
                             stepNoise: { scale: 100, threshold: 0.6 }
                         }),
-                        params: DecoRules.daisy({ pack: 0.6, spacing: 0, paletteName: 'daisy' })
+                        params: FlowerParams.daisy({ pack: 0.6, spacing: 0, paletteName: 'daisy' })
                     }
                 ]
             })

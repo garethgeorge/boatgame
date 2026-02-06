@@ -5,7 +5,7 @@ import { EntityIds } from '../../entities/EntityIds';
 import { EntityRules } from './EntityLayoutRules';
 import { Placements, Patterns } from './BoatPathLayoutPatterns';
 import { RiverGeometry } from '../RiverGeometry';
-import { RockRule, BottleRule } from '../../entities/StaticEntityRules';
+import { RiverRockRule, BottleRule } from '../../entities/StaticEntityRules';
 import { SpatialGrid } from '../../core/SpatialGrid';
 
 describe('BoatPathLayoutStrategy', () => {
@@ -31,7 +31,7 @@ describe('BoatPathLayoutStrategy', () => {
     it('should generate a layout with explicit offsets and no ranges', () => {
         const scatterPattern = Patterns.scatter({
             placement: Placements.path({
-                entity: RockRule.get('test')
+                entity: RiverRockRule.get('test')
             }),
             density: [10, 10] as [number, number],
         });
@@ -71,7 +71,7 @@ describe('BoatPathLayoutStrategy', () => {
     it('should prevent overlapping placements using SpatialGrid', () => {
         const sequencePattern = Patterns.sequence({
             placement: Placements.path({
-                entity: RockRule.get('test')
+                entity: RiverRockRule.get('test')
             }),
             density: [100, 100] as [number, number],
         });

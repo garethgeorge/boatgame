@@ -58,16 +58,16 @@ export class BottleRule extends Details {
 
 ////////
 
-export interface RockPlacement extends EntityPlacement {
+export interface RiverRockPlacement extends EntityPlacement {
     biomeType: BiomeType;
 };
 
-class RockSpawnConfig extends EntitySpawnConfig {
+class RiverRockSpawnConfig extends EntitySpawnConfig {
     id = EntityIds.ROCK;
 
     override spawn(context: PopulationContext, options: EntityPlacement,
         sample: RiverGeometrySample) {
-        const opts = options as RockPlacement;
+        const opts = options as RiverRockPlacement;
 
         let pillars = false;
         if (opts.biomeType === 'forest') pillars = Math.random() < 0.1;
@@ -79,13 +79,13 @@ class RockSpawnConfig extends EntitySpawnConfig {
     }
 };
 
-export class RockRule extends Details {
-    private static _instance: RockRule;
-    private static rock_config = new RockSpawnConfig();
+export class RiverRockRule extends Details {
+    private static _instance: RiverRockRule;
+    private static rock_config = new RiverRockSpawnConfig();
 
     public static get(biomeType: BiomeType, predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
-        if (!this._instance) this._instance = new RockRule();
-        return (ctx: EntityGeneratorContext): RockPlacement | null => {
+        if (!this._instance) this._instance = new RiverRockRule();
+        return (ctx: EntityGeneratorContext): RiverRockPlacement | null => {
             const radius = 1.5 + Math.random() * 3.0; // 1.5 to 4.5m
             if (predicate !== undefined && !predicate(ctx, radius)) return null;
             return {

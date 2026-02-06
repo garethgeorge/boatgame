@@ -7,7 +7,7 @@ import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, NoiseMap, DecorationConfig } from '../decorators/TerrainDecorator';
 import { TierRule, Signal, Combine } from '../decorators/PoissonDecorationRules';
-import { DecoRules } from '../decorations/DecoRules';
+import { Fitness, TreeParams, FlowerParams } from '../decorations/DecoRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
@@ -65,13 +65,13 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'trees',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             fitness: 0.02,
                             stepDistance: [5, 100]
                         }),
                         params: r < 0.5 ?
-                            DecoRules.box_elder({ size: 3 }) :
-                            DecoRules.elm_tree()
+                            TreeParams.box_elder({ size: 3 }) :
+                            TreeParams.elm()
                     }
                 ]
             }));
@@ -82,14 +82,14 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'lilies',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             fitness: 1,
                             stepDistance: [5, 20],
                             stepNoise: { scale: 50, threshold: 0.7 }
                         }),
                         params: r < 0.5 ?
-                            DecoRules.lily() :
-                            DecoRules.daisy()
+                            FlowerParams.lily() :
+                            FlowerParams.daisy()
                     }
                 ]
             }));

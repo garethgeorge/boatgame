@@ -33,5 +33,7 @@ export const DECORATION_MANIFEST: DecorationManifestEntry[] = [
     })),
     { name: 'cycad', model: () => DecorationRegistry.getFactory('cycad').create(), hasCanopy: true },
     { name: 'treeFern', model: () => DecorationRegistry.getFactory('treeFern').create(), hasCanopy: true },
-    { name: 'mangrove', model: () => Decorations.getMangrove(), hasCanopy: true }
+    { name: 'mangrove', model: () => Decorations.getMangrove(), hasCanopy: true },
+    { name: 'beachChair', model: () => DecorationRegistry.getFactory('beachChair').create(), hasCanopy: false },
+    { name: 'beachUmbrella', model: () => DecorationRegistry.getFactory('beachUmbrella').create(), hasCanopy: true }
 ];

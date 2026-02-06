@@ -6,14 +6,14 @@ import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConf
 import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationConfig, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { DecoRules } from '../decorations/DecoRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { EntityRules } from '../layout/EntityLayoutRules';
 import { AlligatorRule, MonkeyRule, HippoRule } from '../../entities/AnimalEntityRules';
-import { BottleRule, RockRule, PierRule } from '../../entities/StaticEntityRules';
+import { BottleRule, RiverRockRule, PierRule } from '../../entities/StaticEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
+import { Fitness, RockParams, PlantParams } from '../decorations/DecoRules';
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';
@@ -61,12 +61,12 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                     species: [
                         {
                             id: 'cactus',
-                            preference: DecoRules.fitness({
+                            preference: Fitness.make({
                                 fitness: 0.2,
                                 stepDistance: [5, 100],
                                 slope: [0, 30]
                             }),
-                            params: DecoRules.cactus()
+                            params: PlantParams.cactus()
                         }
                     ]
                 }),
@@ -74,12 +74,12 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                     species: [
                         {
                             id: 'rock',
-                            preference: DecoRules.fitness({
+                            preference: Fitness.make({
                                 fitness: 0.1,
                                 stepDistance: [3, 20],
                                 slope: [0, 70]
                             }),
-                            params: DecoRules.rock({ rockBiome: 'desert' })
+                            params: RockParams.rock({ rockBiome: 'desert' })
                         }
                     ]
                 })
@@ -100,12 +100,12 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                     name: 'intro',
                     progress: [0, 0.4], scenes: [{
                         length: [50, 100], patterns: [
-                            Place.sequence_slalom(RockRule.get('desert'), [0.5, 2.0])
+                            Place.sequence_slalom(RiverRockRule.get('desert'), [0.5, 2.0])
                         ]
                     },
                     {
                         length: [50, 100], patterns: [
-                            Place.staggered_slalom(RockRule.get('desert'), [0.5, 2.0], { minCount: 3 })
+                            Place.staggered_slalom(RiverRockRule.get('desert'), [0.5, 2.0], { minCount: 3 })
                         ]
                     }]
                 },
@@ -114,13 +114,13 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
                     progress: [0.3, 0.9], scenes: [{
                         length: [100, 200], patterns: [
                             Place.sequence_nearShore([AlligatorRule.get(), MonkeyRule.get()], [0.5, 4.0]),
-                            Place.sequence_slalom(RockRule.get('desert'), [0.5, 2.0])
+                            Place.sequence_slalom(RiverRockRule.get('desert'), [0.5, 2.0])
                         ]
                     },
                     {
                         length: [100, 200], patterns: [
                             Place.cluster_nearShore(HippoRule.get(), [0.3, 2.0], { minCount: 2 }),
-                            Place.staggered_slalom(RockRule.get('desert'), [0.5, 2.0], { minCount: 3 })
+                            Place.staggered_slalom(RiverRockRule.get('desert'), [0.5, 2.0], { minCount: 3 })
                         ]
                     }]
                 }]

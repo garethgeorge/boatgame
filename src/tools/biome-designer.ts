@@ -11,7 +11,10 @@ import { Profiler } from '../core/Profiler.js';
 import { DebugConsole } from '../core/DebugConsole.js';
 import { DesignerUtils, HistoryManager } from './DesignerUtils.js';
 import { TierRule, Combine, Signal } from '../world/decorators/PoissonDecorationRules.js';
-import { DecoRules } from '../world/decorations/DecoRules.js';
+import {
+    Fitness, RockParams, TreeParams, FlowerParams,
+    PlantParams, MangroveParams, PropParams
+} from '../world/decorations/DecoRules.js';
 
 class BiomeDesigner {
     private engine: GameEngine;
@@ -395,12 +398,18 @@ class BiomeDesigner {
                 TierRule,
                 Combine,
                 Signal,
-                DecoRules: DecoRules
+                DecoRules: Fitness,
+                RockParams,
+                TreeParams,
+                FlowerParams,
+                PlantParams,
+                MangroveParams,
+                PropParams
             };
 
             // Re-evaluate with full context
-            const evalRules = new Function('THREE', 'TierRule', 'Combine', 'Signal', 'DecoRules', 'return ' + text)(
-                context.THREE, context.TierRule, context.Combine, context.Signal, context.DecoRules
+            const evalRules = new Function('THREE', 'TierRule', 'Combine', 'Signal', 'DecoRules', 'RockParams', 'TreeParams', 'FlowerParams', 'PlantParams', 'MangroveParams', 'PropParams', 'return ' + text)(
+                context.THREE, context.TierRule, context.Combine, context.Signal, context.DecoRules, context.RockParams, context.TreeParams, context.FlowerParams, context.PlantParams, context.MangroveParams, context.PropParams
             );
 
             const features = RiverSystem.getInstance().biomeManager.getDesignerBiome();

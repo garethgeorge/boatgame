@@ -6,7 +6,7 @@ import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConf
 import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { DecoRules } from '../decorations/DecoRules';
+import { Fitness, MangroveParams } from '../decorations/DecoRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { SnakeRule, EgretRule, DragonflyRule, AlligatorRule } from '../../entities/AnimalEntityRules';
@@ -154,11 +154,11 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     species: [
                         {
                             id: 'mangrove',
-                            preference: DecoRules.fitness({
+                            preference: Fitness.make({
                                 fitness: 1.0,
                                 stepDistance: [5, 55],
                             }),
-                            params: DecoRules.mangrove()
+                            params: MangroveParams.mangrove()
                         }
                     ]
                 }),

@@ -6,7 +6,7 @@ import { Decorations } from '../decorations/Decorations';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule, Combine, Signal } from '../decorators/PoissonDecorationRules';
 import { EntityIds } from '../../entities/EntityIds';
-import { DecoRules } from '../decorations/DecoRules';
+import { Fitness, RockParams, TreeParams } from '../decorations/DecoRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
@@ -65,21 +65,21 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'oak_tree',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             fitness: 0.6,
                             stepDistance: [10, 200],
                             slope: [0, 30]
                         }),
-                        params: DecoRules.oak_tree({ snow: true, leaves: 0.5 })
+                        params: TreeParams.oak({ snow: true, leaves: 0.5 })
                     },
                     {
                         id: 'elm_tree',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             fitness: 0.4,
                             stepDistance: [10, 60],
                             slope: [0, 25]
                         }),
-                        params: DecoRules.elm_tree()
+                        params: TreeParams.elm()
                     },
                 ]
             }),
@@ -87,10 +87,10 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'rock',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             fitness: 0.1
                         }),
-                        params: DecoRules.rock({ rockBiome: 'ice' })
+                        params: RockParams.rock({ rockBiome: 'ice' })
                     },
                 ]
             })

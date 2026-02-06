@@ -7,7 +7,7 @@ import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { DecoRules } from '../decorations/DecoRules';
+import { Fitness, RockParams, TreeParams } from '../decorations/DecoRules';
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { MathUtils } from '../../core/MathUtils';
@@ -87,11 +87,11 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'palm',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             stepDistance: [5, 60],
                             slope: [0, 20]
                         }),
-                        params: DecoRules.palm_tree()
+                        params: TreeParams.palm()
                     }
                 ]
             }),
@@ -99,12 +99,12 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'rock',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             stepDistance: [0, 15],
                             slope: [10, 60],
                             fitness: 0.5
                         }),
-                        params: DecoRules.rock()
+                        params: RockParams.rock()
                     }
                 ]
             })

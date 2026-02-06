@@ -7,7 +7,7 @@ import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, NoiseMap, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { DecoRules } from '../decorations/DecoRules';
+import { Fitness, RockParams, PlantParams } from '../decorations/DecoRules';
 import { WorldMap } from '../decorators/PoissonDecorationStrategy';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
@@ -15,7 +15,7 @@ import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { EntityRules } from '../layout/EntityLayoutRules';
 import { TRexRule, TriceratopsRule, PterodactylRule, BrontosaurusRule } from '../../entities/AnimalEntityRules';
-import { RockRule, LogRule, BottleRule, WaterGrassRule } from '../../entities/StaticEntityRules';
+import { RiverRockRule, LogRule, BottleRule, WaterGrassRule } from '../../entities/StaticEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
@@ -69,30 +69,30 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                     species: [
                         {
                             id: 'cycad',
-                            preference: DecoRules.fitness({
+                            preference: Fitness.make({
                                 map: { name: 'trees', range: [0, 0.5] },
                                 stepDistance: [5, 100],
                                 slope: [0, 30]
                             }),
-                            params: DecoRules.cycad()
+                            params: PlantParams.cycad()
                         },
                         {
                             id: 'tree_fern',
-                            preference: DecoRules.fitness({
+                            preference: Fitness.make({
                                 map: { name: 'trees', range: [0.5, 1] },
                                 stepDistance: [10, 100],
                                 slope: [0, 25]
                             }),
-                            params: DecoRules.tree_fern()
+                            params: PlantParams.tree_fern()
                         },
                         {
                             id: 'rock',
-                            preference: DecoRules.fitness({
+                            preference: Fitness.make({
                                 fitness: 0.5,
                                 stepDistance: [3, 40],
                                 slope: [30, 90]
                             }),
-                            params: DecoRules.rock({ rockBiome: this.id })
+                            params: RockParams.rock({ rockBiome: this.id })
                         }
                     ]
                 })
@@ -114,7 +114,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
                     progress: [0, 1.0],
                     scenes: [{
                         length: [100, 200], patterns: [
-                            Place.scatter_slalom(RockRule.get('jurassic'), [1.0, 3.0]),
+                            Place.scatter_slalom(RiverRockRule.get('jurassic'), [1.0, 3.0]),
                             Place.scatter_nearShore([TRexRule.get(), TriceratopsRule.get()], [0.5, 1.5]),
                             Place.scatter_nearShore(WaterGrassRule.get(), [1.5, 3.0])
                         ]

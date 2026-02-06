@@ -7,14 +7,14 @@ import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
-import { DecoRules } from '../decorations/DecoRules';
+import { Fitness, RockParams, TreeParams } from '../decorations/DecoRules';
 import { Decorations } from '../decorations/Decorations';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { EntityRules } from '../layout/EntityLayoutRules';
 import { MooseRule, BrownBearRule, DucklingRule } from '../../entities/AnimalEntityRules';
-import { LogRule, RockRule, PierRule, WaterGrassRule, BottleRule } from '../../entities/StaticEntityRules';
+import { LogRule, RiverRockRule, PierRule, WaterGrassRule, BottleRule } from '../../entities/StaticEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
@@ -52,27 +52,27 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'elder_tree',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             stepDistance: [60, 70],
                             stepNoise: { scale: 123.4, threshold: 0.95 }
                         }),
-                        params: DecoRules.elder_tree({ paletteName: 'fall_yellow' })
+                        params: TreeParams.elder({ paletteName: 'fall_yellow' })
                     },
                     {
                         id: 'birch_tree',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             stepNoise: { scale: 50, threshold: 0.5 },
                             stepDistance: [5, 200]
                         }),
-                        params: DecoRules.birch_tree({ paletteName: 'fall_yellow' })
+                        params: TreeParams.birch({ paletteName: 'fall_yellow' })
                     },
                     {
                         id: 'oak_tree',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             fitness: 0.9,
                             stepDistance: [5, 200]
                         }),
-                        params: DecoRules.oak_tree({ paletteName: 'fall_red_orange' })
+                        params: TreeParams.oak({ paletteName: 'fall_red_orange' })
                     }
                 ]
             }),
@@ -80,10 +80,10 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                 species: [
                     {
                         id: 'rock',
-                        preference: DecoRules.fitness({
+                        preference: Fitness.make({
                             fitness: 0.2, minFitness: 0.02, stepDistance: [2, 10]
                         }),
-                        params: DecoRules.rock()
+                        params: RockParams.rock()
                     }
                 ]
             })
@@ -105,7 +105,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                 scenes: [{
                     length: [100, 200], patterns: [
                         Place.sequence_path(LogRule.get(), [0.3, 0.4]),
-                        Place.scatter_slalom(RockRule.get('forest'), [1.0, 3.0])
+                        Place.scatter_slalom(RiverRockRule.get('forest'), [1.0, 3.0])
                     ]
                 },
                 {
