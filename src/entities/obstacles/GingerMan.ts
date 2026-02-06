@@ -4,7 +4,7 @@ import { Decorations } from '../../world/Decorations';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
 import { Entity } from '../../core/Entity';
-import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
+import { SwimAwayBehaviorFactory } from '../behaviors/SwimAwayBehaviorFactory';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimationStep } from '../../core/AnimationPlayer';
 
@@ -16,7 +16,7 @@ import { EntityMetadata } from '../EntityMetadata';
  */
 export class GingerMan extends Animal {
 
-    public static readonly HEIGHT_IN_WATER: number = -1.7;
+    public static readonly HEIGHT_IN_WATER: number = -4;
     public static readonly MODEL_PARAMS = { scale: 6, angle: Math.PI };
     public static readonly RADIUS: number = EntityMetadata.gingerman.radius;
 
@@ -34,18 +34,18 @@ export class GingerMan extends Animal {
                 angularDamping: 2.0
             });
 
-        this.setBehavior(AttackBehaviorFactory.create(this,
+        this.setBehavior(SwimAwayBehaviorFactory.create(this,
             {
                 heightInWater: GingerMan.HEIGHT_IN_WATER,
                 jumpsIntoWater: false,
-                snoutOffset: 1.0,
                 ...options,
+                behavior: options.behavior ?? { type: 'walk-swim' }
             })
         );
     }
 
     protected override getHitBehaviorParams(): ObstacleHitBehaviorParams {
-        return { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 };
+        return { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -10 };
     }
 
     protected getModelData() {
@@ -83,6 +83,7 @@ export class GingerMan extends Animal {
                     AnimalLogicPhase.IDLE_WATER,
                     AnimalLogicPhase.PREPARING_ATTACK,
                     AnimalLogicPhase.ATTACKING,
+                    AnimalLogicPhase.SWIMING_AWAY,
                 ],
                 play: Animal.play({
                     name: 'swim',

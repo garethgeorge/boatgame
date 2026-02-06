@@ -12,7 +12,9 @@ export type SwimAwayBehaviorConfig =
     // starts out in river and swims away when boat is near
     | { type: 'swim' }
     // starts out on land, enters river, swims away when boat is near
-    | { type: 'wait-swim' };
+    | { type: 'wait-swim' }
+    // starts out on land, walks around, enters river, swims away when boat is near
+    | { type: 'walk-swim' };
 
 export type ShoreBehaviorConfig =
     { type: 'none' }

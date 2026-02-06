@@ -30,6 +30,7 @@ class MetadataExtractorPage {
     private boatGroup: HTMLElement;
     private animationSelect: HTMLSelectElement;
     private dividerInput: HTMLInputElement;
+    private heightInput: HTMLInputElement;
     private speedSlider: HTMLInputElement;
     private speedDisplay: HTMLElement;
 
@@ -113,6 +114,7 @@ class MetadataExtractorPage {
         this.boatGroup = document.getElementById('boat-group')!;
         this.animationSelect = document.getElementById('animation-select') as HTMLSelectElement;
         this.dividerInput = document.getElementById('divider-input') as HTMLInputElement;
+        this.heightInput = document.getElementById('height-input') as HTMLInputElement;
         this.speedSlider = document.getElementById('speed-slider') as HTMLInputElement;
         this.speedDisplay = document.getElementById('speed-display')!;
 
@@ -151,6 +153,10 @@ class MetadataExtractorPage {
             if (this.selectedName === 'boat') {
                 this.updateHull();
             }
+        });
+
+        this.heightInput.addEventListener('input', () => {
+            this.updateModelHeight();
         });
 
         this.decoMetadataArea.addEventListener('input', () => this.syncMetadata());
@@ -212,6 +218,7 @@ class MetadataExtractorPage {
         // Reset UI
         this.animationGroup.style.display = 'none';
         this.boatGroup.style.display = 'none';
+        this.heightInput.value = "0";
 
         if (this.selectedType === 'decoration') {
             DECORATION_MANIFEST.forEach(d => {
@@ -338,6 +345,13 @@ class MetadataExtractorPage {
             } catch (e) {
                 console.warn(e);
             }
+        }
+    }
+
+    private updateModelHeight() {
+        if (this.currentModel) {
+            this.currentModel.position.y = parseFloat(this.heightInput.value) || 0;
+            this.currentModel.updateMatrixWorld(true);
         }
     }
 

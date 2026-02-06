@@ -2,20 +2,14 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { PopulationContext } from './PopulationContext';
-import { Decorations } from '../Decorations';
 import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from './decorations/BoatPathLayoutStrategy';
-import { RiverGeometry } from '../RiverGeometry';
-import { EntityIds } from '../../entities/EntityIds';
 import { BoatPathLayoutSpawner } from './decorations/BoatPathLayoutSpawner';
-import { AnimalSpawnOptions } from '../../entities/spawners/AnimalSpawner';
 import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { SpeciesRules } from './decorations/SpeciesDecorationRules';
 import { SkyBiome } from './BiomeFeatures';
-import { Placements, Patterns } from './decorations/BoatPathLayoutPatterns';
 import { Place } from './decorations/BoatPathLayoutShortcuts';
-import { EntityRules } from './decorations/EntityLayoutRules';
-import { SnakeRule, EgretRule, DragonflyRule, SwampGatorRule } from '../../entities/AnimalEntityRules';
+import { SnakeRule, EgretRule, DragonflyRule, AlligatorRule } from '../../entities/AnimalEntityRules';
 import { MangroveRule, BottleRule, LogRule, WaterGrassRule, LilyPadPatchRule } from '../../entities/StaticEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
@@ -81,25 +75,6 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
             }]
         },
         {
-            name: 'obstacles',
-            stages: [{
-                name: 'standard',
-                progress: [0.0, 1.0],
-                scenes: [{
-                    length: [100, 200], patterns: [
-                        Place.scatter_slalom(LogRule.get(), [0.5, 2.0]),
-                        Place.scatter_middle(LilyPadPatchRule.get(), [5.0, 10.0], { minCount: 100 }),
-                        Place.scatter_nearShore(WaterGrassRule.get(), [1.5, 3.0])
-                    ]
-                },
-                {
-                    length: [100, 200], patterns: [
-                        Place.scatter_middle(LilyPadPatchRule.get(), [5.0, 10.0], { minCount: 100 })
-                    ]
-                }]
-            }]
-        },
-        {
             name: 'rewards',
             stages: [{
                 name: 'bottles',
@@ -118,7 +93,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                 progress: [0.2, 1.0],
                 scenes: [{
                     length: [150, 300], patterns: [
-                        Place.scatter_path([SwampGatorRule.get(), SnakeRule.get()], [0.2, 0.6])
+                        Place.scatter_path([AlligatorRule.get(), SnakeRule.get()], [0.25, 1.5])
                     ]
                 }]
             }]
@@ -139,8 +114,26 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
                     ]
                 }]
             }]
-        }
-        ];
+        },
+        {
+            name: 'obstacles',
+            stages: [{
+                name: 'standard',
+                progress: [0.0, 1.0],
+                scenes: [{
+                    length: [100, 200], patterns: [
+                        Place.scatter_slalom(LogRule.get(), [0.5, 2.0]),
+                        Place.scatter_middle(LilyPadPatchRule.get(), [2.0, 5.0]),
+                        Place.scatter_nearShore(WaterGrassRule.get(), [1.5, 3.0])
+                    ]
+                },
+                {
+                    length: [100, 200], patterns: [
+                        Place.scatter_middle(LilyPadPatchRule.get(), [2.0, 5.0])
+                    ]
+                }]
+            }]
+        }];
 
         const config: BoatPathLayoutConfig = {
             tracks,

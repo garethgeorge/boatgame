@@ -204,34 +204,6 @@ export class AlligatorRule extends AnimalRule {
     }
 }
 
-export class SwampGatorRule extends AnimalRule {
-    private static _instance: SwampGatorRule = null;
-
-    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
-        if (!this._instance) this._instance = new SwampGatorRule;
-
-        const finalPredicate = (ctx: EntityGeneratorContext, radius: number) => {
-            if (ctx.habitat != 'water') return false;
-            if (!(-10 <= ctx.offset && ctx.offset < 10)) return false;
-            return predicate(ctx, radius);
-        };
-
-        return this._instance.get(finalPredicate);
-    }
-
-    constructor() {
-        super(
-            new AnimalSpawnConfig(EntityIds.ALLIGATOR, Alligator, ['alligator']),
-            EntityMetadata.alligator.radius,
-            Alligator.HEIGHT_IN_WATER
-        );
-    }
-
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
-        return { type: 'attack', logicName: 'AmbushAttack' };
-    }
-}
-
 export class HippoRule extends AnimalRule {
     private static _instance: HippoRule = null;
 
@@ -648,7 +620,7 @@ export class GingerManRule extends AnimalRule {
     }
 
     protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
-        return { type: 'walk-attack', logicName: 'WolfAttack' };
+        return { type: 'walk-swim' };
     }
 }
 
