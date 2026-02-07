@@ -14,6 +14,7 @@ import { Duckling } from './obstacles/Duckling';
 import { Butterfly } from './obstacles/Butterfly';
 import { Pterodactyl } from './obstacles/Pterodactyl';
 import { Bluebird } from './obstacles/Bluebird';
+import { Parrot } from './obstacles/Parrot';
 import { Egret } from './obstacles/Egret';
 import { Dragonfly } from './obstacles/Dragonfly';
 import { Snake } from './obstacles/Snake';
@@ -55,6 +56,7 @@ export const ENTITY_MANIFEST: EntityManifestEntry[] = [
     { name: 'butterfly', model: () => Decorations.getButterfly()!, params: Butterfly.MODEL_PARAMS },
     { name: 'pterodactyl', model: () => Decorations.getPterodactyl()!, params: Pterodactyl.MODEL_PARAMS },
     { name: 'bluebird', model: () => Decorations.getBluebird()!, params: Bluebird.MODEL_PARAMS },
+    { name: 'parrot', model: () => Decorations.getParrot()!, params: Parrot.MODEL_PARAMS },
     { name: 'egret', model: () => Decorations.getEgret()!, params: Egret.MODEL_PARAMS },
     { name: 'dragonfly', model: () => Decorations.getDragonfly()!, params: Dragonfly.MODEL_PARAMS },
     { name: 'snake', model: () => Decorations.getSnake()!, params: Snake.MODEL_PARAMS },

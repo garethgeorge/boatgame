@@ -15,7 +15,7 @@ import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { EntityRules } from '../layout/EntityLayoutRules';
-import { DolphinRule, TurtleRule, ButterflyRule } from '../../entities/AnimalEntityRules';
+import { DolphinRule, TurtleRule, ButterflyRule, ParrotRule } from '../../entities/AnimalEntityRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 /**
@@ -160,7 +160,13 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 stages: [{
                     name: 'flying_animals',
                     progress: [0.4, 1.0],
-                    scenes: [{ length: [100, 300], patterns: [Place.scatter_onShore(ButterflyRule.get(), [0.3, 0.6])] }]
+                    scenes: [{
+                        length: [100, 300],
+                        patterns: [
+                            Place.scatter_onShore(ButterflyRule.get(), [0.3, 0.6]),
+                            Place.scatter_onShore(ParrotRule.get(), [0.4, 0.8])
+                        ]
+                    }]
                 }]
             }
             ],

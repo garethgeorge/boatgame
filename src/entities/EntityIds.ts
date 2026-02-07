@@ -14,6 +14,7 @@ export enum EntityIds {
     BUTTERFLY = 'butterfly',
     PTERODACTYL = 'pterodactyl',
     BLUEBIRD = 'bluebird',
+    PARROT = 'parrot',
     EGRET = 'egret',
     DRAGONFLY = 'dragonfly',
     SNAKE = 'snake',

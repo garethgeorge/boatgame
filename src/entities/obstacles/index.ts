@@ -19,6 +19,7 @@ export { Monkey } from './Monkey';
 export { Moose } from './Moose';
 export { PenguinKayak } from './PenguinKayak';
 export { PolarBear } from './PolarBear';
+export { Parrot } from './Parrot';
 export { Pterodactyl } from './Pterodactyl';
 export { Snake } from './Snake';
 export { Swan } from './Swan';

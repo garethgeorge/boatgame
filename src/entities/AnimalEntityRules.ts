@@ -12,6 +12,7 @@ import { Alligator } from './obstacles/Alligator';
 import { Bluebird } from './obstacles/Bluebird';
 import { BrownBear } from './obstacles/BrownBear';
 import { Butterfly } from './obstacles/Butterfly';
+import { Parrot } from './obstacles/Parrot';
 import { Hippo } from './obstacles/Hippo';
 import { Swan } from './obstacles/Swan';
 import { PolarBear } from './obstacles/PolarBear';
@@ -283,6 +284,27 @@ export class BluebirdRule extends AnimalRule {
         super(
             new AnimalSpawnConfig(EntityIds.BLUEBIRD, Bluebird, ['bluebird']),
             EntityMetadata.bluebird.radius,
+            0
+        );
+    }
+
+    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+        return { type: 'none' }; // ignored
+    }
+}
+
+export class ParrotRule extends AnimalRule {
+    private static _instance: ParrotRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.landPredicate): EntityGeneratorFn {
+        if (!this._instance) this._instance = new ParrotRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            new AnimalSpawnConfig(EntityIds.PARROT, Parrot, ['parrot']),
+            EntityMetadata.parrot.radius,
             0
         );
     }
