@@ -54,7 +54,7 @@ export class Parrot extends Animal {
         return {
             default: Animal.play({
                 name: 'idle',
-                timeScale: 1.0, randomizeLength: 0.2, startTime: -1,
+                timeScale: 3.0, randomizeLength: 0.2, startTime: -1,
                 repeat: Infinity
             }),
             animations: [
@@ -66,7 +66,7 @@ export class Parrot extends Animal {
                     ],
                     play: Animal.play({
                         name: 'fly',
-                        timeScale: 6.0, randomizeLength: 0.2, startTime: -1,
+                        timeScale: 1.0, randomizeLength: 0.2, startTime: -1,
                         repeat: Infinity
                     })
                 }
