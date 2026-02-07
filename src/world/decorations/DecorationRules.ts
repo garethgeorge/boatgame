@@ -1,11 +1,10 @@
 import * as THREE from 'three'
 import { CoreMath } from "../../core/CoreMath";
 import { Combine, Signal } from "../decorators/PoissonDecorationRules";
-import { WorldContext } from "../decorators/PoissonDecorationStrategy";
+import { DecorationRule, WorldContext, DecorationPlacement, DecorationContext } from "../decorators/PoissonDecorationStrategy";
+import { Decorations, LSystemTreeKind, LSystemFlowerKind, DecorationInstance } from "./Decorations";
 import { ColorPalettes } from "../decorators/ColorPalettes";
 import { DecorationMetadata } from "./DecorationMetadata";
-import { DecorationContext, DecorationOptions } from "../decorators/TerrainDecorator";
-import { Decorations, LSystemTreeKind, LSystemFlowerKind, DecorationInstance } from "./Decorations";
 import { RiverSystem } from "../RiverSystem";
 
 /** 
@@ -102,49 +101,266 @@ export class Fitness {
     }
 }
 
-export interface CommonDecorationOptions extends DecorationOptions {
-    scale: number;
-    rotation: number;
+class Details {
+    public static calculateShoreRotation(worldX: number, worldZ: number) {
+        const riverSystem = RiverSystem.getInstance();
+        const closest = riverSystem.getClosestCenterPoint({ x: worldX, z: worldZ });
+
+        // Vector from the point to the closest river center point
+        const vx = closest.x - worldX;
+        const vz = closest.z - worldZ;
+
+        // Assumes the model faces +z
+        return Math.PI / 2 - Math.atan2(vz, vx);
+    }
 }
 
-export interface RockDecorationOptions extends CommonDecorationOptions {
-    rockBiome?: string;
+export class RockPlacement extends DecorationPlacement {
+    constructor(
+        x: number, y: number, z: number,
+        groundRadius: number,
+        extraSpacing: number,
+        public readonly rockBiome: string,
+        public readonly scale: number,
+        public readonly rotation: number
+    ) {
+        super(x, y, z, groundRadius, 0, extraSpacing);
+    }
+
+    public override get kind() { return 'rock'; }
+
+    public override *ensureLoaded() {
+        yield* Decorations.ensureAllLoaded(['rock']);
+    }
+
+    public override place(ctx: DecorationContext) {
+        const rockInstances = Decorations.getRockInstance(this.rockBiome, this.scale);
+        ctx.tryPlaceInstances(rockInstances, this.kind, this.x, this.y, this.z, this.scale, this.rotation);
+    }
+}
+
+export class TreePlacement extends DecorationPlacement {
+    constructor(
+        x: number, y: number, z: number,
+        groundRadius: number,
+        canopyRadius: number,
+        extraSpacing: number,
+        public readonly treeKind: LSystemTreeKind,
+        public readonly scale: number,
+        public readonly rotation: number,
+        public readonly color?: number,
+        public readonly woodColor?: number,
+        public readonly isSnowy?: boolean,
+        public readonly isLeafLess?: boolean
+    ) {
+        super(x, y, z, groundRadius, canopyRadius, extraSpacing);
+    }
+
+    public override get kind() { return this.treeKind; }
+
+    public override *ensureLoaded() {
+        yield* Decorations.ensureAllLoaded(['lsystem-tree']);
+    }
+
+    public override place(ctx: DecorationContext) {
+        const treeInstances = Decorations.getLSystemTreeInstance({
+            kind: this.treeKind,
+            leafColor: this.color,
+            woodColor: this.woodColor,
+            isSnowy: this.isSnowy,
+            isLeafLess: this.isLeafLess
+        });
+        ctx.tryPlaceInstances(treeInstances, this.kind, this.x, this.y, this.z, this.scale, this.rotation);
+    }
+}
+
+export class FlowerPlacement extends DecorationPlacement {
+    constructor(
+        x: number, y: number, z: number,
+        groundRadius: number,
+        extraSpacing: number,
+        public readonly flowerKind: LSystemFlowerKind,
+        public readonly scale: number,
+        public readonly rotation: number,
+        public readonly color?: number
+    ) {
+        super(x, y, z, groundRadius, 0, extraSpacing);
+    }
+
+    public override get kind() { return this.flowerKind; }
+
+    public override *ensureLoaded() {
+        yield* Decorations.ensureAllLoaded(['lsystem-flower']);
+    }
+
+    public override place(ctx: DecorationContext) {
+        const flowerInstances = Decorations.getLSystemFlowerInstance({
+            kind: this.flowerKind,
+            petalColor: this.color ?? 0xffffff
+        });
+        ctx.tryPlaceInstances(flowerInstances, this.kind, this.x, this.y, this.z, this.scale, this.rotation);
+    }
+}
+
+export class PlantPlacement extends DecorationPlacement {
+    constructor(
+        x: number, y: number, z: number,
+        groundRadius: number,
+        canopyRadius: number,
+        extraSpacing: number,
+        public readonly plantKind: string,
+        public readonly scale: number,
+        public readonly rotation: number
+    ) {
+        super(x, y, z, groundRadius, canopyRadius, extraSpacing);
+    }
+
+    public override get kind() { return this.plantKind; }
+
+    public override *ensureLoaded() {
+        yield* Decorations.ensureAllLoaded([this.plantKind as any]);
+    }
+
+    public override place(ctx: DecorationContext) {
+        let instances: DecorationInstance[];
+        switch (this.plantKind) {
+            case 'cactus': instances = Decorations.getCactusInstance(); break;
+            case 'cycad': instances = Decorations.getCycadInstance(); break;
+            case 'treeFern': instances = Decorations.getTreeFernInstance(); break;
+            default: return;
+        }
+        ctx.tryPlaceInstances(instances, this.kind, this.x, this.y, this.z, this.scale, this.rotation);
+    }
+}
+
+export class MangrovePlacement extends DecorationPlacement {
+    constructor(
+        x: number, y: number, z: number,
+        groundRadius: number,
+        canopyRadius: number,
+        public readonly scale: number,
+        public readonly rotation: number
+    ) {
+        super(x, y, z, groundRadius, canopyRadius, 0);
+    }
+
+    public override get kind() { return 'mangrove'; }
+
+    public override *ensureLoaded() {
+        yield* Decorations.ensureAllLoaded(['mangrove']);
+    }
+
+    public override place(ctx: DecorationContext) {
+        const mangrove = Decorations.getMangrove(this.scale);
+        ctx.tryPlaceObject(mangrove, this.kind, this.x, this.y, this.z, this.scale, this.rotation);
+    }
+}
+
+export class PropPlacement extends DecorationPlacement {
+    constructor(
+        x: number, y: number, z: number,
+        groundRadius: number,
+        canopyRadius: number,
+        public readonly propKind: string,
+        public readonly scale: number,
+        public rotation: number,
+        public readonly placeTowardShore: boolean = false
+    ) {
+        super(x, y, z, groundRadius, canopyRadius, 0);
+    }
+
+    public override get kind() { return this.propKind; }
+
+    public override *ensureLoaded() {
+        yield* Decorations.ensureAllLoaded([this.propKind as any]);
+    }
+
+    public override place(ctx: DecorationContext) {
+        if (this.placeTowardShore) {
+            this.rotation = Details.calculateShoreRotation(this.x, this.z);
+        }
+
+        let model: THREE.Object3D | undefined;
+        switch (this.propKind) {
+            case 'beachChair': model = Decorations.getBeachChair()?.model; break;
+            case 'beachUmbrella': model = Decorations.getBeachUmbrella()?.model; break;
+        }
+        if (model) ctx.tryPlaceObject(model, this.kind, this.x, this.y, this.z, this.scale, this.rotation);
+    }
+}
+
+export class UmbrellaWithChairsPlacement extends DecorationPlacement {
+    constructor(
+        x: number, y: number, z: number,
+        groundRadius: number,
+        public readonly numChairs: number,
+        public readonly scale: number
+    ) {
+        super(x, y, z, groundRadius, 0, 0);
+    }
+
+    public override get kind() { return 'umbrellaWithChairs'; }
+
+    public override *ensureLoaded() {
+        yield* Decorations.ensureAllLoaded(['beachUmbrella', 'beachChair']);
+    }
+
+    public override place(ctx: DecorationContext) {
+        // 1. Place Umbrella at center
+        const umbrellaModel = Decorations.getBeachUmbrella()?.model;
+        if (umbrellaModel) {
+            const umbrellaScale = this.scale * 1.5;
+            const umbrellaRot = Math.random() * Math.PI * 2;
+            ctx.tryPlaceObject(umbrellaModel, 'beachUmbrella', this.x, this.y, this.z, umbrellaScale, umbrellaRot);
+        }
+
+        // 2. Calculate shore rotation for chairs
+        const shoreRot = Details.calculateShoreRotation(this.x, this.z);
+
+        // 3. Determine chair positions
+        const chairModel = Decorations.getBeachChair()?.model;
+        if (chairModel) {
+            const chairScale = this.scale;
+            const chairRadius = DecorationMetadata.beachChair.groundRadius;
+            const offsetDist = chairRadius * chairScale;
+
+            const dx = Math.cos(shoreRot) * offsetDist;
+            const dz = -Math.sin(shoreRot) * offsetDist;
+
+            const placeChair = (isLeft: boolean) => {
+                const side = isLeft ? -1 : 1;
+                const x = this.x + dx * side;
+                const z = this.z + dz * side;
+                const y = this.y;
+                ctx.tryPlaceObject(chairModel, 'beachChair', x, y, z, chairScale, shoreRot);
+            }
+
+            if (this.numChairs === 1) {
+                placeChair(Math.random() > 0.5);
+            } else if (this.numChairs >= 2) {
+                placeChair(true);
+                placeChair(false);
+            }
+        }
+    }
 }
 
 export class RockParams {
     public static rock(options: { rockBiome?: string } = {}) {
         return (ctx: WorldContext) => {
             const scale = 0.8 + ctx.random() * 0.8;
-            return {
-                groundRadius: DecorationMetadata.rock.groundRadius * scale,
-                spacing: 10.0,
-                options: {
-                    place: RockParams.place,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['rock']),
-                    kind: 'rock',
-                    rotation: ctx.random() * Math.PI * 2,
-                    scale,
-                    rockBiome: options.rockBiome
-                }
-            };
+            const groundRadius = DecorationMetadata.rock.groundRadius * scale;
+            const spacing = 10.0;
+            return new RockPlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                groundRadius,
+                spacing,
+                options.rockBiome ?? 'happy',
+                scale,
+                ctx.random() * Math.PI * 2
+            );
         };
     }
-
-    public static place = (
-        ctx: DecorationContext,
-        pos: { worldX: number, worldZ: number, height: number },
-        options: DecorationOptions) => {
-        const opts = options as RockDecorationOptions;
-        const rockInstances = Decorations.getRockInstance(opts.rockBiome ?? 'happy', opts.scale);
-        ctx.tryPlaceInstances(rockInstances, opts.kind, pos, opts.scale, opts.rotation);
-    }
-}
-
-export interface TreeDecorationOptions extends CommonDecorationOptions {
-    color?: number;
-    woodColor?: number;
-    isSnowy?: boolean;
-    isLeafLess?: boolean;
 }
 
 export class TreeParams {
@@ -153,12 +369,16 @@ export class TreeParams {
             const scale = 2.0 + ctx.random() * 0.5; // Large scale
             const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.random()) : undefined;
             const meta = DecorationMetadata.elder;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                spacing: 25.0,
-                options: { place: TreeParams.place, ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-tree']), kind: 'elder', rotation: ctx.random() * Math.PI * 2, scale, color } as TreeDecorationOptions
-            };
+            return new TreePlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                25.0,
+                'elder' as LSystemTreeKind,
+                scale,
+                ctx.random() * Math.PI * 2,
+                color
+            );
         }
     }
 
@@ -176,12 +396,16 @@ export class TreeParams {
                 ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) :
                 undefined;
             const meta = DecorationMetadata.birch;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                spacing: spacing,
-                options: { place: TreeParams.place, ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-tree']), kind: 'birch', rotation: ctx.random() * Math.PI * 2, scale, color } as TreeDecorationOptions
-            };
+            return new TreePlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                spacing ?? 0,
+                'birch' as LSystemTreeKind,
+                scale,
+                ctx.random() * Math.PI * 2,
+                color
+            );
         };
     }
 
@@ -197,20 +421,19 @@ export class TreeParams {
                 ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) :
                 undefined;
             const meta = DecorationMetadata.oak;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                options: {
-                    place: TreeParams.place,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-tree']),
-                    kind: 'oak',
-                    rotation: ctx.random() * Math.PI * 2,
-                    scale,
-                    color,
-                    isSnowy: snow,
-                    isLeafLess: ctx.random() > leaves
-                } as TreeDecorationOptions
-            };
+            return new TreePlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                0,
+                'oak' as LSystemTreeKind,
+                scale,
+                ctx.random() * Math.PI * 2,
+                color,
+                undefined,
+                snow,
+                ctx.random() > leaves
+            );
         };
     }
 
@@ -239,22 +462,19 @@ export class TreeParams {
                 ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(woodPaletteName), ctx.random()) :
                 undefined;
             const meta = DecorationMetadata.elm;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                spacing: spacing,
-                options: {
-                    place: TreeParams.place,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-tree']),
-                    kind: 'elm',
-                    rotation: ctx.random() * Math.PI * 2,
-                    scale,
-                    color,
-                    woodColor,
-                    isSnowy: snow,
-                    isLeafLess: ctx.random() > leaves
-                } as TreeDecorationOptions
-            };
+            return new TreePlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                spacing,
+                'elm' as LSystemTreeKind,
+                scale,
+                ctx.random() * Math.PI * 2,
+                color,
+                woodColor,
+                snow,
+                ctx.random() > leaves
+            );
         };
     }
 
@@ -270,11 +490,16 @@ export class TreeParams {
             const scale = size * 0.9 + ctx.random() * 0.4;
             const color = paletteName !== undefined ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
             const meta = DecorationMetadata.vase;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                options: { place: TreeParams.place, ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-tree']), kind: 'vase', rotation: ctx.random() * Math.PI * 2, scale, color } as TreeDecorationOptions
-            };
+            return new TreePlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                0,
+                'vase' as LSystemTreeKind,
+                scale,
+                ctx.random() * Math.PI * 2,
+                color
+            );
         };
     }
 
@@ -293,12 +518,17 @@ export class TreeParams {
             const color = paletteName !== undefined ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
             const woodColor = woodPaletteName !== undefined ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(woodPaletteName), ctx.random()) : undefined;
             const meta = DecorationMetadata.willow;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                spacing: spacing,
-                options: { place: TreeParams.place, ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-tree']), kind: 'willow', rotation: ctx.random() * Math.PI * 2, scale, color, woodColor } as TreeDecorationOptions
-            };
+            return new TreePlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                spacing,
+                'willow' as LSystemTreeKind,
+                scale,
+                ctx.random() * Math.PI * 2,
+                color,
+                woodColor
+            );
         };
     }
 
@@ -307,12 +537,16 @@ export class TreeParams {
             const scale = 0.7 + ctx.random() * 0.6;
             const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.random()) : undefined;
             const meta = DecorationMetadata.poplar;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                spacing: 2,
-                options: { place: TreeParams.place, ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-tree']), kind: 'poplar', rotation: ctx.random() * Math.PI * 2, scale, color } as TreeDecorationOptions
-            }
+            return new TreePlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                2,
+                'poplar' as LSystemTreeKind,
+                scale,
+                ctx.random() * Math.PI * 2,
+                color
+            );
         };
     }
 
@@ -321,11 +555,16 @@ export class TreeParams {
             const scale = 0.8 + ctx.random() * 0.6;
             const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.random()) : undefined;
             const meta = DecorationMetadata.open;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                options: { place: TreeParams.place, ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-tree']), kind: 'open', rotation: ctx.random() * Math.PI * 2, scale, color } as TreeDecorationOptions
-            };
+            return new TreePlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                0,
+                'open' as LSystemTreeKind,
+                scale,
+                ctx.random() * Math.PI * 2,
+                color
+            );
         };
     }
 
@@ -333,38 +572,17 @@ export class TreeParams {
         return (ctx: WorldContext) => {
             const scale = 1.5 + ctx.random() * 1.0;
             const meta = DecorationMetadata.palm;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                options: {
-                    place: TreeParams.place,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-tree']),
-                    kind: 'palm',
-                    rotation: ctx.random() * Math.PI * 2,
-                    scale
-                } as TreeDecorationOptions
-            };
+            return new TreePlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                0,
+                'palm' as LSystemTreeKind,
+                scale,
+                ctx.random() * Math.PI * 2
+            );
         };
     }
-
-    public static place = (
-        ctx: DecorationContext,
-        pos: { worldX: number, worldZ: number, height: number },
-        options: DecorationOptions) => {
-        const opts = options as TreeDecorationOptions;
-        const treeInstances = Decorations.getLSystemTreeInstance({
-            kind: options.kind as LSystemTreeKind,
-            leafColor: opts.color,
-            woodColor: opts.woodColor,
-            isSnowy: opts.isSnowy,
-            isLeafLess: opts.isLeafLess
-        });
-        ctx.tryPlaceInstances(treeInstances, opts.kind, pos, opts.scale, opts.rotation);
-    }
-}
-
-export interface FlowerDecorationOptions extends CommonDecorationOptions {
-    color?: number;
 }
 
 export class FlowerParams {
@@ -383,18 +601,15 @@ export class FlowerParams {
             const palette = ColorPalettes.getPalette(paletteName);
             const color = ColorPalettes.getInterpolatedColor(palette, ctx.random());
             const meta = DecorationMetadata.daisy;
-            return {
-                groundRadius: meta.groundRadius * scale * pack,
-                spacing: spacing,
-                options: {
-                    place: FlowerParams.place,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-flower']),
-                    kind: 'daisy',
-                    rotation: ctx.random() * Math.PI * 2,
-                    scale,
-                    color
-                } as FlowerDecorationOptions
-            };
+            return new FlowerPlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale * pack,
+                spacing,
+                'daisy' as LSystemFlowerKind,
+                scale,
+                ctx.random() * Math.PI * 2,
+                color
+            );
         };
     }
 
@@ -413,18 +628,15 @@ export class FlowerParams {
             const palette = ColorPalettes.getPalette(paletteName);
             const color = ColorPalettes.getInterpolatedColor(palette, ctx.random());
             const meta = DecorationMetadata.lily;
-            return {
-                groundRadius: meta.groundRadius * scale * pack,
-                spacing: spacing,
-                options: {
-                    place: FlowerParams.place,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-flower']),
-                    kind: 'lily',
-                    rotation: ctx.random() * Math.PI * 2,
-                    scale,
-                    color
-                } as FlowerDecorationOptions
-            };
+            return new FlowerPlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale * pack,
+                spacing,
+                'lily' as LSystemFlowerKind,
+                scale,
+                ctx.random() * Math.PI * 2,
+                color
+            );
         };
     }
 
@@ -443,30 +655,16 @@ export class FlowerParams {
             const palette = ColorPalettes.getPalette(paletteName);
             const color = ColorPalettes.getInterpolatedColor(palette, ctx.random());
             const meta = DecorationMetadata.lily; // Assuming waterlily uses similar metadata
-            return {
-                groundRadius: meta.groundRadius * scale * pack,
-                spacing: spacing,
-                options: {
-                    place: FlowerParams.place,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['lsystem-flower']),
-                    kind: 'waterlily',
-                    rotation: ctx.random() * Math.PI * 2,
-                    scale, color
-                } as FlowerDecorationOptions
-            };
+            return new FlowerPlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale * pack,
+                spacing,
+                'waterlily' as LSystemFlowerKind,
+                scale,
+                ctx.random() * Math.PI * 2,
+                color
+            );
         };
-    }
-
-    public static place = (
-        ctx: DecorationContext,
-        pos: { worldX: number, worldZ: number, height: number },
-        options: DecorationOptions) => {
-        const opts = options as FlowerDecorationOptions;
-        const flowerInstances = Decorations.getLSystemFlowerInstance({
-            kind: options.kind as LSystemFlowerKind,
-            petalColor: opts.color ?? 0xffffff
-        });
-        ctx.tryPlaceInstances(flowerInstances, opts.kind, pos, opts.scale, opts.rotation);
     }
 }
 
@@ -475,18 +673,15 @@ export class PlantParams {
         return (ctx: WorldContext) => {
             const scale = 0.8 + ctx.random() * 0.4;
             const meta = DecorationMetadata.cactus;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                spacing: 1,
-                options: {
-                    place: PlantParams.place,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['cactus']),
-                    kind: 'cactus',
-                    rotation: ctx.random() * Math.PI * 2,
-                    scale
-                }
-            };
+            return new PlantPlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                1,
+                'cactus',
+                scale,
+                ctx.random() * Math.PI * 2
+            );
         };
     }
 
@@ -494,18 +689,15 @@ export class PlantParams {
         return (ctx: WorldContext) => {
             const scale = 0.8 + ctx.random() * 0.4;
             const meta = DecorationMetadata.cycad;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                spacing: 1,
-                options: {
-                    place: PlantParams.place,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['cycad']),
-                    kind: 'cycad',
-                    rotation: ctx.random() * Math.PI * 2,
-                    scale
-                }
-            };
+            return new PlantPlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                1,
+                'cycad',
+                scale,
+                ctx.random() * Math.PI * 2
+            );
         };
     }
 
@@ -513,34 +705,16 @@ export class PlantParams {
         return (ctx: WorldContext) => {
             const scale = 0.8 + ctx.random() * 0.4;
             const meta = DecorationMetadata.treeFern;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                spacing: 1,
-                options: {
-                    place: PlantParams.place,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['treeFern']),
-                    kind: 'treeFern',
-                    rotation: ctx.random() * Math.PI * 2,
-                    scale
-                }
-            };
+            return new PlantPlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                1,
+                'treeFern',
+                scale,
+                ctx.random() * Math.PI * 2
+            );
         };
-    }
-
-    public static place = (
-        ctx: DecorationContext,
-        pos: { worldX: number, worldZ: number, height: number },
-        options: DecorationOptions) => {
-        const opts = options as CommonDecorationOptions;
-        let instances: DecorationInstance[];
-        switch (options.kind) {
-            case 'cactus': instances = Decorations.getCactusInstance(); break;
-            case 'cycad': instances = Decorations.getCycadInstance(); break;
-            case 'treeFern': instances = Decorations.getTreeFernInstance(); break;
-            default: return;
-        }
-        ctx.tryPlaceInstances(instances, opts.kind, pos, opts.scale, opts.rotation);
     }
 }
 
@@ -549,32 +723,15 @@ export class MangroveParams {
         return (ctx: WorldContext) => {
             const scale = 1.5 + ctx.random() * 0.5;
             const meta = DecorationMetadata.mangrove;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                options: {
-                    place: MangroveParams.place,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['mangrove']),
-                    kind: 'mangrove',
-                    rotation: ctx.random() * Math.PI * 2,
-                    scale
-                }
-            };
+            return new MangrovePlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                scale,
+                ctx.random() * Math.PI * 2
+            );
         }
     }
-
-    public static place = (
-        ctx: DecorationContext,
-        pos: { worldX: number, worldZ: number, height: number },
-        options: DecorationOptions) => {
-        const opts = options as CommonDecorationOptions;
-        const mangrove = Decorations.getMangrove(opts.scale);
-        ctx.tryPlaceObject(mangrove, opts.kind, pos, opts.scale, opts.rotation);
-    }
-}
-
-export interface UmbrellaWithChairsOptions extends CommonDecorationOptions {
-    numChairs: number;
 }
 
 export class PropParams {
@@ -582,17 +739,15 @@ export class PropParams {
         return (ctx: WorldContext) => {
             const scale = 3.0;
             const meta = DecorationMetadata.beachChair;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                options: {
-                    place: PropParams.place_toward_shore,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['beachChair']),
-                    kind: 'beachChair',
-                    rotation: 0,    // calculated when placing
-                    scale
-                }
-            };
+            return new PropPlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                'beachChair',
+                scale,
+                0,
+                true // placeTowardShore
+            );
         };
     }
 
@@ -600,17 +755,14 @@ export class PropParams {
         return (ctx: WorldContext) => {
             const scale = 1.0;
             const meta = DecorationMetadata.beachUmbrella;
-            return {
-                groundRadius: meta.groundRadius * scale,
-                canopyRadius: meta.canopyRadius * scale,
-                options: {
-                    place: PropParams.place,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['beachUmbrella']),
-                    kind: 'beachUmbrella',
-                    rotation: ctx.random() * Math.PI * 2,
-                    scale
-                }
-            };
+            return new PropPlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                meta.groundRadius * scale,
+                meta.canopyRadius * scale,
+                'beachUmbrella',
+                scale,
+                ctx.random() * Math.PI * 2
+            );
         };
     }
 
@@ -618,104 +770,12 @@ export class PropParams {
         return (ctx: WorldContext) => {
             const scale = 3.0;
             const chairRadius = DecorationMetadata.beachChair.groundRadius;
-            return {
-                groundRadius: 2 * chairRadius * scale,
-                options: {
-                    place: PropParams.place_umbrella_with_chairs,
-                    ensureLoaded: () => Decorations.ensureAllLoaded(['beachUmbrella', 'beachChair']),
-                    kind: 'umbrellaWithChairs',
-                    numChairs,
-                    scale,
-                    rotation: 0
-                } as UmbrellaWithChairsOptions
-            };
+            return new UmbrellaWithChairsPlacement(
+                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                2 * chairRadius * scale,
+                numChairs,
+                scale
+            );
         };
-    }
-
-    public static place(
-        ctx: DecorationContext,
-        pos: { worldX: number, worldZ: number, height: number },
-        options: DecorationOptions) {
-        const opts = options as CommonDecorationOptions;
-        let model: THREE.Object3D | undefined;
-        switch (options.kind) {
-            case 'beachChair': model = Decorations.getBeachChair()?.model; break;
-            case 'beachUmbrella': model = Decorations.getBeachUmbrella()?.model; break;
-        }
-        if (model) ctx.tryPlaceObject(model, opts.kind, pos, opts.scale, opts.rotation);
-    }
-
-    public static place_toward_shore(
-        ctx: DecorationContext,
-        pos: { worldX: number, worldZ: number, height: number },
-        options: DecorationOptions) {
-        const opts = options as CommonDecorationOptions;
-        const rotation = PropParams.calculateShoreRotation(pos);
-
-        let model: THREE.Object3D | undefined;
-        switch (options.kind) {
-            case 'beachChair': model = Decorations.getBeachChair()?.model; break;
-            case 'beachUmbrella': model = Decorations.getBeachUmbrella()?.model; break;
-        }
-        if (model) ctx.tryPlaceObject(model, opts.kind, pos, opts.scale, rotation);
-    }
-
-    public static place_umbrella_with_chairs(
-        ctx: DecorationContext,
-        pos: { worldX: number, worldZ: number, height: number },
-        options: DecorationOptions) {
-        const opts = options as UmbrellaWithChairsOptions;
-
-        // 1. Place Umbrella at center
-        const umbrellaModel = Decorations.getBeachUmbrella()?.model;
-        if (umbrellaModel) {
-            // Umbrella rotation can be random
-            const umbrellaScale = opts.scale * 1.5;
-            const umbrellaRot = Math.random() * Math.PI * 2;
-            ctx.tryPlaceObject(umbrellaModel, 'beachUmbrella', pos, umbrellaScale, umbrellaRot);
-        }
-
-        // 2. Calculate shore rotation for chairs
-        const shoreRot = PropParams.calculateShoreRotation(pos);
-
-        // 3. Determine chair positions
-        const chairModel = Decorations.getBeachChair()?.model;
-        if (chairModel) {
-            const chairScale = opts.scale;
-            const chairRadius = DecorationMetadata.beachChair.groundRadius;
-            const offsetDist = chairRadius * chairScale;
-
-            const dx = Math.cos(shoreRot) * offsetDist;
-            const dz = -Math.sin(shoreRot) * offsetDist;
-
-            const placeChair = (isLeft: boolean) => {
-                const side = isLeft ? -1 : 1;
-                const chairPos = {
-                    worldX: pos.worldX + dx * side,
-                    worldZ: pos.worldZ + dz * side,
-                    height: pos.height
-                };
-                ctx.tryPlaceObject(chairModel, 'beachChair', chairPos, chairScale, shoreRot);
-            }
-
-            if (opts.numChairs === 1) {
-                placeChair(Math.random() > 0.5);
-            } else if (opts.numChairs >= 2) {
-                placeChair(true);
-                placeChair(false);
-            }
-        }
-    }
-
-    public static calculateShoreRotation(pos: { worldX: number, worldZ: number }) {
-        const riverSystem = RiverSystem.getInstance();
-        const closest = riverSystem.getClosestCenterPoint({ x: pos.worldX, z: pos.worldZ });
-
-        // Vector from the point to the closest river center point
-        const vx = closest.x - pos.worldX;
-        const vz = closest.z - pos.worldZ;
-
-        // Assumes the model faces +z
-        return Math.PI / 2 - Math.atan2(vz, vx);
     }
 }

@@ -64,7 +64,7 @@ describe('BoatPathLayoutStrategy', () => {
             expect(p.x).toBeDefined();
             expect(p.z).toBeDefined();
             expect((p as any).range).toBeUndefined();
-            expect(p.radius).toBeGreaterThan(0);
+            expect(p.groundRadius).toBeGreaterThan(0);
         });
     });
 
@@ -118,7 +118,7 @@ describe('BoatPathLayoutStrategy', () => {
                 const dist = Math.sqrt(dx * dx + dz * dz);
 
                 // Allow a tiny epsilon for floating point
-                expect(dist).toBeGreaterThanOrEqual(p1.radius + p2.radius - 0.01);
+                expect(dist).toBeGreaterThanOrEqual(p1.groundRadius + p2.groundRadius - 0.01);
             }
         }
     });
@@ -145,7 +145,7 @@ describe('BoatPathLayoutStrategy', () => {
 
         const layout = BoatPathLayoutStrategy.createLayout([0, 100], config as any, new SpatialGrid(20));
 
-        const bottle = layout.placements.find(p => p.config.id === EntityIds.BOTTLE);
+        const bottle = layout.placements.find(p => p.id === EntityIds.BOTTLE);
         expect(bottle).toBeDefined();
         expect(bottle!.x).toBeDefined();
     });

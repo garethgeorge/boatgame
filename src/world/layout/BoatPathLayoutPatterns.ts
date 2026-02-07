@@ -152,14 +152,10 @@ export class Placements {
         pathIndex: number, offset: number,
         x: number, z: number,
     ): boolean {
-        if (context.spatialGrid.checkCollision(x, z, options.radius, 0)) return false;
+        if (context.spatialGrid.checkCollision(x, z, options.groundRadius, options.canopyRadius)) return false;
 
         context.placements.push(options);
-        context.spatialGrid.insert({
-            position: new THREE.Vector3(x, 0, z),
-            groundRadius: options.radius,
-            canopyRadius: 0
-        });
+        context.spatialGrid.insert(options);
 
         return true;
     }

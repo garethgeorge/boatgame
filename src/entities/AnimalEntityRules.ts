@@ -33,44 +33,38 @@ import { Dragonfly } from './obstacles/Dragonfly';
 import { Pterodactyl } from './obstacles/Pterodactyl';
 import { Decorations, DecorationId } from '../world/decorations/Decorations';
 import {
-    Habitat, EntityGeneratorContext, EntitySpawnConfig,
+    Habitat, EntityGeneratorContext,
     EntityPlacement, PlacementPredicate, EntityRules,
     EntityGeneratorFn
 } from '../world/layout/EntityLayoutRules';
 
-export interface AnimalPlacement extends EntityPlacement {
-    habitat: Habitat;
-    heightInWater: number;
-    options: AnimalSpawnOptions;
-};
-
-export class AnimalSpawnConfig extends EntitySpawnConfig {
+export class AnimalPlacement extends EntityPlacement {
     constructor(
-        public id: EntityIds,
-        public factory: AnimalClass,
-        public decorationIds: DecorationId[] = []
+        index: number, x: number, y: number, z: number, groundRadius: number,
+        public readonly id: EntityIds,
+        public readonly habitat: Habitat,
+        public readonly factory: AnimalClass,
+        public readonly heightInWater: number,
+        public readonly options: AnimalSpawnOptions,
+        public readonly decorationIds: DecorationId[] = []
     ) {
-        super();
-        this.decorationIds = decorationIds;
+        super(index, x, y, z, groundRadius);
     }
 
-    public spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample
-    ) {
-        const x = options.x;
-        const z = options.z;
+    public spawn(context: PopulationContext, sample: RiverGeometrySample) {
+        const x = this.x;
+        const z = this.z;
 
-        const animal = options as AnimalPlacement;
         const animalClass = this.factory;
         if (!animalClass) return;
 
         const riverSystem = RiverSystem.getInstance();
 
-        if (animal.habitat === 'water') {
+        if (this.habitat === 'water') {
             AnimalSpawner.createEntity(animalClass, context,
                 x, z, Math.random() * Math.PI * 2,
-                animal.heightInWater, new THREE.Vector3(0, 1, 0),
-                animal.options);
+                this.heightInWater, new THREE.Vector3(0, 1, 0),
+                this.options);
         } else {
             const terrainHeight = riverSystem.terrainGeometry.calculateHeight(x, z);
             const terrainNormal = riverSystem.terrainGeometry.calculateNormal(x, z);
@@ -87,12 +81,12 @@ export class AnimalSpawnConfig extends EntitySpawnConfig {
             AnimalSpawner.createEntity(animalClass, context,
                 x, z, rotation,
                 terrainHeight, terrainNormal,
-                animal.options);
+                this.options);
         }
     }
 
     public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
-        if (this.decorationIds) {
+        if (this.decorationIds && this.decorationIds.length > 0) {
             yield* Decorations.ensureAllLoaded(this.decorationIds as any);
         }
     }
@@ -124,7 +118,7 @@ class Details {
             })
         ]);
 
-    protected aggressiveness(ctx: EntityGeneratorContext): number {
+    protected static aggressiveness(ctx: EntityGeneratorContext): number {
         const aggressiveness = Math.min(1.0, ctx.progress * 0.7 + Math.random() * 0.3);
         return aggressiveness;
     }
@@ -133,6 +127,7 @@ class Details {
         habitat: Habitat,
         logicName?: 'WolfAttack' | 'AmbushAttack'
     ): AnimalBehaviorConfig {
+
         if (logicName === undefined)
             logicName = Math.random() < 0.5 ? 'WolfAttack' : 'AmbushAttack';
         if (habitat === 'water') {
@@ -157,13 +152,17 @@ class Details {
 }
 
 abstract class AnimalRule extends Details {
-    private config: AnimalSpawnConfig;
+    private id: EntityIds;
+    private factory: AnimalClass;
+    private decorationIds: DecorationId[];
     private radius: number;
     private heightInWater: number;
 
-    constructor(config: AnimalSpawnConfig, radius: number, heightInWater: number) {
+    constructor(id: EntityIds, factory: AnimalClass, decorationIds: DecorationId[], radius: number, heightInWater: number) {
         super();
-        this.config = config;
+        this.id = id;
+        this.factory = factory;
+        this.decorationIds = decorationIds;
         this.radius = radius;
         this.heightInWater = heightInWater;
     }
@@ -172,18 +171,21 @@ abstract class AnimalRule extends Details {
 
     public get(predicate: PlacementPredicate): EntityGeneratorFn {
         return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
-            const radius = this.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius, habitat: ctx.habitat,
-                config: this.config,
-                heightInWater: this.heightInWater,
-                options: {
-                    aggressiveness: this.aggressiveness(ctx),
+            const groundRadius = this.radius;
+            if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
+            return new AnimalPlacement(
+                ctx.index, ctx.x, 0, ctx.z, groundRadius,
+                this.id,
+                ctx.habitat,
+                this.factory,
+                this.heightInWater,
+                {
+                    aggressiveness: Details.aggressiveness(ctx),
                     biomeZRange: ctx.biomeZRange,
                     behavior: this.behavior(ctx)
-                }
-            };
+                },
+                this.decorationIds
+            );
         }
     }
 }
@@ -198,7 +200,7 @@ export class AlligatorRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.ALLIGATOR, Alligator, ['alligator']),
+            EntityIds.ALLIGATOR, Alligator, ['alligator'],
             EntityMetadata.alligator.radius,
             Alligator.HEIGHT_IN_WATER
         );
@@ -219,7 +221,7 @@ export class HippoRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.HIPPO, Hippo, ['hippo']),
+            EntityIds.HIPPO, Hippo, ['hippo'],
             EntityMetadata.hippo.radius,
             Hippo.HEIGHT_IN_WATER
         );
@@ -240,7 +242,7 @@ export class SwanRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.SWAN, Swan, ['swan']),
+            EntityIds.SWAN, Swan, ['swan'],
             EntityMetadata.swan.radius,
             Swan.HEIGHT_IN_WATER
         );
@@ -261,7 +263,7 @@ export class UnicornRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.UNICORN, Unicorn, ['unicorn']),
+            EntityIds.UNICORN, Unicorn, ['unicorn'],
             EntityMetadata.unicorn.radius,
             0
         );
@@ -282,7 +284,7 @@ export class BluebirdRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.BLUEBIRD, Bluebird, ['bluebird']),
+            EntityIds.BLUEBIRD, Bluebird, ['bluebird'],
             EntityMetadata.bluebird.radius,
             0
         );
@@ -303,7 +305,7 @@ export class ParrotRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.PARROT, Parrot, ['parrot']),
+            EntityIds.PARROT, Parrot, ['parrot'],
             EntityMetadata.parrot.radius,
             0
         );
@@ -324,7 +326,7 @@ export class BrownBearRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.BROWN_BEAR, BrownBear, ['brownBear']),
+            EntityIds.BROWN_BEAR, BrownBear, ['brownBear'],
             EntityMetadata.brownBear.radius,
             BrownBear.HEIGHT_IN_WATER
         );
@@ -345,7 +347,7 @@ export class PolarBearRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.POLAR_BEAR, PolarBear, ['polarBear']),
+            EntityIds.POLAR_BEAR, PolarBear, ['polarBear'],
             EntityMetadata.polarBear.radius,
             PolarBear.HEIGHT_IN_WATER
         );
@@ -366,7 +368,7 @@ export class MooseRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.MOOSE, Moose, ['moose']),
+            EntityIds.MOOSE, Moose, ['moose'],
             EntityMetadata.moose.radius,
             Moose.HEIGHT_IN_WATER
         );
@@ -387,7 +389,7 @@ export class DucklingRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.DUCKLING, Duckling, ['duckling']),
+            EntityIds.DUCKLING, Duckling, ['duckling'],
             EntityMetadata.duckling.radius,
             Duckling.HEIGHT_IN_WATER
         );
@@ -408,7 +410,7 @@ export class PenguinKayakRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.PENGUIN_KAYAK, PenguinKayak, ['penguinKayak']),
+            EntityIds.PENGUIN_KAYAK, PenguinKayak, ['penguinKayak'],
             EntityMetadata.penguinKayak.radius,
             PenguinKayak.HEIGHT_IN_WATER
         );
@@ -429,7 +431,7 @@ export class DragonflyRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.DRAGONFLY, Dragonfly, ['dragonfly']),
+            EntityIds.DRAGONFLY, Dragonfly, ['dragonfly'],
             EntityMetadata.dragonfly.radius,
             0
         );
@@ -450,7 +452,7 @@ export class TRexRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.TREX, TRex, ['trex']),
+            EntityIds.TREX, TRex, ['trex'],
             EntityMetadata.trex.radius,
             TRex.HEIGHT_IN_WATER
         );
@@ -471,7 +473,7 @@ export class TriceratopsRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.TRICERATOPS, Triceratops, ['triceratops']),
+            EntityIds.TRICERATOPS, Triceratops, ['triceratops'],
             EntityMetadata.triceratops.radius,
             Triceratops.HEIGHT_IN_WATER
         );
@@ -492,7 +494,7 @@ export class BrontosaurusRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.BRONTOSAURUS, Brontosaurus, ['brontosaurus']),
+            EntityIds.BRONTOSAURUS, Brontosaurus, ['brontosaurus'],
             EntityMetadata.brontosaurus.radius,
             Brontosaurus.HEIGHT_IN_WATER
         );
@@ -513,7 +515,7 @@ export class PterodactylRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.PTERODACTYL, Pterodactyl, ['pterodactyl']),
+            EntityIds.PTERODACTYL, Pterodactyl, ['pterodactyl'],
             EntityMetadata.pterodactyl.radius,
             0
         );
@@ -534,7 +536,7 @@ export class SnakeRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.SNAKE, Snake, ['snake']),
+            EntityIds.SNAKE, Snake, ['snake'],
             EntityMetadata.snake.radius,
             Snake.HEIGHT_IN_WATER
         );
@@ -555,7 +557,7 @@ export class EgretRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.EGRET, Egret, ['egret']),
+            EntityIds.EGRET, Egret, ['egret'],
             EntityMetadata.egret.radius,
             Egret.HEIGHT_IN_WATER
         );
@@ -576,7 +578,7 @@ export class DolphinRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.DOLPHIN, Dolphin, ['dolphin']),
+            EntityIds.DOLPHIN, Dolphin, ['dolphin'],
             EntityMetadata.dolphin.radius,
             Dolphin.HEIGHT_IN_WATER
         );
@@ -597,7 +599,7 @@ export class TurtleRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.TURTLE, Turtle, ['turtle']),
+            EntityIds.TURTLE, Turtle, ['turtle'],
             EntityMetadata.turtle.radius,
             Turtle.HEIGHT_IN_WATER
         );
@@ -618,7 +620,7 @@ export class ButterflyRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.BUTTERFLY, Butterfly, ['butterfly']),
+            EntityIds.BUTTERFLY, Butterfly, ['butterfly'],
             EntityMetadata.butterfly.radius,
             0
         );
@@ -639,7 +641,7 @@ export class GingerManRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.GINGERMAN, GingerMan, ['gingerman']),
+            EntityIds.GINGERMAN, GingerMan, ['gingerman'],
             EntityMetadata.gingerman.radius,
             GingerMan.HEIGHT_IN_WATER
         );
@@ -660,7 +662,7 @@ export class MonkeyRule extends AnimalRule {
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.MONKEY, Monkey, ['monkey']),
+            EntityIds.MONKEY, Monkey, ['monkey'],
             EntityMetadata.monkey.radius,
             Monkey.HEIGHT_IN_WATER
         );

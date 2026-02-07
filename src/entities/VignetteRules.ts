@@ -5,10 +5,11 @@ import { PopulationContext } from "../world/biomes/PopulationContext";
 import { RiverSystem } from "../world/RiverSystem";
 import { Decorations, DecorationId } from '../world/decorations/Decorations';
 import {
-    EntityGeneratorContext, EntitySpawnConfig,
+    EntityGeneratorContext,
     EntityPlacement, EntityGeneratorFn, EntityRules,
     PlacementPredicate
 } from '../world/layout/EntityLayoutRules';
+
 import { Parrot } from './obstacles/Parrot';
 import { DecorationMetadata } from '../world/decorations/DecorationMetadata';
 import { AnimalSpawner } from './spawners/AnimalSpawner';
@@ -16,27 +17,20 @@ import { AnimalSpawner } from './spawners/AnimalSpawner';
 /**
  * Metadata for vignette placements.
  */
-export interface BirdOnBeachChairPlacement extends EntityPlacement {
-    scale: number; // for chair
-    biomeZRange: [number, number];
-}
-
-/**
- * Specialized SpawnConfig for vignettes that coordinate props and entities.
- */
-export class BirdOnBeachChairSpawnConfig extends EntitySpawnConfig {
+export class BirdOnBeachChairPlacement extends EntityPlacement {
     constructor(
-        public id: EntityIds,
-        public decorationIds: DecorationId[] = []
+        index: number, x: number, y: number, z: number, groundRadius: number,
+        public readonly scale: number, // for chair
+        public readonly biomeZRange: [number, number],
+        public readonly decorationIds: DecorationId[] = []
     ) {
-        super();
+        super(index, x, y, z, groundRadius);
     }
 
-    public spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample
-    ) {
-        const placement = options as BirdOnBeachChairPlacement;
-        const { x, z } = placement;
+    public get id() { return EntityIds.PARROT; }
+
+    public spawn(context: PopulationContext, sample: RiverGeometrySample) {
+        const { x, z } = this;
 
         const riverSystem = RiverSystem.getInstance();
         const height = riverSystem.terrainGeometry.calculateHeight(x, z);
@@ -57,7 +51,7 @@ export class BirdOnBeachChairSpawnConfig extends EntitySpawnConfig {
             context.decoHelper.positionAndCollectGeometry(
                 context,
                 chairModel,
-                { worldX: x, worldZ: z, height },
+                x, height, z,
                 chairScale,
                 rotation + Math.PI  // model needs rotating
             );
@@ -81,7 +75,7 @@ export class BirdOnBeachChairSpawnConfig extends EntitySpawnConfig {
             parrotHeight, new THREE.Vector3(0, 1, 0),
             {
                 aggressiveness: 0.5,
-                biomeZRange: placement.biomeZRange,
+                biomeZRange: this.biomeZRange,
                 behavior: { type: 'none' }
             });
     }
@@ -102,12 +96,6 @@ export class BirdOnBeachChairRule {
             })
         ]);
 
-    private config: BirdOnBeachChairSpawnConfig;
-
-    constructor() {
-        this.config = new BirdOnBeachChairSpawnConfig(EntityIds.PARROT, ['beachChair', 'parrot']);
-    }
-
     public static get(predicate: PlacementPredicate = this.defaultPredicate): EntityGeneratorFn {
         if (!this._instance) this._instance = new BirdOnBeachChairRule();
         return (ctx: EntityGeneratorContext) =>
@@ -117,18 +105,20 @@ export class BirdOnBeachChairRule {
     public generate(ctx: EntityGeneratorContext, predicate: PlacementPredicate): BirdOnBeachChairPlacement | null {
         // Chair scale
         const scale = 3.0;
-        const radius = DecorationMetadata.beachChair.groundRadius * scale;
+        const groundRadius = DecorationMetadata.beachChair.groundRadius * scale;
 
-        if (predicate !== undefined && !predicate(ctx, radius)) return null;
+        if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
 
-        return {
-            index: ctx.index,
-            x: ctx.x,
-            z: ctx.z,
-            radius,
+        return new BirdOnBeachChairPlacement(
+            ctx.index,
+            ctx.x,
+            0,
+            ctx.z,
+            groundRadius,
             scale,
-            biomeZRange: ctx.biomeZRange,
-            config: this.config
-        };
+            ctx.biomeZRange,
+            ['beachChair', 'parrot']
+        );
     }
 }
+

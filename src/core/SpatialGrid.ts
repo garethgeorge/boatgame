@@ -1,15 +1,14 @@
 import * as THREE from 'three';
 
-// A single placement
+// A single placement. Note that the x-z plane is the ground plane for the grid.
 export interface PlacementManifest {
-    position: THREE.Vector3;
+    x: number;
+    y: number;
+    z: number;
 
     // The "actual" radii at ground and canopy levels
     groundRadius: number;
     canopyRadius: number;
-
-    // type specific options
-    options?: any;
 };
 
 export interface AnySpatialGrid {
@@ -80,10 +79,10 @@ export class SpatialGrid implements AnySpatialGrid {
     insert(item: PlacementManifest) {
         const radius = Math.max(item.groundRadius, item.canopyRadius);
 
-        const cxStart = Math.floor((item.position.x - radius) * this.cellSizeInv);
-        const cyStart = Math.floor((item.position.z - radius) * this.cellSizeInv);
-        const cxEnd = Math.floor((item.position.x + radius) * this.cellSizeInv);
-        const cyEnd = Math.floor((item.position.z + radius) * this.cellSizeInv);
+        const cxStart = Math.floor((item.x - radius) * this.cellSizeInv);
+        const cyStart = Math.floor((item.z - radius) * this.cellSizeInv);
+        const cxEnd = Math.floor((item.x + radius) * this.cellSizeInv);
+        const cyEnd = Math.floor((item.z + radius) * this.cellSizeInv);
 
         for (let icx = cxStart; icx <= cxEnd; icx++) {
             for (let icy = cyStart; icy <= cyEnd; icy++) {
@@ -117,8 +116,8 @@ export class SpatialGrid implements AnySpatialGrid {
                 if (cellItems) {
                     for (let k = 0; k < cellItems.length; k++) {
                         const item = cellItems[k];
-                        const dx = x - item.position.x;
-                        const dy = y - item.position.z;
+                        const dx = x - item.x;
+                        const dy = y - item.z;
                         const distSq = dx * dx + dy * dy;
 
                         // Check ground collision
@@ -154,8 +153,8 @@ export class SpatialGrid implements AnySpatialGrid {
                 if (cellItems) {
                     for (let k = 0; k < cellItems.length; k++) {
                         const item = cellItems[k];
-                        const dx = x - item.position.x;
-                        const dy = y - item.position.z;
+                        const dx = x - item.x;
+                        const dy = y - item.z;
                         const distSq = dx * dx + dy * dy;
                         const groundDist = groundRadius + item.groundRadius;
                         if (distSq < groundDist * groundDist) return true;
@@ -184,8 +183,8 @@ export class SpatialGrid implements AnySpatialGrid {
                     for (let k = 0; k < cellItems.length; k++) {
                         const item = cellItems[k];
                         if (item.canopyRadius <= 0) continue;
-                        const dx = x - item.position.x;
-                        const dy = y - item.position.z;
+                        const dx = x - item.x;
+                        const dy = y - item.z;
                         const distSq = dx * dx + dy * dy;
                         const canopyDist = canopyRadius + item.canopyRadius;
                         if (distSq < canopyDist * canopyDist) return true;

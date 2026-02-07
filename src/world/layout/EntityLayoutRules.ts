@@ -4,6 +4,7 @@ import { RiverGeometrySample } from "../RiverGeometry";
 import { PopulationContext } from "../biomes/PopulationContext";
 import { DecorationId } from '../decorations/Decorations';
 import { RiverSystem } from "../RiverSystem";
+import { PlacementManifest } from '../../core/SpatialGrid';
 
 export type Habitat = 'land' | 'water';
 
@@ -37,37 +38,36 @@ export type EntityGeneratorFn = (ctx: EntityGeneratorContext) =>
 
 
 /**
- * The entity description includes a spawn config used to preload and spawn
- * the entity.
+ * Entity placement describes how to place an instance.
+ * index is the fractional index of the river position.
  */
-export class EntitySpawnConfig {
-    public id: EntityIds;
-    public decorationIds: DecorationId[] = [];
+export abstract class EntityPlacement implements PlacementManifest {
+    constructor(
+        public readonly index: number,
+        public readonly x: number,
+        public readonly y: number,
+        public readonly z: number,
+        public readonly groundRadius: number,
+        public readonly canopyRadius: number = 0
+    ) { }
 
-    public spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-    }
+    /** The entity ID for telemetry and identity. */
+    public abstract get id(): EntityIds;
 
+    /** Spawns the entity into the world. */
+    public abstract spawn(context: PopulationContext, sample: RiverGeometrySample): void;
+
+    /** 
+     * Generator that yields promises for assets that must be loaded 
+     * before this entity can be spawned.
+     */
     public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+        // Default: nothing to load
     }
-};
+}
 
-/**
- * The entity placement is minimally comprised of the x,y position of the
- * entity center, its radius and spawn config. Note that the center need
- * not be the same as the offset position passed since objets such as piers
- * or buoys may extend from the offset in a specific direction.
- */
-export interface EntityPlacement {
-    /** Fractional index in river path. */
-    index: number;
-    /** Center and radius */
-    x: number, z: number, radius: number;
-    /** Spawner */
-    config: EntitySpawnConfig;
-};
 
-export type PlacementPredicate = (ctx: EntityGeneratorContext, radius: number) => boolean;
+export type PlacementPredicate = (ctx: EntityGeneratorContext, groundRadius: number) => boolean;
 
 export class EntityRules {
     public static choose(types: EntityGeneratorFn[]) {
@@ -78,31 +78,31 @@ export class EntityRules {
     }
 
     public static all(predicates: PlacementPredicate[]): PlacementPredicate {
-        return (ctx: EntityGeneratorContext, radius: number) => {
+        return (ctx: EntityGeneratorContext, groundRadius: number) => {
             for (const p of predicates) {
-                if (!p(ctx, radius)) return false;
+                if (!p(ctx, groundRadius)) return false;
             }
             return true;
         };
     }
 
     public static select(choice: { water?: PlacementPredicate, land?: PlacementPredicate }): PlacementPredicate {
-        return (ctx: EntityGeneratorContext, radius: number) => {
+        return (ctx: EntityGeneratorContext, groundRadius: number) => {
             if (ctx.habitat === 'water' && choice.water !== undefined) {
-                return choice.water(ctx, radius);
+                return choice.water(ctx, groundRadius);
             } else if (ctx.habitat === 'land' && choice.land !== undefined) {
-                return choice.land(ctx, radius);
+                return choice.land(ctx, groundRadius);
             }
             return false;
         }
     }
 
     public static true(): PlacementPredicate {
-        return (ctx: EntityGeneratorContext, radius: number) => true;
+        return (ctx: EntityGeneratorContext, groundRadius: number) => true;
     }
 
     public static slope_in_range(min: number, max: number): PlacementPredicate {
-        return (ctx: EntityGeneratorContext, radius: number) => {
+        return (ctx: EntityGeneratorContext, groundRadius: number) => {
             const normal = ctx.riverSystem.terrainGeometry.calculateNormal(ctx.x, ctx.z);
             const up = new THREE.Vector3(0, 1, 0);
             const angleRad = normal.angleTo(up);
@@ -112,8 +112,8 @@ export class EntityRules {
     }
 
     public static min_bank_distance(min: number): PlacementPredicate {
-        return (ctx: EntityGeneratorContext, radius: number) => {
-            return Math.abs(Math.abs(ctx.offset) - ctx.sample.bankDist) > radius + min;
+        return (ctx: EntityGeneratorContext, groundRadius: number) => {
+            return Math.abs(Math.abs(ctx.offset) - ctx.sample.bankDist) > groundRadius + min;
         }
     }
 }

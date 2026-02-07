@@ -1,5 +1,5 @@
 import { CoreMath } from "../../core/CoreMath";
-import { DecorationRule, WorldContext } from "./PoissonDecorationStrategy";
+import { DecorationRule, WorldContext, DecorationPlacement } from "./PoissonDecorationStrategy";
 
 export const Signal = {
     constant: (fitness: number) => (ctx: WorldContext) =>
@@ -91,12 +91,7 @@ export const Combine = {
         Math.max(...fns.map(f => f(ctx))),
 };
 
-export type SpeciesGeneratorFn = (ctx: WorldContext) => {
-    groundRadius: number,
-    canopyRadius?: number,
-    spacing?: number,
-    options: any
-};
+export type SpeciesGeneratorFn = (ctx: WorldContext) => DecorationPlacement;
 
 export const Select = {
     choose: (species: SpeciesGeneratorFn[]) => {
@@ -128,17 +123,9 @@ export class TierRule implements DecorationRule {
     }
 
     // Pick the winner based on relative preference
-    generate(ctx: WorldContext): {
-        groundRadius: number,
-        canopyRadius?: number,
-        spacing?: number,
-        options: any
-    } {
+    generate(ctx: WorldContext): DecorationPlacement {
         const scored = this.species.map(s => ({ s, p: s.preference(ctx) }));
         const winner = scored.reduce((a, b) => a.p > b.p ? a : b).s;
-        let params = winner.params(ctx);
-        return {
-            ...params
-        };
+        return winner.params(ctx);
     }
 }

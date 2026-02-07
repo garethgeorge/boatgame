@@ -12,8 +12,8 @@ import { PierSpawner } from './spawners/PierSpawner';
 import { BuoySpawner } from './spawners/BuoySpawner';
 import { LogSpawner } from './spawners/LogSpawner';
 import {
-    EntitySpawnConfig, EntityPlacement, EntityGeneratorContext,
-    PlacementPredicate, EntityRules, EntityGeneratorFn
+    EntityPlacement, EntityGeneratorContext,
+    PlacementPredicate, EntityRules, EntityGeneratorFn,
 } from '../world/layout/EntityLayoutRules';
 import { IcebergSpawner } from "./spawners/IcebergSpawner";
 
@@ -28,170 +28,150 @@ class Details {
     ]);
 }
 
+/**
+ * A simple implementation of EntityPlacement for static entities that don't need
+ * complex logic or parameters beyond their ID.
+ */
+export class SimpleEntityPlacement extends EntityPlacement {
+    constructor(
+        index: number, x: number, y: number, z: number, groundRadius: number,
+        public readonly id: EntityIds,
+        private readonly spawnFn: (context: PopulationContext, x: number, z: number, groundRadius: number) => void
+    ) {
+        super(index, x, y, z, groundRadius);
+    }
+
+    override spawn(context: PopulationContext, sample: RiverGeometrySample) {
+        this.spawnFn(context, this.x, this.z, this.groundRadius);
+    }
+}
+
 ////////
 
-class BottleSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.BOTTLE;
-
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        MessageInABottleSpawner.createEntity(context, options.x, options.z);
-    }
-};
-
 export class BottleRule extends Details {
-    private static _instance: BottleRule;
-    private static bottle_config = new BottleSpawnConfig();
-
     public static get(predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
-        if (!this._instance) this._instance = new BottleRule();
         return (ctx: EntityGeneratorContext): EntityPlacement | null => {
-            const radius = EntityMetadata.messageInABottle.radius;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
-                config: this.bottle_config
-            };
+            const groundRadius = EntityMetadata.messageInABottle.radius;
+            if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
+            return new SimpleEntityPlacement(
+                ctx.index, ctx.x, 0, ctx.z, groundRadius,
+                EntityIds.BOTTLE,
+                (context, x, z) => MessageInABottleSpawner.createEntity(context, x, z)
+            );
         }
     }
 }
 
 ////////
 
-export interface RiverRockPlacement extends EntityPlacement {
-    biomeType: BiomeType;
-};
+export class RiverRockPlacement extends EntityPlacement {
+    constructor(
+        index: number, x: number, y: number, z: number, groundRadius: number,
+        public readonly biomeType: BiomeType
+    ) {
+        super(index, x, y, z, groundRadius);
+    }
 
-class RiverRockSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.ROCK;
+    get id() { return EntityIds.ROCK; }
 
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        const opts = options as RiverRockPlacement;
-
+    override spawn(context: PopulationContext, sample: RiverGeometrySample) {
         let pillars = false;
-        if (opts.biomeType === 'forest') pillars = Math.random() < 0.1;
-        else if (opts.biomeType === 'desert') pillars = Math.random() < 0.3;
+        if (this.biomeType === 'forest') pillars = Math.random() < 0.1;
+        else if (this.biomeType === 'desert') pillars = Math.random() < 0.3;
 
         RockSpawner.createEntity(
-            context, options.x, options.z, options.radius, pillars, opts.biomeType
+            context, this.x, this.z, this.groundRadius, pillars, this.biomeType
         );
     }
 };
 
 export class RiverRockRule extends Details {
-    private static _instance: RiverRockRule;
-    private static rock_config = new RiverRockSpawnConfig();
-
     public static get(biomeType: BiomeType, predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
-        if (!this._instance) this._instance = new RiverRockRule();
         return (ctx: EntityGeneratorContext): RiverRockPlacement | null => {
-            const radius = 1.5 + Math.random() * 3.0; // 1.5 to 4.5m
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
-                biomeType: biomeType,
-                config: this.rock_config,
-            };
+            const groundRadius = 1.5 + Math.random() * 3.0; // 1.5 to 4.5m
+            if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
+            return new RiverRockPlacement(
+                ctx.index, ctx.x, 0, ctx.z, groundRadius,
+                biomeType
+            );
         }
     }
 }
 
 ////////
-
-class LogSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.LOG;
-
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        LogSpawner.createEntity(context, options.x, options.z, options.radius * 2);
-    }
-};
 
 export class LogRule extends Details {
-    private static _instance: LogRule;
-    private static log_config = new LogSpawnConfig();
-
     public static get(predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
-        if (!this._instance) this._instance = new LogRule();
         return (ctx: EntityGeneratorContext): EntityPlacement | null => {
             const length = 10 + Math.random() * 10;
-            const radius = length / 2;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
-                config: this.log_config
-            };
+            const groundRadius = length / 2;
+            if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
+            return new SimpleEntityPlacement(
+                ctx.index, ctx.x, 0, ctx.z, groundRadius,
+                EntityIds.LOG,
+                (context, x, z, radius) => LogSpawner.createEntity(context, x, z, radius * 2)
+            );
         }
     }
 }
 
 ////////
 
-export interface BuoyPlacement extends EntityPlacement {
-    offset: number;
+export class BuoyPlacement extends EntityPlacement {
+    constructor(
+        index: number, x: number, y: number, z: number, groundRadius: number,
+        public readonly offset: number
+    ) {
+        super(index, x, y, z, groundRadius);
+    }
+
+    get id() { return EntityIds.BUOY; }
+
+    override spawn(context: PopulationContext, sample: RiverGeometrySample) {
+        BuoySpawner.createEntity(context, sample, [this.offset - this.groundRadius, this.offset + this.groundRadius]);
+    }
 };
 
-class BuoySpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.BUOY;
-
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        const opts = options as BuoyPlacement;
-        const radius = opts.radius;
-        const offset = opts.offset;
-        BuoySpawner.createEntity(context, sample, [offset - radius, offset + radius]);
-    }
-}
-
 export class BuoyRule extends Details {
-    private static _instance: BuoyRule;
-    private static buoy_config = new BuoySpawnConfig();
-
     public static get(predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
-        if (!this._instance) this._instance = new BuoyRule();
         return (ctx: EntityGeneratorContext): BuoyPlacement | null => {
             // Pick a random length 30-50% width
             const chainLength = (0.3 + Math.random() * 0.2) * ctx.sample.bankDist * 2;
-            const radius = chainLength / 2;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
-                offset: ctx.offset,
-                config: this.buoy_config,
-            };
+            const groundRadius = chainLength / 2;
+            if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
+            return new BuoyPlacement(
+                ctx.index, ctx.x, 0, ctx.z, groundRadius,
+                ctx.offset
+            );
         }
     }
 }
 
 ////////
 
-export interface PierPlacement extends EntityPlacement {
-    angle: number;
-    hasDepot: boolean;
-};
+export class PierPlacement extends EntityPlacement {
+    constructor(
+        index: number, x: number, y: number, z: number, groundRadius: number,
+        public readonly angle: number,
+        public readonly hasDepot: boolean
+    ) {
+        super(index, x, y, z, groundRadius);
+    }
 
-class PierSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.PIER;
+    get id() { return EntityIds.PIER; }
 
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        const opts = options as PierPlacement;
+    override spawn(context: PopulationContext, sample: RiverGeometrySample) {
         PierSpawner.createEntity(
-            context, opts.x, opts.z, opts.radius * 2, opts.angle, opts.hasDepot);
+            context, this.x, this.z, this.groundRadius * 2, this.angle, this.hasDepot);
     }
 
     override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
         yield* PierSpawner.ensureLoaded();
     }
-}
+};
 
 export class PierRule extends Details {
-    private static _instance: PierRule;
-    private static pier_config = new PierSpawnConfig();
-
     public static get(forceDepot: boolean = false, predicate: PlacementPredicate = this.shorePredicate): EntityGeneratorFn {
-        if (!this._instance) this._instance = new PierRule();
         return (ctx: EntityGeneratorContext): PierPlacement | null => {
 
             const width = 2 * ctx.sample.bankDist;
@@ -202,8 +182,8 @@ export class PierRule extends Details {
 
             let pierLength = minPierLength + Math.random() * (maxPierLength - minPierLength);
 
-            const radius = pierLength / 2;
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
+            const groundRadius = pierLength / 2;
+            if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
 
             const hasDepot = forceDepot ?
                 forceDepot : (pierLength > minDepotPierLength && Math.random() > 0.5);
@@ -217,45 +197,41 @@ export class PierRule extends Details {
             const xBank = ctx.sample.centerPos.x - xDir * (ctx.sample.bankDist + 2);
             const zBank = ctx.sample.centerPos.z - zDir * (ctx.sample.bankDist + 2);
 
-            const x = xBank + xDir * radius;
-            const z = zBank + zDir * radius;
+            const x = xBank + xDir * groundRadius;
+            const z = zBank + zDir * groundRadius;
 
-            return {
-                index: ctx.index, x: x, z: z, radius: radius,
-                angle: angle,
-                hasDepot: hasDepot,
-                config: this.pier_config
-            };
+            return new PierPlacement(
+                ctx.index, x, 0, z, groundRadius,
+                angle,
+                hasDepot
+            );
         }
     }
 }
 
 ////////
 
-export interface IcebergPlacement extends EntityPlacement {
-    hasBear: boolean;
-};
+export class IcebergPlacement extends EntityPlacement {
+    constructor(
+        index: number, x: number, y: number, z: number, groundRadius: number,
+        public readonly hasBear: boolean
+    ) {
+        super(index, x, y, z, groundRadius);
+    }
 
-class IcebergSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.ICEBERG;
+    get id() { return EntityIds.ICEBERG; }
 
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        const opts = options as IcebergPlacement;
-        IcebergSpawner.createEntity(context, options.x, options.z, options.radius, opts.hasBear);
+    override spawn(context: PopulationContext, sample: RiverGeometrySample) {
+        IcebergSpawner.createEntity(context, this.x, this.z, this.groundRadius, this.hasBear);
     }
 
     override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
         yield* IcebergSpawner.ensureLoaded();
     }
-}
+};
 
 export class IcebergRule extends Details {
-    private static _instance: IcebergRule;
-    private static iceberg_config = new IcebergSpawnConfig();
-
     public static get(predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
-        if (!this._instance) this._instance = new IcebergRule();
         return (ctx: EntityGeneratorContext): IcebergPlacement | null => {
 
             let scale = 4.0 + Math.random();
@@ -268,42 +244,38 @@ export class IcebergRule extends Details {
                 scale = 1.5;
             }
 
-            const radius = 4.0 + Math.random() * scale;
+            const groundRadius = 4.0 + Math.random() * scale;
 
             // check predicate
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
+            if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
 
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
-                hasBear: hasBear,
-                config: this.iceberg_config
-            };
+            return new IcebergPlacement(
+                ctx.index, ctx.x, 0, ctx.z, groundRadius,
+                hasBear
+            );
         }
     }
 }
 
 ////////
 
-export interface MangrovePlacement extends EntityPlacement {
-    size: number;
-}
-
-class MangroveSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.MANGROVE;
-
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        const opts = options as MangrovePlacement;
-        MangroveSpawner.createEntity(context, options.x, options.z, opts.size);
+export class MangrovePlacement extends EntityPlacement {
+    constructor(
+        index: number, x: number, y: number, z: number, groundRadius: number,
+        public readonly size: number
+    ) {
+        super(index, x, y, z, groundRadius);
     }
-}
+
+    get id() { return EntityIds.MANGROVE; }
+
+    override spawn(context: PopulationContext, sample: RiverGeometrySample) {
+        MangroveSpawner.createEntity(context, this.x, this.z, this.size);
+    }
+};
 
 export class MangroveRule extends Details {
-    private static _instance: MangroveRule;
-    private static mangrove_config = new MangroveSpawnConfig();
-
     public static get(predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
-        if (!this._instance) this._instance = new MangroveRule();
         return (ctx: EntityGeneratorContext): MangrovePlacement | null => {
 
             // Size Variance
@@ -320,105 +292,87 @@ export class MangroveRule extends Details {
             const finalScale = baseScale * jitter;
 
             // Making size bigger than radius packs more tightly
-            const radius = 15.0 * finalScale;
-            const size = radius * 1.5;
+            const groundRadius = 15.0 * finalScale;
+            const size = groundRadius * 1.5;
 
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
+            if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
 
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
-                size: size,
-                config: this.mangrove_config
-            };
+            return new MangrovePlacement(
+                ctx.index, ctx.x, 0, ctx.z, groundRadius,
+                size
+            );
         }
     }
 }
 
 ////////
 
-export interface PatchPlacement extends EntityPlacement {
-    width: number;
-    length: number;
-};
+export class PatchPlacement extends EntityPlacement {
+    constructor(
+        index: number, x: number, y: number, z: number, groundRadius: number,
+        public readonly id: EntityIds,
+        public readonly width: number,
+        public readonly length: number,
+        private readonly spawner: { createEntity: (context: PopulationContext, x: number, z: number, width: number, length: number, tangent: { x: number, z: number }) => void, ensureLoaded?: () => Generator<void | Promise<void>, void, unknown> }
+    ) {
 
-class LilyPadPatchSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.LILLY_PAD_PATCH;
+        super(index, x, y, z, groundRadius);
+    }
 
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        const opts = options as PatchPlacement;
-        LillyPadPatchSpawner.createEntity(context, options.x, options.z,
-            opts.width, opts.length, sample.tangent);
+    override spawn(context: PopulationContext, sample: RiverGeometrySample) {
+        this.spawner.createEntity(context, this.x, this.z, this.width, this.length, sample.tangent);
     }
 
     override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
-        yield* LillyPadPatchSpawner.ensureLoaded();
+        if (this.spawner.ensureLoaded) {
+            yield* this.spawner.ensureLoaded();
+        }
     }
-}
+};
 
 export class LilyPadPatchRule extends Details {
-    private static _instance: LilyPadPatchRule;
-    private static lily_pad_patch_config = new LilyPadPatchSpawnConfig();
-
     public static get(predicate: PlacementPredicate = this.waterPredicate): EntityGeneratorFn {
-        if (!this._instance) this._instance = new LilyPadPatchRule();
         return (ctx: EntityGeneratorContext): PatchPlacement | null => {
             const length = 16.0 + Math.random() * 16.0;
             const width = 16.0 + Math.random() * 16.0;
 
-            const radius = Math.max(width, length) / 2.0;
+            const groundRadius = Math.max(width, length) / 2.0;
 
-            if (predicate !== undefined && !predicate(ctx, radius)) return null;
+            if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
 
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
-                width: width, length: length,
-                config: this.lily_pad_patch_config
-            };
+            return new PatchPlacement(
+                ctx.index, ctx.x, 0, ctx.z, groundRadius,
+                EntityIds.LILLY_PAD_PATCH,
+                width, length,
+                LillyPadPatchSpawner
+            );
         }
     }
 }
 
 ////////
 
-class WaterGrassSpawnConfig extends EntitySpawnConfig {
-    id = EntityIds.WATER_GRASS;
-
-    override spawn(context: PopulationContext, options: EntityPlacement,
-        sample: RiverGeometrySample) {
-        const opts = options as PatchPlacement;
-        WaterGrassSpawner.createEntity(context, options.x, options.z,
-            opts.width, opts.length, sample.tangent);
-    }
-
-    override *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
-        yield* WaterGrassSpawner.ensureLoaded();
-    }
-}
-
 export class WaterGrassRule extends Details {
-    private static _instance: WaterGrassRule;
-    private static water_grass_config = new WaterGrassSpawnConfig();
-
     public static get(): EntityGeneratorFn {
-        if (!this._instance) this._instance = new WaterGrassRule();
         return (ctx: EntityGeneratorContext): PatchPlacement | null => {
             const length = 20.0 + Math.random() * 30.0;
             const width = 10.0 + Math.random() * 15.0;
 
             // Radius for collision check (approximate as max dimension / 2)
-            const radius = Math.max(width, length) / 2.0;
+            const groundRadius = Math.max(width, length) / 2.0;
 
             // Not using a predicate because water grass isn't
             // round and collision is ok
             if (ctx.sample.bankDist - Math.abs(ctx.offset) < width / 2)
                 return null;
 
-            return {
-                index: ctx.index, x: ctx.x, z: ctx.z, radius: radius,
-                width: width, length: length,
-                config: this.water_grass_config
-            };
+            return new PatchPlacement(
+                ctx.index, ctx.x, 0, ctx.z, groundRadius,
+                EntityIds.WATER_GRASS,
+                width, length,
+                WaterGrassSpawner
+            );
         }
     }
 }
+

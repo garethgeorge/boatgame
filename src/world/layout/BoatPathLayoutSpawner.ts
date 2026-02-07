@@ -3,7 +3,7 @@ import { BiomeType } from '../biomes/BiomeType';
 import { BoatPathLayout } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { RiverGeometry } from '../RiverGeometry';
-import { EntitySpawnConfig } from './EntityLayoutRules';
+import { EntityPlacement } from './EntityLayoutRules';
 
 export class BoatPathLayoutSpawner {
     private static instance: BoatPathLayoutSpawner;
@@ -35,15 +35,14 @@ export class BoatPathLayoutSpawner {
         const iChunkMax = Math.max(iChunkStart, iChunkEnd);
 
         // Gatekeeping: identify needed models and ensure all loaded
-        const neededIds = new Map<EntityIds, EntitySpawnConfig>();
+        const seenIds = new Set<EntityIds>();
         for (const p of layout.placements) {
-            if (p.index >= iChunkMin && p.index < iChunkMax &&
-                !neededIds.has(p.config.id)) {
-                neededIds.set(p.config.id, p.config);
+            if (p.index >= iChunkMin && p.index < iChunkMax) {
+                if (!seenIds.has(p.id)) {
+                    yield* p.ensureLoaded();
+                    seenIds.add(p.id);
+                }
             }
-        }
-        for (const [id, config] of neededIds) {
-            yield* config.ensureLoaded();
         }
 
         let countSinceYield = 0;
@@ -58,8 +57,9 @@ export class BoatPathLayoutSpawner {
                 }
 
                 const sample = RiverGeometry.getPathPoint(layout.path, p.index);
-                p.config.spawn(context, p, sample);
+                p.spawn(context, sample);
             }
         }
     }
 }
+
