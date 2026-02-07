@@ -16,6 +16,7 @@ import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { EntityRules } from '../layout/EntityLayoutRules';
 import { DolphinRule, TurtleRule, ButterflyRule, ParrotRule } from '../../entities/AnimalEntityRules';
+import { BirdOnBeachChairRule } from '../../entities/VignetteRules';
 import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 /**
@@ -164,7 +165,7 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                         length: [100, 300],
                         patterns: [
                             Place.scatter_onShore(ButterflyRule.get(), [0.3, 0.6]),
-                            Place.scatter_onShore(ParrotRule.get(), [0.4, 0.8])
+                            Place.scatter_onShore(BirdOnBeachChairRule.get(), [0.4, 0.8])
                         ]
                     }]
                 }]
