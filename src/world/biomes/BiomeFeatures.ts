@@ -37,5 +37,5 @@ export interface BiomeFeatures {
     /**
      * Allows the biome designer UI to directly edit a biome
      */
-    getDecorationConfig?(): DecorationConfig | undefined;
+    getDecorationConfig(): DecorationConfig | undefined;
 }

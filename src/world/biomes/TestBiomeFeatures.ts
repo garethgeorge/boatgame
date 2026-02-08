@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
+import { BoatPathLayoutConfig } from '../layout/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { DecorationRule } from '../decorators/PoissonDecorationStrategy';
 import { Combine, Signal, TierRule } from '../decorators/PoissonDecorationRules';
@@ -22,6 +23,10 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
 
     constructor(index: number, z: number, direction: number) {
         super(index, z, TestBiomeFeatures.LENGTH, direction);
+    }
+
+    protected getLayoutConfig(): BoatPathLayoutConfig | null {
+        return null;
     }
 
     private decorationConfig: DecorationConfig = {

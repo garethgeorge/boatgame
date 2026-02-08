@@ -1,8 +1,11 @@
 import { BiomeFeatures, SkyBiome } from './BiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { PopulationContext } from './PopulationContext';
-import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { DecorationConfig, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { CoreMath } from '../../core/CoreMath';
+import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy } from '../layout/BoatPathLayoutStrategy';
+import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
+import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 
 export abstract class BaseBiomeFeatures implements BiomeFeatures {
     abstract id: BiomeType;
@@ -10,6 +13,9 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
     protected index: number = 0;
     protected zMin: number = 0;
     protected zMax: number = 0;
+
+    protected spatialGrid: SpatialGrid = new SpatialGrid(20);
+    protected layoutCache: BoatPathLayout | null = null;
 
     /**
      * If index is < 0 the z value is the end of the biome if > 0 it is the start
@@ -28,8 +34,6 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
     getRange(): { zMin: number, zMax: number } {
         return { zMin: this.zMin, zMax: this.zMax };
     }
-
-    abstract populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown>;
 
     getFogDensity(): number {
         return 0.0;
@@ -63,7 +67,53 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         return 1.0;
     }
 
+    protected getLayoutConfig(): BoatPathLayoutConfig | null {
+        return null;
+    }
+
+    protected getLayout(): BoatPathLayout | null {
+        if (this.layoutCache) return this.layoutCache;
+
+        const config = this.getLayoutConfig();
+        if (!config) return null;
+
+        this.layoutCache = BoatPathLayoutStrategy.createLayout(
+            [this.zMin, this.zMax], config, this.spatialGrid);
+        return this.layoutCache;
+    }
+
     public getDecorationConfig(): DecorationConfig | undefined {
         return undefined;
+    }
+
+    public * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
+        // 1. Get entity layout creating it if needed
+        const layout = this.getLayout();
+
+        // 2. Decorate
+        const decorationConfig = this.getDecorationConfig();
+
+        if (decorationConfig) {
+            // decorations are inserted into the chunk grid but checked for
+            // collisions against the layout grid for the entire biome
+            const spatialGrid = new SpatialGridPair(
+                context.chunk.spatialGrid,
+                this.spatialGrid
+            );
+
+            yield* TerrainDecorator.decorateIterator(
+                context,
+                decorationConfig,
+                { xMin: -250, xMax: 250, zMin: zStart, zMax: zEnd },
+                spatialGrid,
+                12345 + zStart
+            );
+        }
+
+        // 3. Spawn
+        if (layout) {
+            yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
+                context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
+        }
     }
 }

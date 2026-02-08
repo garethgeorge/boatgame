@@ -2,18 +2,13 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
-import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { EntityIds } from '../../entities/EntityIds';
-import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
-import { DecorationRule, TerrainDecorator, NoiseMap, DecorationConfig } from '../decorators/TerrainDecorator';
-import { TierRule, Signal, Combine } from '../decorators/PoissonDecorationRules';
+import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
+import { DecorationRule, DecorationConfig } from '../decorators/TerrainDecorator';
+import { TierRule } from '../decorators/PoissonDecorationRules';
 import { Fitness, TreeParams, FlowerParams } from '../decorations/DecorationRules';
 import { SkyBiome } from './BiomeFeatures';
-import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { EntityRules } from '../layout/EntityLayoutRules';
 import { DragonflyRule } from '../../entities/AnimalEntityRules';
-import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 
 
 /**
@@ -28,9 +23,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, HappyBiomeFeatures.LENGTH, direction);
     }
 
-    private spatialGrid: SpatialGrid = new SpatialGrid(20);
     private decorationConfig: DecorationConfig | null = null;
-    private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         // Lush green ground color
@@ -99,9 +92,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return this.decorationConfig;
     }
 
-    private getLayout(): BoatPathLayout {
-        if (this.layoutCache) return this.layoutCache;
-
+    protected getLayoutConfig(): BoatPathLayoutConfig {
         const tracks: TrackConfig[] = [{
             name: 'flying',
             stages: [{
@@ -111,40 +102,11 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             }]
         }];
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
+        return {
             tracks,
             path: {
                 length: [200, 100]
             }
-        }, this.spatialGrid);
-
-        return this.layoutCache;
-    }
-
-    * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // 1. Get entity layout creating it if needed
-        const layout = this.getLayout();
-
-        // 2. Decorate
-        const decorationConfig = this.getDecorationConfig();
-
-        // decorations are inserted into the chunk grid but checked for
-        // collisions against the layout grid for the entire biome
-        const spatialGrid = new SpatialGridPair(
-            context.chunk.spatialGrid,
-            this.spatialGrid
-        );
-
-        yield* TerrainDecorator.decorateIterator(
-            context,
-            decorationConfig,
-            { xMin: -250, xMax: 250, zMin: zStart, zMax: zEnd },
-            spatialGrid,
-            12345 + zStart // Seed variation
-        );
-
-        // 3. Spawn
-        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
-            context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
+        };
     }
 }

@@ -2,20 +2,14 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
-import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { EntityIds } from '../../entities/EntityIds';
-import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
-import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
+import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
+import { DecorationConfig, DecorationRule } from '../decorators/TerrainDecorator';
 import { TierRule } from '../decorators/PoissonDecorationRules';
 import { Fitness, RockParams, TreeParams } from '../decorations/DecorationRules';
-import { Decorations } from '../decorations/Decorations';
 import { SkyBiome } from './BiomeFeatures';
-import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { EntityRules } from '../layout/EntityLayoutRules';
 import { MooseRule, BrownBearRule, DucklingRule } from '../../entities/AnimalEntityRules';
-import { LogRule, RiverRockRule, PierRule, WaterGrassRule, BottleRule } from '../../entities/StaticEntityRules';
-import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
+import { LogRule, RiverRockRule, WaterGrassRule, BottleRule } from '../../entities/StaticEntityRules';
 
 export class ForestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'forest';
@@ -25,8 +19,6 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, ForestBiomeFeatures.LENGTH, direction);
     }
 
-    private spatialGrid: SpatialGrid = new SpatialGrid(20);
-    private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         return { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 };
@@ -94,9 +86,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
         return this.decorationConfig;
     }
 
-    private getLayout(): BoatPathLayout {
-        if (this.layoutCache) return this.layoutCache;
-
+    protected getLayoutConfig(): BoatPathLayoutConfig {
         const tracks: TrackConfig[] = [{
             name: 'obstacles',
             stages: [{
@@ -135,40 +125,12 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
             }]
         }];
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
+        return {
             tracks,
             path: {
                 length: [200, 100]
             }
-        }, this.spatialGrid);
-
-        return this.layoutCache;
+        };
     }
 
-    * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // 1. Get entity layout creating it if needed
-        const layout = this.getLayout();
-
-        // 2. Decorate
-        const decorationConfig = this.getDecorationConfig();
-
-        // decorations are inserted into the chunk grid but checked for
-        // collisions against the layout grid for the entire biome
-        const spatialGrid = new SpatialGridPair(
-            context.chunk.spatialGrid,
-            this.spatialGrid
-        );
-
-        yield* TerrainDecorator.decorateIterator(
-            context,
-            decorationConfig,
-            { xMin: -250, xMax: 250, zMin: zStart, zMax: zEnd },
-            spatialGrid,
-            12345 + zStart // Seed variation
-        );
-
-        // 3. Spawn
-        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
-            context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
-    }
 }
