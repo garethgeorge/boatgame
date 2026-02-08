@@ -152,7 +152,7 @@ export class TerrainDecorator {
                 self.tryPlaceObject(context, object, kind, x, y, z, scale, rotation);
             },
             registerSlot(type: string, x: number, y: number, z: number) {
-                context.chunk.slots.registerSlot(type, x, y, z);
+                RiverSystem.getInstance().slots.registerSlot(type, x, y, z);
             }
         };
 

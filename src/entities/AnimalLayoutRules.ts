@@ -130,7 +130,7 @@ export class AnimalSlotPlacement extends AnimalPlacement {
     }
 
     public spawn(context: PopulationContext, sample: RiverGeometrySample) {
-        const slot = context.chunk.slots.findNearbySlot(this.slotType, this.x, this.z, 10.0);
+        const slot = context.riverSystem.slots.findNearbySlot(this.slotType, this.x, this.z, 10.0);
         if (slot) {
             console.log('[Populate] Found slot');
             const animalClass = this.factory;

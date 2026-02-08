@@ -3,6 +3,7 @@ import { BiomeManager } from './BiomeManager';
 import { TerrainGeometry } from './TerrainGeometry';
 import { RiverGeometrySample } from './RiverGeometry';
 import { CoreMath } from '../core/CoreMath';
+import { TerrainSlotMap } from './TerrainSlotMap';
 
 export class RiverSystem {
   private static readonly MAKE_STRAIGHT_RIVER = false;
@@ -21,6 +22,7 @@ export class RiverSystem {
 
   public biomeManager: BiomeManager;
   public terrainGeometry: TerrainGeometry;
+  public readonly slots: TerrainSlotMap = new TerrainSlotMap();
 
   private constructor() {
     this.noise = new SimplexNoise(100);

@@ -32,4 +32,8 @@ export class TerrainSlotMap {
 
         return bestSlot;
     }
+
+    public removeSlotsInRange(zMin: number, zMax: number) {
+        this.slots = this.slots.filter(s => s.z < zMin || s.z > zMax);
+    }
 }

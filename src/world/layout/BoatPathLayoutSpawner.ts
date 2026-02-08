@@ -28,15 +28,14 @@ export class BoatPathLayoutSpawner {
     ): Generator<void | Promise<void>, void, unknown> {
         if (!layout) return;
 
-        const iChunkStart = RiverGeometry.getPathIndexByZ(layout.path, zStart);
-        const iChunkEnd = RiverGeometry.getPathIndexByZ(layout.path, zEnd);
-        const iChunkMin = Math.min(iChunkStart, iChunkEnd);
-        const iChunkMax = Math.max(iChunkStart, iChunkEnd);
+        const zMin = Math.min(zStart, zEnd);
+        const zMax = Math.max(zStart, zEnd);
 
         // Gatekeeping: identify needed models and ensure all loaded
         const seenIds = new Set<EntityIds>();
         for (const p of layout.placements) {
-            if (p.index >= iChunkMin && p.index < iChunkMax) {
+            // Use world Z for filtering consistent with TerrainDecorator
+            if (p.z >= zMin && p.z < zMax) {
                 if (!seenIds.has(p.id)) {
                     yield* p.ensureLoaded();
                     seenIds.add(p.id);
@@ -48,7 +47,7 @@ export class BoatPathLayoutSpawner {
 
         for (const p of layout.placements) {
             // Check if placement is within current segment
-            if (p.index >= iChunkMin && p.index < iChunkMax) {
+            if (p.z >= zMin && p.z < zMax) {
                 countSinceYield++;
                 if (countSinceYield > 10) {
                     yield;

@@ -26,7 +26,6 @@ export class TerrainChunk {
   public readonly zOffset: number;
   public readonly riverSystem: RiverSystem;
   public readonly spatialGrid: SpatialGrid;
-  public readonly slots: TerrainSlotMap = new TerrainSlotMap();
 
   private graphicsEngine: GraphicsEngine;
 
@@ -130,6 +129,7 @@ export class TerrainChunk {
     const difficulty = Math.min(distance / 7500, 1.0);
 
     const context: PopulationContext = {
+      riverSystem: this.riverSystem,
       chunk: this,
       geometriesByMaterial: geometriesByMaterial,
       instancedData: instancedData,
