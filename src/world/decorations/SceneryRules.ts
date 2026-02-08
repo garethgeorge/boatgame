@@ -752,7 +752,10 @@ export class MangroveParams {
 
 export class PropParams {
 
-    public static beach_chair_slot = 'beach-chair';
+    public static beach_chair_slot = {
+        slot: 'beach-chair',
+        radius: DecorationMetadata.beachChair.groundRadius * 3.0
+    };
 
     public static beach_chair() {
         return (ctx: WorldContext) => {
@@ -767,7 +770,7 @@ export class PropParams {
                 0,
                 true, // placeTowardShore
                 {
-                    name: this.beach_chair_slot,
+                    name: this.beach_chair_slot.slot,
                     dz: DecorationMetadata.beachChair.backOffset,
                     dy: DecorationMetadata.beachChair.height
                 }

@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 import { DecorationConfig } from '../decorators/TerrainDecorator';
-import { Select, TierRule } from '../decorators/DecorationRuleBuilders';
+import { Select, Signal, TierRule } from '../decorators/DecorationRuleBuilders';
 import { Fitness, PropParams, RockParams, TreeParams } from '../decorations/SceneryRules';
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../../core/SimplexNoise';
@@ -12,7 +12,7 @@ import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { DolphinRule, TurtleRule, ButterflyRule, ParrotRule } from '../../entities/AnimalLayoutRules';
 import { BirdOnBeachChairRule } from '../../entities/VignetteLayoutRules';
-import { DecorationRule } from '../decorators/DecorationRule';
+import { DecorationRule, WorldContext } from '../decorators/DecorationRule';
 
 /**
  * Tropical Shoreline Biome: A sunny coastal paradise with palm trees and marine life.
@@ -92,6 +92,14 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
             new TierRule({
                 species: [
                     {
+                        // This exists only to make chairs for Parrot perches
+                        id: 'parrot-chair',
+                        preference: Signal.constant(0),
+                        params: Select.choose([
+                            PropParams.beach_chair(),
+                        ])
+                    },
+                    {
                         id: 'chair',
                         preference: Fitness.make({
                             stepDistance: [5, 20],
@@ -100,8 +108,8 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                         }),
                         params: Select.choose([
                             PropParams.beach_chair(),
-                            // PropParams.umbrella_with_chairs(1),
-                            // PropParams.umbrella_with_chairs(2)
+                            PropParams.umbrella_with_chairs(1),
+                            PropParams.umbrella_with_chairs(2)
                         ])
                     }
                 ]
@@ -156,8 +164,11 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                         length: [100, 300],
                         patterns: [
                             Place.scatter_onShore(ButterflyRule.get(), [0.3, 0.6]),
-                            //Place.scatter_onShore(BirdOnBeachChairRule.get(), [0.4, 0.8])
-                            Place.scatter_onShore(ParrotRule.get('chair', PropParams.beach_chair_slot), [0.4, 0.8])
+                            // Parrots need a chair to perch on
+                            Place.scatter_onShore(
+                                ParrotRule.get('parrot-chair', PropParams.beach_chair_slot),
+                                [0.4, 0.8]
+                            )
                         ]
                     }]
                 }]

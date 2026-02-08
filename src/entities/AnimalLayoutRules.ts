@@ -130,9 +130,12 @@ export class AnimalSlotPlacement extends AnimalPlacement {
     }
 
     public spawn(context: PopulationContext, sample: RiverGeometrySample) {
-        const slot = context.riverSystem.slots.findNearbySlot(this.slotType, this.x, this.z, 10.0);
+        // The required decoration ought to have been placed at the same
+        // location as this.x,z and its slot should be within its radius
+        // but add a little
+        const slot = context.riverSystem.slots.findNearbySlot(
+            this.slotType, this.x, this.z, this.requirement.groundRadius * 2);
         if (slot) {
-            console.log('[Populate] Found slot');
             const animalClass = this.factory;
             if (!animalClass) return;
 
@@ -147,7 +150,6 @@ export class AnimalSlotPlacement extends AnimalPlacement {
                 slot.y, new THREE.Vector3(0, 1, 0),
                 this.options);
         } else {
-            console.log('[Populate] No slot');
             super.spawn(context, sample);
         }
     }
@@ -297,27 +299,30 @@ abstract class AnimalSlotRule extends Details {
     /** 
      * Get layout rule for the animal. species identifies a decoration
      * that is required to be created and slot is a slot on that decoration
-     * where the animal will be attached.
+     * where the animal will be attached. The params are for the required
+     * decoration.
      */
-    public get(species: string, slot: string, predicate: PlacementPredicate): LayoutRule {
+    public get(species: string, params: { slot: string, radius: number },
+        predicate: PlacementPredicate): LayoutRule {
         return (ctx: LayoutContext): AnimalPlacement | null => {
-            const groundRadius = this.radius;
-            if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
-            return this.createPlacement(ctx, species, slot, groundRadius);
+            const reservationRadius = params.radius;
+            if (predicate !== undefined && !predicate(ctx, reservationRadius)) return null;
+            return this.createPlacement(ctx, species, params.slot, this.radius, params.radius);
         }
     }
 
     protected createPlacement(
         ctx: LayoutContext,
         species: string, slot: string,
-        groundRadius: number
+        animalRadius: number,
+        reservationRadius: number
     ): AnimalPlacement {
         return new AnimalSlotPlacement({
             index: ctx.index,
             x: ctx.x,
             y: 0,
             z: ctx.z,
-            groundRadius,
+            groundRadius: animalRadius,
             id: this.id,
             habitat: ctx.habitat,
             factory: this.factory,
@@ -330,7 +335,7 @@ abstract class AnimalSlotRule extends Details {
             requirement: {
                 species: species,
                 x: ctx.x, y: 0, z: ctx.z,
-                groundRadius, canopyRadius: 0
+                groundRadius: reservationRadius, canopyRadius: 0
             },
             slotType: slot,
             decorationIds: this.decorationIds
@@ -447,11 +452,11 @@ export class ParrotRule extends AnimalSlotRule {
     private static _instance: ParrotRule = null;
 
     public static get(
-        species: string, slot: string,
+        species: string, params: { slot: string, radius: number },
         predicate: PlacementPredicate = AnimalRule.landPredicate
     ): LayoutRule {
         if (!this._instance) this._instance = new ParrotRule;
-        return this._instance.get(species, slot, predicate);
+        return this._instance.get(species, params, predicate);
     }
 
     constructor() {
