@@ -4,6 +4,18 @@ import { PopulationContext } from "../biomes/PopulationContext";
 import { RiverGeometrySample } from "../RiverGeometry";
 
 /**
+ * Requirement for a decoration to be placed to support this placement.
+ */
+export interface DecorationRequirement extends PlacementManifest {
+    species: string;
+    x: number;
+    y: number;
+    z: number;
+    groundRadius: number;
+    canopyRadius: number;
+}
+
+/**
  * Placement describes how to place an instance.
  * index is the fractional index of the river position.
  */
@@ -14,7 +26,8 @@ export abstract class LayoutPlacement implements PlacementManifest {
         public readonly y: number,
         public readonly z: number,
         public readonly groundRadius: number,
-        public readonly canopyRadius: number = 0
+        public readonly canopyRadius: number = 0,
+        public readonly requirement?: DecorationRequirement
     ) { }
 
     /** The entity ID for telemetry and identity. */

@@ -8,6 +8,7 @@ import { DecorationInstance, Decorations, LSystemTreeKind, LSystemFlowerKind } f
 import { CoreMath } from '../../core/CoreMath';
 import { DecorationContext, DecorationPlacement } from './DecorationPlacement';
 import { DecorationRule } from './DecorationRule';
+import { DecorationRequirement } from '../layout/LayoutPlacement';
 
 
 export class NoiseMap implements WorldMap {
@@ -51,20 +52,22 @@ export class TerrainDecorator {
         context: PopulationContext,
         config: DecorationConfig,
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
+        requirements: DecorationRequirement[],
         spatialGrid: AnySpatialGrid,
         seed: number = 0,
     ): Generator<void | Promise<void>, void, unknown> {
-        const placements = yield* this.generateIterator(config, region, spatialGrid, seed);
+        const placements = yield* this.generateIterator(config, region, requirements, spatialGrid, seed);
         yield* this.populateIterator(context, placements, region);
     }
 
     public static generateIterator(
         config: DecorationConfig,
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
+        requirements: DecorationRequirement[],
         spatialGrid: AnySpatialGrid,
         seed: number = 0,
     ): Generator<void | Promise<void>, DecorationPlacement[], unknown> {
-        return this.instance().generateIterator(config, region, spatialGrid, seed);
+        return this.instance().generateIterator(config, region, requirements, spatialGrid, seed);
     }
 
     public static populateIterator(
@@ -83,6 +86,7 @@ export class TerrainDecorator {
     private *generateIterator(
         config: DecorationConfig,
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
+        requirements: DecorationRequirement[],
         spatialGrid: AnySpatialGrid,
         seed: number = 0,
     ): Generator<void | Promise<void>, DecorationPlacement[], unknown> {
@@ -118,6 +122,7 @@ export class TerrainDecorator {
             spatialGrid,
             terrainProvider,
             biomeProgressProvider,
+            requirements,
             seed,
             config.maps
         );
@@ -145,6 +150,9 @@ export class TerrainDecorator {
                 scale: number, rotation: number
             ) {
                 self.tryPlaceObject(context, object, kind, x, y, z, scale, rotation);
+            },
+            registerSlot(type: string, x: number, y: number, z: number) {
+                context.chunk.slots.registerSlot(type, x, y, z);
             }
         };
 
@@ -184,12 +192,14 @@ export class TerrainDecorator {
         scale: number,
         rotation: number
     ) {
-        if (!this.distanceFilter(x, y, z))
+        if (!this.distanceFilter(x, y, z)) {
             return false;
+        }
 
         const height = context.decoHelper.calculateObjectHeight(object);
-        if (!this.visibilityFilter(x, y, z, height))
+        if (!this.visibilityFilter(x, y, z, height)) {
             return false;
+        }
 
         context.decoHelper.positionAndCollectGeometry(context, object, x, y, z, scale, rotation);
 

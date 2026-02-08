@@ -33,20 +33,42 @@ import { Dragonfly } from './obstacles/Dragonfly';
 import { Pterodactyl } from './obstacles/Pterodactyl';
 import { Decorations, DecorationId } from '../world/decorations/Decorations';
 import { PlacementPredicate, LayoutRules } from '../world/layout/LayoutRuleBuilders';
-import { LayoutPlacement } from '../world/layout/LayoutPlacement';
+import { DecorationRequirement, LayoutPlacement } from '../world/layout/LayoutPlacement';
 import { LayoutContext, LayoutRule, Habitat } from '../world/layout/LayoutRule';
 
+interface AnimalPlacementParams {
+    index: number;
+    x: number;
+    y: number;
+    z: number;
+    groundRadius: number;
+    requirement?: DecorationRequirement;
+
+    id: EntityIds;
+    habitat: Habitat;
+    factory: AnimalClass;
+    heightInWater: number;
+    options: AnimalSpawnOptions;
+    decorationIds?: DecorationId[];
+}
+
 export class AnimalPlacement extends LayoutPlacement {
-    constructor(
-        index: number, x: number, y: number, z: number, groundRadius: number,
-        public readonly id: EntityIds,
-        public readonly habitat: Habitat,
-        public readonly factory: AnimalClass,
-        public readonly heightInWater: number,
-        public readonly options: AnimalSpawnOptions,
-        public readonly decorationIds: DecorationId[] = []
-    ) {
-        super(index, x, y, z, groundRadius);
+    public readonly id: EntityIds;
+    public readonly habitat: Habitat;
+    public readonly factory: AnimalClass;
+    public readonly heightInWater: number;
+    public readonly options: AnimalSpawnOptions;
+    public readonly decorationIds: DecorationId[];
+
+    constructor(params: AnimalPlacementParams) {
+        super(params.index, params.x, params.y, params.z,
+            params.groundRadius, 0, params.requirement);
+        this.id = params.id;
+        this.habitat = params.habitat;
+        this.factory = params.factory;
+        this.heightInWater = params.heightInWater;
+        this.options = params.options;
+        this.decorationIds = params.decorationIds ?? [];
     }
 
     public spawn(context: PopulationContext, sample: RiverGeometrySample) {
@@ -89,6 +111,49 @@ export class AnimalPlacement extends LayoutPlacement {
         }
     }
 }
+
+export interface AnimalSlotPlacementParams extends AnimalPlacementParams {
+    requirement: DecorationRequirement;
+    slotType: string;
+}
+
+/**
+ * Specialized animal placement that attempts to find an attachment slot (e.g., a chair)
+ * before falling back to standard placement.
+ */
+export class AnimalSlotPlacement extends AnimalPlacement {
+    public readonly slotType: string;
+
+    constructor(params: AnimalSlotPlacementParams) {
+        super(params);
+        this.slotType = params.slotType;
+    }
+
+    public spawn(context: PopulationContext, sample: RiverGeometrySample) {
+        const slot = context.chunk.slots.findNearbySlot(this.slotType, this.x, this.z, 10.0);
+        if (slot) {
+            console.log('[Populate] Found slot');
+            const animalClass = this.factory;
+            if (!animalClass) return;
+
+            // Facing logic: face the river center even when on a slot
+            const d = slot.x < sample.centerPos.x ? -1 : 1;
+            const riverAngle = Math.atan2(sample.tangent.x, sample.tangent.z);
+            let rotation = (d > 0) ? Math.PI / 2 : -Math.PI / 2;
+            rotation += riverAngle;
+
+            AnimalSpawner.createEntity(animalClass, context,
+                slot.x, slot.z, rotation,
+                slot.y, new THREE.Vector3(0, 1, 0),
+                this.options);
+        } else {
+            console.log('[Populate] No slot');
+            super.spawn(context, sample);
+        }
+    }
+}
+
+
 
 class Details {
     protected static defaultPredicate =
@@ -149,6 +214,10 @@ class Details {
     }
 }
 
+/**
+ * Helper class for animal rules. Provides a get() function to create a
+ * layout rule.
+ */
 abstract class AnimalRule extends Details {
     private id: EntityIds;
     private factory: AnimalClass;
@@ -156,7 +225,10 @@ abstract class AnimalRule extends Details {
     private radius: number;
     private heightInWater: number;
 
-    constructor(id: EntityIds, factory: AnimalClass, decorationIds: DecorationId[], radius: number, heightInWater: number) {
+    constructor(
+        id: EntityIds, factory: AnimalClass, decorationIds: DecorationId[],
+        radius: number, heightInWater: number
+    ) {
         super();
         this.id = id;
         this.factory = factory;
@@ -171,20 +243,98 @@ abstract class AnimalRule extends Details {
         return (ctx: LayoutContext): AnimalPlacement | null => {
             const groundRadius = this.radius;
             if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
-            return new AnimalPlacement(
-                ctx.index, ctx.x, 0, ctx.z, groundRadius,
-                this.id,
-                ctx.habitat,
-                this.factory,
-                this.heightInWater,
-                {
-                    aggressiveness: Details.aggressiveness(ctx),
-                    biomeZRange: ctx.biomeZRange,
-                    behavior: this.behavior(ctx)
-                },
-                this.decorationIds
-            );
+            return this.createPlacement(ctx, groundRadius);
         }
+    }
+
+    protected createPlacement(ctx: LayoutContext, groundRadius: number): AnimalPlacement {
+        return new AnimalPlacement({
+            index: ctx.index,
+            x: ctx.x,
+            y: 0,
+            z: ctx.z,
+            groundRadius,
+            id: this.id,
+            habitat: ctx.habitat,
+            factory: this.factory,
+            heightInWater: this.heightInWater,
+            options: {
+                aggressiveness: Details.aggressiveness(ctx),
+                biomeZRange: ctx.biomeZRange,
+                behavior: this.behavior(ctx)
+            },
+            decorationIds: this.decorationIds
+        });
+    }
+}
+
+/**
+ * Helper class for animal rules when an animal wants to require placement
+ * of a 'species' that will have a slot for attaching the animal. Provides
+ * a get() function to create a layout rule.
+ */
+abstract class AnimalSlotRule extends Details {
+    private id: EntityIds;
+    private factory: AnimalClass;
+    private decorationIds: DecorationId[];
+    private radius: number;
+    private heightInWater: number;
+
+    constructor(
+        id: EntityIds, factory: AnimalClass, decorationIds: DecorationId[],
+        radius: number, heightInWater: number
+    ) {
+        super();
+        this.id = id;
+        this.factory = factory;
+        this.decorationIds = decorationIds;
+        this.radius = radius;
+        this.heightInWater = heightInWater;
+    }
+
+    protected abstract behavior(ctx: LayoutContext): AnimalBehaviorConfig;
+
+    /** 
+     * Get layout rule for the animal. species identifies a decoration
+     * that is required to be created and slot is a slot on that decoration
+     * where the animal will be attached.
+     */
+    public get(species: string, slot: string, predicate: PlacementPredicate): LayoutRule {
+        return (ctx: LayoutContext): AnimalPlacement | null => {
+            const groundRadius = this.radius;
+            if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
+            return this.createPlacement(ctx, species, slot, groundRadius);
+        }
+    }
+
+    protected createPlacement(
+        ctx: LayoutContext,
+        species: string, slot: string,
+        groundRadius: number
+    ): AnimalPlacement {
+        return new AnimalSlotPlacement({
+            index: ctx.index,
+            x: ctx.x,
+            y: 0,
+            z: ctx.z,
+            groundRadius,
+            id: this.id,
+            habitat: ctx.habitat,
+            factory: this.factory,
+            heightInWater: this.heightInWater,
+            options: {
+                aggressiveness: Details.aggressiveness(ctx),
+                biomeZRange: ctx.biomeZRange,
+                behavior: this.behavior(ctx)
+            },
+            requirement: {
+                species: species,
+                x: ctx.x, y: 0, z: ctx.z,
+                groundRadius, canopyRadius: 0
+            },
+            slotType: slot,
+            decorationIds: this.decorationIds
+        });
     }
 }
 
@@ -293,12 +443,15 @@ export class BluebirdRule extends AnimalRule {
     }
 }
 
-export class ParrotRule extends AnimalRule {
+export class ParrotRule extends AnimalSlotRule {
     private static _instance: ParrotRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.landPredicate): LayoutRule {
+    public static get(
+        species: string, slot: string,
+        predicate: PlacementPredicate = AnimalRule.landPredicate
+    ): LayoutRule {
         if (!this._instance) this._instance = new ParrotRule;
-        return this._instance.get(predicate);
+        return this._instance.get(species, slot, predicate);
     }
 
     constructor() {

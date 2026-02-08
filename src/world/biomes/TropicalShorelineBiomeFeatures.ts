@@ -100,8 +100,8 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                         }),
                         params: Select.choose([
                             PropParams.beach_chair(),
-                            PropParams.umbrella_with_chairs(1),
-                            PropParams.umbrella_with_chairs(2)
+                            // PropParams.umbrella_with_chairs(1),
+                            // PropParams.umbrella_with_chairs(2)
                         ])
                     }
                 ]
@@ -156,7 +156,8 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                         length: [100, 300],
                         patterns: [
                             Place.scatter_onShore(ButterflyRule.get(), [0.3, 0.6]),
-                            Place.scatter_onShore(BirdOnBeachChairRule.get(), [0.4, 0.8])
+                            //Place.scatter_onShore(BirdOnBeachChairRule.get(), [0.4, 0.8])
+                            Place.scatter_onShore(ParrotRule.get('chair', PropParams.beach_chair_slot), [0.4, 0.8])
                         ]
                     }]
                 }]

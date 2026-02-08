@@ -16,6 +16,8 @@ export interface DecorationContext {
         x: number, y: number, z: number,
         scale: number, rotation: number
     );
+
+    registerSlot(type: string, x: number, y: number, z: number): void;
 }
 
 /**

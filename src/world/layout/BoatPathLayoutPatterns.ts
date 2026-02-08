@@ -98,7 +98,7 @@ export class Placements {
         // todo: ? make placement info entirely type specific except for
         // something to identify the chunk ?
 
-        const placed = this._tryPlaceEntity(context, options, pathIndex, offset, x, z);
+        const placed = this._tryPlaceEntity(context, options);
         return placed;
     }
 
@@ -138,7 +138,7 @@ export class Placements {
             const options = opts.entity(ctx);
             if (!options) continue;
 
-            if (this._tryPlaceEntity(context, options, pathIndex, offset, x, z))
+            if (this._tryPlaceEntity(context, options))
                 return true;
         }
         return false;
@@ -146,15 +146,28 @@ export class Placements {
 
     private static _tryPlaceEntity(
         context: PatternContext,
-        options: LayoutPlacement,
-        pathIndex: number, offset: number,
-        x: number, z: number,
+        options: LayoutPlacement
     ): boolean {
-        if (context.spatialGrid.checkCollision(x, z, options.groundRadius, options.canopyRadius)) return false;
+        if (options.requirement) {
+            const requirement = options.requirement;
+            // Collision check using the requirement's radius
+            if (context.spatialGrid.checkCollision(requirement.x, requirement.z,
+                requirement.groundRadius, requirement.canopyRadius)) {
+                return false;
+            }
 
-        context.placements.push(options);
-        context.spatialGrid.insert(options);
+            context.placements.push(options);
+            context.requirements.push(requirement);
+            context.spatialGrid.insert(requirement);
+        } else {
+            if (context.spatialGrid.checkCollision(options.x, options.z,
+                options.groundRadius, options.canopyRadius)) {
+                return false;
+            }
 
+            context.placements.push(options);
+            context.spatialGrid.insert(options);
+        }
         return true;
     }
 

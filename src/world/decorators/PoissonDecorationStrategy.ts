@@ -4,6 +4,7 @@ import { SimplexNoise } from '../../core/SimplexNoise';
 import { CoreMath } from '../../core/CoreMath';
 import { DecorationPlacement } from './DecorationPlacement';
 import { DecorationRule, WorldContext } from './DecorationRule';
+import { DecorationRequirement } from '../layout/LayoutPlacement';
 
 export interface WorldMap {
     sample(x: number, y: number): number;
@@ -22,6 +23,7 @@ export class PoissonDecorationStrategy {
         spatialGrid: AnySpatialGrid,
         terrainProvider: (x: number, z: number) => { height: number, slope: number, distToRiver: number },
         biomeProgressProvider: (z: number) => number,
+        requirements: DecorationRequirement[] = [],
         seed: number = 0,
         maps: Record<string, WorldMap> = {}
     ): Generator<void | Promise<void>, DecorationPlacement[], unknown> {
@@ -47,8 +49,30 @@ export class PoissonDecorationStrategy {
             }
         };
 
+        const pendingRequirements = [...requirements];
+
         for (const rule of rules) {
             const activeList: DecorationPlacement[] = [];
+
+            // Phase 0: Automatic Seeding from Requirements
+            for (let i = 0; i < pendingRequirements.length; i++) {
+                const req = pendingRequirements[i];
+                if (req === undefined) continue;
+                if (req.x < region.xMin || req.x > region.xMax ||
+                    req.z < region.zMin || req.z > region.zMax) continue;
+
+                ctx.requirement = req;
+                const candidate = this.tryPlace(req.x, req.z, rule,
+                    spatialGrid, terrainProvider, biomeProgressProvider,
+                    ctx, true);
+                if (candidate) {
+                    manifests.push(candidate);
+                    activeList.push(candidate);
+                    spatialGrid.insert(candidate);
+                    pendingRequirements[i] = undefined;
+                }
+                ctx.requirement = undefined;
+            }
 
             // Phase 1: Seeding
             const seedAttempts = 100;
@@ -56,7 +80,9 @@ export class PoissonDecorationStrategy {
                 const x = region.xMin + Math.random() * width;
                 const z = region.zMin + Math.random() * depth;
 
-                const candidate = this.tryPlace(x, z, rule, spatialGrid, terrainProvider, biomeProgressProvider, ctx);
+                const candidate = this.tryPlace(x, z, rule,
+                    spatialGrid, terrainProvider, biomeProgressProvider,
+                    ctx);
                 if (candidate) {
                     manifests.push(candidate);
                     activeList.push(candidate);
@@ -86,9 +112,12 @@ export class PoissonDecorationStrategy {
                     const cx = parent.x + Math.cos(angle) * distance;
                     const cz = parent.z + Math.sin(angle) * distance;
 
-                    if (cx < region.xMin || cx > region.xMax || cz < region.zMin || cz > region.zMax) continue;
+                    if (cx < region.xMin || cx > region.xMax ||
+                        cz < region.zMin || cz > region.zMax) continue;
 
-                    const candidate = this.tryPlace(cx, cz, rule, spatialGrid, terrainProvider, biomeProgressProvider, ctx);
+                    const candidate = this.tryPlace(cx, cz, rule,
+                        spatialGrid, terrainProvider, biomeProgressProvider,
+                        ctx);
                     if (candidate) {
                         // fitness is an estimate of how crowded the neighborhood is
                         candidate.fitness *= 1 / (i + 1);
@@ -125,11 +154,13 @@ export class PoissonDecorationStrategy {
         spatialGrid: AnySpatialGrid,
         terrainProvider: (x: number, z: number) => { height: number, slope: number, distToRiver: number },
         biomeProgressProvider: (z: number) => number,
-        ctx: WorldContext
+        ctx: WorldContext,
+        isAutomaticSeed: boolean = false
     ): DecorationPlacement | null {
         // Quick point-in-circle check before expensive calculations.
         // If the center point is already inside another's ground radius, it's a collision.
-        if (spatialGrid.checkGroundCollision(x, z, 0)) {
+        // We skip this check for automatic seeds as they are required.
+        if (!isAutomaticSeed && spatialGrid.checkGroundCollision(x, z, 0)) {
             return null;
         }
 
@@ -143,13 +174,18 @@ export class PoissonDecorationStrategy {
         ctx.distanceToRiver = terrain.distToRiver;
         ctx.biomeProgress = biomeProgress;
 
-        let f = rule.fitness(ctx);
-        if (f > 1) f = 1;
-        if (f <= 0) return null;
-        if (Math.random() > f) return null;
+        if (!isAutomaticSeed) {
+            let f = rule.fitness(ctx);
+            if (f > 1) f = 1;
+            if (f <= 0) return null;
+            if (Math.random() > f) return null;
+        }
 
         const params = rule.generate(ctx);
+        if (!params) return null;
         params.fitness = 1.0;
+
+        if (isAutomaticSeed) return params;
 
         const groundRadius = params.groundRadius;
         const canopyRadius = params.canopyRadius ?? 0;

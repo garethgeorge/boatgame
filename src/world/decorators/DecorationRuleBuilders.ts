@@ -123,10 +123,19 @@ export class TierRule implements DecorationRule {
         return Math.max(...this.species.map(s => s.preference(ctx)));
     }
 
-    // Pick the winner based on relative preference
-    generate(ctx: WorldContext): DecorationPlacement {
-        const scored = this.species.map(s => ({ s, p: s.preference(ctx) }));
-        const winner = scored.reduce((a, b) => a.p > b.p ? a : b).s;
-        return winner.params(ctx);
+    // Pick the winner based on relative preference or requirement
+    generate(ctx: WorldContext): DecorationPlacement | null {
+        if (ctx.requirement) {
+            const species = this.species.find(s => s.id === ctx.requirement?.species);
+            if (species) {
+                return species.params(ctx);
+            } else {
+                return null;
+            }
+        } else {
+            const scored = this.species.map(s => ({ s, p: s.preference(ctx) }));
+            const winner = scored.reduce((a, b) => a.p > b.p ? a : b).s;
+            return winner.params(ctx);
+        }
     }
 }

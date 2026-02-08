@@ -105,6 +105,7 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
                 context,
                 decorationConfig,
                 { xMin: -250, xMax: 250, zMin: zStart, zMax: zEnd },
+                layout.requirements,
                 spatialGrid,
                 12345 + zStart
             );

@@ -2,7 +2,7 @@ import { RiverGeometry } from '../RiverGeometry';
 import { RiverSystem } from '../RiverSystem';
 import { AnySpatialGrid } from '../../core/SpatialGrid';
 import { PlacementConfig } from './BoatPathLayoutPatterns';
-import { LayoutPlacement } from './LayoutPlacement';
+import { LayoutPlacement, DecorationRequirement } from './LayoutPlacement';
 import { PathPoint } from './LayoutRule';
 
 /**
@@ -13,11 +13,14 @@ export interface BoatPathLayout {
     path: PathPoint[];
     /** Flattened list of obstacle placements */
     placements: LayoutPlacement[];
+    /** Requirements for decorations to be placed */
+    requirements: DecorationRequirement[];
 }
 
 export interface PatternContext {
     riverSystem: RiverSystem;
     placements: LayoutPlacement[];
+    requirements: DecorationRequirement[];
     path: PathPoint[];
     range: [number, number];        // index range in path array
     progress: number;               // progress [0-1] along river
@@ -109,7 +112,7 @@ export class BoatPathLayoutStrategy {
 
         // 1. Sample the river
         const path = this.sampleRiver(riverSystem, biomeZRange[1], biomeZRange[0]);
-        if (path.length < 2) return { path, placements: [] };
+        if (path.length < 2) return { path, placements: [], requirements: [] };
 
         const totalArcLength = path[path.length - 1].arcLength;
 
@@ -120,12 +123,12 @@ export class BoatPathLayoutStrategy {
         this.generateWeavingPath(path, config, totalArcLength);
 
         // 4. Determine obstacle placements
-        const placements = this.resolvePlacements(
+        const { placements, requirements } = this.resolvePlacements(
             riverSystem,
             path, tracks, config, totalArcLength,
             spatialGrid, biomeZRange);
 
-        return { path, placements };
+        return { path, placements, requirements };
     }
 
     private static sampleRiver(
@@ -223,8 +226,9 @@ export class BoatPathLayoutStrategy {
         totalArcLength: number,
         spatialGrid: AnySpatialGrid,
         biomeZRange: [number, number]
-    ): LayoutPlacement[] {
+    ): { placements: LayoutPlacement[], requirements: DecorationRequirement[] } {
         const placements: LayoutPlacement[] = [];
+        const requirements: DecorationRequirement[] = [];
 
         for (const track of tracks) {
             // Procedural scenes
@@ -239,6 +243,7 @@ export class BoatPathLayoutStrategy {
                     const context: PatternContext = {
                         riverSystem,
                         placements,
+                        requirements,
                         path,
                         range: [sceneIStart, sceneIEnd],
                         progress,
@@ -257,6 +262,7 @@ export class BoatPathLayoutStrategy {
                 const context: PatternContext = {
                     riverSystem,
                     placements,
+                    requirements,
                     path,
                     range: [0, path.length],
                     progress: ep.at,
@@ -270,6 +276,6 @@ export class BoatPathLayoutStrategy {
             }
         }
 
-        return placements;
+        return { placements, requirements };
     }
 }

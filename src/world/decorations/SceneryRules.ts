@@ -111,8 +111,8 @@ class Details {
         const vx = closest.x - worldX;
         const vz = closest.z - worldZ;
 
-        // Assumes the model faces +z
-        return Math.PI / 2 - Math.atan2(vz, vx);
+        // Assumes the model faces -z and rotations are clockwise
+        return -(Math.PI / 2 + Math.atan2(vz, vx));
     }
 }
 
@@ -265,7 +265,8 @@ export class PropPlacement extends DecorationPlacement {
         public readonly propKind: string,
         public readonly scale: number,
         public rotation: number,
-        public readonly placeTowardShore: boolean = false
+        public readonly placeTowardShore: boolean = false,
+        public readonly slot: { name: string, dz: number, dy: number } = undefined,
     ) {
         super(x, y, z, groundRadius, canopyRadius, 0);
     }
@@ -286,7 +287,21 @@ export class PropPlacement extends DecorationPlacement {
             case 'beachChair': model = Decorations.getBeachChair()?.model; break;
             case 'beachUmbrella': model = Decorations.getBeachUmbrella()?.model; break;
         }
-        if (model) ctx.tryPlaceObject(model, this.kind, this.x, this.y, this.z, this.scale, this.rotation);
+        if (model) {
+            // chair needs an extra rotation of PI degrees to account for
+            // orientation of model
+            ctx.tryPlaceObject(model, this.kind, this.x, this.y, this.z,
+                this.scale, this.rotation + Math.PI);
+        }
+
+        // Register slot
+        if (this.slot !== undefined) {
+            // rotation is clockwise
+            const slotX = this.x + Math.sin(this.rotation) * this.slot.dz * this.scale;
+            const slotZ = this.z + Math.cos(this.rotation) * this.slot.dz * this.scale;
+            const slotY = this.y + this.slot.dy * this.scale;
+            ctx.registerSlot(this.slot.name, slotX, slotY, slotZ);
+        }
     }
 }
 
@@ -316,7 +331,7 @@ export class UmbrellaWithChairsPlacement extends DecorationPlacement {
         }
 
         // 2. Calculate shore rotation for chairs
-        const shoreRot = Details.calculateShoreRotation(this.x, this.z);
+        const shoreRot = Details.calculateShoreRotation(this.x, this.z) + Math.PI;
 
         // 3. Determine chair positions
         const chairModel = Decorations.getBeachChair()?.model;
@@ -736,6 +751,9 @@ export class MangroveParams {
 }
 
 export class PropParams {
+
+    public static beach_chair_slot = 'beach-chair';
+
     public static beach_chair() {
         return (ctx: WorldContext) => {
             const scale = 3.0;
@@ -747,7 +765,12 @@ export class PropParams {
                 'beachChair',
                 scale,
                 0,
-                true // placeTowardShore
+                true, // placeTowardShore
+                {
+                    name: this.beach_chair_slot,
+                    dz: DecorationMetadata.beachChair.backOffset,
+                    dy: DecorationMetadata.beachChair.height
+                }
             );
         };
     }

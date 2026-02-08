@@ -1,10 +1,13 @@
+import { DecorationRequirement } from "../layout/LayoutPlacement";
 import { DecorationPlacement } from "./DecorationPlacement";
 
 /**
- * Environmental Context for a rule.
+ * Environmental Context for a rule. When generating required decorations
+ * a requirement is passed in the world context.
  */
 export interface WorldContext {
     pos: { x: number, y: number }; // World X, Z (using y for z in 2D context)
+    requirement?: DecorationRequirement;
     elevation: number;
     slope: number;
     distanceToRiver: number;
@@ -25,5 +28,5 @@ export interface DecorationRule {
     fitness: (ctx: WorldContext) => number;
 
     // Attributes: Generates the specific look
-    generate: (ctx: WorldContext) => DecorationPlacement;
+    generate: (ctx: WorldContext) => DecorationPlacement | null;
 }

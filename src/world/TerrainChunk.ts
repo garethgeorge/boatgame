@@ -10,6 +10,7 @@ import { EntityManager } from '../core/EntityManager';
 import { SpatialGrid } from '../core/SpatialGrid';
 import { GraphicsUtils } from '../core/GraphicsUtils';
 import { RiverGeometry } from './RiverGeometry';
+import { TerrainSlotMap } from './TerrainSlotMap';
 
 export class TerrainChunk {
 
@@ -25,6 +26,7 @@ export class TerrainChunk {
   public readonly zOffset: number;
   public readonly riverSystem: RiverSystem;
   public readonly spatialGrid: SpatialGrid;
+  public readonly slots: TerrainSlotMap = new TerrainSlotMap();
 
   private graphicsEngine: GraphicsEngine;
 
