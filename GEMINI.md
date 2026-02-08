@@ -5,8 +5,11 @@ This is a 3D Boat Game built with **Three.js** for rendering and **Planck.js** (
 
 ## Directory Structure
 - **`src/core`**: Core engine subsystems including Graphics, Physics, and the Entity system.
-- **`src/entities`**: Game entities (Boat, Obstacles, etc.).
-- **`src/world`**: World generation, terrain chunks, biomes, and decoration placement.
+- **`src/entities`**: Game entities (Boat, Obstacles, Animals, etc.).
+- **`src/world`**: World generation, terrain chunks, biomes, layout, and decoration placement.
+    - **`src/world/layout`**: Boat path and obstacle layout logic.
+    - **`src/world/decorators`**: Procedural decoration placement (Poisson sampling).
+    - **`src/world/decorations`**: Assets, registry, and scenery rules.
 - **`src/managers`**: High-level game managers (Input, Obstacles).
 - **`src/shaders`**: Custom shader definitions.
 - **`src/sky`**: Sky and day/night cycle management.
@@ -117,10 +120,10 @@ The world is infinite and generated procedurally as the boat moves along the **N
 -   **TerrainChunk**: Generates three layers:
     -   **Ground**: `MeshToonMaterial` with vertex colors derived from biomes.
     -   **Water**: Custom `WaterShader`.
-    -   **Decorations**: Instanced/merged meshes for performance.
+    -   **Decorations**: Instanced/merged meshes and entities populated via `BaseBiomeFeatures.populate`.
 
 ## 7. Decoration System
-**Files**: `src/world/Decorations.ts`, `src/world/factories/*`
+**Files**: `src/world/decorations/Decorations.ts`, `src/world/factories/*`
 
 Decorations (trees, rocks, etc.) use a **Registry + Factory** pattern to decouple placement logic from asset creation.
 
@@ -129,7 +132,7 @@ Decorations (trees, rocks, etc.) use a **Registry + Factory** pattern to decoupl
 -   **`Decorations`**: Static facade providing strongly-typed accessors (e.g., `Decorations.getTree(...)`) that delegate to the registry.
 -   **Async Loading & Gatekeeping**: The system uses a hybrid approach to prevent performance spikes:
     -   **Lazy Loading**: Assets are loaded on-demand. `GLTFModelFactory.load()` is idempotent and caches its loading promise.
-    -   **Gatekeeper Pattern**: Biome generators (`decorate`, `spawn`) and `TerrainChunk` generators return `Generator<void | Promise<void>, ...>`. They yield `Promise` objects returned by `Decorations.ensureLoaded(id)` *before* instantiating entities.
+    -   **Gatekeeper Pattern**: Biome generators (`populate`) return `Generator<void | Promise<void>, ...>`. They yield `Promise` objects returned by `Decorations.ensureLoaded(id)` *before* instantiating objects.
     -   **Non-Blocking Wait**: `TerrainManager` tracks these yielded promises and pauses chunk processing without blocking the game loop.
 -   **Optimization**: `TerrainChunk` uses `BiomeDecorationHelper` to batch and merge decoration geometries to reduce draw calls.
 
@@ -138,7 +141,7 @@ Decorations (trees, rocks, etc.) use a **Registry + Factory** pattern to decoupl
 
 Dynamic game objects (Obstacles, Animals) follow a hierarchy designed for behavioral complexity.
 
-### Architecture
+### Architecture (Updated)
 -   **`Entity`** (Base): Manages `planck.Body` (Physics) and `THREE.Mesh` (Graphics) sync.
 -   **`AttackAnimal`** (Abstract): Extends `Entity`. Implements:
     -   **State Machine**: Uses `EntityBehavior` classes (e.g., `ShoreIdle`, `EnteringWater`, `Swimming`) to drive logic.
@@ -146,9 +149,9 @@ Dynamic game objects (Obstacles, Animals) follow a hierarchy designed for behavi
     -   **Physics**: Auto-configures dynamic bodies with specific density/friction.
 
 ### Spawning
-**Files**: `src/entities/spawners/AttackAnimalSpawner.ts`
--   **Spawners**: Encapsulate placement rules (e.g., `AttackAnimalSpawner`).
--   **PlacementHelper**: Used to find valid positions (Shore vs. Water, clustering, distance from banks) without colliding with static terrain.
+**Files**: `src/entities/spawners/AnimalSpawner.ts`, `src/entities/AnimalLayoutRules.ts`
+-   **Spawners**: Encapsulate creation rules. `AnimalSpawner.createEntity` handles the instantiation of any animal class with common options like aggressiveness and behavior.
+-   **Placement Rules**: Instead of a standalone `PlacementHelper`, valid positions (Shore vs. Water, spacing, slope) are now determined by `PlacementPredicate`s defined in `src/world/layout/LayoutRuleBuilders.ts` and utilized in `AnimalLayoutRules.ts`.
 
 ## 9. Animal Behavior & Logic System
 **Files**: `src/entities/behaviors/AnimalUniversalBehavior.ts`, `src/entities/behaviors/logic/*`
@@ -204,47 +207,49 @@ The `AnimationPlayer` uses a similar stack-based scripting engine to manage comp
 3. **Event-Driven Advancement**: When an animation completes (or finishes its specified `repeat` count), the `THREE.AnimationMixer`'s `'finished'` event triggers the player to resolve the next step in the script.
 
 ## 11. Declarative Biome Layout System
-**Files**: `src/world/biomes/BoatPathLayoutStrategy.ts`, `src/world/biomes/*BiomeFeatures.ts`
+**Files**: `src/world/layout/BoatPathLayoutStrategy.ts`, `src/world/layout/BoatPathLayoutPatterns.ts`, `src/world/biomes/*BiomeFeatures.ts`
 
 The layout system uses a declarative approach to define the "intended path" for the boat and the distribution of obstacles and rewards.
 
 ### 1. Conceptual Design
 The system generates a **BoatPathLayout** which consists of:
 - **Directed Weaving Path**: A sinusoidal path that weaves between river banks, providing a guided but challenging route.
-- **Independent Tracks**: Multiple parallel tracks (e.g., 'main', 'rewards', 'unique_elements') that contribute obstacle placements independently, allowing for layered behavioral complexity.
+- **Independent Tracks**: Multiple parallel tracks (e.g., 'main', 'rewards', 'unique_elements') that contribute obstacle placements independently.
 
 ### 2. Pattern System
 Obstacles are placed according to high-level patterns defined in `PatternConfig`.
-- **Pattern Logics**:
+- **Pattern Logics (in `Patterns` class)**:
     - `scatter`: Randomized placement within a segment.
     - `sequence`: Evenly spaced placements.
     - `gate`: Placements on opposite sides of the boat path to create a narrowing.
     - `staggered`: Alternating sides relative to the boat path.
     - `cluster`: Dense grouping around a central point.
-- **Placement Types**:
+- **Placement Types (in `Placements` class)**:
     - `path`: Directly on the boat's intended path.
     - `slalom`: Off-path, forcing the player to weave.
-    - `shore`: Placed on or near the banks (refined by `waterAnimals` list).
+    - `nearShore`: Placed near the river banks.
+    - `middle`: Placed in the middle of the river.
 
 ### 3. Track & Stage Architecture
-A biome's layout is composed of one or more **Tracks**. Each track consists of a sequence of **Stages**.
+A biome's layout is composed of one or more **Tracks** (`TrackConfig`). Each track consists of a sequence of **Stages** (`StageConfig`).
 - **Stages**: Defined for specific progress ranges (0.0 to 1.0). The system randomly selects and scales stages to fill the biome.
-- **Weighted Selection**: Each stage picks patterns from weighted arrays, ensuring variety in procedural generation.
+- **Scenes**: Each stage contains **Scenes** (`SceneConfig`) which define a segment length and a set of patterns.
 - **Explicit Placements**: Tracks can also contain `ExplicitPlacementConfig` for unique, non-procedural elements (e.g., a finish line or a boss encounter) at fixed progress points.
 
 ### 4. Implementation Details
 The `BoatPathLayoutStrategy.createLayout()` follows a deterministic multi-step process:
-1. **Geometry Sampling**: Samples `RiverGeometry` to establish an arc-length coordinate system.
-2. **Track Generation**: Independently chooses and scales stages for every track.
-3. **Weaving Calculation**: Calculates "crossings" based on the primary track's stage boundaries to determine when the boat should weave.
-4. **Placement Resolution**: Resolves pattern logic into concrete `ObstaclePlacement` objects with defined `range` (lateral boundaries) and `aggressiveness`).
+1.  **Geometry Sampling**: Samples `RiverGeometry` to establish an arc-length coordinate system.
+2.  **Track Generation**: Independently chooses and scales stages/scenes for every track.
+3.  **Weaving Calculation**: Calculates "crossings" based on the primary track's stage boundaries.
+4.  **Placement Resolution**: Resolves:
+    -   **Patterns**: Resolved into concrete `LayoutPlacement` objects. Patterns like `scatter` or `gate` use `PlacementConfig` to determine where to place elements.
+    -   **Placements**: Providers (e.g., `Placements.path`, `Placements.nearShore`) that calculate specific X-offsets and habitat types.
 
 ### 5. Extension Guide
-- **Adding Pattern Logics**: Implement the logic in `populatePlacements()` to calculate `pathIndex` and pass hints to `applyIndividualPlacement()`.
-- **Adding Placement Types**: Update `placementRange()` to define how the lateral `[min, max]` range is calculated relative to the boat path and river banks.
+-   **Adding Patterns**: Implement new static methods in the `Patterns` class or use the existing ones with custom `PlacementConfig` providers from the `Placements` class.
 
 ## 12. Procedural Decoration Placement System
-**Files**: `src/world/decorators/PoissonDecorationStrategy.ts`, `src/world/decorators/PoissonDecorationRules.ts`, `src/world/decorators/TerrainDecorator.ts`
+**Files**: `src/world/decorators/PoissonDecorationStrategy.ts`, `src/world/decorators/DecorationRuleBuilders.ts`, `src/world/decorators/TerrainDecorator.ts`
 
 This system uses **Poisson Disk Sampling** with variable radii to place static decorations (trees, rocks, flowers) across the terrain. Position fitness and object spacing are controlled by declarative rules and environmental signals.
 
@@ -263,11 +268,10 @@ private decorationRules: DecorationRule[] = [
         species: [
             {
                 id: 'oak_tree',
-                preference: Combine.all(
-                    Signal.constant(1.0),
-                    Signal.linearRange(Signal.distanceToRiver, 5, 50), // Prefer away from river
-                    Signal.inRange(Signal.slope, 0, 30) // Only on flat/low slope
-                ),
+                preference: Fitness.make({
+                    fitness: 0.02,
+                    stepDistance: [5, 100]
+                }),
                 params: (ctx) => {
                     const scale = 0.8 + ctx.random() * 0.4;
                     return {
@@ -307,18 +311,18 @@ async decorate(context: DecorationContext, zStart: number, zEnd: number) {
 - Avoid casting to any in typescript except where there is no reasonable alternative or it is being done for performance reasons.
 - Don't remove comments in the code unless they are no longer applicable.
 
-## 15. Procedural Tree System (L-Systems)
-**Files**: `src/world/factories/LSystemTreeGenerator.ts`, `src/world/factories/LSystemTreeArchetypes.ts`
+## 15. Procedural Plant System (L-Systems)
+**Files**: `src/world/factories/LSystemPlantGenerator.ts`, `src/world/factories/LSystemTreeArchetypes.ts`
 
 The vegetation system uses a Lindenmayer System (L-System) to generate procedural tree geometries. This allows for defining complex, organic tree structures using simple string-based production rules and parameters.
 
-### 1. Generation Pipeline (`LSystemTreeGenerator.ts`)
+### 1. Generation Pipeline (`LSystemPlantGenerator.ts`)
 The generator follows a 4-pass process to create a complete tree mesh:
 
 1.  **Topology Pass (Turtle Graphics)**:
     -   Interprets the L-System string (axiom + iterations).
-    -   Uses "Turtle" logic to build a topological graph of `TreeNode`s.
-    -   Handles state management `[` `]`, rotation `&` `/`, and leaf placement `+` `$`.
+    -   Uses "Turtle" logic to build a topological graph of `PlantNode`s.
+    -   Handles state management `[` `]`, rotation `&` `/`, and leaf placement `+`.
     -   Processes terminal symbols defined in the `branches` registry to create branch segments.
     -   Applies physical modifiers like `gravity`, `wind`, and `heliotropism` based on the active branch parameters.
 2.  **Radii Pass (Pipe Model)**:
@@ -347,12 +351,12 @@ Trees are defined by `TreeConfig` objects in the `ARCHETYPES` registry.
 #### B. Symbols
 -   **Terminal Symbols (Branching)**: Any symbol present in the `branches` record (e.g., `=`, `#`, `-`) will trigger the creation of a branch segment and move the turtle forward. These can be defined with custom `BranchParams`. A pseudo-branch can be created by setting its scale to 0. No branch is created but parameters can then be defined for the & etc operators that attach things to the branch.
 -   **Built-in Graphics Symbols**:
-    -   `[` : **Push State**. Start a new branch junction.
-    -   `]` : **Pop State**. End current branch and return to parent junction.
-    -   `&` : **Pitch**. Rotate around the local X axis (controlled by `spread`).
-    -   `/` : **Yaw**. Rotate around the local Y axis (golden angle).
-    -   `+` : **Standard Leaf**. Marks a node as having a leaf oriented along the branch.
-    -   `^` : **Orient Upright (with jitter)**. Resets the turtle to point upwards (0,1,0), perturbed by the current branch's jitter.
+    -   `[` : **Push State**. Save current turtle position and orientation.
+    -   `]` : **Pop State**. Restore last saved state.
+    -   `&` : **Pitch**. Rotate around local X axis by `spread` (+/- `jitter`).
+    -   `/` : **Yaw**. Rotate by golden angle (137.5°) or custom angle (+/- `jitter`).
+    -   `+` : **Leaf**. Attach a leaf at the current position.
+    -   `^` : **Up**. Reset orientation to point vertically up, affected by `jitter`.
 -   **Non-terminal symbols**: Any other symbol (typically `A-Z`) used for expansion logic.
 
 #### C. Branch Parameters
@@ -378,49 +382,22 @@ Leaves are generated separately using strategies defined in `LeafKind`.
 Use `npx tsc --noEmit` to verify that the code passes typescript checks.
 
 ## 17. Adding New Animals
-
-Follow these steps to add a new animal species to the game:
-
-### 1. Define Entity ID
-Add a unique ID for the new animal to the `EntityIds` enum in `src/entities/EntityIds.ts`.
-
-### 2. Register Assets
-In `src/world/Decorations.ts`:
--   Register the GLTF model path using `DecorationRegistry.register('id', new GLTFModelFactory('assets/model.glb'))`.
--   Add a static helper method to the `Decorations` class:
-    ```typescript
-    static getMyAnimal() { return this.getModelAndAnimations('id'); }
-    ```
-
-### 3. Create Animal Entity Class
-Create a new file in `src/entities/obstacles/` (e.g., `MyAnimal.ts`) extending `AttackAnimal`, `FlyingAnimal`, or `SwimAwayAnimal`.
--   **Model**: Override `getModelData()` to return your new `Decorations` getter.
--   **Setup**: Implement `setupModel()` to set scale and orientation (usually `Math.PI` to face forward).
--   **Animations**: Implement `getAnimations()` to map `AnimalLogicPhase` to `AnimationScript` (e.g., using `Animal.play()` or `AnimationStep.random()`).
--   **Behavior**: In the constructor, call `this.setBehavior()` using the corresponding factory (`AttackBehaviorFactory`, `FlyingBehaviorFactory`, etc.).
-
-### 4. Register Spawner Configuration
-In `src/entities/spawners/EntitySpawners.ts`:
--   Add an entry to the appropriate config array (`attackConfigs`, `flyingConfigs`, or `swimAwayConfigs`).
--   Define `getDensity`, `factory`, and placement rules like `shoreProbability` or `waterPlacement`.
-
-### 5. Update Layout System
-In `src/world/biomes/BoatPathLayoutSpawner.ts`:
--   Add your new `EntityIds` to the `switch` statement in `spawn()` to enable layout-based placement.
-
-### 6. Biome Integration
+To add a new animal to the game:
+### 1. Model & Metadata
+-   Add the GLTF model to `public/assets/`.
+-   Add a new entry to `EntityIds.ts`.
+-   Define metadata in `EntityMetadata.ts` (radius, health, etc.).
+### 2. Entity Class
+-   Create a new class in `src/entities/obstacles/` (e.g., `Wolf.ts`).
+-   Extend `AttackAnimal` or `Entity`.
+-   Implement `setupModel` to handle rotations/scaling and toonification.
+### 3. Logic & Behavior
+-   Define behavior configurations in `AnimalBehaviorConfigs.ts`.
+-   If needed, add new behavior logic in `src/entities/behaviors/logic/`.
+### 4. Layout Rules
+-   Create a `LayoutRule` class in `src/entities/AnimalLayoutRules.ts` (e.g. `WolfRule`).
+-   Implement the `behavior()` method to return the desired `AnimalBehaviorConfig`.
+-   Use `LayoutRules.all`, `LayoutRules.select`, etc., to define where the animal can spawn.
+### 5. Biome Integration
 In the target biome's features file (e.g., `SwampBiomeFeatures.ts`):
--   Add the new ID to relevant `patterns` (e.g., a `threat` or `scatter` pattern).
--   If the animal spawns in water, add it to the `waterAnimals` list in `createLayout()`.
-
-## 18. Animal Creation Logic Flow
-
-The following details the logic flow when an animal entity is created by `BoatPathLayoutSpawner`:
-
-1.  **Selection**: The process begins with an `entityType`, `RiverGeometrySample`, and `ObstaclePlacement` identifying an object to be placed at a specific location along the river.
-2.  **Spawner Retrieval**: The `BoatPathLayoutSpawner` retrieves the appropriate `AnimalSpawner` for the `entityType` from the `EntitySpawners` registry.
-3.  **Spawn Call**: The spawner's `spawnAnimalAbsolute()` method is called with `AnimalSpawnOptions`. These options include the river sample, placement range, aggressiveness, and optionally a specific logic name (e.g., `'WolfAttack'`).
-4.  **Spawner Implementation**: The spawner is a sub-class of `AnimalSpawner` (e.g., `AttackAnimalSpawner`, `FlyingAnimalSpawner`, or `SwimAwayAnimalSpawner`).
-5.  **Configuration & Factory**: Each spawner uses a configuration (e.g., `AttackAnimalSpawnConfig`) that defines placement requirements (like `shoreProbability` or `minDistFromBank`) and a `factory` function for the specific animal entity.
-6.  **Placement Resolution**: The spawner chooses an exact world position and orientation for the animal based on its configuration, the provided river sample, and random variance.
-7.  **Instantiation**: Finally, the spawner calls its `factory` function to instantiate the animal, passing it an `AnimalOptions` sub-class (e.g., `AttackAnimalOptions`) containing the resolved placement and behavior settings.
+-   Add the animal to a track's patterns using its rule (e.g., `Place.scatter_path(WolfRule.get(), ...)`).
