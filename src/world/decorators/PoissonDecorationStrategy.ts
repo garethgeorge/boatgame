@@ -1,82 +1,12 @@
 import * as THREE from 'three';
-import { PlacementManifest, AnySpatialGrid } from '../../core/SpatialGrid';
+import { AnySpatialGrid } from '../../core/SpatialGrid';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { CoreMath } from '../../core/CoreMath';
-import { DecorationInstance } from '../factories/DecorationFactory';
+import { DecorationPlacement } from './DecorationPlacement';
+import { DecorationRule, WorldContext } from './DecorationRule';
 
 export interface WorldMap {
     sample(x: number, y: number): number;
-}
-
-// Environmental Context
-export interface WorldContext {
-    pos: { x: number, y: number }; // World X, Z (using y for z in 2D context)
-    elevation: number;
-    slope: number;
-    distanceToRiver: number;
-    biomeProgress: number; // 0.0 (Start) to 1.0 (End of river)
-    // Helpers to access random values cleanly
-    random: () => number;
-    gaussian: () => number;
-    noise2D: (x: number, y: number) => number;
-    sampleMap: (name: string, x?: number, y?: number) => number;
-}
-
-// The Declarative Rule
-export interface DecorationRule {
-    // Placement: Returns 0 to 1 (0 = Impossible, 1 = Perfect)
-    fitness: (ctx: WorldContext) => number;
-
-    // Attributes: Generates the specific look
-    generate: (ctx: WorldContext) => DecorationPlacement;
-}
-
-export interface DecorationContext {
-    tryPlaceInstances(
-        instances: DecorationInstance[],
-        kind: string,
-        x: number, y: number, z: number,
-        scale: number, rotation: number
-    );
-
-    tryPlaceObject(
-        object: THREE.Object3D,
-        kind: string,
-        x: number, y: number, z: number,
-        scale: number, rotation: number
-    );
-}
-
-export abstract class DecorationPlacement implements PlacementManifest {
-    public readonly totalSpacing: number;
-
-    constructor(
-        public readonly x: number,
-        public readonly y: number,
-        public readonly z: number,
-        public readonly groundRadius: number,
-        public readonly canopyRadius: number = 0,
-        extraSpacing: number = 0,
-        public fitness: number = 1.0
-    ) {
-        const baseRadius = canopyRadius > 0 ? canopyRadius : groundRadius;
-        this.totalSpacing = Math.max(0.01, baseRadius + extraSpacing);
-    }
-
-    public abstract get kind(): string;
-
-    /**
-     * Spawns the decoration into the world.
-     */
-    public abstract place(ctx: DecorationContext): void;
-
-    /** 
-     * Generator that yields promises for assets that must be loaded 
-     * before this decoration can be placed.
-     */
-    public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
-        // Default: nothing to load
-    }
 }
 
 export class PoissonDecorationStrategy {

@@ -4,16 +4,15 @@ import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig } from '../layout/BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
-import { DecorationRule } from '../decorators/PoissonDecorationStrategy';
-import { Combine, Signal, TierRule } from '../decorators/PoissonDecorationRules';
+import { Combine, Signal, TierRule } from '../decorators/DecorationRuleBuilders';
 import { RiverSystem } from '../RiverSystem';
 import { RiverGeometry } from '../RiverGeometry';
 import { DecorationConfig, TerrainDecorator } from '../decorators/TerrainDecorator';
 import { Decorations } from '../decorations/Decorations';
 import { off } from 'node:cluster';
-import { EntityRules } from '../layout/EntityLayoutRules';
+import { LayoutRules } from '../layout/LayoutRuleBuilders';
 // AnimalEntityRules removed as it was unused here
-import { DragonflyRule } from '../../entities/AnimalEntityRules';
+import { DragonflyRule } from '../../entities/AnimalLayoutRules';
 import { AnimalSpawner } from '../../entities/spawners/AnimalSpawner';
 import { Monkey } from '../../entities/obstacles';
 

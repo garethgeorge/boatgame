@@ -1,5 +1,6 @@
 import { CoreMath } from "../../core/CoreMath";
-import { DecorationRule, WorldContext, DecorationPlacement } from "./PoissonDecorationStrategy";
+import { DecorationPlacement } from "./DecorationPlacement";
+import { DecorationRule, WorldContext } from "./DecorationRule";
 
 export const Signal = {
     constant: (fitness: number) => (ctx: WorldContext) =>

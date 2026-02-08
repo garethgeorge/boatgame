@@ -1,9 +1,9 @@
-import { EntityIds } from '../../entities/EntityIds';
-import { RiverGeometry, RiverGeometrySample } from '../RiverGeometry';
+import { RiverGeometry } from '../RiverGeometry';
 import { RiverSystem } from '../RiverSystem';
-import { EntityGeneratorFn, EntityPlacement, Habitat, PathPoint } from './EntityLayoutRules';
-import { AnySpatialGrid, SpatialGrid } from '../../core/SpatialGrid';
+import { AnySpatialGrid } from '../../core/SpatialGrid';
 import { PlacementConfig } from './BoatPathLayoutPatterns';
+import { LayoutPlacement } from './LayoutPlacement';
+import { PathPoint } from './LayoutRule';
 
 /**
  * The final generated boat path and its associated obstacle layout.
@@ -12,12 +12,12 @@ export interface BoatPathLayout {
     /** Array of geometry and boat offset samples */
     path: PathPoint[];
     /** Flattened list of obstacle placements */
-    placements: EntityPlacement[];
+    placements: LayoutPlacement[];
 }
 
 export interface PatternContext {
     riverSystem: RiverSystem;
-    placements: EntityPlacement[];
+    placements: LayoutPlacement[];
     path: PathPoint[];
     range: [number, number];        // index range in path array
     progress: number;               // progress [0-1] along river
@@ -223,8 +223,8 @@ export class BoatPathLayoutStrategy {
         totalArcLength: number,
         spatialGrid: AnySpatialGrid,
         biomeZRange: [number, number]
-    ): EntityPlacement[] {
-        const placements: EntityPlacement[] = [];
+    ): LayoutPlacement[] {
+        const placements: LayoutPlacement[] = [];
 
         for (const track of tracks) {
             // Procedural scenes

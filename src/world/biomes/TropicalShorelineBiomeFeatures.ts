@@ -1,18 +1,18 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
-import { PopulationContext } from './PopulationContext';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { DecorationRule, DecorationConfig } from '../decorators/TerrainDecorator';
-import { Select, TierRule } from '../decorators/PoissonDecorationRules';
-import { Fitness, PropParams, RockParams, TreeParams } from '../decorations/DecorationRules';
+import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { Select, TierRule } from '../decorators/DecorationRuleBuilders';
+import { Fitness, PropParams, RockParams, TreeParams } from '../decorations/SceneryRules';
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { CoreMath } from '../../core/CoreMath';
 import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { DolphinRule, TurtleRule, ButterflyRule, ParrotRule } from '../../entities/AnimalEntityRules';
-import { BirdOnBeachChairRule } from '../../entities/VignetteRules';
+import { DolphinRule, TurtleRule, ButterflyRule, ParrotRule } from '../../entities/AnimalLayoutRules';
+import { BirdOnBeachChairRule } from '../../entities/VignetteLayoutRules';
+import { DecorationRule } from '../decorators/DecorationRule';
 
 /**
  * Tropical Shoreline Biome: A sunny coastal paradise with palm trees and marine life.

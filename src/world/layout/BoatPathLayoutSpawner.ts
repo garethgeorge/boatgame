@@ -3,7 +3,6 @@ import { BiomeType } from '../biomes/BiomeType';
 import { BoatPathLayout } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { RiverGeometry } from '../RiverGeometry';
-import { EntityPlacement } from './EntityLayoutRules';
 
 export class BoatPathLayoutSpawner {
     private static instance: BoatPathLayoutSpawner;

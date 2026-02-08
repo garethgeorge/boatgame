@@ -4,13 +4,13 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 import { DecorationConfig } from '../decorators/TerrainDecorator';
-import { TierRule } from '../decorators/PoissonDecorationRules';
+import { TierRule } from '../decorators/DecorationRuleBuilders';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { AlligatorRule, MonkeyRule, HippoRule } from '../../entities/AnimalEntityRules';
-import { BottleRule, RiverRockRule, PierRule } from '../../entities/StaticEntityRules';
-import { Fitness, RockParams, PlantParams } from '../decorations/DecorationRules';
+import { AlligatorRule, MonkeyRule, HippoRule } from '../../entities/AnimalLayoutRules';
+import { BottleRule, RiverRockRule, PierRule } from '../../entities/StaticLayoutRules';
+import { Fitness, RockParams, PlantParams } from '../decorations/SceneryRules';
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';

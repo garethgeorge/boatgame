@@ -32,13 +32,11 @@ import { Unicorn } from './obstacles/Unicorn';
 import { Dragonfly } from './obstacles/Dragonfly';
 import { Pterodactyl } from './obstacles/Pterodactyl';
 import { Decorations, DecorationId } from '../world/decorations/Decorations';
-import {
-    Habitat, EntityGeneratorContext,
-    EntityPlacement, PlacementPredicate, EntityRules,
-    EntityGeneratorFn
-} from '../world/layout/EntityLayoutRules';
+import { PlacementPredicate, LayoutRules } from '../world/layout/LayoutRuleBuilders';
+import { LayoutPlacement } from '../world/layout/LayoutPlacement';
+import { LayoutContext, LayoutRule, Habitat } from '../world/layout/LayoutRule';
 
-export class AnimalPlacement extends EntityPlacement {
+export class AnimalPlacement extends LayoutPlacement {
     constructor(
         index: number, x: number, y: number, z: number, groundRadius: number,
         public readonly id: EntityIds,
@@ -94,31 +92,31 @@ export class AnimalPlacement extends EntityPlacement {
 
 class Details {
     protected static defaultPredicate =
-        EntityRules.all([
-            EntityRules.min_bank_distance(1.0),
-            EntityRules.select({
-                land: EntityRules.slope_in_range(0, 20),
-                water: EntityRules.true()
+        LayoutRules.all([
+            LayoutRules.min_bank_distance(1.0),
+            LayoutRules.select({
+                land: LayoutRules.slope_in_range(0, 20),
+                water: LayoutRules.true()
             })
         ]);
 
     protected static landPredicate =
-        EntityRules.all([
-            EntityRules.min_bank_distance(1.0),
-            EntityRules.select({
-                land: EntityRules.slope_in_range(0, 20),
+        LayoutRules.all([
+            LayoutRules.min_bank_distance(1.0),
+            LayoutRules.select({
+                land: LayoutRules.slope_in_range(0, 20),
             })
         ]);
 
     protected static waterPredicate =
-        EntityRules.all([
-            EntityRules.min_bank_distance(1.0),
-            EntityRules.select({
-                water: EntityRules.true()
+        LayoutRules.all([
+            LayoutRules.min_bank_distance(1.0),
+            LayoutRules.select({
+                water: LayoutRules.true()
             })
         ]);
 
-    protected static aggressiveness(ctx: EntityGeneratorContext): number {
+    protected static aggressiveness(ctx: LayoutContext): number {
         const aggressiveness = Math.min(1.0, ctx.progress * 0.7 + Math.random() * 0.3);
         return aggressiveness;
     }
@@ -167,10 +165,10 @@ abstract class AnimalRule extends Details {
         this.heightInWater = heightInWater;
     }
 
-    protected abstract behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig;
+    protected abstract behavior(ctx: LayoutContext): AnimalBehaviorConfig;
 
-    public get(predicate: PlacementPredicate): EntityGeneratorFn {
-        return (ctx: EntityGeneratorContext): AnimalPlacement | null => {
+    public get(predicate: PlacementPredicate): LayoutRule {
+        return (ctx: LayoutContext): AnimalPlacement | null => {
             const groundRadius = this.radius;
             if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
             return new AnimalPlacement(
@@ -193,7 +191,7 @@ abstract class AnimalRule extends Details {
 export class AlligatorRule extends AnimalRule {
     private static _instance: AlligatorRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): LayoutRule {
         if (!this._instance) this._instance = new AlligatorRule;
         return this._instance.get(predicate);
     }
@@ -206,7 +204,7 @@ export class AlligatorRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat);
     }
 }
@@ -214,7 +212,7 @@ export class AlligatorRule extends AnimalRule {
 export class HippoRule extends AnimalRule {
     private static _instance: HippoRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): LayoutRule {
         if (!this._instance) this._instance = new HippoRule;
         return this._instance.get(predicate);
     }
@@ -227,7 +225,7 @@ export class HippoRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat);
     }
 }
@@ -235,7 +233,7 @@ export class HippoRule extends AnimalRule {
 export class SwanRule extends AnimalRule {
     private static _instance: SwanRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): LayoutRule {
         if (!this._instance) this._instance = new SwanRule;
         return this._instance.get(predicate);
     }
@@ -248,7 +246,7 @@ export class SwanRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return { type: 'swim' };
     }
 }
@@ -256,7 +254,7 @@ export class SwanRule extends AnimalRule {
 export class UnicornRule extends AnimalRule {
     private static _instance: UnicornRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.landPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.landPredicate): LayoutRule {
         if (!this._instance) this._instance = new UnicornRule;
         return this._instance.get(predicate);
     }
@@ -269,7 +267,7 @@ export class UnicornRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return { type: 'unicorn' };
     }
 }
@@ -277,7 +275,7 @@ export class UnicornRule extends AnimalRule {
 export class BluebirdRule extends AnimalRule {
     private static _instance: BluebirdRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.landPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.landPredicate): LayoutRule {
         if (!this._instance) this._instance = new BluebirdRule;
         return this._instance.get(predicate);
     }
@@ -290,7 +288,7 @@ export class BluebirdRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return { type: 'none' }; // ignored
     }
 }
@@ -298,7 +296,7 @@ export class BluebirdRule extends AnimalRule {
 export class ParrotRule extends AnimalRule {
     private static _instance: ParrotRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.landPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.landPredicate): LayoutRule {
         if (!this._instance) this._instance = new ParrotRule;
         return this._instance.get(predicate);
     }
@@ -311,7 +309,7 @@ export class ParrotRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return { type: 'none' }; // ignored
     }
 }
@@ -319,7 +317,7 @@ export class ParrotRule extends AnimalRule {
 export class BrownBearRule extends AnimalRule {
     private static _instance: BrownBearRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): LayoutRule {
         if (!this._instance) this._instance = new BrownBearRule;
         return this._instance.get(predicate);
     }
@@ -332,7 +330,7 @@ export class BrownBearRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
     }
 }
@@ -340,7 +338,7 @@ export class BrownBearRule extends AnimalRule {
 export class PolarBearRule extends AnimalRule {
     private static _instance: PolarBearRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): LayoutRule {
         if (!this._instance) this._instance = new PolarBearRule;
         return this._instance.get(predicate);
     }
@@ -353,7 +351,7 @@ export class PolarBearRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
     }
 }
@@ -361,7 +359,7 @@ export class PolarBearRule extends AnimalRule {
 export class MooseRule extends AnimalRule {
     private static _instance: MooseRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): LayoutRule {
         if (!this._instance) this._instance = new MooseRule;
         return this._instance.get(predicate);
     }
@@ -374,7 +372,7 @@ export class MooseRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
     }
 }
@@ -382,7 +380,7 @@ export class MooseRule extends AnimalRule {
 export class DucklingRule extends AnimalRule {
     private static _instance: DucklingRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): LayoutRule {
         if (!this._instance) this._instance = new DucklingRule;
         return this._instance.get(predicate);
     }
@@ -395,7 +393,7 @@ export class DucklingRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return { type: 'swim' };
     }
 }
@@ -403,7 +401,7 @@ export class DucklingRule extends AnimalRule {
 export class PenguinKayakRule extends AnimalRule {
     private static _instance: PenguinKayakRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): LayoutRule {
         if (!this._instance) this._instance = new PenguinKayakRule;
         return this._instance.get(predicate);
     }
@@ -416,7 +414,7 @@ export class PenguinKayakRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return { type: 'swim' };
     }
 }
@@ -424,7 +422,7 @@ export class PenguinKayakRule extends AnimalRule {
 export class DragonflyRule extends AnimalRule {
     private static _instance: DragonflyRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): LayoutRule {
         if (!this._instance) this._instance = new DragonflyRule;
         return this._instance.get(predicate);
     }
@@ -437,7 +435,7 @@ export class DragonflyRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return { type: 'none' }; // ignored
     }
 }
@@ -445,7 +443,7 @@ export class DragonflyRule extends AnimalRule {
 export class TRexRule extends AnimalRule {
     private static _instance: TRexRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): LayoutRule {
         if (!this._instance) this._instance = new TRexRule;
         return this._instance.get(predicate);
     }
@@ -458,7 +456,7 @@ export class TRexRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
     }
 }
@@ -466,7 +464,7 @@ export class TRexRule extends AnimalRule {
 export class TriceratopsRule extends AnimalRule {
     private static _instance: TriceratopsRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): LayoutRule {
         if (!this._instance) this._instance = new TriceratopsRule;
         return this._instance.get(predicate);
     }
@@ -479,7 +477,7 @@ export class TriceratopsRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
     }
 }
@@ -487,7 +485,7 @@ export class TriceratopsRule extends AnimalRule {
 export class BrontosaurusRule extends AnimalRule {
     private static _instance: BrontosaurusRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): LayoutRule {
         if (!this._instance) this._instance = new BrontosaurusRule;
         return this._instance.get(predicate);
     }
@@ -500,7 +498,7 @@ export class BrontosaurusRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
     }
 }
@@ -508,7 +506,7 @@ export class BrontosaurusRule extends AnimalRule {
 export class PterodactylRule extends AnimalRule {
     private static _instance: PterodactylRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): LayoutRule {
         if (!this._instance) this._instance = new PterodactylRule;
         return this._instance.get(predicate);
     }
@@ -521,7 +519,7 @@ export class PterodactylRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return { type: 'none' }; // ignored
     }
 }
@@ -529,7 +527,7 @@ export class PterodactylRule extends AnimalRule {
 export class SnakeRule extends AnimalRule {
     private static _instance: SnakeRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): LayoutRule {
         if (!this._instance) this._instance = new SnakeRule;
         return this._instance.get(predicate);
     }
@@ -542,7 +540,7 @@ export class SnakeRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return { type: 'attack', logicName: 'WolfAttack' };
     }
 }
@@ -550,7 +548,7 @@ export class SnakeRule extends AnimalRule {
 export class EgretRule extends AnimalRule {
     private static _instance: EgretRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): LayoutRule {
         if (!this._instance) this._instance = new EgretRule;
         return this._instance.get(predicate);
     }
@@ -563,7 +561,7 @@ export class EgretRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return { type: 'none' }; // ignored
     }
 }
@@ -571,7 +569,7 @@ export class EgretRule extends AnimalRule {
 export class DolphinRule extends AnimalRule {
     private static _instance: DolphinRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): LayoutRule {
         if (!this._instance) this._instance = new DolphinRule;
         return this._instance.get(predicate);
     }
@@ -584,7 +582,7 @@ export class DolphinRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return { type: 'swim' };
     }
 }
@@ -592,7 +590,7 @@ export class DolphinRule extends AnimalRule {
 export class TurtleRule extends AnimalRule {
     private static _instance: TurtleRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): LayoutRule {
         if (!this._instance) this._instance = new TurtleRule;
         return this._instance.get(predicate);
     }
@@ -605,7 +603,7 @@ export class TurtleRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return ctx.habitat === 'land' ? { type: 'wait-swim' } : { type: 'swim' };
     }
 }
@@ -613,7 +611,7 @@ export class TurtleRule extends AnimalRule {
 export class ButterflyRule extends AnimalRule {
     private static _instance: ButterflyRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.landPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.landPredicate): LayoutRule {
         if (!this._instance) this._instance = new ButterflyRule;
         return this._instance.get(predicate);
     }
@@ -626,7 +624,7 @@ export class ButterflyRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return { type: 'none' }; // ignored
     }
 }
@@ -634,7 +632,7 @@ export class ButterflyRule extends AnimalRule {
 export class GingerManRule extends AnimalRule {
     private static _instance: GingerManRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): LayoutRule {
         if (!this._instance) this._instance = new GingerManRule;
         return this._instance.get(predicate);
     }
@@ -647,7 +645,7 @@ export class GingerManRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return { type: 'walk-swim' };
     }
 }
@@ -655,7 +653,7 @@ export class GingerManRule extends AnimalRule {
 export class MonkeyRule extends AnimalRule {
     private static _instance: MonkeyRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.defaultPredicate): LayoutRule {
         if (!this._instance) this._instance = new MonkeyRule;
         return this._instance.get(predicate);
     }
@@ -668,7 +666,7 @@ export class MonkeyRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
         return this.behavior_walk_attack(ctx.habitat);
     }
 }

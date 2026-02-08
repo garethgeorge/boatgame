@@ -3,12 +3,12 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { DecorationRule, DecorationConfig } from '../decorators/TerrainDecorator';
-import { TierRule } from '../decorators/PoissonDecorationRules';
-import { Fitness, TreeParams, FlowerParams } from '../decorations/DecorationRules';
+import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { TierRule } from '../decorators/DecorationRuleBuilders';
+import { Fitness, TreeParams, FlowerParams } from '../decorations/SceneryRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { DragonflyRule } from '../../entities/AnimalEntityRules';
+import { DragonflyRule } from '../../entities/AnimalLayoutRules';
 
 
 /**

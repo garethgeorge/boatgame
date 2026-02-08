@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import { PoissonDecorationStrategy, DecorationRule, WorldMap, DecorationPlacement, DecorationContext } from './PoissonDecorationStrategy';
+import { PoissonDecorationStrategy, WorldMap } from './PoissonDecorationStrategy';
 import { AnySpatialGrid } from '../../core/SpatialGrid';
-export type { DecorationRule, DecorationPlacement as PoissonPlacement };
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { PopulationContext } from '../biomes/PopulationContext';
 import { DecorationInstance, Decorations, LSystemTreeKind, LSystemFlowerKind } from '../decorations/Decorations';
-import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { CoreMath } from '../../core/CoreMath';
+import { DecorationContext, DecorationPlacement } from './DecorationPlacement';
+import { DecorationRule } from './DecorationRule';
 
 
 export class NoiseMap implements WorldMap {

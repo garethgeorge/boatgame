@@ -1,15 +1,14 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
-import { PopulationContext } from './PopulationContext';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { DecorationConfig, DecorationRule } from '../decorators/TerrainDecorator';
-import { TierRule } from '../decorators/PoissonDecorationRules';
-import { Fitness, RockParams, TreeParams } from '../decorations/DecorationRules';
+import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { TierRule } from '../decorators/DecorationRuleBuilders';
+import { Fitness, RockParams, TreeParams } from '../decorations/SceneryRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { PolarBearRule, PenguinKayakRule } from '../../entities/AnimalEntityRules';
-import { IcebergRule, BuoyRule, BottleRule } from '../../entities/StaticEntityRules';
+import { PolarBearRule, PenguinKayakRule } from '../../entities/AnimalLayoutRules';
+import { IcebergRule, BuoyRule, BottleRule } from '../../entities/StaticLayoutRules';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'ice';

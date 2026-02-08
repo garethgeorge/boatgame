@@ -1,16 +1,15 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
-import { PopulationContext } from './PopulationContext';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { DecorationConfig, DecorationRule, NoiseMap } from '../decorators/TerrainDecorator';
-import { TierRule } from '../decorators/PoissonDecorationRules';
-import { Fitness, RockParams, PlantParams } from '../decorations/DecorationRules';
+import { DecorationConfig, NoiseMap } from '../decorators/TerrainDecorator';
+import { TierRule } from '../decorators/DecorationRuleBuilders';
+import { Fitness, RockParams, PlantParams } from '../decorations/SceneryRules';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { TRexRule, TriceratopsRule, PterodactylRule, BrontosaurusRule } from '../../entities/AnimalEntityRules';
-import { RiverRockRule, LogRule, BottleRule, WaterGrassRule } from '../../entities/StaticEntityRules';
+import { TRexRule, TriceratopsRule, PterodactylRule, BrontosaurusRule } from '../../entities/AnimalLayoutRules';
+import { RiverRockRule, LogRule, BottleRule, WaterGrassRule } from '../../entities/StaticLayoutRules';
 
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'jurassic';

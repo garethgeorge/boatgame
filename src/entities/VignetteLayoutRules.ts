@@ -4,20 +4,17 @@ import { RiverGeometrySample } from "../world/RiverGeometry";
 import { PopulationContext } from "../world/biomes/PopulationContext";
 import { RiverSystem } from "../world/RiverSystem";
 import { Decorations, DecorationId } from '../world/decorations/Decorations';
-import {
-    EntityGeneratorContext,
-    EntityPlacement, EntityGeneratorFn, EntityRules,
-    PlacementPredicate
-} from '../world/layout/EntityLayoutRules';
-
+import { LayoutRules, PlacementPredicate } from '../world/layout/LayoutRuleBuilders';
 import { Parrot } from './obstacles/Parrot';
 import { DecorationMetadata } from '../world/decorations/DecorationMetadata';
 import { AnimalSpawner } from './spawners/AnimalSpawner';
+import { LayoutPlacement } from '../world/layout/LayoutPlacement';
+import { LayoutContext, LayoutRule } from '../world/layout/LayoutRule';
 
 /**
  * Metadata for vignette placements.
  */
-export class BirdOnBeachChairPlacement extends EntityPlacement {
+export class BirdOnBeachChairPlacement extends LayoutPlacement {
     constructor(
         index: number, x: number, y: number, z: number, groundRadius: number,
         public readonly scale: number, // for chair
@@ -89,20 +86,20 @@ export class BirdOnBeachChairRule {
     private static _instance: BirdOnBeachChairRule = null;
 
     private static defaultPredicate =
-        EntityRules.all([
-            EntityRules.min_bank_distance(1.0),
-            EntityRules.select({
-                land: EntityRules.slope_in_range(0, 10),
+        LayoutRules.all([
+            LayoutRules.min_bank_distance(1.0),
+            LayoutRules.select({
+                land: LayoutRules.slope_in_range(0, 10),
             })
         ]);
 
-    public static get(predicate: PlacementPredicate = this.defaultPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = this.defaultPredicate): LayoutRule {
         if (!this._instance) this._instance = new BirdOnBeachChairRule();
-        return (ctx: EntityGeneratorContext) =>
+        return (ctx: LayoutContext) =>
             this._instance.generate(ctx, predicate);
     }
 
-    public generate(ctx: EntityGeneratorContext, predicate: PlacementPredicate): BirdOnBeachChairPlacement | null {
+    public generate(ctx: LayoutContext, predicate: PlacementPredicate): BirdOnBeachChairPlacement | null {
         // Chair scale
         const scale = 3.0;
         const groundRadius = DecorationMetadata.beachChair.groundRadius * scale;

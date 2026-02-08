@@ -2,10 +2,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BoatPathLayoutStrategy } from './BoatPathLayoutStrategy';
 import { RiverSystem } from '../RiverSystem';
 import { EntityIds } from '../../entities/EntityIds';
-import { EntityRules } from './EntityLayoutRules';
+import { LayoutRules } from './LayoutRuleBuilders';
 import { Placements, Patterns } from './BoatPathLayoutPatterns';
 import { RiverGeometry } from '../RiverGeometry';
-import { RiverRockRule, BottleRule } from '../../entities/StaticEntityRules';
+import { RiverRockRule, BottleRule } from '../../entities/StaticLayoutRules';
 import { SpatialGrid } from '../../core/SpatialGrid';
 
 describe('BoatPathLayoutStrategy', () => {

@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
-import { PopulationContext } from './PopulationContext';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { DecorationConfig, DecorationRule } from '../decorators/TerrainDecorator';
-import { TierRule } from '../decorators/PoissonDecorationRules';
-import { Fitness, MangroveParams } from '../decorations/DecorationRules';
+import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { TierRule } from '../decorators/DecorationRuleBuilders';
+import { Fitness, MangroveParams } from '../decorations/SceneryRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { SnakeRule, EgretRule, DragonflyRule, AlligatorRule } from '../../entities/AnimalEntityRules';
-import { MangroveRule, BottleRule, LogRule, WaterGrassRule, LilyPadPatchRule } from '../../entities/StaticEntityRules';
+import { SnakeRule, EgretRule, DragonflyRule, AlligatorRule } from '../../entities/AnimalLayoutRules';
+import { MangroveRule, BottleRule, LogRule, WaterGrassRule, LilyPadPatchRule } from '../../entities/StaticLayoutRules';
+import { DecorationRule } from '../decorators/DecorationRule';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';

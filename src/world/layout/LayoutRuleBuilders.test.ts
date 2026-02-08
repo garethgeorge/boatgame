@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as THREE from 'three';
-import { EntityRules } from './EntityLayoutRules';
+import { LayoutRules } from './LayoutRuleBuilders';
 
-describe('EntityLayoutRules', () => {
+describe('LayoutRules', () => {
     describe('slope_in_range', () => {
         const mockRiverSystem = {
             terrainGeometry: {
@@ -17,7 +17,7 @@ describe('EntityLayoutRules', () => {
         });
 
         it('should correctly filter based on degrees (0-20 range)', () => {
-            const slope10 = EntityRules.slope_in_range(0, 20);
+            const slope10 = LayoutRules.slope_in_range(0, 20);
 
             // Case 1: 0 degrees (upright) -> should be true
             mockRiverSystem.terrainGeometry.calculateNormal.mockReturnValue(new THREE.Vector3(0, 1, 0));
@@ -50,7 +50,7 @@ describe('EntityLayoutRules', () => {
         });
 
         it('should correctly filter based on degrees (40-50 range)', () => {
-            const slope45 = EntityRules.slope_in_range(40, 50);
+            const slope45 = LayoutRules.slope_in_range(40, 50);
 
             // 45 degrees -> true
             const angle45Rad = 45 * Math.PI / 180;

@@ -1,10 +1,8 @@
 import * as THREE from 'three';
 import { RiverGeometry } from "../RiverGeometry";
 import { PatternConfig, PatternContext } from "./BoatPathLayoutStrategy";
-import {
-    EntityGeneratorContext, EntityGeneratorFn,
-    EntityPlacement, Habitat, PathPoint
-} from "./EntityLayoutRules";
+import { LayoutPlacement } from './LayoutPlacement';
+import { LayoutContext, LayoutRule, Habitat, PathPoint } from './LayoutRule';
 
 /**
  * Options shared by the various types of patterns.
@@ -27,7 +25,7 @@ export type PlacementConfig = (context: PatternContext, pathIndex: number, side:
 
 export interface CommonPlacementOptions {
     /** Generates a candidate entity */
-    entity: EntityGeneratorFn;
+    entity: LayoutRule;
 }
 
 type PlacementRangeFn = (context: PatternContext, pathPoint: PathPoint, side?: 'left' | 'right') => [number, number];
@@ -83,7 +81,7 @@ export class Placements {
         const z = sample.centerPos.z + sample.normal.z * offset;
         const habitat: Habitat = 'water';
 
-        const ctx: EntityGeneratorContext = {
+        const ctx: LayoutContext = {
             riverSystem: context.riverSystem,
             sample,
             index: pathIndex,
@@ -114,7 +112,7 @@ export class Placements {
         const sample = RiverGeometry.getPathPoint(context.path, pathIndex);
         const range = rangeFn(context, sample, side);
 
-        const ctx: EntityGeneratorContext = {
+        const ctx: LayoutContext = {
             riverSystem: context.riverSystem,
             sample,
             index: pathIndex,
@@ -148,7 +146,7 @@ export class Placements {
 
     private static _tryPlaceEntity(
         context: PatternContext,
-        options: EntityPlacement,
+        options: LayoutPlacement,
         pathIndex: number, offset: number,
         x: number, z: number,
     ): boolean {

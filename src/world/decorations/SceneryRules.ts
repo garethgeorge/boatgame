@@ -1,11 +1,12 @@
 import * as THREE from 'three'
 import { CoreMath } from "../../core/CoreMath";
-import { Combine, Signal } from "../decorators/PoissonDecorationRules";
-import { DecorationRule, WorldContext, DecorationPlacement, DecorationContext } from "../decorators/PoissonDecorationStrategy";
+import { Combine, Signal } from "../decorators/DecorationRuleBuilders";
+import { WorldContext } from "../decorators/DecorationRule";
 import { Decorations, LSystemTreeKind, LSystemFlowerKind, DecorationInstance } from "./Decorations";
 import { ColorPalettes } from "../decorators/ColorPalettes";
 import { DecorationMetadata } from "./DecorationMetadata";
 import { RiverSystem } from "../RiverSystem";
+import { DecorationContext, DecorationPlacement } from '../decorators/DecorationPlacement';
 
 /** 
  * Parameters for building a fitness function that is the product

@@ -1,16 +1,16 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
-import { PopulationContext } from './PopulationContext';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { DecorationRule, DecorationConfig } from '../decorators/TerrainDecorator';
-import { TierRule } from '../decorators/PoissonDecorationRules';
-import { Fitness, TreeParams, FlowerParams } from '../decorations/DecorationRules';
+import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { TierRule } from '../decorators/DecorationRuleBuilders';
+import { Fitness, TreeParams, FlowerParams } from '../decorations/SceneryRules';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
 import { RiverSystem } from '../RiverSystem';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { SwanRule, UnicornRule, BluebirdRule, GingerManRule } from '../../entities/AnimalEntityRules';
+import { SwanRule, UnicornRule, BluebirdRule, GingerManRule } from '../../entities/AnimalLayoutRules';
+import { DecorationRule } from '../decorators/DecorationRule';
 
 /**
  * Fantasy Land Biome: A magical realm with pastel-colored patches and mystical creatures.
