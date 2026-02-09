@@ -8,6 +8,7 @@ import { Entity } from '../../core/Entity';
 import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 
 import { EntityMetadata } from '../EntityMetadata';
+import { FlyingBehaviorConfig } from '../behaviors/AnimalBehaviorConfigs';
 
 export class Parrot extends Animal {
     public static readonly MODEL_PARAMS = { scale: 2.0 };
@@ -26,13 +27,10 @@ export class Parrot extends Animal {
                 friction: 0.1
             });
 
-        this.setBehavior(FlyingBehaviorFactory.createShoreLanding(
+        this.setBehavior(FlyingBehaviorFactory.create(
             this,
-            {
-                noticeDistance: 100.0,
-                flightSpeed: 25.0,
-                ...options,
-            }
+            options.behavior as FlyingBehaviorConfig,
+            options
         ));
     }
 

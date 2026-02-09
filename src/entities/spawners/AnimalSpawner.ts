@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PopulationContext } from '../../world/biomes/PopulationContext';
 import { AnimalBehaviorConfig } from '../behaviors/AnimalBehaviorConfigs';
-import { AnimalClass } from '../obstacles/Animal';
+import { Animal, AnimalClass } from '../obstacles/Animal';
 /**
  * Spawn options. All parameters are optional so that options can be created
  * by combining partial sets.
@@ -18,7 +18,7 @@ export interface AnimalSpawnOptions {
 export class AnimalSpawner {
     public static createEntity(factory: AnimalClass, context: PopulationContext,
         x: number, z: number, angle: number, height: number, normal: THREE.Vector3,
-        options: AnimalSpawnOptions) {
+        options: AnimalSpawnOptions): Animal | null {
         const entity = new factory(context.physicsEngine, {
             x: x, y: z, angle, height, terrainNormal: normal,
             aggressiveness: options.aggressiveness ?? 0.5,
@@ -27,8 +27,8 @@ export class AnimalSpawner {
         });
         if (entity) {
             context.entityManager.add(entity);
-            return true;
+            return entity;
         }
-        return false;
+        return null;
     }
 }

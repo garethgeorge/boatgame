@@ -145,10 +145,15 @@ export class AnimalSlotPlacement extends AnimalPlacement {
             let rotation = (d > 0) ? Math.PI / 2 : -Math.PI / 2;
             rotation += riverAngle;
 
-            AnimalSpawner.createEntity(animalClass, context,
+            const animal = AnimalSpawner.createEntity(animalClass, context,
                 slot.x, slot.z, rotation,
                 slot.y, new THREE.Vector3(0, 1, 0),
                 this.options);
+
+            if (animal) {
+                slot.isOccupied = true;
+                animal.currentSlot = slot;
+            }
         } else {
             super.spawn(context, sample);
         }
@@ -444,7 +449,7 @@ export class BluebirdRule extends AnimalRule {
     }
 
     protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
-        return { type: 'none' }; // ignored
+        return { type: 'shore-landing', noticeDistance: 100.0, flightSpeed: 25.0 };
     }
 }
 
@@ -468,7 +473,7 @@ export class ParrotRule extends AnimalSlotRule {
     }
 
     protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
-        return { type: 'none' }; // ignored
+        return { type: 'slot-landing', slotTypes: ['beach-chair'], noticeDistance: 100.0, flightSpeed: 25.0 };
     }
 }
 
@@ -594,7 +599,16 @@ export class DragonflyRule extends AnimalRule {
     }
 
     protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
-        return { type: 'none' }; // ignored
+        return {
+            type: 'wandering',
+            noticeDistance: 60.0,
+            flightSpeed: 40.0,
+            flightHeight: 4.0,
+            buzzDuration: 2.0,
+            buzzHeight: 1.5,
+            buzzOffset: 3.0,
+            wanderRadius: 10.0
+        };
     }
 }
 
@@ -678,7 +692,7 @@ export class PterodactylRule extends AnimalRule {
     }
 
     protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
-        return { type: 'none' }; // ignored
+        return { type: 'shore-landing', noticeDistance: 200.0, flightSpeed: 30.0 };
     }
 }
 
@@ -720,7 +734,7 @@ export class EgretRule extends AnimalRule {
     }
 
     protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
-        return { type: 'none' }; // ignored
+        return { type: 'water-landing', noticeDistance: 20.0, flightSpeed: 25.0, landingHeight: Egret.HEIGHT_IN_WATER };
     }
 }
 
@@ -783,7 +797,7 @@ export class ButterflyRule extends AnimalRule {
     }
 
     protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
-        return { type: 'none' }; // ignored
+        return { type: 'shore-landing', noticeDistance: 100.0, flightSpeed: 20.0 };
     }
 }
 

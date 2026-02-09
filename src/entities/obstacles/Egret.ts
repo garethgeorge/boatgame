@@ -9,6 +9,7 @@ import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 import { AnimationPlayer, AnimationStep } from '../../core/AnimationPlayer';
 
 import { EntityMetadata } from '../EntityMetadata';
+import { FlyingBehaviorConfig } from '../behaviors/AnimalBehaviorConfigs';
 
 export class Egret extends Animal {
     public static readonly HEIGHT_IN_WATER = -0.2;
@@ -27,14 +28,10 @@ export class Egret extends Animal {
                 friction: 0.1
             });
 
-        this.setBehavior(FlyingBehaviorFactory.createWaterLanding(
+        this.setBehavior(FlyingBehaviorFactory.create(
             this,
-            {
-                noticeDistance: 20.0,
-                flightSpeed: 25.0,
-                landingHeight: Egret.HEIGHT_IN_WATER,
-                ...options,
-            }
+            options.behavior as FlyingBehaviorConfig,
+            options
         ));
     }
 

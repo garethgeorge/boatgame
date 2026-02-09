@@ -20,7 +20,18 @@ export type ShoreBehaviorConfig =
     { type: 'none' }
     | { type: 'unicorn' };
 
+export type FlyingBehaviorConfig =
+    | { type: 'none' }
+    | { type: 'shore-landing'; noticeDistance?: number; flightSpeed?: number }
+    | { type: 'slot-landing'; slotTypes: string[]; noticeDistance?: number; flightSpeed?: number }
+    | { type: 'water-landing'; noticeDistance?: number; flightSpeed?: number; landingHeight?: number }
+    | {
+        type: 'wandering'; noticeDistance?: number; flightSpeed?: number; flightHeight?: number;
+        wanderRadius?: number; buzzDuration?: number; buzzHeight?: number; buzzOffset?: number;
+    };
+
 export type AnimalBehaviorConfig =
     AttackBehaviorConfig
     | ShoreBehaviorConfig
-    | SwimAwayBehaviorConfig;
+    | SwimAwayBehaviorConfig
+    | FlyingBehaviorConfig;
