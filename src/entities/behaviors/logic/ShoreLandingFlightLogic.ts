@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
-import { BuzzTargetStrategy, FleeRiverStrategy, FlyToShoreStrategy, LandingStrategy } from './strategy/FlightPathStrategies';
+import { FleeRiverStrategy, PointLandingStrategy } from './strategy/FlightPathStrategies';
 import { RiverSystem } from '../../../world/RiverSystem';
 
 export interface ShoreLandingFlightParams {
@@ -37,7 +37,21 @@ export class ShoreLandingFlightLogic implements AnimalLogic {
             const banks = RiverSystem.getInstance().getBankPositions(context.originPos.y);
             if (context.originPos.x < banks.left - 20.0 || context.originPos.x > banks.right + 20.0) {
                 this.state = 'LANDING';
-                this.strategy = new LandingStrategy(this.flightSpeed);
+
+                // Pick a point near the current position on the shore
+                const landingDist = 5.0 + Math.random() * 15.0; // At least 5, no more than 20
+                const targetX = context.originPos.x < banks.left ? banks.left - landingDist : banks.right + landingDist;
+                const targetZ = context.originPos.y;
+                const targetPos = new planck.Vec2(targetX, targetZ);
+                const targetHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(targetX, targetZ);
+
+                this.strategy = new PointLandingStrategy(
+                    context,
+                    this.flightSpeed,
+                    targetPos,
+                    targetHeight,
+                    context.currentHeight // Use current height for flight height
+                );
             }
 
             if (this.zRange) {

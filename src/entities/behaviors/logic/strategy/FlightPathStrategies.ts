@@ -122,36 +122,6 @@ export class FlyToShoreStrategy extends AnimalPathStrategy {
 }
 
 /**
- * LANDING (Flight)
- */
-export class LandingStrategy extends AnimalPathStrategy {
-    readonly name = 'Landing';
-    private landingAngle: number = 0;
-    private landingStartAltitude: number = -1;
-
-    constructor(private horizSpeed: number) { super(); }
-
-    update(context: AnimalStrategyContext): AnimalSteering {
-        const groundHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(context.originPos.x, context.originPos.y);
-        const currentAltitude = Math.max(0, context.currentHeight - groundHeight);
-
-        if (this.landingStartAltitude < 0) {
-            this.landingStartAltitude = currentAltitude;
-            const derivative = RiverSystem.getInstance().getRiverDerivative(context.originPos.y);
-            this.landingAngle = context.originPos.x < RiverSystem.getInstance().getBankPositions(context.originPos.y).left ? Math.atan2(1, derivative) : Math.atan2(-1, -derivative);
-        }
-
-        const speedFactor = Math.max(0, Math.min(1, currentAltitude / Math.max(0.1, this.landingStartAltitude)));
-        const flightDir = planck.Vec2(Math.sin(this.landingAngle), -Math.cos(this.landingAngle));
-        return {
-            target: context.originPos.clone().add(flightDir.mul(10)),
-            speed: this.horizSpeed * speedFactor,
-            height: 0
-        };
-    }
-}
-
-/**
  * POINT LANDING (Flight)
  * Lands on a specific 3D point (target and height).
  */
