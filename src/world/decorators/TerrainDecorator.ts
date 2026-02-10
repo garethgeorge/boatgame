@@ -4,38 +4,11 @@ import { AnySpatialGrid } from '../../core/SpatialGrid';
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { PopulationContext } from '../biomes/PopulationContext';
-import { DecorationInstance, Decorations, LSystemTreeKind, LSystemFlowerKind } from '../decorations/Decorations';
+import { DecorationInstance } from '../decorations/Decorations';
 import { CoreMath } from '../../core/CoreMath';
-import { DecorationContext, DecorationPlacement } from './DecorationPlacement';
+import { DecorationContext, DecorationPlacement, DecorationRequirements } from './DecorationPlacement';
 import { DecorationRule } from './DecorationRule';
-import { DecorationRequirement } from '../layout/LayoutPlacement';
-
-
-export class NoiseMap implements WorldMap {
-    private noise: SimplexNoise;
-    private sx: number;
-    private sy: number;
-    private dx: number;
-    private dy: number;
-
-    constructor(noise: SimplexNoise, sx: number, sy: number,
-        dx: number = Math.random(), dy: number = Math.random()) {
-        this.noise = noise;
-        this.sx = sx;
-        this.sy = sy;
-        this.dx = dx;
-        this.dy = dy;
-    }
-
-    sample(x: number, y: number): number {
-        return (this.noise.noise2D(x / this.sx + this.dx, y / this.sy + this.dy) + 1) / 2.0;
-    }
-}
-
-export interface DecorationConfig {
-    maps: Record<string, WorldMap>,
-    rules: DecorationRule[]
-};
+import { WorldParams } from './WorldParams';
 
 export class TerrainDecorator {
     private static _instance: TerrainDecorator;
@@ -50,24 +23,24 @@ export class TerrainDecorator {
 
     public static *decorateIterator(
         context: PopulationContext,
-        config: DecorationConfig,
+        world: WorldParams,
+        config: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-        requirements: DecorationRequirement[],
+        requirements: DecorationRequirements,
         spatialGrid: AnySpatialGrid,
-        seed: number = 0,
     ): Generator<void | Promise<void>, void, unknown> {
-        const placements = yield* this.generateIterator(config, region, requirements, spatialGrid, seed);
+        const placements = yield* this.generateIterator(world, config, region, requirements, spatialGrid);
         yield* this.populateIterator(context, placements, region);
     }
 
     public static generateIterator(
-        config: DecorationConfig,
+        world: WorldParams,
+        config: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-        requirements: DecorationRequirement[],
+        requirements: DecorationRequirements,
         spatialGrid: AnySpatialGrid,
-        seed: number = 0,
     ): Generator<void | Promise<void>, DecorationPlacement[], unknown> {
-        return this.instance().generateIterator(config, region, requirements, spatialGrid, seed);
+        return this.instance().generateIterator(world, config, region, requirements, spatialGrid);
     }
 
     public static populateIterator(
@@ -84,47 +57,19 @@ export class TerrainDecorator {
     }
 
     private *generateIterator(
-        config: DecorationConfig,
+        world: WorldParams,
+        config: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
-        requirements: DecorationRequirement[],
+        requirements: DecorationRequirements,
         spatialGrid: AnySpatialGrid,
-        seed: number = 0,
     ): Generator<void | Promise<void>, DecorationPlacement[], unknown> {
 
-        // Default Terrain Provider using RiverSystem
-        const terrainProvider = (x: number, z: number) => {
-            const height = this.riverSystem.terrainGeometry.calculateHeight(x, z);
-            const normal = this.riverSystem.terrainGeometry.calculateNormal(x, z);
-
-            // Approximate distToRiver logic
-            const riverCenter = this.riverSystem.getRiverCenter(z);
-            const distToCenter = Math.abs(x - riverCenter);
-            const riverWidth = this.riverSystem.getRiverWidth(z);
-            const distToRiver = distToCenter - riverWidth / 2;
-
-            // Slope calculation (angle in radians)
-            const slope = Math.acos(Math.max(-1, Math.min(1, normal.y)));
-
-            return { height, slope, distToRiver };
-        };
-
-        const zStart = region.zMax;
-        const zEnd = region.zMin;
-        const totalLen = Math.abs(zStart - zEnd) || 1; // avoid /0
-
-        const biomeProgressProvider = (z: number) => {
-            return (zStart - z) / totalLen;
-        };
-
         return yield* this.strategy.generateIterator(
-            config.rules,
+            world,
+            config,
             region,
             spatialGrid,
-            terrainProvider,
-            biomeProgressProvider,
             requirements,
-            seed,
-            config.maps
         );
     }
 

@@ -54,3 +54,5 @@ export abstract class DecorationPlacement implements PlacementManifest {
         // Default: nothing to load
     }
 }
+
+export type DecorationRequirements = Map<string, DecorationPlacement[]>;

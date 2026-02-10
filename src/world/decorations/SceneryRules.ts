@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { CoreMath } from "../../core/CoreMath";
 import { Combine, Signal } from "../decorators/DecorationRuleBuilders";
-import { WorldContext } from "../decorators/DecorationRule";
+import { DecorationParams } from "../decorators/DecorationRule";
 import { Decorations, LSystemTreeKind, LSystemFlowerKind, DecorationInstance } from "./Decorations";
 import { ColorPalettes } from "../decorators/ColorPalettes";
 import { DecorationMetadata } from "./DecorationMetadata";
@@ -46,7 +46,7 @@ export class Fitness {
 
     public static make(params: FitnessParams) {
 
-        let fitnessFuncs: ((ctx: WorldContext) => number)[] = [];
+        let fitnessFuncs: ((ctx: DecorationParams) => number)[] = [];
 
         fitnessFuncs.push(Signal.constant(params.fitness ?? 1.0));
 
@@ -363,17 +363,17 @@ export class UmbrellaWithChairsPlacement extends DecorationPlacement {
 
 export class RockParams {
     public static rock(options: { rockBiome?: string } = {}) {
-        return (ctx: WorldContext) => {
-            const scale = 0.8 + ctx.random() * 0.8;
+        return (ctx: DecorationParams) => {
+            const scale = 0.8 + ctx.world.random() * 0.8;
             const groundRadius = DecorationMetadata.rock.groundRadius * scale;
             const spacing = 10.0;
             return new RockPlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 groundRadius,
                 spacing,
                 options.rockBiome ?? 'happy',
                 scale,
-                ctx.random() * Math.PI * 2
+                ctx.world.random() * Math.PI * 2
             );
         };
     }
@@ -381,18 +381,19 @@ export class RockParams {
 
 export class TreeParams {
     public static elder(options: { paletteName?: string } = {}) {
-        return (ctx: WorldContext) => {
-            const scale = 2.0 + ctx.random() * 0.5; // Large scale
-            const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.random()) : undefined;
+        return (ctx: DecorationParams) => {
+            const scale = 2.0 + ctx.world.random() * 0.5; // Large scale
+            const color = options.paletteName ? ColorPalettes.getInterpolatedColor(
+                ColorPalettes.getPalette(options.paletteName), ctx.world.random()) : undefined;
             const meta = DecorationMetadata.elder;
             return new TreePlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 25.0,
                 'elder' as LSystemTreeKind,
                 scale,
-                ctx.random() * Math.PI * 2,
+                ctx.world.random() * Math.PI * 2,
                 color
             );
         }
@@ -406,20 +407,20 @@ export class TreeParams {
             spacing = undefined,
             paletteName = undefined
         } = options;
-        return (ctx: WorldContext) => {
-            const scale = CoreMath.clamp(0.6, 1.8, 0.9 + ctx.gaussian() * 0.3);
+        return (ctx: DecorationParams) => {
+            const scale = CoreMath.clamp(0.6, 1.8, 0.9 + ctx.world.gaussian() * 0.3);
             const color = paletteName !== undefined ?
-                ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) :
+                ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.world.random()) :
                 undefined;
             const meta = DecorationMetadata.birch;
             return new TreePlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 spacing ?? 0,
                 'birch' as LSystemTreeKind,
                 scale,
-                ctx.random() * Math.PI * 2,
+                ctx.world.random() * Math.PI * 2,
                 color
             );
         };
@@ -431,24 +432,24 @@ export class TreeParams {
             snow = false,
             leaves = 1
         } = options;
-        return (ctx: WorldContext) => {
-            const scale = CoreMath.clamp(0.8, 3.0, 1.0 + ctx.gaussian() * 0.5);
+        return (ctx: DecorationParams) => {
+            const scale = CoreMath.clamp(0.8, 3.0, 1.0 + ctx.world.gaussian() * 0.5);
             const color = paletteName !== undefined ?
-                ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) :
+                ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.world.random()) :
                 undefined;
             const meta = DecorationMetadata.oak;
             return new TreePlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 0,
                 'oak' as LSystemTreeKind,
                 scale,
-                ctx.random() * Math.PI * 2,
+                ctx.world.random() * Math.PI * 2,
                 color,
                 undefined,
                 snow,
-                ctx.random() > leaves
+                ctx.world.random() > leaves
             );
         };
     }
@@ -469,27 +470,27 @@ export class TreeParams {
             snow = false,
             leaves = 1
         } = options;
-        return (ctx: WorldContext) => {
-            const scale = size * (1.0 + ctx.random() * 0.5);
+        return (ctx: DecorationParams) => {
+            const scale = size * (1.0 + ctx.world.random() * 0.5);
             const color = paletteName !== undefined ?
-                ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) :
+                ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.world.random()) :
                 undefined;
             const woodColor = woodPaletteName !== undefined ?
-                ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(woodPaletteName), ctx.random()) :
+                ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(woodPaletteName), ctx.world.random()) :
                 undefined;
             const meta = DecorationMetadata.elm;
             return new TreePlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 spacing,
                 'elm' as LSystemTreeKind,
                 scale,
-                ctx.random() * Math.PI * 2,
+                ctx.world.random() * Math.PI * 2,
                 color,
                 woodColor,
                 snow,
-                ctx.random() > leaves
+                ctx.world.random() > leaves
             );
         };
     }
@@ -502,18 +503,18 @@ export class TreeParams {
             size = 1,
             paletteName = undefined
         } = options;
-        return (ctx: WorldContext) => {
-            const scale = size * 0.9 + ctx.random() * 0.4;
-            const color = paletteName !== undefined ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
+        return (ctx: DecorationParams) => {
+            const scale = size * 0.9 + ctx.world.random() * 0.4;
+            const color = paletteName !== undefined ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.world.random()) : undefined;
             const meta = DecorationMetadata.vase;
             return new TreePlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 0,
                 'vase' as LSystemTreeKind,
                 scale,
-                ctx.random() * Math.PI * 2,
+                ctx.world.random() * Math.PI * 2,
                 color
             );
         };
@@ -529,19 +530,19 @@ export class TreeParams {
             paletteName = undefined,
             woodPaletteName = undefined
         } = options;
-        return (ctx: WorldContext) => {
-            const scale = 2.0 + ctx.random() * 1.0;
-            const color = paletteName !== undefined ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.random()) : undefined;
-            const woodColor = woodPaletteName !== undefined ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(woodPaletteName), ctx.random()) : undefined;
+        return (ctx: DecorationParams) => {
+            const scale = 2.0 + ctx.world.random() * 1.0;
+            const color = paletteName !== undefined ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(paletteName), ctx.world.random()) : undefined;
+            const woodColor = woodPaletteName !== undefined ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(woodPaletteName), ctx.world.random()) : undefined;
             const meta = DecorationMetadata.willow;
             return new TreePlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 spacing,
                 'willow' as LSystemTreeKind,
                 scale,
-                ctx.random() * Math.PI * 2,
+                ctx.world.random() * Math.PI * 2,
                 color,
                 woodColor
             );
@@ -549,53 +550,53 @@ export class TreeParams {
     }
 
     public static poplar(options: { paletteName?: string } = {}) {
-        return (ctx: WorldContext) => {
-            const scale = 0.7 + ctx.random() * 0.6;
-            const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.random()) : undefined;
+        return (ctx: DecorationParams) => {
+            const scale = 0.7 + ctx.world.random() * 0.6;
+            const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.world.random()) : undefined;
             const meta = DecorationMetadata.poplar;
             return new TreePlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 2,
                 'poplar' as LSystemTreeKind,
                 scale,
-                ctx.random() * Math.PI * 2,
+                ctx.world.random() * Math.PI * 2,
                 color
             );
         };
     }
 
     public static japanese_maple(options: { paletteName?: string } = {}) {
-        return (ctx: WorldContext) => {
-            const scale = 0.8 + ctx.random() * 0.6;
-            const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.random()) : undefined;
+        return (ctx: DecorationParams) => {
+            const scale = 0.8 + ctx.world.random() * 0.6;
+            const color = options.paletteName ? ColorPalettes.getInterpolatedColor(ColorPalettes.getPalette(options.paletteName), ctx.world.random()) : undefined;
             const meta = DecorationMetadata.open;
             return new TreePlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 0,
                 'open' as LSystemTreeKind,
                 scale,
-                ctx.random() * Math.PI * 2,
+                ctx.world.random() * Math.PI * 2,
                 color
             );
         };
     }
 
     public static palm() {
-        return (ctx: WorldContext) => {
-            const scale = 1.5 + ctx.random() * 1.0;
+        return (ctx: DecorationParams) => {
+            const scale = 1.5 + ctx.world.random() * 1.0;
             const meta = DecorationMetadata.palm;
             return new TreePlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 0,
                 'palm' as LSystemTreeKind,
                 scale,
-                ctx.random() * Math.PI * 2
+                ctx.world.random() * Math.PI * 2
             );
         };
     }
@@ -612,18 +613,18 @@ export class FlowerParams {
             spacing = 2,
             paletteName = 'daisy'
         } = options;
-        return (ctx: WorldContext) => {
-            const scale = 0.7 + ctx.random() * 0.5;
+        return (ctx: DecorationParams) => {
+            const scale = 0.7 + ctx.world.random() * 0.5;
             const palette = ColorPalettes.getPalette(paletteName);
-            const color = ColorPalettes.getInterpolatedColor(palette, ctx.random());
+            const color = ColorPalettes.getInterpolatedColor(palette, ctx.world.random());
             const meta = DecorationMetadata.daisy;
             return new FlowerPlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale * pack,
                 spacing,
                 'daisy' as LSystemFlowerKind,
                 scale,
-                ctx.random() * Math.PI * 2,
+                ctx.world.random() * Math.PI * 2,
                 color
             );
         };
@@ -639,18 +640,18 @@ export class FlowerParams {
             spacing = 2,
             paletteName = 'lily'
         } = options;
-        return (ctx: WorldContext) => {
-            const scale = 0.7 + ctx.random() * 0.5;
+        return (ctx: DecorationParams) => {
+            const scale = 0.7 + ctx.world.random() * 0.5;
             const palette = ColorPalettes.getPalette(paletteName);
-            const color = ColorPalettes.getInterpolatedColor(palette, ctx.random());
+            const color = ColorPalettes.getInterpolatedColor(palette, ctx.world.random());
             const meta = DecorationMetadata.lily;
             return new FlowerPlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale * pack,
                 spacing,
                 'lily' as LSystemFlowerKind,
                 scale,
-                ctx.random() * Math.PI * 2,
+                ctx.world.random() * Math.PI * 2,
                 color
             );
         };
@@ -666,18 +667,18 @@ export class FlowerParams {
             spacing = 2,
             paletteName = 'lily'
         } = options;
-        return (ctx: WorldContext) => {
-            const scale = 0.7 + ctx.random() * 0.5;
+        return (ctx: DecorationParams) => {
+            const scale = 0.7 + ctx.world.random() * 0.5;
             const palette = ColorPalettes.getPalette(paletteName);
-            const color = ColorPalettes.getInterpolatedColor(palette, ctx.random());
+            const color = ColorPalettes.getInterpolatedColor(palette, ctx.world.random());
             const meta = DecorationMetadata.lily; // Assuming waterlily uses similar metadata
             return new FlowerPlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale * pack,
                 spacing,
                 'waterlily' as LSystemFlowerKind,
                 scale,
-                ctx.random() * Math.PI * 2,
+                ctx.world.random() * Math.PI * 2,
                 color
             );
         };
@@ -686,49 +687,49 @@ export class FlowerParams {
 
 export class PlantParams {
     public static cactus() {
-        return (ctx: WorldContext) => {
-            const scale = 0.8 + ctx.random() * 0.4;
+        return (ctx: DecorationParams) => {
+            const scale = 0.8 + ctx.world.random() * 0.4;
             const meta = DecorationMetadata.cactus;
             return new PlantPlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 1,
                 'cactus',
                 scale,
-                ctx.random() * Math.PI * 2
+                ctx.world.random() * Math.PI * 2
             );
         };
     }
 
     public static cycad() {
-        return (ctx: WorldContext) => {
-            const scale = 0.8 + ctx.random() * 0.4;
+        return (ctx: DecorationParams) => {
+            const scale = 0.8 + ctx.world.random() * 0.4;
             const meta = DecorationMetadata.cycad;
             return new PlantPlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 1,
                 'cycad',
                 scale,
-                ctx.random() * Math.PI * 2
+                ctx.world.random() * Math.PI * 2
             );
         };
     }
 
     public static tree_fern() {
-        return (ctx: WorldContext) => {
-            const scale = 0.8 + ctx.random() * 0.4;
+        return (ctx: DecorationParams) => {
+            const scale = 0.8 + ctx.world.random() * 0.4;
             const meta = DecorationMetadata.treeFern;
             return new PlantPlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 1,
                 'treeFern',
                 scale,
-                ctx.random() * Math.PI * 2
+                ctx.world.random() * Math.PI * 2
             );
         };
     }
@@ -736,15 +737,15 @@ export class PlantParams {
 
 export class MangroveParams {
     public static mangrove() {
-        return (ctx: WorldContext) => {
-            const scale = 1.5 + ctx.random() * 0.5;
+        return (ctx: DecorationParams) => {
+            const scale = 1.5 + ctx.world.random() * 0.5;
             const meta = DecorationMetadata.mangrove;
             return new MangrovePlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 scale,
-                ctx.random() * Math.PI * 2
+                ctx.world.random() * Math.PI * 2
             );
         }
     }
@@ -753,16 +754,16 @@ export class MangroveParams {
 export class PropParams {
 
     public static beach_chair_slot = {
-        slot: 'beach-chair',
+        name: 'beach-chair',
         radius: DecorationMetadata.beachChair.groundRadius * 3.0
     };
 
     public static beach_chair() {
-        return (ctx: WorldContext) => {
+        return (ctx: DecorationParams) => {
             const scale = 3.0;
             const meta = DecorationMetadata.beachChair;
             return new PropPlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 'beachChair',
@@ -770,7 +771,7 @@ export class PropParams {
                 0,
                 true, // placeTowardShore
                 {
-                    name: this.beach_chair_slot.slot,
+                    name: this.beach_chair_slot.name,
                     dz: DecorationMetadata.beachChair.backOffset,
                     dy: DecorationMetadata.beachChair.height
                 }
@@ -779,26 +780,26 @@ export class PropParams {
     }
 
     public static beach_umbrella() {
-        return (ctx: WorldContext) => {
+        return (ctx: DecorationParams) => {
             const scale = 1.0;
             const meta = DecorationMetadata.beachUmbrella;
             return new PropPlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 meta.groundRadius * scale,
                 meta.canopyRadius * scale,
                 'beachUmbrella',
                 scale,
-                ctx.random() * Math.PI * 2
+                ctx.world.random() * Math.PI * 2
             );
         };
     }
 
     public static umbrella_with_chairs(numChairs: number) {
-        return (ctx: WorldContext) => {
+        return (ctx: DecorationParams) => {
             const scale = 3.0;
             const chairRadius = DecorationMetadata.beachChair.groundRadius;
             return new UmbrellaWithChairsPlacement(
-                ctx.pos.x, ctx.elevation, ctx.pos.y,
+                ctx.x, ctx.elevation, ctx.z,
                 2 * chairRadius * scale,
                 numChairs,
                 scale

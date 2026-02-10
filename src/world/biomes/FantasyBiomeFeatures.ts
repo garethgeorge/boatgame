@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { DecorationConfig } from './DecorationConfig';
 import { TierRule } from '../decorators/DecorationRuleBuilders';
 import { Fitness, TreeParams, FlowerParams } from '../decorations/SceneryRules';
 import { SimplexNoise } from '../../core/SimplexNoise';
@@ -19,7 +19,6 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'fantasy';
     private static readonly LENGTH = 1500;
 
-    private decorationConfig: DecorationConfig | null = null;
     private groundNoise = new SimplexNoise(12345);
 
     private readonly COLORS = {
@@ -84,8 +83,8 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
         };
     }
 
-    private fantasyRules(): DecorationRule[] {
-        return [
+    public createDecorationConfig(): DecorationConfig {
+        const rules = [
             new TierRule({
                 species: [
                     {
@@ -129,16 +128,10 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                 ]
             })
         ];
+        return { rules };
     }
 
-    public getDecorationConfig(): DecorationConfig {
-        if (!this.decorationConfig) {
-            this.decorationConfig = { rules: this.fantasyRules(), maps: {} };
-        }
-        return this.decorationConfig;
-    }
-
-    protected getLayoutConfig(): BoatPathLayoutConfig {
+    public createLayoutConfig(): BoatPathLayoutConfig {
 
         const tracks: TrackConfig[] = [
             {

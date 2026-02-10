@@ -33,16 +33,15 @@ import { Dragonfly } from './obstacles/Dragonfly';
 import { Pterodactyl } from './obstacles/Pterodactyl';
 import { Decorations, DecorationId } from '../world/decorations/Decorations';
 import { PlacementPredicate, LayoutRules } from '../world/layout/LayoutRuleBuilders';
-import { DecorationRequirement, LayoutPlacement } from '../world/layout/LayoutPlacement';
-import { LayoutContext, LayoutRule, Habitat } from '../world/layout/LayoutRule';
+import { LayoutPlacement } from '../world/layout/LayoutPlacement';
+import { LayoutParams, LayoutRule, Habitat, LayoutPlacements, LayoutGenerator } from '../world/layout/LayoutRule';
 
 interface AnimalPlacementParams {
     index: number;
     x: number;
     y: number;
     z: number;
-    groundRadius: number;
-    requirement?: DecorationRequirement;
+    radius: number;
 
     id: EntityIds;
     habitat: Habitat;
@@ -52,7 +51,13 @@ interface AnimalPlacementParams {
     decorationIds?: DecorationId[];
 }
 
-export class AnimalPlacement extends LayoutPlacement {
+export class AnimalPlacement implements LayoutPlacement, LayoutGenerator {
+    readonly index: number;
+    readonly x: number;
+    readonly y: number;
+    readonly z: number;
+    readonly radius: number;
+
     public readonly id: EntityIds;
     public readonly habitat: Habitat;
     public readonly factory: AnimalClass;
@@ -61,8 +66,12 @@ export class AnimalPlacement extends LayoutPlacement {
     public readonly decorationIds: DecorationId[];
 
     constructor(params: AnimalPlacementParams) {
-        super(params.index, params.x, params.y, params.z,
-            params.groundRadius, 0, params.requirement);
+        this.index = params.index;
+        this.x = params.x;
+        this.y = params.y;
+        this.z = params.z;
+        this.radius = params.radius;
+
         this.id = params.id;
         this.habitat = params.habitat;
         this.factory = params.factory;
@@ -105,6 +114,10 @@ export class AnimalPlacement extends LayoutPlacement {
         }
     }
 
+    public generate(placements: LayoutPlacements) {
+        placements.place(this);
+    }
+
     public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
         if (this.decorationIds && this.decorationIds.length > 0) {
             yield* Decorations.ensureAllLoaded(this.decorationIds as any);
@@ -113,8 +126,8 @@ export class AnimalPlacement extends LayoutPlacement {
 }
 
 export interface AnimalSlotPlacementParams extends AnimalPlacementParams {
-    requirement: DecorationRequirement;
     slotType: string;
+    searchRadius: number;
 }
 
 /**
@@ -123,18 +136,17 @@ export interface AnimalSlotPlacementParams extends AnimalPlacementParams {
  */
 export class AnimalSlotPlacement extends AnimalPlacement {
     public readonly slotType: string;
+    public readonly searchRadius: number;
 
     constructor(params: AnimalSlotPlacementParams) {
         super(params);
         this.slotType = params.slotType;
+        this.searchRadius = params.searchRadius;
     }
 
     public spawn(context: PopulationContext, sample: RiverGeometrySample) {
-        // The required decoration ought to have been placed at the same
-        // location as this.x,z and its slot should be within its radius
-        // but add a little
         const slot = context.riverSystem.slots.findNearbySlot(
-            this.slotType, this.x, this.z, this.requirement.groundRadius * 2);
+            this.slotType, this.x, this.z, this.searchRadius);
         if (slot) {
             const animalClass = this.factory;
             if (!animalClass) return;
@@ -160,8 +172,6 @@ export class AnimalSlotPlacement extends AnimalPlacement {
     }
 }
 
-
-
 class Details {
     protected static defaultPredicate =
         LayoutRules.all([
@@ -169,7 +179,8 @@ class Details {
             LayoutRules.select({
                 land: LayoutRules.slope_in_range(0, 20),
                 water: LayoutRules.true()
-            })
+            }),
+            LayoutRules.is_free()
         ]);
 
     protected static landPredicate =
@@ -177,7 +188,8 @@ class Details {
             LayoutRules.min_bank_distance(1.0),
             LayoutRules.select({
                 land: LayoutRules.slope_in_range(0, 20),
-            })
+            }),
+            LayoutRules.is_free()
         ]);
 
     protected static waterPredicate =
@@ -185,10 +197,11 @@ class Details {
             LayoutRules.min_bank_distance(1.0),
             LayoutRules.select({
                 water: LayoutRules.true()
-            })
+            }),
+            LayoutRules.is_free()
         ]);
 
-    protected static aggressiveness(ctx: LayoutContext): number {
+    protected static aggressiveness(ctx: LayoutParams): number {
         const aggressiveness = Math.min(1.0, ctx.progress * 0.7 + Math.random() * 0.3);
         return aggressiveness;
     }
@@ -244,30 +257,29 @@ abstract class AnimalRule extends Details {
         this.heightInWater = heightInWater;
     }
 
-    protected abstract behavior(ctx: LayoutContext): AnimalBehaviorConfig;
+    protected abstract behavior(ctx: LayoutParams): AnimalBehaviorConfig;
 
     public get(predicate: PlacementPredicate): LayoutRule {
-        return (ctx: LayoutContext): AnimalPlacement | null => {
-            const groundRadius = this.radius;
-            if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
-            return this.createPlacement(ctx, groundRadius);
+        return (ctx: LayoutParams) => {
+            if (predicate !== undefined && !predicate(ctx, this.radius)) return null;
+            return this.createPlacement(ctx);
         }
     }
 
-    protected createPlacement(ctx: LayoutContext, groundRadius: number): AnimalPlacement {
+    protected createPlacement(ctx: LayoutParams): AnimalPlacement {
         return new AnimalPlacement({
             index: ctx.index,
             x: ctx.x,
             y: 0,
             z: ctx.z,
-            groundRadius,
+            radius: this.radius,
             id: this.id,
             habitat: ctx.habitat,
             factory: this.factory,
             heightInWater: this.heightInWater,
             options: {
                 aggressiveness: Details.aggressiveness(ctx),
-                biomeZRange: ctx.biomeZRange,
+                biomeZRange: ctx.world.biomeZRange,
                 behavior: this.behavior(ctx)
             },
             decorationIds: this.decorationIds
@@ -299,50 +311,38 @@ abstract class AnimalSlotRule extends Details {
         this.heightInWater = heightInWater;
     }
 
-    protected abstract behavior(ctx: LayoutContext): AnimalBehaviorConfig;
+    protected abstract behavior(ctx: LayoutParams): AnimalBehaviorConfig;
 
-    /** 
-     * Get layout rule for the animal. species identifies a decoration
-     * that is required to be created and slot is a slot on that decoration
-     * where the animal will be attached. The params are for the required
-     * decoration.
-     */
-    public get(species: string, params: { slot: string, radius: number },
+    public get(slot: { name: string, radius: number },
         predicate: PlacementPredicate): LayoutRule {
-        return (ctx: LayoutContext): AnimalPlacement | null => {
-            const reservationRadius = params.radius;
-            if (predicate !== undefined && !predicate(ctx, reservationRadius)) return null;
-            return this.createPlacement(ctx, species, params.slot, this.radius, params.radius);
+        return (ctx: LayoutParams) => {
+            if (predicate !== undefined && !predicate(ctx, this.radius)) return null;
+            return this.createPlacement(ctx, slot.name, slot.radius * 1.5);
         }
     }
 
     protected createPlacement(
-        ctx: LayoutContext,
-        species: string, slot: string,
-        animalRadius: number,
-        reservationRadius: number
+        ctx: LayoutParams,
+        slot: string,
+        searchRadius: number,
     ): AnimalPlacement {
         return new AnimalSlotPlacement({
             index: ctx.index,
             x: ctx.x,
             y: 0,
             z: ctx.z,
-            groundRadius: animalRadius,
+            radius: this.radius,
             id: this.id,
             habitat: ctx.habitat,
             factory: this.factory,
             heightInWater: this.heightInWater,
             options: {
                 aggressiveness: Details.aggressiveness(ctx),
-                biomeZRange: ctx.biomeZRange,
+                biomeZRange: ctx.world.biomeZRange,
                 behavior: this.behavior(ctx)
             },
-            requirement: {
-                species: species,
-                x: ctx.x, y: 0, z: ctx.z,
-                groundRadius: reservationRadius, canopyRadius: 0
-            },
             slotType: slot,
+            searchRadius: searchRadius,
             decorationIds: this.decorationIds
         });
     }
@@ -364,7 +364,7 @@ export class AlligatorRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat);
     }
 }
@@ -385,7 +385,7 @@ export class HippoRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat);
     }
 }
@@ -406,7 +406,7 @@ export class SwanRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return { type: 'swim' };
     }
 }
@@ -427,7 +427,7 @@ export class UnicornRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return { type: 'unicorn' };
     }
 }
@@ -448,7 +448,7 @@ export class BluebirdRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return { type: 'shore-landing', noticeDistance: 100.0, flightSpeed: 25.0 };
     }
 }
@@ -457,11 +457,11 @@ export class ParrotRule extends AnimalSlotRule {
     private static _instance: ParrotRule = null;
 
     public static get(
-        species: string, params: { slot: string, radius: number },
+        slot: { name: string, radius: number },
         predicate: PlacementPredicate = AnimalRule.landPredicate
     ): LayoutRule {
         if (!this._instance) this._instance = new ParrotRule;
-        return this._instance.get(species, params, predicate);
+        return this._instance.get(slot, predicate);
     }
 
     constructor() {
@@ -472,7 +472,7 @@ export class ParrotRule extends AnimalSlotRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return { type: 'slot-landing', slotTypes: ['beach-chair'], noticeDistance: 100.0, flightSpeed: 25.0 };
     }
 }
@@ -493,7 +493,7 @@ export class BrownBearRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
     }
 }
@@ -514,7 +514,7 @@ export class PolarBearRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
     }
 }
@@ -535,7 +535,7 @@ export class MooseRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
     }
 }
@@ -556,7 +556,7 @@ export class DucklingRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return { type: 'swim' };
     }
 }
@@ -577,7 +577,7 @@ export class PenguinKayakRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return { type: 'swim' };
     }
 }
@@ -598,7 +598,7 @@ export class DragonflyRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return {
             type: 'wandering',
             noticeDistance: 60.0,
@@ -628,7 +628,7 @@ export class TRexRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
     }
 }
@@ -649,7 +649,7 @@ export class TriceratopsRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
     }
 }
@@ -670,7 +670,7 @@ export class BrontosaurusRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return this.behavior_wait_attack(ctx.habitat, 'WolfAttack');
     }
 }
@@ -691,7 +691,7 @@ export class PterodactylRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return { type: 'shore-landing', noticeDistance: 200.0, flightSpeed: 30.0 };
     }
 }
@@ -712,7 +712,7 @@ export class SnakeRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return { type: 'attack', logicName: 'WolfAttack' };
     }
 }
@@ -733,7 +733,7 @@ export class EgretRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return { type: 'water-landing', noticeDistance: 20.0, flightSpeed: 25.0, landingHeight: Egret.HEIGHT_IN_WATER };
     }
 }
@@ -754,7 +754,7 @@ export class DolphinRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return { type: 'swim' };
     }
 }
@@ -775,7 +775,7 @@ export class TurtleRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return ctx.habitat === 'land' ? { type: 'wait-swim' } : { type: 'swim' };
     }
 }
@@ -796,7 +796,7 @@ export class ButterflyRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return { type: 'shore-landing', noticeDistance: 100.0, flightSpeed: 20.0 };
     }
 }
@@ -817,7 +817,7 @@ export class GingerManRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return { type: 'walk-swim' };
     }
 }
@@ -838,7 +838,7 @@ export class MonkeyRule extends AnimalRule {
         );
     }
 
-    protected behavior(ctx: LayoutContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return this.behavior_walk_attack(ctx.habitat);
     }
 }

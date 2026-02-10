@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
-import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { DecorationConfig } from './DecorationConfig';
 
 export interface SkyColors {
     top: number;

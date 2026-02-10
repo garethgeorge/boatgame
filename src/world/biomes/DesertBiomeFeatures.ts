@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { DecorationConfig } from './DecorationConfig';
 import { TierRule } from '../decorators/DecorationRuleBuilders';
 import { SkyBiome } from './BiomeFeatures';
 import { Placements } from '../layout/BoatPathLayoutPatterns';
@@ -19,8 +19,6 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     constructor(index: number, z: number, direction: number) {
         super(index, z, DesertBiomeFeatures.LENGTH, direction);
     }
-
-    private decorationConfig: DecorationConfig | null = null;
 
     getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         const c0 = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 };
@@ -49,43 +47,40 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         };
     }
 
-    public getDecorationConfig(): DecorationConfig {
-        if (!this.decorationConfig) {
-            const rules = [
-                new TierRule({
-                    species: [
-                        {
-                            id: 'cactus',
-                            preference: Fitness.make({
-                                fitness: 0.2,
-                                stepDistance: [5, 100],
-                                slope: [0, 30]
-                            }),
-                            params: PlantParams.cactus()
-                        }
-                    ]
-                }),
-                new TierRule({
-                    species: [
-                        {
-                            id: 'rock',
-                            preference: Fitness.make({
-                                fitness: 0.1,
-                                stepDistance: [3, 20],
-                                slope: [0, 70]
-                            }),
-                            params: RockParams.rock({ rockBiome: 'desert' })
-                        }
-                    ]
-                })
-            ];
+    public createDecorationConfig(): DecorationConfig {
+        const rules = [
+            new TierRule({
+                species: [
+                    {
+                        id: 'cactus',
+                        preference: Fitness.make({
+                            fitness: 0.2,
+                            stepDistance: [5, 100],
+                            slope: [0, 30]
+                        }),
+                        params: PlantParams.cactus()
+                    }
+                ]
+            }),
+            new TierRule({
+                species: [
+                    {
+                        id: 'rock',
+                        preference: Fitness.make({
+                            fitness: 0.1,
+                            stepDistance: [3, 20],
+                            slope: [0, 70]
+                        }),
+                        params: RockParams.rock({ rockBiome: 'desert' })
+                    }
+                ]
+            })
+        ];
 
-            this.decorationConfig = { rules, maps: {} };
-        }
-        return this.decorationConfig;
+        return { rules };
     }
 
-    protected getLayoutConfig(): BoatPathLayoutConfig {
+    public createLayoutConfig(): BoatPathLayoutConfig {
         const tracks: TrackConfig[] = [
             {
                 name: 'main',
@@ -148,6 +143,5 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
             }
         };
     }
-
 
 }

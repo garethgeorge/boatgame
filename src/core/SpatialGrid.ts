@@ -3,7 +3,6 @@ import * as THREE from 'three';
 // A single placement. Note that the x-z plane is the ground plane for the grid.
 export interface PlacementManifest {
     x: number;
-    y: number;
     z: number;
 
     // The "actual" radii at ground and canopy levels

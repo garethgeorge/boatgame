@@ -3,7 +3,7 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { DecorationConfig } from './DecorationConfig';
 import { TierRule } from '../decorators/DecorationRuleBuilders';
 import { Fitness, TreeParams, FlowerParams } from '../decorations/SceneryRules';
 import { SkyBiome } from './BiomeFeatures';
@@ -22,8 +22,6 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
     constructor(index: number, z: number, direction: number) {
         super(index, z, HappyBiomeFeatures.LENGTH, direction);
     }
-
-    private decorationConfig: DecorationConfig | null = null;
 
     getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         // Lush green ground color
@@ -47,8 +45,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         return 0.5 * super.getAmplitudeMultiplier(wx, wz, distFromBank);
     }
 
-    public getDecorationConfig(): DecorationConfig {
-        if (this.decorationConfig) return this.decorationConfig;
+    public createDecorationConfig(): DecorationConfig {
 
         const rules: TierRule[] = [];
 
@@ -88,11 +85,10 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
             }));
         }
 
-        this.decorationConfig = { rules: rules, maps: {} };
-        return this.decorationConfig;
+        return { rules };
     }
 
-    protected getLayoutConfig(): BoatPathLayoutConfig {
+    public createLayoutConfig(): BoatPathLayoutConfig {
         const tracks: TrackConfig[] = [{
             name: 'flying',
             stages: [{

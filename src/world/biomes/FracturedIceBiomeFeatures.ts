@@ -14,7 +14,7 @@ import { BiomeFeatures, SkyBiome } from './BiomeFeatures';
 import { IcebergSpawner } from '../../entities/spawners/IcebergSpawner';
 import { BoatPathLayoutConfig } from '../layout/BoatPathLayoutStrategy';
 import { CoreMath } from '../../core/CoreMath';
-import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { DecorationConfig } from './DecorationConfig';
 
 interface Point {
     x: number;

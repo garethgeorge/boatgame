@@ -6,7 +6,6 @@ describe('SpatialGrid', () => {
         const grid = new SpatialGrid(10);
         const item: PlacementManifest = {
             x: 5,
-            y: 0,
             z: 5,
             groundRadius: 2,
             canopyRadius: 0
@@ -25,7 +24,6 @@ describe('SpatialGrid', () => {
         const grid = new SpatialGrid(10);
         const item: PlacementManifest = {
             x: 5,
-            y: 0,
             z: 5,
             groundRadius: 1,
             canopyRadius: 3
@@ -44,7 +42,6 @@ describe('SpatialGrid', () => {
         const grid = new SpatialGrid(10);
         const item: PlacementManifest = {
             x: 5,
-            y: 0,
             z: 5,
             groundRadius: 2,
             canopyRadius: 0

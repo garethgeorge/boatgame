@@ -2,30 +2,25 @@ import * as THREE from 'three';
 import { AnySpatialGrid } from '../../core/SpatialGrid';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { CoreMath } from '../../core/CoreMath';
-import { DecorationPlacement } from './DecorationPlacement';
-import { DecorationRule, WorldContext } from './DecorationRule';
-import { DecorationRequirement } from '../layout/LayoutPlacement';
+import { DecorationPlacement, DecorationRequirements } from './DecorationPlacement';
+import { DecorationRule, DecorationParams } from './DecorationRule';
+import { WorldParams } from './WorldParams';
 
 export interface WorldMap {
     sample(x: number, y: number): number;
 }
 
 export class PoissonDecorationStrategy {
-    private noise2D: SimplexNoise;
 
     constructor(noise2D: SimplexNoise) {
-        this.noise2D = noise2D;
     }
 
     public *generateIterator(
+        world: WorldParams,
         rules: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
         spatialGrid: AnySpatialGrid,
-        terrainProvider: (x: number, z: number) => { height: number, slope: number, distToRiver: number },
-        biomeProgressProvider: (z: number) => number,
-        requirements: DecorationRequirement[] = [],
-        seed: number = 0,
-        maps: Record<string, WorldMap> = {}
+        requirements: DecorationRequirements = undefined,
     ): Generator<void | Promise<void>, DecorationPlacement[], unknown> {
         const manifests: DecorationPlacement[] = [];
 
@@ -33,45 +28,27 @@ export class PoissonDecorationStrategy {
         const depth = region.zMax - region.zMin;
 
         // Reuse context to reduce GC pressure
-        const ctx: WorldContext = {
-            pos: { x: 0, y: 0 },
+        const ctx: DecorationParams = {
+            x: 0, z: 0,
             elevation: 0,
             slope: 0,
             distanceToRiver: 0,
-            biomeProgress: 0,
-            random: Math.random,
-            gaussian: CoreMath.createGaussianRNG(Math.random),
-            noise2D: (x, y) => this.noise2D.noise2D(x, y),
-            sampleMap: (name, x, y) => {
-                const map = maps[name];
-                if (!map) return 0;
-                return map.sample(x ?? ctx.pos.x, y ?? ctx.pos.y);
-            }
+            world: world
         };
-
-        const pendingRequirements = [...requirements];
 
         for (const rule of rules) {
             const activeList: DecorationPlacement[] = [];
 
             // Phase 0: Automatic Seeding from Requirements
-            for (let i = 0; i < pendingRequirements.length; i++) {
-                const req = pendingRequirements[i];
-                if (req === undefined) continue;
-                if (req.x < region.xMin || req.x > region.xMax ||
-                    req.z < region.zMin || req.z > region.zMax) continue;
+            if (requirements && requirements.has(rule.id)) {
+                for (const placement of requirements.get(rule.id)) {
+                    if (placement.x < region.xMin || placement.x > region.xMax ||
+                        placement.z < region.zMin || placement.z > region.zMax) continue;
 
-                ctx.requirement = req;
-                const candidate = this.tryPlace(req.x, req.z, rule,
-                    spatialGrid, terrainProvider, biomeProgressProvider,
-                    ctx, true);
-                if (candidate) {
-                    manifests.push(candidate);
-                    activeList.push(candidate);
-                    spatialGrid.insert(candidate);
-                    pendingRequirements[i] = undefined;
+                    manifests.push(placement);
+                    activeList.push(placement);
+                    spatialGrid.insert(placement);
                 }
-                ctx.requirement = undefined;
             }
 
             // Phase 1: Seeding
@@ -81,8 +58,7 @@ export class PoissonDecorationStrategy {
                 const z = region.zMin + Math.random() * depth;
 
                 const candidate = this.tryPlace(x, z, rule,
-                    spatialGrid, terrainProvider, biomeProgressProvider,
-                    ctx);
+                    spatialGrid, ctx);
                 if (candidate) {
                     manifests.push(candidate);
                     activeList.push(candidate);
@@ -116,8 +92,7 @@ export class PoissonDecorationStrategy {
                         cz < region.zMin || cz > region.zMax) continue;
 
                     const candidate = this.tryPlace(cx, cz, rule,
-                        spatialGrid, terrainProvider, biomeProgressProvider,
-                        ctx);
+                        spatialGrid, ctx);
                     if (candidate) {
                         // fitness is an estimate of how crowded the neighborhood is
                         candidate.fitness *= 1 / (i + 1);
@@ -152,9 +127,7 @@ export class PoissonDecorationStrategy {
         z: number,
         rule: DecorationRule,
         spatialGrid: AnySpatialGrid,
-        terrainProvider: (x: number, z: number) => { height: number, slope: number, distToRiver: number },
-        biomeProgressProvider: (z: number) => number,
-        ctx: WorldContext,
+        ctx: DecorationParams,
         isAutomaticSeed: boolean = false
     ): DecorationPlacement | null {
         // Quick point-in-circle check before expensive calculations.
@@ -164,15 +137,13 @@ export class PoissonDecorationStrategy {
             return null;
         }
 
-        const terrain = terrainProvider(x, z);
-        const biomeProgress = biomeProgressProvider(z);
+        const terrain = ctx.world.terrainProvider(x, z);
 
-        ctx.pos.x = x;
-        ctx.pos.y = z;
+        ctx.x = x;
+        ctx.z = z;
         ctx.elevation = terrain.height;
         ctx.slope = terrain.slope;
         ctx.distanceToRiver = terrain.distToRiver;
-        ctx.biomeProgress = biomeProgress;
 
         if (!isAutomaticSeed) {
             let f = rule.fitness(ctx);

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { DecorationConfig } from './DecorationConfig';
 import { TierRule } from '../decorators/DecorationRuleBuilders';
 import { Fitness, MangroveParams } from '../decorations/SceneryRules';
 import { SkyBiome } from './BiomeFeatures';
@@ -18,8 +18,6 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     constructor(index: number, z: number, direction: number) {
         super(index, z, SwampBiomeFeatures.LENGTH, direction);
     }
-
-    private decorationConfig: DecorationConfig | null = null;
 
     getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         return { r: 0x2B / 255, g: 0x24 / 255, b: 0x1C / 255 }; // Muddy Dark Brown
@@ -55,7 +53,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         return 5.0;
     }
 
-    protected getLayoutConfig(): BoatPathLayoutConfig {
+    public createLayoutConfig(): BoatPathLayoutConfig {
         const tracks: TrackConfig[] = [{
             name: 'vegetation',
             stages: [{
@@ -137,25 +135,22 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         };
     }
 
-    public getDecorationConfig(): DecorationConfig {
-        if (!this.decorationConfig) {
-            const rules: DecorationRule[] = [
-                new TierRule({
-                    species: [
-                        {
-                            id: 'mangrove',
-                            preference: Fitness.make({
-                                fitness: 1.0,
-                                stepDistance: [5, 55],
-                            }),
-                            params: MangroveParams.mangrove()
-                        }
-                    ]
-                }),
-            ];
-            this.decorationConfig = { rules, maps: {} };
-        }
-        return this.decorationConfig;
+    public createDecorationConfig(): DecorationConfig {
+        const rules: DecorationRule[] = [
+            new TierRule({
+                species: [
+                    {
+                        id: 'mangrove',
+                        preference: Fitness.make({
+                            fitness: 1.0,
+                            stepDistance: [5, 55],
+                        }),
+                        params: MangroveParams.mangrove()
+                    }
+                ]
+            }),
+        ];
+        return { rules };
     }
 
 

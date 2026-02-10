@@ -11,7 +11,9 @@ describe('LayoutRules', () => {
         };
 
         const createCtx = (x: number, z: number) => ({
-            riverSystem: mockRiverSystem,
+            world: {
+                riverSystem: mockRiverSystem
+            },
             x, z,
             habitat: 'land'
         });

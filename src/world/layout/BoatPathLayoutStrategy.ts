@@ -2,8 +2,10 @@ import { RiverGeometry } from '../RiverGeometry';
 import { RiverSystem } from '../RiverSystem';
 import { AnySpatialGrid } from '../../core/SpatialGrid';
 import { PlacementConfig } from './BoatPathLayoutPatterns';
-import { LayoutPlacement, DecorationRequirement } from './LayoutPlacement';
-import { PathPoint } from './LayoutRule';
+import { LayoutPlacement } from './LayoutPlacement';
+import { LayoutPlacements, PathPoint } from './LayoutRule';
+import { DecorationPlacement, DecorationRequirements } from '../decorators/DecorationPlacement';
+import { WorldParams } from '../decorators/WorldParams';
 
 /**
  * The final generated boat path and its associated obstacle layout.
@@ -13,20 +15,18 @@ export interface BoatPathLayout {
     path: PathPoint[];
     /** Flattened list of obstacle placements */
     placements: LayoutPlacement[];
-    /** Requirements for decorations to be placed */
-    requirements: DecorationRequirement[];
+    /** List of required decoration placements */
+    requirements: DecorationRequirements;
 }
 
 export interface PatternContext {
-    riverSystem: RiverSystem;
-    placements: LayoutPlacement[];
-    requirements: DecorationRequirement[];
+    world: WorldParams;
+    placements: LayoutPlacements;
     path: PathPoint[];
     range: [number, number];        // index range in path array
     progress: number;               // progress [0-1] along river
     length: number;                 // arc length of the segment
     spatialGrid: AnySpatialGrid;
-    biomeZRange: [number, number];
 }
 
 export type PatternConfig = (context: PatternContext) => void;
@@ -104,15 +104,20 @@ interface GeneratedTrack {
  */
 export class BoatPathLayoutStrategy {
     public static createLayout(
-        biomeZRange: [number, number],
+        world: WorldParams,
         config: BoatPathLayoutConfig,
         spatialGrid: AnySpatialGrid
     ): BoatPathLayout {
         const riverSystem = RiverSystem.getInstance();
 
         // 1. Sample the river
-        const path = this.sampleRiver(riverSystem, biomeZRange[1], biomeZRange[0]);
-        if (path.length < 2) return { path, placements: [], requirements: [] };
+        const path = this.sampleRiver(riverSystem, world.biomeZRange[1], world.biomeZRange[0]);
+        const layout: BoatPathLayout = {
+            path,
+            placements: [],
+            requirements: new Map<string, DecorationPlacement[]>()
+        };
+        if (path.length < 2) return layout;
 
         const totalArcLength = path[path.length - 1].arcLength;
 
@@ -123,12 +128,31 @@ export class BoatPathLayoutStrategy {
         this.generateWeavingPath(path, config, totalArcLength);
 
         // 4. Determine obstacle placements
-        const { placements, requirements } = this.resolvePlacements(
-            riverSystem,
-            path, tracks, config, totalArcLength,
-            spatialGrid, biomeZRange);
+        const placements: LayoutPlacements = {
+            place: (placement: LayoutPlacement) => {
+                spatialGrid.insert({
+                    x: placement.x,
+                    z: placement.z,
+                    groundRadius: placement.radius,
+                    canopyRadius: 0
+                });
+                layout.placements.push(placement);
+            },
+            require: (id: string, placement: DecorationPlacement) => {
+                let placements = layout.requirements.get(id);
+                if (placements === undefined) {
+                    placements = [];
+                    layout.requirements.set(id, placements);
+                }
+                placements.push(placement);
+            }
+        };
+        this.resolvePlacements(
+            world, placements,
+            path, tracks, totalArcLength,
+            spatialGrid);
 
-        return { path, placements, requirements };
+        return layout;
     }
 
     private static sampleRiver(
@@ -219,17 +243,13 @@ export class BoatPathLayoutStrategy {
     }
 
     private static resolvePlacements(
-        riverSystem: RiverSystem,
+        world: WorldParams,
+        placements: LayoutPlacements,
         path: PathPoint[],
         tracks: GeneratedTrack[],
-        config: BoatPathLayoutConfig,
         totalArcLength: number,
         spatialGrid: AnySpatialGrid,
-        biomeZRange: [number, number]
-    ): { placements: LayoutPlacement[], requirements: DecorationRequirement[] } {
-        const placements: LayoutPlacement[] = [];
-        const requirements: DecorationRequirement[] = [];
-
+    ) {
         for (const track of tracks) {
             // Procedural scenes
             for (const scene of track.scenes) {
@@ -241,15 +261,13 @@ export class BoatPathLayoutStrategy {
                     const sceneIEnd = Math.floor((scene.sEnd / totalArcLength) * (path.length - 1));
 
                     const context: PatternContext = {
-                        riverSystem,
+                        world,
                         placements,
-                        requirements,
                         path,
                         range: [sceneIStart, sceneIEnd],
                         progress,
                         length: sceneLenMeters,
                         spatialGrid,
-                        biomeZRange
                     };
                     pattern(context);
                 }
@@ -260,22 +278,18 @@ export class BoatPathLayoutStrategy {
                 const pathIndex = ep.at * (path.length - 1);
 
                 const context: PatternContext = {
-                    riverSystem,
+                    world,
                     placements,
-                    requirements,
                     path,
                     range: [0, path.length],
                     progress: ep.at,
                     length: path[path.length - 1].arcLength,
                     spatialGrid,
-                    biomeZRange
                 };
 
                 const side = Math.random() < 0.5 ? 'left' : 'right';
                 ep.placement(context, pathIndex, side);
             }
         }
-
-        return { placements, requirements };
     }
 }

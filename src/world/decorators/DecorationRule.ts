@@ -1,32 +1,32 @@
-import { DecorationRequirement } from "../layout/LayoutPlacement";
 import { DecorationPlacement } from "./DecorationPlacement";
+import { WorldParams } from "./WorldParams";
 
 /**
  * Environmental Context for a rule. When generating required decorations
  * a requirement is passed in the world context.
  */
-export interface WorldContext {
-    pos: { x: number, y: number }; // World X, Z (using y for z in 2D context)
-    requirement?: DecorationRequirement;
+export interface DecorationParams {
+    x: number,
+    z: number,
     elevation: number;
     slope: number;
     distanceToRiver: number;
-    biomeProgress: number; // 0.0 (Start) to 1.0 (End of river)
-    // Helpers to access random values cleanly
-    random: () => number;
-    gaussian: () => number;
-    noise2D: (x: number, y: number) => number;
-    sampleMap: (name: string, x?: number, y?: number) => number;
+    world: WorldParams;
 }
+
+export type DecorationGenerator =
+    (ctx: DecorationParams) => DecorationPlacement | null;
 
 /*
  * A rule has a fitness function to evaluate its 'strength' and a function to
  * generate a placement.
  */
 export interface DecorationRule {
+    id: string,
+
     // Placement: Returns 0 to 1 (0 = Impossible, 1 = Perfect)
-    fitness: (ctx: WorldContext) => number;
+    fitness: (ctx: DecorationParams) => number;
 
     // Attributes: Generates the specific look
-    generate: (ctx: WorldContext) => DecorationPlacement | null;
+    generate: DecorationGenerator;
 }

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { DecorationConfig } from './DecorationConfig';
 import { TierRule } from '../decorators/DecorationRuleBuilders';
 import { Fitness, RockParams, TreeParams } from '../decorations/SceneryRules';
 import { SkyBiome } from './BiomeFeatures';
@@ -46,11 +46,7 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
         return 2.3;
     }
 
-    private decorationConfig: DecorationConfig | null = null;
-
-    public getDecorationConfig(): DecorationConfig {
-        if (this.decorationConfig) return this.decorationConfig;
-
+    public createDecorationConfig(): DecorationConfig {
         const rules = [
             new TierRule({
                 species: [
@@ -87,11 +83,10 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
             })
         ];
 
-        this.decorationConfig = { rules, maps: {} };
-        return this.decorationConfig;
+        return { rules };
     }
 
-    protected getLayoutConfig(): BoatPathLayoutConfig {
+    public createLayoutConfig(): BoatPathLayoutConfig {
         const tracks: TrackConfig[] = [{
             name: 'obstacles',
             stages: [{

@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { RiverGeometry } from "../RiverGeometry";
 import { PatternConfig, PatternContext } from "./BoatPathLayoutStrategy";
-import { LayoutPlacement } from './LayoutPlacement';
-import { LayoutContext, LayoutRule, Habitat, PathPoint } from './LayoutRule';
+import { LayoutParams, LayoutRule, Habitat, PathPoint } from './LayoutRule';
 
 /**
  * Options shared by the various types of patterns.
@@ -81,25 +80,23 @@ export class Placements {
         const z = sample.centerPos.z + sample.normal.z * offset;
         const habitat: Habitat = 'water';
 
-        const ctx: LayoutContext = {
-            riverSystem: context.riverSystem,
+        const layoutContext: LayoutParams = {
+            world: context.world,
             sample,
             index: pathIndex,
             offset,
             x, z,
             habitat,
             progress: context.progress,
-            biomeZRange: context.biomeZRange
+            is_free: (x, z, r) => !context.spatialGrid.checkCollision(x, z, r, 0),
         };
 
-        const options = opts.entity(ctx);
-        if (!options) return false;
-
-        // todo: ? make placement info entirely type specific except for
-        // something to identify the chunk ?
-
-        const placed = this._tryPlaceEntity(context, options);
-        return placed;
+        const generator = opts.entity(layoutContext);
+        if (generator) {
+            generator.generate(context.placements);
+            return true;
+        }
+        return false;
     }
 
     private static _tryPlace(
@@ -112,15 +109,15 @@ export class Placements {
         const sample = RiverGeometry.getPathPoint(context.path, pathIndex);
         const range = rangeFn(context, sample, side);
 
-        const ctx: LayoutContext = {
-            riverSystem: context.riverSystem,
+        const layoutContext: LayoutParams = {
+            world: context.world,
             sample,
             index: pathIndex,
             offset: 0,
             x: 0, z: 0,
             habitat: 'land',
             progress: context.progress,
-            biomeZRange: context.biomeZRange
+            is_free: (x, z, r) => !context.spatialGrid.checkCollision(x, z, r, 0),
         };
 
         const attempts = 10;
@@ -130,45 +127,18 @@ export class Placements {
             const z = sample.centerPos.z + sample.normal.z * offset;
             const habitat: Habitat = Math.abs(offset) > sample.bankDist ? 'land' : 'water';
 
-            ctx.offset = offset;
-            ctx.x = x;
-            ctx.z = z;
-            ctx.habitat = habitat;
+            layoutContext.offset = offset;
+            layoutContext.x = x;
+            layoutContext.z = z;
+            layoutContext.habitat = habitat;
 
-            const options = opts.entity(ctx);
-            if (!options) continue;
-
-            if (this._tryPlaceEntity(context, options))
+            const generator = opts.entity(layoutContext);
+            if (generator) {
+                generator.generate(context.placements);
                 return true;
+            }
         }
         return false;
-    }
-
-    private static _tryPlaceEntity(
-        context: PatternContext,
-        options: LayoutPlacement
-    ): boolean {
-        if (options.requirement) {
-            const requirement = options.requirement;
-            // Collision check using the requirement's radius
-            if (context.spatialGrid.checkCollision(requirement.x, requirement.z,
-                requirement.groundRadius, requirement.canopyRadius)) {
-                return false;
-            }
-
-            context.placements.push(options);
-            context.requirements.push(requirement);
-            context.spatialGrid.insert(requirement);
-        } else {
-            if (context.spatialGrid.checkCollision(options.x, options.z,
-                options.groundRadius, options.canopyRadius)) {
-                return false;
-            }
-
-            context.placements.push(options);
-            context.spatialGrid.insert(options);
-        }
-        return true;
     }
 
     private static _scatterRange(context: PatternContext, pathPoint: PathPoint, side?: 'left' | 'right'): [number, number] {
