@@ -27,6 +27,7 @@ const DECORATION_FACTORIES = {
   'riverRock': new RiverRockFactory(),
   'boat': new GLTFModelFactory('assets/boat-model-1.glb'),
   'polarBear': new GLTFModelFactory('assets/polar-bear-model-1.glb'),
+  'walrus': new GLTFModelFactory('assets/walrus-model-1.glb'),
   'hippo': new GLTFModelFactory('assets/hippo-model-1.glb'),
   'alligator': new GLTFModelFactory('assets/alligator-model-1.glb'),
   'penguinKayak': new GLTFModelFactory('assets/penguin-kayak-model-1.glb'),
@@ -185,6 +186,7 @@ export class Decorations {
   /** 
    * Functions that return a model and animations
    */
+  static getWalrus() { return this.getModelAndAnimations('walrus'); }
   static getPolarBear() { return this.getModelAndAnimations('polarBear'); }
   static getHippo() { return this.getModelAndAnimations('hippo'); }
   static getAlligator() { return this.getModelAndAnimations('alligator'); }
