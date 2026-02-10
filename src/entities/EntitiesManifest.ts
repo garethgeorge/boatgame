@@ -27,6 +27,7 @@ import * as THREE from 'three';
 import { BaseMangrove } from './obstacles/Mangrove';
 import { MessageInABottle } from './obstacles/MessageInABottle';
 import { Narwhal } from './obstacles/Narwhal';
+import { Walrus } from './obstacles';
 
 export interface EntityManifestEntry {
     name: string;
@@ -44,29 +45,30 @@ export const BOAT_MANIFEST: EntityManifestEntry = {
 
 export const ENTITY_MANIFEST: EntityManifestEntry[] = [
     { name: 'alligator', model: () => Decorations.getAlligator()!, params: Alligator.MODEL_PARAMS },
-    { name: 'polarBear', model: () => Decorations.getPolarBear()!, params: PolarBear.MODEL_PARAMS },
-    { name: 'hippo', model: () => Decorations.getHippo()!, params: Hippo.MODEL_PARAMS },
-    { name: 'trex', model: () => Decorations.getTRex()!, params: TRex.MODEL_PARAMS },
+    { name: 'bluebird', model: () => Decorations.getBluebird()!, params: Bluebird.MODEL_PARAMS },
     { name: 'brontosaurus', model: () => Decorations.getBrontosaurus()!, params: Brontosaurus.MODEL_PARAMS },
     { name: 'brownBear', model: () => Decorations.getBrownBear()!, params: BrownBear.MODEL_PARAMS },
+    { name: 'butterfly', model: () => Decorations.getButterfly()!, params: Butterfly.MODEL_PARAMS },
+    { name: 'dolphin', model: () => Decorations.getDolphin()!, params: Dolphin.MODEL_PARAMS },
+    { name: 'dragonfly', model: () => Decorations.getDragonfly()!, params: Dragonfly.MODEL_PARAMS },
+    { name: 'duckling', model: () => Decorations.getDuckling()!, params: Duckling.MODEL_PARAMS },
+    { name: 'egret', model: () => Decorations.getEgret()!, params: Egret.MODEL_PARAMS },
+    { name: 'gingerman', model: () => Decorations.getGingerMan()!, params: GingerMan.MODEL_PARAMS },
+    { name: 'hippo', model: () => Decorations.getHippo()!, params: Hippo.MODEL_PARAMS },
+    { name: 'mangrove', model: () => ({ model: Decorations.getMangrove(1), animations: [] }), params: { scale: 1 } },
+    { name: 'messageInABottle', model: () => ({ model: Decorations.getBottle(0x88FF88), animations: [] }), params: { scale: 1 } },
     { name: 'monkey', model: () => Decorations.getMonkey()!, params: Monkey.MODEL_PARAMS },
     { name: 'moose', model: () => Decorations.getMoose()!, params: Moose.MODEL_PARAMS },
     { name: 'narwhal', model: () => Decorations.getNarwhal()!, params: Narwhal.MODEL_PARAMS },
-    { name: 'triceratops', model: () => Decorations.getTriceratops()!, params: Triceratops.MODEL_PARAMS },
-    { name: 'dolphin', model: () => Decorations.getDolphin()!, params: Dolphin.MODEL_PARAMS },
-    { name: 'duckling', model: () => Decorations.getDuckling()!, params: Duckling.MODEL_PARAMS },
-    { name: 'butterfly', model: () => Decorations.getButterfly()!, params: Butterfly.MODEL_PARAMS },
-    { name: 'pterodactyl', model: () => Decorations.getPterodactyl()!, params: Pterodactyl.MODEL_PARAMS },
-    { name: 'bluebird', model: () => Decorations.getBluebird()!, params: Bluebird.MODEL_PARAMS },
     { name: 'parrot', model: () => Decorations.getParrot()!, params: Parrot.MODEL_PARAMS },
-    { name: 'egret', model: () => Decorations.getEgret()!, params: Egret.MODEL_PARAMS },
-    { name: 'dragonfly', model: () => Decorations.getDragonfly()!, params: Dragonfly.MODEL_PARAMS },
-    { name: 'snake', model: () => Decorations.getSnake()!, params: Snake.MODEL_PARAMS },
-    { name: 'turtle', model: () => Decorations.getTurtle()!, params: Turtle.MODEL_PARAMS },
     { name: 'penguinKayak', model: () => Decorations.getPenguinKayak()!, params: PenguinKayak.MODEL_PARAMS },
+    { name: 'polarBear', model: () => Decorations.getPolarBear()!, params: PolarBear.MODEL_PARAMS },
+    { name: 'pterodactyl', model: () => Decorations.getPterodactyl()!, params: Pterodactyl.MODEL_PARAMS },
+    { name: 'snake', model: () => Decorations.getSnake()!, params: Snake.MODEL_PARAMS },
     { name: 'swan', model: () => Decorations.getSwan()!, params: Swan.MODEL_PARAMS },
+    { name: 'trex', model: () => Decorations.getTRex()!, params: TRex.MODEL_PARAMS },
+    { name: 'triceratops', model: () => Decorations.getTriceratops()!, params: Triceratops.MODEL_PARAMS },
+    { name: 'turtle', model: () => Decorations.getTurtle()!, params: Turtle.MODEL_PARAMS },
     { name: 'unicorn', model: () => Decorations.getUnicorn()!, params: Unicorn.MODEL_PARAMS },
-    { name: 'gingerman', model: () => Decorations.getGingerMan()!, params: GingerMan.MODEL_PARAMS },
-    { name: 'messageInABottle', model: () => ({ model: Decorations.getBottle(0x88FF88), animations: [] }), params: { scale: 1 } },
-    { name: 'mangrove', model: () => ({ model: Decorations.getMangrove(1), animations: [] }), params: { scale: 1 } },
+    { name: 'walrus', model: () => Decorations.getWalrus()!, params: Walrus.MODEL_PARAMS },
 ];

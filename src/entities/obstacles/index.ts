@@ -28,5 +28,6 @@ export { Triceratops } from './Triceratops';
 export { Unicorn } from './Unicorn';
 export { WaterGrass } from './WaterGrass';
 export { LillyPadPatch } from './LillyPadPatch';
+export { Walrus } from './Walrus';
 export { GasCan } from './GasCan';
 export { MessageInABottle } from './MessageInABottle';
