@@ -119,6 +119,17 @@ export class EntityManager {
       const isPlayer = entity.physicsBodies.length > 0 &&
         (entity.physicsBodies[0].getUserData() as any)?.type === Entity.TYPE_PLAYER;
 
+      // Order is important. A frame has been rendered and physics has been run
+      // so that physics body state corresponds to the next frame. Update and
+      // sync together set things up for the next render and physics update.
+      // At the end the visuals should be prepared for the next render and
+      // physics for updating after that render.
+      // There are two basic cases:
+      // - Dynamic motion, entity update sets physics parameters to be used on
+      //   the next iteration, sync copies the current body position to the
+      //   visuals for render.
+      // - Kinematic motion, entity update directly sets the visuals, sync
+      //   copies this to the physics body.
       if (entity.isVisible || isPlayer || DesignerSettings.isDesignerMode) {
         entity.update(dt);
         entity.sync(alpha);

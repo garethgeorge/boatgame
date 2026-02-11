@@ -36,7 +36,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     private readonly VERT_SPEED: number = 10.0;
     private readonly ROTATION_SPEED_FLIGHT: number = Math.PI * 1.0;
     private readonly BANK_SPEED = Math.PI * 1.5;
-    private readonly MAX_BANK = Math.PI * 0.15;
+    private readonly MAX_BANK = Math.PI * 0.3;
 
     constructor(
         entity: AnyAnimal,
@@ -232,6 +232,14 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         if (kinematic && !this.isKinematic) {
             AnimalBehaviorUtils.setCollisionMask(body, 0);
             body.setType(planck.Body.KINEMATIC);
+
+            // We are driving position directly
+            body.setLinearVelocity(planck.Vec2(0, 0));
+            body.setAngularVelocity(0);
+
+            //maybe do this.. better is supply some velocity
+            //body.setSleepingAllowed(false);
+
             this.isKinematic = true;
         } else if (!kinematic && this.isKinematic) {
             AnimalBehaviorUtils.setCollisionMask(body, 0xFFFF);
@@ -288,13 +296,18 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         // --- Precise Positioning (Height/Normal) ---
         if (steering.height !== undefined) {
             const normal = steering.facing?.normal ?? new THREE.Vector3(0, 1, 0);
-            this.entity.setExplictPosition?.(steering.height, normal);
+            this.entity.setDynamicPosition(steering.height, normal);
         }
     }
 
     private executeLandLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
         this.setPhysicsMode(context.physicsBody, true);
-        const { dt, physicsBody, originPos } = context;
+        const { dt, originPos, physicsBody } = context;
+        const mesh = this.entity.getMesh();
+        if (!mesh) return;
+
+        // Sync angle from physics body in case it changed during other locomotion modes
+        this.currentAngle = physicsBody.getAngle();
 
         // Handle Steering Path (Kinematic Movement)
         const steering = result.path;
@@ -306,42 +319,45 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const originToTargetDist = originToTarget.length();
         if (originToTargetDist > 0.01) {
             const moveDir = originToTarget.clone().mul(1.0 / originToTargetDist);
-            const moveVel = moveDir.mul(desiredSpeed);
-            physicsBody.setLinearVelocity(moveVel);
-        } else {
-            physicsBody.setLinearVelocity(planck.Vec2(0, 0));
+            const moveDist = desiredSpeed * dt;
+            mesh.position.x += moveDir.x * moveDist;
+            mesh.position.z += moveDir.y * moveDist;
         }
 
         // --- Rotation ---
-        let targetAngle = physicsBody.getAngle();
+        let targetAngle = this.currentAngle;
         if (steering.facing?.angle !== undefined) {
             targetAngle = steering.facing.angle;
         } else if (originToTargetDist > 0.1) {
             targetAngle = Math.atan2(originToTarget.y, originToTarget.x) + Math.PI / 2;
         }
 
-        const currentAngle = physicsBody.getAngle();
-        let angleDiff = targetAngle - currentAngle;
+        let angleDiff = targetAngle - this.currentAngle;
         while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
         while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
 
         const rotationSpeed = 3.0; // matched to legacy AnimalShoreWalkBehavior
         const maxRotation = rotationSpeed * dt;
         const rotation = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), maxRotation);
-        physicsBody.setAngle(currentAngle + rotation);
+        this.currentAngle += rotation;
 
         // --- Precise Positioning (Height/Normal) ---
-        if (steering.height !== undefined) {
-            this.entity.setExplictPosition?.(steering.height, steering.facing?.normal ?? new THREE.Vector3(0, 1, 0));
-        }
+        const height = steering.height ?? context.currentHeight;
+        const normal = steering.facing?.normal ?? new THREE.Vector3(0, 1, 0);
+
+        this.applyMeshTransform(mesh, height, normal, this.currentAngle);
     }
 
     private executeFlightLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
         this.setPhysicsMode(context.physicsBody, true);
+        const { dt, originPos, physicsBody } = context;
+        const mesh = this.entity.getMesh();
+        if (!mesh) return;
+
+        // Sync angle from physics body in case it changed during other locomotion modes
+        this.currentAngle = physicsBody.getAngle();
 
         const steering = result.path;
-
-        const { dt, physicsBody, originPos } = context;
         const targetWorldPos = steering.target;
         const desiredSpeed = steering.speed;
         const desiredHeight = steering.height ?? context.currentHeight;
@@ -358,14 +374,13 @@ export class AnimalUniversalBehavior implements EntityBehavior {
 
         const turnSpeed = steering.turningSpeed ?? this.ROTATION_SPEED_FLIGHT;
         this.handleFlightRotationAndBanking(targetAngle, turnSpeed, dt);
-        physicsBody.setAngle(this.currentAngle);
 
         // --- Horizontal Movement ---
         if (distToTarget > 0.01) {
             const moveDir = diffToTarget.clone().mul(1.0 / distToTarget);
             const moveDist = Math.min(distToTarget, desiredSpeed * dt);
-            const newPos = originPos.clone().add(moveDir.mul(moveDist));
-            physicsBody.setPosition(newPos);
+            mesh.position.x += moveDir.x * moveDist;
+            mesh.position.z += moveDir.y * moveDist;
         }
 
         // --- Height & Normal ---
@@ -388,7 +403,17 @@ export class AnimalUniversalBehavior implements EntityBehavior {
             normal.lerp(steering.facing.normal, blendFactor).normalize();
         }
 
-        this.entity.setExplictPosition?.(newHeight, normal);
+        this.applyMeshTransform(mesh, newHeight, normal, this.currentAngle);
+    }
+
+    private applyMeshTransform(mesh: THREE.Object3D, height: number, normal: THREE.Vector3, angle: number) {
+        mesh.position.y = height;
+
+        const up = new THREE.Vector3(0, 1, 0);
+        const normalQuaternion = new THREE.Quaternion().setFromUnitVectors(up, normal);
+        const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(normal, -angle);
+
+        mesh.quaternion.multiplyQuaternions(rotationQuaternion, normalQuaternion);
     }
 
     private handleFlightRotationAndBanking(targetAngle: number, turnSpeed: number, dt: number) {
