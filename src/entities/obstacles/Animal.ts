@@ -252,11 +252,15 @@ export abstract class Animal extends Entity implements AnyAnimal {
         return this.physicsBodies.length > 0 ? this.physicsBodies[0] : null;
     }
 
+    getMesh(): THREE.Object3D | null {
+        return this.meshes.length > 0 ? this.meshes[0] : null;
+    }
+
     getHeight(): number {
         return this.meshes[0].position.y;
     }
 
-    setExplictPosition(height: number, normal: THREE.Vector3): void {
+    setDynamicPosition(height: number, normal: THREE.Vector3): void {
         if (this.meshes.length > 0) {
             this.meshes[0].position.y = height;
         }

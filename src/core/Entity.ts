@@ -115,45 +115,63 @@ export abstract class Entity {
   }
 
   protected syncBodyMesh(body: planck.Body, mesh: THREE.Object3D, alpha: number) {
-    const currPos = body.getPosition();
-    const currAngle = body.getAngle();
+    if (body.getType() === 'kinematic') {
+      // Kinematic motion syncs mesh to physics
+      const worldPos = new THREE.Vector3();
+      const worldQuat = new THREE.Quaternion();
 
-    let pos = currPos;
-    let angle = currAngle;
+      // Step 1: Get the combined world transform
+      mesh.getWorldPosition(worldPos);
+      mesh.getWorldQuaternion(worldQuat);
 
-    // Interpolate if we have previous state AND NOT kinematic.
-    // Kinematic bodies are driven by logic every frame, so interpolation
-    // against the physics clock causes "beating" glitches/stutters.
-    if (body.getType() !== 'kinematic' && this.prevPos.has(body) && this.prevAngle.has(body)) {
-      const prevPos = this.prevPos.get(body)!;
-      const prevAngle = this.prevAngle.get(body)!;
+      // Step 2: Extract the "Yaw" (Rotation around Y)
+      // We use Euler to convert the 3D orientation back to a single angle
+      const worldEuler = new THREE.Euler().setFromQuaternion(worldQuat, 'YXZ');
+      const planckAngle = -worldEuler.y;
 
-      const x = prevPos.x * (1 - alpha) + currPos.x * alpha;
-      const y = prevPos.y * (1 - alpha) + currPos.y * alpha;
-      pos = planck.Vec2(x, y);
+      body.setPosition(planck.Vec2(worldPos.x, worldPos.z));
+      body.setAngle(planckAngle);
 
-      // Interpolate angle (handle wrap-around if necessary, but Planck angles are continuous)
-      angle = prevAngle * (1 - alpha) + currAngle * alpha;
-    }
-
-    mesh.position.x = pos.x;
-    mesh.position.z = pos.y; // Map 2D Physics Y to 3D Graphics Z
-
-    // Apply rotation with optional normal alignment
-    if (this.normalVector) {
-      //mesh.setRotationFromAxisAngle(this.normalVector.clone(), -angle);
-      const up = new THREE.Vector3(0, 1, 0); // Default Y-axis
-      const normalQuaternion = new THREE.Quaternion().setFromUnitVectors(up, this.normalVector);
-
-      // The axis for this rotation is the targetNormal itself
-      const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(this.normalVector, -angle);
-
-      // Multiply the orientation by the rotation to get the final transformation
-      // Order matters: first align, then rotate around the aligned axis.
-      mesh.quaternion.multiplyQuaternions(rotationQuaternion, normalQuaternion);
     } else {
-      // Standard rotation around Y. Intentionally preserves any other rotations.
-      mesh.rotation.y = -angle;
+      // Dynamic motion syncs physics to mesh
+      const currPos = body.getPosition();
+      const currAngle = body.getAngle();
+
+      let pos = currPos;
+      let angle = currAngle;
+
+      // Interpolate if we have previous state 
+      if (this.prevPos.has(body) && this.prevAngle.has(body)) {
+        const prevPos = this.prevPos.get(body)!;
+        const prevAngle = this.prevAngle.get(body)!;
+
+        const x = prevPos.x * (1 - alpha) + currPos.x * alpha;
+        const y = prevPos.y * (1 - alpha) + currPos.y * alpha;
+        pos = planck.Vec2(x, y);
+
+        // Interpolate angle (handle wrap-around if necessary, but Planck angles are continuous)
+        angle = prevAngle * (1 - alpha) + currAngle * alpha;
+      }
+
+      mesh.position.x = pos.x;
+      mesh.position.z = pos.y; // Map 2D Physics Y to 3D Graphics Z
+
+      // Apply rotation with optional normal alignment
+      if (this.normalVector) {
+        //mesh.setRotationFromAxisAngle(this.normalVector.clone(), -angle);
+        const up = new THREE.Vector3(0, 1, 0); // Default Y-axis
+        const normalQuaternion = new THREE.Quaternion().setFromUnitVectors(up, this.normalVector);
+
+        // The axis for this rotation is the targetNormal itself
+        const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(this.normalVector, -angle);
+
+        // Multiply the orientation by the rotation to get the final transformation
+        // Order matters: first align, then rotate around the aligned axis.
+        mesh.quaternion.multiplyQuaternions(rotationQuaternion, normalQuaternion);
+      } else {
+        // Standard rotation around Y. Intentionally preserves any other rotations.
+        mesh.rotation.y = -angle;
+      }
     }
   }
 

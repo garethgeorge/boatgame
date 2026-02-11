@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as planck from 'planck';
+import * as THREE from 'three';
 import { AnimalUniversalBehavior } from './AnimalUniversalBehavior';
 import { Boat } from '../Boat';
 import { AnimalLogicRegistry } from './logic/AnimalLogicRegistry';
@@ -53,6 +54,11 @@ describe('AnimalUniversalBehavior', () => {
 
         mockEntity = {
             getPhysicsBody: vi.fn(() => mockBody),
+            getMesh: vi.fn(() => ({
+                position: new THREE.Vector3(),
+                rotation: new THREE.Euler(),
+                quaternion: new THREE.Quaternion(),
+            })),
             getHeight: vi.fn(() => 0),
             handleBehaviorEvent: vi.fn(),
         };

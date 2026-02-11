@@ -15,20 +15,40 @@ export type AnimalBehaviorEvent =
 
 // Any animal must implement this interface to get behavior
 export interface AnyAnimal {
-    // any animal might be on a slot
+    /** 
+     * The slot (e.g. a perch) owned by the animal.
+     */
     currentSlot: TerrainSlot | null;
 
-    // the physics body is directly read and updated by the behavior
-    // it defines the position, orientation, velocity, etc.
-    // the collision mask can also be modified by the behavior
+    /**
+     * The physics body is directly read and updated by the behavior.
+     * It defines the position, orientation, velocity, etc. Those
+     * values are directly set for dynamic (physics based) motion and
+     * the physics position is copied to the mesh. Kinematic motion updates
+     * the mesh instead and the mesh position is copied to physics.
+     * The collision mask can also be modified by the behavior.
+     */
     getPhysicsBody(): planck.Body | null;
 
-    // get the height of the animal with water level being 0
+    /**
+     * Get the mesh for the animal. Kinematic motion directly updates the
+     * mesh.
+     */
+    getMesh(): THREE.Object3D | null;
+
+    /**
+     * Get the height of the animal in its parent frame.
+     */
     getHeight(): number;
 
-    // explicitly set the height and normal of the animal
-    setExplictPosition?(height: number, normal: THREE.Vector3): void;
+    /**
+     * Applies only to dynamic motion (i.e. motion driven by physiscs)
+     * set the height and normal as those are not controlled by physics
+     */
+    setDynamicPosition(height: number, normal: THREE.Vector3): void;
 
-    // Handle generic behavior events
+    /**
+     * Handle generic behavior events
+     */
     handleBehaviorEvent?(event: AnimalBehaviorEvent): void;
 }
