@@ -52,4 +52,7 @@ export class ObstacleHitBehavior implements EntityBehavior {
             }
         }
     }
+
+    apply(dt: number) {
+    }
 }

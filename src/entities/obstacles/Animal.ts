@@ -222,6 +222,12 @@ export abstract class Animal extends Entity implements AnyAnimal {
         }
     }
 
+    applyUpdate(dt: number) {
+        if (this.behavior) {
+            this.behavior.apply(dt);
+        }
+    }
+
     dispose() {
         if (this.behavior && this.behavior.dispose) {
             this.behavior.dispose();

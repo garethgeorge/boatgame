@@ -15,10 +15,15 @@ export type AnimalBehaviorEvent =
 
 // Any animal must implement this interface to get behavior
 export interface AnyAnimal {
-    /** 
+    /**
      * The slot (e.g. a perch) owned by the animal.
      */
     currentSlot: TerrainSlot | null;
+
+    /**
+     * Get the logical parent of this animal.
+     */
+    parent(): { meshes: THREE.Object3D[] } | null;
 
     /**
      * The physics body is directly read and updated by the behavior.
