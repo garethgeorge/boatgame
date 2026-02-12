@@ -41,6 +41,7 @@ const DECORATION_FACTORIES = {
   'pterodactyl': new GLTFModelFactory('assets/pterodactyl-model-1.glb'),
   'butterfly': new GLTFModelFactory('assets/butterfly-model-1.glb'),
   'dolphin': new GLTFModelFactory('assets/dolphin-model-1.glb'),
+  'narwhal': new GLTFModelFactory('assets/narwhal-model-1.glb'),
   'bluebird': new GLTFModelFactory('assets/bluebird-model-1.glb'),
   'parrot': new GLTFModelFactory('assets/parrot-model-1.glb'),
   'egret': new GLTFModelFactory('assets/egret-model-1.glb'),
@@ -199,6 +200,7 @@ export class Decorations {
   static getPterodactyl() { return this.getModelAndAnimations('pterodactyl'); }
   static getButterfly() { return this.getModelAndAnimations('butterfly'); }
   static getDolphin() { return this.getModelAndAnimations('dolphin'); }
+  static getNarwhal() { return this.getModelAndAnimations('narwhal'); }
   static getBluebird() { return this.getModelAndAnimations('bluebird'); }
   static getParrot() { return this.getModelAndAnimations('parrot'); }
   static getEgret() { return this.getModelAndAnimations('egret'); }

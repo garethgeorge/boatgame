@@ -11,7 +11,7 @@ import { SkyBiome } from './BiomeFeatures';
 import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { EntityRules } from '../layout/EntityLayoutRules';
-import { PolarBearRule, PenguinKayakRule } from '../../entities/AnimalEntityRules';
+import { PolarBearRule, PenguinKayakRule, NarwhalRule } from '../../entities/AnimalEntityRules';
 import { IcebergRule, BuoyRule, BottleRule } from '../../entities/StaticEntityRules';
 import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
 import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
@@ -111,7 +111,8 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 scenes: [{
                     length: [100, 200], patterns: [
                         Place.scatter_slalom(IcebergRule.get(), [1.0, 3.0]),
-                        Place.scatter_middle(BuoyRule.get(), [0.5, 1.5])
+                        Place.scatter_middle(BuoyRule.get(), [0.5, 1.5]),
+                        Place.scatter_slalom(NarwhalRule.get(), [0.5, 1.0])
                     ]
                 },
                 {

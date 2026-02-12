@@ -26,6 +26,7 @@ import { GingerMan } from './obstacles/GingerMan';
 import * as THREE from 'three';
 import { BaseMangrove } from './obstacles/Mangrove';
 import { MessageInABottle } from './obstacles/MessageInABottle';
+import { Narwhal } from './obstacles/Narwhal';
 
 export interface EntityManifestEntry {
     name: string;
@@ -50,6 +51,7 @@ export const ENTITY_MANIFEST: EntityManifestEntry[] = [
     { name: 'brownBear', model: () => Decorations.getBrownBear()!, params: BrownBear.MODEL_PARAMS },
     { name: 'monkey', model: () => Decorations.getMonkey()!, params: Monkey.MODEL_PARAMS },
     { name: 'moose', model: () => Decorations.getMoose()!, params: Moose.MODEL_PARAMS },
+    { name: 'narwhal', model: () => Decorations.getNarwhal()!, params: Narwhal.MODEL_PARAMS },
     { name: 'triceratops', model: () => Decorations.getTriceratops()!, params: Triceratops.MODEL_PARAMS },
     { name: 'dolphin', model: () => Decorations.getDolphin()!, params: Dolphin.MODEL_PARAMS },
     { name: 'duckling', model: () => Decorations.getDuckling()!, params: Duckling.MODEL_PARAMS },
