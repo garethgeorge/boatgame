@@ -763,20 +763,20 @@ export class DolphinRule extends AnimalRule {
 export class NarwhalRule extends AnimalRule {
     private static _instance: NarwhalRule = null;
 
-    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): EntityGeneratorFn {
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): LayoutRule {
         if (!this._instance) this._instance = new NarwhalRule;
         return this._instance.get(predicate);
     }
 
     constructor() {
         super(
-            new AnimalSpawnConfig(EntityIds.NARWHAL, Narwhal, ['narwhal']),
+            EntityIds.NARWHAL, Narwhal, ['narwhal'],
             EntityMetadata.narwhal.radius,
             Narwhal.HEIGHT_IN_WATER
         );
     }
 
-    protected behavior(ctx: EntityGeneratorContext): AnimalBehaviorConfig {
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
         return { type: 'swim' };
     }
 }

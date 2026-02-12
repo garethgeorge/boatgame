@@ -1,18 +1,14 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
-import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 import { DecorationConfig } from './DecorationConfig';
 import { TierRule } from '../decorators/DecorationRuleBuilders';
 import { Fitness, RockParams, TreeParams } from '../decorations/SceneryRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { EntityRules } from '../layout/EntityLayoutRules';
-import { PolarBearRule, PenguinKayakRule, NarwhalRule } from '../../entities/AnimalEntityRules';
-import { IcebergRule, BuoyRule, BottleRule } from '../../entities/StaticEntityRules';
-import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
-import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
+import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
+import { BottleRule, BuoyRule, IcebergRule } from '../../entities/StaticLayoutRules';
+import { NarwhalRule, PenguinKayakRule, PolarBearRule } from '../../entities/AnimalLayoutRules';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'ice';
