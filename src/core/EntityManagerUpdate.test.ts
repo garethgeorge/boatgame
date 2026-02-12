@@ -13,7 +13,7 @@ class MockEntity extends Entity {
 
     public updateCount = 0;
     public applyCount = 0;
-    public syncCount = 0;
+    public visualsCount = 0;
 
     public update(dt: number) {
         this.updateCount++;
@@ -21,10 +21,12 @@ class MockEntity extends Entity {
 
     public applyUpdate(dt: number) {
         this.applyCount++;
+        super.applyUpdate(dt);
     }
 
-    public sync(alpha: number) {
-        this.syncCount++;
+    public updateVisuals(dt: number, alpha: number) {
+        this.visualsCount++;
+        super.updateVisuals(dt, alpha);
     }
 }
 
@@ -58,7 +60,8 @@ describe('EntityManager Hierarchical Update', () => {
         entityManager.add(entity1);
         entityManager.add(entity2);
 
-        entityManager.update(0.1);
+        entityManager.updateLogic(0.1);
+        entityManager.applyUpdates(0.1);
 
         expect(entity1.updateCount).toBe(1);
         expect(entity1.applyCount).toBe(1);
@@ -76,9 +79,9 @@ describe('EntityManager Hierarchical Update', () => {
         const callOrder: string[] = [];
 
         vi.spyOn(parent, 'applyUpdate').mockImplementation(() => { callOrder.push('parent_apply'); });
-        vi.spyOn(parent, 'sync').mockImplementation(() => { callOrder.push('parent_sync'); });
+        vi.spyOn(parent, 'updateVisuals').mockImplementation(() => { callOrder.push('parent_visuals'); });
         vi.spyOn(child, 'applyUpdate').mockImplementation(() => { callOrder.push('child_apply'); });
-        vi.spyOn(child, 'sync').mockImplementation(() => { callOrder.push('child_sync'); });
+        vi.spyOn(child, 'updateVisuals').mockImplementation(() => { callOrder.push('child_visuals'); });
 
         entityManager.add(parent);
         entityManager.add(child);
@@ -87,13 +90,15 @@ describe('EntityManager Hierarchical Update', () => {
         // Clear initial syncs from add()
         callOrder.length = 0;
 
-        entityManager.update(0.1);
+        entityManager.updateLogic(0.1);
+        entityManager.applyUpdates(0.1);
+        entityManager.updateVisuals(0.1, 0.5);
 
         expect(callOrder).toEqual([
             'parent_apply',
-            'parent_sync',
             'child_apply',
-            'child_sync'
+            'parent_visuals',
+            'child_visuals'
         ]);
     });
 
@@ -114,14 +119,14 @@ describe('EntityManager Hierarchical Update', () => {
         mid.addChild(leaf);
 
         const callOrder: string[] = [];
-        vi.spyOn(root, 'sync').mockImplementation(() => { callOrder.push('root'); });
-        vi.spyOn(mid, 'sync').mockImplementation(() => { callOrder.push('mid'); });
-        vi.spyOn(leaf, 'sync').mockImplementation(() => { callOrder.push('leaf'); });
+        vi.spyOn(root, 'updateVisuals').mockImplementation(() => { callOrder.push('root'); });
+        vi.spyOn(mid, 'updateVisuals').mockImplementation(() => { callOrder.push('mid'); });
+        vi.spyOn(leaf, 'updateVisuals').mockImplementation(() => { callOrder.push('leaf'); });
 
         // Clear initial syncs from add()
         callOrder.length = 0;
 
-        entityManager.update(0.1);
+        entityManager.updateVisuals(0.1, 0.5);
 
         expect(callOrder).toEqual(['root', 'mid', 'leaf']);
     });

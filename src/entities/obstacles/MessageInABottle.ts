@@ -20,15 +20,17 @@ export class MessageInABottle extends Entity {
         }
         update(dt: number) {
             this.floatOffset += dt * 1.5;
+        }
+
+        apply(dt: number) {
+        }
+
+        updateVisuals(dt: number, alpha: number) {
             if (this.bottle.meshes.length > 0) {
                 const mesh = this.bottle.meshes[0];
-                // Raise by 50% of height (height is ~2.0 now). +1.0 base?
-                // User said "float ~50% of it's height heigher".
-                // Previous base was implicit 0? No, cylinder center is 0.
-                // Let's add +1.0 to y.
                 mesh.position.y = Math.sin(this.floatOffset) * 0.1 + 1.0;
                 mesh.rotation.y += dt * 0.5;
-                mesh.rotation.z = Math.sin(this.floatOffset * 0.5) * 0.2; // Bobbing tilt
+                mesh.rotation.z = Math.sin(this.floatOffset * 0.5) * 0.2;
             }
         }
     };
@@ -72,9 +74,23 @@ export class MessageInABottle extends Entity {
         if (this.behavior) {
             this.behavior.update(dt);
         }
+    }
+
+    applyUpdate(dt: number) {
+        if (this.behavior && this.behavior.apply) {
+            this.behavior.apply(dt);
+        }
+        super.applyUpdate(dt);
+    }
+
+    updateVisuals(dt: number, alpha: number) {
+        if (this.behavior && (this.behavior as any).updateVisuals) {
+            (this.behavior as any).updateVisuals(dt, alpha);
+        }
         if (this.player) {
             this.player.update(dt);
         }
+        super.updateVisuals(dt, alpha);
     }
 
     wasHitByPlayer() {

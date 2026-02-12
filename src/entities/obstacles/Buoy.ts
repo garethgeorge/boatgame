@@ -82,30 +82,18 @@ export class Buoy extends Entity {
     }
 
     update(dt: number) {
-        if (this.physicsBodies.length === 0) return;
+    }
+
+    updateVisuals(dt: number, alpha: number) {
+        super.updateVisuals(dt, alpha);
 
         // Bobbing animation
         this.bobTimer += dt * 2.0;
         const bobOffset = Math.sin(this.bobTimer) * 0.1;
 
-        // Apply bob to mesh Y (relative to physics body which is at 0)
-        // Entity.sync() overwrites position, so we need to add offset to the mesh *child* or adjust sync?
-        // Entity.sync() sets this.mesh.position.
-        // If we want visual bobbing independent of physics, we should put the buoy parts in a child group and animate that.
-        // Let's restructure mesh in constructor? 
-        // Actually, Entity.sync() sets this.mesh.position.y = 0 (or whatever we set).
-        // Wait, Entity.sync() usually sets x/z from physics and y from... where?
-        // Let's check Entity.ts or just assume we can modify Y after sync?
-        // If sync happens before update, we can override Y here.
-        // If sync happens after, our change is overwritten.
-        // Usually update is called, then physics step, then sync.
-        // So we might need a child container.
-
-        // Let's just iterate children and offset them? No, that accumulates.
-        // Let's just assume we can set Y here and it sticks if sync doesn't touch Y.
-        // Most Entity syncs only touch X/Z for 2D physics.
-        // Let's verify Entity.ts later if needed. For now, let's try setting mesh.position.y.
-
-        this.meshes[0].position.y = bobOffset;
+        // Apply bob to mesh Y
+        if (this.meshes.length > 0) {
+            this.meshes[0].position.y = bobOffset;
+        }
     }
 }

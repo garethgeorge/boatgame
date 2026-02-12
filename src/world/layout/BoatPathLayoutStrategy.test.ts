@@ -60,7 +60,8 @@ describe('BoatPathLayoutStrategy', () => {
         const world: any = {
             biomeZRange: [0, 100],
             riverSystem: RiverSystem.getInstance(),
-            terrainProvider: () => ({ height: 0, slope: 0, distToRiver: 0 })
+            terrainProvider: () => ({ height: 0, slope: 0, distToRiver: 0 }),
+            random: vi.fn().mockReturnValue(0.5)
         };
         const layout = BoatPathLayoutStrategy.createLayout(world, config as any, new SpatialGrid(20));
 
@@ -95,7 +96,8 @@ describe('BoatPathLayoutStrategy', () => {
         const world: any = {
             biomeZRange: [0, 100],
             riverSystem: RiverSystem.getInstance(),
-            terrainProvider: () => ({ height: 0, slope: 0, distToRiver: 0 })
+            terrainProvider: () => ({ height: 0, slope: 0, distToRiver: 0 }),
+            random: vi.fn().mockReturnValue(0.5)
         };
         const layout = BoatPathLayoutStrategy.createLayout(world, config as any, new SpatialGrid(20));
 

@@ -16,7 +16,7 @@ export class WaterGrass extends Entity {
     // Material
     private static material = new THREE.MeshToonMaterial({
         color: 0x44aa44,
-        side: THREE.DoubleSide, 
+        side: THREE.DoubleSide,
         name: 'WaterGrassLeaf',
         transparent: true,
         opacity: 0.8
@@ -29,7 +29,7 @@ export class WaterGrass extends Entity {
         // Inject custom shader chunk for bending
         this.material.onBeforeCompile = (shader) => {
             shader.uniforms.uPlayerPosition = this.playerPosUniform;
-            
+
             shader.vertexShader = `
                 uniform vec3 uPlayerPosition;
             ` + shader.vertexShader;
@@ -97,13 +97,13 @@ export class WaterGrass extends Entity {
         body.createFixture({
             shape: planck.Polygon(points),
             isSensor: true, // It's a trap, not a wall
-            userData: { type: 'water_grass' } 
+            userData: { type: 'water_grass' }
         });
-        
+
         body.setUserData({ type: 'water_grass', entity: this });
         this.physicsBodies.push(body);
 
-        this.sync();
+        this.updateVisuals(0, 1.0);
     }
 
     update(dt: number): void {
@@ -118,7 +118,7 @@ export class WaterGrass extends Entity {
                 // Apply drag force
                 // Drag Force Fd = -0.5 * rho * v^2 * Cd * A
                 // Simplified: F = -k * v * |v|  or  F = -k * v
-                
+
                 // Get velocity of the boat
                 const vel = otherBody.getLinearVelocity();
                 const speed = vel.length();
@@ -132,7 +132,7 @@ export class WaterGrass extends Entity {
                     force.mul(dragFactor * speed * speed);
                     // Or maybe just linear for "thick grass"? 
                     // Let's try quadratic first.
-                    
+
                     // Apply force to the boat center
                     otherBody.applyForceToCenter(force, true);
                 }
@@ -144,15 +144,15 @@ export class WaterGrass extends Entity {
             }
             contact = contact.next;
         }
-        
+
         // Update global uniform if Player exists
         // Done once per frame ideally, but doing it per entity is okay (uniform set is cheap)
         // Or better: access Boat singleton
         const playerBody = Boat.getPlayerBody();
         if (playerBody) {
-             const pos = playerBody.getPosition();
-             // Physics Y is World Z
-             WaterGrass.playerPosUniform.value.set(pos.x, 0, pos.y);
+            const pos = playerBody.getPosition();
+            // Physics Y is World Z
+            WaterGrass.playerPosUniform.value.set(pos.x, 0, pos.y);
         }
     }
 
@@ -180,22 +180,22 @@ export class WaterGrass extends Entity {
             // r = sqrt(random), theta = random * 2pi
             const r = Math.sqrt(Math.random());
             const theta = Math.random() * Math.PI * 2;
-            
+
             const x = (width / 2) * r * Math.cos(theta); // World X
             const z = (length / 2) * r * Math.sin(theta); // World Z (Physics Y)
 
             // Wisp geometry
             // Simple plane or crossed planes
             // Let's do a simple quad standing up
-            
+
             // Box-Muller transform for normal distribution
             const u = 1 - Math.random(); // Converting [0,1) to (0,1]
             const v = Math.random();
-            const zRand = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
-            
+            const zRand = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+
             // Mean 0.8, StdDev 0.3
             const wispH = Math.max(0.2, 0.8 + zRand * 0.3);
-            
+
             const wispW = 0.5 + Math.random() * 0.3;
 
             const geometry = new THREE.PlaneGeometry(wispW, wispH);
@@ -214,15 +214,15 @@ export class WaterGrass extends Entity {
             const merged = BufferGeometryUtils.mergeGeometries(geometries);
             const mesh = GraphicsUtils.createMesh(merged, this.material, 'WaterGrassPatch');
             mesh.receiveShadow = false;
-            
+
             // To be "under water surfacefo", y should be slightly negative?
             // Water usually is at y=0 or y=-0.5?
             // "visible under the water surface"
             // Let's push them down a bit.
-            mesh.position.y = -0.2; 
+            mesh.position.y = -0.2;
 
             group.add(mesh);
-            
+
             // Cleanup individual geometries
             geometries.forEach(g => g.dispose());
         }

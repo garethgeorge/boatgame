@@ -162,7 +162,6 @@ export class Boat extends Entity {
     update(dt: number, input?: InputManager) {
         this.collectedBottles.update(dt);
         if (this.physicsBodies.length === 0 || !input) return;
-        const physicsBody = this.physicsBodies[0];
 
         // --- Input Handling ---
 
@@ -170,6 +169,8 @@ export class Boat extends Entity {
         // If touch throttle is active (non-zero), use it directly (Spring-loaded)
         if (input.isDown('stop')) {
             this.currentThrottle = 0;
+            // Immediate stop request
+            const physicsBody = this.physicsBodies[0];
             physicsBody.setLinearVelocity(planck.Vec2(0, 0));
             physicsBody.setAngularVelocity(0);
         } else {
@@ -201,7 +202,22 @@ export class Boat extends Entity {
             }
         }
 
-        this.applyPhysicsForces(physicsBody);
+        // NOTE: We no longer call applyPhysicsForces here. 
+        // It is called in applyUpdate.
+    }
+
+    applyUpdate(dt: number) {
+        if (this.physicsBodies.length > 0) {
+            this.applyPhysicsForces(this.physicsBodies[0]);
+        }
+    }
+
+    updateVisuals(dt: number, alpha: number) {
+        // Super handles interpolation
+        super.updateVisuals(dt, alpha);
+
+        if (this.physicsBodies.length === 0) return;
+        const physicsBody = this.physicsBodies[0];
 
         // --- Visuals Implementation ---
 
@@ -237,17 +253,20 @@ export class Boat extends Entity {
         if (this.flashTimer > 0) {
             this.flashTimer -= dt;
             if (this.flashTimer <= 0) {
-                // Restore original materials (remove emissive)
-                this.innerMesh.traverse((child) => {
-                    if ((child as THREE.Mesh).isMesh) {
-                        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
-                        if (mat && mat.emissive) {
-                            mat.emissive.setHex(0x000000);
-                        }
-                    }
-                });
+                this.restoreOriginalMaterials();
             }
         }
+    }
+
+    private restoreOriginalMaterials() {
+        this.innerMesh.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+                const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+                if (mat && mat.emissive) {
+                    mat.emissive.setHex(0x000000);
+                }
+            }
+        });
     }
 
     public getThrottle(): number {
@@ -275,8 +294,8 @@ export class Boat extends Entity {
             this.currentThrottle = 0;
             this.currentSteering = 0;
 
-            // Sync immediately to avoid visual glitch?
-            this.sync(1.0);
+            // Sync immediately to avoid visual glitch
+            this.updateVisuals(0, 1.0);
         }
     }
 

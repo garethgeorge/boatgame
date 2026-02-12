@@ -41,7 +41,7 @@ export class EntityManager {
         this.entities.add(entity);
 
         // Sync immediately so meshes are correctly positioned before being added to the scene
-        entity.sync(1.0);
+        entity.updateVisuals(0, 1.0);
 
         // Planck bodies are added to world upon creation, so no need to add here.
         for (const mesh of entity.meshes) {
@@ -106,26 +106,7 @@ export class EntityManager {
         }
     }
 
-    update(dt: number) {
-        // Order is important. A frame has been rendered and physics has been run
-        // so that physics body state corresponds to the next frame. Update,
-        // applyUpdate() and sync together set things up for the next render
-        // and physics update. At the end the visuals should be prepared for the
-        // next render and physics for updating after that render.
-        //
-        // The update step should compute parameters for the next frame without
-        // applying them. That way all update functions have a consistent view
-        // of the state at the end of the last frame.
-        //
-        // Apply update then applies the computed parameters to the physics/
-        // visuals and sync makes sure that physics and mesh are sync'ed.
-        // There are two basic cases:
-        // - Dynamic motion, update sets physics parameters to be used on
-        //   the next iteration, sync copies the current body position to the
-        //   visuals for render.
-        // - Kinematic motion, entity update directly sets the visuals, sync
-        //   copies this to the physics body.
-        const alpha = this.physicsEngine.getAlpha();
+    updateLogic(dt: number) {
         const entitiesArray = Array.from(this.entities);
 
         const shouldUpdateEntity = (entity: Entity) => {
@@ -135,39 +116,72 @@ export class EntityManager {
             return entity.isVisible || isPlayer || DesignerSettings.isDesignerMode;
         }
 
-        // 1. Logic Pass (Compute)
-        // Order doesn't matter here as logic uses current (Frame N) state
+        // Logic Pass (Compute) - Non-hierarchical as it's read-only
         for (const entity of entitiesArray) {
             if (shouldUpdateEntity(entity)) {
                 entity.update(dt);
             }
         }
+    }
 
-        // 2. Application Pass (Hierarchical)
+    applyUpdates(dt: number) {
+        const shouldUpdateEntity = (entity: Entity) => {
+            const isPlayer = entity.physicsBodies.length > 0 &&
+                (entity.physicsBodies[0].getUserData() as any)?.type === Entity.TYPE_PLAYER;
+
+            return entity.isVisible || isPlayer || DesignerSettings.isDesignerMode;
+        }
+
+        // Application Pass (Hierarchical)
         const applyRecursive = (entity: Entity) => {
             if (shouldUpdateEntity(entity)) {
                 entity.applyUpdate(dt);
-                entity.sync(alpha);
             }
 
-            // Recursively apply children
             for (const child of entity.children()) {
                 applyRecursive(child);
             }
         };
 
-        for (const entity of entitiesArray) {
-            // Only start from roots (entities without a parent that is also in this manager)
+        for (const entity of this.entities) {
             const parent = entity.parent();
             if (!parent || !this.entities.has(parent)) {
                 applyRecursive(entity);
             }
         }
 
-        // Handled removal after everything is synced
+        // Handle removals after apply pass
+        const entitiesArray = Array.from(this.entities);
         for (const entity of entitiesArray) {
             if (entity.shouldRemove) {
                 this.remove(entity);
+            }
+        }
+    }
+
+    updateVisuals(dt: number, alpha: number) {
+        const shouldUpdateEntity = (entity: Entity) => {
+            const isPlayer = entity.physicsBodies.length > 0 &&
+                (entity.physicsBodies[0].getUserData() as any)?.type === Entity.TYPE_PLAYER;
+
+            return entity.isVisible || isPlayer || DesignerSettings.isDesignerMode;
+        }
+
+        // Visuals Pass (Hierarchical)
+        const visualsRecursive = (entity: Entity) => {
+            if (shouldUpdateEntity(entity)) {
+                entity.updateVisuals(dt, alpha);
+            }
+
+            for (const child of entity.children()) {
+                visualsRecursive(child);
+            }
+        };
+
+        for (const entity of this.entities) {
+            const parent = entity.parent();
+            if (!parent || !this.entities.has(parent)) {
+                visualsRecursive(entity);
             }
         }
     }

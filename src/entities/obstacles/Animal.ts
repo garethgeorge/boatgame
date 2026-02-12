@@ -214,9 +214,6 @@ export abstract class Animal extends Entity implements AnyAnimal {
     //--- Entity
 
     update(dt: number) {
-        if (this.player) {
-            this.player.update(dt);
-        }
         if (this.behavior) {
             this.behavior.update(dt);
         }
@@ -226,6 +223,14 @@ export abstract class Animal extends Entity implements AnyAnimal {
         if (this.behavior) {
             this.behavior.apply(dt);
         }
+        super.applyUpdate(dt);
+    }
+
+    updateVisuals(dt: number, alpha: number) {
+        if (this.player) {
+            this.player.update(dt);
+        }
+        super.updateVisuals(dt, alpha);
     }
 
     dispose() {

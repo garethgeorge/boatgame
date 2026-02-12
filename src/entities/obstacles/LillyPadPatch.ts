@@ -62,7 +62,7 @@ export class LillyPadPatch extends Entity {
         body.setUserData({ type: 'lilly_pad_patch', entity: this });
         this.physicsBodies.push(body);
 
-        this.sync();
+        this.updateVisuals(0, 1.0);
     }
 
     update(dt: number): void {

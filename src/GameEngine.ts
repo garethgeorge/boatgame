@@ -155,17 +155,28 @@ export class GameEngine {
         if (!this.isPaused) {
             this.processContacts();
 
+            Profiler.start('Entities');
+            // 1. Logic Phase (Read-only)
+            this.boat.update(dt, this.inputManager);
+            this.entityManager.updateLogic(dt);
+
+            // 2. Apply Phase (Write-intent)
+            this.boat.applyUpdate(dt);
+            this.entityManager.applyUpdates(dt);
+            Profiler.end('Entities');
+
+            // 3. Physics Phase (Advance)
             Profiler.start('Physics');
             this.physicsEngine.update(dt);
             Profiler.end('Physics');
-
-            Profiler.start('Entities');
-            this.boat.update(dt, this.inputManager);
-            this.entityManager.update(dt);
-            Profiler.end('Entities');
         }
 
         if (this.boat.meshes.length > 0) {
+            // 4. Visuals & Sync Phase (Interpolate & FX)
+            const alpha = this.physicsEngine.getAlpha();
+            this.entityManager.updateVisuals(dt, alpha);
+            this.boat.updateVisuals(dt, alpha);
+
             Profiler.start('Terrain');
             this.terrainManager.update(this.boat, dt);
             Profiler.end('Terrain');

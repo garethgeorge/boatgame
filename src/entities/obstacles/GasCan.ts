@@ -19,6 +19,11 @@ export class GasCan extends Entity {
         update(dt: number) {
             // Float animation
             this.floatOffset += dt * 2;
+        }
+
+        apply(dt: number) { }
+
+        updateVisuals(dt: number) {
             if (this.gasCan.meshes.length > 0) {
                 const mesh = this.gasCan.meshes[0];
                 mesh.position.y = Math.sin(this.floatOffset) * 0.2 + 0.5; // +0.5 base height
@@ -94,5 +99,18 @@ export class GasCan extends Entity {
         if (this.behavior) {
             this.behavior.update(dt);
         }
+    }
+
+    applyUpdate(dt: number) {
+        if (this.behavior && this.behavior.apply) {
+            this.behavior.apply(dt);
+        }
+    }
+
+    updateVisuals(dt: number, alpha: number) {
+        if (this.behavior && (this.behavior as any).updateVisuals) {
+            (this.behavior as any).updateVisuals(dt);
+        }
+        super.updateVisuals(dt, alpha);
     }
 }

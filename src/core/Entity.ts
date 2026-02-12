@@ -90,13 +90,24 @@ export abstract class Entity {
 
     /**
      * Called each frame to compute the entity state for the next frame.
+     * Use this phase for read-only calculations and goal setting.
      */
     abstract update(dt: number): void;
 
     /**
      * Called each frame to apply the next entity state for the next frame.
+     * Use this phase to modify physics state (forces, velocities, kinematic positions).
      */
     public applyUpdate(dt: number) {
+        // By default, if we are kinematic, we sync the physics body to the mesh
+        // which might have been moved by some logic/parenting.
+        if (this.physicsBodies.length > 0 && this.meshes.length > 0) {
+            const body = this.physicsBodies[0];
+            const mesh = this.meshes[0];
+            if (body.getType() === 'kinematic') {
+                this.syncMeshToBody(mesh, body);
+            }
+        }
     }
 
     // Do stuff when hit by the player
@@ -150,29 +161,27 @@ export abstract class Entity {
         }
     }
 
-    // Sync graphics position/rotation with physics body
-    // By default, syncs the first mesh with the first body
-    // Subclasses can override or call this manually for specific pairs
-    sync(alpha: number = 1.0) {
+    /**
+     * Called each frame to update visuals based on physics and delta time.
+     * Use this phase for interpolation, animations, and non-physics FX.
+     */
+    public updateVisuals(dt: number, alpha: number = 1.0) {
         let yPos = 0;
         if (this.physicsBodies.length > 0 && this.meshes.length > 0) {
             const body = this.physicsBodies[0];
             const mesh = this.meshes[0];
-            this.syncBodyMesh(body, mesh, alpha);
+            this.updateBodyMeshVisuals(body, mesh, alpha);
             yPos = mesh.position.y;
         }
 
-        // Sync debug meshes - assuming 1:1 mapping if they exist, or just rebuild them?
-        // Actually, ensureDebugMeshes creates a group for each body usually?
-        // Let's iterate if counts match
         for (let i = 0; i < Math.min(this.physicsBodies.length, this.debugMeshes.length); i++) {
             const debugMesh = this.debugMeshes[i];
-            this.syncBodyMesh(this.physicsBodies[i], debugMesh, alpha);
+            this.updateBodyMeshVisuals(this.physicsBodies[i], debugMesh, alpha);
             debugMesh.position.y = yPos + 1.0;
         }
     }
 
-    protected syncBodyMesh(body: planck.Body, mesh: THREE.Object3D, alpha: number) {
+    protected updateBodyMeshVisuals(body: planck.Body, mesh: THREE.Object3D, alpha: number) {
         if (this.parent() && body.getType() !== 'kinematic') {
             // If we have a parent, we only sync if we are in kinematic mode. 
             // Otherwise, the physics body and mesh position will diverge in world space.
@@ -180,24 +189,10 @@ export abstract class Entity {
         }
 
         if (body.getType() === 'kinematic') {
-            // Kinematic motion syncs mesh to physics
-            const worldPos = new THREE.Vector3();
-            const worldQuat = new THREE.Quaternion();
-
-            // Step 1: Get the combined world transform
-            mesh.getWorldPosition(worldPos);
-            mesh.getWorldQuaternion(worldQuat);
-
-            // Step 2: Extract the "Yaw" (Rotation around Y)
-            // We use Euler to convert the 3D orientation back to a single angle
-            const worldEuler = new THREE.Euler().setFromQuaternion(worldQuat, 'YXZ');
-            const planckAngle = -worldEuler.y;
-
-            body.setPosition(planck.Vec2(worldPos.x, worldPos.z));
-            body.setAngle(planckAngle);
-
+            // Kinematic visual sync is handled by parenting or applyUpdate's Mesh->Body sync
+            // We only need to ensure the mesh transform is up to date if not already handled
         } else {
-            // Dynamic motion syncs physics to mesh
+            // Dynamic motion: Interpolate physics body to mesh visuals
             const currPos = body.getPosition();
             const currAngle = body.getAngle();
 
@@ -237,6 +232,21 @@ export abstract class Entity {
                 mesh.rotation.y = -angle;
             }
         }
+    }
+
+    protected syncMeshToBody(mesh: THREE.Object3D, body: planck.Body) {
+        // Extract world transform to sync kinematic body
+        const worldPos = new THREE.Vector3();
+        const worldQuat = new THREE.Quaternion();
+
+        mesh.getWorldPosition(worldPos);
+        mesh.getWorldQuaternion(worldQuat);
+
+        const worldEuler = new THREE.Euler().setFromQuaternion(worldQuat, 'YXZ');
+        const planckAngle = -worldEuler.y;
+
+        body.setPosition(planck.Vec2(worldPos.x, worldPos.z));
+        body.setAngle(planckAngle);
     }
 
     ensureDebugMeshes(): THREE.Object3D[] {
@@ -289,8 +299,8 @@ export abstract class Entity {
                 if (line) group.add(line);
             }
 
-            // Initial sync
-            this.syncBodyMesh(body, group, 1.0);
+            // Initial visuals sync
+            this.updateBodyMeshVisuals(body, group, 1.0);
             if (this.meshes.length > 0) {
                 group.position.y = this.meshes[0].position.y + 1.0;
             } else {

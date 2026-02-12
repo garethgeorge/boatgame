@@ -102,11 +102,18 @@ The game uses a specific mapping between the 2D physics engine (Planck.js) and t
 - **Gradient Map**: The gradient map is a shared resource managed by `GraphicsUtils`.
 
 ### 5. Game Loop
-**File**: `src/Game.ts`
+**File**: `src/GameEngine.ts`
 
-- **`animate()`**: The main loop.
-- **`update(dt)`**: Fixed-step logic can be implemented here, though currently, it passes variable `dt`.
-- **`Profiler`**: Use `Profiler.start('Label')` and `Profiler.end('Label')` to measure performance blocks.
+The game uses a robust three-phase update cycle per frame to ensure state consistency and eliminate response lag:
+
+1.  **Logic Phase (`updateLogic`)**: Entities compute their intent (movement targets, state changes) using read-only access to the current world state.
+2.  **Apply Phase (`applyUpdates`)**: Entities commit their intent to the physics engine (applying forces, velocities, or kinematic transforms). Kinematic entities synchronize their physics body positions from their mesh positions in this phase.
+3.  **Physics Phase (`physicsEngine.update`)**: The physics world advances the simulation by one or more steps.
+4.  **Visual Phase (`updateVisuals`)**: Final visuals are updated at the display frame rate. This includes:
+    -   **Interpolation**: Smoothing dynamic body positions based on the physics simulation progress (`alpha`).
+    -   **Visual Effects**: Frame-rate dependent animations, bobbing, tilt, and other non-physics behaviors.
+
+This structure ensures that collisions and inputs are processed in the same frame they occur, and all entities see a consistent world state during the logic pass.
 
 ## 6. Terrain & World Generation
 **Files**: `src/world/TerrainManager.ts`, `src/world/TerrainChunk.ts`
