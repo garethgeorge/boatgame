@@ -9,6 +9,7 @@ import { WaitForBoatLogic } from './WaitForBoatLogic';
 import { ShoreWalkLogic } from './ShoreWalkLogic';
 import { DelayLogic } from './DelayLogic';
 import { WaterLandingFlightLogic } from './WaterLandingFlightLogic';
+import { SlotLandingFlightLogic } from './SlotLandingFlightLogic';
 import { WanderingFlightLogic } from './WanderingFlightLogic';
 import { BuzzBoatFlightLogic } from './BuzzBoatFlightLogic';
 import { FlyDirectToShoreLogic } from './FlyDirectToShoreLogic';
@@ -27,6 +28,7 @@ export class AnimalLogicRegistry {
         this.register('FlyDirectToShore', (params) => new FlyDirectToShoreLogic(params));
         this.register('FlyOppositeBoat', (params) => new FlyOppositeBoatLogic(params));
         this.register('ShoreLandingFlight', (params) => new ShoreLandingFlightLogic(params));
+        this.register('SlotLandingFlight', (params) => new SlotLandingFlightLogic(params));
         this.register('ShoreWalk', (params) => new ShoreWalkLogic(params));
         this.register('WaitForBoat', (params) => new WaitForBoatLogic(params));
         this.register('WanderingFlight', (params) => new WanderingFlightLogic(params));

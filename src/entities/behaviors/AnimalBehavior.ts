@@ -1,6 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { AnimalLogic, AnimalLogicPhase } from './logic/AnimalLogic';
+import { TerrainSlot } from '../../world/TerrainSlotMap';
 
 /**
  * LOGIC_STARTING - about to start a logic stage
@@ -14,6 +15,9 @@ export type AnimalBehaviorEvent =
 
 // Any animal must implement this interface to get behavior
 export interface AnyAnimal {
+    // any animal might be on a slot
+    currentSlot: TerrainSlot | null;
+
     // the physics body is directly read and updated by the behavior
     // it defines the position, orientation, velocity, etc.
     // the collision mask can also be modified by the behavior

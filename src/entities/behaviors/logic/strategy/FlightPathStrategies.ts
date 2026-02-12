@@ -1,7 +1,9 @@
 import * as planck from 'planck';
+import * as THREE from 'three';
 import { RiverSystem } from '../../../../world/RiverSystem';
 import { AnimalPathStrategy, AnimalSteering, AnimalStrategyContext } from './AnimalPathStrategy';
 import { AnimalBehaviorUtils } from '../../AnimalBehaviorUtils';
+import { CoreMath } from '../../../../core/CoreMath';
 
 /**
  * BUZZ TARGET (Flight)
@@ -120,31 +122,115 @@ export class FlyToShoreStrategy extends AnimalPathStrategy {
 }
 
 /**
- * LANDING (Flight)
+ * POINT LANDING (Flight)
+ * Lands on a specific 3D point (target and height).
  */
-export class LandingStrategy extends AnimalPathStrategy {
-    readonly name = 'Landing';
-    private landingAngle: number = 0;
-    private landingStartAltitude: number = -1;
+export class PointLandingStrategy extends AnimalPathStrategy {
+    readonly name = 'Point Landing';
 
-    constructor(private horizSpeed: number) { super(); }
+
+    private horizSpeed: number;
+    private target: planck.Vec2;
+    private targetHeight: number;
+    private flightHeight: number;
+
+    private landingDir: planck.Vec2;
+    private approachTarget: planck.Vec2;
+    private approachHeight: number;
+
+    private landingStartDist: number;
+    private landingStartHeight: number;
+    private state: 'FLY' | 'APPROACH' | 'LANDING' = 'FLY';
+
+    constructor(
+        context: AnimalStrategyContext,
+        horizSpeed: number,
+        target: planck.Vec2,
+        targetHeight: number,
+        flightHeight: number
+    ) {
+        super();
+
+        this.horizSpeed = horizSpeed;
+        this.target = target;
+        this.targetHeight = targetHeight;
+        this.flightHeight = flightHeight;
+
+        // --- Landing Path Calculation ---
+        const river = RiverSystem.getInstance();
+        const centerResult = river.getClosestCenterPoint({ x: this.target.x, z: this.target.y });
+        const centerPos = new planck.Vec2(centerResult.x, centerResult.z);
+
+        // Direction from target TO river center
+        this.landingDir = planck.Vec2.sub(centerPos, this.target);
+        this.landingDir.normalize();
+
+        // A point on the landing path away from the river
+        const approachDistance = 20.0;
+        this.approachTarget = planck.Vec2.sub(this.target, this.landingDir.clone().mul(approachDistance));
+        this.approachHeight = this.targetHeight + 5.0;
+    }
 
     update(context: AnimalStrategyContext): AnimalSteering {
-        const groundHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(context.originPos.x, context.originPos.y);
-        const currentAltitude = Math.max(0, context.currentHeight - groundHeight);
+        const horizDist = planck.Vec2.distance(context.originPos, this.target);
 
-        if (this.landingStartAltitude < 0) {
-            this.landingStartAltitude = currentAltitude;
-            const derivative = RiverSystem.getInstance().getRiverDerivative(context.originPos.y);
-            this.landingAngle = context.originPos.x < RiverSystem.getInstance().getBankPositions(context.originPos.y).left ? Math.atan2(1, derivative) : Math.atan2(-1, -derivative);
+        // --- State Management ---
+        switch (this.state) {
+            case 'FLY': {
+                const distToApproach = planck.Vec2.distance(context.originPos, this.approachTarget);
+                if (distToApproach < 10.0)
+                    this.state = 'APPROACH';
+                break;
+            }
+            case 'APPROACH': {
+                const distToApproach = planck.Vec2.distance(context.originPos, this.approachTarget);
+                if (distToApproach < 1.0) {
+                    this.state = 'LANDING';
+                    this.landingStartDist = horizDist;
+                    this.landingStartHeight = context.currentHeight;
+                }
+                break;
+            }
         }
 
-        const speedFactor = Math.max(0, Math.min(1, currentAltitude / Math.max(0.1, this.landingStartAltitude)));
-        const flightDir = planck.Vec2(Math.sin(this.landingAngle), -Math.cos(this.landingAngle));
+        let target = undefined;
+        let targetHeight = undefined;
+        let speedFactor = 1.0;
+
+        // --- Execution ---
+        switch (this.state) {
+            case 'FLY': {
+                target = this.approachTarget;
+                targetHeight = this.flightHeight;
+                break;
+            }
+            case 'APPROACH': {
+                target = this.approachTarget;
+                targetHeight = this.approachHeight;
+                break;
+            }
+            case 'LANDING': {
+                target = this.target;
+                targetHeight = this.targetHeight;
+                // Guide the landing in smoothly
+                if (this.landingStartDist > 0.0) {
+                    const progress = Math.pow(horizDist / this.landingStartDist, 0.5);
+                    speedFactor = CoreMath.clamp(0.1, 1.0, progress);
+                    if (horizDist > 0.5) {
+                        targetHeight = CoreMath.lerp(targetHeight, this.landingStartHeight, progress);
+                    }
+                }
+                break;
+            }
+        }
+
         return {
-            target: context.originPos.clone().add(flightDir.mul(10)),
+            target: target,
             speed: this.horizSpeed * speedFactor,
-            height: 0
+            height: targetHeight,
+            facing: {
+                normal: new THREE.Vector3(0, 1, 0)
+            }
         };
     }
 }

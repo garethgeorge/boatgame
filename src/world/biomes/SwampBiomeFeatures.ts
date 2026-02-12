@@ -1,17 +1,15 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
-import { PopulationContext } from './PopulationContext';
-import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
-import { DecorationConfig, DecorationRule, TerrainDecorator } from '../decorators/TerrainDecorator';
-import { TierRule } from '../decorators/PoissonDecorationRules';
-import { Fitness, MangroveParams } from '../decorations/DecorationRules';
+import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
+import { DecorationConfig } from './DecorationConfig';
+import { TierRule } from '../decorators/DecorationRuleBuilders';
+import { Fitness, MangroveParams } from '../decorations/SceneryRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { SnakeRule, EgretRule, DragonflyRule, AlligatorRule } from '../../entities/AnimalEntityRules';
-import { MangroveRule, BottleRule, LogRule, WaterGrassRule, LilyPadPatchRule } from '../../entities/StaticEntityRules';
-import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
+import { SnakeRule, EgretRule, DragonflyRule, AlligatorRule } from '../../entities/AnimalLayoutRules';
+import { MangroveRule, BottleRule, LogRule, WaterGrassRule, LilyPadPatchRule } from '../../entities/StaticLayoutRules';
+import { DecorationRule } from '../decorators/DecorationRule';
 
 export class SwampBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'swamp';
@@ -20,10 +18,6 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
     constructor(index: number, z: number, direction: number) {
         super(index, z, SwampBiomeFeatures.LENGTH, direction);
     }
-
-    private spatialGrid: SpatialGrid = new SpatialGrid(20);
-    private decorationConfig: DecorationConfig | null = null;
-    private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         return { r: 0x2B / 255, g: 0x24 / 255, b: 0x1C / 255 }; // Muddy Dark Brown
@@ -59,9 +53,7 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
         return 5.0;
     }
 
-    private getLayout(): BoatPathLayout {
-        if (this.layoutCache) return this.layoutCache;
-
+    public createLayoutConfig(): BoatPathLayoutConfig {
         const tracks: TrackConfig[] = [{
             name: 'vegetation',
             stages: [{
@@ -135,65 +127,32 @@ export class SwampBiomeFeatures extends BaseBiomeFeatures {
             }]
         }];
 
-        const config: BoatPathLayoutConfig = {
+        return {
             tracks,
             path: {
                 length: [200, 100]
             }
         };
-
-        this.layoutCache = BoatPathLayoutStrategy.createLayout(
-            [this.zMin, this.zMax], config, this.spatialGrid);
-        return this.layoutCache;
     }
 
-    public getDecorationConfig(): DecorationConfig {
-        if (!this.decorationConfig) {
-            const rules: DecorationRule[] = [
-                new TierRule({
-                    species: [
-                        {
-                            id: 'mangrove',
-                            preference: Fitness.make({
-                                fitness: 1.0,
-                                stepDistance: [5, 55],
-                            }),
-                            params: MangroveParams.mangrove()
-                        }
-                    ]
-                }),
-            ];
-            this.decorationConfig = { rules, maps: {} };
-        }
-        return this.decorationConfig;
+    public createDecorationConfig(): DecorationConfig {
+        const rules: DecorationRule[] = [
+            new TierRule({
+                species: [
+                    {
+                        id: 'mangrove',
+                        preference: Fitness.make({
+                            fitness: 1.0,
+                            stepDistance: [5, 55],
+                        }),
+                        params: MangroveParams.mangrove()
+                    }
+                ]
+            }),
+        ];
+        return { rules };
     }
 
 
-    * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // 1. Get entity layout creating it if needed
-        const layout = this.getLayout();
-
-        // 2. Decorate
-        const decorationConfig = this.getDecorationConfig();
-
-        // decorations are inserted into the chunk grid but checked for
-        // collisions against the layout grid for the entire biome
-        const spatialGrid = new SpatialGridPair(
-            context.chunk.spatialGrid,
-            this.spatialGrid
-        );
-
-        yield* TerrainDecorator.decorateIterator(
-            context,
-            decorationConfig,
-            { xMin: -250, xMax: 250, zMin: zStart, zMax: zEnd },
-            spatialGrid,
-            12345 + zStart // Seed variation
-        );
-
-        // 3. Spawn
-        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
-            context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
-    }
 }
 

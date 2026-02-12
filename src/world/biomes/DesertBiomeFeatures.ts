@@ -2,18 +2,15 @@ import { PopulationContext } from './PopulationContext';
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
-import { BoatPathLayout, BoatPathLayoutConfig, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
-import { DecorationConfig, TerrainDecorator } from '../decorators/TerrainDecorator';
-import { TierRule } from '../decorators/PoissonDecorationRules';
+import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
+import { DecorationConfig } from './DecorationConfig';
+import { TierRule } from '../decorators/DecorationRuleBuilders';
 import { SkyBiome } from './BiomeFeatures';
-import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
+import { Placements } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { EntityRules } from '../layout/EntityLayoutRules';
-import { AlligatorRule, MonkeyRule, HippoRule } from '../../entities/AnimalEntityRules';
-import { BottleRule, RiverRockRule, PierRule } from '../../entities/StaticEntityRules';
-import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
-import { Fitness, RockParams, PlantParams } from '../decorations/DecorationRules';
+import { AlligatorRule, MonkeyRule, HippoRule } from '../../entities/AnimalLayoutRules';
+import { BottleRule, RiverRockRule, PierRule } from '../../entities/StaticLayoutRules';
+import { Fitness, RockParams, PlantParams } from '../decorations/SceneryRules';
 
 export class DesertBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'desert';
@@ -22,10 +19,6 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
     constructor(index: number, z: number, direction: number) {
         super(index, z, DesertBiomeFeatures.LENGTH, direction);
     }
-
-    private spatialGrid: SpatialGrid = new SpatialGrid(20);
-    private decorationConfig: DecorationConfig | null = null;
-    private layoutCache: BoatPathLayout | null = null;
 
     getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         const c0 = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 };
@@ -54,45 +47,40 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         };
     }
 
-    public getDecorationConfig(): DecorationConfig {
-        if (!this.decorationConfig) {
-            const rules = [
-                new TierRule({
-                    species: [
-                        {
-                            id: 'cactus',
-                            preference: Fitness.make({
-                                fitness: 0.2,
-                                stepDistance: [5, 100],
-                                slope: [0, 30]
-                            }),
-                            params: PlantParams.cactus()
-                        }
-                    ]
-                }),
-                new TierRule({
-                    species: [
-                        {
-                            id: 'rock',
-                            preference: Fitness.make({
-                                fitness: 0.1,
-                                stepDistance: [3, 20],
-                                slope: [0, 70]
-                            }),
-                            params: RockParams.rock({ rockBiome: 'desert' })
-                        }
-                    ]
-                })
-            ];
+    public createDecorationConfig(): DecorationConfig {
+        const rules = [
+            new TierRule({
+                species: [
+                    {
+                        id: 'cactus',
+                        preference: Fitness.make({
+                            fitness: 0.2,
+                            stepDistance: [5, 100],
+                            slope: [0, 30]
+                        }),
+                        params: PlantParams.cactus()
+                    }
+                ]
+            }),
+            new TierRule({
+                species: [
+                    {
+                        id: 'rock',
+                        preference: Fitness.make({
+                            fitness: 0.1,
+                            stepDistance: [3, 20],
+                            slope: [0, 70]
+                        }),
+                        params: RockParams.rock({ rockBiome: 'desert' })
+                    }
+                ]
+            })
+        ];
 
-            this.decorationConfig = { rules, maps: {} };
-        }
-        return this.decorationConfig;
+        return { rules };
     }
 
-    private getLayout(): BoatPathLayout {
-        if (this.layoutCache) return this.layoutCache;
-
+    public createLayoutConfig(): BoatPathLayoutConfig {
         const tracks: TrackConfig[] = [
             {
                 name: 'main',
@@ -148,43 +136,12 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
             }
         ];
 
-        const config: BoatPathLayoutConfig = {
+        return {
             tracks,
             path: {
                 length: [200, 100]
             }
         };
-
-        this.layoutCache = BoatPathLayoutStrategy.createLayout(
-            [this.zMin, this.zMax], config, this.spatialGrid);
-        return this.layoutCache;
-    }
-
-    * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // 1. Get entity layout creating it if needed
-        const layout = this.getLayout();
-
-        // 2. Decorate
-        const config = this.getDecorationConfig();
-
-        // decorations are inserted into the chunk grid but checked for
-        // collisions against the layout grid for the entire biome
-        const spatialGrid = new SpatialGridPair(
-            context.chunk.spatialGrid,
-            this.spatialGrid
-        );
-
-        yield* TerrainDecorator.decorateIterator(
-            context,
-            config,
-            { xMin: -240, xMax: 240, zMin: zStart, zMax: zEnd },
-            spatialGrid,
-            42 // Desert seed
-        );
-
-        // 3. Spawn
-        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
-            context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
     }
 
 }

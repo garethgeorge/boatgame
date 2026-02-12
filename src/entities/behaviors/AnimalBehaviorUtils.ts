@@ -107,15 +107,25 @@ export class AnimalBehaviorUtils {
     }
 
     /**
+     * Returns the boat's forward vector (Negative Y in local space).
+     */
+    public static getBoatForward(boatBody: planck.Body): planck.Vec2 {
+        return boatBody.getWorldVector(new planck.Vec2(0, -1));
+    }
+
+    /**
+     * Returns true if the point is in front of the boat based on the boat's position and forward vector.
+     */
+    public static isPointInFront(point: planck.Vec2, boatPos: planck.Vec2, boatForward: planck.Vec2): boolean {
+        const toPoint = planck.Vec2.sub(point, boatPos);
+        return planck.Vec2.dot(toPoint, boatForward) > 0;
+    }
+
+    /**
      * Returns true if the animal is in front of the boat (longitudinally) based on the boat's orientation.
-     * Uses dot product: (animalPos - boatPos) . boatForward > 0
      */
     public static isInFrontOfBoat(animalPos: planck.Vec2, boatBody: planck.Body): boolean {
-        const boatPos = boatBody.getPosition();
-        // Boat faces Negative Y in local space
-        const forward = boatBody.getWorldVector(new planck.Vec2(0, -1));
-        const toAnimal = planck.Vec2.sub(animalPos, boatPos);
-        return planck.Vec2.dot(toAnimal, forward) > 0;
+        return this.isPointInFront(animalPos, boatBody.getPosition(), this.getBoatForward(boatBody));
     }
 
     /**

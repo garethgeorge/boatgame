@@ -10,6 +10,7 @@ import { ShoreWalkLogic, ShoreWalkParams } from './ShoreWalkLogic';
 import { WaitForBoatLogic, WaitForBoatParams } from './WaitForBoatLogic';
 import { WanderingFlightLogic, WanderingFlightParams } from './WanderingFlightLogic';
 import { WaterLandingFlightLogic, WaterLandingFlightParams } from './WaterLandingFlightLogic';
+import { SlotLandingFlightLogic, SlotLandingFlightParams } from './SlotLandingFlightLogic';
 import { SwimBackInRangeLogic, SwimBackInRangeParams } from './SwimBackInRangeLogic';
 import { WolfAttackLogic } from './WolfAttackLogic';
 
@@ -30,5 +31,6 @@ export type AnimalLogicConfig =
     | ({ name: 'WaitForBoat'; params: WaitForBoatParams } & AnimalLogicBaseConfig)
     | ({ name: 'WanderingFlight'; params: WanderingFlightParams } & AnimalLogicBaseConfig)
     | ({ name: 'WaterLandingFlight'; params: WaterLandingFlightParams } & AnimalLogicBaseConfig)
+    | ({ name: 'SlotLandingFlight'; params: SlotLandingFlightParams } & AnimalLogicBaseConfig)
     | ({ name: 'SwimBackInRange'; params: SwimBackInRangeParams } & AnimalLogicBaseConfig)
     | ({ name: 'WolfAttack'; params?: never } & AnimalLogicBaseConfig);

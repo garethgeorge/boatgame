@@ -1,21 +1,16 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
-import { PopulationContext } from './PopulationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { EntityIds } from '../../entities/EntityIds';
-import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
-import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
-import { TierRule } from '../decorators/PoissonDecorationRules';
-import { Fitness, TreeParams, FlowerParams } from '../decorations/DecorationRules';
+import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
+import { DecorationConfig } from './DecorationConfig';
+import { TierRule } from '../decorators/DecorationRuleBuilders';
+import { Fitness, TreeParams, FlowerParams } from '../decorations/SceneryRules';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
 import { RiverSystem } from '../RiverSystem';
-import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { EntityRules } from '../layout/EntityLayoutRules';
-import { SwanRule, UnicornRule, BluebirdRule, GingerManRule } from '../../entities/AnimalEntityRules';
-import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
+import { SwanRule, UnicornRule, BluebirdRule, GingerManRule } from '../../entities/AnimalLayoutRules';
+import { DecorationRule } from '../decorators/DecorationRule';
 
 /**
  * Fantasy Land Biome: A magical realm with pastel-colored patches and mystical creatures.
@@ -24,9 +19,6 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'fantasy';
     private static readonly LENGTH = 1500;
 
-    private spatialGrid: SpatialGrid = new SpatialGrid(20);
-    private decorationConfig: DecorationConfig | null = null;
-    private layoutCache: BoatPathLayout | null = null;
     private groundNoise = new SimplexNoise(12345);
 
     private readonly COLORS = {
@@ -91,8 +83,8 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
         };
     }
 
-    private fantasyRules(): DecorationRule[] {
-        return [
+    public createDecorationConfig(): DecorationConfig {
+        const rules = [
             new TierRule({
                 species: [
                     {
@@ -136,17 +128,10 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
                 ]
             })
         ];
+        return { rules };
     }
 
-    public getDecorationConfig(): DecorationConfig {
-        if (!this.decorationConfig) {
-            this.decorationConfig = { rules: this.fantasyRules(), maps: {} };
-        }
-        return this.decorationConfig;
-    }
-
-    private getLayout(): BoatPathLayout {
-        if (this.layoutCache) return this.layoutCache;
+    public createLayoutConfig(): BoatPathLayoutConfig {
 
         const tracks: TrackConfig[] = [
             {
@@ -181,40 +166,12 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
             }
         ];
 
-        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
+        return {
             tracks,
             path: {
                 length: [200, 100]
             }
-        }, this.spatialGrid);
-
-        return this.layoutCache;
+        };
     }
 
-    * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // 1. Get entity layout creating it if needed
-        const layout = this.getLayout();
-
-        // 2. Decorate
-        const decorationConfig = this.getDecorationConfig();
-
-        // decorations are inserted into the chunk grid but checked for
-        // collisions against the layout grid for the entire biome
-        const spatialGrid = new SpatialGridPair(
-            context.chunk.spatialGrid,
-            this.spatialGrid
-        );
-
-        yield* TerrainDecorator.decorateIterator(
-            context,
-            decorationConfig,
-            { xMin: -250, xMax: 250, zMin: zStart, zMax: zEnd },
-            spatialGrid,
-            42 // Fixed seed for magical consistency
-        );
-
-        // 3. Spawn
-        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
-            context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
-    }
 }

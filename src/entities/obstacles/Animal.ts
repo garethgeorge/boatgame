@@ -10,6 +10,7 @@ import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior, ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { AnimalBehaviorConfig } from '../behaviors/AnimalBehaviorConfigs';
+import { TerrainSlot } from '../../world/TerrainSlotMap';
 
 
 export interface AnimalOptions {
@@ -49,6 +50,7 @@ export type AnimalClass =
 export abstract class Animal extends Entity implements AnyAnimal {
     private behavior: EntityBehavior | null = null;
     private player: AnimationPlayer | null = null;
+    public currentSlot: TerrainSlot | null = null;
 
     constructor(
         physicsEngine: PhysicsEngine,
@@ -59,7 +61,6 @@ export abstract class Animal extends Entity implements AnyAnimal {
         physicsOptions: AnimalPhysicsOptions
     ) {
         super();
-
         const {
             x,
             y,
@@ -150,6 +151,9 @@ export abstract class Animal extends Entity implements AnyAnimal {
     //--- Behavior functions
 
     public setBehavior(behavior: EntityBehavior) {
+        if (this.behavior && this.behavior.dispose) {
+            this.behavior.dispose();
+        }
         this.behavior = behavior;
         if (!this.behavior)
             this.playAnimationForPhase(null, AnimalLogicPhase.NONE);
@@ -216,6 +220,17 @@ export abstract class Animal extends Entity implements AnyAnimal {
         if (this.behavior) {
             this.behavior.update(dt);
         }
+    }
+
+    dispose() {
+        if (this.behavior && this.behavior.dispose) {
+            this.behavior.dispose();
+        }
+        if (this.currentSlot) {
+            this.currentSlot.isOccupied = false;
+            this.currentSlot = null;
+        }
+        super.dispose();
     }
 
     protected abstract getHitBehaviorParams(): ObstacleHitBehaviorParams;

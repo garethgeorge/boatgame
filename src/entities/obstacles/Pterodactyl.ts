@@ -9,6 +9,7 @@ import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
 
 import { EntityMetadata } from '../EntityMetadata';
+import { FlyingBehaviorConfig } from '../behaviors/AnimalBehaviorConfigs';
 
 export class Pterodactyl extends Animal {
     public static readonly MODEL_PARAMS = { scale: 3.0 };
@@ -27,13 +28,10 @@ export class Pterodactyl extends Animal {
                 friction: 0.1
             });
 
-        this.setBehavior(FlyingBehaviorFactory.createShoreLanding(
+        this.setBehavior(FlyingBehaviorFactory.create(
             this,
-            {
-                noticeDistance: 200.0,
-                flightSpeed: 30.0,
-                ...options,
-            }
+            options.behavior as FlyingBehaviorConfig,
+            options
         ));
     }
 

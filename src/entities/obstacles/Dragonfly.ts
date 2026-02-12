@@ -8,6 +8,7 @@ import { Entity } from '../../core/Entity';
 import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 
 import { EntityMetadata } from '../EntityMetadata';
+import { FlyingBehaviorConfig } from '../behaviors/AnimalBehaviorConfigs';
 
 export class Dragonfly extends Animal {
     public static readonly MODEL_PARAMS = { scale: 2.25 };
@@ -26,18 +27,10 @@ export class Dragonfly extends Animal {
                 friction: 0.1
             });
 
-        this.setBehavior(FlyingBehaviorFactory.createWandering(
+        this.setBehavior(FlyingBehaviorFactory.create(
             this,
-            {
-                noticeDistance: 60.0,
-                flightSpeed: 40.0,
-                flightHeight: 4.0,
-                buzzDuration: 2.0,
-                buzzHeight: 1.5,
-                buzzOffset: 3.0,
-                wanderRadius: 10.0,
-                ...options,
-            }
+            options.behavior as FlyingBehaviorConfig,
+            options
         ));
     }
 

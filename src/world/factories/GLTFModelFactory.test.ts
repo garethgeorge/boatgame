@@ -7,21 +7,21 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 // Mock GLTFLoader
 vi.mock('three/examples/jsm/loaders/GLTFLoader.js', () => {
     return {
-        GLTFLoader: vi.fn().mockImplementation(() => ({
-            load: vi.fn().mockImplementation((path, onLoad) => {
+        GLTFLoader: class {
+            load = vi.fn((path, onLoad) => {
                 onLoad({
                     scene: new THREE.Group(),
                     animations: []
                 });
-            })
-        }))
+            });
+        }
     };
 });
 
 // Mock SkeletonUtils.clone
 vi.mock('three/examples/jsm/utils/SkeletonUtils.js', () => {
     return {
-        clone: vi.fn().mockImplementation((obj) => obj.clone())
+        clone: vi.fn((obj) => obj.clone())
     };
 });
 

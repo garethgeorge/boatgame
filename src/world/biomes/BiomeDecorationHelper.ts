@@ -13,11 +13,11 @@ export class BiomeDecorationHelper {
     public positionAndCollectGeometry(
         context: PopulationContext,
         object: THREE.Object3D,
-        position: { worldX: number; height: number; worldZ: number },
+        worldX: number, height: number, worldZ: number,
         scale: number,
         rotation: number
     ): void {
-        object.position.set(position.worldX, position.height, position.worldZ);
+        object.position.set(worldX, height, worldZ);
         object.scale.set(scale, scale, scale);
         object.rotation.y = rotation;
         object.updateMatrixWorld(true);
@@ -122,12 +122,12 @@ export class BiomeDecorationHelper {
     public addInstancedDecoration(
         context: PopulationContext,
         instances: DecorationInstance[],
-        position: { worldX: number; height: number; worldZ: number },
+        worldX: number, height: number, worldZ: number,
         rotationY: number = Math.random() * Math.PI * 2,
         scale: number = 1.0 + (Math.random() - 0.5) * 0.2
     ): void {
         const worldMatrix = new THREE.Matrix4().compose(
-            new THREE.Vector3(position.worldX, position.height, position.worldZ),
+            new THREE.Vector3(worldX, height, worldZ),
             new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotationY, 0)),
             new THREE.Vector3(scale, scale, scale)
         );

@@ -3,7 +3,6 @@ import { BiomeType } from '../biomes/BiomeType';
 import { BoatPathLayout } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { RiverGeometry } from '../RiverGeometry';
-import { EntitySpawnConfig } from './EntityLayoutRules';
 
 export class BoatPathLayoutSpawner {
     private static instance: BoatPathLayoutSpawner;
@@ -29,28 +28,26 @@ export class BoatPathLayoutSpawner {
     ): Generator<void | Promise<void>, void, unknown> {
         if (!layout) return;
 
-        const iChunkStart = RiverGeometry.getPathIndexByZ(layout.path, zStart);
-        const iChunkEnd = RiverGeometry.getPathIndexByZ(layout.path, zEnd);
-        const iChunkMin = Math.min(iChunkStart, iChunkEnd);
-        const iChunkMax = Math.max(iChunkStart, iChunkEnd);
+        const zMin = Math.min(zStart, zEnd);
+        const zMax = Math.max(zStart, zEnd);
 
         // Gatekeeping: identify needed models and ensure all loaded
-        const neededIds = new Map<EntityIds, EntitySpawnConfig>();
+        const seenIds = new Set<EntityIds>();
         for (const p of layout.placements) {
-            if (p.index >= iChunkMin && p.index < iChunkMax &&
-                !neededIds.has(p.config.id)) {
-                neededIds.set(p.config.id, p.config);
+            // Use world Z for filtering consistent with TerrainDecorator
+            if (p.z >= zMin && p.z < zMax) {
+                if (!seenIds.has(p.id)) {
+                    yield* p.ensureLoaded();
+                    seenIds.add(p.id);
+                }
             }
-        }
-        for (const [id, config] of neededIds) {
-            yield* config.ensureLoaded();
         }
 
         let countSinceYield = 0;
 
         for (const p of layout.placements) {
             // Check if placement is within current segment
-            if (p.index >= iChunkMin && p.index < iChunkMax) {
+            if (p.z >= zMin && p.z < zMax) {
                 countSinceYield++;
                 if (countSinceYield > 10) {
                     yield;
@@ -58,8 +55,9 @@ export class BoatPathLayoutSpawner {
                 }
 
                 const sample = RiverGeometry.getPathPoint(layout.path, p.index);
-                p.config.spawn(context, p, sample);
+                p.spawn(context, sample);
             }
         }
     }
 }
+

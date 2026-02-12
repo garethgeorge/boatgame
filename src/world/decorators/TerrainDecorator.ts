@@ -1,69 +1,14 @@
 import * as THREE from 'three';
-import { PoissonDecorationStrategy, DecorationRule, WorldMap } from './PoissonDecorationStrategy';
-import { PlacementManifest, AnySpatialGrid } from '../../core/SpatialGrid';
-export type { DecorationRule, PlacementManifest };
+import { PoissonDecorationStrategy, WorldMap } from './PoissonDecorationStrategy';
+import { AnySpatialGrid } from '../../core/SpatialGrid';
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { PopulationContext } from '../biomes/PopulationContext';
-import { DecorationInstance, Decorations, LSystemTreeKind, LSystemFlowerKind } from '../decorations/Decorations';
-import { GraphicsUtils } from '../../core/GraphicsUtils';
+import { DecorationInstance } from '../decorations/Decorations';
 import { CoreMath } from '../../core/CoreMath';
-
-
-export interface DecorationContext {
-    tryPlaceInstances(
-        instances: DecorationInstance[],
-        kind: string,
-        pos: { worldX: number, worldZ: number, height: number },
-        scale: number, rotation: number
-    );
-
-    tryPlaceObject(
-        object: THREE.Object3D,
-        kind: string,
-        pos: { worldX: number, worldZ: number, height: number },
-        scale: number, rotation: number
-    );
-}
-
-export type DecoratorFunction = (ctx: DecorationContext,
-    pos: { worldX: number, worldZ: number, height: number },
-    opts: DecorationOptions) => void;
-
-/**
- * Type specific options have a function to place the instance
- */
-export interface DecorationOptions {
-    place: DecoratorFunction;
-    ensureLoaded?: () => Generator<void | Promise<void>, void, unknown>;
-    kind: string
-}
-
-export class NoiseMap implements WorldMap {
-    private noise: SimplexNoise;
-    private sx: number;
-    private sy: number;
-    private dx: number;
-    private dy: number;
-
-    constructor(noise: SimplexNoise, sx: number, sy: number,
-        dx: number = Math.random(), dy: number = Math.random()) {
-        this.noise = noise;
-        this.sx = sx;
-        this.sy = sy;
-        this.dx = dx;
-        this.dy = dy;
-    }
-
-    sample(x: number, y: number): number {
-        return (this.noise.noise2D(x / this.sx + this.dx, y / this.sy + this.dy) + 1) / 2.0;
-    }
-}
-
-export interface DecorationConfig {
-    maps: Record<string, WorldMap>,
-    rules: DecorationRule[]
-};
+import { DecorationContext, DecorationPlacement, DecorationRequirements } from './DecorationPlacement';
+import { DecorationRule } from './DecorationRule';
+import { WorldParams } from './WorldParams';
 
 export class TerrainDecorator {
     private static _instance: TerrainDecorator;
@@ -78,26 +23,28 @@ export class TerrainDecorator {
 
     public static *decorateIterator(
         context: PopulationContext,
-        config: DecorationConfig,
+        world: WorldParams,
+        config: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
+        requirements: DecorationRequirements,
         spatialGrid: AnySpatialGrid,
-        seed: number = 0,
     ): Generator<void | Promise<void>, void, unknown> {
-        const placements = yield* this.generateIterator(config, region, spatialGrid, seed);
+        const placements = yield* this.generateIterator(world, config, region, requirements, spatialGrid);
         yield* this.populateIterator(context, placements, region);
     }
 
     public static generateIterator(
-        config: DecorationConfig,
+        world: WorldParams,
+        config: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
+        requirements: DecorationRequirements,
         spatialGrid: AnySpatialGrid,
-        seed: number = 0,
-    ): Generator<void | Promise<void>, PlacementManifest[], unknown> {
-        return this.instance().generateIterator(config, region, spatialGrid, seed);
+    ): Generator<void | Promise<void>, DecorationPlacement[], unknown> {
+        return this.instance().generateIterator(world, config, region, requirements, spatialGrid);
     }
 
     public static populateIterator(
-        context: PopulationContext, decorations: PlacementManifest[],
+        context: PopulationContext, decorations: DecorationPlacement[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
     ): Generator<void | Promise<void>, void, unknown> {
         return this.instance().populateIterator(context, decorations, region);
@@ -110,50 +57,24 @@ export class TerrainDecorator {
     }
 
     private *generateIterator(
-        config: DecorationConfig,
+        world: WorldParams,
+        config: DecorationRule[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
+        requirements: DecorationRequirements,
         spatialGrid: AnySpatialGrid,
-        seed: number = 0,
-    ): Generator<void | Promise<void>, PlacementManifest[], unknown> {
-
-        // Default Terrain Provider using RiverSystem
-        const terrainProvider = (x: number, z: number) => {
-            const height = this.riverSystem.terrainGeometry.calculateHeight(x, z);
-            const normal = this.riverSystem.terrainGeometry.calculateNormal(x, z);
-
-            // Approximate distToRiver logic
-            const riverCenter = this.riverSystem.getRiverCenter(z);
-            const distToCenter = Math.abs(x - riverCenter);
-            const riverWidth = this.riverSystem.getRiverWidth(z);
-            const distToRiver = distToCenter - riverWidth / 2;
-
-            // Slope calculation (angle in radians)
-            const slope = Math.acos(Math.max(-1, Math.min(1, normal.y)));
-
-            return { height, slope, distToRiver };
-        };
-
-        const zStart = region.zMax;
-        const zEnd = region.zMin;
-        const totalLen = Math.abs(zStart - zEnd) || 1; // avoid /0
-
-        const biomeProgressProvider = (z: number) => {
-            return (zStart - z) / totalLen;
-        };
+    ): Generator<void | Promise<void>, DecorationPlacement[], unknown> {
 
         return yield* this.strategy.generateIterator(
-            config.rules,
+            world,
+            config,
             region,
             spatialGrid,
-            terrainProvider,
-            biomeProgressProvider,
-            seed,
-            config.maps
+            requirements,
         );
     }
 
     private *populateIterator(
-        context: PopulationContext, decorations: PlacementManifest[],
+        context: PopulationContext, decorations: DecorationPlacement[],
         region: { xMin: number, xMax: number, zMin: number, zMax: number },
     ): Generator<void | Promise<void>, void, unknown> {
 
@@ -162,35 +83,35 @@ export class TerrainDecorator {
             tryPlaceInstances(
                 instances: DecorationInstance[],
                 kind: string,
-                pos: { worldX: number, worldZ: number, height: number },
+                x: number, y: number, z: number,
                 scale: number, rotation: number
             ) {
-                self.tryPlaceInstances(context, instances, kind, pos, scale, rotation);
+                self.tryPlaceInstances(context, instances, kind, x, y, z, scale, rotation);
             },
             tryPlaceObject(
                 object: THREE.Object3D,
                 kind: string,
-                pos: { worldX: number, worldZ: number, height: number },
+                x: number, y: number, z: number,
                 scale: number, rotation: number
             ) {
-                self.tryPlaceObject(context, object, kind, pos, scale, rotation);
+                self.tryPlaceObject(context, object, kind, x, y, z, scale, rotation);
+            },
+            registerSlot(type: string, x: number, y: number, z: number) {
+                RiverSystem.getInstance().slots.registerSlot(type, x, y, z);
             }
         };
 
         // Gatekeeping: identify needed models and ensure all loaded
-        const uniqueLoaded = new Set<() => Generator<void | Promise<void>, void, unknown>>();
+        const uniqueLoaded = new Set<string>();
         for (const manifest of decorations) {
-            if (!(region.xMin <= manifest.position.x && manifest.position.x < region.xMax)) continue;
-            if (!(region.zMin <= manifest.position.z && manifest.position.z < region.zMax)) continue;
+            if (!(region.xMin <= manifest.x && manifest.x < region.xMax)) continue;
+            if (!(region.zMin <= manifest.z && manifest.z < region.zMax)) continue;
 
-            const options = manifest.options as DecorationOptions;
-            if (options.ensureLoaded) {
-                uniqueLoaded.add(options.ensureLoaded);
+            const kind = manifest.kind;
+            if (!uniqueLoaded.has(kind)) {
+                uniqueLoaded.add(kind);
+                yield* manifest.ensureLoaded();
             }
-        }
-
-        for (const ensureLoaded of uniqueLoaded) {
-            yield* ensureLoaded();
         }
 
         let countSinceYield = 0;
@@ -201,21 +122,10 @@ export class TerrainDecorator {
                 countSinceYield = 0;
             }
 
-            if (!(region.xMin <= manifest.position.x && manifest.position.x < region.xMax)) continue;
-            if (!(region.zMin <= manifest.position.z && manifest.position.z < region.zMax)) continue;
+            if (!(region.xMin <= manifest.x && manifest.x < region.xMax)) continue;
+            if (!(region.zMin <= manifest.z && manifest.z < region.zMax)) continue;
 
-            const wx = manifest.position.x;
-            const wz = manifest.position.z;
-            const height = manifest.position.y;
-
-            const pos = {
-                worldX: wx,
-                worldZ: wz,
-                height: height
-            };
-
-            const options: DecorationOptions = manifest.options as DecorationOptions;
-            options.place(ctx, pos, options);
+            manifest.place(ctx);
         }
     }
 
@@ -223,18 +133,20 @@ export class TerrainDecorator {
         context: PopulationContext,
         object: THREE.Object3D,
         kind: string,
-        pos: { worldX: number, worldZ: number, height: number },
+        x: number, y: number, z: number,
         scale: number,
         rotation: number
     ) {
-        if (!this.distanceFilter(pos))
+        if (!this.distanceFilter(x, y, z)) {
             return false;
+        }
 
         const height = context.decoHelper.calculateObjectHeight(object);
-        if (!this.visibilityFilter(pos, height))
+        if (!this.visibilityFilter(x, y, z, height)) {
             return false;
+        }
 
-        context.decoHelper.positionAndCollectGeometry(context, object, pos, scale, rotation);
+        context.decoHelper.positionAndCollectGeometry(context, object, x, y, z, scale, rotation);
 
         // Record stats
         if (context.stats) {
@@ -247,18 +159,18 @@ export class TerrainDecorator {
         context: PopulationContext,
         instances: DecorationInstance[],
         kind: string,
-        pos: { worldX: number, worldZ: number, height: number },
+        x: number, y: number, z: number,
         scale: number,
         rotation: number
     ) {
-        if (!this.distanceFilter(pos))
+        if (!this.distanceFilter(x, y, z))
             return false;
 
         const height = context.decoHelper.calculateInstancesHeight(instances);
-        if (!this.visibilityFilter(pos, height))
+        if (!this.visibilityFilter(x, y, z, height))
             return false;
 
-        context.decoHelper.addInstancedDecoration(context, instances, pos, rotation, scale);
+        context.decoHelper.addInstancedDecoration(context, instances, x, y, z, rotation, scale);
 
         // Record stats
         if (context.stats) {
@@ -267,13 +179,11 @@ export class TerrainDecorator {
         }
     }
 
-    private distanceFilter(
-        pos: { worldX: number, worldZ: number, height: number }
-    ): boolean {
+    private distanceFilter(x: number, y: number, z: number): boolean {
         const riverSystem = this.riverSystem;
-        const riverWidth = riverSystem.getRiverWidth(pos.worldZ);
-        const riverCenter = riverSystem.getRiverCenter(pos.worldZ);
-        const distFromCenter = Math.abs(pos.worldX - riverCenter);
+        const riverWidth = riverSystem.getRiverWidth(z);
+        const riverCenter = riverSystem.getRiverCenter(z);
+        const distFromCenter = Math.abs(x - riverCenter);
         const distFromBank = distFromCenter - riverWidth / 2;
 
         // Apply distance-based probability bias
@@ -291,13 +201,13 @@ export class TerrainDecorator {
     }
 
     private visibilityFilter(
-        pos: { worldX: number, worldZ: number, height: number },
+        x: number, y: number, z: number,
         height: number
     ) {
         const riverSystem = this.riverSystem;
-        const queryHeight = pos.height + (height * 1.2);
+        const queryHeight = y + (height * 1.2);
 
-        if (!riverSystem.terrainGeometry.checkVisibility(pos.worldX, queryHeight, pos.worldZ, /* visibilitySteps=*/8)) {
+        if (!riverSystem.terrainGeometry.checkVisibility(x, queryHeight, z, /* visibilitySteps=*/8)) {
             return false;
         }
 

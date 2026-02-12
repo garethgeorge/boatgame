@@ -10,6 +10,7 @@ import { EntityManager } from '../core/EntityManager';
 import { SpatialGrid } from '../core/SpatialGrid';
 import { GraphicsUtils } from '../core/GraphicsUtils';
 import { RiverGeometry } from './RiverGeometry';
+import { TerrainSlotMap } from './TerrainSlotMap';
 
 export class TerrainChunk {
 
@@ -128,6 +129,7 @@ export class TerrainChunk {
     const difficulty = Math.min(distance / 7500, 1.0);
 
     const context: PopulationContext = {
+      riverSystem: this.riverSystem,
       chunk: this,
       geometriesByMaterial: geometriesByMaterial,
       instancedData: instancedData,

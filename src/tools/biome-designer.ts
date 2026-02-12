@@ -10,11 +10,11 @@ import { DebugSettings } from '../core/DebugSettings.js';
 import { Profiler } from '../core/Profiler.js';
 import { DebugConsole } from '../core/DebugConsole.js';
 import { DesignerUtils, HistoryManager } from './DesignerUtils.js';
-import { TierRule, Combine, Signal } from '../world/decorators/PoissonDecorationRules.js';
+import { TierRule, Combine, Signal } from '../world/decorators/DecorationRuleBuilders.js';
 import {
     Fitness, RockParams, TreeParams, FlowerParams,
     PlantParams, MangroveParams, PropParams
-} from '../world/decorations/DecorationRules.js';
+} from '../world/decorations/SceneryRules.js';
 
 class BiomeDesigner {
     private engine: GameEngine;

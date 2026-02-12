@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
-import { DecorationConfig } from '../decorators/TerrainDecorator';
+import { DecorationConfig } from './DecorationConfig';
 
 export interface SkyColors {
     top: number;
@@ -37,5 +37,5 @@ export interface BiomeFeatures {
     /**
      * Allows the biome designer UI to directly edit a biome
      */
-    getDecorationConfig?(): DecorationConfig | undefined;
+    getDecorationConfig(): DecorationConfig | undefined;
 }

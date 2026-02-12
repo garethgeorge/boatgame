@@ -110,6 +110,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
 
         const context: AnimalLogicContext = {
             dt,
+            animal: this.entity,
             originPos: physicsBody.getPosition(),
             snoutPos: physicsBody.getWorldPoint(this.snoutOffset),
             currentHeight: this.entity.getHeight(),
@@ -347,18 +348,27 @@ export class AnimalUniversalBehavior implements EntityBehavior {
 
         // --- Rotation and Banking ---
         const diffToTarget = targetWorldPos.clone().sub(originPos);
-        const targetAngle = Math.atan2(diffToTarget.x, -diffToTarget.y);
+        const distToTarget = diffToTarget.length();
+        let targetAngle: number;
+        if (steering.facing?.angle !== undefined) {
+            targetAngle = steering.facing.angle;
+        } else {
+            targetAngle = Math.atan2(diffToTarget.x, -diffToTarget.y);
+        }
 
         const turnSpeed = steering.turningSpeed ?? this.ROTATION_SPEED_FLIGHT;
         this.handleFlightRotationAndBanking(targetAngle, turnSpeed, dt);
         physicsBody.setAngle(this.currentAngle);
 
         // --- Horizontal Movement ---
-        const flightDir = planck.Vec2(Math.sin(this.currentAngle), -Math.cos(this.currentAngle));
-        const newPos = originPos.clone().add(flightDir.mul(desiredSpeed * dt));
-        physicsBody.setPosition(newPos);
+        if (distToTarget > 0.01) {
+            const moveDir = diffToTarget.clone().mul(1.0 / distToTarget);
+            const moveDist = Math.min(distToTarget, desiredSpeed * dt);
+            const newPos = originPos.clone().add(moveDir.mul(moveDist));
+            physicsBody.setPosition(newPos);
+        }
 
-        // --- Height ---
+        // --- Height & Normal ---
         const currentHeight = context.currentHeight;
         let newHeight = currentHeight;
         if (currentHeight < desiredHeight) {
@@ -367,7 +377,18 @@ export class AnimalUniversalBehavior implements EntityBehavior {
             newHeight = Math.max(desiredHeight, currentHeight - this.VERT_SPEED * dt);
         }
 
-        this.entity.setExplictPosition?.(newHeight, this.getBankingNormal());
+        let normal = this.getBankingNormal();
+        if (steering.facing?.normal) {
+            // Smoothly blend toward the target normal as we descend
+            // Start blending when within 2 units of the target height
+            const blendRange = 2.0;
+            const distToTargetHeight = Math.abs(currentHeight - desiredHeight);
+            const blendFactor = 1.0 - Math.min(1.0, distToTargetHeight / blendRange);
+
+            normal.lerp(steering.facing.normal, blendFactor).normalize();
+        }
+
+        this.entity.setExplictPosition?.(newHeight, normal);
     }
 
     private handleFlightRotationAndBanking(targetAngle: number, turnSpeed: number, dt: number) {

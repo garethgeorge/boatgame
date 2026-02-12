@@ -10,8 +10,11 @@ import Delaunator from 'delaunator';
 import { EntityIds } from '../../entities/EntityIds';
 import { FracturedIceberg } from '../../entities/obstacles/FracturedIceberg';
 import { Decorations } from '../decorations/Decorations';
-import { SkyBiome } from './BiomeFeatures';
+import { BiomeFeatures, SkyBiome } from './BiomeFeatures';
 import { IcebergSpawner } from '../../entities/spawners/IcebergSpawner';
+import { BoatPathLayoutConfig } from '../layout/BoatPathLayoutStrategy';
+import { CoreMath } from '../../core/CoreMath';
+import { DecorationConfig } from './DecorationConfig';
 
 interface Point {
     x: number;
@@ -29,24 +32,49 @@ interface BiomeLayout {
     shrinkFactor?: number;
 }
 
-export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
-    id: BiomeType = 'fractured_ice' as BiomeType;
+export class FracturedIceBiomeFeatures implements BiomeFeatures {
     private static readonly LENGTH = 1500;
 
-    constructor(index: number, z: number, direction: number) {
-        super(index, z, FracturedIceBiomeFeatures.LENGTH, direction);
-    }
+    id: BiomeType = 'fractured_ice' as BiomeType;
+
+    private index: number = 0;
+    private zMin: number = 0;
+    private zMax: number = 0;
 
     private layoutCache: BiomeLayout | null = null;
 
-
     // Cache the material
     private static iceMaterial: THREE.Material | null = null;
+
+    /**
+     * If index is < 0 the z value is the end of the biome if > 0 it is the start
+     */
+    constructor(index: number, z: number, direction: number) {
+        this.index = index;
+        if (direction < 0) {
+            this.zMax = z;
+            this.zMin = z - FracturedIceBiomeFeatures.LENGTH;
+        } else {
+            this.zMin = z;
+            this.zMax = z + FracturedIceBiomeFeatures.LENGTH;
+        }
+    }
+
+    getRange(): { zMin: number, zMax: number } {
+        return { zMin: this.zMin, zMax: this.zMax };
+    }
 
     getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
         // slightly bluer/darker water under ice? 
         // actually this is ground color (river bed). Ice biome uses white-ish.
         return { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 };
+    }
+
+    public getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number {
+        // Apply Bank Taper: Force land height to 0 at the river edge
+        // Smoothly ramp up over 15 units
+        const bankTaper = CoreMath.smoothstep(0, 15, distFromBank);
+        return bankTaper;
     }
 
     getScreenTint(): { r: number, g: number, b: number } {
@@ -60,7 +88,7 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
         return { near: 0, far: 400 };
     }
 
-    public override getSkyBiome(): SkyBiome {
+    public getSkyBiome(): SkyBiome {
         return {
             noon: { top: 0xa0c0f0, bottom: 0xe0f0ff },
             sunset: { top: 0x203050, mid: 0x9370db, bottom: 0xffb6c1 },
@@ -72,6 +100,10 @@ export class FracturedIceBiomeFeatures extends BaseBiomeFeatures {
     getRiverWidthMultiplier(): number {
         // Ice biome was 2.3. Fractured ice needs space.
         return 5.0;
+    }
+
+    getDecorationConfig(): DecorationConfig | undefined {
+        return undefined;
     }
 
     private getLayout(): BiomeLayout {

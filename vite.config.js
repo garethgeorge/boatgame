@@ -6,11 +6,19 @@ export default defineConfig({
   plugins: [
     basicSsl()
   ],
-  build: {
-    outDir: 'dist',
-  },
   server: {
     host: true // Exposes the server to the network (0.0.0.0)
+  },
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      input: {
+        main: '/index.html',
+        designer: '/designer.html',
+        'biome-designer': '/biome-designer.html',
+        'metadata-extractor': '/metadata-extractor.html'
+      }
+    }
   },
   test: {
     environment: 'happy-dom',

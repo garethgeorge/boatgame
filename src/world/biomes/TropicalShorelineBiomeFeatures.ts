@@ -1,23 +1,18 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
-import { PopulationContext } from './PopulationContext';
-import { BoatPathLayout, BoatPathLayoutStrategy, TrackConfig } from '../layout/BoatPathLayoutStrategy';
-import { EntityIds } from '../../entities/EntityIds';
-import { BoatPathLayoutSpawner } from '../layout/BoatPathLayoutSpawner';
-import { DecorationRule, TerrainDecorator, DecorationConfig } from '../decorators/TerrainDecorator';
-import { Select, TierRule } from '../decorators/PoissonDecorationRules';
-import { Fitness, PropParams, RockParams, TreeParams } from '../decorations/DecorationRules';
+import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
+import { DecorationConfig } from './DecorationConfig';
+import { Select, Signal, TierRule } from '../decorators/DecorationRuleBuilders';
+import { Fitness, PropParams, RockParams, TreeParams } from '../decorations/SceneryRules';
 import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { CoreMath } from '../../core/CoreMath';
 import { SkyBiome } from './BiomeFeatures';
-import { Placements, Patterns } from '../layout/BoatPathLayoutPatterns';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { EntityRules } from '../layout/EntityLayoutRules';
-import { DolphinRule, TurtleRule, ButterflyRule, ParrotRule } from '../../entities/AnimalEntityRules';
-import { BirdOnBeachChairRule } from '../../entities/VignetteRules';
-import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
+import { DolphinRule, TurtleRule, ButterflyRule, ParrotRule } from '../../entities/AnimalLayoutRules';
+import { DecorationRule } from '../decorators/DecorationRule';
+import { LayoutRules } from '../layout/LayoutRuleBuilders';
 
 /**
  * Tropical Shoreline Biome: A sunny coastal paradise with palm trees and marine life.
@@ -25,10 +20,6 @@ import { SpatialGrid, SpatialGridPair } from '../../core/SpatialGrid';
 export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'tropical_shoreline';
     private static readonly LENGTH = 1200;
-
-    private spatialGrid: SpatialGrid = new SpatialGrid(20);
-    private decorationConfig: DecorationConfig | null = null;
-    private layoutCache: BoatPathLayout | null = null;
 
     private colorNoise = new SimplexNoise(42);
     private readonly SAND_COLOR = new THREE.Color(0xf2d16b);
@@ -82,12 +73,12 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
         return t;
     }
 
-    private shorelineRules(): DecorationRule[] {
-        return [
+    public createDecorationConfig(): DecorationConfig {
+        const rules = [
             new TierRule({
+                id: 'palm',
                 species: [
                     {
-                        id: 'palm',
                         preference: Fitness.make({
                             stepDistance: [5, 60],
                             slope: [0, 20]
@@ -97,9 +88,9 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 ]
             }),
             new TierRule({
+                id: 'chairs',
                 species: [
                     {
-                        id: 'chair',
                         preference: Fitness.make({
                             stepDistance: [5, 20],
                             slope: [0, 10],
@@ -114,9 +105,9 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 ]
             }),
             new TierRule({
+                id: 'rock',
                 species: [
                     {
-                        id: 'rock',
                         preference: Fitness.make({
                             stepDistance: [0, 15],
                             slope: [10, 60],
@@ -127,19 +118,11 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                 ]
             })
         ];
+        return { rules };
     }
 
-    public getDecorationConfig(): DecorationConfig {
-        if (!this.decorationConfig) {
-            this.decorationConfig = { rules: this.shorelineRules(), maps: {} };
-        }
-        return this.decorationConfig;
-    }
-
-    private getLayout(): BoatPathLayout {
-        if (this.layoutCache) return this.layoutCache;
-
-        this.layoutCache = BoatPathLayoutStrategy.createLayout([this.zMin, this.zMax], {
+    public createLayoutConfig(): BoatPathLayoutConfig {
+        return {
             tracks: [{
                 name: 'river',
                 stages: [{
@@ -165,7 +148,16 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
                         length: [100, 300],
                         patterns: [
                             Place.scatter_onShore(ButterflyRule.get(), [0.3, 0.6]),
-                            Place.scatter_onShore(BirdOnBeachChairRule.get(), [0.4, 0.8])
+                            // Parrots need a slot to perch on, its provided by a chair
+                            Place.scatter_onShore(
+                                LayoutRules.attachment(
+                                    ParrotRule.get(PropParams.beach_chair_slot),
+                                    PropParams.beach_chair(),
+                                    'chairs',   // must match a decoration tier rule
+                                    PropParams.beach_chair_slot.radius
+                                ),
+                                [0.4, 0.8]
+                            )
                         ]
                     }]
                 }]
@@ -174,35 +166,7 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
             path: {
                 length: [200, 100]
             }
-        }, this.spatialGrid);
-
-        return this.layoutCache;
+        };
     }
 
-    * populate(context: PopulationContext, difficulty: number, zStart: number, zEnd: number): Generator<void | Promise<void>, void, unknown> {
-        // 1. Get entity layout creating it if needed
-        const layout = this.getLayout();
-
-        // 2. Decorate
-        const decorationConfig = this.getDecorationConfig();
-
-        // decorations are inserted into the chunk grid but checked for
-        // collisions against the layout grid for the entire biome
-        const spatialGrid = new SpatialGridPair(
-            context.chunk.spatialGrid,
-            this.spatialGrid
-        );
-
-        yield* TerrainDecorator.decorateIterator(
-            context,
-            decorationConfig,
-            { xMin: -250, xMax: 250, zMin: zStart, zMax: zEnd },
-            spatialGrid,
-            12345 + zStart // Seed variation
-        );
-
-        // 3. Spawn
-        yield* BoatPathLayoutSpawner.getInstance().spawnIterator(
-            context, layout, this.id, zStart, zEnd, [this.zMin, this.zMax]);
-    }
 }

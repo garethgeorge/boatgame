@@ -3,8 +3,11 @@ import { TerrainChunk } from '../TerrainChunk';
 import { BiomeDecorationHelper } from './BiomeDecorationHelper';
 import { EntityManager } from '../../core/EntityManager';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { RiverSystem } from '../RiverSystem';
 
 export interface PopulationContext {
+    riverSystem: RiverSystem;
+
     // Entity management
     entityManager: EntityManager;
     physicsEngine: PhysicsEngine;

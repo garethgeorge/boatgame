@@ -310,10 +310,12 @@ export class TerrainManager {
         // 1. Clear everything significantly before the first chunk
         const firstZ = indices[0] * TerrainChunk.CHUNK_SIZE;
         this.entityManager.removeEntitiesInRange(firstZ - 2000, firstZ);
+        this.riverSystem.slots.removeSlotsInRange(firstZ - 2000, firstZ);
 
         // 2. Clear everything significantly after the last chunk
         const lastZ = (indices[indices.length - 1] + 1) * TerrainChunk.CHUNK_SIZE;
         this.entityManager.removeEntitiesInRange(lastZ, lastZ + 2000);
+        this.riverSystem.slots.removeSlotsInRange(lastZ, lastZ + 2000);
 
         // 3. Clear gaps between chunks
         for (let i = 0; i < indices.length - 1; i++) {
@@ -322,6 +324,7 @@ export class TerrainManager {
             const gapStart = expectedNext * TerrainChunk.CHUNK_SIZE;
             const gapEnd = indices[i + 1] * TerrainChunk.CHUNK_SIZE;
             this.entityManager.removeEntitiesInRange(gapStart, gapEnd);
+            this.riverSystem.slots.removeSlotsInRange(gapStart, gapEnd);
           }
         }
 

@@ -11,11 +11,35 @@ import { BuzzBoatFlightLogic } from './logic/BuzzBoatFlightLogic';
 import { FlyOppositeBoatLogic } from './logic/FlyOppositeBoatLogic';
 import { AnimalLogicPhase } from './logic/AnimalLogic';
 import { WaitForBoatParams } from './logic/WaitForBoatLogic';
-
-// FlyingAnimalOptions removed, use AnimalOptions directly
-
+import { SlotLandingFlightLogic } from './logic/SlotLandingFlightLogic';
+import { FlyingBehaviorConfig } from './AnimalBehaviorConfigs';
+import { AnimalOptions } from '../obstacles/Animal';
+import { EntityBehavior } from './EntityBehavior';
 
 export class FlyingBehaviorFactory {
+
+    public static create(
+        animal: AnyAnimal,
+        config: FlyingBehaviorConfig,
+        options: AnimalOptions
+    ): EntityBehavior | null {
+        if (!config || config.type === 'none') return null;
+
+        const aggressiveness = options.aggressiveness ?? 0.5;
+
+        switch (config.type) {
+            case 'shore-landing':
+                return this.createShoreLanding(animal, { ...config, aggressiveness, zRange: options.zRange });
+            case 'slot-landing':
+                return this.createSlotLanding(animal, { ...config, aggressiveness, zRange: options.zRange });
+            case 'water-landing':
+                return this.createWaterLanding(animal, { ...config, aggressiveness });
+            case 'wandering':
+                return this.createWandering(animal, { ...config, aggressiveness });
+            default:
+                return null;
+        }
+    }
 
     public static createShoreLanding(
         animal: AnyAnimal,
@@ -73,6 +97,97 @@ export class FlyingBehaviorFactory {
                         params: { flightSpeed, zRange }
                     }
                 }
+                case ShoreLandingFlightLogic.RESULT_FINISHED: {
+                    return {
+                        name: 'Delay',
+                        params: {
+                            waitOnShore: true,
+                            maxDuration: 5.0,
+                            phase: AnimalLogicPhase.IDLE_SHORE
+                        }
+                    }
+                }
+                case DelayLogic.RESULT_FINISHED:
+                default: {
+                    return null;
+                }
+            }
+        };
+        return new AnimalUniversalBehavior(animal, aggressiveness, script);
+    }
+
+    public static createSlotLanding(
+        animal: AnyAnimal,
+        params: {
+            slotTypes: string[],
+            disableLogic?: boolean,
+            aggressiveness?: number,
+            noticeDistance?: number,
+            flightSpeed?: number,
+            zRange?: [number, number],
+        }
+    ) {
+        const {
+            slotTypes,
+            disableLogic = false,
+            aggressiveness = 0.5,
+            noticeDistance = 200.0,
+            flightSpeed = 25.0,
+            zRange,
+        } = params;
+
+        if (disableLogic) return null;
+
+        const script = (step: number, lastResult: string): any => {
+            switch (lastResult) {
+                case '': {
+                    return {
+                        name: 'WaitForBoat',
+                        params: {
+                            forwardMax: noticeDistance,
+                            ignoreBottles: true,
+                            phase: AnimalLogicPhase.IDLE_SHORE
+                        }
+                    };
+                }
+                case WaitForBoatLogic.RESULT_NOTICED: {
+                    return {
+                        name: 'BuzzBoatFlight',
+                        params: { flightSpeed, zRange }
+                    }
+                }
+                case BuzzBoatFlightLogic.RESULT_FINISHED: {
+                    return {
+                        name: 'SlotLandingFlight',
+                        params: { slotTypes, flightSpeed }
+                    }
+                }
+                case BuzzBoatFlightLogic.RESULT_OUT_OF_RANGE:
+                case SlotLandingFlightLogic.RESULT_FAILED: {
+                    // Fallback to shore landing if slot search fails or out of range
+                    return {
+                        name: 'ShoreLandingFlight',
+                        params: { flightSpeed, zRange }
+                    }
+                }
+                case ShoreLandingFlightLogic.RESULT_OUT_OF_RANGE: {
+                    return {
+                        name: 'FlyDirectToShore',
+                        params: { flightSpeed, zRange }
+                    }
+                }
+                case SlotLandingFlightLogic.RESULT_FINISHED:
+                case ShoreLandingFlightLogic.RESULT_FINISHED: {
+                    return {
+                        name: 'Delay',
+                        params: {
+                            waitOnShore: true,
+                            maxDuration: 5.0,
+                            phase: AnimalLogicPhase.IDLE_SHORE
+                        }
+                    }
+                }
+                case DelayLogic.RESULT_FINISHED:
                 default: {
                     return null;
                 }

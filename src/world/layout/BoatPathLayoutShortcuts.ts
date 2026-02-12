@@ -1,6 +1,7 @@
-import { EntityGeneratorFn, EntityRules } from "./EntityLayoutRules";
-import { Patterns, Placements, PlacementConfig } from "./BoatPathLayoutPatterns";
+import { Patterns, Placements } from "./BoatPathLayoutPatterns";
 import { PatternConfig } from "./BoatPathLayoutStrategy";
+import { LayoutRule } from "./LayoutRule";
+import { LayoutRules } from "./LayoutRuleBuilders";
 
 export interface ShortcutOptions {
     minCount?: number;
@@ -13,7 +14,7 @@ export interface ShortcutOptions {
 export class Place {
     // --- Sequence Patterns ---
 
-    public static sequence_nearShore(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static sequence_nearShore(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.sequence({
             placement: Placements.nearShore({ entity: this._wrapEntity(entity) }),
             density,
@@ -21,7 +22,7 @@ export class Place {
         });
     }
 
-    public static sequence_onShore(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static sequence_onShore(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.sequence({
             placement: Placements.onShore({ entity: this._wrapEntity(entity) }),
             density,
@@ -29,7 +30,7 @@ export class Place {
         });
     }
 
-    public static sequence_slalom(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static sequence_slalom(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.sequence({
             placement: Placements.slalom({ entity: this._wrapEntity(entity) }),
             density,
@@ -37,7 +38,7 @@ export class Place {
         });
     }
 
-    public static sequence_path(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static sequence_path(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.sequence({
             placement: Placements.path({ entity: this._wrapEntity(entity) }),
             density,
@@ -45,7 +46,7 @@ export class Place {
         });
     }
 
-    public static sequence_scatter(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static sequence_scatter(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.sequence({
             placement: Placements.scatter({ entity: this._wrapEntity(entity) }),
             density,
@@ -55,7 +56,7 @@ export class Place {
 
     // --- Scatter Patterns ---
 
-    public static scatter_nearShore(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static scatter_nearShore(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.scatter({
             placement: Placements.nearShore({ entity: this._wrapEntity(entity) }),
             density,
@@ -63,7 +64,7 @@ export class Place {
         });
     }
 
-    public static scatter_onShore(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static scatter_onShore(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.scatter({
             placement: Placements.onShore({ entity: this._wrapEntity(entity) }),
             density,
@@ -71,7 +72,7 @@ export class Place {
         });
     }
 
-    public static scatter_slalom(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static scatter_slalom(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.scatter({
             placement: Placements.slalom({ entity: this._wrapEntity(entity) }),
             density,
@@ -79,7 +80,7 @@ export class Place {
         });
     }
 
-    public static scatter_path(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static scatter_path(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.scatter({
             placement: Placements.path({ entity: this._wrapEntity(entity) }),
             density,
@@ -87,7 +88,7 @@ export class Place {
         });
     }
 
-    public static scatter_middle(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static scatter_middle(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.scatter({
             placement: Placements.middle({ entity: this._wrapEntity(entity) }),
             density,
@@ -95,7 +96,7 @@ export class Place {
         });
     }
 
-    public static scatter_scatter(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static scatter_scatter(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.scatter({
             placement: Placements.scatter({ entity: this._wrapEntity(entity) }),
             density,
@@ -105,7 +106,7 @@ export class Place {
 
     // --- Staggered Patterns ---
 
-    public static staggered_nearShore(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static staggered_nearShore(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.staggered({
             placement: Placements.nearShore({ entity: this._wrapEntity(entity) }),
             density,
@@ -113,7 +114,7 @@ export class Place {
         });
     }
 
-    public static staggered_onShore(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static staggered_onShore(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.staggered({
             placement: Placements.onShore({ entity: this._wrapEntity(entity) }),
             density,
@@ -121,7 +122,7 @@ export class Place {
         });
     }
 
-    public static staggered_slalom(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static staggered_slalom(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.staggered({
             placement: Placements.slalom({ entity: this._wrapEntity(entity) }),
             density,
@@ -129,7 +130,7 @@ export class Place {
         });
     }
 
-    public static staggered_path(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static staggered_path(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.staggered({
             placement: Placements.path({ entity: this._wrapEntity(entity) }),
             density,
@@ -137,7 +138,7 @@ export class Place {
         });
     }
 
-    public static staggered_middle(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static staggered_middle(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.staggered({
             placement: Placements.middle({ entity: this._wrapEntity(entity) }),
             density,
@@ -147,7 +148,7 @@ export class Place {
 
     // --- Gate Patterns ---
 
-    public static gate_nearShore(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static gate_nearShore(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.gate({
             placement: Placements.nearShore({ entity: this._wrapEntity(entity) }),
             density,
@@ -155,7 +156,7 @@ export class Place {
         });
     }
 
-    public static gate_slalom(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static gate_slalom(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.gate({
             placement: Placements.slalom({ entity: this._wrapEntity(entity) }),
             density,
@@ -163,7 +164,7 @@ export class Place {
         });
     }
 
-    public static gate_path(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static gate_path(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.gate({
             placement: Placements.path({ entity: this._wrapEntity(entity) }),
             density,
@@ -173,7 +174,7 @@ export class Place {
 
     // --- Cluster Patterns ---
 
-    public static cluster_nearShore(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static cluster_nearShore(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.cluster({
             placement: Placements.nearShore({ entity: this._wrapEntity(entity) }),
             density,
@@ -181,7 +182,7 @@ export class Place {
         });
     }
 
-    public static cluster_onShore(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static cluster_onShore(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.cluster({
             placement: Placements.onShore({ entity: this._wrapEntity(entity) }),
             density,
@@ -189,7 +190,7 @@ export class Place {
         });
     }
 
-    public static cluster_slalom(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static cluster_slalom(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.cluster({
             placement: Placements.slalom({ entity: this._wrapEntity(entity) }),
             density,
@@ -197,7 +198,7 @@ export class Place {
         });
     }
 
-    public static cluster_path(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static cluster_path(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.cluster({
             placement: Placements.path({ entity: this._wrapEntity(entity) }),
             density,
@@ -205,7 +206,7 @@ export class Place {
         });
     }
 
-    public static cluster_middle(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static cluster_middle(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.cluster({
             placement: Placements.middle({ entity: this._wrapEntity(entity) }),
             density,
@@ -215,7 +216,7 @@ export class Place {
 
     // --- Sequence variations ---
 
-    public static sequence_middle(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static sequence_middle(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.sequence({
             placement: Placements.middle({ entity: this._wrapEntity(entity) }),
             density,
@@ -225,7 +226,7 @@ export class Place {
 
     // --- At Shore Shortcuts ---
 
-    public static sequence_atShore(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static sequence_atShore(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.sequence({
             placement: Placements.atShore({ entity: this._wrapEntity(entity) }),
             density,
@@ -233,7 +234,7 @@ export class Place {
         });
     }
 
-    public static scatter_atShore(entity: EntityGeneratorFn | EntityGeneratorFn[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
+    public static scatter_atShore(entity: LayoutRule | LayoutRule[], density?: [number, number], options?: ShortcutOptions): PatternConfig {
         return Patterns.scatter({
             placement: Placements.atShore({ entity: this._wrapEntity(entity) }),
             density,
@@ -243,9 +244,9 @@ export class Place {
 
     // --- Helpers ---
 
-    private static _wrapEntity(entity: EntityGeneratorFn | EntityGeneratorFn[]): EntityGeneratorFn {
+    private static _wrapEntity(entity: LayoutRule | LayoutRule[]): LayoutRule {
         if (Array.isArray(entity)) {
-            return EntityRules.choose(entity);
+            return LayoutRules.choose(entity);
         }
         return entity;
     }
