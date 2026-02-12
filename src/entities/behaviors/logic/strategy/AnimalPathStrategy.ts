@@ -27,7 +27,7 @@ export interface AnimalSteering {
 
     /**
      * Optional Vertical Target (Y axis).
-     * - WATER/LAND: If defined, triggers setExplictPosition to force the animal's height.
+     * - WATER: If defined, triggers setExplictPosition to force the animal's height.
      * - FLIGHT: The target altitude. Animal will climb/descend smoothly toward this value.
      * Defaults to the terrain/water surface level if undefined.
      */
@@ -37,7 +37,6 @@ export interface AnimalSteering {
     facing?: {
         /** 
          * Absolute Y-axis rotation (radians).
-         * - LAND: Overrides the default "look-at-target" rotation.
          * - FLIGHT: Overrides the movement-derived orientation if provided.
          * - WATER: Currently ignored; orientation is derived from movement.
          */
@@ -45,7 +44,7 @@ export interface AnimalSteering {
 
         /** 
          * Surface normal alignment.
-         * - WATER/LAND: Used if 'height' is defined to set the animal's orientation.
+         * - WATER: Used if 'height' is defined to set the animal's orientation.
          * - FLIGHT: Smoothly blends the banking normal toward this normal as target height is reached.
          */
         normal?: THREE.Vector3;
@@ -62,6 +61,12 @@ export interface AnimalSteering {
      * - WATER: Controls the interpolation speed of angular velocity.
      */
     turningSmoothing?: number;
+
+    /**
+     * Whether banking (tilting during turns) is enabled.
+     * - FLIGHT: If false, the animal will not bank during turns. Defaults to true.
+     */
+    bankingEnabled?: boolean;
 }
 
 /**

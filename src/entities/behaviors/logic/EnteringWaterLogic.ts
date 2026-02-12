@@ -55,7 +55,7 @@ export class EnteringWaterLogic implements AnimalLogic {
         } else {
             return {
                 path: steering,
-                locomotionType: 'LAND'
+                locomotionType: 'FLIGHT'
             };
         }
     }

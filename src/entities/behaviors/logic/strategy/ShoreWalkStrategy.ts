@@ -67,14 +67,13 @@ export class ShoreTurnStrategy extends AnimalPathStrategy {
             this.onFinish();
         }
 
+        const direction = planck.Vec2(Math.sin(this.targetAngle), -Math.cos(this.targetAngle));
+        const rotationTarget = context.originPos.clone().add(direction);
+
         return {
-            target: context.originPos, // Stay in place
+            target: rotationTarget,
             speed: 0,
             turningSpeed: this.rotationSpeed,
-            facing: {
-                angle: this.targetAngle, // Let physics/sync handle the rotation
-                normal: new THREE.Vector3(0, 1, 0) // Default up normal
-            }
         };
     }
 }
@@ -142,16 +141,9 @@ export class ShoreWalkStrategy extends AnimalPathStrategy {
         const dy = targetWorldPos.y - currentPos.y;
         const desiredAngle = Math.atan2(dy, dx) + Math.PI / 2;
 
-        const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(currentPos.x, currentPos.y);
-
         return {
             target: targetWorldPos,
             speed: this.speed,
-            height: terrainHeight,
-            facing: {
-                angle: desiredAngle,
-                normal: new THREE.Vector3(0, 1, 0) // Default up normal
-            }
         };
     }
 

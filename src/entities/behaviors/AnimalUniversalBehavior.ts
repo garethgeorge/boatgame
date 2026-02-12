@@ -7,6 +7,7 @@ import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase, AnimalLogicScript, AnimalLogicScriptFn } from './logic/AnimalLogic';
 import { AnimalLogicConfig } from './logic/AnimalLogicConfigs';
 import { AnimalLogicRegistry } from './logic/AnimalLogicRegistry';
+import { RiverSystem } from '../../world/RiverSystem';
 
 interface ScriptStackEntry {
     script: AnimalLogicScriptFn;
@@ -381,9 +382,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
 
         // --- Rotation ---
         let targetAngle = this.currentAngle;
-        if (steering.facing?.angle !== undefined) {
-            targetAngle = steering.facing.angle;
-        } else if (distToTarget > 0.1) {
+        if (distToTarget > 0.1) {
             const parent = this.entity.parent();
             if (parent && parent.meshes.length > 0) {
                 const moveDirLocal = new THREE.Vector3(moveVecWorld.x, 0, moveVecWorld.y);
@@ -405,10 +404,14 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const rotation = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), maxRotation);
         const nextAngle = this.currentAngle + rotation;
 
+        const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(nextPos.x, nextPos.z);
+        const terrainNormal = RiverSystem.getInstance().terrainGeometry.calculateNormal(nextPos.x, nextPos.z);
+        nextPos.y = terrainHeight;
+
         this.pendingKinematic = {
             pos: nextPos,
             angle: nextAngle,
-            normal: steering.facing?.normal ?? new THREE.Vector3(0, 1, 0),
+            normal: terrainNormal,
             bank: 0
         };
         this.currentAngle = nextAngle;
@@ -481,7 +484,12 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         nextPos.y = newHeight;
 
         // --- Normal (Banking) ---
-        let normal = this.getBankingNormal();
+        let normal = new THREE.Vector3(0, 1, 0);
+        const bankingEnabled = steering.bankingEnabled ?? true;
+        if (bankingEnabled) {
+            normal = this.getBankingNormal();
+        }
+
         if (steering.facing?.normal) {
             const blendRange = 2.0;
             const distToTargetHeight = Math.abs(currentHeight - desiredHeight);

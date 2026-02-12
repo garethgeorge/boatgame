@@ -85,6 +85,7 @@ export class EnteringWaterStrategy extends AnimalPathStrategy {
             target: targetWorldPos,
             speed: moveSpeed,
             height: explicitHeight,
+            bankingEnabled: false,
             facing: {
                 normal: explicitNormal
             }
