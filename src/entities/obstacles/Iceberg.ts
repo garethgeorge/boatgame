@@ -5,6 +5,7 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/decorations/Decorations';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { TerrainMap } from '../behaviors/TerrainMap';
+import { ConvexHull } from '../../core/ConvexHull';
 
 export class Iceberg extends Entity {
     private animationMixer?: THREE.AnimationMixer;
@@ -46,7 +47,7 @@ export class Iceberg extends Entity {
         shape.closePath();
 
         // Polygon shape for physics (Convex Hull for safety)
-        const hullVertices = Iceberg.getConvexHull(vertices);
+        const hullVertices = ConvexHull.computeVec2(vertices);
         physicsBody.createFixture({
             shape: planck.Polygon(hullVertices),
             density: 10.0, // Heavy ice (5x increase)
@@ -154,48 +155,7 @@ export class Iceberg extends Entity {
         return this.terrainMap;
     }
 
-    // --- Static
-    private static getConvexHull(points: planck.Vec2[]): planck.Vec2[] {
-        if (points.length <= 3) return points;
-
-        // Sort points lexographically (by x, then y)
-        // Clone to avoid modifying original array
-        const sorted = [...points].sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
-
-        const lower: planck.Vec2[] = [];
-        for (const p of sorted) {
-            while (lower.length >= 2 && this.crossProduct(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
-                lower.pop();
-            }
-            lower.push(p);
-        }
-
-        const upper: planck.Vec2[] = [];
-        for (let i = sorted.length - 1; i >= 0; i--) {
-            const p = sorted[i];
-            while (upper.length >= 2 && this.crossProduct(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
-                upper.pop();
-            }
-            upper.push(p);
-        }
-
-        // Concatenate lower and upper to form full hull
-        // Last point of lower is same as first of upper, so pop it
-        lower.pop();
-        const hull = lower.concat(upper);
-
-        // Remove duplicate end point if present (Monotone chain usually results in closed loop with start repeated? No, we popped.)
-        // But Box2D Polygon doesn't want the last point to equal the first.
-        // Monotone chain returns CCW order.
-
-        return hull;
-    }
-
-    // 2D Cross Product of OA and OB vectors, returns z-component of their 3D cross product.
-    // Positive if O->A->B is CCW
-    private static crossProduct(o: planck.Vec2, a: planck.Vec2, b: planck.Vec2): number {
-        return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-    }
+}
 }
 
 class IcebergTerrainMap implements TerrainMap {

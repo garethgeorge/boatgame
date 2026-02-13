@@ -4,6 +4,7 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/decorations/Decorations';
 import { MangroveFactory } from '../../world/factories/MangroveFactory';
+import { ConvexHull } from '../../core/ConvexHull';
 
 export abstract class BaseMangrove extends Entity {
     constructor(x: number, y: number, scale: number, physicsEngine: PhysicsEngine) {
@@ -51,7 +52,7 @@ export class SmallMangrove extends BaseMangrove {
             const points = rootOffsets.map(o => planck.Vec2(o.x * scale, o.z * scale));
 
             // 1. Get Hull
-            let hull = MangroveFactory.getConvexHull(points);
+            let hull = ConvexHull.computeVec2(points);
 
             // 2. Expand Hull to account for root radius (approximate)
             const centroid = planck.Vec2(0, 0);
