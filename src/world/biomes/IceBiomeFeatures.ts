@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
-import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 import { DecorationConfig } from './DecorationConfig';
 import { TierRule } from '../decorators/DecorationRuleBuilders';
 import { Fitness, RockParams, TreeParams } from '../decorations/SceneryRules';
@@ -9,6 +8,7 @@ import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { NarwhalRule, PolarBearRule, PenguinKayakRule } from '../../entities/AnimalLayoutRules';
 import { IcebergRule, BuoyRule, BottleRule } from '../../entities/StaticLayoutRules';
+import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'ice';
