@@ -101,7 +101,6 @@ export class FlyingBehaviorFactory {
                     return {
                         name: 'Delay',
                         params: {
-                            waitOnShore: true,
                             maxDuration: 5.0,
                             phase: AnimalLogicPhase.IDLE_SHORE
                         }
@@ -181,7 +180,6 @@ export class FlyingBehaviorFactory {
                     return {
                         name: 'Delay',
                         params: {
-                            waitOnShore: true,
                             maxDuration: 5.0,
                             phase: AnimalLogicPhase.IDLE_SHORE
                         }
@@ -247,7 +245,6 @@ export class FlyingBehaviorFactory {
                 return {
                     name: 'Delay',
                     params: {
-                        waitOnShore: false,
                         maxDuration: 2.0,
                         phase: AnimalLogicPhase.IDLE_WATER
                     }

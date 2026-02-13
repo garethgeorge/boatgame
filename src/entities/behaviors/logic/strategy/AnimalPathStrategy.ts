@@ -5,7 +5,7 @@ import { AnyAnimal } from '../../AnimalBehavior';
 /**
  * Supported locomotion physics models.
  */
-export type LocomotionType = 'WATER' | 'LAND' | 'FLIGHT';
+export type LocomotionType = 'WATER' | 'LAND' | 'FLIGHT' | 'NONE';
 
 /**
  * Result of any path strategy calculation. The interpretation of these parameters

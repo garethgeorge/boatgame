@@ -69,6 +69,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const body = entity.getPhysicsBody();
         if (body) {
             this.currentAngle = body.getAngle();
+            this.isKinematic = body.getType() === planck.Body.KINEMATIC;
         }
 
         // Initialize script
@@ -231,6 +232,9 @@ export class AnimalUniversalBehavior implements EntityBehavior {
                 break;
             case 'LAND':
                 this.computeLandLocomotion(context, result);
+                break;
+            case 'NONE':
+                this.computeNoneLocomotion(context);
                 break;
             case 'WATER':
             default:
@@ -581,5 +585,20 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         return up.multiplyScalar(Math.cos(this.currentBank))
             .add(right.multiplyScalar(Math.sin(this.currentBank)))
             .normalize();
+
+    }
+
+    private computeNoneLocomotion(context: AnimalLogicContext) {
+        if (this.isKinematic) {
+            // Keep current kinematic state (no updates to pendingKinematic)
+            this.pendingKinematic = null;
+        } else {
+            // Stop dynamic motion but DO NOT override height or normal
+            // this allows the animal to stay at its current height
+            this.pendingDynamic = {
+                linVel: planck.Vec2(0, 0),
+                angVel: 0
+            };
+        }
     }
 }

@@ -61,6 +61,7 @@ describe('AnimalUniversalBehavior', () => {
             setLinearVelocity: vi.fn(),
             getAngularVelocity: vi.fn(() => 0),
             getLinearVelocity: vi.fn(() => planck.Vec2(0, 0)),
+            getType: vi.fn(() => planck.Body.DYNAMIC),
             setType: vi.fn(),
             setAngle: vi.fn(),
             setPosition: vi.fn(),
@@ -77,6 +78,7 @@ describe('AnimalUniversalBehavior', () => {
             getMesh: vi.fn(() => mockMesh),
             getHeight: vi.fn(() => 0),
             handleBehaviorEvent: vi.fn(),
+            setDynamicPosition: vi.fn(),
             parent: vi.fn(() => null),
         };
 
@@ -233,7 +235,7 @@ describe('AnimalUniversalBehavior', () => {
             // Define a jump: height 2, scale 10
             mockLogic.update.mockReturnValue({
                 path: { target: planck.Vec2(0, 10), speed: 10, locomotionType: 'LAND' as const },
-                jump: { height: 2, scale: 10 }
+                jump: { height: 2, distance: 10 }
             });
 
             // Frame 0: Start of jump
@@ -275,7 +277,7 @@ describe('AnimalUniversalBehavior', () => {
             // Define a jump: height 2, scale 10, moving at x=20 (outside river)
             mockLogic.update.mockReturnValue({
                 path: { target: planck.Vec2(20, 10), speed: 10, locomotionType: 'LAND' as const },
-                jump: { height: 2, scale: 10 }
+                jump: { height: 2, distance: 10 }
             });
 
             // Set initial position outside river
@@ -299,6 +301,53 @@ describe('AnimalUniversalBehavior', () => {
             // But terrain height is 3.0
             // 2.0 <= 3.0, so jump should end and height should be 3.0
             expect(mockEntity.getMesh().position.y).toBe(3);
+        });
+    });
+
+    describe('NONE locomotion', () => {
+        it('should stop dynamic motion when locomotion is NONE', () => {
+            const behavior = new AnimalUniversalBehavior(mockEntity, 0.5, 0, { name: 'NoneLogic' } as any);
+
+            mockLogic.update.mockReturnValue({
+                path: { target: planck.Vec2(0, 0), speed: 0, locomotionType: 'NONE' as const },
+            });
+
+            // Set to dynamic mode first
+            behavior.update(0.1); // This will set computeNoneLocomotion which will stop dynamic motion if already dynamic
+            behavior.apply(0.1);
+
+            expect(mockBody.setLinearVelocity).toHaveBeenCalledWith(expect.objectContaining({ x: 0, y: 0 }));
+            expect(mockBody.setAngularVelocity).toHaveBeenCalledWith(0);
+
+            // Should NOT have called setDynamicPosition because height/normal are undefined in pendingDynamic
+            expect(mockEntity.setDynamicPosition).not.toHaveBeenCalled();
+        });
+
+        it('should keep kinematic state when locomotion is NONE', () => {
+            const behavior = new AnimalUniversalBehavior(mockEntity, 0.5, 0, { name: 'NoneLogic' } as any);
+
+            // First enter land (kinematic)
+            mockLogic.update.mockReturnValue({
+                path: { target: planck.Vec2(0, 0), speed: 0, locomotionType: 'LAND' as const },
+            });
+            behavior.update(0.1);
+            behavior.apply(0.1);
+
+            // Now switch to NONE
+            mockLogic.update.mockReturnValue({
+                path: { target: planck.Vec2(0, 0), speed: 0, locomotionType: 'NONE' as const },
+            });
+
+            const mesh = mockEntity.getMesh();
+            mesh.position.set(123, 456, 789);
+
+            behavior.update(0.1);
+            behavior.apply(0.1);
+
+            // Position should NOT have been updated by computeNoneLocomotion
+            expect(mesh.position.x).toBe(123);
+            expect(mesh.position.y).toBe(456);
+            expect(mesh.position.z).toBe(789);
         });
     });
 });

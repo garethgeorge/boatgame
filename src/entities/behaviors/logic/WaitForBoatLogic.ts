@@ -6,7 +6,6 @@ import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
 export interface WaitForBoatParams {
     phase: AnimalLogicPhase;
-    waitOnShore?: boolean;
     ignoreBottles?: boolean;
     forwardMin?: number;    // ends when forward distance is > than this
     forwardMax?: number;    // ends when forward distance is < that this
@@ -23,7 +22,6 @@ export class WaitForBoatLogic implements AnimalLogic {
     public static readonly RESULT_NOTICED = 'wait_for_boat_noticed';
     readonly name = 'WaitForBoat';
 
-    private locomotionType: LocomotionType;
     private logicPhase: AnimalLogicPhase;
     private ignoreBottles: boolean;
 
@@ -33,8 +31,6 @@ export class WaitForBoatLogic implements AnimalLogic {
     private backwardMax?: number;
 
     constructor(params: WaitForBoatParams) {
-        const waitOnShore = params.waitOnShore ?? true;
-        this.locomotionType = waitOnShore ? 'LAND' : 'WATER';
         this.logicPhase = params.phase;
         this.ignoreBottles = params.ignoreBottles ?? false;
 
@@ -81,7 +77,7 @@ export class WaitForBoatLogic implements AnimalLogic {
             path: {
                 target: context.originPos,
                 speed: 0,
-                locomotionType: this.locomotionType
+                locomotionType: 'NONE'
             },
             result: result,
             finish: true // Always finish on same frame when result is set

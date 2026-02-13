@@ -4,7 +4,6 @@ import { LocomotionType } from './strategy/AnimalPathStrategy';
 
 export interface DelayParams {
     phase: AnimalLogicPhase,
-    waitOnShore?: boolean;
     maxDuration?: number;
 }
 
@@ -17,14 +16,11 @@ export class DelayLogic implements AnimalLogic {
     public static readonly RESULT_FINISHED = 'delay_finished';
     readonly name = 'Delay';
 
-    private locomotionType: LocomotionType;
     private logicPhase: AnimalLogicPhase;
     private timeRemaining: number;
 
     constructor(params?: DelayParams) {
         this.logicPhase = params.phase;
-        const waitOnShore = params?.waitOnShore ?? true;
-        this.locomotionType = waitOnShore ? 'LAND' : 'WATER';
         this.timeRemaining = params?.maxDuration ?? 1.0;
     }
 
@@ -38,7 +34,7 @@ export class DelayLogic implements AnimalLogic {
             path: {
                 target: context.originPos,
                 speed: 0,
-                locomotionType: this.locomotionType
+                locomotionType: 'NONE'
             },
             result: this.timeRemaining <= 0 ? DelayLogic.RESULT_FINISHED : undefined
         };
