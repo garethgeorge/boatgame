@@ -3,9 +3,7 @@ import * as THREE from 'three';
 import { Boat } from '../Boat';
 import { AnyAnimal } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
-import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase, AnimalLogicScript, AnimalLogicScriptFn } from './logic/AnimalLogic';
-import { LocomotionType } from './logic/strategy/AnimalPathStrategy';
 import { AnimalLogicConfig } from './logic/AnimalLogicConfigs';
 import { AnimalLogicRegistry } from './logic/AnimalLogicRegistry';
 import { RiverSystem } from '../../world/RiverSystem';
@@ -32,11 +30,10 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     private logicPhase: AnimalLogicPhase = AnimalLogicPhase.NONE;
 
     // Flight/Land state tracking
-    private currentAngle: number = 0;
     private currentBank: number = 0;
-    private isKinematic: boolean = false;
+
     private pendingKinematic: {
-        pos: THREE.Vector3, angle: number, normal: THREE.Vector3, bank: number
+        pos: THREE.Vector3, angle: number, normal: THREE.Vector3
     } | null = null;
     private pendingDynamic: {
         linVel: planck.Vec2, angVel: number, height?: number, normal?: THREE.Vector3
@@ -66,12 +63,6 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         this.aggressiveness = aggressiveness;
         this.waterHeight = waterHeight;
         this.snoutOffset = snoutOffset || planck.Vec2(0, 0);
-
-        const body = entity.getPhysicsBody();
-        if (body) {
-            this.currentAngle = body.getAngle();
-            this.isKinematic = body.getType() === planck.Body.KINEMATIC;
-        }
 
         // Initialize script
         this.nextLogicConfig = this.beginScript(script, '');
@@ -242,6 +233,16 @@ export class AnimalUniversalBehavior implements EntityBehavior {
                 this.computeWaterLocomotion(context, result);
                 break;
         }
+
+        // Damp banking if not in FLIGHT
+        if (result.path.locomotionType !== 'FLIGHT' && this.currentBank !== 0) {
+            const bankChange = this.BANK_SPEED * context.dt;
+            if (Math.abs(this.currentBank) < bankChange) {
+                this.currentBank = 0;
+            } else {
+                this.currentBank -= Math.sign(this.currentBank) * bankChange;
+            }
+        }
     }
 
     private dispatchEvents(logic: AnimalLogic, context: AnimalLogicContext) {
@@ -270,7 +271,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     }
 
     private applyKinematicUpdate(update: {
-        pos: THREE.Vector3, angle: number, normal: THREE.Vector3, bank: number
+        pos: THREE.Vector3, angle: number, normal: THREE.Vector3
     }) {
         const mesh = this.entity.getMesh();
         if (!mesh) return;
@@ -299,7 +300,8 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     }
 
     private setPhysicsMode(body: planck.Body, kinematic: boolean) {
-        if (kinematic && !this.isKinematic) {
+        const isKinematic = body.getType() === planck.Body.KINEMATIC;
+        if (kinematic && !isKinematic) {
             PhysicsUtils.setCollisionMask(body, 0);
             body.setType(planck.Body.KINEMATIC);
 
@@ -309,12 +311,24 @@ export class AnimalUniversalBehavior implements EntityBehavior {
 
             //maybe do this.. better is supply some velocity
             //body.setSleepingAllowed(false);
-
-            this.isKinematic = true;
-        } else if (!kinematic && this.isKinematic) {
+        } else if (!kinematic && isKinematic) {
             PhysicsUtils.setCollisionMask(body, 0xFFFF);
             body.setType(planck.Body.DYNAMIC);
-            this.isKinematic = false;
+        }
+    }
+
+    private computeNoneLocomotion(context: AnimalLogicContext) {
+        const isKinematic = context.physicsBody.getType() === planck.Body.KINEMATIC;
+        if (isKinematic) {
+            // Keep current kinematic state (no updates to pendingKinematic)
+            this.pendingKinematic = null;
+        } else {
+            // Stop dynamic motion but DO NOT override height or normal
+            // this allows the animal to stay at its current height
+            this.pendingDynamic = {
+                linVel: planck.Vec2(0, 0),
+                angVel: 0
+            };
         }
     }
 
@@ -378,39 +392,39 @@ export class AnimalUniversalBehavior implements EntityBehavior {
 
         // Handle Steering Path (Kinematic Movement)
         const steering = result.path;
-        const targetWorldPos = steering.target;
+        const targetLocalPos = new THREE.Vector3(steering.target.x, 0, steering.target.y);
+        this.entity.worldToLocalPos(targetLocalPos);
         const desiredSpeed = steering.speed;
 
-        const parent = this.entity.parent();
-        const targetRelativePos = this.getRelativePosition(targetWorldPos, parent);
-
         // --- Movement ---
-        const moveVec = targetRelativePos.clone().sub(new THREE.Vector2(nextPos.x, nextPos.z));
-        const distToTarget = moveVec.length();
+        const moveVec = targetLocalPos.clone().sub(nextPos);
+        const distToTarget = new THREE.Vector2(moveVec.x, moveVec.z).length();
 
         if (distToTarget > 0.01) {
             const moveDist = Math.min(distToTarget, desiredSpeed * dt);
-            const moveDir = moveVec.clone().normalize();
+            const moveDir = new THREE.Vector2(moveVec.x, moveVec.z).normalize();
             nextPos.x += moveDir.x * moveDist;
             nextPos.z += moveDir.y * moveDist;
         }
 
         // --- Rotation ---
-        let targetAngle = this.currentAngle;
+        const currentAngle = this.entity.localAngle();
+        let targetAngle = currentAngle;
         if (distToTarget > 0.1) {
-            targetAngle = Math.atan2(moveVec.x, -moveVec.y); // Forward is -Z
+            targetAngle = Math.atan2(moveVec.x, -moveVec.z); // Forward is -Z
         }
 
-        let angleDiff = targetAngle - this.currentAngle;
+        let angleDiff = targetAngle - currentAngle;
         while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
         while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
 
         const rotationSpeed = steering.turningSpeed ?? 3.0;
         const maxRotation = rotationSpeed * dt;
         const rotation = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), maxRotation);
-        const nextAngle = this.currentAngle + rotation;
+        const nextAngle = currentAngle + rotation;
 
-        const worldPos = this.getWorldPosition(nextPos, parent);
+        const worldPos = nextPos.clone();
+        this.entity.localToWorldPos(worldPos);
         const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(worldPos.x, worldPos.z);
         const terrainNormal = RiverSystem.getInstance().terrainGeometry.calculateNormal(worldPos.x, worldPos.z);
 
@@ -453,9 +467,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
             pos: nextPos,
             angle: nextAngle,
             normal: terrainNormal,
-            bank: 0
         };
-        this.currentAngle = nextAngle;
     }
 
     private computeFlightLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
@@ -467,25 +479,26 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const nextPos = mesh.position.clone();
 
         const steering = result.path;
-        const targetWorldPos = steering.target;
+        const targetWorldPos = new THREE.Vector3(
+            steering.target.x, steering.height ?? context.currentHeight, steering.target.y);
         const desiredSpeed = steering.speed;
-        const desiredHeight = steering.height ?? context.currentHeight;
 
         // --- Rotation and Banking ---
-        const parent = this.entity.parent();
-        const targetRelativePos = this.getRelativePosition(targetWorldPos, parent);
-        const moveVec = targetRelativePos.clone().sub(new THREE.Vector2(nextPos.x, nextPos.z));
-        const distToTarget = moveVec.length();
+        const moveVec = targetWorldPos.clone().sub(nextPos);
+        const distToTarget = new THREE.Vector2(moveVec.x, moveVec.z).length();
 
-        const targetAngle = Math.atan2(moveVec.x, -moveVec.y);
+        const currentAngle = this.entity.localAngle();
+        const targetAngle = Math.atan2(moveVec.x, -moveVec.z);
 
         const turnSpeed = steering.turningSpeed ?? this.ROTATION_SPEED_FLIGHT;
-        this.handleFlightRotationAndBanking(targetAngle, turnSpeed, dt);
+        const { nextAngle, nextBank } = this.handleFlightRotationAndBanking(
+            currentAngle, this.currentBank, targetAngle, turnSpeed, dt);
+        this.currentBank = nextBank;
 
         // --- Horizontal Movement ---
         if (distToTarget > 0.01) {
             const moveDist = Math.min(distToTarget, desiredSpeed * dt);
-            const moveDir = moveVec.clone().normalize();
+            const moveDir = new THREE.Vector2(moveVec.x, moveVec.z).normalize();
             nextPos.x += moveDir.x * moveDist;
             nextPos.z += moveDir.y * moveDist;
         }
@@ -493,10 +506,10 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         // --- Height ---
         const currentHeight = context.currentHeight;
         let newHeight = currentHeight;
-        if (currentHeight < desiredHeight) {
-            newHeight = Math.min(desiredHeight, currentHeight + this.VERT_SPEED * dt);
-        } else if (currentHeight > desiredHeight) {
-            newHeight = Math.max(desiredHeight, currentHeight - this.VERT_SPEED * dt);
+        if (currentHeight < targetWorldPos.y) {
+            newHeight = Math.min(targetWorldPos.y, currentHeight + this.VERT_SPEED * dt);
+        } else if (currentHeight > targetWorldPos.y) {
+            newHeight = Math.max(targetWorldPos.y, currentHeight - this.VERT_SPEED * dt);
         }
         nextPos.y = newHeight;
 
@@ -504,19 +517,21 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         let normal = new THREE.Vector3(0, 1, 0);
         const bankingEnabled = steering.bankingEnabled ?? true;
         if (bankingEnabled) {
-            normal = this.getBankingNormal();
+            normal = this.getBankingNormal(nextAngle, nextBank);
         }
 
         this.pendingKinematic = {
             pos: nextPos,
-            angle: this.currentAngle,
-            normal: normal,
-            bank: this.currentBank
+            angle: nextAngle,
+            normal: normal
         };
     }
 
-    private handleFlightRotationAndBanking(targetAngle: number, turnSpeed: number, dt: number) {
-        let diff = targetAngle - this.currentAngle;
+    private handleFlightRotationAndBanking(
+        currentAngle: number, currentBank: number, targetAngle: number,
+        turnSpeed: number, dt: number
+    ): { nextAngle: number, nextBank: number } {
+        let diff = targetAngle - currentAngle;
         while (diff > Math.PI) diff -= Math.PI * 2;
         while (diff < -Math.PI) diff += Math.PI * 2;
 
@@ -524,65 +539,35 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const turnDirection = Math.sign(diff);
 
         if (Math.abs(diff) < maxRotation) {
-            this.currentAngle = targetAngle;
+            currentAngle = targetAngle;
         } else {
-            this.currentAngle += turnDirection * maxRotation;
+            currentAngle += turnDirection * maxRotation;
         }
 
-        while (this.currentAngle > Math.PI) this.currentAngle -= Math.PI * 2;
-        while (this.currentAngle < -Math.PI) this.currentAngle += Math.PI * 2;
+        while (currentAngle > Math.PI) currentAngle -= Math.PI * 2;
+        while (currentAngle < -Math.PI) currentAngle += Math.PI * 2;
 
         const targetIntensity = Math.min(1.0, Math.abs(diff) / (Math.PI / 4));
         const targetBank = turnDirection * targetIntensity * this.MAX_BANK;
-        const bankDiff = targetBank - this.currentBank;
+        const bankDiff = targetBank - currentBank;
         const maxBankChange = this.BANK_SPEED * dt;
 
         if (Math.abs(bankDiff) < maxBankChange) {
-            this.currentBank = targetBank;
+            currentBank = targetBank;
         } else {
-            this.currentBank += Math.sign(bankDiff) * maxBankChange;
+            currentBank += Math.sign(bankDiff) * maxBankChange;
         }
+
+        return { nextAngle: currentAngle, nextBank: currentBank };
     }
 
-    private getBankingNormal(): THREE.Vector3 {
-        const right = new THREE.Vector3(Math.cos(this.currentAngle), 0, Math.sin(this.currentAngle));
+    private getBankingNormal(angle: number, bank: number): THREE.Vector3 {
+        const right = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
         const up = new THREE.Vector3(0, 1, 0);
 
-        return up.multiplyScalar(Math.cos(this.currentBank))
-            .add(right.multiplyScalar(Math.sin(this.currentBank)))
+        return up.multiplyScalar(Math.cos(bank))
+            .add(right.multiplyScalar(Math.sin(bank)))
             .normalize();
 
-    }
-
-    private computeNoneLocomotion(context: AnimalLogicContext) {
-        if (this.isKinematic) {
-            // Keep current kinematic state (no updates to pendingKinematic)
-            this.pendingKinematic = null;
-        } else {
-            // Stop dynamic motion but DO NOT override height or normal
-            // this allows the animal to stay at its current height
-            this.pendingDynamic = {
-                linVel: planck.Vec2(0, 0),
-                angVel: 0
-            };
-        }
-    }
-
-    private getRelativePosition(worldPos: planck.Vec2, parent: any | null): THREE.Vector2 {
-        if (parent && parent.meshes.length > 0) {
-            const parentMesh = parent.meshes[0];
-            const localPos = new THREE.Vector3(worldPos.x, 0, worldPos.y);
-            parentMesh.worldToLocal(localPos);
-            return new THREE.Vector2(localPos.x, localPos.z);
-        }
-        return new THREE.Vector2(worldPos.x, worldPos.y);
-    }
-
-    private getWorldPosition(localPos: THREE.Vector3, parent: any | null): THREE.Vector3 {
-        if (parent && parent.meshes.length > 0) {
-            const parentMesh = parent.meshes[0];
-            return localPos.clone().applyMatrix4(parentMesh.matrixWorld);
-        }
-        return localPos.clone();
     }
 }

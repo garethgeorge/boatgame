@@ -124,7 +124,7 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                         Place.scatter_nearShore([
                             PolarBearRule.get(),
                             PenguinKayakRule.get(),
-                            NarwhalRule.get()], [0.5, 0.5]),
+                            NarwhalRule.get()], [1.0, 1.0]),
                     ]
                 }]
             }],

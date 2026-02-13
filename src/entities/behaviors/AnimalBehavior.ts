@@ -21,9 +21,17 @@ export interface AnyAnimal {
     currentSlot: TerrainSlot | null;
 
     /**
-     * Get the logical parent of this animal.
+     * Note that these functions may return the input if no conversion
+     * is needed.
      */
-    parent(): { meshes: THREE.Object3D[] } | null;
+    worldToLocalPos(world: THREE.Vector3): void;
+    localToWorldPos(world: THREE.Vector3): void;
+
+    /**
+     * Note that this is the physics coordinate system angle, -ve of
+     * graphics.
+     */
+    localAngle(): number;
 
     /**
      * The physics body is directly read and updated by the behavior.

@@ -259,6 +259,29 @@ export abstract class Animal extends Entity implements AnyAnimal {
 
     //--- AnyAnimal interface
 
+    worldToLocalPos(world: THREE.Vector3): void {
+        const parent = this.parent();
+        if (!parent || parent.meshes.length < 1) return;
+        parent.meshes[0].worldToLocal(world);
+    }
+
+    localToWorldPos(local: THREE.Vector3): void {
+        const parent = this.parent();
+        if (!parent || parent.meshes.length < 1) return;
+        parent.meshes[0].localToWorld(local);
+    }
+
+    localAngle(): number {
+        if (this.physicsBodies.length < 1) return 0;
+        const worldAngle = this.physicsBodies[0].getAngle();
+
+        const parent = this.parent();
+        if (!parent || parent.physicsBodies.length < 1) return worldAngle;
+        const parentAngle = parent.physicsBodies[0].getAngle();
+
+        return worldAngle - parentAngle;
+    }
+
     getPhysicsBody(): planck.Body | null {
         return this.physicsBodies.length > 0 ? this.physicsBodies[0] : null;
     }

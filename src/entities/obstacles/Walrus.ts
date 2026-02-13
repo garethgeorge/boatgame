@@ -13,7 +13,7 @@ import { EntityMetadata } from '../EntityMetadata';
 export class Walrus extends Animal {
 
     public static readonly HEIGHT_IN_WATER: number = -1.5;
-    public static readonly MODEL_PARAMS = { scale: 3.0, angle: Math.PI };
+    public static readonly MODEL_PARAMS = { scale: 3.0, angle: 0 };
     public static readonly RADIUS: number = EntityMetadata.walrus.radius;
 
     constructor(

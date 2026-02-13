@@ -86,6 +86,26 @@ describe('AnimalUniversalBehavior', () => {
             handleBehaviorEvent: vi.fn(),
             setDynamicPosition: vi.fn(),
             parent: vi.fn(() => null),
+            worldToLocalPos: vi.fn((v: THREE.Vector3) => {
+                const parent = mockEntity.parent();
+                if (parent && parent.meshes.length > 0) {
+                    parent.meshes[0].worldToLocal(v);
+                }
+            }),
+            localToWorldPos: vi.fn((v: THREE.Vector3) => {
+                const parent = mockEntity.parent();
+                if (parent && parent.meshes.length > 0) {
+                    parent.meshes[0].localToWorld(v);
+                }
+            }),
+            localAngle: vi.fn(() => {
+                const worldAngle = mockBody.getAngle();
+                const parent = mockEntity.parent();
+                if (parent && parent.physicsBodies && parent.physicsBodies.length > 0) {
+                    return worldAngle - parent.physicsBodies[0].getAngle();
+                }
+                return worldAngle;
+            }),
         };
 
         mockLogic = {
@@ -379,7 +399,8 @@ describe('AnimalUniversalBehavior', () => {
             parentMesh.updateMatrixWorld();
 
             const mockParent = {
-                meshes: [parentMesh]
+                meshes: [parentMesh],
+                physicsBodies: [{ getAngle: () => 0 }]
             };
 
             mockEntity.parent.mockReturnValue(mockParent);
