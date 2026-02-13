@@ -1,13 +1,9 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { AnimalSteering } from './strategy/AnimalPathStrategy';
+import { AnimalSteering, LocomotionType } from './strategy/AnimalPathStrategy';
 import { AnimalBehaviorEvent } from '../AnimalBehavior';
 import { AnimalStrategyContext } from './strategy/AnimalPathStrategy';
 
-/**
- * Supported locomotion physics models.
- */
-export type LocomotionType = 'WATER' | 'LAND' | 'FLIGHT';
 
 /**
  * Phases that any animal logic can be in.
@@ -95,9 +91,6 @@ export interface AnimalLogicPathResult {
     // Composition: Holds the physical path result (Steering or Explicit)
     path: AnimalSteering;
 
-    // The physics model to use for this frame
-    locomotionType: LocomotionType;
-
     // --- Result / Continuation ---
 
     // If set, the current logic is finished with this result string.
@@ -107,6 +100,10 @@ export interface AnimalLogicPathResult {
     // - true: Apply the current frame's steering, then switch logic next frame.
     // - false (undefined): Switch logic IMMEDIATELY (disengage), ignoring current steering.
     finish?: boolean;
+
+    // Optional: Jump parameters for land locomotion. Setting a jump will
+    // trigger the animal to jump.
+    jump?: { height: number, distance: number };
 }
 
 /**

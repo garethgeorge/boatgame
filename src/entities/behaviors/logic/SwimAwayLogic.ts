@@ -53,9 +53,9 @@ export class SwimAwayLogic implements AnimalLogic {
             return {
                 path: {
                     target: context.originPos,
-                    speed: 0
+                    speed: 0,
+                    locomotionType: 'WATER'
                 },
-                locomotionType: 'WATER',
                 result
             }
         }
@@ -63,7 +63,6 @@ export class SwimAwayLogic implements AnimalLogic {
         const steering = this.strategy.update(context);
         return {
             path: steering,
-            locomotionType: 'WATER',
         };
     }
 

@@ -1,5 +1,6 @@
 import * as planck from 'planck';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase, LocomotionType } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
+import { LocomotionType } from './strategy/AnimalPathStrategy';
 import { AnimalLogicConfig } from './AnimalLogicConfigs';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
@@ -79,9 +80,9 @@ export class WaitForBoatLogic implements AnimalLogic {
         return {
             path: {
                 target: context.originPos,
-                speed: 0
+                speed: 0,
+                locomotionType: this.locomotionType
             },
-            locomotionType: this.locomotionType,
             result: result,
             finish: true // Always finish on same frame when result is set
         };

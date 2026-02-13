@@ -69,13 +69,11 @@ export class ShoreLandingFlightLogic implements AnimalLogic {
         if (this.hasLanded(context)) {
             return {
                 path: steering,
-                locomotionType: 'FLIGHT',
                 result: ShoreLandingFlightLogic.RESULT_FINISHED
             };
         } else {
             return {
                 path: steering,
-                locomotionType: 'FLIGHT',
                 result: this.state === 'OUT_OF_RANGE' ? ShoreLandingFlightLogic.RESULT_OUT_OF_RANGE :
                     undefined
             };

@@ -74,6 +74,7 @@ export class ShoreTurnStrategy extends AnimalPathStrategy {
             target: rotationTarget,
             speed: 0,
             turningSpeed: this.rotationSpeed,
+            locomotionType: 'LAND'
         };
     }
 }
@@ -144,6 +145,7 @@ export class ShoreWalkStrategy extends AnimalPathStrategy {
         return {
             target: targetWorldPos,
             speed: this.speed,
+            locomotionType: 'LAND'
         };
     }
 

@@ -10,9 +10,11 @@ import { RiverGeometry } from '../RiverGeometry';
 import { TerrainDecorator } from '../decorators/TerrainDecorator';
 import { Decorations } from '../decorations/Decorations';
 import { AnimalSpawner } from '../../entities/spawners/AnimalSpawner';
-import { Monkey } from '../../entities/obstacles';
+import { GingerMan, Monkey } from '../../entities/obstacles';
 import { Fitness, PropParams } from '../decorations/SceneryRules';
 import { DecorationConfig } from './DecorationConfig';
+import { AlligatorRule, BrontosaurusRule, BrownBearRule, GingerManRule, MonkeyRule, MooseRule, PolarBearRule, TRexRule, TriceratopsRule, TurtleRule } from '../../entities/AnimalLayoutRules';
+import { Place } from '../layout/BoatPathLayoutShortcuts';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -38,19 +40,19 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         const rules = [
             new TierRule({
                 species: [
-                    {
-                        id: 'chair',
-                        preference: Fitness.make({
-                            stepDistance: [5, 20],
-                            slope: [0, 10],
-                            stepNoise: { scale: 20, threshold: 0.7 }
-                        }),
-                        params: Select.choose([
-                            PropParams.beach_chair(),
-                            // PropParams.umbrella_with_chairs(1),
-                            // PropParams.umbrella_with_chairs(2)
-                        ])
-                    }
+                    // {
+                    //     id: 'chair',
+                    //     preference: Fitness.make({
+                    //         stepDistance: [5, 20],
+                    //         slope: [0, 10],
+                    //         stepNoise: { scale: 20, threshold: 0.7 }
+                    //     }),
+                    //     params: Select.choose([
+                    //         PropParams.beach_chair(),
+                    //         // PropParams.umbrella_with_chairs(1),
+                    //         // PropParams.umbrella_with_chairs(2)
+                    //     ])
+                    // }
                 ]
             }),
         ];
@@ -61,15 +63,23 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     public createLayoutConfig(): BoatPathLayoutConfig {
         return {
             tracks: [{
-                name: 'flying',
+                name: 'animals',
                 stages: [{
-                    name: 'flying_animals',
+                    name: 'animals',
                     progress: [0.0, 1.0],
                     scenes: [{
                         length: [100, 300],
                         patterns: [
-                            //Place.scatter_onShore(ParrotRule.get('chair', PropParams.beach_chair_slot), [0.8, 0.8])
-                            //Place.scatter_onShore(BirdOnBeachChairRule.get(), [0.4, 0.8])
+                            Place.scatter_onShore(AlligatorRule.get(), [0.5, 0.5]),
+                            Place.scatter_onShore(BrontosaurusRule.get(), [0.5, 0.5]),
+                            Place.scatter_onShore(BrownBearRule.get(), [0.5, 0.5]),
+                            Place.scatter_onShore(GingerManRule.get(), [0.5, 0.5]),
+                            Place.scatter_onShore(MonkeyRule.get(), [0.5, 0.5]),
+                            Place.scatter_onShore(MooseRule.get(), [0.5, 0.5]),
+                            Place.scatter_onShore(PolarBearRule.get(), [0.5, 0.5]),
+                            Place.scatter_onShore(TRexRule.get(), [0.5, 0.5]),
+                            Place.scatter_onShore(TriceratopsRule.get(), [0.5, 0.5]),
+                            Place.scatter_onShore(TurtleRule.get(), [0.5, 0.5]),
                         ]
                     }]
                 }]

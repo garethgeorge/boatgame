@@ -3,6 +3,11 @@ import * as THREE from 'three';
 import { AnyAnimal } from '../../AnimalBehavior';
 
 /**
+ * Supported locomotion physics models.
+ */
+export type LocomotionType = 'WATER' | 'LAND' | 'FLIGHT';
+
+/**
  * Result of any path strategy calculation. The interpretation of these parameters
  * depends on the active LocomotionType. At its most basic the steering says to
  * move toward a target point at a target speed. This doesn't mean instantly change
@@ -11,12 +16,24 @@ import { AnyAnimal } from '../../AnimalBehavior';
  */
 export interface AnimalSteering {
     /** 
+     * Interpretation of these parameters depends on the active LocomotionType.
+     */
+    locomotionType: LocomotionType;
+
+    /** 
      * 2D Target position on the XZ plane.
      * - WATER: Used for both steering direction and target rotation.
-     * - LAND: Targets kinematic movement; also used for rotation if facing.angle is unset.
+     * - LAND: Targets kinematic movement; also used for rotation.
      * - FLIGHT: Defines the horizontal flight path and informs banking/steering.
      */
     target: planck.Vec2;
+
+    /**
+     * Vertical Target (Y axis).
+     * - FLIGHT only: The target altitude. Animal will climb/descend smoothly toward this value.
+     * Land motion uses terrain height, water motion uses animal water height.
+     */
+    height?: number;
 
     /** 
      * Desired movement speed.
@@ -25,34 +42,10 @@ export interface AnimalSteering {
      */
     speed: number;
 
-    /**
-     * Optional Vertical Target (Y axis).
-     * - WATER: If defined, triggers setExplictPosition to force the animal's height.
-     * - FLIGHT: The target altitude. Animal will climb/descend smoothly toward this value.
-     * Defaults to the terrain/water surface level if undefined.
-     */
-    height?: number;
-
-    /** Optional Orientation Targets */
-    facing?: {
-        /** 
-         * Absolute Y-axis rotation (radians).
-         * - FLIGHT: Overrides the movement-derived orientation if provided.
-         * - WATER: Currently ignored; orientation is derived from movement.
-         */
-        angle?: number;
-
-        /** 
-         * Surface normal alignment.
-         * - WATER: Used if 'height' is defined to set the animal's orientation.
-         * - FLIGHT: Smoothly blends the banking normal toward this normal as target height is reached.
-         */
-        normal?: THREE.Vector3;
-    };
-
     /** 
      * Rotation speed limits.
      * - WATER/FLIGHT: Controls the maximum angular change per second.
+     * - LAND: Controls the maximum angular change per second for kinematic rotation.
      */
     turningSpeed?: number;
 

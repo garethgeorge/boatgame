@@ -1,5 +1,6 @@
 import * as planck from 'planck';
-import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase, LocomotionType } from './AnimalLogic';
+import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
+import { LocomotionType } from './strategy/AnimalPathStrategy';
 
 export interface DelayParams {
     phase: AnimalLogicPhase,
@@ -36,9 +37,9 @@ export class DelayLogic implements AnimalLogic {
         return {
             path: {
                 target: context.originPos,
-                speed: 0
+                speed: 0,
+                locomotionType: this.locomotionType
             },
-            locomotionType: this.locomotionType,
             result: this.timeRemaining <= 0 ? DelayLogic.RESULT_FINISHED : undefined
         };
     }

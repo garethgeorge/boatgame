@@ -126,8 +126,7 @@ export class ShoreWalkLogic implements AnimalLogic {
 
         if (this.state === 'FINISHED' || !this.strategy) {
             return {
-                path: { target: currentPos, speed: 0 },
-                locomotionType: 'LAND',
+                path: { target: currentPos, speed: 0, locomotionType: 'LAND' },
                 result: ShoreWalkLogic.RESULT_FINISHED,
                 finish: true
             };
@@ -137,7 +136,6 @@ export class ShoreWalkLogic implements AnimalLogic {
         const steering = this.strategy.update(context);
         return {
             path: steering,
-            locomotionType: 'LAND'
         };
     }
 

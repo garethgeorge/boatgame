@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
+import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering, LocomotionType } from './AnimalPathStrategy';
 
 /**
  * MOVE TO POINT (Generic)
@@ -11,6 +11,7 @@ export class MoveToPointStrategy extends AnimalPathStrategy {
     constructor(
         private target: planck.Vec2,
         private speed: number,
+        private locomotionType: LocomotionType = 'WATER',
         private turningSpeed?: number,
         private turningSmoothing?: number
     ) {
@@ -22,7 +23,8 @@ export class MoveToPointStrategy extends AnimalPathStrategy {
             target: this.target,
             speed: this.speed,
             turningSpeed: this.turningSpeed,
-            turningSmoothing: this.turningSmoothing
+            turningSmoothing: this.turningSmoothing,
+            locomotionType: this.locomotionType
         };
     }
 }

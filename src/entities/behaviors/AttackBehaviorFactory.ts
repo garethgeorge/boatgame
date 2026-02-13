@@ -39,7 +39,7 @@ export class AttackBehaviorFactory {
         const script = this.getLogicScript(behavior, heightInWater, jumpsIntoWater);
 
         if (script) {
-            return new AnimalUniversalBehavior(animal, aggressiveness, script, snoutVector);
+            return new AnimalUniversalBehavior(animal, aggressiveness, heightInWater, script, snoutVector);
         } else {
             return null;
         }

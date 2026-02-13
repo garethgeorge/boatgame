@@ -47,10 +47,11 @@ export class SlotLandingFlightLogic implements AnimalLogic {
         const defaultSteering = {
             target: context.originPos,
             speed: 0,
-            height: context.currentHeight
+            height: context.currentHeight,
+            locomotionType: 'FLIGHT' as const
         };
 
-        if (!animal) return { path: defaultSteering, locomotionType: 'FLIGHT', result: SlotLandingFlightLogic.RESULT_FAILED };
+        if (!animal) return { path: defaultSteering, result: SlotLandingFlightLogic.RESULT_FAILED };
 
         switch (this.state) {
             case 'SEARCHING': {
@@ -93,7 +94,6 @@ export class SlotLandingFlightLogic implements AnimalLogic {
                 if (this.hasLanded(context)) {
                     return {
                         path: this.strategy?.update(context) ?? defaultSteering,
-                        locomotionType: 'FLIGHT',
                         result: SlotLandingFlightLogic.RESULT_FINISHED
                     };
                 }
@@ -101,7 +101,7 @@ export class SlotLandingFlightLogic implements AnimalLogic {
             }
 
             case 'FAILED': {
-                return { path: defaultSteering, locomotionType: 'FLIGHT', result: SlotLandingFlightLogic.RESULT_FAILED };
+                return { path: defaultSteering, result: SlotLandingFlightLogic.RESULT_FAILED };
             }
         }
 
@@ -110,7 +110,6 @@ export class SlotLandingFlightLogic implements AnimalLogic {
 
         return {
             path: steering,
-            locomotionType: 'FLIGHT',
             result: this.state === 'FAILED' ? SlotLandingFlightLogic.RESULT_FAILED : undefined
         };
     }

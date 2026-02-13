@@ -21,6 +21,10 @@ class BiomeDesigner {
     private controls!: MapControls;
     private rulesHistory!: HistoryManager;
     private isInternalChange = false;
+    private teleportMode = false;
+    private raycaster = new THREE.Raycaster();
+    private mouse = new THREE.Vector2();
+    private mouseDownPos = new THREE.Vector2();
 
     constructor() {
         const container = document.getElementById('canvas-container');
@@ -36,6 +40,7 @@ class BiomeDesigner {
         DesignerSettings.targetBiome = targetBiome;
 
         this.initUI(targetBiome);
+        this.initSimulationUI();
         this.initDebugMenu();
         this.initRulesEditor();
         this.initStatsDisplay();
@@ -82,6 +87,105 @@ class BiomeDesigner {
         this.engine.skyManager.isCyclePaused = true;
         this.engine.skyManager.setCycleTime(parseFloat(timeSlider.value));
 
+    }
+
+    private initSimulationUI() {
+        const bottleCountInput = document.getElementById('bottle-count') as HTMLInputElement;
+        const bottleCountDisplay = document.getElementById('bottle-count-display') as HTMLSpanElement;
+        const teleportToggleBtn = document.getElementById('teleport-toggle-btn') as HTMLButtonElement;
+
+        bottleCountInput.addEventListener('input', () => {
+            const targetCount = parseInt(bottleCountInput.value);
+            bottleCountDisplay.textContent = targetCount.toString();
+            this.setBottleCount(targetCount);
+        });
+
+        const simSpeedInput = document.getElementById('sim-speed') as HTMLInputElement;
+        const simSpeedDisplay = document.getElementById('sim-speed-display') as HTMLSpanElement;
+
+        simSpeedInput.addEventListener('input', () => {
+            const speed = parseFloat(simSpeedInput.value);
+            simSpeedDisplay.textContent = speed.toFixed(1);
+            this.engine.timeScale = speed;
+        });
+
+        teleportToggleBtn.addEventListener('click', () => {
+            this.teleportMode = !this.teleportMode;
+            teleportToggleBtn.textContent = `Teleport Mode: ${this.teleportMode ? 'ON' : 'OFF'}`;
+            teleportToggleBtn.style.background = this.teleportMode ? '#4488ff' : '#444';
+        });
+
+        const canvas = this.engine.graphicsEngine.renderer.domElement;
+
+        canvas.addEventListener('mousedown', (e) => {
+            this.mouseDownPos.set(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (!this.teleportMode) return;
+
+            // Check if it was a click (minimal movement)
+            const dist = Math.sqrt(Math.pow(e.clientX - this.mouseDownPos.x, 2) + Math.pow(e.clientY - this.mouseDownPos.y, 2));
+            if (dist > 5) return;
+
+            const rect = canvas.getBoundingClientRect();
+            this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+            this.raycaster.setFromCamera(this.mouse, this.engine.graphicsEngine.camera);
+
+            // Intersect with terrain meshes
+            const intersects = this.raycaster.intersectObjects(this.engine.graphicsEngine.scene.children, true);
+
+            // Find the first intersection that is either water or ground
+            const hit = intersects.find(i => {
+                // Try to identify terrain/water meshes. 
+                // Usually they are in the scene and have specific names or types.
+                // For now, any mesh that isn't the boat will do as a target.
+                return i.object.type === 'Mesh' && !this.isBoatPart(i.object);
+            });
+
+            if (hit) {
+                this.engine.boat.teleport(hit.point.x, hit.point.z);
+                // Optional: Toggle off after use
+                // this.teleportMode = false;
+                // teleportToggleBtn.textContent = 'Teleport Mode: OFF';
+                // teleportToggleBtn.style.background = '#444';
+            }
+        });
+
+        // Periodically update bottle count input to match boat state (in case it changes)
+        setInterval(() => {
+            if (this.engine.boat && document.activeElement !== bottleCountInput) {
+                const count = this.engine.boat.collectedBottles.count;
+                bottleCountInput.value = count.toString();
+                bottleCountDisplay.textContent = count.toString();
+            }
+        }, 1000);
+    }
+
+    private isBoatPart(object: THREE.Object3D): boolean {
+        let curr: THREE.Object3D | null = object;
+        while (curr) {
+            if (this.engine.boat.meshes.includes(curr as any)) return true;
+            curr = curr.parent;
+        }
+        return false;
+    }
+
+    private setBottleCount(target: number) {
+        const collected = this.engine.boat.collectedBottles;
+        const current = collected.count;
+
+        if (target > current) {
+            for (let i = 0; i < target - current; i++) {
+                collected.addBottle(0x0088FF, false); // Add without animation for instant control
+            }
+        } else if (target < current) {
+            for (let i = 0; i < current - target; i++) {
+                collected.removeBottle(false); // Remove without animation
+            }
+        }
     }
 
 

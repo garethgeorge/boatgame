@@ -96,7 +96,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
                 },
                 {
                     length: [100, 200], patterns: [
-                        Place.scatter_nearShore([MooseRule.get(), BrownBearRule.get()], [0.5, 1.0]),
+                        Place.scatter_nearShore([MooseRule.get(), BrownBearRule.get()], [0.5, 2.0]),
                         Place.scatter_middle(WaterGrassRule.get(), [1.5, 3.0])
                     ]
                 },

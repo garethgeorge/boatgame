@@ -38,6 +38,7 @@ export class BuzzTargetStrategy extends AnimalPathStrategy {
             target: targetPoint,
             speed: this.horizSpeed * alignment,
             height: distToTarget > 50.0 ? this.flightHeight : this.buzzHeight,
+            locomotionType: 'FLIGHT',
         };
     }
 }
@@ -64,6 +65,7 @@ export class FleeRiverStrategy extends AnimalPathStrategy {
             target: context.originPos.clone().add(flightDir.mul(10)),
             speed: this.horizSpeed * alignment,
             height: this.flightHeight,
+            locomotionType: 'FLIGHT',
         };
     }
 }
@@ -117,6 +119,7 @@ export class FlyToShoreStrategy extends AnimalPathStrategy {
             target: this.target,
             speed: this.horizSpeed * alignment,
             height: this.flightHeight,
+            locomotionType: 'FLIGHT',
         };
     }
 }
@@ -225,12 +228,10 @@ export class PointLandingStrategy extends AnimalPathStrategy {
         }
 
         return {
-            target: target,
+            target: target!,
             speed: this.horizSpeed * speedFactor,
             height: targetHeight,
-            facing: {
-                normal: new THREE.Vector3(0, 1, 0)
-            }
+            locomotionType: 'FLIGHT'
         };
     }
 }
@@ -290,6 +291,7 @@ export class WaterLandingStrategy extends AnimalPathStrategy {
             target: targetWorldPos,
             speed: this.horizSpeed * speedFactor,
             height: targetHeight,
+            locomotionType: 'FLIGHT',
         };
     }
 }
@@ -338,6 +340,7 @@ export class WanderStrategy extends AnimalPathStrategy {
             target: this.target,
             speed: this.speed * alignment,
             height: this.height,
+            locomotionType: 'FLIGHT',
         };
     }
 
@@ -370,7 +373,8 @@ export class FlyToPointStrategy extends AnimalPathStrategy {
         return {
             target: this.target,
             speed: this.speed * alignment,
-            height: this.height
+            height: this.height,
+            locomotionType: 'FLIGHT'
         };
     }
 }

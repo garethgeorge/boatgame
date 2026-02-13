@@ -30,7 +30,8 @@ export class FleePathStrategy extends AnimalPathStrategy {
             target: targetWorldPos,
             speed: params.fleeSpeed,
             turningSpeed: params.turningSpeed,
-            turningSmoothing: params.turningSmoothing
+            turningSmoothing: params.turningSmoothing,
+            locomotionType: 'WATER'
         };
     }
 

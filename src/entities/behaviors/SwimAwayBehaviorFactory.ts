@@ -47,7 +47,7 @@ export class SwimAwayBehaviorFactory {
         }
 
         if (script) {
-            return new AnimalUniversalBehavior(animal, aggressiveness, script);
+            return new AnimalUniversalBehavior(animal, aggressiveness, heightInWater, script);
         } else {
             return null;
         }

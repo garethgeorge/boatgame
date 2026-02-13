@@ -19,25 +19,43 @@ export class EnteringWaterLogic implements AnimalLogic {
 
     private strategy: EnteringWaterStrategy;
     private duration: number = 0;
+    private jump: boolean = false;
+    private jumpDistance: number = 0;
+    private targetWaterHeight: number = 0;
+
+    private readonly JUMP_HEIGHT = 4.0;
 
     constructor(params: EnteringWaterParams) {
-        this.strategy = new EnteringWaterStrategy(params.jump, params.targetWaterHeight);
+        this.jump = params.jump;
+        this.targetWaterHeight = params.targetWaterHeight;
+        this.strategy = new EnteringWaterStrategy();
     }
 
     activate(context: AnimalLogicContext) {
-        const totalDistance = this.strategy.initialize(context.originPos, context.physicsBody.getAngle());
+        this.strategy.initialize(context.originPos, context.physicsBody.getAngle());
 
         const moveSpeed = 8.0 * (1 + 3 * context.aggressiveness);
-        this.duration = totalDistance / moveSpeed;
+
+        const facingAngle = context.physicsBody.getAngle() - Math.PI / 2;
+        const direction = { x: Math.cos(facingAngle), y: Math.sin(facingAngle) };
+        const distToWater = RiverSystem.getInstance().getDistanceToWater(context.originPos, direction);
+
+        // Calculate progress t at which the parabolic jump reaches the water level.
+        // solve 4 * t * (1-t) * jump height = -h
+        // where h = context.currentHeight
+        const h = context.currentHeight;
+        const jh = this.JUMP_HEIGHT;
+        const t = (jh + Math.sqrt(jh * jh + jh * h)) / (2 * jh);
+
+        this.jumpDistance = (distToWater > 0 ? distToWater : 0) / t;
+        this.duration = this.jumpDistance / moveSpeed;
     }
 
     update(context: AnimalLogicContext): AnimalLogicPathResult {
         const steering = this.strategy.update(context);
 
-        // Check if fully in water
+        // Check if sufficiently in water
         const pos = context.originPos;
-        const progress = this.strategy.getEntryProgress(pos);
-
         const banks = RiverSystem.getInstance().getBankPositions(pos.y);
         const margin = 2.0;
         const distFromLeft = pos.x - banks.left;
@@ -45,17 +63,21 @@ export class EnteringWaterLogic implements AnimalLogic {
         const distIntoWater = Math.min(distFromLeft, distFromRight);
 
         // Move to next logic once in water
-        if (distIntoWater >= margin || progress >= 1.0) {
+        if (distIntoWater >= margin) {
             return {
                 path: steering,
-                locomotionType: 'WATER',
                 result: EnteringWaterLogic.RESULT_FINISHED,
                 finish: true
             };
-        } else {
+        } else if (this.jump) {
+            this.jump = false;
             return {
                 path: steering,
-                locomotionType: 'FLIGHT'
+                jump: { height: this.JUMP_HEIGHT, distance: this.jumpDistance }
+            };
+        } else {
+            return {
+                path: steering
             };
         }
     }

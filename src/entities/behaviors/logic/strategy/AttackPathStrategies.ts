@@ -46,7 +46,8 @@ export class SternInterceptStrategy extends AnimalPathStrategy {
             target: targetWorldPos,
             speed: params.attackSpeed,
             turningSpeed: params.turningSpeed,
-            turningSmoothing: params.turningSmoothing
+            turningSmoothing: params.turningSmoothing,
+            locomotionType: 'WATER'
         };
     }
 }
@@ -77,7 +78,8 @@ export class CircleFlankStrategy extends AnimalPathStrategy {
             target: context.targetBody.getWorldPoint(flankLocal),
             speed: params.attackSpeed,
             turningSpeed: params.turningSpeed,
-            turningSmoothing: params.turningSmoothing
+            turningSmoothing: params.turningSmoothing,
+            locomotionType: 'WATER'
         };
     }
 }
@@ -95,7 +97,8 @@ export class VulnerableChargeStrategy extends AnimalPathStrategy {
             target: context.targetBody.getWorldPoint(planck.Vec2(0, Boat.STERN_Y)),
             speed: params.attackSpeed,
             turningSpeed: params.turningSpeed,
-            turningSmoothing: params.turningSmoothing
+            turningSmoothing: params.turningSmoothing,
+            locomotionType: 'WATER'
         };
     }
 }
@@ -122,7 +125,8 @@ export class ShoreHuggingStrategy extends AnimalPathStrategy {
             target: planck.Vec2(targetX, targetY),
             speed: params.attackSpeed * 0.5,
             turningSpeed: params.turningSpeed,
-            turningSmoothing: params.turningSmoothing
+            turningSmoothing: params.turningSmoothing,
+            locomotionType: 'WATER'
         };
     }
 }
@@ -140,7 +144,8 @@ export class LurkingStrategy extends AnimalPathStrategy {
             target: context.targetBody.getPosition(),
             speed: 0,
             turningSpeed: params.turningSpeed,
-            turningSmoothing: params.turningSmoothing
+            turningSmoothing: params.turningSmoothing,
+            locomotionType: 'WATER'
         };
     }
 }

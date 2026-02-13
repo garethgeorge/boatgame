@@ -113,7 +113,7 @@ export class FlyingBehaviorFactory {
                 }
             }
         };
-        return new AnimalUniversalBehavior(animal, aggressiveness, script);
+        return new AnimalUniversalBehavior(animal, aggressiveness, 0, script);
     }
 
     public static createSlotLanding(
@@ -193,7 +193,7 @@ export class FlyingBehaviorFactory {
                 }
             }
         };
-        return new AnimalUniversalBehavior(animal, aggressiveness, script);
+        return new AnimalUniversalBehavior(animal, aggressiveness, 0, script);
     }
 
     public static createWaterLanding(
@@ -255,7 +255,7 @@ export class FlyingBehaviorFactory {
             }
             return null;
         };
-        return new AnimalUniversalBehavior(animal, aggressiveness, script);
+        return new AnimalUniversalBehavior(animal, aggressiveness, landingHeight, script);
     }
 
     public static createWandering(
@@ -326,6 +326,6 @@ export class FlyingBehaviorFactory {
             return null;
         };
 
-        return new AnimalUniversalBehavior(animal, aggressiveness, script);
+        return new AnimalUniversalBehavior(animal, aggressiveness, 0, script);
     }
 }

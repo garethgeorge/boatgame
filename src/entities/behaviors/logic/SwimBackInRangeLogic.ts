@@ -48,6 +48,7 @@ export class SwimBackInRangeLogic implements AnimalLogic {
         this.strategy = new MoveToPointStrategy(
             this.target,
             params.fleeSpeed,
+            'WATER',
             params.turningSpeed,
             params.turningSmoothing
         );
@@ -56,8 +57,7 @@ export class SwimBackInRangeLogic implements AnimalLogic {
     update(context: AnimalLogicContext): AnimalLogicPathResult {
         if (!this.strategy || !this.target) {
             return {
-                path: { target: context.originPos, speed: 0 },
-                locomotionType: 'WATER',
+                path: { target: context.originPos, speed: 0, locomotionType: 'WATER' },
                 result: SwimBackInRangeLogic.RESULT_TIMEOUT
             };
         }
@@ -68,8 +68,7 @@ export class SwimBackInRangeLogic implements AnimalLogic {
         const distSq = planck.Vec2.distanceSquared(context.originPos, this.target);
         if (distSq < 2.0 * 2.0) {
             return {
-                path: { target: context.originPos, speed: 0 },
-                locomotionType: 'WATER',
+                path: { target: context.originPos, speed: 0, locomotionType: 'WATER' },
                 result: SwimBackInRangeLogic.RESULT_REACHED
             };
         }
@@ -77,8 +76,7 @@ export class SwimBackInRangeLogic implements AnimalLogic {
         // Check timeout
         if (this.timeElapsed >= this.timeout) {
             return {
-                path: { target: context.originPos, speed: 0 },
-                locomotionType: 'WATER',
+                path: { target: context.originPos, speed: 0, locomotionType: 'WATER' },
                 result: SwimBackInRangeLogic.RESULT_TIMEOUT
             };
         }
@@ -86,7 +84,6 @@ export class SwimBackInRangeLogic implements AnimalLogic {
         const steering = this.strategy.update(context);
         return {
             path: steering,
-            locomotionType: 'WATER',
         };
     }
 

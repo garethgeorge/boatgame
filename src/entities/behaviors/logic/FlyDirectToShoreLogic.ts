@@ -61,13 +61,11 @@ export class FlyDirectToShoreLogic implements AnimalLogic {
         if (this.hasLanded(context)) {
             return {
                 path: steering,
-                locomotionType: 'FLIGHT',
                 result: FlyDirectToShoreLogic.RESULT_FINISHED
             };
         } else {
             return {
                 path: steering,
-                locomotionType: 'FLIGHT',
             };
         }
     }

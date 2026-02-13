@@ -30,7 +30,7 @@ export class ShoreBehaviorFactory {
         const script = this.getLogicScript(behavior);
 
         if (script) {
-            return new AnimalUniversalBehavior(animal, aggressiveness, script);
+            return new AnimalUniversalBehavior(animal, aggressiveness, 0, script);
         } else {
             return null;
         }

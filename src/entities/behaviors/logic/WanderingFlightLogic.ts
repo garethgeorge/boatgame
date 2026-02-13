@@ -61,7 +61,6 @@ export class WanderingFlightLogic implements AnimalLogic {
         if (this.noticeDelay <= 0 && distToBoat < this.noticeDistance) {
             return {
                 path: this.strategy.update(context),
-                locomotionType: 'FLIGHT',
                 result: WanderingFlightLogic.RESULT_NOTICED
             };
         }
@@ -78,7 +77,6 @@ export class WanderingFlightLogic implements AnimalLogic {
 
         return {
             path: steering,
-            locomotionType: 'FLIGHT',
         };
     }
 

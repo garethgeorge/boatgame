@@ -59,7 +59,6 @@ export class FlyOppositeBoatLogic implements AnimalLogic {
         if (distToTarget < 2.0) {
             return {
                 path: steering,
-                locomotionType: 'FLIGHT',
                 finish: true,
                 result: FlyOppositeBoatLogic.RESULT_FINISHED
             };
@@ -67,7 +66,6 @@ export class FlyOppositeBoatLogic implements AnimalLogic {
 
         return {
             path: steering,
-            locomotionType: 'FLIGHT'
         };
     }
 

@@ -83,7 +83,6 @@ export class BuzzBoatFlightLogic implements AnimalLogic {
         // Get result
         return {
             path: steering,
-            locomotionType: 'FLIGHT',
             result: this.state === 'DONE' ? BuzzBoatFlightLogic.RESULT_FINISHED : (
                 this.state === 'OUT_OF_RANGE' ? BuzzBoatFlightLogic.RESULT_OUT_OF_RANGE :
                     undefined

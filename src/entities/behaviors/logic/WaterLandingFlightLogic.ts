@@ -47,14 +47,12 @@ export class WaterLandingFlightLogic implements AnimalLogic {
         if (this.hasLanded(context)) {
             return {
                 path: steering,
-                locomotionType: 'FLIGHT',
                 result: WaterLandingFlightLogic.RESULT_FINISHED,
                 finish: true
             };
         } else {
             return {
                 path: steering,
-                locomotionType: 'FLIGHT',
             };
         }
     }

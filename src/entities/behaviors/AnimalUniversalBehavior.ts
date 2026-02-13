@@ -5,6 +5,7 @@ import { AnyAnimal } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
 import { AnimalBehaviorUtils } from './AnimalBehaviorUtils';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase, AnimalLogicScript, AnimalLogicScriptFn } from './logic/AnimalLogic';
+import { LocomotionType } from './logic/strategy/AnimalPathStrategy';
 import { AnimalLogicConfig } from './logic/AnimalLogicConfigs';
 import { AnimalLogicRegistry } from './logic/AnimalLogicRegistry';
 import { RiverSystem } from '../../world/RiverSystem';
@@ -17,6 +18,7 @@ interface ScriptStackEntry {
 export class AnimalUniversalBehavior implements EntityBehavior {
     private entity: AnyAnimal;
     private aggressiveness: number;
+    private waterHeight: number;
     private snoutOffset: planck.Vec2;
 
     // Script execution
@@ -39,6 +41,13 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         linVel: planck.Vec2, angVel: number, height?: number, normal?: THREE.Vector3
     } | null = null;
 
+    // Jump state
+    private jumpActive: boolean = false;
+    private jumpStartHeight: number = 0;
+    private jumpHeight: number = 0;
+    private jumpScale: number = 0;
+    private jumpTraveledDistance: number = 0;
+
     // Dynamics Constants
     private readonly VERT_SPEED: number = 10.0;
     private readonly ROTATION_SPEED_FLIGHT: number = Math.PI * 1.0;
@@ -48,11 +57,13 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     constructor(
         entity: AnyAnimal,
         aggressiveness: number,
+        waterHeight: number,
         script: AnimalLogicScript,
         snoutOffset?: planck.Vec2
     ) {
         this.entity = entity;
         this.aggressiveness = aggressiveness;
+        this.waterHeight = waterHeight;
         this.snoutOffset = snoutOffset || planck.Vec2(0, 0);
 
         const body = entity.getPhysicsBody();
@@ -207,7 +218,14 @@ export class AnimalUniversalBehavior implements EntityBehavior {
 
     private computeLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
         if (!result || !result.path) return;
-        switch (result.locomotionType) {
+
+        // Reset jump if not in LAND locomotion or if jump is not provided by the logic
+        // and we are not currently jumping
+        if (result.path.locomotionType !== 'LAND') {
+            this.jumpActive = false;
+        }
+
+        switch (result.path.locomotionType) {
             case 'FLIGHT':
                 this.computeFlightLocomotion(context, result);
                 break;
@@ -310,7 +328,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const originToTargetDist = originToTarget.length();
 
         // --- Rotation ---
-        const desiredAngle = Math.atan2(originToTarget.y, originToTarget.x) + Math.PI / 2;
+        const desiredAngle = Math.atan2(originToTarget.x, -originToTarget.y);
         const currentAngle = physicsBody.getAngle();
 
         let angleDiff = desiredAngle - currentAngle;
@@ -339,8 +357,8 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         this.pendingDynamic = {
             linVel: nextVel,
             angVel: finalRotationSpeed,
-            height: steering.height,
-            normal: steering.facing?.normal ?? new THREE.Vector3(0, 1, 0)
+            height: this.waterHeight,
+            normal: new THREE.Vector3(0, 1, 0)
         };
     }
 
@@ -351,7 +369,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         if (!mesh) return;
 
         const nextPos = mesh.position.clone();
-        this.currentAngle = physicsBody.getAngle();
+        const prevHorizontalPos = new THREE.Vector2(nextPos.x, nextPos.z);
 
         // Handle Steering Path (Kinematic Movement)
         const steering = result.path;
@@ -389,9 +407,9 @@ export class AnimalUniversalBehavior implements EntityBehavior {
                 const parentQuat = new THREE.Quaternion();
                 parent.meshes[0].getWorldQuaternion(parentQuat);
                 moveDirLocal.applyQuaternion(parentQuat.invert());
-                targetAngle = Math.atan2(moveDirLocal.x, moveDirLocal.z);
+                targetAngle = Math.atan2(moveDirLocal.x, -moveDirLocal.z); // Local coordinates: Forward is -Z (longitudinal)
             } else {
-                targetAngle = Math.atan2(moveVecWorld.x, moveVecWorld.y) + Math.PI / 2;
+                targetAngle = Math.atan2(moveVecWorld.x, -moveVecWorld.y);
             }
         }
 
@@ -399,14 +417,48 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
         while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
 
-        const rotationSpeed = 3.0;
+        const rotationSpeed = steering.turningSpeed ?? 3.0;
         const maxRotation = rotationSpeed * dt;
         const rotation = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), maxRotation);
         const nextAngle = this.currentAngle + rotation;
 
         const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(nextPos.x, nextPos.z);
         const terrainNormal = RiverSystem.getInstance().terrainGeometry.calculateNormal(nextPos.x, nextPos.z);
-        nextPos.y = terrainHeight;
+
+        const banks = RiverSystem.getInstance().getBankPositions(nextPos.z);
+        let normalHeight = terrainHeight;
+        if (nextPos.x > banks.left && nextPos.x < banks.right) {
+            const distFromBank = Math.min(Math.abs(nextPos.x - banks.left), Math.abs(nextPos.x - banks.right));
+            const t = Math.min(1.0, distFromBank / 2.0);
+            normalHeight = terrainHeight * (1 - t) + this.waterHeight * t;
+        }
+
+        // --- Jump Logic ---
+        if (result.jump && !this.jumpActive) {
+            this.jumpActive = true;
+            this.jumpStartHeight = nextPos.y;
+            this.jumpHeight = result.jump.height;
+            this.jumpScale = result.jump.distance;
+            this.jumpTraveledDistance = 0;
+        }
+
+        if (this.jumpActive) {
+            const horizontalMoveDist = new THREE.Vector2(nextPos.x, nextPos.z).distanceTo(prevHorizontalPos);
+            this.jumpTraveledDistance += horizontalMoveDist;
+
+            const t = this.jumpTraveledDistance / this.jumpScale;
+            // height = start jump height + 4 * t * (1-t) * jump height
+            const parabolicHeight = this.jumpStartHeight + 4 * t * (1 - t) * this.jumpHeight;
+
+            if (parabolicHeight <= normalHeight) {
+                this.jumpActive = false;
+                nextPos.y = normalHeight;
+            } else {
+                nextPos.y = parabolicHeight;
+            }
+        } else {
+            nextPos.y = normalHeight;
+        }
 
         this.pendingKinematic = {
             pos: nextPos,
@@ -424,7 +476,6 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         if (!mesh) return;
 
         const nextPos = mesh.position.clone();
-        this.currentAngle = physicsBody.getAngle();
 
         const steering = result.path;
         const targetWorldPos = steering.target;
@@ -436,19 +487,15 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const distToTarget = diffToTarget.length();
 
         let targetAngle: number;
-        if (steering.facing?.angle !== undefined) {
-            targetAngle = steering.facing.angle;
+        const parent = this.entity.parent();
+        if (parent && parent.meshes.length > 0) {
+            const diffLocal = new THREE.Vector3(diffToTarget.x, 0, diffToTarget.y);
+            const parentQuat = new THREE.Quaternion();
+            parent.meshes[0].getWorldQuaternion(parentQuat);
+            diffLocal.applyQuaternion(parentQuat.invert());
+            targetAngle = Math.atan2(diffLocal.x, diffLocal.z);
         } else {
-            const parent = this.entity.parent();
-            if (parent && parent.meshes.length > 0) {
-                const diffLocal = new THREE.Vector3(diffToTarget.x, 0, diffToTarget.y);
-                const parentQuat = new THREE.Quaternion();
-                parent.meshes[0].getWorldQuaternion(parentQuat);
-                diffLocal.applyQuaternion(parentQuat.invert());
-                targetAngle = Math.atan2(diffLocal.x, diffLocal.z);
-            } else {
-                targetAngle = Math.atan2(diffToTarget.x, -diffToTarget.y);
-            }
+            targetAngle = Math.atan2(diffToTarget.x, -diffToTarget.y);
         }
 
         const turnSpeed = steering.turningSpeed ?? this.ROTATION_SPEED_FLIGHT;
@@ -488,13 +535,6 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const bankingEnabled = steering.bankingEnabled ?? true;
         if (bankingEnabled) {
             normal = this.getBankingNormal();
-        }
-
-        if (steering.facing?.normal) {
-            const blendRange = 2.0;
-            const distToTargetHeight = Math.abs(currentHeight - desiredHeight);
-            const blendFactor = 1.0 - Math.min(1.0, distToTargetHeight / blendRange);
-            normal.lerp(steering.facing.normal, blendFactor).normalize();
         }
 
         this.pendingKinematic = {

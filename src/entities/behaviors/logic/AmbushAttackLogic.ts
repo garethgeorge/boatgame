@@ -37,9 +37,9 @@ export class AmbushAttackLogic implements AnimalLogic {
             return {
                 path: {
                     target: context.originPos,
-                    speed: 0
+                    speed: 0,
+                    locomotionType: 'WATER'
                 },
-                locomotionType: 'WATER',
             }
         }
 
@@ -70,7 +70,6 @@ export class AmbushAttackLogic implements AnimalLogic {
 
         return {
             path: steering,
-            locomotionType: 'WATER',
         };
     }
 
