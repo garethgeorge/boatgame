@@ -2,6 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { GraphicsUtils } from './GraphicsUtils';
 import { Boat } from '../entities/Boat';
+import { PhysicsUtils } from './PhysicsUtils';
 
 export abstract class Entity {
 
@@ -44,6 +45,17 @@ export abstract class Entity {
 
     public setParent(parent: Entity | null) {
         this._parent = parent;
+        if (parent) {
+            for (const body of this.physicsBodies) {
+                body.setType(planck.Body.KINEMATIC);
+                PhysicsUtils.setCollisionMask(body, 0);
+            }
+        } else {
+            for (const body of this.physicsBodies) {
+                //body.setType(planck.Body.KINEMATIC);
+                PhysicsUtils.setCollisionMask(body, 0xFFFF);
+            }
+        }
     }
 
     public children(): Entity[] {

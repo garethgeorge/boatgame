@@ -54,7 +54,7 @@ export interface SceneConfig {
  * Defines a segment of a track where certain scenes are laid out.
  */
 export interface StageConfig {
-    name: string;
+    name?: string;
     /** The progress range [0.0, 1.0] within the biome where this stage can be selected */
     progress: [number, number];
     /** Scenes to choose from for this stage */
@@ -66,7 +66,7 @@ export interface StageConfig {
  * or a collection of explicit, unique placements.
  */
 export interface TrackConfig {
-    name: string;
+    name?: string;
     /** Procedural stages that fill the biome length (optional if placements is used) */
     stages?: StageConfig[];
     /** Explicit, unique placements at specific progress points (optional if stages is used) */

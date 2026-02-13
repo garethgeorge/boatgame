@@ -9,6 +9,7 @@ import { LocomotionType } from './logic/strategy/AnimalPathStrategy';
 import { AnimalLogicConfig } from './logic/AnimalLogicConfigs';
 import { AnimalLogicRegistry } from './logic/AnimalLogicRegistry';
 import { RiverSystem } from '../../world/RiverSystem';
+import { PhysicsUtils } from '../../core/PhysicsUtils';
 
 interface ScriptStackEntry {
     script: AnimalLogicScriptFn;
@@ -299,7 +300,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
 
     private setPhysicsMode(body: planck.Body, kinematic: boolean) {
         if (kinematic && !this.isKinematic) {
-            AnimalBehaviorUtils.setCollisionMask(body, 0);
+            PhysicsUtils.setCollisionMask(body, 0);
             body.setType(planck.Body.KINEMATIC);
 
             // We are driving position directly
@@ -311,7 +312,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
 
             this.isKinematic = true;
         } else if (!kinematic && this.isKinematic) {
-            AnimalBehaviorUtils.setCollisionMask(body, 0xFFFF);
+            PhysicsUtils.setCollisionMask(body, 0xFFFF);
             body.setType(planck.Body.DYNAMIC);
             this.isKinematic = false;
         }

@@ -8,6 +8,7 @@ import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { NarwhalRule, PolarBearRule, PenguinKayakRule } from '../../entities/AnimalLayoutRules';
 import { IcebergRule, BuoyRule, BottleRule } from '../../entities/StaticLayoutRules';
+import { VignetteLayoutRules } from '../../entities/VignetteLayoutRules';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
@@ -75,7 +76,8 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                     {
                         id: 'rock',
                         preference: Fitness.make({
-                            fitness: 0.1
+                            fitness: 0.1,
+                            stepDistance: [10, 30]
                         }),
                         params: RockParams.rock({ rockBiome: 'ice' })
                     },
@@ -88,21 +90,53 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
 
     public createLayoutConfig(): BoatPathLayoutConfig {
         const tracks: TrackConfig[] = [{
-            name: 'obstacles',
+            name: 'big bergs and buoys',
+            stages: [{
+                progress: [0, 1.0],
+                scenes: [{
+                    length: [100, 200], patterns: [
+                        Place.scatter_scatter(VignetteLayoutRules.icebergWalrus(), [1.0, 3.0]),
+                        Place.scatter_nearShore(BuoyRule.get(), [0.5, 1.5]),
+                    ]
+                },
+                ]
+            }],
+        },
+        {
+            name: 'little bergs',
+            stages: [{
+                progress: [0, 1.0],
+                scenes: [{
+                    length: [100, 200], patterns: [
+                        Place.scatter_scatter([IcebergRule.get()], [1.0, 3.0]),
+                    ]
+                },
+                ]
+            }],
+        },
+        {
+            name: 'animals',
             stages: [{
                 name: 'ice_gauntlet',
                 progress: [0, 1.0],
                 scenes: [{
                     length: [100, 200], patterns: [
-                        Place.scatter_slalom(IcebergRule.get(), [1.0, 3.0]),
-                        Place.scatter_middle(BuoyRule.get(), [0.5, 1.5]),
-                        Place.scatter_slalom(NarwhalRule.get(), [0.5, 1.0])
+                        Place.scatter_nearShore([
+                            PolarBearRule.get(),
+                            PenguinKayakRule.get(),
+                            NarwhalRule.get()], [0.5, 0.5]),
                     ]
-                },
-                {
+                }]
+            }],
+        },
+        {
+            name: 'rewards',
+            stages: [{
+                name: 'bottles',
+                progress: [0, 1.0],
+                scenes: [{
                     length: [100, 200], patterns: [
                         Place.scatter_path(BottleRule.get(), [0.25, 0.25]),
-                        Place.scatter_nearShore([PolarBearRule.get(), PenguinKayakRule.get()], [0.5, 0.5])
                     ]
                 }]
             }],

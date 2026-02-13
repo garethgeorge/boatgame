@@ -89,16 +89,6 @@ export class AnimalBehaviorUtils {
         return { startFleeDistance, stopFleeDistance, fleeSpeed, turningSpeed, turningSmoothing };
     }
 
-    public static setCollisionMask(body: planck.Body, maskBits: number) {
-        for (let b = body.getFixtureList(); b; b = b.getNext()) {
-            b.setFilterData({
-                categoryBits: b.getFilterCategoryBits(),
-                maskBits: maskBits,
-                groupIndex: b.getFilterGroupIndex()
-            });
-        }
-    }
-
     /**
      * Calculates the true Euclidean distance between two points in the 2D physics plane.
      */
