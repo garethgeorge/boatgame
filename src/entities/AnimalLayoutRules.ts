@@ -31,6 +31,7 @@ import { Monkey } from './obstacles/Monkey';
 import { Unicorn } from './obstacles/Unicorn';
 import { Dragonfly } from './obstacles/Dragonfly';
 import { Pterodactyl } from './obstacles/Pterodactyl';
+import { Narwhal } from './obstacles/Narwhal';
 import { Decorations, DecorationId } from '../world/decorations/Decorations';
 import { PlacementPredicate, LayoutRules } from '../world/layout/LayoutRuleBuilders';
 import { LayoutPlacement } from '../world/layout/LayoutPlacement';
@@ -751,6 +752,27 @@ export class DolphinRule extends AnimalRule {
             EntityIds.DOLPHIN, Dolphin, ['dolphin'],
             EntityMetadata.dolphin.radius,
             Dolphin.HEIGHT_IN_WATER
+        );
+    }
+
+    protected behavior(ctx: LayoutParams): AnimalBehaviorConfig {
+        return { type: 'swim' };
+    }
+}
+
+export class NarwhalRule extends AnimalRule {
+    private static _instance: NarwhalRule = null;
+
+    public static get(predicate: PlacementPredicate = AnimalRule.waterPredicate): LayoutRule {
+        if (!this._instance) this._instance = new NarwhalRule;
+        return this._instance.get(predicate);
+    }
+
+    constructor() {
+        super(
+            EntityIds.NARWHAL, Narwhal, ['narwhal'],
+            EntityMetadata.narwhal.radius,
+            Narwhal.HEIGHT_IN_WATER
         );
     }
 

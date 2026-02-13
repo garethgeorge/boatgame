@@ -7,7 +7,7 @@ import { TierRule } from '../decorators/DecorationRuleBuilders';
 import { Fitness, RockParams, TreeParams } from '../decorations/SceneryRules';
 import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
-import { PolarBearRule, PenguinKayakRule } from '../../entities/AnimalLayoutRules';
+import { NarwhalRule, PolarBearRule, PenguinKayakRule } from '../../entities/AnimalLayoutRules';
 import { IcebergRule, BuoyRule, BottleRule } from '../../entities/StaticLayoutRules';
 
 export class IceBiomeFeatures extends BaseBiomeFeatures {
@@ -95,7 +95,8 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 scenes: [{
                     length: [100, 200], patterns: [
                         Place.scatter_slalom(IcebergRule.get(), [1.0, 3.0]),
-                        Place.scatter_middle(BuoyRule.get(), [0.5, 1.5])
+                        Place.scatter_middle(BuoyRule.get(), [0.5, 1.5]),
+                        Place.scatter_slalom(NarwhalRule.get(), [0.5, 1.0])
                     ]
                 },
                 {

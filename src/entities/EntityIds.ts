@@ -10,6 +10,7 @@ export enum EntityIds {
     MOOSE = 'moose',
     TRICERATOPS = 'triceratops',
     DOLPHIN = 'dolphin',
+    NARWHAL = 'narwhal',
     DUCKLING = 'duckling',
     BUTTERFLY = 'butterfly',
     PTERODACTYL = 'pterodactyl',
