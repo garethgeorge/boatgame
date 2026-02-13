@@ -68,6 +68,10 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         this.nextLogicConfig = this.beginScript(script, '');
     }
 
+    public getWaterHeight(): number {
+        return this.waterHeight;
+    }
+
     private beginScript(script: AnimalLogicScript, lastResult: string): AnimalLogicConfig {
         if (!script) return null;
 
@@ -119,12 +123,15 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const physicsBody = this.entity.getPhysicsBody();
         if (!targetBody || !physicsBody) return;
 
+        const worldPos = this.entity.localPos().clone();
+        this.entity.localToWorldPos(worldPos);
+
         const context: AnimalLogicContext = {
             dt,
             animal: this.entity,
             originPos: physicsBody.getPosition(),
             snoutPos: physicsBody.getWorldPoint(this.snoutOffset),
-            currentHeight: this.entity.getHeight(),
+            currentHeight: worldPos.y,
             physicsBody,
             targetBody,
             aggressiveness: this.aggressiveness,
@@ -423,18 +430,8 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const rotation = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), maxRotation);
         const nextAngle = currentAngle + rotation;
 
-        const worldPos = nextPos.clone();
-        this.entity.localToWorldPos(worldPos);
-        const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(worldPos.x, worldPos.z);
-        const terrainNormal = RiverSystem.getInstance().terrainGeometry.calculateNormal(worldPos.x, worldPos.z);
-
-        const banks = RiverSystem.getInstance().getBankPositions(worldPos.z);
-        let normalHeight = terrainHeight;
-        if (worldPos.x > banks.left && worldPos.x < banks.right) {
-            const distFromBank = Math.min(Math.abs(worldPos.x - banks.left), Math.abs(worldPos.x - banks.right));
-            const t = Math.min(1.0, distFromBank / 2.0);
-            normalHeight = terrainHeight * (1 - t) + this.waterHeight * t;
-        }
+        const { y: terrainHeight, normal: terrainNormal } =
+            this.entity.sampleTerrain(nextPos.x, nextPos.z, this.waterHeight);
 
         // --- Jump Logic ---
         if (result.jump && !this.jumpActive) {
@@ -453,14 +450,14 @@ export class AnimalUniversalBehavior implements EntityBehavior {
             // height = start jump height + 4 * t * (1-t) * jump height
             const parabolicHeight = this.jumpStartHeight + 4 * t * (1 - t) * this.jumpHeight;
 
-            if (parabolicHeight <= normalHeight) {
+            if (parabolicHeight <= terrainHeight) {
                 this.jumpActive = false;
-                nextPos.y = normalHeight;
+                nextPos.y = terrainHeight;
             } else {
                 nextPos.y = parabolicHeight;
             }
         } else {
-            nextPos.y = normalHeight;
+            nextPos.y = terrainHeight;
         }
 
         this.pendingKinematic = {

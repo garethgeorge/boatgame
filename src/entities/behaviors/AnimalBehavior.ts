@@ -28,10 +28,22 @@ export interface AnyAnimal {
     localToWorldPos(world: THREE.Vector3): void;
 
     /**
+     * Get the position of the animal in its parent frame.
+     */
+    localPos(): THREE.Vector3;
+
+    /**
      * Note that this is the physics coordinate system angle, -ve of
      * graphics.
      */
     localAngle(): number;
+
+    /**
+     * Sample the terrain at the local (x,z) coordinate. Water height is
+     * supplied as a bit of a hack so that animal can return its height in
+     * water if the location is in the river.
+     */
+    sampleTerrain(x: number, z: number, waterHeight: number): { y: number, normal: THREE.Vector3 };
 
     /**
      * The physics body is directly read and updated by the behavior.
@@ -48,11 +60,6 @@ export interface AnyAnimal {
      * mesh.
      */
     getMesh(): THREE.Object3D | null;
-
-    /**
-     * Get the height of the animal in its parent frame.
-     */
-    getHeight(): number;
 
     /**
      * Applies only to dynamic motion (i.e. motion driven by physiscs)
