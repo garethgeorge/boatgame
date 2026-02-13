@@ -24,7 +24,6 @@ import { Swan } from './obstacles/Swan';
 import { Unicorn } from './obstacles/Unicorn';
 import { GingerMan } from './obstacles/GingerMan';
 import * as THREE from 'three';
-import { Walrus } from './obstacles';
 import { BaseMangrove } from './obstacles/Mangrove';
 import { MessageInABottle } from './obstacles/MessageInABottle';
 import { Narwhal } from './obstacles/Narwhal';
