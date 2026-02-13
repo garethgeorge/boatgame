@@ -86,6 +86,7 @@ describe('AnimalUniversalBehavior', () => {
             handleBehaviorEvent: vi.fn(),
             setDynamicPosition: vi.fn(),
             parent: vi.fn(() => null),
+            localPos: vi.fn(() => mockMesh.position),
             worldToLocalPos: vi.fn((v: THREE.Vector3) => {
                 const parent = mockEntity.parent();
                 if (parent && parent.meshes.length > 0) {
@@ -106,6 +107,22 @@ describe('AnimalUniversalBehavior', () => {
                 }
                 return worldAngle;
             }),
+            getTerrainMap: vi.fn(() => ({
+                sample: vi.fn((x: number, z: number, waterHeight: number) => {
+                    const terrainHeight = mockRiverSystem.terrainGeometry.calculateHeight(x, z);
+                    const terrainNormal = mockRiverSystem.terrainGeometry.calculateNormal(x, z);
+
+                    const banks = mockRiverSystem.getBankPositions(z);
+                    let normalHeight = terrainHeight;
+                    if (x > banks.left && x < banks.right) {
+                        const distFromBank = Math.min(Math.abs(x - banks.left), Math.abs(x - banks.right));
+                        const t = Math.min(1.0, distFromBank / 2.0);
+                        normalHeight = terrainHeight * (1 - t) + waterHeight * t;
+                    }
+
+                    return { y: normalHeight, normal: terrainNormal };
+                })
+            }))
         };
 
         mockLogic = {

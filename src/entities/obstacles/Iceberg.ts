@@ -4,9 +4,11 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/decorations/Decorations';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
+import { TerrainMap } from '../behaviors/TerrainMap';
 
 export class Iceberg extends Entity {
     private animationMixer?: THREE.AnimationMixer;
+    private terrainMap: TerrainMap = new IcebergTerrainMap();
 
     constructor(x: number, y: number, radius: number, hasBear: boolean, physicsEngine: PhysicsEngine) {
         super();
@@ -148,7 +150,11 @@ export class Iceberg extends Entity {
         // Drifts naturally
     }
 
-    // Monotone Chain Convex Hull Algorithm
+    getTerrainMap(): TerrainMap {
+        return this.terrainMap;
+    }
+
+    // --- Static
     private static getConvexHull(points: planck.Vec2[]): planck.Vec2[] {
         if (points.length <= 3) return points;
 
@@ -189,5 +195,11 @@ export class Iceberg extends Entity {
     // Positive if O->A->B is CCW
     private static crossProduct(o: planck.Vec2, a: planck.Vec2, b: planck.Vec2): number {
         return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+    }
+}
+
+class IcebergTerrainMap implements TerrainMap {
+    sample(x: number, z: number, waterHeight: number): { y: number; normal: THREE.Vector3; } {
+        return { y: 0.2, normal: new THREE.Vector3(0, 1, 0) };
     }
 }

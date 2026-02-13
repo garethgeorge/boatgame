@@ -41,6 +41,7 @@ class IcebergWalrusPlacement implements LayoutPlacement, LayoutGenerator {
 
         // Parenting
         iceberg.addChild(walrus);
+        walrus.setTerrainMap(iceberg.getTerrainMap());
     }
 
     public generate(placements: LayoutPlacements) {

@@ -12,6 +12,8 @@ import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { AnimalBehaviorConfig } from '../behaviors/AnimalBehaviorConfigs';
 import { TerrainSlot } from '../../world/TerrainSlotMap';
 import { RiverSystem } from '../../world/RiverSystem';
+import { TerrainMap } from '../behaviors/TerrainMap';
+import { WorldTerrainMap } from '../behaviors/WorldTerrainMap';
 
 
 export interface AnimalOptions {
@@ -52,6 +54,7 @@ export abstract class Animal extends Entity implements AnyAnimal {
     private behavior: EntityBehavior | null = null;
     private player: AnimationPlayer | null = null;
     public currentSlot: TerrainSlot | null = null;
+    private terrainMap: TerrainMap = WorldTerrainMap.getInstance();
 
     constructor(
         physicsEngine: PhysicsEngine,
@@ -287,25 +290,12 @@ export abstract class Animal extends Entity implements AnyAnimal {
         return worldAngle - parentAngle;
     }
 
-    sampleTerrain(x: number, z: number, waterHeight: number): { y: number; normal: THREE.Vector3; } {
-        const parent = this.parent();
+    getTerrainMap(): TerrainMap {
+        return this.terrainMap;
+    }
 
-        if (!parent) {
-            const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(x, z);
-            const terrainNormal = RiverSystem.getInstance().terrainGeometry.calculateNormal(x, z);
-
-            const banks = RiverSystem.getInstance().getBankPositions(z);
-            let normalHeight = terrainHeight;
-            if (x > banks.left && x < banks.right) {
-                const distFromBank = Math.min(Math.abs(x - banks.left), Math.abs(x - banks.right));
-                const t = Math.min(1.0, distFromBank / 2.0);
-                normalHeight = terrainHeight * (1 - t) + waterHeight * t;
-            }
-
-            return { y: normalHeight, normal: terrainNormal };
-        } else {
-            return { y: 0.2, normal: new THREE.Vector3(0, 1, 0) };
-        }
+    setTerrainMap(map: TerrainMap) {
+        this.terrainMap = map;
     }
 
     getPhysicsBody(): planck.Body | null {

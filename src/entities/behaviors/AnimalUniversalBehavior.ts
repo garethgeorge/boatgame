@@ -431,7 +431,7 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const nextAngle = currentAngle + rotation;
 
         const { y: terrainHeight, normal: terrainNormal } =
-            this.entity.sampleTerrain(nextPos.x, nextPos.z, this.waterHeight);
+            this.entity.getTerrainMap().sample(nextPos.x, nextPos.z, this.waterHeight);
 
         // --- Jump Logic ---
         if (result.jump && !this.jumpActive) {

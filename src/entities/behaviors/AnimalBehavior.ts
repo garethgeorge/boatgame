@@ -2,6 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { AnimalLogic, AnimalLogicPhase } from './logic/AnimalLogic';
 import { TerrainSlot } from '../../world/TerrainSlotMap';
+import { TerrainMap } from './TerrainMap';
 
 /**
  * LOGIC_STARTING - about to start a logic stage
@@ -39,11 +40,9 @@ export interface AnyAnimal {
     localAngle(): number;
 
     /**
-     * Sample the terrain at the local (x,z) coordinate. Water height is
-     * supplied as a bit of a hack so that animal can return its height in
-     * water if the location is in the river.
+     * Get the terrain map for the animal. 
      */
-    sampleTerrain(x: number, z: number, waterHeight: number): { y: number, normal: THREE.Vector3 };
+    getTerrainMap(): TerrainMap;
 
     /**
      * The physics body is directly read and updated by the behavior.
