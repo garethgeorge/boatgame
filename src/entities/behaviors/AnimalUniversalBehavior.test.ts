@@ -350,4 +350,45 @@ describe('AnimalUniversalBehavior', () => {
             expect(mesh.position.z).toBe(789);
         });
     });
+
+    describe('Parented Locomotion', () => {
+        it('should handle parented locomotion correctly', () => {
+            const config: any = { name: 'LandLogic' };
+            const behavior = new AnimalUniversalBehavior(mockEntity, 0.5, 0, config);
+
+            // Mock parent mesh
+            const parentMesh = new THREE.Group();
+            parentMesh.position.set(100, 0, 100);
+            parentMesh.updateMatrixWorld();
+
+            const mockParent = {
+                meshes: [parentMesh]
+            };
+
+            mockEntity.parent.mockReturnValue(mockParent);
+
+            // Target is at world (110, 110)
+            // Relative to parent (100, 100), this should be (10, 10)
+            mockLogic.update.mockReturnValue({
+                path: { target: planck.Vec2(110, 110), speed: 10, turningSpeed: 100, locomotionType: 'LAND' as const },
+            });
+
+            // Initial local position is (0, 0)
+            const mesh = mockEntity.getMesh();
+            mesh.position.set(0, 0, 0);
+
+            behavior.update(0.1); // moveDist = 10 * 0.1 = 1.0
+            behavior.apply(0.1);
+
+            // moveVec local is (10, 10)
+            // normalized moveDir local is (1/sqrt(2), 1/sqrt(2)) approx (0.707, 0.707)
+            expect(mesh.position.x).toBeCloseTo(0.707, 3);
+            expect(mesh.position.z).toBeCloseTo(0.707, 3);
+
+            // Rotation should be atan2(10, -10) = 3 * PI / 4 = 2.356
+            const worldEuler = new THREE.Euler().setFromQuaternion(mesh.quaternion, 'YXZ');
+            const angle = -worldEuler.y;
+            expect(angle).toBeCloseTo(2.356, 3);
+        });
+    });
 });

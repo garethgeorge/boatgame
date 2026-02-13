@@ -380,41 +380,24 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const targetWorldPos = steering.target;
         const desiredSpeed = steering.speed;
 
+        const parent = this.entity.parent();
+        const targetRelativePos = this.getRelativePosition(targetWorldPos, parent);
+
         // --- Movement ---
-        const moveVecWorld = targetWorldPos.clone().sub(originPos);
-        const distToTarget = moveVecWorld.length();
+        const moveVec = targetRelativePos.clone().sub(new THREE.Vector2(nextPos.x, nextPos.z));
+        const distToTarget = moveVec.length();
 
         if (distToTarget > 0.01) {
-            const moveDist = desiredSpeed * dt;
-            const moveDirWorld = moveVecWorld.clone().mul(1.0 / distToTarget);
-            const moveStepWorld = new THREE.Vector3(moveDirWorld.x * moveDist, 0, moveDirWorld.y * moveDist);
-
-            const parent = this.entity.parent();
-            if (parent && parent.meshes.length > 0) {
-                const parentQuat = new THREE.Quaternion();
-                parent.meshes[0].getWorldQuaternion(parentQuat);
-                const moveStepLocal = moveStepWorld.clone().applyQuaternion(parentQuat.invert());
-                nextPos.x += moveStepLocal.x;
-                nextPos.z += moveStepLocal.z;
-            } else {
-                nextPos.x += moveStepWorld.x;
-                nextPos.z += moveStepWorld.z;
-            }
+            const moveDist = Math.min(distToTarget, desiredSpeed * dt);
+            const moveDir = moveVec.clone().normalize();
+            nextPos.x += moveDir.x * moveDist;
+            nextPos.z += moveDir.y * moveDist;
         }
 
         // --- Rotation ---
         let targetAngle = this.currentAngle;
         if (distToTarget > 0.1) {
-            const parent = this.entity.parent();
-            if (parent && parent.meshes.length > 0) {
-                const moveDirLocal = new THREE.Vector3(moveVecWorld.x, 0, moveVecWorld.y);
-                const parentQuat = new THREE.Quaternion();
-                parent.meshes[0].getWorldQuaternion(parentQuat);
-                moveDirLocal.applyQuaternion(parentQuat.invert());
-                targetAngle = Math.atan2(moveDirLocal.x, -moveDirLocal.z); // Local coordinates: Forward is -Z (longitudinal)
-            } else {
-                targetAngle = Math.atan2(moveVecWorld.x, -moveVecWorld.y);
-            }
+            targetAngle = Math.atan2(moveVec.x, -moveVec.y); // Forward is -Z
         }
 
         let angleDiff = targetAngle - this.currentAngle;
@@ -426,13 +409,14 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const rotation = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), maxRotation);
         const nextAngle = this.currentAngle + rotation;
 
-        const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(nextPos.x, nextPos.z);
-        const terrainNormal = RiverSystem.getInstance().terrainGeometry.calculateNormal(nextPos.x, nextPos.z);
+        const worldPos = this.getWorldPosition(nextPos, parent);
+        const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(worldPos.x, worldPos.z);
+        const terrainNormal = RiverSystem.getInstance().terrainGeometry.calculateNormal(worldPos.x, worldPos.z);
 
-        const banks = RiverSystem.getInstance().getBankPositions(nextPos.z);
+        const banks = RiverSystem.getInstance().getBankPositions(worldPos.z);
         let normalHeight = terrainHeight;
-        if (nextPos.x > banks.left && nextPos.x < banks.right) {
-            const distFromBank = Math.min(Math.abs(nextPos.x - banks.left), Math.abs(nextPos.x - banks.right));
+        if (worldPos.x > banks.left && worldPos.x < banks.right) {
+            const distFromBank = Math.min(Math.abs(worldPos.x - banks.left), Math.abs(worldPos.x - banks.right));
             const t = Math.min(1.0, distFromBank / 2.0);
             normalHeight = terrainHeight * (1 - t) + this.waterHeight * t;
         }
@@ -487,20 +471,12 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         const desiredHeight = steering.height ?? context.currentHeight;
 
         // --- Rotation and Banking ---
-        const diffToTarget = targetWorldPos.clone().sub(originPos);
-        const distToTarget = diffToTarget.length();
-
-        let targetAngle: number;
         const parent = this.entity.parent();
-        if (parent && parent.meshes.length > 0) {
-            const diffLocal = new THREE.Vector3(diffToTarget.x, 0, diffToTarget.y);
-            const parentQuat = new THREE.Quaternion();
-            parent.meshes[0].getWorldQuaternion(parentQuat);
-            diffLocal.applyQuaternion(parentQuat.invert());
-            targetAngle = Math.atan2(diffLocal.x, diffLocal.z);
-        } else {
-            targetAngle = Math.atan2(diffToTarget.x, -diffToTarget.y);
-        }
+        const targetRelativePos = this.getRelativePosition(targetWorldPos, parent);
+        const moveVec = targetRelativePos.clone().sub(new THREE.Vector2(nextPos.x, nextPos.z));
+        const distToTarget = moveVec.length();
+
+        const targetAngle = Math.atan2(moveVec.x, -moveVec.y);
 
         const turnSpeed = steering.turningSpeed ?? this.ROTATION_SPEED_FLIGHT;
         this.handleFlightRotationAndBanking(targetAngle, turnSpeed, dt);
@@ -508,20 +484,9 @@ export class AnimalUniversalBehavior implements EntityBehavior {
         // --- Horizontal Movement ---
         if (distToTarget > 0.01) {
             const moveDist = Math.min(distToTarget, desiredSpeed * dt);
-            const moveDirWorld = diffToTarget.clone().mul(1.0 / distToTarget);
-            const moveStepWorld = new THREE.Vector3(moveDirWorld.x * moveDist, 0, moveDirWorld.y * moveDist);
-
-            const parent = this.entity.parent();
-            if (parent && parent.meshes.length > 0) {
-                const parentQuat = new THREE.Quaternion();
-                parent.meshes[0].getWorldQuaternion(parentQuat);
-                const moveStepLocal = moveStepWorld.clone().applyQuaternion(parentQuat.invert());
-                nextPos.x += moveStepLocal.x;
-                nextPos.z += moveStepLocal.z;
-            } else {
-                nextPos.x += moveStepWorld.x;
-                nextPos.z += moveStepWorld.z;
-            }
+            const moveDir = moveVec.clone().normalize();
+            nextPos.x += moveDir.x * moveDist;
+            nextPos.z += moveDir.y * moveDist;
         }
 
         // --- Height ---
@@ -600,5 +565,23 @@ export class AnimalUniversalBehavior implements EntityBehavior {
                 angVel: 0
             };
         }
+    }
+
+    private getRelativePosition(worldPos: planck.Vec2, parent: any | null): THREE.Vector2 {
+        if (parent && parent.meshes.length > 0) {
+            const parentMesh = parent.meshes[0];
+            const localPos = new THREE.Vector3(worldPos.x, 0, worldPos.y);
+            parentMesh.worldToLocal(localPos);
+            return new THREE.Vector2(localPos.x, localPos.z);
+        }
+        return new THREE.Vector2(worldPos.x, worldPos.y);
+    }
+
+    private getWorldPosition(localPos: THREE.Vector3, parent: any | null): THREE.Vector3 {
+        if (parent && parent.meshes.length > 0) {
+            const parentMesh = parent.meshes[0];
+            return localPos.clone().applyMatrix4(parentMesh.matrixWorld);
+        }
+        return localPos.clone();
     }
 }
