@@ -33,8 +33,9 @@ class IcebergWalrusPlacement implements LayoutPlacement, LayoutGenerator {
             y: this.z,
             height: 0.2,
             angle: Math.random() * Math.PI * 2,
-            behavior: { type: 'wait-attack', logicName: 'WolfAttack' },
+            behavior: { type: 'walk-to-boat-attack' },
             zRange: this.biomeZRange
+
         });
         context.entityManager.add(walrus);
 

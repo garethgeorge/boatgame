@@ -12,6 +12,7 @@ import { WanderingFlightLogic, WanderingFlightParams } from './WanderingFlightLo
 import { WaterLandingFlightLogic, WaterLandingFlightParams } from './WaterLandingFlightLogic';
 import { SlotLandingFlightLogic, SlotLandingFlightParams } from './SlotLandingFlightLogic';
 import { SwimBackInRangeLogic, SwimBackInRangeParams } from './SwimBackInRangeLogic';
+import { WalkTowardBoatLogic, WalkTowardBoatParams } from './WalkTowardBoatLogic';
 import { WolfAttackLogic } from './WolfAttackLogic';
 
 export interface AnimalLogicBaseConfig {
@@ -20,6 +21,7 @@ export interface AnimalLogicBaseConfig {
 
 export type AnimalLogicConfig =
     | ({ name: 'AmbushAttack'; params?: never } & AnimalLogicBaseConfig)
+    | ({ name: 'WalkTowardBoat'; params: WalkTowardBoatParams } & AnimalLogicBaseConfig)
     | ({ name: 'BuzzBoatFlight'; params: BuzzBoatFlightParams } & AnimalLogicBaseConfig)
     | ({ name: 'SwimAway'; params: SwimAwayParams } & AnimalLogicBaseConfig)
     | ({ name: 'Delay'; params: DelayParams } & AnimalLogicBaseConfig)
@@ -34,3 +36,4 @@ export type AnimalLogicConfig =
     | ({ name: 'SlotLandingFlight'; params: SlotLandingFlightParams } & AnimalLogicBaseConfig)
     | ({ name: 'SwimBackInRange'; params: SwimBackInRangeParams } & AnimalLogicBaseConfig)
     | ({ name: 'WolfAttack'; params?: never } & AnimalLogicBaseConfig);
+

@@ -5,7 +5,10 @@ export type AttackBehaviorConfig =
     // starts out waiting on land, enters river, and executes attack
     | { type: 'wait-attack'; logicName: 'AmbushAttack' | 'WolfAttack' }
     // starts out waiting/walking on land, enters river, and executes attack
-    | { type: 'walk-attack'; logicName: 'AmbushAttack' | 'WolfAttack' };
+    | { type: 'walk-attack'; logicName: 'AmbushAttack' | 'WolfAttack' }
+    // starts out waiting on land, then walks toward boat on land
+    | { type: 'walk-to-boat-attack' };
+
 
 export type SwimAwayBehaviorConfig =
     { type: 'none' }

@@ -65,6 +65,12 @@ describe('AnimalUniversalBehavior', () => {
             setType: vi.fn(),
             setAngle: vi.fn(),
             setPosition: vi.fn(),
+            getFixtureList: vi.fn(() => ({
+                getNext: vi.fn(() => null),
+                setFilterData: vi.fn(),
+                getFilterCategoryBits: vi.fn(() => 0x0001),
+                getFilterGroupIndex: vi.fn(() => 0),
+            })),
         };
 
         const mockMesh = {
@@ -92,7 +98,18 @@ describe('AnimalUniversalBehavior', () => {
 
         (Boat.getPlayerBody as any).mockReturnValue({ getPosition: () => planck.Vec2(10, 10) });
         (Boat.getBottleCount as any).mockReturnValue(5);
-        (AnimalLogicRegistry.create as any).mockReturnValue(mockLogic);
+        (AnimalLogicRegistry.create as any).mockImplementation((config: any) => {
+            if (config.name === 'WalkTowardBoat') {
+                return {
+                    activate: vi.fn(),
+                    update: vi.fn((ctx) => ({
+                        path: { target: ctx.targetBody.getPosition(), speed: config.params.speed, locomotionType: 'LAND' }
+                    })),
+                    getPhase: vi.fn(() => 'WALKING'),
+                };
+            }
+            return mockLogic;
+        });
     });
 
     it('should initialize with a single config script', () => {
@@ -389,6 +406,21 @@ describe('AnimalUniversalBehavior', () => {
             const worldEuler = new THREE.Euler().setFromQuaternion(mesh.quaternion, 'YXZ');
             const angle = -worldEuler.y;
             expect(angle).toBeCloseTo(2.356, 3);
+        });
+
+        it('should move toward boat in WalkTowardBoatLogic', () => {
+            const config: any = { name: 'WalkTowardBoat', params: { speed: 2.0 } };
+            const behavior = new AnimalUniversalBehavior(mockEntity, 0.5, 0, config);
+
+            // Boat is at (10, 10)
+            behavior.update(0.1); // moveDist = 2.0 * 0.1 = 0.2
+            behavior.apply(0.1);
+
+            const mesh = mockEntity.getMesh();
+            // moveVec is (10, 10), normalized is (0.707, 0.707)
+            // nextPos = (0, 0) + (0.707, 0.707) * 0.2 = (0.1414, 0.1414)
+            expect(mesh.position.x).toBeCloseTo(0.1414, 4);
+            expect(mesh.position.z).toBeCloseTo(0.1414, 4);
         });
     });
 });

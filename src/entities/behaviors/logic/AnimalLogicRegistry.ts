@@ -15,8 +15,10 @@ import { BuzzBoatFlightLogic } from './BuzzBoatFlightLogic';
 import { FlyDirectToShoreLogic } from './FlyDirectToShoreLogic';
 import { FlyOppositeBoatLogic } from './FlyOppositeBoatLogic';
 import { SwimBackInRangeLogic } from './SwimBackInRangeLogic';
+import { WalkTowardBoatLogic } from './WalkTowardBoatLogic';
 
 export class AnimalLogicRegistry {
+
     private static factories: Map<string, (params?: any) => AnimalLogic> = new Map();
 
     static {
@@ -34,8 +36,10 @@ export class AnimalLogicRegistry {
         this.register('WanderingFlight', (params) => new WanderingFlightLogic(params));
         this.register('WaterLandingFlight', (params) => new WaterLandingFlightLogic(params));
         this.register('SwimBackInRange', (params) => new SwimBackInRangeLogic(params));
+        this.register('WalkTowardBoat', (params) => new WalkTowardBoatLogic(params));
         this.register('WolfAttack', () => new WolfAttackLogic());
     }
+
 
     public static register<T extends AnimalLogicConfig['name']>(
         name: T,

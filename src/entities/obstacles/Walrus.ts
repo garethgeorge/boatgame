@@ -63,9 +63,7 @@ export class Walrus extends Animal {
         animations: [
             {
                 phases: [
-                    AnimalLogicPhase.ENTERING_WATER,
-                    AnimalLogicPhase.PREPARING_ATTACK,
-                    AnimalLogicPhase.ATTACKING,
+                    AnimalLogicPhase.WALKING,
                 ],
                 play: Animal.play({
                     name: 'walk',

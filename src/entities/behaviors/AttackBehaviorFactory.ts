@@ -95,8 +95,20 @@ export class AttackBehaviorFactory {
                 },
                 { name: behavior.logicName } as AnimalLogicConfig
             ]);
+        } else if (behavior.type === 'walk-to-boat-attack') {
+            return AnimalLogicStep.sequence([
+                {
+                    name: 'WaitForBoat',
+                    params: { phase: AnimalLogicPhase.IDLE_SHORE, forwardMax: 50 },
+                },
+                {
+                    name: 'WalkTowardBoat',
+                    params: { speed: 2.0 }
+                }
+            ]);
         }
         return null;
+
     }
 }
 
