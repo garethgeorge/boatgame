@@ -28,6 +28,7 @@ import { Walrus } from './obstacles';
 import { BaseMangrove } from './obstacles/Mangrove';
 import { MessageInABottle } from './obstacles/MessageInABottle';
 import { Narwhal } from './obstacles/Narwhal';
+import { Walrus } from './obstacles';
 
 export interface EntityManifestEntry {
     name: string;
