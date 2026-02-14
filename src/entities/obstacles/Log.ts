@@ -105,7 +105,7 @@ export class Log extends Entity {
         // Logs don't break, they block!
     }
 
-    update(dt: number) {
+    updateLogic(dt: number) {
         // Just floats
     }
 }

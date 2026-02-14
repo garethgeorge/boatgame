@@ -61,4 +61,8 @@ export class AnimalUniversalBehavior implements EntityBehavior {
     apply(dt: number) {
         this.locomotionController.apply(dt);
     }
+
+    updateSceneGraph() {
+        this.locomotionController.updateZone();
+    }
 }

@@ -81,7 +81,7 @@ export class Buoy extends Entity {
         // Buoys just bounce
     }
 
-    update(dt: number) {
+    updateLogic(dt: number) {
     }
 
     updateVisuals(dt: number, alpha: number) {

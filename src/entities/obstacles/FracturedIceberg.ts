@@ -94,7 +94,7 @@ export class FracturedIceberg extends Entity {
         this.meshes.push(mesh);
     }
 
-    update(dt: number): void {
+    updateLogic(dt: number): void {
         // Passive physics object, no logic needed
     }
 }

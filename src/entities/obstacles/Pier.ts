@@ -297,7 +297,7 @@ export class Pier extends Entity {
         }
     }
 
-    update(dt: number) {
+    updateLogic(dt: number) {
         this.collectedBottles?.update(dt);
     }
 }

@@ -48,7 +48,7 @@ export class BuoySpawner {
                 super();
                 this.physicsBodies.push(body);
             }
-            update(dt: number) { }
+            updateLogic(dt: number) { }
             wasHitByPlayer() { }
         }
         const anchorEntity = new AnchorEntity(anchorBody);

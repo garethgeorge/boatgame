@@ -3,12 +3,14 @@ import * as THREE from 'three';
 import { AnyAnimal } from './AnimalBehavior';
 import { AnimalLogicContext, AnimalLogicPathResult } from './logic/AnimalLogic';
 import { PhysicsUtils } from '../../core/PhysicsUtils';
+import { Zone } from './TerrainMap';
 
 export class AnimalLocomotionController {
     private entity: AnyAnimal;
     private waterHeight: number;
 
     // Locomotion State
+    private currentZone: Zone | null = null;
     private currentBank: number = 0;
     private jumpActive: boolean = false;
     private jumpStartHeight: number = 0;
@@ -32,10 +34,6 @@ export class AnimalLocomotionController {
     constructor(entity: AnyAnimal, waterHeight: number) {
         this.entity = entity;
         this.waterHeight = waterHeight;
-    }
-
-    public getWaterHeight(): number {
-        return this.waterHeight;
     }
 
     public computeLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
@@ -351,5 +349,26 @@ export class AnimalLocomotionController {
         return up.multiplyScalar(Math.cos(bank))
             .add(right.multiplyScalar(Math.sin(bank)))
             .normalize();
+    }
+
+    public updateZone() {
+        const mesh = this.entity.getMesh();
+        if (!mesh) return;
+
+        // Sample the terrain map at the current position to get the zone
+        const { zone } = this.entity.getTerrainMap().sample(
+            mesh.position.x,
+            mesh.position.z,
+            this.waterHeight,
+            2.0
+        );
+
+        if (this.currentZone !== zone) {
+            this.currentZone = zone;
+            this.entity.handleBehaviorEvent?.({
+                type: 'ZONE_CHANGED',
+                zone: zone
+            });
+        }
     }
 }

@@ -15,7 +15,7 @@ class MockEntity extends Entity {
     public applyCount = 0;
     public visualsCount = 0;
 
-    public update(dt: number) {
+    public updateLogic(dt: number) {
         this.updateCount++;
     }
 

@@ -95,7 +95,7 @@ export class GasCan extends Entity {
         }, { duration: 0.5, rotateSpeed: 0, targetHeightOffset: -2 });
     }
 
-    update(dt: number) {
+    updateLogic(dt: number) {
         if (this.behavior) {
             this.behavior.update(dt);
         }

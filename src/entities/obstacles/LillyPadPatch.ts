@@ -65,7 +65,7 @@ export class LillyPadPatch extends Entity {
         this.updateVisuals(0, 1.0);
     }
 
-    update(dt: number): void {
+    updateLogic(dt: number): void {
         let contact = this.physicsBodies[0].getContactList();
         while (contact) {
             const otherBody = contact.other;

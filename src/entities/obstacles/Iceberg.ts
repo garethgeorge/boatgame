@@ -146,7 +146,7 @@ export class Iceberg extends Entity {
         // Solid
     }
 
-    update(dt: number) {
+    updateLogic(dt: number) {
         // Update animation mixer if present
         if (this.animationMixer) {
             this.animationMixer.update(dt);

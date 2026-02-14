@@ -217,7 +217,7 @@ export abstract class Animal extends Entity implements AnyAnimal {
 
     //--- Entity
 
-    update(dt: number) {
+    updateLogic(dt: number) {
         if (this.behavior) {
             this.behavior.update(dt);
         }
@@ -228,6 +228,12 @@ export abstract class Animal extends Entity implements AnyAnimal {
             this.behavior.apply(dt);
         }
         super.applyUpdate(dt);
+    }
+
+    public updateSceneGraph() {
+        if (this.behavior) {
+            this.behavior.updateSceneGraph();
+        }
     }
 
     updateVisuals(dt: number, alpha: number) {
@@ -325,6 +331,16 @@ export abstract class Animal extends Entity implements AnyAnimal {
             }
             case 'LOGIC_FINISHED': {
                 this.playAnimationForPhase(null, AnimalLogicPhase.NONE);
+                break;
+            }
+            case 'ZONE_CHANGED': {
+                if (event.zone === 'water') {
+                    const parent = this.parent();
+                    if (parent) {
+                        parent.removeChild(this);
+                        this.setTerrainMap(WorldTerrainMap.getInstance());
+                    }
+                }
                 break;
             }
         }

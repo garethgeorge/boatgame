@@ -106,7 +106,7 @@ export class WaterGrass extends Entity {
         this.updateVisuals(0, 1.0);
     }
 
-    update(dt: number): void {
+    updateLogic(dt: number): void {
         // Drag Logic
         // Iterate all contacts
         let contact = this.physicsBodies[0].getContactList();

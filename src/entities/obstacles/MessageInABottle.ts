@@ -70,7 +70,7 @@ export class MessageInABottle extends Entity {
         this.behavior = new MessageInABottle.FloatBehavior(this);
     }
 
-    update(dt: number) {
+    updateLogic(dt: number) {
         if (this.behavior) {
             this.behavior.update(dt);
         }

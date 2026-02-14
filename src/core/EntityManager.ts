@@ -106,6 +106,10 @@ export class EntityManager {
         }
     }
 
+    /**
+     * 1. Compute the updates to the physics/scene graph but don't apply yet so
+     * that all logic sees a consistent view of the just completed frame.
+     */
     updateLogic(dt: number) {
         const entitiesArray = Array.from(this.entities);
 
@@ -119,11 +123,16 @@ export class EntityManager {
         // Logic Pass (Compute) - Non-hierarchical as it's read-only
         for (const entity of entitiesArray) {
             if (shouldUpdateEntity(entity)) {
-                entity.update(dt);
+                entity.updateLogic(dt);
             }
         }
     }
 
+    /**
+     * 2. Apply the changes to the physics for dynamic entities or scene graph
+     * for kinematic entities. These are applied recursively so parent entities
+     * are updated before children. Physics is stepped after this.
+     */
     applyUpdates(dt: number) {
         const shouldUpdateEntity = (entity: Entity) => {
             const isPlayer = entity.physicsBodies.length > 0 &&
@@ -150,8 +159,15 @@ export class EntityManager {
             }
         }
 
-        // Handle removals after apply pass
+        // Scene Graph Updates (Non-hierarchical, safe after apply pass)
         const entitiesArray = Array.from(this.entities);
+        for (const entity of entitiesArray) {
+            if (shouldUpdateEntity(entity)) {
+                entity.updateSceneGraph();
+            }
+        }
+
+        // Handle removals after apply pass
         for (const entity of entitiesArray) {
             if (entity.shouldRemove) {
                 this.remove(entity);
@@ -159,6 +175,9 @@ export class EntityManager {
         }
     }
 
+    /**
+     * 3. Final visuals update after stepping physics.
+     */
     updateVisuals(dt: number, alpha: number) {
         const shouldUpdateEntity = (entity: Entity) => {
             const isPlayer = entity.physicsBodies.length > 0 &&

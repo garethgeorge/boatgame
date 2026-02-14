@@ -40,7 +40,7 @@ export class RiverRock extends Entity {
         // Solid
     }
 
-    update(dt: number) {
+    updateLogic(dt: number) {
         // Static
     }
 }

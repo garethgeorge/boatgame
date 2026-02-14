@@ -77,6 +77,11 @@ export abstract class Entity {
     }
 
     public removeChild(child: Entity) {
+        const index = this._children.indexOf(child);
+        if (index === -1) return;
+
+        this._children.splice(index, 1);
+
         if (child.meshes.length > 0) {
             const childMesh = child.meshes[0];
 
@@ -88,11 +93,6 @@ export abstract class Entity {
 
             scene.attach(childMesh);
             child.setParent(null);
-
-            const index = this._children.indexOf(child);
-            if (index !== -1) {
-                this._children.splice(index, 1);
-            }
         }
     }
 
@@ -101,14 +101,15 @@ export abstract class Entity {
     }
 
     /**
-     * Called each frame to compute the entity state for the next frame.
+     * 1. Called each frame to compute the entity state for the next frame.
      * Use this phase for read-only calculations and goal setting.
      */
-    abstract update(dt: number): void;
+    abstract updateLogic(dt: number): void;
 
     /**
-     * Called each frame to apply the next entity state for the next frame.
-     * Use this phase to modify physics state (forces, velocities, kinematic positions).
+     * 2. Called each frame to apply the next entity state for the next frame.
+     * Use this phase to modify physics state for dynamic entities and the
+     * visuals for kinematic entities. This function is called recursively.
      */
     public applyUpdate(dt: number) {
         // By default, if we are kinematic, we sync the physics body to the mesh
@@ -122,9 +123,36 @@ export abstract class Entity {
         }
     }
 
+    /**
+     * 3. Called after applyUpdate and before removals. 
+     * Use this phase for scene graph modifications (like unparenting) 
+     * that are unsafe during the hierarchical applyUpdate pass.
+     */
+    public updateSceneGraph() {
+    }
+
+    /**
+     * 4. Called each frame to update visuals based on physics and delta time.
+     * Use this phase for interpolation, animations, and non-physics FX.
+     */
+    public updateVisuals(dt: number, alpha: number = 1.0) {
+        let yPos = 0;
+        if (this.physicsBodies.length > 0 && this.meshes.length > 0) {
+            const body = this.physicsBodies[0];
+            const mesh = this.meshes[0];
+            this.updateBodyMeshVisuals(body, mesh, alpha);
+            yPos = mesh.position.y;
+        }
+
+        for (let i = 0; i < Math.min(this.physicsBodies.length, this.debugMeshes.length); i++) {
+            const debugMesh = this.debugMeshes[i];
+            this.updateBodyMeshVisuals(this.physicsBodies[i], debugMesh, alpha);
+            debugMesh.position.y = yPos + 1.0;
+        }
+    }
+
     // Do stuff when hit by the player
     wasHitByPlayer(boat: Boat): void {
-
     }
 
     // Helper function to destroy all physics bodies for the entity
@@ -170,26 +198,6 @@ export abstract class Entity {
         for (const body of this.physicsBodies) {
             this.prevPos.set(body, body.getPosition().clone());
             this.prevAngle.set(body, body.getAngle());
-        }
-    }
-
-    /**
-     * Called each frame to update visuals based on physics and delta time.
-     * Use this phase for interpolation, animations, and non-physics FX.
-     */
-    public updateVisuals(dt: number, alpha: number = 1.0) {
-        let yPos = 0;
-        if (this.physicsBodies.length > 0 && this.meshes.length > 0) {
-            const body = this.physicsBodies[0];
-            const mesh = this.meshes[0];
-            this.updateBodyMeshVisuals(body, mesh, alpha);
-            yPos = mesh.position.y;
-        }
-
-        for (let i = 0; i < Math.min(this.physicsBodies.length, this.debugMeshes.length); i++) {
-            const debugMesh = this.debugMeshes[i];
-            this.updateBodyMeshVisuals(this.physicsBodies[i], debugMesh, alpha);
-            debugMesh.position.y = yPos + 1.0;
         }
     }
 

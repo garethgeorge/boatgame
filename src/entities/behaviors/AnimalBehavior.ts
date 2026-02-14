@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { AnimalLogic, AnimalLogicPhase } from './logic/AnimalLogic';
 import { TerrainSlot } from '../../world/TerrainSlotMap';
-import { TerrainMap } from './TerrainMap';
+import { TerrainMap, Zone } from './TerrainMap';
 
 /**
  * LOGIC_STARTING - about to start a logic stage
@@ -12,6 +12,7 @@ import { TerrainMap } from './TerrainMap';
 export type AnimalBehaviorEvent =
     { type: 'LOGIC_STARTING', logic: AnimalLogic, logicPhase: AnimalLogicPhase }
     | { type: 'LOGIC_TICK', dt: number, logic: AnimalLogic, logicPhase: AnimalLogicPhase }
+    | { type: 'ZONE_CHANGED', zone: Zone }
     | { type: 'LOGIC_FINISHED' }
 
 // Any animal must implement this interface to get behavior

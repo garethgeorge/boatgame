@@ -159,7 +159,7 @@ export class Boat extends Entity {
         mesh.receiveShadow = true;
     }
 
-    update(dt: number, input?: InputManager) {
+    updateLogic(dt: number, input?: InputManager) {
         this.collectedBottles.update(dt);
         if (this.physicsBodies.length === 0 || !input) return;
 

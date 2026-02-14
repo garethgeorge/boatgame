@@ -157,7 +157,7 @@ export class GameEngine {
 
             Profiler.start('Entities');
             // 1. Logic Phase (Read-only)
-            this.boat.update(dt, this.inputManager);
+            this.boat.updateLogic(dt, this.inputManager);
             this.entityManager.updateLogic(dt);
 
             // 2. Apply Phase (Write-intent)

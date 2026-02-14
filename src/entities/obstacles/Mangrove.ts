@@ -37,7 +37,7 @@ export abstract class BaseMangrove extends Entity {
     // Abstract method for subclasses to implement specific collider logic
     protected abstract createFixtures(body: planck.Body, mesh: THREE.Group, scale: number): void;
 
-    update(dt: number): void {
+    updateLogic(dt: number): void {
         // Static, no update needed
     }
 }
