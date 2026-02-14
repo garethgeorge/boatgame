@@ -103,7 +103,10 @@ export class AttackBehaviorFactory {
                 },
                 {
                     name: 'WalkTowardBoat',
-                    params: { speed: 2.0 }
+                    params: { speed: 3.0 }
+                },
+                {
+                    name: 'WolfAttack',
                 }
             ]);
         }
