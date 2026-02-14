@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../Entity';
-import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { PhysicsEngine, CollisionCategories } from '../../core/PhysicsEngine';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { Decorations } from '../../world/decorations/Decorations';
 
@@ -23,7 +23,8 @@ export class RiverRock extends Entity {
         physicsBody.createFixture({
             shape: planck.Circle(radius * 1.1),
             friction: 0.5,
-            restitution: 0.2
+            restitution: 0.2,
+            filterCategoryBits: CollisionCategories.OBSTACLE
         });
 
         physicsBody.setUserData({ type: 'obstacle', subtype: 'rock', entity: this });

@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../Entity';
-import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { PhysicsEngine, CollisionCategories } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/decorations/Decorations';
 import { CollectedBottles } from '../CollectedBottles';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
@@ -155,7 +155,8 @@ export class Pier extends Entity {
         // Length is along X (extending from bank). Width is along Y (thickness).
         physicsBody.createFixture({
             shape: planck.Box(length / 2, width / 2),
-            friction: 0.5
+            friction: 0.5,
+            filterCategoryBits: CollisionCategories.OBSTACLE
         });
 
         // Deck
@@ -263,7 +264,8 @@ export class Pier extends Entity {
         // Physics Fixture
         physicsBody.createFixture({
             shape: planck.Box(segmentLength / 2, segmentWidth / 2, planck.Vec2(centerX, centerY)),
-            friction: 0.5
+            friction: 0.5,
+            filterCategoryBits: CollisionCategories.OBSTACLE
         });
 
         // Visual Mesh

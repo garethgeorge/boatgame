@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../Entity';
-import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { PhysicsEngine, CollisionCategories } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/decorations/Decorations';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { TerrainMap, Zone } from '../behaviors/TerrainMap';
@@ -53,7 +53,8 @@ export class Iceberg extends Entity {
             shape: planck.Polygon(hullVertices),
             density: 10.0, // Heavy ice (5x increase)
             friction: 0.1, // Slippery
-            restitution: 0.2
+            restitution: 0.2,
+            filterCategoryBits: CollisionCategories.OBSTACLE
         });
 
         physicsBody.setUserData({ type: 'obstacle', subtype: 'iceberg', entity: this });

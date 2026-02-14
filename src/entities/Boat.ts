@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Entity } from './Entity';
 import { InputManager } from '../managers/InputManager';
-import { PhysicsEngine } from '../core/PhysicsEngine';
+import { PhysicsEngine, CollisionCategories } from '../core/PhysicsEngine';
 import { Decorations } from '../world/decorations/Decorations';
 import { CollectedBottles } from './CollectedBottles';
 import { MessageInABottle } from './obstacles/MessageInABottle';
@@ -112,7 +112,8 @@ export class Boat extends Entity {
             density: 10.0,
             friction: 0.1,
             restitution: 0.1,
-            userData: { part: Boat.PART_FRONT }
+            userData: { part: Boat.PART_FRONT },
+            filterCategoryBits: CollisionCategories.BOAT
         });
 
         physicsBody.createFixture({
@@ -120,7 +121,8 @@ export class Boat extends Entity {
             density: 10.0,
             friction: 0.1,
             restitution: 0.1,
-            userData: { part: Boat.PART_BACK }
+            userData: { part: Boat.PART_BACK },
+            filterCategoryBits: CollisionCategories.BOAT
         });
 
         // Set mass to a standard value for consistent tuning

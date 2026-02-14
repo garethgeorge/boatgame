@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../Entity';
-import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { PhysicsEngine, CollisionCategories } from '../../core/PhysicsEngine';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class Buoy extends Entity {
@@ -25,7 +25,8 @@ export class Buoy extends Entity {
             shape: planck.Circle(0.5), // 1m diameter
             density: 5.0, // 5x increase from 1.0
             friction: 0.3,
-            restitution: 0.5 // Bouncy
+            restitution: 0.5, // Bouncy
+            filterCategoryBits: CollisionCategories.OBSTACLE
         });
 
         physicsBody.setUserData({ type: 'obstacle', subtype: 'buoy', entity: this });

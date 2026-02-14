@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { AnyAnimal } from './AnimalBehavior';
 import { AnimalLogicContext, AnimalLogicPathResult } from './logic/AnimalLogic';
 import { PhysicsUtils } from '../../core/PhysicsUtils';
+import { CollisionCategories } from '../../core/PhysicsEngine';
 import { Zone } from './TerrainMap';
 
 export class AnimalLocomotionController {
@@ -116,12 +117,15 @@ export class AnimalLocomotionController {
     private setPhysicsMode(body: planck.Body, kinematic: boolean) {
         const isKinematic = body.getType() === planck.Body.KINEMATIC;
         if (kinematic && !isKinematic) {
-            PhysicsUtils.setCollisionMask(body, 0);
+            // Only ignore terrain when kinematicly controlled. 
+            // We still want to hit other objects (like the boat).
+            PhysicsUtils.updateCollisionMask(body, CollisionCategories.TERRAIN, false);
             body.setType(planck.Body.KINEMATIC);
             body.setLinearVelocity(planck.Vec2(0, 0));
             body.setAngularVelocity(0);
         } else if (!kinematic && isKinematic) {
-            PhysicsUtils.setCollisionMask(body, 0xFFFF);
+            // Re-enable terrain collision when becoming dynamic
+            PhysicsUtils.updateCollisionMask(body, CollisionCategories.TERRAIN, true);
             body.setType(planck.Body.DYNAMIC);
         }
     }

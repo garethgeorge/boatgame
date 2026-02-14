@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../Entity';
-import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { PhysicsEngine, CollisionCategories } from '../../core/PhysicsEngine';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 
 export class Log extends Entity {
@@ -73,7 +73,8 @@ export class Log extends Entity {
             shape: planck.Box(length / 2, 0.6), // 1.2m thick log
             density: 100.0, // Heavy wood (5x increase from 20.0)
             friction: 0.8, // Rough
-            restitution: 0.1
+            restitution: 0.1,
+            filterCategoryBits: CollisionCategories.OBSTACLE
         });
 
         physicsBody.setUserData({ type: 'obstacle', subtype: 'log', entity: this });

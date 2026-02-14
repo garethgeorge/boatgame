@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../Entity';
-import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { PhysicsEngine, CollisionCategories } from '../../core/PhysicsEngine';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
 import { ObstacleHitBehavior } from '../behaviors/ObstacleHitBehavior';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
@@ -49,7 +49,8 @@ export class GasCan extends Entity {
 
         physicsBody.createFixture({
             shape: planck.Box(0.5, 0.5),
-            isSensor: true
+            isSensor: true,
+            filterCategoryBits: CollisionCategories.COLLECTABLE
         });
 
         physicsBody.setUserData({ type: Entity.TYPE_COLLECTABLE, subtype: 'gas', entity: this });

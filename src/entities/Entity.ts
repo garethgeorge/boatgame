@@ -16,6 +16,9 @@ export abstract class Entity {
     // Physics fixture type names
     public static readonly TYPE_SENSOR = 'sensor';
 
+    private static _nextCollisionGroupId: number = 1;
+    private _collisionGroupId: number = 0;
+
     private _parent: Entity | null = null;
     private _children: Entity[] = [];
 
@@ -39,24 +42,30 @@ export abstract class Entity {
 
     public isVisible: boolean = true;
 
-    constructor() { }
+    constructor() {
+    }
 
     public parent(): Entity | null {
         return this._parent;
     }
 
-    public setParent(parent: Entity | null) {
+    private setParent(parent: Entity | null) {
         this._parent = parent;
-        if (parent) {
-            for (const body of this.physicsBodies) {
+    }
+
+    private updateCollisionGroupId(id: number) {
+        if (id === this._collisionGroupId) return;
+        this._collisionGroupId = id;
+
+        for (const body of this.physicsBodies) {
+            if (id !== 0 && this._parent) {
                 body.setType(planck.Body.KINEMATIC);
-                PhysicsUtils.setCollisionMask(body, 0);
             }
-        } else {
-            for (const body of this.physicsBodies) {
-                //body.setType(planck.Body.KINEMATIC);
-                PhysicsUtils.setCollisionMask(body, 0xFFFF);
-            }
+            PhysicsUtils.setCollisionGroup(body, id);
+        }
+
+        for (const child of this._children) {
+            child.updateCollisionGroupId(id);
         }
     }
 
@@ -65,16 +74,22 @@ export abstract class Entity {
     }
 
     public addChild(child: Entity) {
+        if (this._children.includes(child)) return;
+        this._children.push(child);
+
         if (this.meshes.length > 0 && child.meshes.length > 0) {
             const parentMesh = this.meshes[0];
             const childMesh = child.meshes[0];
 
             parentMesh.attach(childMesh);
             child.setParent(this);
+        }
 
-            if (!this._children.includes(child)) {
-                this._children.push(child);
-            }
+        if (this._collisionGroupId === 0) {
+            const id = Entity._nextCollisionGroupId++;
+            this.updateCollisionGroupId(-id);
+        } else {
+            child.updateCollisionGroupId(this._collisionGroupId);
         }
     }
 
@@ -95,6 +110,13 @@ export abstract class Entity {
 
             scene.attach(childMesh);
             child.setParent(null);
+        }
+
+        if (this._children.length === 0) {
+            this._collisionGroupId = 0;
+            this.updateCollisionGroupId(0);
+        } else {
+            child.updateCollisionGroupId(0);
         }
     }
 

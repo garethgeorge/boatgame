@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../Entity';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
-import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { PhysicsEngine, CollisionCategories } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/decorations/Decorations';
 import { AnimationPlayer } from '../../core/AnimationPlayer';
 import { EntityBehavior } from '../behaviors/EntityBehavior';
@@ -56,7 +56,8 @@ export class MessageInABottle extends Entity {
 
         physicsBody.createFixture({
             shape: planck.Circle(0.4),
-            isSensor: true
+            isSensor: true,
+            filterCategoryBits: CollisionCategories.COLLECTABLE
         });
 
         physicsBody.setUserData({ type: Entity.TYPE_COLLECTABLE, subtype: 'bottle', entity: this });

@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { Entity } from '../Entity';
-import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { PhysicsEngine, CollisionCategories } from '../../core/PhysicsEngine';
 import { AnimationParameters, AnimationPlayer, AnimationScript } from '../../core/AnimationPlayer';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
@@ -123,7 +123,8 @@ export abstract class Animal extends Entity implements AnyAnimal {
             shape: planck.Polygon(vertices),
             density: density,
             friction: friction,
-            restitution: restitution
+            restitution: restitution,
+            filterCategoryBits: CollisionCategories.ANIMAL
         });
 
         physicsBody.setUserData({ type: entityType, subtype: subtype, entity: this });

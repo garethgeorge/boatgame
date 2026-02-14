@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as planck from 'planck';
 import { Entity } from '../Entity';
-import { PhysicsEngine } from '../../core/PhysicsEngine';
+import { PhysicsEngine, CollisionCategories } from '../../core/PhysicsEngine';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Boat } from '../Boat';
@@ -97,7 +97,8 @@ export class WaterGrass extends Entity {
         body.createFixture({
             shape: planck.Polygon(points),
             isSensor: true, // It's a trap, not a wall
-            userData: { type: 'water_grass' }
+            userData: { type: 'water_grass' },
+            filterCategoryBits: CollisionCategories.OBSTACLE
         });
 
         body.setUserData({ type: 'water_grass', entity: this });

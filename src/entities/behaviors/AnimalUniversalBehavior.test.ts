@@ -69,6 +69,7 @@ describe('AnimalUniversalBehavior', () => {
                 getNext: vi.fn(() => null),
                 setFilterData: vi.fn(),
                 getFilterCategoryBits: vi.fn(() => 0x0001),
+                getFilterMaskBits: vi.fn(() => 0xFFFF),
                 getFilterGroupIndex: vi.fn(() => 0),
             })),
         };
