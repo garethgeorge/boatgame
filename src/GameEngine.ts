@@ -160,9 +160,9 @@ export class GameEngine {
             this.boat.updateLogic(dt, this.inputManager);
             this.entityManager.updateLogic(dt);
 
-            // 2. Apply Phase (Write-intent)
-            this.boat.applyUpdate(dt);
-            this.entityManager.applyUpdates(dt);
+            // 2. Physics Update Phase (Write-intent)
+            this.boat.updatePhysics(dt);
+            this.entityManager.updatePhysics(dt);
             Profiler.end('Entities');
 
             // 3. Physics Phase (Advance)

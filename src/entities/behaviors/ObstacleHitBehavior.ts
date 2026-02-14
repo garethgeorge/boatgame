@@ -53,6 +53,12 @@ export class ObstacleHitBehavior implements EntityBehavior {
         }
     }
 
-    apply(dt: number) {
+    updatePhysics(dt: number) {
+    }
+
+    updateVisuals(dt: number, alpha: number) {
+    }
+
+    updateSceneGraph() {
     }
 }

@@ -22,7 +22,7 @@ export class MessageInABottle extends Entity {
             this.floatOffset += dt * 1.5;
         }
 
-        apply(dt: number) {
+        updatePhysics(dt: number) {
         }
 
         updateVisuals(dt: number, alpha: number) {
@@ -32,6 +32,9 @@ export class MessageInABottle extends Entity {
                 mesh.rotation.y += dt * 0.5;
                 mesh.rotation.z = Math.sin(this.floatOffset * 0.5) * 0.2;
             }
+        }
+
+        updateSceneGraph() {
         }
     };
 
@@ -76,16 +79,16 @@ export class MessageInABottle extends Entity {
         }
     }
 
-    applyUpdate(dt: number) {
-        if (this.behavior && this.behavior.apply) {
-            this.behavior.apply(dt);
+    updatePhysics(dt: number) {
+        if (this.behavior) {
+            this.behavior.updatePhysics(dt);
         }
-        super.applyUpdate(dt);
+        super.updatePhysics(dt);
     }
 
     updateVisuals(dt: number, alpha: number) {
-        if (this.behavior && (this.behavior as any).updateVisuals) {
-            (this.behavior as any).updateVisuals(dt, alpha);
+        if (this.behavior) {
+            this.behavior.updateVisuals(dt, alpha);
         }
         if (this.player) {
             this.player.update(dt);

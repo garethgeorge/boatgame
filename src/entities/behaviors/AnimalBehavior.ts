@@ -5,15 +5,19 @@ import { TerrainSlot } from '../../world/TerrainSlotMap';
 import { TerrainMap, Zone } from './TerrainMap';
 
 /**
+ * Logic events are triggered during updateLogic()
  * LOGIC_STARTING - about to start a logic stage
  * LOGIC_TICK - sent while logic is running
  * LOGIC_FINISHED - all logic is complete
+ * 
+ * Events triggered during updateSceneGraph()
+ * ZONE_CHANGED
  */
 export type AnimalBehaviorEvent =
     { type: 'LOGIC_STARTING', logic: AnimalLogic, logicPhase: AnimalLogicPhase }
     | { type: 'LOGIC_TICK', dt: number, logic: AnimalLogic, logicPhase: AnimalLogicPhase }
-    | { type: 'ZONE_CHANGED', zone: Zone }
     | { type: 'LOGIC_FINISHED' }
+    | { type: 'ZONE_CHANGED', zone: Zone }
 
 // Any animal must implement this interface to get behavior
 export interface AnyAnimal {

@@ -107,11 +107,13 @@ The game uses a specific mapping between the 2D physics engine (Planck.js) and t
 The game uses a robust three-phase update cycle per frame to ensure state consistency and eliminate response lag:
 
 1.  **Logic Phase (`updateLogic`)**: Entities compute their intent (movement targets, state changes) using read-only access to the current world state.
-2.  **Apply Phase (`applyUpdates`)**: Entities commit their intent to the physics engine (applying forces, velocities, or kinematic transforms). Kinematic entities synchronize their physics body positions from their mesh positions in this phase.
+2.  **Update physics Phase (`updatePhysics`)**: Entities commit their intent to the physics engine (applying forces, velocities, or kinematic transforms).
 3.  **Physics Phase (`physicsEngine.update`)**: The physics world advances the simulation by one or more steps.
 4.  **Visual Phase (`updateVisuals`)**: Final visuals are updated at the display frame rate. This includes:
-    -   **Interpolation**: Smoothing dynamic body positions based on the physics simulation progress (`alpha`).
+    -   **Dynamic bodies**: Physics body state is copied to the graphics.
+    -   **Kinematic bodies**: Graphics state is updated then copied to physics.
     -   **Visual Effects**: Frame-rate dependent animations, bobbing, tilt, and other non-physics behaviors.
+    -   **Scene graph**: Parenting/un-parenting and removal of entities.
 
 This structure ensures that collisions and inputs are processed in the same frame they occur, and all entities see a consistent world state during the logic pass.
 

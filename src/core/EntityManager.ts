@@ -113,70 +113,36 @@ export class EntityManager {
     updateLogic(dt: number) {
         const entitiesArray = Array.from(this.entities);
 
-        const shouldUpdateEntity = (entity: Entity) => {
+        for (const entity of entitiesArray) {
             const isPlayer = entity.physicsBodies.length > 0 &&
                 (entity.physicsBodies[0].getUserData() as any)?.type === Entity.TYPE_PLAYER;
 
-            return entity.isVisible || isPlayer || DesignerSettings.isDesignerMode;
-        }
-
-        // Logic Pass (Compute) - Non-hierarchical as it's read-only
-        for (const entity of entitiesArray) {
-            if (shouldUpdateEntity(entity)) {
+            if (entity.isVisible || isPlayer || DesignerSettings.isDesignerMode) {
                 entity.updateLogic(dt);
             }
         }
     }
 
     /**
-     * 2. Apply the changes to the physics for dynamic entities or scene graph
-     * for kinematic entities. These are applied recursively so parent entities
-     * are updated before children. Physics is stepped after this.
+     * 2. Apply the changes to the physics for dynamic entities.
+     * These are applied recursively so parent entities are updated before children.
+     * Physics is stepped after this.
      */
-    applyUpdates(dt: number) {
-        const shouldUpdateEntity = (entity: Entity) => {
+    updatePhysics(dt: number) {
+        for (const entity of this.entities) {
             const isPlayer = entity.physicsBodies.length > 0 &&
                 (entity.physicsBodies[0].getUserData() as any)?.type === Entity.TYPE_PLAYER;
 
-            return entity.isVisible || isPlayer || DesignerSettings.isDesignerMode;
-        }
-
-        // Application Pass (Hierarchical)
-        const applyRecursive = (entity: Entity) => {
-            if (shouldUpdateEntity(entity)) {
-                entity.applyUpdate(dt);
-            }
-
-            for (const child of entity.children()) {
-                applyRecursive(child);
-            }
-        };
-
-        for (const entity of this.entities) {
-            const parent = entity.parent();
-            if (!parent || !this.entities.has(parent)) {
-                applyRecursive(entity);
-            }
-        }
-
-        // Scene Graph Updates (Non-hierarchical, safe after apply pass)
-        const entitiesArray = Array.from(this.entities);
-        for (const entity of entitiesArray) {
-            if (shouldUpdateEntity(entity)) {
-                entity.updateSceneGraph();
-            }
-        }
-
-        // Handle removals after apply pass
-        for (const entity of entitiesArray) {
-            if (entity.shouldRemove) {
-                this.remove(entity);
+            if (entity.isVisible || isPlayer || DesignerSettings.isDesignerMode) {
+                entity.updatePhysics(dt);
             }
         }
     }
 
     /**
-     * 3. Final visuals update after stepping physics.
+     * 3. Final visuals update after stepping physics. For dynamic bodies
+     * copies physics to mesh. For kinematic bodies apply mesh updates and
+     * copy to physics.
      */
     updateVisuals(dt: number, alpha: number) {
         const shouldUpdateEntity = (entity: Entity) => {
@@ -201,6 +167,21 @@ export class EntityManager {
             const parent = entity.parent();
             if (!parent || !this.entities.has(parent)) {
                 visualsRecursive(entity);
+            }
+        }
+
+        // Deferred Scene Graph Updates (Safe after visuals pass)
+        const entitiesArray = Array.from(this.entities);
+        for (const entity of entitiesArray) {
+            if (shouldUpdateEntity(entity)) {
+                entity.updateSceneGraph();
+            }
+        }
+
+        // Handle removals
+        for (const entity of entitiesArray) {
+            if (entity.shouldRemove) {
+                this.remove(entity);
             }
         }
     }

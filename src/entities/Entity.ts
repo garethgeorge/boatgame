@@ -104,51 +104,58 @@ export abstract class Entity {
      * 1. Called each frame to compute the entity state for the next frame.
      * Use this phase for read-only calculations and goal setting.
      */
-    abstract updateLogic(dt: number): void;
+    public updateLogic(dt: number): void {
+    }
 
     /**
      * 2. Called each frame to apply the next entity state for the next frame.
-     * Use this phase to modify physics state for dynamic entities and the
-     * visuals for kinematic entities. This function is called recursively.
+     * Use this phase to modify physics state for dynamic entities.
      */
-    public applyUpdate(dt: number) {
-        // By default, if we are kinematic, we sync the physics body to the mesh
-        // which might have been moved by some logic/parenting.
-        if (this.physicsBodies.length > 0 && this.meshes.length > 0) {
-            const body = this.physicsBodies[0];
-            const mesh = this.meshes[0];
-            if (body.getType() === 'kinematic') {
-                this.syncMeshToBody(mesh, body);
-            }
-        }
+    public updatePhysics(dt: number): void {
     }
 
     /**
-     * 3. Called after applyUpdate and before removals. 
-     * Use this phase for scene graph modifications (like unparenting) 
-     * that are unsafe during the hierarchical applyUpdate pass.
+     * 3. Called each frame to apply updates to the scene graph either from
+     * updateLogic() or updatePhysics(). Called recursively so that parent
+     * is updated before children. Call super.updateVisuals() to ensure
+     * physics and mesh are synchronized.
+     * 
+     * Kinematic objects use this to update the mesh visuals then call
+     * super to update physics from mesh. Dynamic objects generally call
+     * super to update mesh from physics then apply any other changes.
      */
-    public updateSceneGraph() {
-    }
-
-    /**
-     * 4. Called each frame to update visuals based on physics and delta time.
-     * Use this phase for interpolation, animations, and non-physics FX.
-     */
-    public updateVisuals(dt: number, alpha: number = 1.0) {
+    public updateVisuals(dt: number, alpha: number = 1.0): void {
         let yPos = 0;
         if (this.physicsBodies.length > 0 && this.meshes.length > 0) {
             const body = this.physicsBodies[0];
             const mesh = this.meshes[0];
-            this.updateBodyMeshVisuals(body, mesh, alpha);
+
+            // Having a parent implies kinematic motion. For kinematic the mesh
+            // is directly controlled and the physics follows along. For dynamic
+            // physics controls the mesh.
+            if (this.parent()) {
+                if (body.getType() === 'kinematic')
+                    this.syncMeshToBody(mesh, body);
+            } else {
+                this.syncBodyToMesh(body, mesh, alpha);
+            }
+
             yPos = mesh.position.y;
         }
 
         for (let i = 0; i < Math.min(this.physicsBodies.length, this.debugMeshes.length); i++) {
             const debugMesh = this.debugMeshes[i];
-            this.updateBodyMeshVisuals(this.physicsBodies[i], debugMesh, alpha);
+            this.syncBodyToMesh(this.physicsBodies[i], debugMesh, alpha);
             debugMesh.position.y = yPos + 1.0;
         }
+    }
+
+    /**
+     * 4. Called after updateVisuals and before removals. 
+     * Use this phase for scene graph modifications (like unparenting) 
+     * that are unsafe during the hierarchical applyUpdate pass.
+     */
+    public updateSceneGraph(): void {
     }
 
     // Do stuff when hit by the player
@@ -201,60 +208,49 @@ export abstract class Entity {
         }
     }
 
-    protected updateBodyMeshVisuals(body: planck.Body, mesh: THREE.Object3D, alpha: number) {
-        if (this.parent() && body.getType() !== 'kinematic') {
-            // If we have a parent, we only sync if we are in kinematic mode. 
-            // Otherwise, the physics body and mesh position will diverge in world space.
-            return;
+    private syncBodyToMesh(body: planck.Body, mesh: THREE.Object3D, alpha: number) {
+        // Dynamic motion: Interpolate physics body to mesh visuals
+        const currPos = body.getPosition();
+        const currAngle = body.getAngle();
+
+        let pos = currPos;
+        let angle = currAngle;
+
+        // Interpolate if we have previous state 
+        if (this.prevPos.has(body) && this.prevAngle.has(body)) {
+            const prevPos = this.prevPos.get(body)!;
+            const prevAngle = this.prevAngle.get(body)!;
+
+            const x = prevPos.x * (1 - alpha) + currPos.x * alpha;
+            const y = prevPos.y * (1 - alpha) + currPos.y * alpha;
+            pos = planck.Vec2(x, y);
+
+            // Interpolate angle (handle wrap-around if necessary, but Planck angles are continuous)
+            angle = prevAngle * (1 - alpha) + currAngle * alpha;
         }
 
-        if (body.getType() === 'kinematic') {
-            // Kinematic visual sync is handled by parenting or applyUpdate's Mesh->Body sync
-            // We only need to ensure the mesh transform is up to date if not already handled
+        mesh.position.x = pos.x;
+        mesh.position.z = pos.y; // Map 2D Physics Y to 3D Graphics Z
+
+        // Apply rotation with optional normal alignment
+        if (this.normalVector) {
+            //mesh.setRotationFromAxisAngle(this.normalVector.clone(), -angle);
+            const up = new THREE.Vector3(0, 1, 0); // Default Y-axis
+            const normalQuaternion = new THREE.Quaternion().setFromUnitVectors(up, this.normalVector);
+
+            // The axis for this rotation is the targetNormal itself
+            const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(this.normalVector, -angle);
+
+            // Multiply the orientation by the rotation to get the final transformation
+            // Order matters: first align, then rotate around the aligned axis.
+            mesh.quaternion.multiplyQuaternions(rotationQuaternion, normalQuaternion);
         } else {
-            // Dynamic motion: Interpolate physics body to mesh visuals
-            const currPos = body.getPosition();
-            const currAngle = body.getAngle();
-
-            let pos = currPos;
-            let angle = currAngle;
-
-            // Interpolate if we have previous state 
-            if (this.prevPos.has(body) && this.prevAngle.has(body)) {
-                const prevPos = this.prevPos.get(body)!;
-                const prevAngle = this.prevAngle.get(body)!;
-
-                const x = prevPos.x * (1 - alpha) + currPos.x * alpha;
-                const y = prevPos.y * (1 - alpha) + currPos.y * alpha;
-                pos = planck.Vec2(x, y);
-
-                // Interpolate angle (handle wrap-around if necessary, but Planck angles are continuous)
-                angle = prevAngle * (1 - alpha) + currAngle * alpha;
-            }
-
-            mesh.position.x = pos.x;
-            mesh.position.z = pos.y; // Map 2D Physics Y to 3D Graphics Z
-
-            // Apply rotation with optional normal alignment
-            if (this.normalVector) {
-                //mesh.setRotationFromAxisAngle(this.normalVector.clone(), -angle);
-                const up = new THREE.Vector3(0, 1, 0); // Default Y-axis
-                const normalQuaternion = new THREE.Quaternion().setFromUnitVectors(up, this.normalVector);
-
-                // The axis for this rotation is the targetNormal itself
-                const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(this.normalVector, -angle);
-
-                // Multiply the orientation by the rotation to get the final transformation
-                // Order matters: first align, then rotate around the aligned axis.
-                mesh.quaternion.multiplyQuaternions(rotationQuaternion, normalQuaternion);
-            } else {
-                // Standard rotation around Y. Intentionally preserves any other rotations.
-                mesh.rotation.y = -angle;
-            }
+            // Standard rotation around Y. Intentionally preserves any other rotations.
+            mesh.rotation.y = -angle;
         }
     }
 
-    protected syncMeshToBody(mesh: THREE.Object3D, body: planck.Body) {
+    private syncMeshToBody(mesh: THREE.Object3D, body: planck.Body) {
         // Extract world transform to sync kinematic body
         const worldPos = new THREE.Vector3();
         const worldQuat = new THREE.Quaternion();
@@ -320,7 +316,7 @@ export abstract class Entity {
             }
 
             // Initial visuals sync
-            this.updateBodyMeshVisuals(body, group, 1.0);
+            this.syncBodyToMesh(body, group, 1.0);
             if (this.meshes.length > 0) {
                 group.position.y = this.meshes[0].position.y + 1.0;
             } else {

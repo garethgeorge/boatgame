@@ -19,9 +19,9 @@ class MockEntity extends Entity {
         this.updateCount++;
     }
 
-    public applyUpdate(dt: number) {
+    public updatePhysics(dt: number) {
         this.applyCount++;
-        super.applyUpdate(dt);
+        super.updatePhysics(dt);
     }
 
     public updateVisuals(dt: number, alpha: number) {
@@ -61,7 +61,7 @@ describe('EntityManager Hierarchical Update', () => {
         entityManager.add(entity2);
 
         entityManager.updateLogic(0.1);
-        entityManager.applyUpdates(0.1);
+        entityManager.updatePhysics(0.1);
 
         expect(entity1.updateCount).toBe(1);
         expect(entity1.applyCount).toBe(1);
@@ -78,9 +78,9 @@ describe('EntityManager Hierarchical Update', () => {
 
         const callOrder: string[] = [];
 
-        vi.spyOn(parent, 'applyUpdate').mockImplementation(() => { callOrder.push('parent_apply'); });
+        vi.spyOn(parent, 'updatePhysics').mockImplementation(() => { callOrder.push('parent_apply'); });
         vi.spyOn(parent, 'updateVisuals').mockImplementation(() => { callOrder.push('parent_visuals'); });
-        vi.spyOn(child, 'applyUpdate').mockImplementation(() => { callOrder.push('child_apply'); });
+        vi.spyOn(child, 'updatePhysics').mockImplementation(() => { callOrder.push('child_apply'); });
         vi.spyOn(child, 'updateVisuals').mockImplementation(() => { callOrder.push('child_visuals'); });
 
         entityManager.add(parent);
@@ -91,7 +91,7 @@ describe('EntityManager Hierarchical Update', () => {
         callOrder.length = 0;
 
         entityManager.updateLogic(0.1);
-        entityManager.applyUpdates(0.1);
+        entityManager.updatePhysics(0.1);
         entityManager.updateVisuals(0.1, 0.5);
 
         expect(callOrder).toEqual([

@@ -1,6 +1,7 @@
 export interface EntityBehavior {
     update(dt: number): void;
-    apply(dt: number): void;
-    updateSceneGraph?(): void;
+    updatePhysics(dt: number): void;
+    updateVisuals(dt: number, alpha: number): void;
+    updateSceneGraph(): void;
     dispose?(): void;
 }

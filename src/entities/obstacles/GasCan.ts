@@ -21,14 +21,18 @@ export class GasCan extends Entity {
             this.floatOffset += dt * 2;
         }
 
-        apply(dt: number) { }
+        updatePhysics(dt: number) {
+        }
 
-        updateVisuals(dt: number) {
+        updateVisuals(dt: number, alpha: number) {
             if (this.gasCan.meshes.length > 0) {
                 const mesh = this.gasCan.meshes[0];
                 mesh.position.y = Math.sin(this.floatOffset) * 0.2 + 0.5; // +0.5 base height
                 mesh.rotation.y += dt;
             }
+        }
+
+        updateSceneGraph() {
         }
     };
 
@@ -101,15 +105,15 @@ export class GasCan extends Entity {
         }
     }
 
-    applyUpdate(dt: number) {
-        if (this.behavior && this.behavior.apply) {
-            this.behavior.apply(dt);
+    updatePhysics(dt: number) {
+        if (this.behavior) {
+            this.behavior.updatePhysics(dt);
         }
     }
 
     updateVisuals(dt: number, alpha: number) {
-        if (this.behavior && (this.behavior as any).updateVisuals) {
-            (this.behavior as any).updateVisuals(dt);
+        if (this.behavior) {
+            this.behavior.updateVisuals(dt, alpha);
         }
         super.updateVisuals(dt, alpha);
     }

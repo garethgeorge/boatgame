@@ -83,6 +83,7 @@ describe('AnimalUniversalBehavior', () => {
             getPhysicsBody: vi.fn(() => mockBody),
             getMesh: vi.fn(() => mockMesh),
             getHeight: vi.fn(() => 0),
+            currentSlot: null,
             handleBehaviorEvent: vi.fn(),
             setDynamicPosition: vi.fn(),
             parent: vi.fn(() => null),
@@ -138,6 +139,7 @@ describe('AnimalUniversalBehavior', () => {
         };
 
         mockLogic = {
+            name: 'MockLogic',
             activate: vi.fn(),
             update: vi.fn(() => ({
                 path: { target: planck.Vec2(0, 0), speed: 0, locomotionType: 'LAND' as const }
@@ -150,6 +152,7 @@ describe('AnimalUniversalBehavior', () => {
         (AnimalLogicRegistry.create as any).mockImplementation((config: any) => {
             if (config.name === 'WalkTowardBoat') {
                 return {
+                    name: 'WalkTowardBoat',
                     activate: vi.fn(),
                     update: vi.fn((ctx) => ({
                         path: { target: ctx.targetBody.getPosition(), speed: config.params.speed, locomotionType: 'LAND' }
@@ -260,7 +263,8 @@ describe('AnimalUniversalBehavior', () => {
         });
 
         behavior.update(0.1);
-        behavior.apply(0.1);
+        behavior.updatePhysics(0.1);
+        behavior.updateVisuals(0.1, 1.0);
 
         const mesh = mockEntity.getMesh();
         // Extract angle from quaternion
@@ -283,7 +287,8 @@ describe('AnimalUniversalBehavior', () => {
         });
 
         behavior.update(0.1);
-        behavior.apply(0.1);
+        behavior.updatePhysics(0.1);
+        behavior.updateVisuals(0.1, 1.0);
 
         const mesh = mockEntity.getMesh();
         const worldEuler = new THREE.Euler().setFromQuaternion(mesh.quaternion, 'YXZ');
@@ -306,7 +311,8 @@ describe('AnimalUniversalBehavior', () => {
 
             // Frame 0: Start of jump
             behavior.update(0.1); // dt=0.1, speed=10 => move 1 unit
-            behavior.apply(0.1);
+            behavior.updatePhysics(0.1);
+            behavior.updateVisuals(0.1, 1.0);
             mockBody.getPosition.mockReturnValue(planck.Vec2(mockEntity.getMesh().position.x, mockEntity.getMesh().position.z));
 
             // At t = 1/10 = 0.1
@@ -316,7 +322,8 @@ describe('AnimalUniversalBehavior', () => {
             // Frame 4: Peak of jump (t = 0.5)
             for (let i = 0; i < 4; i++) {
                 behavior.update(0.1);
-                behavior.apply(0.1);
+                behavior.updatePhysics(0.1);
+                behavior.updateVisuals(0.1, 1.0);
                 mockBody.getPosition.mockReturnValue(planck.Vec2(mockEntity.getMesh().position.x, mockEntity.getMesh().position.z));
             }
             // total moved = 5
@@ -327,7 +334,8 @@ describe('AnimalUniversalBehavior', () => {
             // Frame 9: End of jump (t = 1.0)
             for (let i = 0; i < 5; i++) {
                 behavior.update(0.1);
-                behavior.apply(0.1);
+                behavior.updatePhysics(0.1);
+                behavior.updateVisuals(0.1, 1.0);
                 mockBody.getPosition.mockReturnValue(planck.Vec2(mockEntity.getMesh().position.x, mockEntity.getMesh().position.z));
             }
             // total moved = 10
@@ -359,7 +367,8 @@ describe('AnimalUniversalBehavior', () => {
             // Move to z=5
             for (let i = 0; i < 5; i++) {
                 behavior.update(0.1);
-                behavior.apply(0.1);
+                behavior.updatePhysics(0.1);
+                behavior.updateVisuals(0.1, 1.0);
                 mockBody.getPosition.mockReturnValue(planck.Vec2(mockEntity.getMesh().position.x, mockEntity.getMesh().position.z));
             }
 
@@ -380,7 +389,7 @@ describe('AnimalUniversalBehavior', () => {
 
             // Set to dynamic mode first
             behavior.update(0.1); // This will set computeNoneLocomotion which will stop dynamic motion if already dynamic
-            behavior.apply(0.1);
+            behavior.updatePhysics(0.1);
 
             expect(mockBody.setLinearVelocity).toHaveBeenCalledWith(expect.objectContaining({ x: 0, y: 0 }));
             expect(mockBody.setAngularVelocity).toHaveBeenCalledWith(0);
@@ -397,7 +406,7 @@ describe('AnimalUniversalBehavior', () => {
                 path: { target: planck.Vec2(0, 0), speed: 0, locomotionType: 'LAND' as const },
             });
             behavior.update(0.1);
-            behavior.apply(0.1);
+            behavior.updatePhysics(0.1);
 
             // Now switch to NONE
             mockLogic.update.mockReturnValue({
@@ -408,7 +417,7 @@ describe('AnimalUniversalBehavior', () => {
             mesh.position.set(123, 456, 789);
 
             behavior.update(0.1);
-            behavior.apply(0.1);
+            behavior.updatePhysics(0.1);
 
             // Position should NOT have been updated by computeNoneLocomotion
             expect(mesh.position.x).toBe(123);
@@ -445,7 +454,8 @@ describe('AnimalUniversalBehavior', () => {
             mesh.position.set(0, 0, 0);
 
             behavior.update(0.1); // moveDist = 10 * 0.1 = 1.0
-            behavior.apply(0.1);
+            behavior.updatePhysics(0.1);
+            behavior.updateVisuals(0.1, 1.0);
 
             // moveVec local is (10, 10)
             // normalized moveDir local is (1/sqrt(2), 1/sqrt(2)) approx (0.707, 0.707)
@@ -464,7 +474,8 @@ describe('AnimalUniversalBehavior', () => {
 
             // Boat is at (10, 10)
             behavior.update(0.1); // moveDist = 2.0 * 0.1 = 0.2
-            behavior.apply(0.1);
+            behavior.updatePhysics(0.1);
+            behavior.updateVisuals(0.1, 1.0);
 
             const mesh = mockEntity.getMesh();
             // moveVec is (10, 10), normalized is (0.707, 0.707)

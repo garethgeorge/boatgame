@@ -206,7 +206,7 @@ export class Boat extends Entity {
         // It is called in applyUpdate.
     }
 
-    applyUpdate(dt: number) {
+    updatePhysics(dt: number) {
         if (this.physicsBodies.length > 0) {
             this.applyPhysicsForces(this.physicsBodies[0]);
         }

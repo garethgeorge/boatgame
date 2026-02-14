@@ -97,4 +97,7 @@ export class FracturedIceberg extends Entity {
     updateLogic(dt: number): void {
         // Passive physics object, no logic needed
     }
+
+    updatePhysics(dt: number): void {
+    }
 }

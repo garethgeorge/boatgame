@@ -70,13 +70,17 @@ export class AnimalLocomotionController {
         }
     }
 
-    public apply(dt: number) {
+    public updatePhysics(dt: number) {
+        if (this.pendingDynamic) {
+            this.applyDynamicUpdate(this.pendingDynamic);
+            this.pendingDynamic = null;
+        }
+    }
+
+    public updateVisuals(dt: number) {
         if (this.pendingKinematic) {
             this.applyKinematicUpdate(this.pendingKinematic);
             this.pendingKinematic = null;
-        } else if (this.pendingDynamic) {
-            this.applyDynamicUpdate(this.pendingDynamic);
-            this.pendingDynamic = null;
         }
     }
 

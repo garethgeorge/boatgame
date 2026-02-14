@@ -223,24 +223,27 @@ export abstract class Animal extends Entity implements AnyAnimal {
         }
     }
 
-    applyUpdate(dt: number) {
+    updatePhysics(dt: number) {
         if (this.behavior) {
-            this.behavior.apply(dt);
+            this.behavior.updatePhysics(dt);
         }
-        super.applyUpdate(dt);
-    }
-
-    public updateSceneGraph() {
-        if (this.behavior) {
-            this.behavior.updateSceneGraph();
-        }
+        super.updatePhysics(dt);
     }
 
     updateVisuals(dt: number, alpha: number) {
         if (this.player) {
             this.player.update(dt);
         }
+        if (this.behavior) {
+            this.behavior.updateVisuals(dt, alpha);
+        }
         super.updateVisuals(dt, alpha);
+    }
+
+    updateSceneGraph() {
+        if (this.behavior) {
+            this.behavior.updateSceneGraph();
+        }
     }
 
     dispose() {
