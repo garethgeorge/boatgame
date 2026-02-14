@@ -255,14 +255,13 @@ export class IcebergPlacement implements LayoutPlacement, LayoutGenerator {
         public readonly y: number,
         public readonly z: number,
         public readonly radius: number,
-        public readonly hasBear: boolean
     ) {
     }
 
     get id() { return EntityIds.ICEBERG; }
 
     public spawn(context: PopulationContext, sample: RiverGeometrySample) {
-        IcebergSpawner.createEntity(context, this.x, this.z, this.radius, this.hasBear);
+        IcebergSpawner.createEntity(context, this.x, this.z, this.radius);
     }
 
     public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
@@ -287,14 +286,7 @@ export class IcebergRule extends Details {
             const groundRadius = 4.0 + r3 * scale;
             if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
 
-            const r4 = ctx.world.random();
-            let hasBear = false;
-            if (r2 < 0.05) hasBear = r4 < 0.5;
-
-            return new IcebergPlacement(
-                ctx.index, ctx.x, 0, ctx.z, groundRadius,
-                hasBear
-            );
+            return new IcebergPlacement(ctx.index, ctx.x, 0, ctx.z, groundRadius);
         };
     }
 }

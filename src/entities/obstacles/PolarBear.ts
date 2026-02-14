@@ -66,10 +66,11 @@ export class PolarBear extends Animal {
                     AnimalLogicPhase.ENTERING_WATER,
                     AnimalLogicPhase.PREPARING_ATTACK,
                     AnimalLogicPhase.ATTACKING,
+                    AnimalLogicPhase.WALKING,
                 ],
                 play: Animal.play({
                     name: 'Walking',
-                    timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
+                    timeScale: 3.0, startTime: -1, randomizeLength: 0.2,
                     repeat: Infinity
                 })
             },

@@ -95,7 +95,10 @@ export class IceBiomeFeatures extends BaseBiomeFeatures {
                 progress: [0, 1.0],
                 scenes: [{
                     length: [100, 200], patterns: [
-                        Place.scatter_scatter(VignetteLayoutRules.icebergWalrus(), [1.0, 3.0]),
+                        Place.scatter_scatter([
+                            VignetteLayoutRules.icebergWalrus(),
+                            VignetteLayoutRules.icebergPolarBear()],
+                            [1.0, 3.0]),
                         Place.scatter_nearShore(BuoyRule.get(), [0.5, 1.5]),
                     ]
                 },
