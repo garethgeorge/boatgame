@@ -12,6 +12,8 @@ export class WalkTowardBoatLogic implements AnimalLogic {
     readonly name = 'WalkTowardBoat';
     private speed: number;
 
+    public static readonly RESULT_FINISHED = 'walk_toward_boat_finished';
+
     constructor(params: WalkTowardBoatParams) {
         this.speed = params.speed;
     }
@@ -20,12 +22,25 @@ export class WalkTowardBoatLogic implements AnimalLogic {
     }
 
     update(context: AnimalLogicContext): AnimalLogicPathResult {
+        const steering = {
+            target: context.targetBody.getPosition(),
+            speed: this.speed,
+            locomotionType: 'LAND' as const
+        };
+
+        const pos = context.animal.localPos();
+        const { zone } = context.animal.getTerrainMap().sample(pos.x, pos.z, 0, 2.0);
+
+        if (zone === 'water') {
+            return {
+                path: steering,
+                result: WalkTowardBoatLogic.RESULT_FINISHED,
+                finish: true
+            };
+        }
+
         return {
-            path: {
-                target: context.targetBody.getPosition(),
-                speed: this.speed,
-                locomotionType: 'LAND'
-            }
+            path: steering
         };
     }
 

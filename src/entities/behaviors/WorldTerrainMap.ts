@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TerrainMap } from './TerrainMap';
+import { TerrainMap, Zone } from './TerrainMap';
 import { RiverSystem } from '../../world/RiverSystem';
 
 export class WorldTerrainMap implements TerrainMap {
@@ -14,19 +14,34 @@ export class WorldTerrainMap implements TerrainMap {
         return WorldTerrainMap.instance;
     }
 
-    public sample(x: number, z: number, waterHeight: number): { y: number, normal: THREE.Vector3 } {
+    public sample(x: number, z: number, waterHeight: number, margin: number): { y: number, normal: THREE.Vector3, zone: Zone } {
         const riverSystem = RiverSystem.getInstance();
         const terrainHeight = riverSystem.terrainGeometry.calculateHeight(x, z);
         const terrainNormal = riverSystem.terrainGeometry.calculateNormal(x, z);
 
         const banks = riverSystem.getBankPositions(z);
-        let normalHeight = terrainHeight;
-        if (x > banks.left && x < banks.right) {
-            const distFromBank = Math.min(Math.abs(x - banks.left), Math.abs(x - banks.right));
-            const t = Math.min(1.0, distFromBank / 2.0);
-            normalHeight = terrainHeight * (1 - t) + waterHeight * t;
+        const distFromLeft = x - banks.left;
+        const distFromRight = banks.right - x;
+        const distIntoWater = Math.min(distFromLeft, distFromRight);
+
+        let height = terrainHeight;
+        let zone: Zone = 'land';
+
+        if (distIntoWater < 0) {
+            // Out of water (on land)
+            height = terrainHeight;
+            zone = 'land';
+        } else if (distIntoWater < margin) {
+            // Margin area
+            const t = distIntoWater / margin;
+            height = terrainHeight * (1 - t) + waterHeight * t;
+            zone = 'margin';
+        } else {
+            // Fully in water
+            height = waterHeight;
+            zone = 'water';
         }
 
-        return { y: normalHeight, normal: terrainNormal };
+        return { y: height, normal: terrainNormal, zone };
     }
 }

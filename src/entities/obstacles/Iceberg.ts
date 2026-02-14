@@ -4,7 +4,7 @@ import { Entity } from '../../core/Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/decorations/Decorations';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
-import { TerrainMap } from '../behaviors/TerrainMap';
+import { TerrainMap, Zone } from '../behaviors/TerrainMap';
 import { ConvexHull } from '../../core/ConvexHull';
 import { Polygon } from '../../core/Polygon';
 
@@ -169,17 +169,28 @@ export class IcebergTerrainMap implements TerrainMap {
         this.iceHeight = iceHeight;
     }
 
-    sample(x: number, z: number, waterHeight: number): { y: number; normal: THREE.Vector3; } {
+    sample(x: number, z: number, waterHeight: number, margin: number): { y: number; normal: THREE.Vector3; zone: Zone; } {
         const point = planck.Vec2(x, z);
         const inside = this.polygon.containsPoint(point);
 
         let y = this.iceHeight;
-        if (!inside) {
+        let zone: Zone = 'land';
+
+        if (inside) {
+            y = this.iceHeight;
+            zone = 'land';
+        } else {
             const dist = this.polygon.distanceToPoint(point);
-            const t = Math.min(1.0, dist / 2.0);
-            y = this.iceHeight * (1 - t) + waterHeight * t;
+            if (dist < margin) {
+                const t = dist / margin;
+                y = this.iceHeight * (1 - t) + waterHeight * t;
+                zone = 'margin';
+            } else {
+                y = waterHeight;
+                zone = 'water';
+            }
         }
 
-        return { y, normal: new THREE.Vector3(0, 1, 0) };
+        return { y, normal: new THREE.Vector3(0, 1, 0), zone };
     }
 }

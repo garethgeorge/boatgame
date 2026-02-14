@@ -108,19 +108,31 @@ describe('AnimalUniversalBehavior', () => {
                 return worldAngle;
             }),
             getTerrainMap: vi.fn(() => ({
-                sample: vi.fn((x: number, z: number, waterHeight: number) => {
+                sample: vi.fn((x: number, z: number, waterHeight: number, margin: number) => {
                     const terrainHeight = mockRiverSystem.terrainGeometry.calculateHeight(x, z);
                     const terrainNormal = mockRiverSystem.terrainGeometry.calculateNormal(x, z);
 
                     const banks = mockRiverSystem.getBankPositions(z);
-                    let normalHeight = terrainHeight;
-                    if (x > banks.left && x < banks.right) {
-                        const distFromBank = Math.min(Math.abs(x - banks.left), Math.abs(x - banks.right));
-                        const t = Math.min(1.0, distFromBank / 2.0);
-                        normalHeight = terrainHeight * (1 - t) + waterHeight * t;
+                    const distFromLeft = x - banks.left;
+                    const distFromRight = banks.right - x;
+                    const distIntoWater = Math.min(distFromLeft, distFromRight);
+
+                    let height = terrainHeight;
+                    let zone: any = 'land';
+
+                    if (distIntoWater < 0) {
+                        height = terrainHeight;
+                        zone = 'land';
+                    } else if (distIntoWater < margin) {
+                        const t = distIntoWater / margin;
+                        height = terrainHeight * (1 - t) + waterHeight * t;
+                        zone = 'margin';
+                    } else {
+                        height = waterHeight;
+                        zone = 'water';
                     }
 
-                    return { y: normalHeight, normal: terrainNormal };
+                    return { y: height, normal: terrainNormal, zone };
                 })
             }))
         };
