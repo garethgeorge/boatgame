@@ -4,7 +4,7 @@ import { Decorations } from '../../world/decorations/Decorations';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
-import { Entity } from '../../core/Entity';
+import { Entity } from '../Entity';
 import { FlyingBehaviorFactory } from '../behaviors/FlyingBehaviorFactory';
 import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
 

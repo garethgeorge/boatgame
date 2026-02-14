@@ -1,7 +1,7 @@
 
 import * as THREE from 'three';
 import * as planck from 'planck';
-import { Entity } from '../../core/Entity';
+import { Entity } from '../Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';

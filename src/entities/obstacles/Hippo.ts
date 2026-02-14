@@ -5,7 +5,7 @@ import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { AnimalBehaviorEvent } from '../behaviors/AnimalBehavior';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
-import { Entity } from '../../core/Entity';
+import { Entity } from '../Entity';
 import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
 
 import { EntityMetadata } from '../EntityMetadata';

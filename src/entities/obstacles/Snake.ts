@@ -4,7 +4,7 @@ import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/decorations/Decorations';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { Animal, AnimalOptions, AnimalAnimations } from './Animal';
-import { Entity } from '../../core/Entity';
+import { Entity } from '../Entity';
 import { AttackBehaviorFactory } from '../behaviors/AttackBehaviorFactory';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimationPlayer } from '../../core/AnimationPlayer';

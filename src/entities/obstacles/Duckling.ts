@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Entity } from '../../core/Entity';
+import { Entity } from '../Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/decorations/Decorations';
 import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';

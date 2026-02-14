@@ -1,8 +1,8 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { GraphicsUtils } from './GraphicsUtils';
+import { GraphicsUtils } from '../core/GraphicsUtils';
 import { Boat } from '../entities/Boat';
-import { PhysicsUtils } from './PhysicsUtils';
+import { PhysicsUtils } from '../core/PhysicsUtils';
 
 export abstract class Entity {
 

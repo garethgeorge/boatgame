@@ -8,7 +8,7 @@ import { TerrainManager } from './world/TerrainManager';
 import { InputManager } from './managers/InputManager';
 import { Profiler } from './core/Profiler';
 import { Boat } from './entities/Boat';
-import { Entity } from './core/Entity';
+import { Entity } from './entities/Entity';
 import { GraphicsUtils } from './core/GraphicsUtils';
 import { DebugSettings } from './core/DebugSettings';
 import { TerrainChunk } from './world/TerrainChunk';

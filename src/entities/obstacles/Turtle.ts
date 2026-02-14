@@ -5,7 +5,7 @@ import { ObstacleHitBehaviorParams } from '../behaviors/ObstacleHitBehavior';
 import { SwimAwayBehaviorFactory } from '../behaviors/SwimAwayBehaviorFactory';
 import { AnimalLogicPhase } from '../behaviors/logic/AnimalLogic';
 import { AnimalAnimations, Animal, AnimalOptions } from './Animal';
-import { Entity } from '../../core/Entity';
+import { Entity } from '../Entity';
 
 import { EntityMetadata } from '../EntityMetadata';
 

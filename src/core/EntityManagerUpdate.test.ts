@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Entity } from './Entity';
+import { Entity } from '../entities/Entity';
 import { EntityManager } from './EntityManager';
 import { PhysicsEngine } from './PhysicsEngine';
 import * as THREE from 'three';

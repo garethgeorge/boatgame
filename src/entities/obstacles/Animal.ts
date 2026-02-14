@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { Entity } from '../../core/Entity';
+import { Entity } from '../Entity';
 import { PhysicsEngine } from '../../core/PhysicsEngine';
 import { AnimationParameters, AnimationPlayer, AnimationScript } from '../../core/AnimationPlayer';
 import { AnyAnimal } from '../behaviors/AnimalBehavior';
