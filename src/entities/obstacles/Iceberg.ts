@@ -6,10 +6,11 @@ import { Decorations } from '../../world/decorations/Decorations';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { TerrainMap } from '../behaviors/TerrainMap';
 import { ConvexHull } from '../../core/ConvexHull';
+import { Polygon } from '../../core/Polygon';
 
 export class Iceberg extends Entity {
     private animationMixer?: THREE.AnimationMixer;
-    private terrainMap: TerrainMap = new IcebergTerrainMap();
+    private terrainMap: TerrainMap;
 
     constructor(x: number, y: number, radius: number, hasBear: boolean, physicsEngine: PhysicsEngine) {
         super();
@@ -137,6 +138,8 @@ export class Iceberg extends Entity {
                 }
             }
         }
+
+        this.terrainMap = new IcebergTerrainMap(vertices, 0.2);
     }
 
     wasHitByPlayer() {
@@ -157,8 +160,26 @@ export class Iceberg extends Entity {
 
 }
 
-class IcebergTerrainMap implements TerrainMap {
+export class IcebergTerrainMap implements TerrainMap {
+    private polygon: Polygon;
+    private iceHeight: number;
+
+    constructor(vertices: planck.Vec2[], iceHeight: number) {
+        this.polygon = new Polygon(vertices);
+        this.iceHeight = iceHeight;
+    }
+
     sample(x: number, z: number, waterHeight: number): { y: number; normal: THREE.Vector3; } {
-        return { y: 0.2, normal: new THREE.Vector3(0, 1, 0) };
+        const point = planck.Vec2(x, z);
+        const inside = this.polygon.containsPoint(point);
+
+        let y = this.iceHeight;
+        if (!inside) {
+            const dist = this.polygon.distanceToPoint(point);
+            const t = Math.min(1.0, dist / 2.0);
+            y = this.iceHeight * (1 - t) + waterHeight * t;
+        }
+
+        return { y, normal: new THREE.Vector3(0, 1, 0) };
     }
 }
