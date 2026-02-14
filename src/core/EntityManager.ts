@@ -64,6 +64,18 @@ export class EntityManager {
             this.entities.delete(entity);
         }
 
+        // Unparent self
+        const parent = entity.parent();
+        if (parent) {
+            parent.removeChild(entity);
+        }
+
+        // Unparent children (promote to roots)
+        const children = [...entity.children()];
+        for (const child of children) {
+            entity.removeChild(child);
+        }
+
         // tell entity
         entity.terminate();
 
