@@ -3,8 +3,8 @@ import { DECORATION_MANIFEST } from '../world/decorations/DecorationsManifest';
 import { ENTITY_MANIFEST, BOAT_MANIFEST } from '../entities/EntitiesManifest';
 import { EntityMetadata, BoatMetadata } from '../entities/EntityMetadata';
 import { GeometryVertexVisitor } from './GeometryVertexVisitor';
-import { ConvexHull } from './ConvexHull';
-import { DecimateHull } from './DecimateHull';
+import { ConvexHull } from '../core/ConvexHull';
+import { DecimateHull } from '../core/DecimateHull';
 
 export interface DecorationRadii {
     groundRadius: number;
@@ -147,8 +147,8 @@ export class MetadataExtractor {
     private static computeHullFromPoints(points: THREE.Vector3[], targetCount: number = 8): number[] {
         if (points.length === 0) return [];
 
-        const hull = ConvexHull.compute(points);
-        const decimated = DecimateHull.decimate(hull, targetCount);
+        const hull = ConvexHull.computeVector3(points);
+        const decimated = DecimateHull.decimateVector3(hull, targetCount);
 
         const result: number[] = [];
         for (const p of decimated) {

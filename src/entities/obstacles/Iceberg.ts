@@ -156,7 +156,6 @@ export class Iceberg extends Entity {
     }
 
 }
-}
 
 class IcebergTerrainMap implements TerrainMap {
     sample(x: number, z: number, waterHeight: number): { y: number; normal: THREE.Vector3; } {

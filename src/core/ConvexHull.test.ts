@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { ConvexHull } from './ConvexHull';
