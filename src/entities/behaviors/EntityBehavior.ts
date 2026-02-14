@@ -3,5 +3,4 @@ export interface EntityBehavior {
     updatePhysics(dt: number): void;
     updateVisuals(dt: number, alpha: number): void;
     updateSceneGraph(): void;
-    dispose?(): void;
 }

@@ -155,9 +155,6 @@ export abstract class Animal extends Entity implements AnyAnimal {
     //--- Behavior functions
 
     public setBehavior(behavior: EntityBehavior) {
-        if (this.behavior && this.behavior.dispose) {
-            this.behavior.dispose();
-        }
         this.behavior = behavior;
         if (!this.behavior)
             this.playAnimationForPhase(null, AnimalLogicPhase.NONE);
@@ -246,15 +243,12 @@ export abstract class Animal extends Entity implements AnyAnimal {
         }
     }
 
-    dispose() {
-        if (this.behavior && this.behavior.dispose) {
-            this.behavior.dispose();
-        }
+    terminate() {
         if (this.currentSlot) {
             this.currentSlot.isOccupied = false;
             this.currentSlot = null;
         }
-        super.dispose();
+        super.terminate();
     }
 
     protected abstract getHitBehaviorParams(): ObstacleHitBehaviorParams;

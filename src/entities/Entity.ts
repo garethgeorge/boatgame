@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { GraphicsUtils } from '../core/GraphicsUtils';
 import { Boat } from '../entities/Boat';
 import { PhysicsUtils } from '../core/PhysicsUtils';
+import { PhysicsEngine } from '../core/PhysicsEngine';
+import { GraphicsEngine } from '../core/GraphicsEngine';
 
 export abstract class Entity {
 
@@ -158,6 +160,12 @@ export abstract class Entity {
     public updateSceneGraph(): void {
     }
 
+    /**
+     * Called at the end of life for the entity.
+     */
+    public terminate() {
+    }
+
     // Do stuff when hit by the player
     wasHitByPlayer(boat: Boat): void {
     }
@@ -168,22 +176,6 @@ export abstract class Entity {
             const world = body.getWorld();
             world.destroyBody(body);
         }
-        this.physicsBodies = [];
-    }
-
-    destroyDebugMeshes() {
-        for (const debugMesh of this.debugMeshes) {
-            GraphicsUtils.disposeObject(debugMesh);
-        }
-        this.debugMeshes = [];
-    }
-
-    dispose() {
-        for (const mesh of this.meshes) {
-            GraphicsUtils.disposeObject(mesh);
-        }
-        this.destroyDebugMeshes();
-        this.meshes = [];
         this.physicsBodies = [];
     }
 
@@ -265,9 +257,9 @@ export abstract class Entity {
         body.setAngle(planckAngle);
     }
 
-    ensureDebugMeshes(): THREE.Object3D[] {
-        if (this.debugMeshes.length > 0) return this.debugMeshes;
-        if (this.physicsBodies.length === 0) return [];
+    ensureDebugMeshes(): void {
+        if (this.debugMeshes.length > 0) return;
+        if (this.physicsBodies.length === 0) return;
 
         for (const body of this.physicsBodies) {
             const group = new THREE.Group();
@@ -324,7 +316,5 @@ export abstract class Entity {
             }
             this.debugMeshes.push(group);
         }
-
-        return this.debugMeshes;
     }
 }

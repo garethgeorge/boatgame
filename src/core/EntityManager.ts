@@ -4,6 +4,7 @@ import { PhysicsEngine } from './PhysicsEngine';
 import { GraphicsEngine } from './GraphicsEngine';
 import * as planck from 'planck';
 import { DesignerSettings } from './DesignerSettings';
+import { GraphicsUtils } from './GraphicsUtils';
 
 export class EntityManager {
     entities: Set<Entity> = new Set();
@@ -20,17 +21,19 @@ export class EntityManager {
     setDebug(enabled: boolean) {
         if (this.debugMode === enabled) return;
         this.debugMode = enabled;
+
         for (const entity of this.entities) {
-            const debugMeshes = entity.ensureDebugMeshes();
-            for (const debugMesh of debugMeshes) {
-                if (this.debugMode) {
+            if (this.debugMode) {
+                entity.ensureDebugMeshes();
+                for (const debugMesh of entity.debugMeshes) {
                     this.graphicsEngine.add(debugMesh);
-                } else {
-                    this.graphicsEngine.remove(debugMesh);
                 }
-            }
-            if (!this.debugMode) {
-                entity.destroyDebugMeshes();
+            } else {
+                for (const debugMesh of entity.debugMeshes) {
+                    this.graphicsEngine.remove(debugMesh);
+                    GraphicsUtils.disposeObject(debugMesh);
+                }
+                entity.debugMeshes = [];
             }
         }
     }
@@ -49,8 +52,8 @@ export class EntityManager {
         }
 
         if (this.debugMode) {
-            const debugMeshes = entity.ensureDebugMeshes();
-            for (const debugMesh of debugMeshes) {
+            entity.ensureDebugMeshes();
+            for (const debugMesh of entity.debugMeshes) {
                 this.graphicsEngine.add(debugMesh);
             }
         }
@@ -59,21 +62,28 @@ export class EntityManager {
     remove(entity: Entity) {
         if (this.entities.has(entity)) {
             this.entities.delete(entity);
-
-            for (const body of entity.physicsBodies) {
-                this.physicsEngine.world.destroyBody(body);
-            }
-
-            for (const mesh of entity.meshes) {
-                this.graphicsEngine.remove(mesh);
-            }
-
-            for (const debugMesh of entity.debugMeshes) {
-                this.graphicsEngine.remove(debugMesh);
-            }
-
-            entity.dispose();
         }
+
+        // tell entity
+        entity.terminate();
+
+        // tear down its physics bodies and visuals
+        for (const body of entity.physicsBodies) {
+            this.physicsEngine.world.destroyBody(body);
+        }
+        entity.physicsBodies = [];
+
+        for (const mesh of entity.meshes) {
+            this.graphicsEngine.remove(mesh);
+            GraphicsUtils.disposeObject(mesh);
+        }
+        entity.meshes = [];
+
+        for (const debugMesh of entity.debugMeshes) {
+            this.graphicsEngine.remove(debugMesh);
+            GraphicsUtils.disposeObject(debugMesh);
+        }
+        entity.debugMeshes = [];
     }
 
     removeEntitiesInRange(zMin: number, zMax: number) {
