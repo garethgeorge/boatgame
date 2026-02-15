@@ -5,12 +5,14 @@ import { AnimalLogicContext, AnimalLogicPathResult } from './logic/AnimalLogic';
 import { PhysicsUtils } from '../../core/PhysicsUtils';
 import { CollisionCategories } from '../../core/PhysicsEngine';
 import { Zone } from './TerrainMap';
+import { LocomotionType } from './logic/strategy/AnimalPathStrategy';
 
 export class AnimalLocomotionController {
     private entity: AnyAnimal;
     private waterHeight: number;
 
     // Locomotion State
+    private currentMode: LocomotionType = 'NONE';
     private currentZone: Zone | null = null;
     private currentBank: number = 0;
     private jumpActive: boolean = false;
@@ -114,19 +116,36 @@ export class AnimalLocomotionController {
         }
     }
 
-    private setPhysicsMode(body: planck.Body, kinematic: boolean) {
-        const isKinematic = body.getType() === planck.Body.KINEMATIC;
-        if (kinematic && !isKinematic) {
-            // Only ignore terrain when kinematicly controlled. 
-            // We still want to hit other objects (like the boat).
-            PhysicsUtils.updateCollisionMask(body, CollisionCategories.TERRAIN, false);
-            body.setType(planck.Body.KINEMATIC);
-            body.setLinearVelocity(planck.Vec2(0, 0));
-            body.setAngularVelocity(0);
-        } else if (!kinematic && isKinematic) {
-            // Re-enable terrain collision when becoming dynamic
-            PhysicsUtils.updateCollisionMask(body, CollisionCategories.TERRAIN, true);
-            body.setType(planck.Body.DYNAMIC);
+    private setLocomotionMode(body: planck.Body, locomotionType: 'LAND' | 'WATER' | 'FLIGHT' | 'NONE') {
+
+        if (this.currentMode === locomotionType) return;
+
+        switch (locomotionType) {
+            case 'NONE': {
+                break;
+            }
+            case 'WATER': {
+                // Dynamic, all collisions enabled
+                PhysicsUtils.setCollisionMask(body, 0xFFFF);
+                body.setType(planck.Body.DYNAMIC);
+                break;
+            }
+            case 'LAND': {
+                // Kinematic, don't collide with river boundary
+                PhysicsUtils.setCollisionMask(body, 0xFFFF & ~CollisionCategories.TERRAIN);
+                body.setType(planck.Body.KINEMATIC);
+                body.setLinearVelocity(planck.Vec2(0, 0));
+                body.setAngularVelocity(0);
+                break;
+            }
+            case 'FLIGHT': {
+                // Kinematic, don't collide with anything
+                PhysicsUtils.setCollisionMask(body, 0);
+                body.setType(planck.Body.KINEMATIC);
+                body.setLinearVelocity(planck.Vec2(0, 0));
+                body.setAngularVelocity(0);
+                break;
+            }
         }
     }
 
@@ -143,7 +162,7 @@ export class AnimalLocomotionController {
     }
 
     private computeWaterLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
-        this.setPhysicsMode(context.physicsBody, false);
+        this.setLocomotionMode(context.physicsBody, 'WATER');
 
         const steering = result.path;
         const { physicsBody, originPos, dt } = context;
@@ -190,7 +209,7 @@ export class AnimalLocomotionController {
     }
 
     private computeLandLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
-        this.setPhysicsMode(context.physicsBody, true);
+        this.setLocomotionMode(context.physicsBody, 'LAND');
         const { dt } = context;
         const mesh = this.entity.getMesh();
         if (!mesh) return;
@@ -264,7 +283,7 @@ export class AnimalLocomotionController {
     }
 
     private computeFlightLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
-        this.setPhysicsMode(context.physicsBody, true);
+        this.setLocomotionMode(context.physicsBody, 'FLIGHT');
         const { dt } = context;
         const mesh = this.entity.getMesh();
         if (!mesh) return;
