@@ -57,7 +57,7 @@ export class Walrus extends Animal {
     private static readonly animations: AnimalAnimations = {
         default: Animal.play({
             name: 'idle',
-            timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
+            timeScale: 0.5, startTime: -1, randomizeLength: 0.2,
             repeat: Infinity
         }),
         animations: [
@@ -67,6 +67,18 @@ export class Walrus extends Animal {
                 ],
                 play: Animal.play({
                     name: 'walk',
+                    timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
+                    repeat: Infinity
+                })
+            },
+            {
+                phases: [
+                    //AnimalLogicPhase.IDLE_WATER,
+                    AnimalLogicPhase.PREPARING_ATTACK,
+                    AnimalLogicPhase.ATTACKING,
+                ],
+                play: Animal.play({
+                    name: 'swim',
                     timeScale: 1.0, startTime: -1, randomizeLength: 0.2,
                     repeat: Infinity
                 })
