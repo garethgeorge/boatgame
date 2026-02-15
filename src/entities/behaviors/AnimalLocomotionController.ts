@@ -10,6 +10,7 @@ import { LocomotionType } from './logic/strategy/AnimalPathStrategy';
 export class AnimalLocomotionController {
     private entity: AnyAnimal;
     private waterHeight: number;
+    private marginWidth: number = 2.0;
 
     // Locomotion State
     private currentMode: LocomotionType = 'NONE';
@@ -247,8 +248,25 @@ export class AnimalLocomotionController {
         const rotation = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), maxRotation);
         const nextAngle = currentAngle + rotation;
 
-        const { y: terrainHeight, normal: terrainNormal } =
-            this.entity.getTerrainMap().sample(nextPos.x, nextPos.z, this.waterHeight, 2.0);
+        let { y: terrainHeight, normal: terrainNormal } =
+            this.entity.getTerrainMap().sample(nextPos.x, nextPos.z);
+
+        const { zone, t: tau } = this.entity.getTerrainMap().zone(
+            nextPos.x, nextPos.z, 0, this.marginWidth);
+
+        // Interpolate height and normal in the margin
+        if (zone === 'margin') {
+            terrainHeight = terrainHeight * (1 - tau) + this.waterHeight * tau;
+
+            const f = 4 * tau * (1 - tau); // Parabolic weight peaking at 0.5 (t=0.5)
+
+            // Tilted normal: 45 degrees in direction of movement
+            const moveDir = new THREE.Vector2(moveVec.x, moveVec.z).normalize();
+            const tiltedNormal = new THREE.Vector3(moveDir.x, 1, moveDir.y).normalize();
+
+            // Interpolate between terrainNormal and tiltedNormal
+            terrainNormal.lerp(tiltedNormal, f).normalize();
+        }
 
         if (result.jump && !this.jumpActive) {
             this.jumpActive = true;
@@ -383,12 +401,8 @@ export class AnimalLocomotionController {
         if (!mesh) return;
 
         // Sample the terrain map at the current position to get the zone
-        const { zone } = this.entity.getTerrainMap().sample(
-            mesh.position.x,
-            mesh.position.z,
-            this.waterHeight,
-            2.0
-        );
+        const { zone } = this.entity.getTerrainMap().zone(
+            mesh.position.x, mesh.position.z, 0, this.marginWidth);
 
         if (this.currentZone !== zone) {
             this.currentZone = zone;

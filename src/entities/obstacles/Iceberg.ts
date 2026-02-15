@@ -138,28 +138,34 @@ export class IcebergTerrainMap implements TerrainMap {
         this.iceHeight = iceHeight;
     }
 
-    sample(x: number, z: number, waterHeight: number, margin: number): { y: number; normal: THREE.Vector3; zone: Zone; } {
+    sample(x: number, z: number): { y: number; normal: THREE.Vector3; } {
+        return { y: this.iceHeight, normal: new THREE.Vector3(0, 1, 0) };
+    }
+
+    distanceToEdge(x: number, z: number): { distance: number, zone1: Zone, zone2: Zone } {
         const point = planck.Vec2(x, z);
+        const distance = this.polygon.distanceToPoint(point);
         const inside = this.polygon.containsPoint(point);
+        return {
+            distance,
+            zone1: inside ? 'land' : 'water',
+            zone2: inside ? 'water' : 'land'
+        };
+    }
 
-        let y = this.iceHeight;
-        let zone: Zone = 'land';
+    public zone(
+        x: number, z: number, margin: number, width: number
+    ): { zone: Zone, t: number } {
+        const point = planck.Vec2(x, z);
+        const inside = this.polygon.containsPoint(point) ? 1 : -1;
+        const distance = this.polygon.distanceToPoint(point) * inside;
 
-        if (inside) {
-            y = this.iceHeight;
-            zone = 'land';
+        if (margin < distance) {
+            return { zone: 'land', t: 0 };
+        } else if (width <= 0 || distance < margin - width) {
+            return { zone: 'water', t: 0 };
         } else {
-            const dist = this.polygon.distanceToPoint(point);
-            if (dist < margin) {
-                const t = dist / margin;
-                y = this.iceHeight * (1 - t) + waterHeight * t;
-                zone = 'margin';
-            } else {
-                y = waterHeight;
-                zone = 'water';
-            }
+            return { zone: 'margin', t: (margin - distance) / width };
         }
-
-        return { y, normal: new THREE.Vector3(0, 1, 0), zone };
     }
 }

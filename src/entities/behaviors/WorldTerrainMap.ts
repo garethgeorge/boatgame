@@ -14,34 +14,29 @@ export class WorldTerrainMap implements TerrainMap {
         return WorldTerrainMap.instance;
     }
 
-    public sample(x: number, z: number, waterHeight: number, margin: number): { y: number, normal: THREE.Vector3, zone: Zone } {
+    public sample(x: number, z: number): { y: number, normal: THREE.Vector3 } {
         const riverSystem = RiverSystem.getInstance();
         const terrainHeight = riverSystem.terrainGeometry.calculateHeight(x, z);
         const terrainNormal = riverSystem.terrainGeometry.calculateNormal(x, z);
 
+        return { y: terrainHeight, normal: terrainNormal };
+    }
+
+    public zone(
+        x: number, z: number, margin: number, width: number
+    ): { zone: Zone, t: number } {
+        const riverSystem = RiverSystem.getInstance();
         const banks = riverSystem.getBankPositions(z);
         const distFromLeft = x - banks.left;
         const distFromRight = banks.right - x;
-        const distIntoWater = Math.min(distFromLeft, distFromRight);
+        const distance = Math.min(distFromLeft, distFromRight);
 
-        let height = terrainHeight;
-        let zone: Zone = 'land';
-
-        if (distIntoWater < 0) {
-            // Out of water (on land)
-            height = terrainHeight;
-            zone = 'land';
-        } else if (distIntoWater < margin) {
-            // Margin area
-            const t = distIntoWater / margin;
-            height = terrainHeight * (1 - t) + waterHeight * t;
-            zone = 'margin';
+        if (margin < distance) {
+            return { zone: 'water', t: 0 };
+        } else if (width <= 0 || distance < margin - width) {
+            return { zone: 'land', t: 0 };
         } else {
-            // Fully in water
-            height = waterHeight;
-            zone = 'water';
+            return { zone: 'margin', t: (margin - distance) / width };
         }
-
-        return { y: height, normal: terrainNormal, zone };
     }
 }

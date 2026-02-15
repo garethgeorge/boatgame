@@ -25,28 +25,39 @@ describe('WorldTerrainMap', () => {
     const margin = 2.0;
 
     it('should return land zone when outside river', () => {
-        const resultL = map.sample(-15, 0, waterHeight, margin);
-        expect(resultL.zone).toBe('land');
-        expect(resultL.y).toBe(10);
+        // Banks at -10 and 10. x=-15 is 5 units outside bank.
+        // margin=0, width=2. distance = -5.
+        // -5 < margin - width (0 - 2 = -2), so zone is land.
+        expect(map.zone(-15, 0, 0, 2).zone).toBe('land');
+        expect(map.sample(-15, 0).y).toBe(10);
 
-        const resultR = map.sample(15, 0, waterHeight, margin);
-        expect(resultR.zone).toBe('land');
-        expect(resultR.y).toBe(10);
+        expect(map.zone(15, 0, 0, 2).zone).toBe('land');
+        expect(map.sample(15, 0).y).toBe(10);
     });
 
-    it('should return margin zone and interpolate height when near bank', () => {
-        // x = -9 is 1 unit into water from left bank (-10)
-        // t = 1 / 2 = 0.5
-        // y = 10 * 0.5 + 0 * 0.5 = 5
-        const result = map.sample(-9, 0, waterHeight, margin);
+    it('should return water zone when inside river', () => {
+        // x=0 is 10 units inside bank. margin=0.
+        // distance=10 > margin=0, so zone is water.
+        expect(map.zone(0, 0, 0, 2).zone).toBe('water');
+    });
+
+    it('should return margin zone and correct t near edge', () => {
+        // x=-9 is 1 unit inside left bank (-10). distance=1.
+        // margin=2, width=2.
+        // distance=1 < margin=2 and distance=1 > margin-width=0.
+        // so zone is margin.
+        // t = (2 - 1) / 2 = 0.5
+        const result = map.zone(-9, 0, 2, 2);
         expect(result.zone).toBe('margin');
-        expect(result.y).toBeCloseTo(5);
-    });
+        expect(result.t).toBeCloseTo(0.5);
 
-    it('should return water zone and water height when deep in river', () => {
-        // x = 0 is 10 units from banks
-        const result = map.sample(0, 0, waterHeight, margin);
-        expect(result.zone).toBe('water');
-        expect(result.y).toBe(0);
+        // x=-11 is 1 unit outside. distance=-1.
+        // margin=0, width=2.
+        // distance=-1 < margin-width=-2 is false.
+        // distance=-1 > margin-width=-2 is true.
+        // margin - distance / width = (0 - (-1)) / 2 = 0.5
+        const result2 = map.zone(-11, 0, 0, 2);
+        expect(result2.zone).toBe('margin');
+        expect(result2.t).toBeCloseTo(0.5);
     });
 });

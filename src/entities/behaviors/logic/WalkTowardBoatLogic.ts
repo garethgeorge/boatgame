@@ -29,7 +29,7 @@ export class WalkTowardBoatLogic implements AnimalLogic {
         };
 
         const pos = context.animal.localPos();
-        const { zone } = context.animal.getTerrainMap().sample(pos.x, pos.z, 0, 2.0);
+        const { zone } = context.animal.getTerrainMap().zone(pos.x, pos.z, 0, 2.0);
 
         if (zone === 'water') {
             return {
