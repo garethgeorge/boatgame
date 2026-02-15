@@ -1,5 +1,6 @@
 import { EntityIds } from "../../entities/EntityIds";
 import { PopulationContext } from "../biomes/PopulationContext";
+import { DecorationId } from "../decorations/Decorations";
 import { RiverGeometrySample } from "../RiverGeometry";
 
 /**
@@ -13,15 +14,13 @@ export interface LayoutPlacement {
     readonly z: number;
     readonly radius: number;
 
-    /** The entity ID for telemetry and identity. */
-    get id(): EntityIds;
-
     /** Spawns the entity into the world. */
     spawn(context: PopulationContext, sample: RiverGeometrySample): void;
 
     /** 
      * Generator that yields promises for assets that must be loaded 
      * before this entity can be spawned.
+     * @param loaded Set of decoration IDs already being loaded/loaded.
      */
-    ensureLoaded(): Generator<void | Promise<void>, void, unknown>;
+    ensureLoaded(loaded: Set<DecorationId>): Generator<void | Promise<void>, void, unknown>;
 }

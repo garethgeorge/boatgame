@@ -3,6 +3,7 @@ import { BiomeType } from '../biomes/BiomeType';
 import { BoatPathLayout } from './BoatPathLayoutStrategy';
 import { EntityIds } from '../../entities/EntityIds';
 import { RiverGeometry } from '../RiverGeometry';
+import { DecorationId } from '../decorations/Decorations';
 
 export class BoatPathLayoutSpawner {
     private static instance: BoatPathLayoutSpawner;
@@ -32,14 +33,11 @@ export class BoatPathLayoutSpawner {
         const zMax = Math.max(zStart, zEnd);
 
         // Gatekeeping: identify needed models and ensure all loaded
-        const seenIds = new Set<EntityIds>();
+        const loaded = new Set<DecorationId>();
         for (const p of layout.placements) {
             // Use world Z for filtering consistent with TerrainDecorator
             if (p.z >= zMin && p.z < zMax) {
-                if (!seenIds.has(p.id)) {
-                    yield* p.ensureLoaded();
-                    seenIds.add(p.id);
-                }
+                yield* p.ensureLoaded(loaded);
             }
         }
 

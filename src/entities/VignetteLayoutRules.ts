@@ -7,9 +7,10 @@ import { RiverGeometrySample } from '../world/RiverGeometry';
 import { EntityIds } from './EntityIds';
 import { Iceberg } from './obstacles/Iceberg';
 import { Walrus } from './obstacles/Walrus';
-import { Decorations } from '../world/decorations/Decorations';
+import { DecorationId, Decorations } from '../world/decorations/Decorations';
 import { AnimalBehaviorUtils } from './behaviors/AnimalBehaviorUtils';
 import { PolarBear } from './obstacles';
+import { IcebergSpawner } from './spawners/IcebergSpawner';
 
 class IcebergAnimalPlacement implements LayoutPlacement, LayoutGenerator {
     constructor(
@@ -21,8 +22,6 @@ class IcebergAnimalPlacement implements LayoutPlacement, LayoutGenerator {
         public readonly biomeZRange: [number, number],
         public readonly animalType: 'walrus' | 'polarBear'
     ) { }
-
-    get id() { return EntityIds.ICEBERG; } // Primary ID for collision checks
 
     public spawn(context: PopulationContext, sample: RiverGeometrySample) {
         const iceberg = new Iceberg(this.x, this.z, this.radius, context.physicsEngine);
@@ -63,8 +62,11 @@ class IcebergAnimalPlacement implements LayoutPlacement, LayoutGenerator {
         placements.place(this);
     }
 
-    public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
-        yield* Decorations.ensureAllLoaded(['walrus']);
+    public *ensureLoaded(loaded: Set<DecorationId>): Generator<void | Promise<void>, void, unknown> {
+        if (!loaded.has(this.animalType)) {
+            yield* Decorations.ensureAllLoaded([this.animalType]);
+            loaded.add(this.animalType);
+        }
     }
 }
 

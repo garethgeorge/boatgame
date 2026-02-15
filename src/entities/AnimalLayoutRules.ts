@@ -44,7 +44,6 @@ interface AnimalPlacementParams {
     z: number;
     radius: number;
 
-    id: EntityIds;
     habitat: Habitat;
     factory: AnimalClass;
     heightInWater: number;
@@ -59,7 +58,6 @@ export class AnimalPlacement implements LayoutPlacement, LayoutGenerator {
     readonly z: number;
     readonly radius: number;
 
-    public readonly id: EntityIds;
     public readonly habitat: Habitat;
     public readonly factory: AnimalClass;
     public readonly heightInWater: number;
@@ -73,7 +71,6 @@ export class AnimalPlacement implements LayoutPlacement, LayoutGenerator {
         this.z = params.z;
         this.radius = params.radius;
 
-        this.id = params.id;
         this.habitat = params.habitat;
         this.factory = params.factory;
         this.heightInWater = params.heightInWater;
@@ -119,9 +116,13 @@ export class AnimalPlacement implements LayoutPlacement, LayoutGenerator {
         placements.place(this);
     }
 
-    public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+    public *ensureLoaded(loaded: Set<string>): Generator<void | Promise<void>, void, unknown> {
         if (this.decorationIds && this.decorationIds.length > 0) {
-            yield* Decorations.ensureAllLoaded(this.decorationIds as any);
+            const needed = this.decorationIds.filter(id => !loaded.has(id));
+            if (needed.length > 0) {
+                yield* Decorations.ensureAllLoaded(needed);
+                needed.forEach(id => loaded.add(id));
+            }
         }
     }
 }
@@ -240,18 +241,16 @@ class Details {
  * layout rule.
  */
 abstract class AnimalRule extends Details {
-    private id: EntityIds;
     private factory: AnimalClass;
     private decorationIds: DecorationId[];
     private radius: number;
     private heightInWater: number;
 
     constructor(
-        id: EntityIds, factory: AnimalClass, decorationIds: DecorationId[],
+        factory: AnimalClass, decorationIds: DecorationId[],
         radius: number, heightInWater: number
     ) {
         super();
-        this.id = id;
         this.factory = factory;
         this.decorationIds = decorationIds;
         this.radius = radius;
@@ -274,7 +273,6 @@ abstract class AnimalRule extends Details {
             y: 0,
             z: ctx.z,
             radius: this.radius,
-            id: this.id,
             habitat: ctx.habitat,
             factory: this.factory,
             heightInWater: this.heightInWater,
@@ -294,18 +292,16 @@ abstract class AnimalRule extends Details {
  * a get() function to create a layout rule.
  */
 abstract class AnimalSlotRule extends Details {
-    private id: EntityIds;
     private factory: AnimalClass;
     private decorationIds: DecorationId[];
     private radius: number;
     private heightInWater: number;
 
     constructor(
-        id: EntityIds, factory: AnimalClass, decorationIds: DecorationId[],
+        factory: AnimalClass, decorationIds: DecorationId[],
         radius: number, heightInWater: number
     ) {
         super();
-        this.id = id;
         this.factory = factory;
         this.decorationIds = decorationIds;
         this.radius = radius;
@@ -333,7 +329,6 @@ abstract class AnimalSlotRule extends Details {
             y: 0,
             z: ctx.z,
             radius: this.radius,
-            id: this.id,
             habitat: ctx.habitat,
             factory: this.factory,
             heightInWater: this.heightInWater,
@@ -359,7 +354,7 @@ export class AlligatorRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.ALLIGATOR, Alligator, ['alligator'],
+            Alligator, ['alligator'],
             EntityMetadata.alligator.radius,
             Alligator.HEIGHT_IN_WATER
         );
@@ -380,7 +375,7 @@ export class HippoRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.HIPPO, Hippo, ['hippo'],
+            Hippo, ['hippo'],
             EntityMetadata.hippo.radius,
             Hippo.HEIGHT_IN_WATER
         );
@@ -401,7 +396,7 @@ export class SwanRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.SWAN, Swan, ['swan'],
+            Swan, ['swan'],
             EntityMetadata.swan.radius,
             Swan.HEIGHT_IN_WATER
         );
@@ -422,7 +417,7 @@ export class UnicornRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.UNICORN, Unicorn, ['unicorn'],
+            Unicorn, ['unicorn'],
             EntityMetadata.unicorn.radius,
             0
         );
@@ -443,7 +438,7 @@ export class BluebirdRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.BLUEBIRD, Bluebird, ['bluebird'],
+            Bluebird, ['bluebird'],
             EntityMetadata.bluebird.radius,
             0
         );
@@ -467,7 +462,7 @@ export class ParrotRule extends AnimalSlotRule {
 
     constructor() {
         super(
-            EntityIds.PARROT, Parrot, ['parrot'],
+            Parrot, ['parrot'],
             EntityMetadata.parrot.radius,
             0
         );
@@ -488,7 +483,7 @@ export class BrownBearRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.BROWN_BEAR, BrownBear, ['brownBear'],
+            BrownBear, ['brownBear'],
             EntityMetadata.brownBear.radius,
             BrownBear.HEIGHT_IN_WATER
         );
@@ -509,7 +504,7 @@ export class PolarBearRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.POLAR_BEAR, PolarBear, ['polarBear'],
+            PolarBear, ['polarBear'],
             EntityMetadata.polarBear.radius,
             PolarBear.HEIGHT_IN_WATER
         );
@@ -530,7 +525,7 @@ export class MooseRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.MOOSE, Moose, ['moose'],
+            Moose, ['moose'],
             EntityMetadata.moose.radius,
             Moose.HEIGHT_IN_WATER
         );
@@ -551,7 +546,7 @@ export class DucklingRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.DUCKLING, Duckling, ['duckling'],
+            Duckling, ['duckling'],
             EntityMetadata.duckling.radius,
             Duckling.HEIGHT_IN_WATER
         );
@@ -572,7 +567,7 @@ export class PenguinKayakRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.PENGUIN_KAYAK, PenguinKayak, ['penguinKayak'],
+            PenguinKayak, ['penguinKayak'],
             EntityMetadata.penguinKayak.radius,
             PenguinKayak.HEIGHT_IN_WATER
         );
@@ -593,7 +588,7 @@ export class DragonflyRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.DRAGONFLY, Dragonfly, ['dragonfly'],
+            Dragonfly, ['dragonfly'],
             EntityMetadata.dragonfly.radius,
             0
         );
@@ -623,7 +618,7 @@ export class TRexRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.TREX, TRex, ['trex'],
+            TRex, ['trex'],
             EntityMetadata.trex.radius,
             TRex.HEIGHT_IN_WATER
         );
@@ -644,7 +639,7 @@ export class TriceratopsRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.TRICERATOPS, Triceratops, ['triceratops'],
+            Triceratops, ['triceratops'],
             EntityMetadata.triceratops.radius,
             Triceratops.HEIGHT_IN_WATER
         );
@@ -665,7 +660,7 @@ export class BrontosaurusRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.BRONTOSAURUS, Brontosaurus, ['brontosaurus'],
+            Brontosaurus, ['brontosaurus'],
             EntityMetadata.brontosaurus.radius,
             Brontosaurus.HEIGHT_IN_WATER
         );
@@ -686,7 +681,7 @@ export class PterodactylRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.PTERODACTYL, Pterodactyl, ['pterodactyl'],
+            Pterodactyl, ['pterodactyl'],
             EntityMetadata.pterodactyl.radius,
             0
         );
@@ -707,7 +702,7 @@ export class SnakeRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.SNAKE, Snake, ['snake'],
+            Snake, ['snake'],
             EntityMetadata.snake.radius,
             Snake.HEIGHT_IN_WATER
         );
@@ -728,7 +723,7 @@ export class EgretRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.EGRET, Egret, ['egret'],
+            Egret, ['egret'],
             EntityMetadata.egret.radius,
             Egret.HEIGHT_IN_WATER
         );
@@ -749,7 +744,7 @@ export class DolphinRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.DOLPHIN, Dolphin, ['dolphin'],
+            Dolphin, ['dolphin'],
             EntityMetadata.dolphin.radius,
             Dolphin.HEIGHT_IN_WATER
         );
@@ -770,7 +765,7 @@ export class NarwhalRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.NARWHAL, Narwhal, ['narwhal'],
+            Narwhal, ['narwhal'],
             EntityMetadata.narwhal.radius,
             Narwhal.HEIGHT_IN_WATER
         );
@@ -791,7 +786,7 @@ export class TurtleRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.TURTLE, Turtle, ['turtle'],
+            Turtle, ['turtle'],
             EntityMetadata.turtle.radius,
             Turtle.HEIGHT_IN_WATER
         );
@@ -812,7 +807,7 @@ export class ButterflyRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.BUTTERFLY, Butterfly, ['butterfly'],
+            Butterfly, ['butterfly'],
             EntityMetadata.butterfly.radius,
             0
         );
@@ -833,7 +828,7 @@ export class GingerManRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.GINGERMAN, GingerMan, ['gingerman'],
+            GingerMan, ['gingerman'],
             EntityMetadata.gingerman.radius,
             GingerMan.HEIGHT_IN_WATER
         );
@@ -854,7 +849,7 @@ export class MonkeyRule extends AnimalRule {
 
     constructor() {
         super(
-            EntityIds.MONKEY, Monkey, ['monkey'],
+            Monkey, ['monkey'],
             EntityMetadata.monkey.radius,
             Monkey.HEIGHT_IN_WATER
         );

@@ -15,6 +15,7 @@ import { PlacementPredicate, LayoutRules } from '../world/layout/LayoutRuleBuild
 import { IcebergSpawner } from "./spawners/IcebergSpawner";
 import { LayoutPlacement } from "../world/layout/LayoutPlacement";
 import { LayoutParams, LayoutPlacements, LayoutRule, LayoutGenerator } from "../world/layout/LayoutRule";
+import { DecorationId, Decorations } from "../world/decorations/Decorations";
 
 class Details {
     public static readonly waterPredicate = LayoutRules.all([
@@ -40,7 +41,6 @@ export class SimpleEntityPlacement implements LayoutPlacement, LayoutGenerator {
         public readonly y: number,
         public readonly z: number,
         public readonly radius: number,
-        public readonly id: EntityIds,
         private readonly spawnFn: (context: PopulationContext, x: number, z: number, radius: number) => void
     ) {
     }
@@ -53,7 +53,7 @@ export class SimpleEntityPlacement implements LayoutPlacement, LayoutGenerator {
         placements.place(this);
     }
 
-    public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+    public *ensureLoaded(loaded: Set<DecorationId>): Generator<void | Promise<void>, void, unknown> {
     }
 }
 
@@ -66,7 +66,6 @@ export class BottleRule extends Details {
             if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
             return new SimpleEntityPlacement(
                 ctx.index, ctx.x, 0, ctx.z, groundRadius,
-                EntityIds.BOTTLE,
                 (context, x, z) => MessageInABottleSpawner.createEntity(context, x, z)
             );
         };
@@ -86,8 +85,6 @@ export class RiverRockPlacement implements LayoutPlacement, LayoutGenerator {
     ) {
     }
 
-    get id() { return EntityIds.ROCK; }
-
     public spawn(context: PopulationContext, sample: RiverGeometrySample) {
         let pillars = false;
         if (this.biomeType === 'forest') pillars = Math.random() < 0.1;
@@ -102,7 +99,7 @@ export class RiverRockPlacement implements LayoutPlacement, LayoutGenerator {
         placements.place(this);
     }
 
-    public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+    public *ensureLoaded(loaded: Set<DecorationId>): Generator<void | Promise<void>, void, unknown> {
     }
 };
 
@@ -131,7 +128,6 @@ export class LogRule extends Details {
             if (predicate !== undefined && !predicate(ctx, groundRadius)) return null;
             return new SimpleEntityPlacement(
                 ctx.index, ctx.x, 0, ctx.z, groundRadius,
-                EntityIds.LOG,
                 (context, x, z, radius) => LogSpawner.createEntity(context, x, z, radius * 2)
             );
         };
@@ -151,8 +147,6 @@ export class BuoyPlacement implements LayoutPlacement, LayoutGenerator {
     ) {
     }
 
-    get id() { return EntityIds.BUOY; }
-
     public spawn(context: PopulationContext, sample: RiverGeometrySample) {
         BuoySpawner.createEntity(context, sample, [this.offset - this.radius, this.offset + this.radius]);
     }
@@ -161,7 +155,7 @@ export class BuoyPlacement implements LayoutPlacement, LayoutGenerator {
         placements.place(this);
     }
 
-    public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+    public *ensureLoaded(loaded: Set<DecorationId>): Generator<void | Promise<void>, void, unknown> {
     }
 };
 
@@ -194,15 +188,16 @@ export class PierPlacement implements LayoutPlacement, LayoutGenerator {
     ) {
     }
 
-    get id() { return EntityIds.PIER; }
-
     public spawn(context: PopulationContext, sample: RiverGeometrySample) {
         PierSpawner.createEntity(
             context, this.x, this.z, this.radius * 2, this.angle, this.hasDepot);
     }
 
-    public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
-        yield* PierSpawner.ensureLoaded();
+    public *ensureLoaded(loaded: Set<DecorationId>): Generator<void | Promise<void>, void, unknown> {
+        if (!loaded.has('depot')) {
+            yield* Decorations.ensureAllLoaded(['depot']);
+            loaded.add('depot');
+        }
     }
 
     public generate(placements: LayoutPlacements) {
@@ -258,14 +253,11 @@ export class IcebergPlacement implements LayoutPlacement, LayoutGenerator {
     ) {
     }
 
-    get id() { return EntityIds.ICEBERG; }
-
     public spawn(context: PopulationContext, sample: RiverGeometrySample) {
         IcebergSpawner.createEntity(context, this.x, this.z, this.radius);
     }
 
-    public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
-        yield* IcebergSpawner.ensureLoaded();
+    public *ensureLoaded(loaded: Set<DecorationId>): Generator<void | Promise<void>, void, unknown> {
     }
 
     public generate(placements: LayoutPlacements) {
@@ -303,8 +295,6 @@ export class MangrovePlacement implements LayoutPlacement, LayoutGenerator {
     ) {
     }
 
-    get id() { return EntityIds.MANGROVE; }
-
     public spawn(context: PopulationContext, sample: RiverGeometrySample) {
         MangroveSpawner.createEntity(context, this.x, this.z, this.radius * 1.5);
     }
@@ -313,7 +303,7 @@ export class MangrovePlacement implements LayoutPlacement, LayoutGenerator {
         placements.place(this);
     }
 
-    public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+    public *ensureLoaded(loaded: Set<DecorationId>): Generator<void | Promise<void>, void, unknown> {
     }
 };
 
@@ -348,7 +338,6 @@ export class PatchPlacement implements LayoutPlacement, LayoutGenerator {
         public readonly y: number,
         public readonly z: number,
         public readonly radius: number,
-        public readonly id: EntityIds,
         public readonly width: number,
         public readonly length: number,
         private readonly spawner: {
@@ -356,7 +345,7 @@ export class PatchPlacement implements LayoutPlacement, LayoutGenerator {
                 context: PopulationContext,
                 x: number, z: number, width: number, length: number,
                 tangent: { x: number, z: number }) => void,
-            ensureLoaded?: () => Generator<void | Promise<void>, void, unknown>
+            ensureLoaded?: (loaded: Set<DecorationId>) => Generator<void | Promise<void>, void, unknown>
         }
     ) {
     }
@@ -365,9 +354,9 @@ export class PatchPlacement implements LayoutPlacement, LayoutGenerator {
         this.spawner.createEntity(context, this.x, this.z, this.width, this.length, sample.tangent);
     }
 
-    public *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+    public *ensureLoaded(loaded: Set<DecorationId>): Generator<void | Promise<void>, void, unknown> {
         if (this.spawner.ensureLoaded) {
-            yield* this.spawner.ensureLoaded();
+            yield* this.spawner.ensureLoaded(loaded);
         }
     }
 
@@ -389,7 +378,6 @@ export class LilyPadPatchRule extends Details {
 
             return new PatchPlacement(
                 ctx.index, ctx.x, 0, ctx.z, groundRadius,
-                EntityIds.LILLY_PAD_PATCH,
                 width, length,
                 LillyPadPatchSpawner
             );
@@ -412,7 +400,6 @@ export class WaterGrassRule extends Details {
 
             return new PatchPlacement(
                 ctx.index, ctx.x, 0, ctx.z, groundRadius,
-                EntityIds.WATER_GRASS,
                 width, length,
                 WaterGrassSpawner
             );

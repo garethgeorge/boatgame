@@ -1,11 +1,15 @@
 import * as THREE from 'three';
 import { PopulationContext } from '../../world/biomes/PopulationContext';
 import { LillyPadPatch } from '../obstacles/LillyPadPatch';
+import { DecorationId } from '../../world/decorations/Decorations';
 
 export class LillyPadPatchSpawner {
 
-    public static *ensureLoaded(): Generator<void | Promise<void>, void, unknown> {
+    public static *ensureLoaded(loaded: Set<DecorationId>): Generator<void | Promise<void>, void, unknown> {
+        const promise = LillyPadPatch.preload();
+        if (promise) yield promise;
     }
+
     public static createEntity(
         context: PopulationContext,
         x: number, z: number, width: number, length: number,

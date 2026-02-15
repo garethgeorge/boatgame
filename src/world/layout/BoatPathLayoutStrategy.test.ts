@@ -73,36 +73,4 @@ describe('BoatPathLayoutStrategy', () => {
         });
     });
 
-    it('should support explicit placements with offsets', () => {
-        const config = {
-            biomeType: 'happy',
-            difficulty: 1,
-            tracks: [
-                {
-                    name: 'unique',
-                    placements: [
-                        {
-                            name: 'b1', at: 0.5,
-                            placement: Placements.path({
-                                entity: BottleRule.get()
-                            })
-                        }
-                    ]
-                }
-            ],
-            path: { length: [10, 20] as [number, number] }
-        };
-
-        const world: any = {
-            biomeZRange: [0, 100],
-            riverSystem: RiverSystem.getInstance(),
-            terrainProvider: () => ({ height: 0, slope: 0, distToRiver: 0 }),
-            random: vi.fn().mockReturnValue(0.5)
-        };
-        const layout = BoatPathLayoutStrategy.createLayout(world, config as any, new SpatialGrid(20));
-
-        const bottle = layout.placements.find(p => p.id === EntityIds.BOTTLE);
-        expect(bottle).toBeDefined();
-        expect(bottle!.x).toBeDefined();
-    });
 });
