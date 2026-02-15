@@ -23,10 +23,10 @@ export class AnimalLocomotionController {
     private jumpTraveledDistance: number = 0;
 
     private pendingKinematic: {
-        pos: THREE.Vector3, angle: number, normal: THREE.Vector3
+        pos: THREE.Vector3, angle: number, normal: THREE.Vector3, mode: LocomotionType
     } | null = null;
     private pendingDynamic: {
-        linVel: planck.Vec2, angVel: number, height?: number, normal?: THREE.Vector3
+        linVel: planck.Vec2, angVel: number, mode: LocomotionType, height?: number, normal?: THREE.Vector3
     } | null = null;
 
     // Constants (moved from UniversalBehavior)
@@ -89,11 +89,15 @@ export class AnimalLocomotionController {
     }
 
     private applyKinematicUpdate(update: {
-        pos: THREE.Vector3, angle: number, normal: THREE.Vector3
+        pos: THREE.Vector3, angle: number, normal: THREE.Vector3, mode: LocomotionType
     }) {
+        const body = this.entity.getPhysicsBody();
+        if (body) {
+            this.setLocomotionMode(body, update.mode);
+        }
+
         const mesh = this.entity.getMesh();
         if (!mesh) return;
-
         mesh.position.copy(update.pos);
 
         const up = new THREE.Vector3(0, 1, 0);
@@ -104,10 +108,12 @@ export class AnimalLocomotionController {
     }
 
     private applyDynamicUpdate(update: {
-        linVel: planck.Vec2, angVel: number, height?: number, normal?: THREE.Vector3
+        linVel: planck.Vec2, angVel: number, mode: LocomotionType, height?: number, normal?: THREE.Vector3
     }) {
         const body = this.entity.getPhysicsBody();
         if (!body) return;
+
+        this.setLocomotionMode(body, update.mode);
 
         body.setLinearVelocity(update.linVel);
         body.setAngularVelocity(update.angVel);
@@ -117,9 +123,10 @@ export class AnimalLocomotionController {
         }
     }
 
-    private setLocomotionMode(body: planck.Body, locomotionType: 'LAND' | 'WATER' | 'FLIGHT' | 'NONE') {
+    private setLocomotionMode(body: planck.Body, locomotionType: LocomotionType) {
 
         if (this.currentMode === locomotionType) return;
+        this.currentMode = locomotionType;
 
         switch (locomotionType) {
             case 'NONE': {
@@ -157,13 +164,13 @@ export class AnimalLocomotionController {
         } else {
             this.pendingDynamic = {
                 linVel: planck.Vec2(0, 0),
-                angVel: 0
+                angVel: 0,
+                mode: 'NONE'
             };
         }
     }
 
     private computeWaterLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
-        this.setLocomotionMode(context.physicsBody, 'WATER');
 
         const steering = result.path;
         const { physicsBody, originPos, dt } = context;
@@ -204,13 +211,13 @@ export class AnimalLocomotionController {
         this.pendingDynamic = {
             linVel: nextVel,
             angVel: finalRotationSpeed,
+            mode: 'WATER',
             height: this.waterHeight,
             normal: new THREE.Vector3(0, 1, 0)
         };
     }
 
     private computeLandLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
-        this.setLocomotionMode(context.physicsBody, 'LAND');
         const { dt } = context;
         const mesh = this.entity.getMesh();
         if (!mesh) return;
@@ -297,11 +304,11 @@ export class AnimalLocomotionController {
             pos: nextPos,
             angle: nextAngle,
             normal: terrainNormal,
+            mode: 'LAND'
         };
     }
 
     private computeFlightLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
-        this.setLocomotionMode(context.physicsBody, 'FLIGHT');
         const { dt } = context;
         const mesh = this.entity.getMesh();
         if (!mesh) return;
@@ -349,7 +356,8 @@ export class AnimalLocomotionController {
         this.pendingKinematic = {
             pos: nextPos,
             angle: nextAngle,
-            normal: normal
+            normal: normal,
+            mode: 'FLIGHT'
         };
     }
 
