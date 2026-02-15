@@ -38,8 +38,8 @@ export class PhysicsEngine {
 
 export const CollisionCategories = {
     BOAT: 0x0001,
-    ANIMAL: 0x0002,
-    TERRAIN: 0x0004,        // i.e. river edge
-    OBSTACLE: 0x0008,
-    COLLECTABLE: 0x0010,
+    ANIMAL: 0x0002,         // animal on ground/in water
+    TERRAIN: 0x0008,        // i.e. river edge
+    OBSTACLE: 0x0010,
+    COLLECTABLE: 0x0020,
 };

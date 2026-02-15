@@ -85,6 +85,8 @@ export abstract class Entity {
             child.setParent(this);
         }
 
+        // If first child added to parent get a group id and set
+        // on parent and children. Otherwise set group id on child
         if (this._collisionGroupId === 0) {
             const id = Entity._nextCollisionGroupId++;
             this.updateCollisionGroupId(-id);
@@ -112,11 +114,17 @@ export abstract class Entity {
             child.setParent(null);
         }
 
-        if (this._children.length === 0) {
-            this._collisionGroupId = 0;
-            this.updateCollisionGroupId(0);
-        } else {
+        // If child has no children clear its group id otherwise assign
+        // a new one to the detached tree
+        if (child._children.length === 0) {
             child.updateCollisionGroupId(0);
+        } else {
+            const id = Entity._nextCollisionGroupId++;
+            child.updateCollisionGroupId(-id);
+        }
+        // If parent has no children clear group id otherwise keep it
+        if (this._children.length === 0) {
+            this.updateCollisionGroupId(0);
         }
     }
 
@@ -154,12 +162,12 @@ export abstract class Entity {
             const body = this.physicsBodies[0];
             const mesh = this.meshes[0];
 
-            // Having a parent implies kinematic motion. For kinematic the mesh
-            // is directly controlled and the physics follows along. For dynamic
-            // physics controls the mesh.
-            if (this.parent()) {
-                if (body.getType() === 'kinematic')
-                    this.syncMeshToBody(mesh, body);
+            // For kinematic the mesh is directly controlled and the physics follows
+            // along. For dynamic physics controls the mesh.
+            if (body.getType() === 'kinematic') {
+                this.syncMeshToBody(mesh, body);
+            } else if (this.parent()) {
+                // when parented should be kinematic but may not switch immediately
             } else {
                 this.syncBodyToMesh(body, mesh, alpha);
             }
