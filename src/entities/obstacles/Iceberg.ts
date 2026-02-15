@@ -139,7 +139,9 @@ export class IcebergTerrainMap implements TerrainMap {
     }
 
     sample(x: number, z: number): { y: number; normal: THREE.Vector3; } {
-        return { y: this.iceHeight, normal: new THREE.Vector3(0, 1, 0) };
+        const point = planck.Vec2(x, z);
+        const inside = this.polygon.containsPoint(point);
+        return { y: inside ? this.iceHeight : 0, normal: new THREE.Vector3(0, 1, 0) };
     }
 
     distanceToEdge(x: number, z: number): { distance: number, zone1: Zone, zone2: Zone } {

@@ -263,7 +263,7 @@ export class AnimalLocomotionController {
 
         // Interpolate height and normal in the margin
         if (zone === 'margin') {
-            terrainHeight = terrainHeight * (1 - tau) + this.waterHeight * tau;
+            terrainHeight = terrainHeight * (1 - tau) + (terrainHeight + this.waterHeight) * tau;
 
             const f = 4 * tau * (1 - tau); // Parabolic weight peaking at 0.5 (t=0.5)
 
@@ -273,6 +273,8 @@ export class AnimalLocomotionController {
 
             // Interpolate between terrainNormal and tiltedNormal
             terrainNormal.lerp(tiltedNormal, f).normalize();
+        } else if (zone === 'water') {
+            terrainHeight += this.waterHeight;
         }
 
         if (result.jump && !this.jumpActive) {

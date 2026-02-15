@@ -15,6 +15,8 @@ import { Fitness, PropParams } from '../decorations/SceneryRules';
 import { DecorationConfig } from './DecorationConfig';
 import { AlligatorRule, BrontosaurusRule, BrownBearRule, GingerManRule, MonkeyRule, MooseRule, PolarBearRule, TRexRule, TriceratopsRule, TurtleRule } from '../../entities/AnimalLayoutRules';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
+import { Placements } from '../layout/BoatPathLayoutPatterns';
+import { VignetteLayoutRules } from '../../entities/VignetteLayoutRules';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -63,6 +65,17 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     public createLayoutConfig(): BoatPathLayoutConfig {
         return {
             tracks: [{
+                name: 'unique_elements',
+                placements: [
+                    {
+                        name: 'berg', at: 0.05,
+                        placement: Placements.scatter({
+                            entity: VignetteLayoutRules.icebergWalrus()
+                        })
+                    }
+                ]
+            },
+            {
                 name: 'animals',
                 stages: [{
                     name: 'animals',
@@ -70,16 +83,16 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                     scenes: [{
                         length: [100, 300],
                         patterns: [
-                            Place.scatter_onShore(AlligatorRule.get(), [0.5, 0.5]),
-                            Place.scatter_onShore(BrontosaurusRule.get(), [0.5, 0.5]),
-                            Place.scatter_onShore(BrownBearRule.get(), [0.5, 0.5]),
-                            Place.scatter_onShore(GingerManRule.get(), [0.5, 0.5]),
-                            Place.scatter_onShore(MonkeyRule.get(), [0.5, 0.5]),
-                            Place.scatter_onShore(MooseRule.get(), [0.5, 0.5]),
-                            Place.scatter_onShore(PolarBearRule.get(), [0.5, 0.5]),
-                            Place.scatter_onShore(TRexRule.get(), [0.5, 0.5]),
-                            Place.scatter_onShore(TriceratopsRule.get(), [0.5, 0.5]),
-                            Place.scatter_onShore(TurtleRule.get(), [0.5, 0.5]),
+                            // Place.scatter_onShore(AlligatorRule.get(), [0.5, 0.5]),
+                            // Place.scatter_onShore(BrontosaurusRule.get(), [0.5, 0.5]),
+                            // Place.scatter_onShore(BrownBearRule.get(), [0.5, 0.5]),
+                            // Place.scatter_onShore(GingerManRule.get(), [0.5, 0.5]),
+                            // Place.scatter_onShore(MonkeyRule.get(), [0.5, 0.5]),
+                            // Place.scatter_onShore(MooseRule.get(), [0.5, 0.5]),
+                            // Place.scatter_onShore(PolarBearRule.get(), [0.5, 0.5]),
+                            // Place.scatter_onShore(TRexRule.get(), [0.5, 0.5]),
+                            // Place.scatter_onShore(TriceratopsRule.get(), [0.5, 0.5]),
+                            // Place.scatter_onShore(TurtleRule.get(), [0.5, 0.5]),
                         ]
                     }]
                 }]

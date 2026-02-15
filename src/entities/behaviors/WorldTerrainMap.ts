@@ -16,6 +16,12 @@ export class WorldTerrainMap implements TerrainMap {
 
     public sample(x: number, z: number): { y: number, normal: THREE.Vector3 } {
         const riverSystem = RiverSystem.getInstance();
+        const banks = riverSystem.getBankPositions(z);
+
+        if (banks.left < x && x < banks.right) {
+            return { y: 0, normal: new THREE.Vector3(0, 1, 0) };
+        }
+
         const terrainHeight = riverSystem.terrainGeometry.calculateHeight(x, z);
         const terrainNormal = riverSystem.terrainGeometry.calculateNormal(x, z);
 
