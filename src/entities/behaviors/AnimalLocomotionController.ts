@@ -26,7 +26,7 @@ export class AnimalLocomotionController {
         pos: THREE.Vector3, angle: number, normal: THREE.Vector3, mode: LocomotionType
     } | null = null;
     private pendingDynamic: {
-        linVel: planck.Vec2, angVel: number, mode: LocomotionType, height?: number, normal?: THREE.Vector3
+        linVel: planck.Vec2, angVel: number, mode: LocomotionType, height: number, normal: THREE.Vector3
     } | null = null;
 
     // Constants (moved from UniversalBehavior)
@@ -118,9 +118,7 @@ export class AnimalLocomotionController {
         body.setLinearVelocity(update.linVel);
         body.setAngularVelocity(update.angVel);
 
-        if (update.height !== undefined && update.normal) {
-            this.entity.setDynamicPosition(update.height, update.normal);
-        }
+        this.entity.setDynamicPosition(update.height, update.normal);
     }
 
     private setLocomotionMode(body: planck.Body, locomotionType: LocomotionType) {
@@ -165,7 +163,9 @@ export class AnimalLocomotionController {
             this.pendingDynamic = {
                 linVel: planck.Vec2(0, 0),
                 angVel: 0,
-                mode: 'NONE'
+                mode: 'NONE',
+                height: this.waterHeight,
+                normal: new THREE.Vector3(0, 1, 0)
             };
         }
     }
