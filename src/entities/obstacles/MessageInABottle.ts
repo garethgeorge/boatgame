@@ -36,6 +36,10 @@ export class MessageInABottle extends Entity {
 
         updateSceneGraph() {
         }
+
+        getDynamicPose(pos: planck.Vec2, angle: number): { height: number; quaternion: THREE.Quaternion } | null {
+            return null;
+        }
     };
 
     private behavior: EntityBehavior | null = null;

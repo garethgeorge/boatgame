@@ -35,10 +35,6 @@ export abstract class Entity {
     // Set to true when this entity has caused a penalty to avoid repetition
     public hasCausedPenalty: boolean = false;
 
-    // Optional normal vector for terrain alignment
-    // If set, mesh will be tilted so its Y-axis aligns with this normal
-    // while still following physics rotation around Y
-    protected normalVector: THREE.Vector3 | null = null;
 
     public isVisible: boolean = true;
 
@@ -183,6 +179,14 @@ export abstract class Entity {
     }
 
     /**
+     * Called during visual sync to get the vertical position and orientation
+     * of the entity. Returning null results in standard Y-rotation.
+     */
+    protected getDynamicPose(pos: planck.Vec2, angle: number): { height: number, quaternion: THREE.Quaternion } | null {
+        return null;
+    }
+
+    /**
      * 4. Called after updateVisuals and before removals. 
      * Use this phase for scene graph modifications (like unparenting) 
      * that are unsafe during the hierarchical applyUpdate pass.
@@ -254,20 +258,13 @@ export abstract class Entity {
         mesh.position.x = pos.x;
         mesh.position.z = pos.y; // Map 2D Physics Y to 3D Graphics Z
 
-        // Apply rotation with optional normal alignment
-        if (this.normalVector) {
-            //mesh.setRotationFromAxisAngle(this.normalVector.clone(), -angle);
-            const up = new THREE.Vector3(0, 1, 0); // Default Y-axis
-            const normalQuaternion = new THREE.Quaternion().setFromUnitVectors(up, this.normalVector);
-
-            // The axis for this rotation is the targetNormal itself
-            const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(this.normalVector, -angle);
-
-            // Multiply the orientation by the rotation to get the final transformation
-            // Order matters: first align, then rotate around the aligned axis.
-            mesh.quaternion.multiplyQuaternions(rotationQuaternion, normalQuaternion);
+        // Apply rotation with optional dynamic pose
+        const pose = this.getDynamicPose(pos, angle);
+        if (pose) {
+            mesh.position.y = pose.height;
+            mesh.quaternion.copy(pose.quaternion);
         } else {
-            // Standard rotation around Y. Intentionally preserves any other rotations.
+            // Standard rotation around Y
             mesh.rotation.y = -angle;
         }
     }

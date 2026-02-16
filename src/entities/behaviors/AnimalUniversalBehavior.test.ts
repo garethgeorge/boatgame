@@ -86,7 +86,6 @@ describe('AnimalUniversalBehavior', () => {
             getHeight: vi.fn(() => 0),
             currentSlot: null,
             handleBehaviorEvent: vi.fn(),
-            setDynamicPosition: vi.fn(),
             parent: vi.fn(() => null),
             localPos: vi.fn(() => mockMesh.position),
             worldToLocalPos: vi.fn((v: THREE.Vector3) => {
@@ -388,8 +387,6 @@ describe('AnimalUniversalBehavior', () => {
             expect(mockBody.setLinearVelocity).toHaveBeenCalledWith(expect.objectContaining({ x: 0, y: 0 }));
             expect(mockBody.setAngularVelocity).toHaveBeenCalledWith(0);
 
-            // Should NOT have called setDynamicPosition because height/normal are undefined in pendingDynamic
-            expect(mockEntity.setDynamicPosition).not.toHaveBeenCalled();
         });
 
         it('should keep kinematic state when locomotion is NONE', () => {

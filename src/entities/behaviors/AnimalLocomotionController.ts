@@ -26,7 +26,7 @@ export class AnimalLocomotionController {
         pos: THREE.Vector3, angle: number, normal: THREE.Vector3, mode: LocomotionType
     } | null = null;
     private pendingDynamic: {
-        linVel: planck.Vec2, angVel: number, mode: LocomotionType, height: number, normal: THREE.Vector3
+        linVel: planck.Vec2, angVel: number, mode: LocomotionType
     } | null = null;
 
     // Constants (moved from UniversalBehavior)
@@ -108,7 +108,7 @@ export class AnimalLocomotionController {
     }
 
     private applyDynamicUpdate(update: {
-        linVel: planck.Vec2, angVel: number, mode: LocomotionType, height?: number, normal?: THREE.Vector3
+        linVel: planck.Vec2, angVel: number, mode: LocomotionType
     }) {
         const body = this.entity.getPhysicsBody();
         if (!body) return;
@@ -117,8 +117,30 @@ export class AnimalLocomotionController {
 
         body.setLinearVelocity(update.linVel);
         body.setAngularVelocity(update.angVel);
+    }
 
-        this.entity.setDynamicPosition(update.height, update.normal);
+    public getDynamicPose(pos: planck.Vec2, angle: number): { height: number; quaternion: THREE.Quaternion } | null {
+        const terrainMap = this.entity.getTerrainMap();
+        const { zone } = terrainMap.zone(pos.x, pos.y, 0, 0);
+
+        const up = new THREE.Vector3(0, 1, 0);
+        let terrainHeight = 0;
+        let terrainNormal = up;
+        if (this.entity.currentSlot) {
+            terrainHeight = this.entity.currentSlot.y;
+        } else if (zone === 'water') {
+            terrainHeight += this.waterHeight;
+        } else {
+            const sample = terrainMap.sample(pos.x, pos.y);
+            terrainHeight = sample.y;
+            terrainNormal = sample.normal;
+        }
+
+        const normalQuaternion = new THREE.Quaternion().setFromUnitVectors(up, terrainNormal);
+        const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(terrainNormal, -angle);
+        const quaternion = new THREE.Quaternion().multiplyQuaternions(rotationQuaternion, normalQuaternion);
+
+        return { height: terrainHeight, quaternion };
     }
 
     private setLocomotionMode(body: planck.Body, locomotionType: LocomotionType) {
@@ -163,9 +185,7 @@ export class AnimalLocomotionController {
             this.pendingDynamic = {
                 linVel: planck.Vec2(0, 0),
                 angVel: 0,
-                mode: 'NONE',
-                height: this.waterHeight,
-                normal: new THREE.Vector3(0, 1, 0)
+                mode: 'NONE'
             };
         }
     }
@@ -211,9 +231,7 @@ export class AnimalLocomotionController {
         this.pendingDynamic = {
             linVel: nextVel,
             angVel: finalRotationSpeed,
-            mode: 'WATER',
-            height: this.waterHeight,
-            normal: new THREE.Vector3(0, 1, 0)
+            mode: 'WATER'
         };
     }
 

@@ -66,12 +66,6 @@ export interface AnyAnimal {
     getMesh(): THREE.Object3D | null;
 
     /**
-     * Applies only to dynamic motion (i.e. motion driven by physiscs)
-     * set the height and normal as those are not controlled by physics
-     */
-    setDynamicPosition(height: number, normal: THREE.Vector3): void;
-
-    /**
      * Handle generic behavior events
      */
     handleBehaviorEvent?(event: AnimalBehaviorEvent): void;

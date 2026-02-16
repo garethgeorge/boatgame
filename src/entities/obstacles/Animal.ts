@@ -21,7 +21,6 @@ export interface AnimalOptions {
     y: number;
     height: number;
     angle?: number;
-    terrainNormal?: THREE.Vector3;
     aggressiveness?: number;
     disableLogic?: boolean;
     behavior?: AnimalBehaviorConfig;
@@ -70,7 +69,6 @@ export abstract class Animal extends Entity implements AnyAnimal {
             y,
             height,
             angle = 0,
-            terrainNormal,
         } = options;
 
         this.canCausePenalty = canCausePenalty;
@@ -78,11 +76,6 @@ export abstract class Animal extends Entity implements AnyAnimal {
         this.setupModelMesh(height);
 
         this.setupPhysicsBody(physicsEngine, subtype, entityType, x, y, -angle, physicsOptions);
-
-        if (terrainNormal)
-            this.normalVector = terrainNormal.clone();
-        else
-            this.normalVector = new THREE.Vector3(0, 1, 0);
 
         this.setBehavior(null);
     }
@@ -238,6 +231,13 @@ export abstract class Animal extends Entity implements AnyAnimal {
         super.updateVisuals(dt, alpha);
     }
 
+    protected getDynamicPose(pos: planck.Vec2, angle: number): { height: number, quaternion: THREE.Quaternion } | null {
+        if (this.behavior) {
+            return this.behavior.getDynamicPose(pos, angle);
+        }
+        return null;
+    }
+
     updateSceneGraph() {
         if (this.behavior) {
             this.behavior.updateSceneGraph();
@@ -308,17 +308,6 @@ export abstract class Animal extends Entity implements AnyAnimal {
 
     getMesh(): THREE.Object3D | null {
         return this.meshes.length > 0 ? this.meshes[0] : null;
-    }
-
-    setDynamicPosition(height: number, normal: THREE.Vector3): void {
-        if (this.meshes.length > 0) {
-            this.meshes[0].position.y = height;
-        }
-        if (this.normalVector) {
-            this.normalVector.copy(normal);
-        } else {
-            this.normalVector = normal.clone();
-        }
     }
 
     handleBehaviorEvent(event: AnimalBehaviorEvent): void {

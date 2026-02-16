@@ -1,4 +1,5 @@
 import * as planck from 'planck';
+import * as THREE from 'three';
 import { Boat } from '../Boat';
 import { AnyAnimal } from './AnimalBehavior';
 import { EntityBehavior } from './EntityBehavior';
@@ -68,5 +69,9 @@ export class AnimalUniversalBehavior implements EntityBehavior {
 
     updateSceneGraph() {
         this.locomotionController.updateZone();
+    }
+
+    getDynamicPose(pos: planck.Vec2, angle: number): { height: number; quaternion: THREE.Quaternion } | null {
+        return this.locomotionController.getDynamicPose(pos, angle);
     }
 }

@@ -20,7 +20,7 @@ export class AnimalSpawner {
         x: number, z: number, angle: number, height: number, normal: THREE.Vector3,
         options: AnimalSpawnOptions): Animal | null {
         const entity = new factory(context.physicsEngine, {
-            x: x, y: z, angle, height, terrainNormal: normal,
+            x: x, y: z, angle, height,
             aggressiveness: options.aggressiveness ?? 0.5,
             behavior: options.behavior,
             zRange: options.biomeZRange

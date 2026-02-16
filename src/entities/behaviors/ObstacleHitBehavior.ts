@@ -1,3 +1,4 @@
+import * as planck from 'planck';
 import * as THREE from 'three';
 import { EntityBehavior } from './EntityBehavior';
 
@@ -60,5 +61,9 @@ export class ObstacleHitBehavior implements EntityBehavior {
     }
 
     updateSceneGraph() {
+    }
+
+    getDynamicPose(pos: planck.Vec2, angle: number): { height: number; quaternion: THREE.Quaternion } | null {
+        return null;
     }
 }
