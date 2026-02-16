@@ -67,18 +67,18 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
             tracks: [{
                 name: 'unique_elements',
                 placements: [
-                    // {
-                    //     name: 'berg', at: 0.05,
-                    //     placement: Placements.scatter({
-                    //         entity: VignetteLayoutRules.icebergWalrus()
-                    //     })
-                    // },
                     {
-                        name: 'test', at: 0.05,
-                        placement: Placements.onShore({
-                            entity: PolarBearRule.get()
+                        name: 'berg', at: 0.05,
+                        placement: Placements.scatter({
+                            entity: VignetteLayoutRules.icebergWalrus()
                         })
-                    }
+                    },
+                    // {
+                    //     name: 'test', at: 0.05,
+                    //     placement: Placements.onShore({
+                    //         entity: PolarBearRule.get()
+                    //     })
+                    // }
                 ]
             },
             {
