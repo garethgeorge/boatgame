@@ -90,11 +90,10 @@ export class AnimalPlacement implements LayoutPlacement, LayoutGenerator {
         if (this.habitat === 'water') {
             AnimalSpawner.createEntity(animalClass, context,
                 x, z, Math.random() * Math.PI * 2,
-                this.heightInWater, new THREE.Vector3(0, 1, 0),
+                this.heightInWater,
                 this.options);
         } else {
             const terrainHeight = riverSystem.terrainGeometry.calculateHeight(x, z);
-            const terrainNormal = riverSystem.terrainGeometry.calculateNormal(x, z);
 
             // Calculate rotation (facing the river)
             const d = x < sample.centerPos.x ? -1 : 1;
@@ -107,7 +106,7 @@ export class AnimalPlacement implements LayoutPlacement, LayoutGenerator {
 
             AnimalSpawner.createEntity(animalClass, context,
                 x, z, rotation,
-                terrainHeight, terrainNormal,
+                terrainHeight,
                 this.options);
         }
     }
@@ -161,7 +160,7 @@ export class AnimalSlotPlacement extends AnimalPlacement {
 
             const animal = AnimalSpawner.createEntity(animalClass, context,
                 slot.x, slot.z, rotation,
-                slot.y, new THREE.Vector3(0, 1, 0),
+                slot.y,
                 this.options);
 
             if (animal) {

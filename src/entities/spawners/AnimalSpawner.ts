@@ -17,7 +17,7 @@ export interface AnimalSpawnOptions {
  */
 export class AnimalSpawner {
     public static createEntity(factory: AnimalClass, context: PopulationContext,
-        x: number, z: number, angle: number, height: number, normal: THREE.Vector3,
+        x: number, z: number, angle: number, height: number,
         options: AnimalSpawnOptions): Animal | null {
         const entity = new factory(context.physicsEngine, {
             x: x, y: z, angle, height,
