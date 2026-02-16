@@ -61,8 +61,8 @@ describe('AnimalUniversalBehavior', () => {
             setLinearVelocity: vi.fn(),
             getAngularVelocity: vi.fn(() => 0),
             getLinearVelocity: vi.fn(() => planck.Vec2(0, 0)),
-            getType: vi.fn(() => planck.Body.DYNAMIC),
-            setType: vi.fn(),
+            getType: vi.fn(() => mockBody._type || planck.Body.DYNAMIC),
+            setType: vi.fn((type) => { mockBody._type = type; }),
             setAngle: vi.fn(),
             setPosition: vi.fn(),
             getFixtureList: vi.fn(() => ({
@@ -389,7 +389,7 @@ describe('AnimalUniversalBehavior', () => {
 
         });
 
-        it('should keep kinematic state when locomotion is NONE', () => {
+        it('should update height for kinematic state when locomotion is NONE', () => {
             const behavior = new AnimalUniversalBehavior(mockEntity, 0.5, 0, { name: 'NoneLogic' } as any);
 
             // First enter land (kinematic)
@@ -397,23 +397,24 @@ describe('AnimalUniversalBehavior', () => {
                 path: { target: planck.Vec2(0, 0), speed: 0, locomotionType: 'LAND' as const },
             });
             behavior.update(0.1);
-            behavior.updatePhysics(0.1);
+            behavior.updateVisuals(0.1, 1.0); // Switch to kinematic
 
             // Now switch to NONE
             mockLogic.update.mockReturnValue({
                 path: { target: planck.Vec2(0, 0), speed: 0, locomotionType: 'NONE' as const },
             });
 
+            // Mock terrain height changing
+            mockRiverSystem.terrainGeometry.calculateHeight.mockReturnValue(5.0);
+
             const mesh = mockEntity.getMesh();
-            mesh.position.set(123, 456, 789);
+            mesh.position.set(0, 0, 0); // Start at height 0
 
             behavior.update(0.1);
-            behavior.updatePhysics(0.1);
+            behavior.updateVisuals(0.1, 1.0); // applyKinematicUpdate happens here
 
-            // Position should NOT have been updated by computeNoneLocomotion
-            expect(mesh.position.x).toBe(123);
-            expect(mesh.position.y).toBe(456);
-            expect(mesh.position.z).toBe(789);
+            // Height should have been updated by computeNoneLocomotion
+            expect(mesh.position.y).toBe(5.0);
         });
     });
 

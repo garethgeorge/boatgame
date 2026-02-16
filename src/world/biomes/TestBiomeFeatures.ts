@@ -13,10 +13,11 @@ import { AnimalSpawner } from '../../entities/spawners/AnimalSpawner';
 import { GingerMan, Monkey } from '../../entities/obstacles';
 import { Fitness, PropParams } from '../decorations/SceneryRules';
 import { DecorationConfig } from './DecorationConfig';
-import { AlligatorRule, BrontosaurusRule, BrownBearRule, GingerManRule, MonkeyRule, MooseRule, PolarBearRule, TRexRule, TriceratopsRule, TurtleRule } from '../../entities/AnimalLayoutRules';
+import { AlligatorRule, BluebirdRule, BrontosaurusRule, BrownBearRule, GingerManRule, MonkeyRule, MooseRule, ParrotRule, PolarBearRule, TRexRule, TriceratopsRule, TurtleRule } from '../../entities/AnimalLayoutRules';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { Placements } from '../layout/BoatPathLayoutPatterns';
 import { VignetteLayoutRules } from '../../entities/VignetteLayoutRules';
+import { LayoutRules } from '../layout/LayoutRuleBuilders';
 
 export class TestBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'test';
@@ -41,21 +42,8 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
     public createDecorationConfig(): DecorationConfig {
         const rules = [
             new TierRule({
-                species: [
-                    // {
-                    //     id: 'chair',
-                    //     preference: Fitness.make({
-                    //         stepDistance: [5, 20],
-                    //         slope: [0, 10],
-                    //         stepNoise: { scale: 20, threshold: 0.7 }
-                    //     }),
-                    //     params: Select.choose([
-                    //         PropParams.beach_chair(),
-                    //         // PropParams.umbrella_with_chairs(1),
-                    //         // PropParams.umbrella_with_chairs(2)
-                    //     ])
-                    // }
-                ]
+                id: 'chairs',
+                species: []
             }),
         ];
 
@@ -73,12 +61,29 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                             entity: VignetteLayoutRules.icebergWalrus()
                         })
                     },
-                    // {
-                    //     name: 'test', at: 0.05,
-                    //     placement: Placements.onShore({
-                    //         entity: PolarBearRule.get()
-                    //     })
-                    // }
+                    {
+                        name: 'test', at: 0.1,
+                        placement: Placements.onShore({
+                            entity: PolarBearRule.get()
+                        })
+                    },
+                    {
+                        name: 'test', at: 0.15,
+                        placement: Placements.onShore({
+                            entity: BluebirdRule.get()
+                        })
+                    },
+                    {
+                        name: 'test', at: 0.2,
+                        placement: Placements.onShore({
+                            entity: LayoutRules.attachment(
+                                ParrotRule.get(PropParams.beach_chair_slot),
+                                PropParams.beach_chair(),
+                                'chairs',   // must match a decoration tier rule
+                                PropParams.beach_chair_slot.radius
+                            )
+                        })
+                    }
                 ]
             },
             {
