@@ -16,6 +16,7 @@ export class AnimalLocomotionController {
     private currentMode: LocomotionType = 'NONE';
     private currentZone: Zone | null = null;
     private currentBank: number = 0;
+    private prevHorizontalPos: THREE.Vector2 | null = null;
     private jumpActive: boolean = false;
     private jumpStartHeight: number = 0;
     private jumpHeight: number = 0;
@@ -40,8 +41,20 @@ export class AnimalLocomotionController {
         this.waterHeight = waterHeight;
     }
 
+    /**
+     * Compute motion parameters without applying them.
+     */
     public computeLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
         if (!result || !result.path) return;
+
+        // Capture the current position as the "previous" position before computing
+        // the next movement. For kinematic bodies this is the mesh position, for
+        // dynamic bodies we use the physics body position.
+        const body = this.entity.getPhysicsBody();
+        if (body) {
+            const pos = body.getPosition();
+            this.prevHorizontalPos = new THREE.Vector2(pos.x, pos.y);
+        }
 
         if (result.path.locomotionType !== 'LAND') {
             this.jumpActive = false;
@@ -74,51 +87,62 @@ export class AnimalLocomotionController {
         }
     }
 
+    /**
+     * Applies the computed physics parameters when the locomotion type is
+     * dynamic.
+     */
     public updatePhysics(dt: number) {
         if (this.pendingDynamic) {
-            this.applyDynamicUpdate(this.pendingDynamic);
+            const body = this.entity.getPhysicsBody();
+            if (!body) return;
+
+            this.setLocomotionMode(body, this.pendingDynamic.mode);
+
+            body.setLinearVelocity(this.pendingDynamic.linVel);
+            body.setAngularVelocity(this.pendingDynamic.angVel);
+
             this.pendingDynamic = null;
         }
     }
 
+    /**
+     * Updates the visuals from the computed motion when the locomotion type
+     * is kinematic.
+     */
     public updateVisuals(dt: number) {
         if (this.pendingKinematic) {
-            this.applyKinematicUpdate(this.pendingKinematic);
+            // For land motion now determine the pose for the current position
+            if (this.pendingKinematic.mode !== 'FLIGHT') {
+                const pose = this.computePose(
+                    this.pendingKinematic.pos.x, this.pendingKinematic.pos.z);
+                this.pendingKinematic.pos.y = pose.height;
+                this.pendingKinematic.normal = pose.normal;
+            }
+
+            const body = this.entity.getPhysicsBody();
+            if (body) {
+                this.setLocomotionMode(body, this.pendingKinematic.mode);
+            }
+
+            const mesh = this.entity.getMesh();
+            if (!mesh) return;
+
+            mesh.position.copy(this.pendingKinematic.pos);
+
+            const up = new THREE.Vector3(0, 1, 0);
+            const normalQuaternion = new THREE.Quaternion().setFromUnitVectors(up, this.pendingKinematic.normal);
+            const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(this.pendingKinematic.normal, -this.pendingKinematic.angle);
+
+            mesh.quaternion.multiplyQuaternions(rotationQuaternion, normalQuaternion);
+
             this.pendingKinematic = null;
         }
     }
 
-    private applyKinematicUpdate(update: {
-        pos: THREE.Vector3, angle: number, normal: THREE.Vector3, mode: LocomotionType
-    }) {
-        const body = this.entity.getPhysicsBody();
-        if (body) {
-            this.setLocomotionMode(body, update.mode);
-        }
-
-        const mesh = this.entity.getMesh();
-        if (!mesh) return;
-        mesh.position.copy(update.pos);
-
-        const up = new THREE.Vector3(0, 1, 0);
-        const normalQuaternion = new THREE.Quaternion().setFromUnitVectors(up, update.normal);
-        const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(update.normal, -update.angle);
-
-        mesh.quaternion.multiplyQuaternions(rotationQuaternion, normalQuaternion);
-    }
-
-    private applyDynamicUpdate(update: {
-        linVel: planck.Vec2, angVel: number, mode: LocomotionType
-    }) {
-        const body = this.entity.getPhysicsBody();
-        if (!body) return;
-
-        this.setLocomotionMode(body, update.mode);
-
-        body.setLinearVelocity(update.linVel);
-        body.setAngularVelocity(update.angVel);
-    }
-
+    /**
+     * For dynamic locomotion the x-z and angle of the visuals is updated
+     * from the physics. The pose (height, normal) are computed here.
+     */
     public getDynamicPose(pos: planck.Vec2, angle: number): { height: number; quaternion: THREE.Quaternion } | null {
         const up = new THREE.Vector3(0, 1, 0);
 
@@ -131,6 +155,30 @@ export class AnimalLocomotionController {
         return { height: pose.height, quaternion };
     }
 
+    /**
+     * Called after all motion updates have been applied to determine
+     * whether the animal is in a new zone.
+     */
+    public updateZone() {
+        const mesh = this.entity.getMesh();
+        if (!mesh) return;
+
+        // Sample the terrain map at the current position to get the zone
+        const { zone } = this.entity.getTerrainMap().zone(
+            mesh.position.x, mesh.position.z, 0, this.marginWidth);
+
+        if (this.currentZone !== zone) {
+            this.currentZone = zone;
+            this.entity.handleBehaviorEvent?.({
+                type: 'ZONE_CHANGED',
+                zone: zone
+            });
+        }
+    }
+
+    /**
+     * Sets the physics body parameters to match the locomotion type.
+     */
     private setLocomotionMode(body: planck.Body, locomotionType: LocomotionType) {
 
         if (this.currentMode === locomotionType) return;
@@ -165,40 +213,75 @@ export class AnimalLocomotionController {
         }
     }
 
+    /**
+     * Compute the pose (height, normal) for a given x-z position.
+     */
     private computePose(x: number, z: number): { height: number, normal: THREE.Vector3 } {
+        const currentPos = new THREE.Vector2(x, z);
         let height = 0;
-        let normal = undefined;
+        let normal: THREE.Vector3;
 
         if (this.entity.currentSlot) {
             height = this.entity.currentSlot.y;
             normal = new THREE.Vector3(0, 1, 0);
         } else {
             const terrainMap = this.entity.getTerrainMap();
-            const { zone } = terrainMap.zone(x, z, 0, 0);
+            const { zone, t: tau } = terrainMap.zone(x, z, 0, this.marginWidth);
             const sample = terrainMap.sample(x, z);
 
             height = sample.y;
             normal = sample.normal;
 
-            if (zone === 'water') {
+            // Interpolate height and normal in the margin
+            if (zone === 'margin') {
+                height = height * (1 - tau) + (height + this.waterHeight) * tau;
+
+                const f = 4 * tau * (1 - tau); // Parabolic weight peaking at 0.5 (t=0.5)
+
+                // Tilted normal: 45 degrees in direction of movement
+                if (this.prevHorizontalPos) {
+                    const moveDir = currentPos.clone().sub(this.prevHorizontalPos);
+                    if (moveDir.lengthSq() > 0.0001) {
+                        moveDir.normalize();
+                        const tiltedNormal = new THREE.Vector3(moveDir.x, 1, moveDir.y).normalize();
+                        normal.lerp(tiltedNormal, f).normalize();
+                    }
+                }
+            } else if (zone === 'water') {
                 height += this.waterHeight;
+            }
+        }
+
+        // Jump parabolic height
+        if (this.jumpActive && this.prevHorizontalPos) {
+            const horizontalMoveDist = currentPos.distanceTo(this.prevHorizontalPos);
+            this.jumpTraveledDistance += horizontalMoveDist;
+
+            const t = this.jumpTraveledDistance / this.jumpScale;
+            const parabolicHeight = this.jumpStartHeight + 4 * t * (1 - t) * this.jumpHeight;
+
+            if (parabolicHeight <= height) {
+                this.jumpActive = false;
+            } else {
+                height = parabolicHeight;
             }
         }
 
         return { height, normal };
     }
 
+    /**
+     * Motion parameters when not moving.
+     */
     private computeNoneLocomotion(context: AnimalLogicContext) {
         const isKinematic = context.physicsBody.getType() === planck.Body.KINEMATIC;
         if (isKinematic) {
             const mesh = this.entity.getMesh();
             if (mesh) {
-                const pose = this.computePose(mesh.position.x, mesh.position.z);
-
                 this.pendingKinematic = {
-                    pos: new THREE.Vector3(mesh.position.x, pose.height, mesh.position.z),
+                    pos: new THREE.Vector3(mesh.position.x, 0, mesh.position.z),
                     angle: this.entity.localAngle(),
-                    normal: pose.normal,
+                    normal: new THREE.Vector3(0, 1, 0),
                     mode: 'NONE'
                 };
             }
@@ -211,6 +294,9 @@ export class AnimalLocomotionController {
         }
     }
 
+    /**
+     * Water motion parameters.
+     */
     private computeWaterLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
 
         const steering = result.path;
@@ -256,13 +342,15 @@ export class AnimalLocomotionController {
         };
     }
 
+    /**
+     * Land motion parameters.
+     */
     private computeLandLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
         const { dt } = context;
         const mesh = this.entity.getMesh();
         if (!mesh) return;
 
         const nextPos = mesh.position.clone();
-        const prevHorizontalPos = new THREE.Vector2(nextPos.x, nextPos.z);
 
         const steering = result.path;
         const targetLocalPos = new THREE.Vector3(steering.target.x, 0, steering.target.y);
@@ -294,61 +382,26 @@ export class AnimalLocomotionController {
         const rotation = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), maxRotation);
         const nextAngle = currentAngle + rotation;
 
-        let { y: terrainHeight, normal: terrainNormal } =
-            this.entity.getTerrainMap().sample(nextPos.x, nextPos.z);
-
-        const { zone, t: tau } = this.entity.getTerrainMap().zone(
-            nextPos.x, nextPos.z, 0, this.marginWidth);
-
-        // Interpolate height and normal in the margin
-        if (zone === 'margin') {
-            terrainHeight = terrainHeight * (1 - tau) + (terrainHeight + this.waterHeight) * tau;
-
-            const f = 4 * tau * (1 - tau); // Parabolic weight peaking at 0.5 (t=0.5)
-
-            // Tilted normal: 45 degrees in direction of movement
-            const moveDir = new THREE.Vector2(moveVec.x, moveVec.z).normalize();
-            const tiltedNormal = new THREE.Vector3(moveDir.x, 1, moveDir.y).normalize();
-
-            // Interpolate between terrainNormal and tiltedNormal
-            terrainNormal.lerp(tiltedNormal, f).normalize();
-        } else if (zone === 'water') {
-            terrainHeight += this.waterHeight;
-        }
-
+        // Capture jump activation from logic result
         if (result.jump && !this.jumpActive) {
             this.jumpActive = true;
-            this.jumpStartHeight = nextPos.y;
+            this.jumpStartHeight = mesh.position.y;
             this.jumpHeight = result.jump.height;
             this.jumpScale = result.jump.distance;
             this.jumpTraveledDistance = 0;
         }
 
-        if (this.jumpActive) {
-            const horizontalMoveDist = new THREE.Vector2(nextPos.x, nextPos.z).distanceTo(prevHorizontalPos);
-            this.jumpTraveledDistance += horizontalMoveDist;
-
-            const t = this.jumpTraveledDistance / this.jumpScale;
-            const parabolicHeight = this.jumpStartHeight + 4 * t * (1 - t) * this.jumpHeight;
-
-            if (parabolicHeight <= terrainHeight) {
-                this.jumpActive = false;
-                nextPos.y = terrainHeight;
-            } else {
-                nextPos.y = parabolicHeight;
-            }
-        } else {
-            nextPos.y = terrainHeight;
-        }
-
         this.pendingKinematic = {
             pos: nextPos,
             angle: nextAngle,
-            normal: terrainNormal,
+            normal: new THREE.Vector3(0, 1, 0),
             mode: 'LAND'
         };
     }
 
+    /**
+     * Flight motion parameters.
+     */
     private computeFlightLocomotion(context: AnimalLogicContext, result: AnimalLogicPathResult) {
         const { dt } = context;
         const mesh = this.entity.getMesh();
@@ -443,22 +496,5 @@ export class AnimalLocomotionController {
         return up.multiplyScalar(Math.cos(bank))
             .add(right.multiplyScalar(Math.sin(bank)))
             .normalize();
-    }
-
-    public updateZone() {
-        const mesh = this.entity.getMesh();
-        if (!mesh) return;
-
-        // Sample the terrain map at the current position to get the zone
-        const { zone } = this.entity.getTerrainMap().zone(
-            mesh.position.x, mesh.position.z, 0, this.marginWidth);
-
-        if (this.currentZone !== zone) {
-            this.currentZone = zone;
-            this.entity.handleBehaviorEvent?.({
-                type: 'ZONE_CHANGED',
-                zone: zone
-            });
-        }
     }
 }

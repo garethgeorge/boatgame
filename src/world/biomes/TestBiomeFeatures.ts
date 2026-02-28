@@ -83,7 +83,25 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                                 PropParams.beach_chair_slot.radius
                             )
                         })
-                    }
+                    },
+                    {
+                        name: 'test', at: 0.25,
+                        placement: Placements.onShore({
+                            entity: MonkeyRule.get()
+                        })
+                    },
+                    {
+                        name: 'test', at: 0.3,
+                        placement: Placements.onShore({
+                            entity: AlligatorRule.get()
+                        })
+                    },
+                    {
+                        name: 'test', at: 0.35,
+                        placement: Placements.onShore({
+                            entity: MooseRule.get()
+                        })
+                    },
                 ]
             },
             {
