@@ -34,8 +34,5 @@ export interface BiomeFeatures {
     getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number;
     getRiverWidthMultiplier(): number;
 
-    /**
-     * Allows the biome designer UI to directly edit a biome
-     */
-    getDecorationConfig(): DecorationConfig | undefined;
 }
+

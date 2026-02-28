@@ -20,7 +20,7 @@ export class BiomeManager {
     private readonly BIOME_TRANSITION_WIDTH = 50;
 
     private activeInstances: BiomeInstance[] = [];
-    private overriddenRules: any[] = null;
+
 
     // Scratch colors for zero-allocation blending
     private scratchColor1 = new THREE.Color();
@@ -40,10 +40,6 @@ export class BiomeManager {
         console.log('[BiomeManager] Resetting designer biome');
         this.activeInstances = [];
         this.ensureWindow(-1, 1);
-    }
-
-    public setOverriddenRules(rules: any[]): void {
-        this.overriddenRules = rules;
     }
 
     public getDesignerBiome(): BiomeFeatures | undefined {
@@ -79,7 +75,6 @@ export class BiomeManager {
         while (this.activeInstances.length < 2 || this.activeInstances[1].zMin > minRequiredZ) {
             const currentZMin = this.activeInstances.length > 0 ? this.activeInstances[0].zMin : 0;
             const instance = this.negGenerator.next(currentZMin, -1);
-            this.applyOverrides(instance);
             this.activeInstances.unshift(instance);
         }
 
@@ -90,17 +85,7 @@ export class BiomeManager {
             const len = this.activeInstances.length;
             const currentZMax = len > 0 ? this.activeInstances[len - 1].zMax : 0;
             const instance = this.posGenerator.next(currentZMax, 1);
-            this.applyOverrides(instance);
             this.activeInstances.push(instance);
-        }
-    }
-
-    private applyOverrides(instance: BiomeInstance): void {
-        if (!this.overriddenRules || instance.type === 'null') return;
-
-        const config = instance.features.getDecorationConfig();
-        if (config) {
-            config.rules = this.overriddenRules;
         }
     }
 

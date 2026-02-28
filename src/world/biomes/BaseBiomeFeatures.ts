@@ -146,7 +146,7 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         return this.worldParams;
     }
 
-    public getDecorationConfig(): DecorationConfig | undefined {
+    private getDecorationConfig(): DecorationConfig | undefined {
         if (!this.decorationConfig) {
             this.decorationConfig = this.createDecorationConfig();
         }

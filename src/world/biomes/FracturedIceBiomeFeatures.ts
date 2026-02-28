@@ -102,10 +102,6 @@ export class FracturedIceBiomeFeatures implements BiomeFeatures {
         return 5.0;
     }
 
-    getDecorationConfig(): DecorationConfig | undefined {
-        return undefined;
-    }
-
     private getLayout(): BiomeLayout {
         if (this.layoutCache) return this.layoutCache;
 

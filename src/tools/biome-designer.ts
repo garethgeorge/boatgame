@@ -10,16 +10,11 @@ import { DebugSettings } from '../core/DebugSettings.js';
 import { Profiler } from '../core/Profiler.js';
 import { DebugConsole } from '../core/DebugConsole.js';
 import { DesignerUtils, HistoryManager } from './DesignerUtils.js';
-import { TierRule, Combine, Signal } from '../world/decorators/DecorationRuleBuilders.js';
-import {
-    Fitness, RockParams, TreeParams, FlowerParams,
-    PlantParams, MangroveParams, PropParams
-} from '../world/decorations/SceneryRules.js';
+
 
 class BiomeDesigner {
     private engine: GameEngine;
     private controls!: MapControls;
-    private rulesHistory!: HistoryManager;
     private isInternalChange = false;
     private teleportMode = false;
     private raycaster = new THREE.Raycaster();
@@ -42,7 +37,6 @@ class BiomeDesigner {
         this.initUI(targetBiome);
         this.initSimulationUI();
         this.initDebugMenu();
-        this.initRulesEditor();
         this.initStatsDisplay();
     }
 
@@ -63,15 +57,8 @@ class BiomeDesigner {
         });
 
         reloadBtn.addEventListener('click', () => {
-            const rulesTextarea = document.getElementById('rules-textarea') as HTMLTextAreaElement;
-            const rulesContainer = document.getElementById('rules-editor-container');
-
-            if (rulesContainer && rulesContainer.style.display !== 'none' && rulesTextarea) {
-                this.applyRules(rulesTextarea.value);
-            } else {
-                RiverSystem.getInstance().biomeManager.resetDesignerBiome();
-                this.engine.terrainManager.regenerateDesignerTerrain();
-            }
+            RiverSystem.getInstance().biomeManager.resetDesignerBiome();
+            this.engine.terrainManager.regenerateDesignerTerrain();
         });
 
         resetCameraBtn.addEventListener('click', () => {
@@ -326,96 +313,7 @@ class BiomeDesigner {
         localStorage.removeItem('biomeDesignerCameraTarget');
     }
 
-    private initRulesEditor() {
-        const container = document.getElementById('rules-editor-container')!;
-        const header = document.getElementById('rules-header')!;
-        const content = document.getElementById('rules-editor-content')!;
-        const textarea = document.getElementById('rules-textarea') as HTMLTextAreaElement;
-        const undoBtn = document.getElementById('undo-btn') as HTMLButtonElement;
-        const redoBtn = document.getElementById('redo-btn') as HTMLButtonElement;
 
-        // Collapsible behavior
-        header.addEventListener('click', () => {
-            header.classList.toggle('collapsed');
-            content.classList.toggle('collapsed');
-            const isCollapsed = content.classList.contains('collapsed');
-            localStorage.setItem('biomeDesignerRulesCollapsed', isCollapsed ? 'true' : 'false');
-        });
-
-        // Restore collapsed state
-        const savedCollapsed = localStorage.getItem('biomeDesignerRulesCollapsed');
-        if (savedCollapsed === 'true') {
-            header.classList.add('collapsed');
-            content.classList.add('collapsed');
-        }
-
-        const updateEditorVisibility = () => {
-            const features = RiverSystem.getInstance().biomeManager.getDesignerBiome();
-            const rules = (features && features.getDecorationConfig()) ? features.getDecorationConfig().rules : undefined;
-
-            if (rules) {
-                container.style.display = 'flex';
-                const rulesText = DesignerUtils.safeStringify(rules);
-                textarea.value = rulesText;
-                this.rulesHistory = new HistoryManager(rulesText, (state) => {
-                    this.isInternalChange = true;
-                    textarea.value = state;
-                    this.isInternalChange = false;
-                });
-            } else {
-                container.style.display = 'none';
-            }
-        };
-
-        // Initial check
-        updateEditorVisibility();
-
-        // Listen for biome changes (we can poll or hook into the biome select)
-        const biomeSelect = document.getElementById('biome-select') as HTMLSelectElement;
-        biomeSelect.addEventListener('change', () => {
-            // Note: the page reloads on change currently, but if that changes:
-            setTimeout(updateEditorVisibility, 100);
-        });
-
-        undoBtn.addEventListener('click', () => this.rulesHistory.undo());
-        redoBtn.addEventListener('click', () => this.rulesHistory.redo());
-
-        // Keyboard shortcuts
-        textarea.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                textarea.value = textarea.value.substring(0, start) + "  " + textarea.value.substring(end);
-                textarea.selectionStart = textarea.selectionEnd = start + 2;
-            }
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                e.preventDefault();
-                this.rulesHistory.push(textarea.value);
-            }
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-                e.preventDefault();
-                this.rulesHistory.undo();
-            }
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
-                e.preventDefault();
-                this.rulesHistory.redo();
-            }
-        });
-
-        let debounceTimer: any;
-        textarea.addEventListener('input', () => {
-            if (this.isInternalChange) return;
-
-            const errorDisplay = document.getElementById('error-display');
-            if (errorDisplay) errorDisplay.style.display = 'none';
-
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                this.rulesHistory.push(textarea.value);
-            }, 500);
-        });
-    }
 
     private initStatsDisplay() {
         const header = document.getElementById('stats-header')!;
@@ -492,39 +390,7 @@ class BiomeDesigner {
         statsContent.innerHTML = html;
     }
 
-    private applyRules(text: string) {
-        const errorDisplay = document.getElementById('error-display')!;
-        errorDisplay.style.display = 'none';
 
-        try {
-            const context = {
-                THREE,
-                TierRule,
-                Combine,
-                Signal,
-                DecoRules: Fitness,
-                RockParams,
-                TreeParams,
-                FlowerParams,
-                PlantParams,
-                MangroveParams,
-                PropParams
-            };
-
-            // Re-evaluate with full context
-            const evalRules = new Function('THREE', 'TierRule', 'Combine', 'Signal', 'DecoRules', 'RockParams', 'TreeParams', 'FlowerParams', 'PlantParams', 'MangroveParams', 'PropParams', 'return ' + text)(
-                context.THREE, context.TierRule, context.Combine, context.Signal, context.DecoRules, context.RockParams, context.TreeParams, context.FlowerParams, context.PlantParams, context.MangroveParams, context.PropParams
-            );
-
-            RiverSystem.getInstance().biomeManager.setOverriddenRules(evalRules);
-            RiverSystem.getInstance().biomeManager.resetDesignerBiome();
-            this.engine.terrainManager.regenerateDesignerTerrain();
-        } catch (e: any) {
-            console.error('[BiomeDesigner] applyRules error:', e);
-            errorDisplay.textContent = `Error: ${e.message}`;
-            errorDisplay.style.display = 'block';
-        }
-    }
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
