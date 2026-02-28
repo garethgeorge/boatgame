@@ -13,6 +13,9 @@ import { GraphicsUtils } from './core/GraphicsUtils';
 import { DebugSettings } from './core/DebugSettings';
 import { TerrainChunk } from './world/TerrainChunk';
 import { RiverSystem } from './world/RiverSystem';
+import { BiomeManager } from './world/BiomeManager';
+import { ProceduralBiomeGenerator } from './world/ProceduralBiomeGenerator';
+import { DesignerBiomeGenerator } from './world/DesignerBiomeGenerator';
 import { DebugConsole } from './core/DebugConsole';
 import { DesignerSettings } from './core/DesignerSettings';
 import { BiomeType } from './world/biomes/BiomeType';
@@ -38,6 +41,20 @@ export class GameEngine {
     pendingContacts: Map<Entity, { type: string, subtype: any, boatPart: string }> = new Map();
 
     constructor(container: HTMLElement) {
+        // Initialize RiverSystem with the correct biome generator based on mode
+        let posGen, negGen;
+
+        if (DesignerSettings.isDesignerMode) {
+            posGen = new DesignerBiomeGenerator(DesignerSettings.targetBiome);
+            negGen = new DesignerBiomeGenerator(DesignerSettings.targetBiome);
+        } else {
+            posGen = new ProceduralBiomeGenerator();
+            negGen = new ProceduralBiomeGenerator();
+        }
+
+        const biomeManager = new BiomeManager(posGen, negGen);
+        RiverSystem.createInstance(biomeManager);
+
         this.physicsEngine = new PhysicsEngine();
         this.graphicsEngine = new GraphicsEngine(container);
         this.skyManager = new SkyManager(this.graphicsEngine.scene, container, this.graphicsEngine.renderer.domElement);

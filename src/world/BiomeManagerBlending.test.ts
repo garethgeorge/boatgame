@@ -1,12 +1,13 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { BiomeManager } from './BiomeManager';
+import { ProceduralBiomeGenerator } from './ProceduralBiomeGenerator';
 
 describe('BiomeManager Blending', () => {
     let biomeManager: BiomeManager;
 
     beforeEach(() => {
-        biomeManager = new BiomeManager();
+        biomeManager = new BiomeManager(new ProceduralBiomeGenerator(), new ProceduralBiomeGenerator());
     });
 
     it('should return 100% weight for the center of a biome', () => {

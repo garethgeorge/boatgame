@@ -7,6 +7,8 @@ import { PhysicsEngine } from '../core/PhysicsEngine';
 import { GraphicsEngine } from '../core/GraphicsEngine';
 import { EntityManager } from '../core/EntityManager';
 import { RiverSystem } from './RiverSystem';
+import { BiomeManager } from './BiomeManager';
+import { ProceduralBiomeGenerator } from './ProceduralBiomeGenerator';
 
 // Mock dependencies
 const mockPhysicsEngine = {
@@ -38,6 +40,11 @@ describe('TerrainManager', () => {
         // Reset Singleton if possible or mock it. 
         // RiverSystem is a singleton, so we rely on its existing state or mock getInstance if it was DI.
         // For now, assuming RiverSystem works deterministically.
+        try {
+            RiverSystem.createInstance(new BiomeManager(new ProceduralBiomeGenerator(), new ProceduralBiomeGenerator()));
+        } catch (e) {
+            // Instance already exists from another test
+        }
         terrainManager = new TerrainManager(mockPhysicsEngine, mockGraphicsEngine, mockEntityManager);
         // Ensure a biome window exists for tests
         RiverSystem.getInstance().biomeManager.ensureWindow(-1000, 1000);

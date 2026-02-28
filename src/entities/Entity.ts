@@ -1,10 +1,10 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
 import { GraphicsUtils } from '../core/GraphicsUtils';
-import { Boat } from '../entities/Boat';
+// Boat must be imported as a type to break a circular dependency: Entity -> Boat -> Entity
+import type { Boat } from '../entities/Boat';
 import { PhysicsUtils } from '../core/PhysicsUtils';
 import { PhysicsEngine } from '../core/PhysicsEngine';
-import { GraphicsEngine } from '../core/GraphicsEngine';
 
 export abstract class Entity {
 

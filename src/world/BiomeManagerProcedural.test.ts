@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BiomeManager } from './BiomeManager';
+import { ProceduralBiomeGenerator } from './ProceduralBiomeGenerator';
 
-describe('BiomeManager Procedural Generation', () => {
+describe('BiomeManager Procedural', () => {
     let biomeManager: BiomeManager;
 
     beforeEach(() => {
-        biomeManager = new BiomeManager();
+        biomeManager = new BiomeManager(new ProceduralBiomeGenerator(), new ProceduralBiomeGenerator());
     });
 
     it('should generate an initial biome at Z=0', () => {

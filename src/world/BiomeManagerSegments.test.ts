@@ -1,12 +1,13 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { BiomeManager } from './BiomeManager';
+import { ProceduralBiomeGenerator } from './ProceduralBiomeGenerator';
 
 describe('BiomeManager Segments', () => {
     let biomeManager: BiomeManager;
 
     beforeEach(() => {
-        biomeManager = new BiomeManager();
+        biomeManager = new BiomeManager(new ProceduralBiomeGenerator(), new ProceduralBiomeGenerator());
     });
 
     it('should return a single segment if range is within one biome', () => {

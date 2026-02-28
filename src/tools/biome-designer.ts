@@ -30,14 +30,14 @@ class BiomeDesigner {
         const container = document.getElementById('canvas-container');
         if (!container) throw new Error('Canvas container not found');
 
-        this.engine = new GameEngine(container);
-
         // Setup Biome Designer Mode
         const params = new URLSearchParams(window.location.search);
         const targetBiome = (params.get('biome') as BiomeType) || 'happy';
 
         DesignerSettings.isDesignerMode = true;
         DesignerSettings.targetBiome = targetBiome;
+
+        this.engine = new GameEngine(container);
 
         this.initUI(targetBiome);
         this.initSimulationUI();
@@ -516,14 +516,9 @@ class BiomeDesigner {
                 context.THREE, context.TierRule, context.Combine, context.Signal, context.DecoRules, context.RockParams, context.TreeParams, context.FlowerParams, context.PlantParams, context.MangroveParams, context.PropParams
             );
 
-            const features = RiverSystem.getInstance().biomeManager.getDesignerBiome();
-            if (features && features.getDecorationConfig() !== undefined) {
-                features.getDecorationConfig().rules = evalRules;
-                RiverSystem.getInstance().biomeManager.setOverriddenRules(features.id, evalRules);
-
-                RiverSystem.getInstance().biomeManager.resetDesignerBiome();
-                this.engine.terrainManager.regenerateDesignerTerrain();
-            }
+            RiverSystem.getInstance().biomeManager.setOverriddenRules(evalRules);
+            RiverSystem.getInstance().biomeManager.resetDesignerBiome();
+            this.engine.terrainManager.regenerateDesignerTerrain();
         } catch (e: any) {
             console.error('[BiomeDesigner] applyRules error:', e);
             errorDisplay.textContent = `Error: ${e.message}`;

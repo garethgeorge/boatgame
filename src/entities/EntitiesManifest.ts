@@ -27,7 +27,7 @@ import * as THREE from 'three';
 import { BaseMangrove } from './obstacles/Mangrove';
 import { MessageInABottle } from './obstacles/MessageInABottle';
 import { Narwhal } from './obstacles/Narwhal';
-import { Walrus } from './obstacles';
+import { Walrus } from './obstacles/Walrus';
 
 export interface EntityManifestEntry {
     name: string;

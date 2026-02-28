@@ -9,7 +9,7 @@ import { Iceberg } from './obstacles/Iceberg';
 import { Walrus } from './obstacles/Walrus';
 import { DecorationId, Decorations } from '../world/decorations/Decorations';
 import { AnimalBehaviorUtils } from './behaviors/AnimalBehaviorUtils';
-import { PolarBear } from './obstacles';
+import { PolarBear } from './obstacles/PolarBear';
 import { IcebergSpawner } from './spawners/IcebergSpawner';
 
 class IcebergAnimalPlacement implements LayoutPlacement, LayoutGenerator {
