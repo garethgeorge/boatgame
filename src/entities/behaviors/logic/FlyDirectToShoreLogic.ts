@@ -2,7 +2,6 @@ import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
 import { FlyToShoreStrategy, PointLandingStrategy } from './strategy/FlightPathStrategies';
-import { RiverSystem } from '../../../world/RiverSystem';
 
 export interface FlyDirectToShoreParams {
     flightSpeed: number;
@@ -27,22 +26,25 @@ export class FlyDirectToShoreLogic implements AnimalLogic {
     }
 
     activate(context: AnimalLogicContext): void {
-        this.strategy = new FlyToShoreStrategy(context.originPos, 15.0, this.flightSpeed, this.zRange);
+        this.strategy = new FlyToShoreStrategy(context.originPos, context.animal.getTerrainMap(), 15.0, this.flightSpeed, this.zRange);
     }
 
     update(context: AnimalLogicContext): AnimalLogicPathResult {
         if (this.state === 'FLYING') {
-            const banks = RiverSystem.getInstance().getBankPositions(context.originPos.y);
-            const isOnShore = context.originPos.x < banks.left - 15.0 || context.originPos.x > banks.right + 15.0;
+            const terrainMap = context.animal.getTerrainMap();
+            const zone = terrainMap.getSurfaceInfo(context.originPos.x, context.originPos.y).zone;
+            const shoreline = terrainMap.getNearestShoreline(context.originPos.x, context.originPos.y);
+            const isOnShore = zone === 'land' && shoreline.distance > 15.0;
+
             if (isOnShore) {
                 this.state = 'LANDING';
 
                 // Pick a point near the current position on the shore
                 const landingDist = 5.0 + Math.random() * 15.0; // At least 5, no more than 20
-                const targetX = context.originPos.x < banks.left ? banks.left - landingDist : banks.right + landingDist;
-                const targetZ = context.originPos.y;
+                const targetX = context.originPos.x - shoreline.normal.x * landingDist;
+                const targetZ = context.originPos.y - shoreline.normal.y * landingDist;
                 const targetPos = new planck.Vec2(targetX, targetZ);
-                const targetHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(targetX, targetZ);
+                const targetHeight = terrainMap.getSurfaceInfo(targetX, targetZ).y;
 
                 this.strategy = new PointLandingStrategy(
                     context,
@@ -75,7 +77,7 @@ export class FlyDirectToShoreLogic implements AnimalLogic {
     }
 
     private hasLanded(context: AnimalLogicContext): boolean {
-        const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(context.originPos.x, context.originPos.y);
+        const terrainHeight = context.animal.getTerrainMap().getSurfaceInfo(context.originPos.x, context.originPos.y).y;
         const currentAltitude = Math.max(0, context.currentHeight - terrainHeight);
         return currentAltitude < 0.1 && context.physicsBody.getLinearVelocity().length() < 1.0;
     }

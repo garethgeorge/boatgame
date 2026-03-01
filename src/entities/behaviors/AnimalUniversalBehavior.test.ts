@@ -109,24 +109,31 @@ describe('AnimalUniversalBehavior', () => {
                 return worldAngle;
             }),
             getTerrainMap: vi.fn(() => ({
-                sample: vi.fn((x: number, z: number) => {
+                getSurfaceInfo: vi.fn((x: number, z: number) => {
                     const terrainHeight = mockRiverSystem.terrainGeometry.calculateHeight(x, z);
                     const terrainNormal = mockRiverSystem.terrainGeometry.calculateNormal(x, z);
                     return { y: terrainHeight, normal: terrainNormal };
                 }),
-                zone: vi.fn((x: number, z: number, margin: number, width: number) => {
+                getZone: vi.fn((x: number, z: number, radius: number) => {
                     const banks = mockRiverSystem.getBankPositions(z);
                     const distFromLeft = x - banks.left;
                     const distFromRight = banks.right - x;
-                    const distance = Math.min(distFromLeft, distFromRight);
+                    const signedWaterDistance = Math.min(distFromLeft, distFromRight);
 
-                    if (margin < distance) {
-                        return { zone: 'water', t: 0 };
-                    } else if (width <= 0 || distance < margin - width) {
-                        return { zone: 'land', t: 0 };
+                    let t = 0;
+                    if (radius > 0) {
+                        t = Math.max(-1, Math.min(1, signedWaterDistance / radius));
                     } else {
-                        return { zone: 'margin', t: (margin - distance) / width };
+                        t = signedWaterDistance > 0 ? 1 : signedWaterDistance < 0 ? -1 : 0;
                     }
+
+                    let zone: any = 'margin';
+                    if (signedWaterDistance >= radius) {
+                        zone = 'water';
+                    } else if (signedWaterDistance <= -radius) {
+                        zone = 'land';
+                    }
+                    return { zone, t };
                 })
             }))
         };

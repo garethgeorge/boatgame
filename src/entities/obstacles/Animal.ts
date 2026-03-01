@@ -11,7 +11,6 @@ import { ObstacleHitBehavior, ObstacleHitBehaviorParams } from '../behaviors/Obs
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { AnimalBehaviorConfig } from '../behaviors/AnimalBehaviorConfigs';
 import { TerrainSlot } from '../../world/TerrainSlotMap';
-import { RiverSystem } from '../../world/RiverSystem';
 import { TerrainMap } from '../behaviors/TerrainMap';
 import { WorldTerrainMap } from '../behaviors/WorldTerrainMap';
 

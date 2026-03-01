@@ -4,9 +4,10 @@ import { Entity } from '../Entity';
 import { PhysicsEngine, CollisionCategories } from '../../core/PhysicsEngine';
 import { Decorations } from '../../world/decorations/Decorations';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
-import { TerrainMap, Zone } from '../behaviors/TerrainMap';
+import { TerrainMap, Zone, SurfaceInfo, ShoreInfo } from '../behaviors/TerrainMap';
 import { ConvexHull } from '../../core/ConvexHull';
 import { Polygon } from '../../core/Polygon';
+import { RiverSystem } from '../../world/RiverSystem';
 
 export class Iceberg extends Entity {
     private animationMixer?: THREE.AnimationMixer;
@@ -138,25 +139,116 @@ export class IcebergTerrainMap implements TerrainMap {
         this.iceHeight = iceHeight;
     }
 
-    sample(x: number, z: number): { y: number; normal: THREE.Vector3; } {
+    public getSurfaceInfo(x: number, z: number): SurfaceInfo {
         const point = planck.Vec2(x, z);
         const inside = this.polygon.containsPoint(point);
-        return { y: inside ? this.iceHeight : 0, normal: new THREE.Vector3(0, 1, 0) };
+        return {
+            y: inside ? this.iceHeight : 0,
+            normal: new THREE.Vector3(0, 1, 0),
+            zone: inside ? 'land' : 'water'
+        };
     }
 
-    public zone(
-        x: number, z: number, margin: number, width: number
+    public getZone(
+        x: number, z: number, radius: number
     ): { zone: Zone, t: number } {
         const point = planck.Vec2(x, z);
-        const inside = this.polygon.containsPoint(point) ? 1 : -1;
-        const distance = this.polygon.distanceToPoint(point) * inside;
+        const isInsideIceberg = this.polygon.containsPoint(point);
+        const absDistance = this.polygon.distanceToPoint(point);
+        const signedWaterDistance = isInsideIceberg ? -absDistance : absDistance;
 
-        if (margin < distance) {
-            return { zone: 'land', t: 0 };
-        } else if (width <= 0 || distance < margin - width) {
-            return { zone: 'water', t: 0 };
+        let t = 0;
+        if (radius > 0) {
+            t = Math.max(-1, Math.min(1, signedWaterDistance / radius));
         } else {
-            return { zone: 'margin', t: (margin - distance) / width };
+            t = signedWaterDistance > 0 ? 1 : signedWaterDistance < 0 ? -1 : 0;
         }
+
+        let zone: Zone = 'margin';
+        if (signedWaterDistance >= radius) {
+            zone = 'water';
+        } else if (signedWaterDistance <= -radius) {
+            zone = 'land';
+        }
+
+        return { zone, t };
+    }
+
+    public getNearestShoreline(x: number, z: number): ShoreInfo {
+        const point = planck.Vec2(x, z);
+        const vertices = (this.polygon as any).vertices as planck.Vec2[];
+        let minDistanceSq = Infinity;
+        let closestPoint = planck.Vec2(0, 0);
+        let segmentNormal = new THREE.Vector2(0, 0);
+
+        for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+            const v1 = vertices[i];
+            const v2 = vertices[j];
+
+            const l2 = planck.Vec2.distanceSquared(v1, v2);
+            let t = 0;
+            if (l2 !== 0) {
+                t = ((point.x - v1.x) * (v2.x - v1.x) + (point.y - v1.y) * (v2.y - v1.y)) / l2;
+                t = Math.max(0, Math.min(1, t));
+            }
+            const proj = planck.Vec2(v1.x + t * (v2.x - v1.x), v1.y + t * (v2.y - v1.y));
+            const distSq = planck.Vec2.distanceSquared(point, proj);
+
+            if (distSq < minDistanceSq) {
+                minDistanceSq = distSq;
+                closestPoint = proj;
+
+                const dx = v2.x - v1.x;
+                const dy = v2.y - v1.y;
+                // Assuming ConvexHull generates CCW vertices, right-hand normal points outwards
+                segmentNormal = new THREE.Vector2(dy, -dx).normalize();
+            }
+        }
+
+        const distance = this.polygon.containsPoint(point) ? -Math.sqrt(minDistanceSq) : Math.sqrt(minDistanceSq);
+        const position = new THREE.Vector2(closestPoint.x, closestPoint.y);
+        const direction = new THREE.Vector2(segmentNormal.y, -segmentNormal.x);
+        return { position, direction, normal: segmentNormal, distance };
+    }
+
+    public getDirectionShoreline(startX: number, startZ: number, dirX: number, dirZ: number): ShoreInfo | null {
+        const vertices = (this.polygon as any).vertices as planck.Vec2[];
+        let closestT = Infinity;
+        let intersectX = 0, intersectZ = 0;
+
+        for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+            const v1 = vertices[j];
+            const v2 = vertices[i];
+
+            const dx1 = dirX;
+            const dy1 = dirZ;
+            const dx2 = v2.x - v1.x;
+            const dy2 = v2.y - v1.y;
+
+            const cross = dx1 * dy2 - dy1 * dx2;
+            if (Math.abs(cross) < 1e-6) continue;
+
+            const t = ((v1.x - startX) * dy2 - (v1.y - startZ) * dx2) / cross;
+            const u = ((v1.x - startX) * dy1 - (v1.y - startZ) * dx1) / cross;
+
+            if (t > 0 && u >= 0 && u <= 1) {
+                if (t < closestT) {
+                    closestT = t;
+                    intersectX = startX + dirX * t;
+                    intersectZ = startZ + dirZ * t;
+                }
+            }
+        }
+
+        if (closestT === Infinity) return null;
+        const shoreInfo = this.getNearestShoreline(intersectX, intersectZ);
+        shoreInfo.distance = closestT;
+        return shoreInfo;
+    }
+
+    public getNearestWaterFlow(x: number, z: number): THREE.Vector2 {
+        const riverSystem = RiverSystem.getInstance();
+        const dx = riverSystem.getRiverDerivative(z);
+        return new THREE.Vector2(dx, -1).normalize();
     }
 }

@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { RiverSystem } from '../../../world/RiverSystem';
+
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalLogicConfig } from './AnimalLogicConfigs';
 import { EnteringWaterStrategy } from './strategy/EnteringWaterStrategy';
@@ -38,7 +38,8 @@ export class EnteringWaterLogic implements AnimalLogic {
 
         const facingAngle = context.physicsBody.getAngle() - Math.PI / 2;
         const direction = { x: Math.cos(facingAngle), y: Math.sin(facingAngle) };
-        const distToWater = RiverSystem.getInstance().getDistanceToWater(context.originPos, direction);
+        const shoreline = context.animal.getTerrainMap().getDirectionShoreline(context.originPos.x, context.originPos.y, direction.x, direction.y);
+        const distToWater = shoreline ? shoreline.distance : 0;
 
         // Calculate progress t at which the parabolic jump reaches the water level.
         // solve 4 * t * (1-t) * jump height = -h
@@ -56,14 +57,10 @@ export class EnteringWaterLogic implements AnimalLogic {
 
         // Check if sufficiently in water
         const pos = context.originPos;
-        const banks = RiverSystem.getInstance().getBankPositions(pos.y);
-        const margin = 2.0;
-        const distFromLeft = pos.x - banks.left;
-        const distFromRight = banks.right - pos.x;
-        const distIntoWater = Math.min(distFromLeft, distFromRight);
+        const { zone } = context.animal.getTerrainMap().getZone(pos.x, pos.y, 2.0);
 
         // Move to next logic once in water
-        if (distIntoWater >= margin) {
+        if (zone === 'water') {
             return {
                 path: steering,
                 result: EnteringWaterLogic.RESULT_FINISHED,

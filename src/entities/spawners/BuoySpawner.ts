@@ -1,7 +1,6 @@
 import * as planck from 'planck';
 import { Buoy } from '../../entities/obstacles/Buoy';
 import { Entity } from '../Entity';
-import { RiverSystem } from '../../world/RiverSystem';
 import { PopulationContext } from '../../world/biomes/PopulationContext';
 import { RiverGeometrySample } from '../../world/RiverGeometry';
 

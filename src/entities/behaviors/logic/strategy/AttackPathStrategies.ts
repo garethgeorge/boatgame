@@ -1,8 +1,7 @@
 import * as planck from 'planck';
 import { Boat } from '../../../Boat';
-import { AnimalBehaviorUtils } from '../../AnimalBehaviorUtils';
-import { RiverSystem } from '../../../../world/RiverSystem';
 import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
+import { AnimalBehaviorUtils } from '../../AnimalBehaviorUtils';
 
 /**
  * STERN INTERCEPT (Water)
@@ -112,17 +111,24 @@ export class ShoreHuggingStrategy extends AnimalPathStrategy {
     constructor() { super(); }
     update(context: AnimalStrategyContext): AnimalSteering {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
+        const terrainMap = context.animal.getTerrainMap();
+        const shoreline = terrainMap.getNearestShoreline(context.originPos.x, context.originPos.y);
         const boatPos = context.targetBody.getPosition();
-        const riverSystem = RiverSystem.getInstance();
 
-        const targetY = context.originPos.y < boatPos.y ? context.originPos.y + 1.0 : context.originPos.y - 1.0;
-        const banks = riverSystem.getBankPositions(targetY);
-        const distToLeft = Math.abs(context.originPos.x - banks.left);
-        const distToRight = Math.abs(context.originPos.x - banks.right);
-        const targetX = distToLeft < distToRight ? banks.left + distToLeft : banks.right - distToRight;
+        const dirToBoatY = boatPos.y > context.originPos.y ? 1.0 : -1.0;
+        let walkDir = shoreline.direction.clone();
+        if (Math.sign(walkDir.y) !== Math.sign(dirToBoatY) && walkDir.y !== 0) {
+            walkDir.negate();
+        }
+        walkDir.multiplyScalar(params.attackSpeed);
+
+        const targetWorldPos = new planck.Vec2(
+            shoreline.position.x + walkDir.x + shoreline.normal.x * shoreline.distance,
+            shoreline.position.y + walkDir.y + shoreline.normal.y * shoreline.distance
+        );
 
         return {
-            target: planck.Vec2(targetX, targetY),
+            target: targetWorldPos,
             speed: params.attackSpeed * 0.5,
             turningSpeed: params.turningSpeed,
             turningSmoothing: params.turningSmoothing,

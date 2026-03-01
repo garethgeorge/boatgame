@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { RiverSystem } from '../../../../world/RiverSystem';
+import { TerrainMap } from '../../TerrainMap';
 import { AnimalPathStrategy, AnimalSteering, AnimalStrategyContext } from './AnimalPathStrategy';
 import { AnimalBehaviorUtils } from '../../AnimalBehaviorUtils';
 import { CoreMath } from '../../../../core/CoreMath';
@@ -80,6 +80,7 @@ export class FlyToShoreStrategy extends AnimalPathStrategy {
 
     constructor(
         currentPos: planck.Vec2,
+        terrainMap: TerrainMap,
         private flightHeight: number,
         private horizSpeed: number,
         private zRange: [number, number]
@@ -92,13 +93,11 @@ export class FlyToShoreStrategy extends AnimalPathStrategy {
         const zMargin = 20.0;
         const zMarginSize = 40.0;
 
-        const banks = RiverSystem.getInstance().getBankPositions(currentPos.y);
+        const shoreline = terrainMap.getNearestShoreline(currentPos.x, currentPos.y);
 
         // Aim for a position well onto the closest shore
-        const isOnLeftSide = currentPos.x < (banks.left + banks.right) / 2;
-        const targetX = isOnLeftSide ?
-            banks.left - (xMargin + Math.random() * xMarginSize) :
-            banks.right + (xMargin + Math.random() * xMarginSize);
+        const marginDist = xMargin + Math.random() * xMarginSize;
+        const targetX = shoreline.position.x - shoreline.normal.x * marginDist;
 
         // Pick a point a little inside the z range
         const isAtStart = currentPos.y < (zMin + zMax) / 2;
@@ -160,12 +159,11 @@ export class PointLandingStrategy extends AnimalPathStrategy {
         this.flightHeight = flightHeight;
 
         // --- Landing Path Calculation ---
-        const river = RiverSystem.getInstance();
-        const centerResult = river.getClosestCenterPoint({ x: this.target.x, z: this.target.y });
-        const centerPos = new planck.Vec2(centerResult.x, centerResult.z);
+        const terrainMap = context.animal.getTerrainMap();
+        const shoreline = terrainMap.getNearestShoreline(this.target.x, this.target.y);
 
-        // Direction from target TO river center
-        this.landingDir = planck.Vec2.sub(centerPos, this.target);
+        // Direction from target TO water is exactly the normal given by ShoreInfo (normal points into water)
+        this.landingDir = new planck.Vec2(shoreline.normal.x, shoreline.normal.y);
         this.landingDir.normalize();
 
         // A point on the landing path away from the river
@@ -248,21 +246,23 @@ export class WaterLandingStrategy extends AnimalPathStrategy {
     constructor(private horizSpeed: number, private landingHeight: number = 0.0) { super(); }
 
     update(context: AnimalStrategyContext): AnimalSteering {
-        const riverSystem = RiverSystem.getInstance();
+        const terrainMap = context.animal.getTerrainMap();
 
-        // Target is the center of the river at a point ahead in the current flight direction
+        // Target is a point ahead in the current flight direction, but aligned with the water flow
         const angle = context.physicsBody.getAngle();
         const moveDir = new planck.Vec2(-Math.sin(angle), -Math.cos(angle));
 
-        const targetZ = context.originPos.y + moveDir.y * this.lookAhead;
-        const banks = riverSystem.getBankPositions(targetZ);
-        const center = (banks.left + banks.right) / 2;
-        const targetWorldPos = new planck.Vec2(center, targetZ);
+        const flowDir = terrainMap.getNearestWaterFlow(context.originPos.x, context.originPos.y);
+
+        const targetWorldPos = new planck.Vec2(
+            context.originPos.x + flowDir.x * this.lookAhead,
+            context.originPos.y + flowDir.y * this.lookAhead
+        );
 
         // Ground information at current position
-        const groundHeight = riverSystem.terrainGeometry.calculateHeight(context.originPos.x, context.originPos.y);
-        const currentBanks = riverSystem.getBankPositions(context.originPos.y);
-        const isOverWater = context.originPos.x > currentBanks.left && context.originPos.x < currentBanks.right;
+        const surfaceInfo = terrainMap.getSurfaceInfo(context.originPos.x, context.originPos.y);
+        const groundHeight = surfaceInfo.y;
+        const isOverWater = surfaceInfo.zone === 'water';
 
         // Altitude relative to ground/water
         const currentAltitude = Math.max(0, context.currentHeight - (isOverWater ? 0 : groundHeight));

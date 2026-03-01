@@ -10,8 +10,8 @@ describe('WalkTowardBoatLogic', () => {
 
     beforeEach(() => {
         mockTerrainMap = {
-            sample: vi.fn(),
-            zone: vi.fn()
+            getSurfaceInfo: vi.fn(),
+            getZone: vi.fn()
         };
 
         mockContext = {
@@ -29,18 +29,18 @@ describe('WalkTowardBoatLogic', () => {
     });
 
     it('should continue walking when on land', () => {
-        mockTerrainMap.zone.mockReturnValue({ zone: 'land' });
+        mockTerrainMap.getZone.mockReturnValue({ zone: 'land' });
         const logic = new WalkTowardBoatLogic({ speed: 5 });
         const result = logic.update(mockContext as AnimalLogicContext);
 
         expect(result.finish).toBeUndefined();
         expect(result.path.speed).toBe(5);
         expect(result.path.locomotionType).toBe('LAND');
-        expect(mockTerrainMap.zone).toHaveBeenCalledWith(0, 0, 0, 2.0);
+        expect(mockTerrainMap.getZone).toHaveBeenCalledWith(0, 0, 2.0);
     });
 
     it('should continue walking when in margin', () => {
-        mockTerrainMap.zone.mockReturnValue({ zone: 'margin' });
+        mockTerrainMap.getZone.mockReturnValue({ zone: 'margin' });
         const logic = new WalkTowardBoatLogic({ speed: 5 });
         const result = logic.update(mockContext as AnimalLogicContext);
 
@@ -48,12 +48,12 @@ describe('WalkTowardBoatLogic', () => {
     });
 
     it('should finish when in water', () => {
-        mockTerrainMap.zone.mockReturnValue({ zone: 'water' });
+        mockTerrainMap.getZone.mockReturnValue({ zone: 'water' });
         const logic = new WalkTowardBoatLogic({ speed: 5 });
         const result = logic.update(mockContext as AnimalLogicContext);
 
         expect(result.finish).toBe(true);
         expect(result.result).toBe(WalkTowardBoatLogic.RESULT_FINISHED);
-        expect(mockTerrainMap.zone).toHaveBeenCalledWith(0, 0, 0, 2.0);
+        expect(mockTerrainMap.getZone).toHaveBeenCalledWith(0, 0, 2.0);
     });
 });

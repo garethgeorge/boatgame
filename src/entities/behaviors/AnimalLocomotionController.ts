@@ -164,8 +164,8 @@ export class AnimalLocomotionController {
         if (!mesh) return;
 
         // Sample the terrain map at the current position to get the zone
-        const { zone } = this.entity.getTerrainMap().zone(
-            mesh.position.x, mesh.position.z, 0, this.marginWidth);
+        const { zone } = this.entity.getTerrainMap().getZone(
+            mesh.position.x, mesh.position.z, this.marginWidth);
 
         if (this.currentZone !== zone) {
             this.currentZone = zone;
@@ -226,14 +226,14 @@ export class AnimalLocomotionController {
             normal = new THREE.Vector3(0, 1, 0);
         } else {
             const terrainMap = this.entity.getTerrainMap();
-            const { zone, t: tau } = terrainMap.zone(x, z, 0, this.marginWidth);
-            const sample = terrainMap.sample(x, z);
+            const { zone, t: tau } = terrainMap.getZone(x, z, this.marginWidth);
+            const sample = terrainMap.getSurfaceInfo(x, z);
 
             height = sample.y;
             normal = sample.normal;
 
             // Interpolate height and normal in the margin
-            if (zone === 'margin') {
+            if (zone === 'margin' && tau > 0) {
                 height = height * (1 - tau) + (height + this.waterHeight) * tau;
 
                 const f = 4 * tau * (1 - tau); // Parabolic weight peaking at 0.5 (t=0.5)

@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { RiverSystem } from '../../../../world/RiverSystem';
+import { TerrainMap } from '../../TerrainMap';
 import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
 import { AnimalBehaviorUtils } from '../../AnimalBehaviorUtils';
 
@@ -21,41 +21,33 @@ export class ShoreTurnStrategy extends AnimalPathStrategy {
 
     constructor(
         private readonly startPos: planck.Vec2,
+        terrainMap: TerrainMap,
         private readonly direction: TurnDirection,
         private readonly rotationSpeed: number,
         private readonly onFinish: () => void
     ) {
         super();
-        this.initialize(startPos);
+        this.initialize(startPos, terrainMap);
     }
 
-    private initialize(pos: planck.Vec2) {
-        const riverSystem = RiverSystem.getInstance();
-        const banks = riverSystem.getBankPositions(pos.y);
-        const distFromLeft = Math.abs(pos.x - banks.left);
-        const distFromRight = Math.abs(pos.x - banks.right);
-        this.isOnLeftBank = distFromLeft < distFromRight;
-        this.targetAngle = this.calculateAngle(riverSystem, pos);
+    private initialize(pos: planck.Vec2, terrainMap: TerrainMap) {
+        this.targetAngle = this.calculateAngle(terrainMap, pos);
     }
 
-    private calculateAngle(riverSystem: RiverSystem, pos: planck.Vec2): number {
-        // Upstream (+Z) -> +Y in Physics (pi/2)
-        // Downstream (-Z) -> -Y in Physics (-pi/2)
-        // Right Bank Shore (+X) -> 0
-        // Left Bank Shore (-X) -> pi
-        // this is the angle for facing up river (animal angle is wrt y axis)
-        const dx = riverSystem.getRiverDerivative(pos.y);
-        const angle = Math.atan2(1.0, dx) + Math.PI / 2;
+    private calculateAngle(terrainMap: TerrainMap, pos: planck.Vec2): number {
+        const flowDir = terrainMap.getNearestWaterFlow(pos.x, pos.y);
+        const shoreline = terrainMap.getNearestShoreline(pos.x, pos.y);
+
+        const downAngle = Math.atan2(flowDir.x, -flowDir.y);         // Facing downstream
+        const upAngle = Math.atan2(-flowDir.x, flowDir.y);           // Facing upstream
+        const riverAngle = Math.atan2(shoreline.normal.x, -shoreline.normal.y);   // Facing river
+        const awayAngle = Math.atan2(-shoreline.normal.x, shoreline.normal.y);    // Facing away
 
         switch (this.direction) {
-            case 1: // Upstream (+Z)
-                return angle;
-            case 3: // Downstream (-Z). This is the default facing direction for animals
-                return angle + Math.PI;
-            case 0: // Face river
-                return angle + (this.isOnLeftBank ? -Math.PI / 2 : Math.PI / 2);
-            case 2: // Face away
-                return angle + (this.isOnLeftBank ? Math.PI / 2 : -Math.PI / 2);
+            case 1: return upAngle;
+            case 3: return downAngle;
+            case 0: return riverAngle;
+            case 2: return awayAngle;
         }
     }
 
@@ -89,30 +81,23 @@ export class ShoreWalkStrategy extends AnimalPathStrategy {
 
     constructor(
         private readonly startPos: planck.Vec2,
+        terrainMap: TerrainMap,
         private readonly direction: WalkDirection,
         private readonly distance: number,
         private readonly speed: number,
         private readonly onFinish: () => void
     ) {
         super();
-        this.initialize(startPos);
+        this.initialize(startPos, terrainMap);
     }
 
-    private initialize(pos: planck.Vec2) {
+    private initialize(pos: planck.Vec2, terrainMap: TerrainMap) {
         this.lastPos = pos.clone();
         this.distanceTravelled = 0;
 
-        const banks = RiverSystem.getInstance().getBankPositions(pos.y);
-        const distFromLeft = Math.abs(pos.x - banks.left);
-        const distFromRight = Math.abs(pos.x - banks.right);
-
-        if (distFromLeft < distFromRight) {
-            this.isOnLeftBank = true;
-            this.bankDistance = distFromLeft;
-        } else {
-            this.isOnLeftBank = false;
-            this.bankDistance = distFromRight;
-        }
+        const shoreline = terrainMap.getNearestShoreline(pos.x, pos.y);
+        // shoreline.distance represents distance to shore boundary (positive if on land)
+        this.bankDistance = Math.max(0, shoreline.distance);
     }
 
     update(context: AnimalStrategyContext): AnimalSteering {
@@ -126,21 +111,26 @@ export class ShoreWalkStrategy extends AnimalPathStrategy {
             this.onFinish();
         }
 
-        // Determine target
-        const riverSystem = RiverSystem.getInstance();
-        const directionSign = this.direction === 'upstream' ? 1 : -1;
+        const terrainMap = context.animal.getTerrainMap();
+        const shoreline = terrainMap.getNearestShoreline(currentPos.x, currentPos.y);
+        const flowDir = terrainMap.getNearestWaterFlow(currentPos.x, currentPos.y);
 
-        const targetY = currentPos.y + directionSign * 4.0;
-        const banks = riverSystem.getBankPositions(targetY);
-        const targetX = this.isOnLeftBank ?
-            banks.left - this.bankDistance : banks.right + this.bankDistance;
-        const targetWorldPos = new planck.Vec2(targetX, targetY);
+        // Determine shore tangent based on flow
+        const isDirectionDownstream = (shoreline.direction.x * flowDir.x + shoreline.direction.y * flowDir.y) > 0;
 
-        // Calculate desired angle relative to the y axis since
-        // that's what animal angle is wrt
-        const dx = targetWorldPos.x - currentPos.x;
-        const dy = targetWorldPos.y - currentPos.y;
-        const desiredAngle = Math.atan2(dy, dx) + Math.PI / 2;
+        let walkDir = shoreline.direction.clone();
+        if (this.direction === 'downstream' && !isDirectionDownstream) {
+            walkDir.negate();
+        } else if (this.direction === 'upstream' && isDirectionDownstream) {
+            walkDir.negate();
+        }
+        walkDir.multiplyScalar(this.speed);
+
+        // Target is speed units ahead along walkDir, offset by bankDistance inland
+        const targetWorldPos = new planck.Vec2(
+            shoreline.position.x + walkDir.x - shoreline.normal.x * this.bankDistance,
+            shoreline.position.y + walkDir.y - shoreline.normal.y * this.bankDistance
+        );
 
         return {
             target: targetWorldPos,

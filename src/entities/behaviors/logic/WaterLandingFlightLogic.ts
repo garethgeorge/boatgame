@@ -2,7 +2,6 @@ import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
 import { BuzzTargetStrategy, FleeRiverStrategy, WaterLandingStrategy } from './strategy/FlightPathStrategies';
-import { RiverSystem } from '../../../world/RiverSystem';
 
 export interface WaterLandingFlightParams {
     flightSpeed: number;

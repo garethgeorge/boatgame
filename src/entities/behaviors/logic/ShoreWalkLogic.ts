@@ -60,6 +60,7 @@ export class ShoreWalkLogic implements AnimalLogic {
                     // Create strategy to turn to face upstream (Direction 1)
                     this.strategy = new ShoreTurnStrategy(
                         currentPos,
+                        context.animal.getTerrainMap(),
                         1,
                         ROTATION_SPEED,
                         () => {
@@ -72,6 +73,7 @@ export class ShoreWalkLogic implements AnimalLogic {
                     // Create strategy to walk upstream
                     this.strategy = new ShoreWalkStrategy(
                         currentPos,
+                        context.animal.getTerrainMap(),
                         'upstream',
                         this.walkDistance,
                         this.speed,
@@ -85,6 +87,7 @@ export class ShoreWalkLogic implements AnimalLogic {
                     // Create strategy to turn to face downstream (Direction 3)
                     this.strategy = new ShoreTurnStrategy(
                         currentPos,
+                        context.animal.getTerrainMap(),
                         3,
                         ROTATION_SPEED,
                         () => {
@@ -97,6 +100,7 @@ export class ShoreWalkLogic implements AnimalLogic {
                     // Create strategy to walk downstream
                     this.strategy = new ShoreWalkStrategy(
                         currentPos,
+                        context.animal.getTerrainMap(),
                         'downstream',
                         this.walkDistance, // Walk back same distance
                         this.speed,
@@ -110,6 +114,7 @@ export class ShoreWalkLogic implements AnimalLogic {
                     // Create strategy to turn to face toward the shore (Direction 0)
                     this.strategy = new ShoreTurnStrategy(
                         currentPos,
+                        context.animal.getTerrainMap(),
                         0,
                         ROTATION_SPEED,
                         () => {
