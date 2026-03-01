@@ -11,7 +11,8 @@ describe('IcebergTerrainMap', () => {
     ];
     const iceHeight = 0.2;
     const waterHeight = -1.0;
-    const map = new IcebergTerrainMap(vertices, iceHeight);
+    const dummyEntity = { physicsBodies: [], meshes: [] } as any;
+    const map = new IcebergTerrainMap(dummyEntity, vertices, iceHeight);
 
     it('should return ice height when inside the iceberg', () => {
         const sampleResult = map.getSurfaceInfo(0, 0);

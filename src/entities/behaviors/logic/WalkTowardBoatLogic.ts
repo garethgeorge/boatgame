@@ -28,8 +28,8 @@ export class WalkTowardBoatLogic implements AnimalLogic {
             locomotionType: 'LAND' as const
         };
 
-        const pos = context.animal.localPos();
-        const { zone } = context.animal.getTerrainMap().getZone(pos.x, pos.z, 2.0);
+        const pos = context.originPos;
+        const { zone } = context.animal.getTerrainMap().getZone(pos.x, pos.y, 2.0);
 
         if (zone === 'water') {
             return {

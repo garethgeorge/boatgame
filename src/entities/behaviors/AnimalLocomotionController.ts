@@ -48,8 +48,7 @@ export class AnimalLocomotionController {
         if (!result || !result.path) return;
 
         // Capture the current position as the "previous" position before computing
-        // the next movement. For kinematic bodies this is the mesh position, for
-        // dynamic bodies we use the physics body position.
+        // the next movement.
         const body = this.entity.getPhysicsBody();
         if (body) {
             const pos = body.getPosition();
@@ -113,10 +112,26 @@ export class AnimalLocomotionController {
         if (this.pendingKinematic) {
             // For land motion now determine the pose for the current position
             if (this.pendingKinematic.mode !== 'FLIGHT') {
-                const pose = this.computePose(
-                    this.pendingKinematic.pos.x, this.pendingKinematic.pos.z);
-                this.pendingKinematic.pos.y = pose.height;
-                this.pendingKinematic.normal = pose.normal;
+                const mesh = this.entity.getMesh();
+
+                let globalPos = this.pendingKinematic.pos.clone();
+                if (mesh && mesh.parent) {
+                    mesh.parent.localToWorld(globalPos);
+                }
+
+                const pose = this.computePose(globalPos.x, globalPos.z);
+
+                globalPos.y = pose.height;
+                let localNormal = pose.normal.clone();
+
+                if (mesh && mesh.parent) {
+                    mesh.parent.worldToLocal(globalPos);
+                    const parentWorldQuat = mesh.parent.getWorldQuaternion(new THREE.Quaternion());
+                    localNormal.applyQuaternion(parentWorldQuat.invert());
+                }
+
+                this.pendingKinematic.pos.y = globalPos.y;
+                this.pendingKinematic.normal = localNormal;
             }
 
             const body = this.entity.getPhysicsBody();
@@ -163,9 +178,12 @@ export class AnimalLocomotionController {
         const mesh = this.entity.getMesh();
         if (!mesh) return;
 
+        const worldPos = new THREE.Vector3();
+        mesh.getWorldPosition(worldPos);
+
         // Sample the terrain map at the current position to get the zone
         const { zone } = this.entity.getTerrainMap().getZone(
-            mesh.position.x, mesh.position.z, this.marginWidth);
+            worldPos.x, worldPos.z, this.marginWidth);
 
         if (this.currentZone !== zone) {
             this.currentZone = zone;

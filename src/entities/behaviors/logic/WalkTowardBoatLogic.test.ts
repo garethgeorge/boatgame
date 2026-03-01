@@ -21,6 +21,7 @@ describe('WalkTowardBoatLogic', () => {
             physicsBody: {
                 getPosition: vi.fn(() => planck.Vec2(50, 50)) // World Pos
             },
+            originPos: planck.Vec2(50, 50),
             animal: {
                 getTerrainMap: vi.fn(() => mockTerrainMap),
                 localPos: vi.fn(() => new THREE.Vector3(0, 0, 0)) // Local Pos
@@ -36,7 +37,7 @@ describe('WalkTowardBoatLogic', () => {
         expect(result.finish).toBeUndefined();
         expect(result.path.speed).toBe(5);
         expect(result.path.locomotionType).toBe('LAND');
-        expect(mockTerrainMap.getZone).toHaveBeenCalledWith(0, 0, 2.0);
+        expect(mockTerrainMap.getZone).toHaveBeenCalledWith(50, 50, 2.0);
     });
 
     it('should continue walking when in margin', () => {
@@ -54,6 +55,6 @@ describe('WalkTowardBoatLogic', () => {
 
         expect(result.finish).toBe(true);
         expect(result.result).toBe(WalkTowardBoatLogic.RESULT_FINISHED);
-        expect(mockTerrainMap.getZone).toHaveBeenCalledWith(0, 0, 2.0);
+        expect(mockTerrainMap.getZone).toHaveBeenCalledWith(50, 50, 2.0);
     });
 });
