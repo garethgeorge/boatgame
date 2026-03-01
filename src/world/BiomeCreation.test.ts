@@ -57,7 +57,7 @@ describe('TerrainManager', () => {
 
         tm.updateCollision(boatZ);
 
-        expect(tm.collisionBodies.length).toBeGreaterThan(0);
+        expect(tm.collisionSegments.size).toBeGreaterThan(0);
         expect(mockPhysicsEngine.world.createBody).toHaveBeenCalled();
     });
 
@@ -68,7 +68,8 @@ describe('TerrainManager', () => {
         const boatZ = 200;
         tm.updateCollision(boatZ);
 
-        expect(tm.collisionMeshes.length).toBeGreaterThan(0);
+        const allMeshes = Array.from(tm.collisionSegments.values()).flatMap((s: any) => s.meshes);
+        expect(allMeshes.length).toBeGreaterThan(0);
         expect(mockGraphicsEngine.add).toHaveBeenCalled(); // Should add meshes to scene
     });
 
@@ -79,7 +80,8 @@ describe('TerrainManager', () => {
         const boatZ = 300;
         tm.updateCollision(boatZ);
 
-        expect(tm.collisionMeshes.length).toBe(0);
+        const allMeshes = Array.from(tm.collisionSegments.values()).flatMap((s: any) => s.meshes);
+        expect(allMeshes.length).toBe(0);
         expect(mockGraphicsEngine.add).not.toHaveBeenCalled(); // Should NOT add meshes
     });
 
@@ -92,12 +94,32 @@ describe('TerrainManager', () => {
 
         // Initial update
         tm.updateCollision(100);
-        const initialBodies = [...tm.collisionBodies];
+        const initialSegments = new Map(tm.collisionSegments);
 
-        // Move far enough to trigger regeneration
+        // Move far enough to trigger regeneration of some segments and removal of others
         tm.updateCollision(1000);
 
         expect(destroyBodyMock).toHaveBeenCalled();
-        expect(tm.collisionBodies).not.toEqual(initialBodies);
+        expect(tm.collisionSegments).not.toEqual(initialSegments);
+    });
+
+    it('should only create new segments when moving the boat', () => {
+        const tm = terrainManager as any;
+        const createBodyMock = vi.spyOn(mockPhysicsEngine.world, 'createBody');
+
+        // Initial update
+        tm.updateCollision(100);
+        const callsAfterFirst = createBodyMock.mock.calls.length;
+
+        // Move boat slightly, but within common window
+        tm.updateCollision(105);
+        const callsAfterSecond = createBodyMock.mock.calls.length;
+
+        // Only one new step (5 units) should have been added, creating 2 bodies (left and right bank)
+        expect(callsAfterSecond - callsAfterFirst).toBe(2);
+
+        // Move boat far - expect original segments to be deleted and many new ones created
+        tm.updateCollision(1000);
+        expect(tm.collisionSegments.size).toBeGreaterThan(0);
     });
 });

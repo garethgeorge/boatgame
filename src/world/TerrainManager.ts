@@ -28,12 +28,13 @@ export class TerrainManager {
     private regenerationQueue: number[] = [];
 
     // Collision segments along the shoreline
-    private collisionBodies: planck.Body[] = [];
-    private collisionMeshes: THREE.Mesh[] = [];
+    private collisionSegments: Map<number, {
+        bodies: planck.Body[],
+        meshes: THREE.Mesh[]
+    }> = new Map();
 
     private readonly collisionRadius = 300; // Radius around boat to generate collision
     private readonly collisionStep = 5; // Step size for collision segments
-    private readonly collisionUpdate = this.collisionStep * 10; // Step for updating segments
     private collisionStartZ: number = -Infinity; // Current start position of generating segments
 
     private boatHistory: THREE.Vector3[] = [];
@@ -225,11 +226,13 @@ export class TerrainManager {
         // collision meshes will update when next generated
         if (!this.debug) {
             // Clear debug meshes immediately
-            this.collisionMeshes.forEach(mesh => {
-                this.graphicsEngine.remove(mesh);
-                GraphicsUtils.disposeObject(mesh);
-            });
-            this.collisionMeshes = [];
+            for (const segment of this.collisionSegments.values()) {
+                for (const mesh of segment.meshes) {
+                    this.graphicsEngine.remove(mesh);
+                    GraphicsUtils.disposeObject(mesh);
+                }
+                segment.meshes = [];
+            }
         }
     }
 
@@ -343,31 +346,37 @@ export class TerrainManager {
 
     private updateCollision(boatZ: number) {
         // Generate collision segments around the boat
-        const startZ = Math.floor((boatZ - this.collisionRadius) / this.collisionUpdate) * this.collisionUpdate;
-        const endZ = Math.ceil((boatZ + this.collisionRadius) / this.collisionUpdate) * this.collisionUpdate;
+        const startZ = Math.floor((boatZ - this.collisionRadius) / this.collisionStep) * this.collisionStep;
+        const endZ = Math.ceil((boatZ + this.collisionRadius) / this.collisionStep) * this.collisionStep;
 
         if (startZ === this.collisionStartZ) return;
 
-        // Clear old collision bodies
-        this.collisionBodies.forEach(b => this.physicsEngine.world.destroyBody(b));
-        this.collisionBodies = [];
+        // 1. Remove segments that are out of range
+        for (const [z, segment] of this.collisionSegments) {
+            if (z < startZ || z >= endZ) {
+                for (const b of segment.bodies) this.physicsEngine.world.destroyBody(b);
+                for (const m of segment.meshes) {
+                    this.graphicsEngine.remove(m);
+                    GraphicsUtils.disposeObject(m);
+                }
+                this.collisionSegments.delete(z);
+            }
+        }
 
-        // Clear debug meshes
-        this.collisionMeshes.forEach(m => {
-            this.graphicsEngine.remove(m);
-            GraphicsUtils.disposeObject(m);
-        });
-        this.collisionMeshes = [];
-
-        // Generate new segments
+        // 2. Add new segments that are missing
         for (let z = startZ; z < endZ; z += this.collisionStep) {
-            const segment = this.createCollisionSegment(z, z + this.collisionStep, this.debug);
-            this.collisionBodies.push(...segment.bodies);
-            if (segment.meshes) {
-                this.collisionMeshes.push(...segment.meshes);
-                segment.meshes.forEach(m => {
-                    this.graphicsEngine.add(m);
+            if (!this.collisionSegments.has(z)) {
+                const segment = this.createCollisionSegment(z, z + this.collisionStep, this.debug);
+                this.collisionSegments.set(z, {
+                    bodies: segment.bodies,
+                    meshes: segment.meshes || []
                 });
+
+                if (segment.meshes) {
+                    for (const m of segment.meshes) {
+                        this.graphicsEngine.add(m);
+                    }
+                }
             }
         }
 

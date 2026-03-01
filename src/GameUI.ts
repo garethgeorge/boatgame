@@ -210,8 +210,11 @@ export class GameUI {
         }, 500); // Match CSS transition duration
     }
 
+    private _currentScore: number = NaN;
     public updateScore(score: number) {
+        if (score === this._currentScore) return;
         this.scoreElement.innerText = `Score: ${score} `;
+        this._currentScore = score;
     }
 
     public updateThrottleVisuals(val: number) {
