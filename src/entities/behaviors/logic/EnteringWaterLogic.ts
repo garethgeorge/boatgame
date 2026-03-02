@@ -2,6 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
+import { EdgeType } from '../TerrainMap';
 import { AnimalLogicConfig } from './AnimalLogicConfigs';
 import { EnteringWaterStrategy } from './strategy/EnteringWaterStrategy';
 
@@ -38,7 +39,7 @@ export class EnteringWaterLogic implements AnimalLogic {
 
         const facingAngle = context.physicsBody.getAngle() - Math.PI / 2;
         const direction = { x: Math.cos(facingAngle), y: Math.sin(facingAngle) };
-        const shoreline = context.animal.getTerrainMap().getDirectionShoreline(context.originPos.x, context.originPos.y, direction.x, direction.y);
+        const shoreline = context.animal.getTerrainMap().getDirectionEdge(context.originPos.x, context.originPos.y, direction.x, direction.y, EdgeType.ANY);
         const distToWater = shoreline ? shoreline.distance : 0;
 
         // Calculate progress t at which the parabolic jump reaches the water level.

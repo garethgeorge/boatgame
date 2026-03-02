@@ -2,6 +2,7 @@ import * as planck from 'planck';
 import { Boat } from '../../../Boat';
 import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
 import { AnimalBehaviorUtils } from '../../AnimalBehaviorUtils';
+import { EdgeType } from '../../TerrainMap';
 
 /**
  * STERN INTERCEPT (Water)
@@ -112,7 +113,7 @@ export class ShoreHuggingStrategy extends AnimalPathStrategy {
     update(context: AnimalStrategyContext): AnimalSteering {
         const params = AnimalBehaviorUtils.evaluateAttackParams(context.aggressiveness, context.bottles, 30);
         const terrainMap = context.animal.getTerrainMap();
-        const shoreline = terrainMap.getNearestShoreline(context.originPos.x, context.originPos.y);
+        const shoreline = terrainMap.getNearestEdge(context.originPos.x, context.originPos.y, EdgeType.SHORE);
         const boatPos = context.targetBody.getPosition();
 
         const dirToBoatY = boatPos.y > context.originPos.y ? 1.0 : -1.0;

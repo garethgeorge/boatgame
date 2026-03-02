@@ -6,7 +6,7 @@ import { BoatPathLayoutConfig } from '../layout/BoatPathLayoutStrategy';
 import { TierRule } from '../decorators/DecorationRuleBuilders';
 import { PropParams } from '../decorations/SceneryRules';
 import { DecorationConfig } from './DecorationConfig';
-import { AlligatorRule, BluebirdRule, MonkeyRule, MooseRule, ParrotRule, PolarBearRule } from '../../entities/AnimalLayoutRules';
+import { AlligatorRule, BluebirdRule, MonkeyRule, MooseRule, ParrotRule, PolarBearRule, PterodactylRule } from '../../entities/AnimalLayoutRules';
 import { Placements } from '../layout/BoatPathLayoutPatterns';
 import { VignetteLayoutRules } from '../../entities/VignetteLayoutRules';
 import { LayoutRules } from '../layout/LayoutRuleBuilders';
@@ -92,6 +92,12 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
                         name: 'test', at: 0.35,
                         placement: Placements.onShore({
                             entity: MooseRule.get()
+                        })
+                    },
+                    {
+                        name: 'test', at: 0.4,
+                        placement: Placements.onShore({
+                            entity: PterodactylRule.get()
                         })
                     },
                 ]

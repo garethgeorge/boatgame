@@ -19,6 +19,7 @@ import { DesignerBiomeGenerator } from './world/DesignerBiomeGenerator';
 import { DebugConsole } from './core/DebugConsole';
 import { DesignerSettings } from './core/DesignerSettings';
 import { BiomeType } from './world/biomes/BiomeType';
+import { WorldTerrainMap } from './entities/behaviors/WorldTerrainMap';
 
 
 export class GameEngine {
@@ -64,6 +65,7 @@ export class GameEngine {
     }
 
     public init(onReady: () => void) {
+        WorldTerrainMap.getInstance().init(this.physicsEngine);
         this.terrainManager = new TerrainManager(this.physicsEngine, this.graphicsEngine, this.entityManager);
 
         this.physicsEngine.onStep = () => {

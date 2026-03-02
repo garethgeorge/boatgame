@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { TerrainMap } from '../../TerrainMap';
+import { TerrainMap, EdgeType } from '../../TerrainMap';
 import { AnimalPathStrategy, AnimalSteering, AnimalStrategyContext } from './AnimalPathStrategy';
 import { AnimalBehaviorUtils } from '../../AnimalBehaviorUtils';
 import { CoreMath } from '../../../../core/CoreMath';
@@ -93,7 +93,7 @@ export class FlyToShoreStrategy extends AnimalPathStrategy {
         const zMargin = 20.0;
         const zMarginSize = 40.0;
 
-        const shoreline = terrainMap.getNearestShoreline(currentPos.x, currentPos.y);
+        const shoreline = terrainMap.getNearestEdge(currentPos.x, currentPos.y, EdgeType.SHORE);
 
         // Aim for a position well onto the closest shore
         const marginDist = xMargin + Math.random() * xMarginSize;
@@ -160,7 +160,7 @@ export class PointLandingStrategy extends AnimalPathStrategy {
 
         // --- Landing Path Calculation ---
         const terrainMap = context.animal.getTerrainMap();
-        const shoreline = terrainMap.getNearestShoreline(this.target.x, this.target.y);
+        const shoreline = terrainMap.getNearestEdge(this.target.x, this.target.y, EdgeType.SHORE);
 
         // Direction from target TO water is exactly the normal given by ShoreInfo (normal points into water)
         this.landingDir = new planck.Vec2(shoreline.normal.x, shoreline.normal.y);

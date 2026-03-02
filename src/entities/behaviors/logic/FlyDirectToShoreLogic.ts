@@ -2,6 +2,7 @@ import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
 import { FlyToShoreStrategy, PointLandingStrategy } from './strategy/FlightPathStrategies';
+import { EdgeType } from '../TerrainMap';
 
 export interface FlyDirectToShoreParams {
     flightSpeed: number;
@@ -33,7 +34,7 @@ export class FlyDirectToShoreLogic implements AnimalLogic {
         if (this.state === 'FLYING') {
             const terrainMap = context.animal.getTerrainMap();
             const zone = terrainMap.getSurfaceInfo(context.originPos.x, context.originPos.y).zone;
-            const shoreline = terrainMap.getNearestShoreline(context.originPos.x, context.originPos.y);
+            const shoreline = terrainMap.getNearestEdge(context.originPos.x, context.originPos.y, EdgeType.SHORE);
             const isOnShore = zone === 'land' && shoreline.distance > 15.0;
 
             if (isOnShore) {

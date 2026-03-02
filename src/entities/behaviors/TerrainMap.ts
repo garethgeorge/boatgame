@@ -22,6 +22,12 @@ export interface ShoreInfo {
     distance: number;         // Distance from the query origin to this shoreline point
 }
 
+export enum EdgeType {
+    SHORE = 1 << 0,
+    DYNAMIC_FEATURE = 1 << 1,
+    ANY = SHORE | DYNAMIC_FEATURE
+}
+
 export interface TerrainMap {
     /** 
      * Unified spatial lookup for height and normal vector.
@@ -38,15 +44,15 @@ export interface TerrainMap {
 
     /**
      * Finds the nearest transition point between land and water.
-     * Useful for tracking shorelines without knowing if it's a "left" or "right" bank.
+     * Useful for tracking edges without knowing if it's a "left" or "right" bank.
      */
-    getNearestShoreline(x: number, z: number): ShoreInfo;
+    getNearestEdge(x: number, z: number, edgeMask?: EdgeType): ShoreInfo;
 
     /**
      * Casts a ray from the start position in the given direction and returns the 
-     * shoreline information at the intersection point, or null if it does not intersect water.
+     * edge information at the intersection point, or null if it does not intersect.
      */
-    getDirectionShoreline(startX: number, startZ: number, dirX: number, dirZ: number): ShoreInfo | null;
+    getDirectionEdge(startX: number, startZ: number, dirX: number, dirZ: number, edgeMask?: EdgeType): ShoreInfo | null;
 
     /**
      * Returns the water flow direction vector of the nearest water body.

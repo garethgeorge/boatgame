@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { TerrainMap } from '../../TerrainMap';
+import { TerrainMap, EdgeType } from '../../TerrainMap';
 import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
 import { AnimalBehaviorUtils } from '../../AnimalBehaviorUtils';
 
@@ -36,7 +36,7 @@ export class ShoreTurnStrategy extends AnimalPathStrategy {
 
     private calculateAngle(terrainMap: TerrainMap, pos: planck.Vec2): number {
         const flowDir = terrainMap.getNearestWaterFlow(pos.x, pos.y);
-        const shoreline = terrainMap.getNearestShoreline(pos.x, pos.y);
+        const shoreline = terrainMap.getNearestEdge(pos.x, pos.y, EdgeType.SHORE);
 
         const downAngle = Math.atan2(flowDir.x, -flowDir.y);         // Facing downstream
         const upAngle = Math.atan2(-flowDir.x, flowDir.y);           // Facing upstream
@@ -95,7 +95,7 @@ export class ShoreWalkStrategy extends AnimalPathStrategy {
         this.lastPos = pos.clone();
         this.distanceTravelled = 0;
 
-        const shoreline = terrainMap.getNearestShoreline(pos.x, pos.y);
+        const shoreline = terrainMap.getNearestEdge(pos.x, pos.y, EdgeType.SHORE);
         // shoreline.distance represents distance to shore boundary (positive if on land)
         this.bankDistance = Math.max(0, shoreline.distance);
     }
@@ -112,7 +112,7 @@ export class ShoreWalkStrategy extends AnimalPathStrategy {
         }
 
         const terrainMap = context.animal.getTerrainMap();
-        const shoreline = terrainMap.getNearestShoreline(currentPos.x, currentPos.y);
+        const shoreline = terrainMap.getNearestEdge(currentPos.x, currentPos.y, EdgeType.SHORE);
         const flowDir = terrainMap.getNearestWaterFlow(currentPos.x, currentPos.y);
 
         // Determine shore tangent based on flow
