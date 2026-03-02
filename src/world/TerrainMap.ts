@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TerrainSlotMap } from '../../world/TerrainSlotMap';
+import { TerrainSlotMap } from './TerrainSlotMap';
 
 export type Zone = 'land' | 'water' | 'margin';
 

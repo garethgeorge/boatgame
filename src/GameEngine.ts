@@ -19,7 +19,7 @@ import { DesignerBiomeGenerator } from './world/DesignerBiomeGenerator';
 import { DebugConsole } from './core/DebugConsole';
 import { DesignerSettings } from './core/DesignerSettings';
 import { BiomeType } from './world/biomes/BiomeType';
-import { WorldTerrainMap } from './entities/behaviors/WorldTerrainMap';
+import { WorldTerrainMap } from './world/WorldTerrainMap';
 
 
 export class GameEngine {

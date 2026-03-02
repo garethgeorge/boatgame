@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import * as planck from 'planck';
 import { TerrainMap, Zone, SurfaceInfo, ShoreInfo, EdgeType } from './TerrainMap';
-import { RiverSystem } from '../../world/RiverSystem';
-import { PhysicsEngine } from '../../core/PhysicsEngine';
-import { DynamicTerrainFeature } from './DynamicTerrainFeature';
+import { RiverSystem } from './RiverSystem';
+import { PhysicsEngine } from '../core/PhysicsEngine';
+import { DynamicTerrainFeature } from '../entities/DynamicTerrainFeature';
 
 export class WorldTerrainMap implements TerrainMap {
     private static instance: WorldTerrainMap;

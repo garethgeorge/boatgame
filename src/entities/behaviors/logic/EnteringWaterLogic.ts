@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
-import { EdgeType } from '../TerrainMap';
+import { EdgeType } from '../../../world/TerrainMap';
 import { AnimalLogicConfig } from './AnimalLogicConfigs';
 import { EnteringWaterStrategy } from './strategy/EnteringWaterStrategy';
 

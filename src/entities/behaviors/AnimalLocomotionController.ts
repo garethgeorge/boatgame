@@ -4,7 +4,7 @@ import { AnyAnimal } from './AnimalBehavior';
 import { AnimalLogicContext, AnimalLogicPathResult } from './logic/AnimalLogic';
 import { PhysicsUtils } from '../../core/PhysicsUtils';
 import { CollisionCategories } from '../../core/PhysicsEngine';
-import { Zone } from './TerrainMap';
+import { Zone } from '../../world/TerrainMap';
 import { LocomotionType } from './logic/strategy/AnimalPathStrategy';
 
 export class AnimalLocomotionController {

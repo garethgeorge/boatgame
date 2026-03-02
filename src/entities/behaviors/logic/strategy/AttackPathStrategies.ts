@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import { Boat } from '../../../Boat';
 import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
 import { AnimalBehaviorUtils } from '../../AnimalBehaviorUtils';
-import { EdgeType } from '../../TerrainMap';
+import { EdgeType } from '../../../../world/TerrainMap';
 
 /**
  * STERN INTERCEPT (Water)

@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import * as THREE from 'three';
 import { AnimalLogic, AnimalLogicPhase } from './logic/AnimalLogic';
 import { TerrainSlot } from '../../world/TerrainSlotMap';
-import { TerrainMap, Zone } from './TerrainMap';
+import { TerrainMap, Zone } from '../../world/TerrainMap';
 
 /**
  * Logic events are triggered during updateLogic()

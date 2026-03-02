@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as THREE from 'three';
 import { WorldTerrainMap } from './WorldTerrainMap';
-import { RiverSystem } from '../../world/RiverSystem';
+import { RiverSystem } from './RiverSystem';
 
-vi.mock('../../world/RiverSystem', () => ({
+vi.mock('./RiverSystem', () => ({
     RiverSystem: {
         getInstance: vi.fn()
     }

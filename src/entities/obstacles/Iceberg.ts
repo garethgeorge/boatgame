@@ -5,7 +5,7 @@ import { PhysicsEngine, CollisionCategories } from '../../core/PhysicsEngine';
 import { GraphicsUtils } from '../../core/GraphicsUtils';
 import { ConvexHull } from '../../core/ConvexHull';
 import { Polygon } from '../../core/Polygon';
-import { DynamicTerrainFeature } from '../behaviors/DynamicTerrainFeature';
+import { DynamicTerrainFeature } from '../DynamicTerrainFeature';
 
 export class Iceberg extends Entity implements DynamicTerrainFeature {
     private animationMixer?: THREE.AnimationMixer;

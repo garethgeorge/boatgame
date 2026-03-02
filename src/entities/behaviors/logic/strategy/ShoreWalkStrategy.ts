@@ -1,6 +1,6 @@
 import * as planck from 'planck';
 import * as THREE from 'three';
-import { TerrainMap, EdgeType } from '../../TerrainMap';
+import { TerrainMap, EdgeType } from '../../../../world/TerrainMap';
 import { AnimalPathStrategy, AnimalStrategyContext, AnimalSteering } from './AnimalPathStrategy';
 import { AnimalBehaviorUtils } from '../../AnimalBehaviorUtils';
 

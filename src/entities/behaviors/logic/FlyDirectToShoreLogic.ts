@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
 import { FlyToShoreStrategy, PointLandingStrategy } from './strategy/FlightPathStrategies';
-import { EdgeType } from '../TerrainMap';
+import { EdgeType } from '../../../world/TerrainMap';
 
 export interface FlyDirectToShoreParams {
     flightSpeed: number;
