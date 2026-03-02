@@ -1,5 +1,4 @@
 import * as planck from 'planck';
-import { RiverSystem } from '../../../world/RiverSystem';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { MoveToPointStrategy } from './strategy/MoveToPointStrategy';
@@ -34,12 +33,12 @@ export class SwimBackInRangeLogic implements AnimalLogic {
         // Pick a random point in the river within the zRange
         const [zMin, zMax] = this.zRange;
         const targetZ = zMin + Math.random() * (zMax - zMin);
-        const banks = RiverSystem.getInstance().getBankPositions(targetZ);
+        const bounds = context.animal.getTerrainMap().getNearestWaterChannel(context.originPos.x, targetZ);
 
         // Stay a bit away from the banks
         const margin = 2.0;
-        const minX = Math.min(banks.left + margin, banks.right - margin);
-        const maxX = Math.max(banks.left + margin, banks.right - margin);
+        const minX = Math.min(bounds.minX + margin, bounds.maxX - margin);
+        const maxX = Math.max(bounds.minX + margin, bounds.maxX - margin);
         const targetX = minX + Math.random() * (maxX - minX);
 
         this.target = new planck.Vec2(targetX, targetZ);

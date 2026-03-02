@@ -2,7 +2,6 @@ import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
 import { FlyToPointStrategy, PointLandingStrategy } from './strategy/FlightPathStrategies';
-import { RiverSystem } from '../../../world/RiverSystem';
 import { TerrainSlot } from '../../../world/TerrainSlotMap';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
@@ -55,20 +54,20 @@ export class SlotLandingFlightLogic implements AnimalLogic {
 
         switch (this.state) {
             case 'SEARCHING': {
-                const riverSystem = RiverSystem.getInstance();
+                const slots = context.animal.getTerrainMap().getTerrainSlots();
                 const boatPos = context.targetBody.getPosition();
                 const boatForward = AnimalBehaviorUtils.getBoatForward(context.targetBody);
                 const searchDistance = 1000.0;
 
                 // 1. Try to find a slot in front of the boat
-                let slot = riverSystem.slots.findNearbySlots(
+                let slot = slots.findNearbySlots(
                     this.slotTypes, context.originPos.x, context.originPos.y, searchDistance, false,
                     (s) => AnimalBehaviorUtils.isPointInFront(new planck.Vec2(s.x, s.z), boatPos, boatForward)
                 );
 
                 // 2. Fallback to any nearby slot if none found in front
                 if (!slot) {
-                    slot = riverSystem.slots.findNearbySlots(
+                    slot = slots.findNearbySlots(
                         this.slotTypes, context.originPos.x, context.originPos.y, searchDistance);
                 }
 

@@ -97,4 +97,13 @@ export class WorldTerrainMap implements TerrainMap {
         // Flow is in -Z direction by default, so derivative dz/dz = -1
         return new THREE.Vector2(dx, -1).normalize();
     }
+
+    public getTerrainSlots() {
+        return RiverSystem.getInstance().slots;
+    }
+
+    public getNearestWaterChannel(x: number, z: number): { minX: number, maxX: number } {
+        const banks = RiverSystem.getInstance().getBankPositions(z);
+        return { minX: banks.left, maxX: banks.right };
+    }
 }

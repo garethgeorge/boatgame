@@ -2,7 +2,6 @@ import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
 import { FleeRiverStrategy, PointLandingStrategy } from './strategy/FlightPathStrategies';
-import { RiverSystem } from '../../../world/RiverSystem';
 
 export interface ShoreLandingFlightParams {
     flightSpeed: number;
@@ -34,16 +33,16 @@ export class ShoreLandingFlightLogic implements AnimalLogic {
     update(context: AnimalLogicContext): AnimalLogicPathResult {
         if (this.state === 'AWAY') {
             // switch to landing if sufficiently over the shore
-            const banks = RiverSystem.getInstance().getBankPositions(context.originPos.y);
-            if (context.originPos.x < banks.left - 20.0 || context.originPos.x > banks.right + 20.0) {
+            const bounds = context.animal.getTerrainMap().getNearestWaterChannel(context.originPos.x, context.originPos.y);
+            if (context.originPos.x < bounds.minX - 20.0 || context.originPos.x > bounds.maxX + 20.0) {
                 this.state = 'LANDING';
 
                 // Pick a point near the current position on the shore
                 const landingDist = 5.0 + Math.random() * 15.0; // At least 5, no more than 20
-                const targetX = context.originPos.x < banks.left ? banks.left - landingDist : banks.right + landingDist;
+                const targetX = context.originPos.x < bounds.minX ? bounds.minX - landingDist : bounds.maxX + landingDist;
                 const targetZ = context.originPos.y;
                 const targetPos = new planck.Vec2(targetX, targetZ);
-                const targetHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(targetX, targetZ);
+                const targetHeight = context.animal.getTerrainMap().getSurfaceInfo(targetX, targetZ).y;
 
                 this.strategy = new PointLandingStrategy(
                     context,
@@ -86,7 +85,7 @@ export class ShoreLandingFlightLogic implements AnimalLogic {
 
     private hasLanded(context: AnimalLogicContext): boolean {
         if (this.state !== 'LANDING') return false;
-        const terrainHeight = RiverSystem.getInstance().terrainGeometry.calculateHeight(context.originPos.x, context.originPos.y);
+        const terrainHeight = context.animal.getTerrainMap().getSurfaceInfo(context.originPos.x, context.originPos.y).y;
         const currentAltitude = Math.max(0, context.currentHeight - terrainHeight);
         return currentAltitude < 0.1 && context.physicsBody.getLinearVelocity().length() < 1.0;
     }

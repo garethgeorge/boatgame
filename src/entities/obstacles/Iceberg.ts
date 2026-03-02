@@ -314,4 +314,14 @@ export class IcebergTerrainMap implements TerrainMap {
         const dx = riverSystem.getRiverDerivative(z);
         return new THREE.Vector2(dx, -1).normalize();
     }
+
+    public getTerrainSlots() {
+        return RiverSystem.getInstance().slots;
+    }
+
+    public getNearestWaterChannel(x: number, z: number): { minX: number, maxX: number } {
+        // Icebergs are currently within the river, so we default to the river's overall bounds.
+        const banks = RiverSystem.getInstance().getBankPositions(z);
+        return { minX: banks.left, maxX: banks.right };
+    }
 }

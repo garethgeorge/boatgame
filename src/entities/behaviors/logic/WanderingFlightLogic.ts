@@ -2,7 +2,6 @@ import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
 import { FlyToPointStrategy, WanderStrategy } from './strategy/FlightPathStrategies';
-import { RiverSystem } from '../../../world/RiverSystem';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
 export interface WanderingFlightParams {
@@ -43,7 +42,7 @@ export class WanderingFlightLogic implements AnimalLogic {
 
         if (this.moveToCenter) {
             this.state = 'MOVING';
-            this.centerPos = this.pickNewWanderCenter(this.centerPos);
+            this.centerPos = this.pickNewWanderCenter(context, this.centerPos);
             this.strategy = new FlyToPointStrategy(this.centerPos, this.flightSpeed, this.wanderHeight);
         } else {
             this.state = 'WANDERING';
@@ -80,18 +79,18 @@ export class WanderingFlightLogic implements AnimalLogic {
         };
     }
 
-    private pickNewWanderCenter(currentPos: planck.Vec2): planck.Vec2 {
-        const riverSystem = RiverSystem.getInstance();
+    private pickNewWanderCenter(context: AnimalLogicContext, currentPos: planck.Vec2): planck.Vec2 {
+        const terrainMap = context.animal.getTerrainMap();
 
         // Pick a random y and get bank positions
         const y = currentPos.y + (Math.random() - 0.5) * 20.0;
-        const banks = riverSystem.getBankPositions(y);
+        const bounds = terrainMap.getNearestWaterChannel(currentPos.x, y);
 
         // Pick a random x inside
-        const width = banks.right - banks.left;
+        const width = bounds.maxX - bounds.minX;
         const margin = Math.min(10.0, (width - 2) / 2);
-        const minX = banks.left + margin;
-        const maxX = banks.right - margin;
+        const minX = bounds.minX + margin;
+        const maxX = bounds.maxX - margin;
         const x = Math.max(minX, Math.min(maxX, currentPos.x + (Math.random() - 0.5) * 10.0));
 
         return new planck.Vec2(x, y);

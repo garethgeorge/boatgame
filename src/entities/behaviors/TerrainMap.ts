@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { TerrainSlotMap } from '../../world/TerrainSlotMap';
 
 export type Zone = 'land' | 'water' | 'margin';
 
@@ -52,4 +53,16 @@ export interface TerrainMap {
      * Useful for: Swimming with/against the current, or orienting downstream.
      */
     getNearestWaterFlow(x: number, z: number): THREE.Vector2;
+
+    /**
+     * Get the slot map associated with this terrain.
+     * Used for finding landing spots like branches or rocks.
+     */
+    getTerrainSlots(): TerrainSlotMap;
+
+    /**
+     * Finds the nearest water channel X-bounds to the left (-X) and right (+X) of a given point.
+     * This defines the navigable width of the water body nearest to that location.
+     */
+    getNearestWaterChannel(x: number, z: number): { minX: number, maxX: number };
 }

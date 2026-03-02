@@ -2,7 +2,6 @@ import * as planck from 'planck';
 import { AnimalLogic, AnimalLogicContext, AnimalLogicPathResult, AnimalLogicPhase } from './AnimalLogic';
 import { AnimalPathStrategy } from './strategy/AnimalPathStrategy';
 import { FlyToPointStrategy } from './strategy/FlightPathStrategies';
-import { RiverSystem } from '../../../world/RiverSystem';
 import { AnimalBehaviorUtils } from '../AnimalBehaviorUtils';
 
 export interface FlyOppositeBoatParams {
@@ -40,8 +39,8 @@ export class FlyOppositeBoatLogic implements AnimalLogic {
         const directionSign = -Math.sign(boatDirY);
 
         const targetZ = context.originPos.y + directionSign * this.distance;
-        const banks = RiverSystem.getInstance().getBankPositions(targetZ);
-        const riverCenter = (banks.left + banks.right) / 2;
+        const bounds = context.animal.getTerrainMap().getNearestWaterChannel(context.originPos.x, targetZ);
+        const riverCenter = (bounds.minX + bounds.maxX) / 2;
 
         this.targetPos = new planck.Vec2(riverCenter, targetZ);
         this.strategy = new FlyToPointStrategy(this.targetPos, this.flightSpeed, this.flightHeight);
