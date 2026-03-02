@@ -1,4 +1,3 @@
-import { smoothstep } from 'three/src/math/MathUtils';
 import * as THREE from 'three';
 import { BiomeFeatures, SkyBiome, SkyColors } from './biomes/BiomeFeatures';
 import { BiomeType } from './biomes/BiomeType';
@@ -249,11 +248,11 @@ export class BiomeManager {
         };
     }
 
-    public getBiomeGroundColor(worldX: number, worldY: number, worldZ: number): { r: number, g: number, b: number } {
+    public getBiomeGroundColor(worldX: number, worldY: number, worldZ: number, distFromBank: number): { r: number, g: number, b: number } {
         const mixture = this.getBiomeMixture(worldZ);
-        const c1 = mixture[0].biome.getGroundColor(worldX, worldY, worldZ);
+        const c1 = mixture[0].biome.getGroundColor(worldX, worldY, worldZ, distFromBank);
         if (mixture.length === 1) return c1;
-        const c2 = mixture[1].biome.getGroundColor(worldX, worldY, worldZ);
+        const c2 = mixture[1].biome.getGroundColor(worldX, worldY, worldZ, distFromBank);
         return {
             r: c1.r * mixture[0].weight + c2.r * mixture[1].weight,
             g: c1.g * mixture[0].weight + c2.g * mixture[1].weight,

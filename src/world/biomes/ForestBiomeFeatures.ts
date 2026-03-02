@@ -1,6 +1,4 @@
-import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
-import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 import { DecorationConfig } from './DecorationConfig';
@@ -20,7 +18,7 @@ export class ForestBiomeFeatures extends BaseBiomeFeatures {
     }
 
 
-    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number, distFromBank: number): { r: number, g: number, b: number } {
         return { r: 0x11 / 255, g: 0x55 / 255, b: 0x11 / 255 };
     }
 

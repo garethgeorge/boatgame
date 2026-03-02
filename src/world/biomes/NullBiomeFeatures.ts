@@ -1,4 +1,3 @@
-import { BoatPathLayoutConfig } from '../layout/BoatPathLayoutStrategy';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 
@@ -10,7 +9,7 @@ export class NullBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, NullBiomeFeatures.LENGTH, direction);
     }
 
-    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number, distFromBank: number): { r: number, g: number, b: number } {
         // Neutral grey
         return { r: 0.5, g: 0.5, b: 0.5 };
     }

@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
@@ -19,7 +18,7 @@ export class TestBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, TestBiomeFeatures.LENGTH, direction);
     }
 
-    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number, distFromBank: number): { r: number, g: number, b: number } {
         return { r: 0x88 / 255, g: 0x88 / 255, b: 0x88 / 255 };
     }
 

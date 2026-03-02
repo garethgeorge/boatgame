@@ -7,10 +7,8 @@ import { TierRule } from '../decorators/DecorationRuleBuilders';
 import { Fitness, TreeParams, FlowerParams } from '../decorations/SceneryRules';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { SkyBiome } from './BiomeFeatures';
-import { RiverSystem } from '../RiverSystem';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { SwanRule, UnicornRule, BluebirdRule, GingerManRule } from '../../entities/AnimalLayoutRules';
-import { DecorationRule } from '../decorators/DecorationRule';
 
 /**
  * Fantasy Land Biome: A magical realm with pastel-colored patches and mystical creatures.
@@ -38,12 +36,10 @@ export class FantasyBiomeFeatures extends BaseBiomeFeatures {
         return 0.3 * super.getAmplitudeMultiplier(x, z, distFromBank);
     }
 
-    public override getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
-
-        const banks = RiverSystem.getInstance().getBankPositions(z);
+    public override getGroundColor(x: number, y: number, z: number, distFromBank: number): { r: number, g: number, b: number } {
 
         let color: THREE.Color;
-        if (banks.left <= x && x <= banks.right) {
+        if (distFromBank < 0) {
             color = this.COLORS.RIVERBED; // #f5f1bb
         } else {
             // Use 2D noise for large color patches

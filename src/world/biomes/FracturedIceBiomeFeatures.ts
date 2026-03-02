@@ -1,20 +1,12 @@
 
 import * as THREE from 'three';
-import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
 import { RiverSystem } from '../RiverSystem';
-import { GraphicsUtils } from '../../core/GraphicsUtils';
 import Delaunator from 'delaunator';
-
-import { EntityIds } from '../../entities/EntityIds';
 import { FracturedIceberg } from '../../entities/obstacles/FracturedIceberg';
-import { Decorations } from '../decorations/Decorations';
 import { BiomeFeatures, SkyBiome } from './BiomeFeatures';
-import { IcebergSpawner } from '../../entities/spawners/IcebergSpawner';
-import { BoatPathLayoutConfig } from '../layout/BoatPathLayoutStrategy';
 import { CoreMath } from '../../core/CoreMath';
-import { DecorationConfig } from './DecorationConfig';
 
 interface Point {
     x: number;
@@ -64,7 +56,7 @@ export class FracturedIceBiomeFeatures implements BiomeFeatures {
         return { zMin: this.zMin, zMax: this.zMax };
     }
 
-    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number, distFromBank: number): { r: number, g: number, b: number } {
         // slightly bluer/darker water under ice? 
         // actually this is ground color (river bed). Ice biome uses white-ish.
         return { r: 0xEE / 255, g: 0xFF / 255, b: 0xFF / 255 };

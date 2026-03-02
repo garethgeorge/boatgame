@@ -99,7 +99,7 @@ export abstract class BaseBiomeFeatures implements BiomeFeatures {
         return { near: 100, far: 800 };
     }
 
-    abstract getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number };
+    abstract getGroundColor(x: number, y: number, z: number, distFromBank: number): { r: number, g: number, b: number };
 
     abstract getScreenTint(): { r: number, g: number, b: number };
 

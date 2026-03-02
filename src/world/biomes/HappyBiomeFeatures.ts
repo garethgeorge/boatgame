@@ -1,6 +1,4 @@
-import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
-import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 import { DecorationConfig } from './DecorationConfig';
@@ -23,7 +21,7 @@ export class HappyBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, HappyBiomeFeatures.LENGTH, direction);
     }
 
-    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number, distFromBank: number): { r: number, g: number, b: number } {
         // Lush green ground color
         return { r: 0x33 / 255, g: 0xaa / 255, b: 0x33 / 255 };
     }

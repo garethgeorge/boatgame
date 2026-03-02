@@ -5,6 +5,13 @@ import { RiverSystem } from './RiverSystem';
 import { PhysicsEngine } from '../core/PhysicsEngine';
 import { DynamicTerrainFeature } from '../entities/DynamicTerrainFeature';
 
+/**
+ * Terrain map which includes dynamic features i.e. entities such as
+ * icebergs that are considered a part of the terrain. This terrain
+ * map is used by the animal behaviors to navigate the world. Since it
+ * queries positions of entities it is only to be used when the
+ * world is in a consistent state.
+ */
 export class WorldTerrainMap implements TerrainMap {
     private static instance: WorldTerrainMap;
     private physicsEngine: PhysicsEngine | null = null;

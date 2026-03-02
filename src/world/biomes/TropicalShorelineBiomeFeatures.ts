@@ -3,15 +3,13 @@ import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
 import { DecorationConfig } from './DecorationConfig';
-import { Select, Signal, TierRule } from '../decorators/DecorationRuleBuilders';
+import { Select, TierRule } from '../decorators/DecorationRuleBuilders';
 import { Fitness, PropParams, RockParams, TreeParams } from '../decorations/SceneryRules';
-import { RiverSystem } from '../RiverSystem';
 import { SimplexNoise } from '../../core/SimplexNoise';
 import { CoreMath } from '../../core/CoreMath';
 import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { DolphinRule, TurtleRule, ButterflyRule, ParrotRule } from '../../entities/AnimalLayoutRules';
-import { DecorationRule } from '../decorators/DecorationRule';
 import { LayoutRules } from '../layout/LayoutRuleBuilders';
 
 /**
@@ -42,10 +40,8 @@ export class TropicalShorelineBiomeFeatures extends BaseBiomeFeatures {
         return { r: 1.0, g: 0.98, b: 0.9 };
     }
 
-    public override getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
-        const banks = RiverSystem.getInstance().getBankPositions(z);
-        const distToShore = x < banks.center ? banks.left - x : x - banks.right;
-        const t = this.getBeachFactor(z, distToShore);
+    public override getGroundColor(x: number, y: number, z: number, distFromBank: number): { r: number, g: number, b: number } {
+        const t = this.getBeachFactor(z, distFromBank);
 
         // Mix the colors
         const color = this.SAND_COLOR.clone().lerp(this.GRASS_COLOR, t);

@@ -1,5 +1,3 @@
-import { PopulationContext } from './PopulationContext';
-import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
@@ -20,7 +18,7 @@ export class DesertBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, DesertBiomeFeatures.LENGTH, direction);
     }
 
-    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number, distFromBank: number): { r: number, g: number, b: number } {
         const c0 = { r: 0xCC / 255, g: 0x88 / 255, b: 0x22 / 255 };
         const c1 = { r: 0xD3 / 255, g: 0x59 / 255, b: 0x24 / 255 };
 

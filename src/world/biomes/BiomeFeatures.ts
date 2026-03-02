@@ -1,7 +1,5 @@
-import * as THREE from 'three';
 import { PopulationContext } from './PopulationContext';
 import { BiomeType } from './BiomeType';
-import { DecorationConfig } from './DecorationConfig';
 
 export interface SkyColors {
     top: number;
@@ -28,7 +26,7 @@ export interface BiomeFeatures {
 
     getFogDensity(): number;
     getFogRange(): { near: number, far: number };
-    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number };
+    getGroundColor(x: number, y: number, z: number, distFromBank: number): { r: number, g: number, b: number };
     getScreenTint(): { r: number, g: number, b: number };
     getSkyBiome(): SkyBiome;
     getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number;

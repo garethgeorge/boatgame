@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { BaseBiomeFeatures } from './BaseBiomeFeatures';
 import { BiomeType } from './BiomeType';
 import { BoatPathLayoutConfig, TrackConfig } from '../layout/BoatPathLayoutStrategy';
@@ -10,7 +9,6 @@ import { SkyBiome } from './BiomeFeatures';
 import { Place } from '../layout/BoatPathLayoutShortcuts';
 import { TRexRule, TriceratopsRule, PterodactylRule, BrontosaurusRule } from '../../entities/AnimalLayoutRules';
 import { RiverRockRule, LogRule, BottleRule, WaterGrassRule } from '../../entities/StaticLayoutRules';
-import { WorldParams } from '../decorators/WorldParams';
 
 export class JurassicBiomeFeatures extends BaseBiomeFeatures {
     id: BiomeType = 'jurassic';
@@ -20,7 +18,7 @@ export class JurassicBiomeFeatures extends BaseBiomeFeatures {
         super(index, z, JurassicBiomeFeatures.LENGTH, direction);
     }
 
-    getGroundColor(x: number, y: number, z: number): { r: number, g: number, b: number } {
+    getGroundColor(x: number, y: number, z: number, distFromBank: number): { r: number, g: number, b: number } {
         return { r: 0x2E / 255, g: 0x4B / 255, b: 0x2E / 255 };
     }
 
