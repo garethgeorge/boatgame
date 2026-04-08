@@ -37,6 +37,12 @@ export class Boat extends Entity {
 
     private flashTimer: number = 0;
 
+    private inputManager: InputManager | null = null;
+
+    public setInputManager(input: InputManager) {
+        this.inputManager = input;
+    }
+
     // For transfer of bottles to depot
     private lastTransferTime: number = 0;
     private readonly TRANSFER_INTERVAL: number = 1.0; // Seconds
@@ -163,13 +169,14 @@ export class Boat extends Entity {
 
     updateLogic(dt: number, input?: InputManager) {
         this.collectedBottles.update(dt);
-        if (this.physicsBodies.length === 0 || !input) return;
+        const resolvedInput = input ?? this.inputManager;
+        if (this.physicsBodies.length === 0 || !resolvedInput) return;
 
         // --- Input Handling ---
 
         // Throttle (Sticky or Touch)
         // If touch throttle is active (non-zero), use it directly (Spring-loaded)
-        if (input.isDown('stop')) {
+        if (resolvedInput.isDown('stop')) {
             this.currentThrottle = 0;
             // Immediate stop request
             const physicsBody = this.physicsBodies[0];
@@ -177,22 +184,22 @@ export class Boat extends Entity {
             physicsBody.setAngularVelocity(0);
         } else {
             // Keyboard Control (Sticky)
-            if (input.isDown('forward')) {
+            if (resolvedInput.isDown('forward')) {
                 this.currentThrottle = Math.min(1.0, this.currentThrottle + this.THROTTLE_SPEED * dt);
-            } else if (input.isDown('backward')) {
+            } else if (resolvedInput.isDown('backward')) {
                 this.currentThrottle = Math.max(-0.5, this.currentThrottle - this.THROTTLE_SPEED * dt);
             }
         }
 
         // Steering (Auto-center)
         // If tilt input is present (non-zero), use it directly (Analog Control)
-        if (Math.abs(input.tilt) > 0.05) {
-            this.currentSteering = -input.tilt * this.MAX_STEER_ANGLE_TILT;
+        if (Math.abs(resolvedInput.tilt) > 0.05) {
+            this.currentSteering = -resolvedInput.tilt * this.MAX_STEER_ANGLE_TILT;
         } else {
             // Keyboard Control (Digital)
-            if (input.isDown('left')) {
+            if (resolvedInput.isDown('left')) {
                 this.currentSteering = Math.min(this.MAX_STEER_ANGLE_KEYBOARD, this.currentSteering + this.STEER_SPEED * dt);
-            } else if (input.isDown('right')) {
+            } else if (resolvedInput.isDown('right')) {
                 this.currentSteering = Math.max(-this.MAX_STEER_ANGLE_KEYBOARD, this.currentSteering - this.STEER_SPEED * dt);
             } else {
                 // Decay steering
@@ -418,6 +425,12 @@ export class Boat extends Entity {
                     this.lastTransferTime = now;
                 }
             }
+        }
+    }
+
+    public terminate() {
+        if (Boat.instance === this) {
+            Boat.instance = null;
         }
     }
 

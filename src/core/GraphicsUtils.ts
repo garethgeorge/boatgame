@@ -221,14 +221,14 @@ export class GraphicsUtils {
         });
     }
 
-    private static toonGradientMap: THREE.Texture = null;
+    private static toonGradientMap: THREE.Texture | null = null;
 
     private static getToonGradientMap(): THREE.Texture {
         if (!this.toonGradientMap) {
             this.toonGradientMap = this.createToonGradientMap();
             this.registerObject(this.toonGradientMap);
         }
-        return this.toonGradientMap;
+        return this.toonGradientMap!;
     }
 
     private static createToonGradientMap(): THREE.Texture {

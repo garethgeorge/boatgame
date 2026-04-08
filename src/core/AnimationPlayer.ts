@@ -155,6 +155,13 @@ export class AnimationPlayer {
     }
 
     private playAction(options: AnimationParameters, force: boolean = false): boolean {
+        // Clean up zombie actions that have faded out from previous crossfades
+        // but were never stopped, preventing them from accumulating in the mixer.
+        for (const action of this.actions.values()) {
+            if (action !== this.currentAction && action.isRunning() && action.getEffectiveWeight() < 0.001) {
+                action.stop();
+            }
+        }
 
         let {
             name,

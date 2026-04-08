@@ -187,6 +187,10 @@ export class TerrainChunk {
             const dz = tz * chunkSize;
             const wz = this.zOffset + dz;
 
+            // Cache river data per Z row (only depends on wz, not x)
+            const riverCenter = this.riverSystem.getRiverCenter(wz);
+            const riverWidth = this.riverSystem.getRiverWidth(wz);
+
             // Now iterate across chunk width
             for (let ix = 0; ix <= resX; ix++) {
                 // tx is parametric [-1,1] from chunk edge to edge
@@ -195,10 +199,8 @@ export class TerrainChunk {
                 const dx = getDistributedX(tx, chunkWidth);
 
                 // river system center in world space
-                const riverCenter = this.riverSystem.getRiverCenter(wz);
-                const riverWidth = this.riverSystem.getRiverWidth(wz);
                 const wx = dx + riverCenter;
-                const height = this.riverSystem.terrainGeometry.calculateHeight(wx, wz);
+                const height = this.riverSystem.terrainGeometry.calculateHeight(wx, wz, riverCenter, riverWidth);
                 const distFromBank = Math.abs(dx) - riverWidth / 2;
 
                 const color = this.riverSystem.biomeManager.getBiomeGroundColor(wx, height, wz, distFromBank);

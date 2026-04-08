@@ -211,6 +211,13 @@ export abstract class Entity {
             world.destroyBody(body);
         }
         this.physicsBodies = [];
+        this.prevPos.clear();
+        this.prevAngle.clear();
+    }
+
+    get isPlayer(): boolean {
+        return this.physicsBodies.length > 0 &&
+            (this.physicsBodies[0].getUserData() as { type?: string })?.type === Entity.TYPE_PLAYER;
     }
 
     setVisible(visible: boolean) {

@@ -74,14 +74,14 @@ export class TerrainGeometry {
     // distance from center of river
     // total distance from center to edge at that position
     // dx, dy is the direction vector from center to edge
-    private calculateRiverRelativePosition(wx: number, wz: number): {
+    private calculateRiverRelativePosition(wx: number, wz: number, precomputedRiverCenter?: number, precomputedRiverWidth?: number): {
         distFromCenter: number,
         riverEdge: number,
         dx: number,
         dy: number
     } {
-        const riverCenter = this.riverSystem.getRiverCenter(wz);
-        const riverWidth = this.riverSystem.getRiverWidth(wz);
+        const riverCenter = precomputedRiverCenter ?? this.riverSystem.getRiverCenter(wz);
+        const riverWidth = precomputedRiverWidth ?? this.riverSystem.getRiverWidth(wz);
         const riverEdge = riverWidth / 2;
 
         const distFromCenter = Math.abs(wx - riverCenter);
@@ -92,9 +92,9 @@ export class TerrainGeometry {
     }
 
     // Returns height of terrain at world space position (wx, wz)
-    public calculateHeight(wx: number, wz: number): number {
+    public calculateHeight(wx: number, wz: number, precomputedRiverCenter?: number, precomputedRiverWidth?: number): number {
 
-        const { distFromCenter, riverEdge } = this.calculateRiverRelativePosition(wx, wz);
+        const { distFromCenter, riverEdge } = this.calculateRiverRelativePosition(wx, wz, precomputedRiverCenter, precomputedRiverWidth);
 
         // 1. Calculate Raw Heights
         const rawLandHeight = this.calculateRawLandHeight(wx, wz, distFromCenter - riverEdge);

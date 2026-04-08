@@ -15,6 +15,7 @@ export class ObstacleHitBehavior implements EntityBehavior {
     private rotateSpeed: number;
     private targetHeightOffset: number;
     private currentHeightChange: number = 0;
+    private completed: boolean = false;
 
     constructor(meshes: THREE.Object3D[], onComplete: () => void, params: ObstacleHitBehaviorParams = {}) {
         this.meshes = meshes;
@@ -28,7 +29,12 @@ export class ObstacleHitBehavior implements EntityBehavior {
     }
 
     update(dt: number) {
+        if (this.completed) {
+            return;
+        }
+
         if (this.meshes.length === 0) {
+            this.completed = true;
             this.onComplete();
             return;
         }
@@ -45,10 +51,12 @@ export class ObstacleHitBehavior implements EntityBehavior {
 
         if (this.verticalSpeed > 0) {
             if (this.currentHeightChange >= this.targetHeightOffset) {
+                this.completed = true;
                 this.onComplete();
             }
         } else {
             if (this.currentHeightChange <= this.targetHeightOffset) {
+                this.completed = true;
                 this.onComplete();
             }
         }

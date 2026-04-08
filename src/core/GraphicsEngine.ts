@@ -19,6 +19,7 @@ export class GraphicsEngine {
   sobelPass?: ShaderPass;
   fxaaPass?: ShaderPass;
   outputPass?: OutputPass;
+  private readonly onResizeHandler = () => this.onWindowResize();
 
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
@@ -64,7 +65,7 @@ export class GraphicsEngine {
       this.composer.addPass(this.outputPass);
     }
 
-    window.addEventListener('resize', () => this.onWindowResize(), false);
+    window.addEventListener('resize', this.onResizeHandler, false);
   }
 
   render(dt: number) {
@@ -94,6 +95,10 @@ export class GraphicsEngine {
         this.fxaaPass.uniforms['resolution'].value.y = 1 / (window.innerHeight * window.devicePixelRatio);
       }
     }
+  }
+
+  dispose() {
+    window.removeEventListener('resize', this.onResizeHandler, false);
   }
 
   add(object: THREE.Object3D) {

@@ -13,9 +13,23 @@ export class EntityManager {
 
     debugMode: boolean = false;
 
+    private _entitiesSnapshot: Entity[] = [];
+    private _snapshotDirty = true;
+
+    private readonly _scratchEntityPos = new THREE.Vector3();
+    private readonly _scratchToEntity = new THREE.Vector3();
+
     constructor(physicsEngine: PhysicsEngine, graphicsEngine: GraphicsEngine) {
         this.physicsEngine = physicsEngine;
         this.graphicsEngine = graphicsEngine;
+    }
+
+    private getSnapshot(): Entity[] {
+        if (this._snapshotDirty) {
+            this._entitiesSnapshot = Array.from(this.entities);
+            this._snapshotDirty = false;
+        }
+        return this._entitiesSnapshot;
     }
 
     setDebug(enabled: boolean) {
@@ -42,6 +56,7 @@ export class EntityManager {
     // removed from the scene.
     add(entity: Entity) {
         this.entities.add(entity);
+        this._snapshotDirty = true;
 
         // Sync immediately so meshes are correctly positioned before being added to the scene
         entity.updateVisuals(0, 1.0);
@@ -62,6 +77,7 @@ export class EntityManager {
     remove(entity: Entity) {
         if (this.entities.has(entity)) {
             this.entities.delete(entity);
+            this._snapshotDirty = true;
         }
 
         // Unparent self
@@ -133,13 +149,10 @@ export class EntityManager {
      * that all logic sees a consistent view of the just completed frame.
      */
     updateLogic(dt: number) {
-        const entitiesArray = Array.from(this.entities);
+        const entitiesArray = this.getSnapshot();
 
         for (const entity of entitiesArray) {
-            const isPlayer = entity.physicsBodies.length > 0 &&
-                (entity.physicsBodies[0].getUserData() as any)?.type === Entity.TYPE_PLAYER;
-
-            if (entity.isVisible || isPlayer || DesignerSettings.isDesignerMode) {
+            if (entity.isVisible || entity.isPlayer || DesignerSettings.isDesignerMode) {
                 entity.updateLogic(dt);
             }
         }
@@ -152,10 +165,7 @@ export class EntityManager {
      */
     updatePhysics(dt: number) {
         for (const entity of this.entities) {
-            const isPlayer = entity.physicsBodies.length > 0 &&
-                (entity.physicsBodies[0].getUserData() as any)?.type === Entity.TYPE_PLAYER;
-
-            if (entity.isVisible || isPlayer || DesignerSettings.isDesignerMode) {
+            if (entity.isVisible || entity.isPlayer || DesignerSettings.isDesignerMode) {
                 entity.updatePhysics(dt);
             }
         }
@@ -168,10 +178,7 @@ export class EntityManager {
      */
     updateVisuals(dt: number, alpha: number) {
         const shouldUpdateEntity = (entity: Entity) => {
-            const isPlayer = entity.physicsBodies.length > 0 &&
-                (entity.physicsBodies[0].getUserData() as any)?.type === Entity.TYPE_PLAYER;
-
-            return entity.isVisible || isPlayer || DesignerSettings.isDesignerMode;
+            return entity.isVisible || entity.isPlayer || DesignerSettings.isDesignerMode;
         }
 
         // Visuals Pass (Hierarchical)
@@ -193,7 +200,7 @@ export class EntityManager {
         }
 
         // Deferred Scene Graph Updates (Safe after visuals pass)
-        const entitiesArray = Array.from(this.entities);
+        const entitiesArray = this.getSnapshot();
         for (const entity of entitiesArray) {
             if (shouldUpdateEntity(entity)) {
                 entity.updateSceneGraph();
@@ -212,6 +219,7 @@ export class EntityManager {
         if (DesignerSettings.isDesignerMode) return;
 
         const visibilityRadius = 360;
+        const visibilityRadiusSq = visibilityRadius * visibilityRadius;
         const dotBuffer = -20; // Entities are small, smaller buffer than chunks
 
         for (const entity of this.entities) {
@@ -221,38 +229,33 @@ export class EntityManager {
             const bodyPos = entity.physicsBodies[0].getPosition();
             const entityX = bodyPos.x;
             const entityZ = bodyPos.y; // Physics Y is Graphics Z
-            const entityPos = new THREE.Vector3(entityX, 0, entityZ);
+            this._scratchEntityPos.set(entityX, 0, entityZ);
 
             // Distance check
-            const dist = cameraPos.distanceTo(entityPos);
+            const distSq = cameraPos.distanceToSquared(this._scratchEntityPos);
 
-            if (dist > visibilityRadius) {
+            if (distSq > visibilityRadiusSq) {
                 entity.setVisible(false);
                 continue;
             }
 
             // Tiered Throttling
-            if (dist < 50) {
+            if (distSq < 50 * 50) {
                 entity.setAnimationThrottle(1);
-            } else if (dist < 100) {
+            } else if (distSq < 100 * 100) {
                 entity.setAnimationThrottle(3);
             } else {
                 entity.setAnimationThrottle(6);
             }
 
             // Direction check (dot product)
-            const toEntity = entityPos.clone().sub(cameraPos);
-            const dot = toEntity.dot(cameraDir);
+            this._scratchToEntity.subVectors(this._scratchEntityPos, cameraPos);
+            const dot = this._scratchToEntity.dot(cameraDir);
 
-            if (DesignerSettings.isDesignerMode) {
-                entity.setVisible(true);
-                entity.setAnimationThrottle(1);
+            if (dot < dotBuffer) {
+                entity.setVisible(false);
             } else {
-                if (dot < dotBuffer) {
-                    entity.setVisible(false);
-                } else {
-                    entity.setVisible(true);
-                }
+                entity.setVisible(true);
             }
         }
     }

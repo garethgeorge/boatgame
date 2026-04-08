@@ -249,7 +249,7 @@ export class TerrainManager {
         let iMaxChunk = currentChunkIndex + posDistance;
         if (DesignerSettings.isDesignerMode) {
             const boundaries = this.riverSystem.biomeManager.getBiomeBoundaries(-1);
-            const biomeMinChunkIdx = Math.floor(boundaries.zMin / TerrainChunk.CHUNK_SIZE);
+            const biomeMinChunkIdx = boundaries ? Math.floor(boundaries.zMin / TerrainChunk.CHUNK_SIZE) : iMinChunk;
             iMinChunk = biomeMinChunkIdx - 1;
             iMaxChunk = 1;
         }
@@ -304,6 +304,17 @@ export class TerrainManager {
             console.log(`[TerrainManager] Disposing chunk ${index}`);
             chunk.dispose();
             this.chunks.delete(index);
+        }
+
+        // Also cancel loading chunks that fell outside the active window
+        for (const [index, entry] of this.loadingChunks) {
+            if ((iMinChunk - 1 <= index && index <= iMaxChunk + 1) && index != regenerateIndex)
+                continue;
+
+            removeCount += 1;
+            console.log(`[TerrainManager] Cancelling loading chunk ${index}`);
+            entry.chunk.dispose();
+            this.loadingChunks.delete(index);
         }
 
         // Remove all entities that do not belong to an active chunk.

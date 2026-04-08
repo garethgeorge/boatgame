@@ -39,7 +39,7 @@ export class GameEngine {
     timeScale: number = 1.0;
     viewMode: 'close' | 'far' | 'birds' | 'birdsFar' = 'close';
 
-    pendingContacts: Map<Entity, { type: string, subtype: any, boatPart: string }> = new Map();
+    pendingContacts: Map<Entity, { type: string, subtype: any, boatPart: string }[]> = new Map();
 
     constructor(container: HTMLElement) {
         // Initialize RiverSystem with the correct biome generator based on mode
@@ -113,11 +113,13 @@ export class GameEngine {
             const entity = entityData?.entity as Entity;
             if (!player || !entity) return;
 
-            this.pendingContacts.set(entity, {
-                type: entityData!.type,
-                subtype: entityData!.subtype,
-                boatPart
-            });
+            const contactInfo = { type: entityData!.type, subtype: entityData!.subtype, boatPart };
+            const existing = this.pendingContacts.get(entity);
+            if (existing) {
+                existing.push(contactInfo);
+            } else {
+                this.pendingContacts.set(entity, [contactInfo]);
+            }
         });
     }
 
@@ -176,11 +178,10 @@ export class GameEngine {
 
             Profiler.start('Entities');
             // 1. Logic Phase (Read-only)
-            this.boat.updateLogic(dt, this.inputManager);
+            this.boat.setInputManager(this.inputManager);
             this.entityManager.updateLogic(dt);
 
             // 2. Physics Update Phase (Write-intent)
-            this.boat.updatePhysics(dt);
             this.entityManager.updatePhysics(dt);
             Profiler.end('Entities');
 
@@ -194,7 +195,6 @@ export class GameEngine {
             // 4. Visuals & Sync Phase (Interpolate & FX)
             const alpha = this.physicsEngine.getAlpha();
             this.entityManager.updateVisuals(dt, alpha);
-            this.boat.updateVisuals(dt, alpha);
 
             Profiler.start('Terrain');
             this.terrainManager.update(this.boat, dt);
@@ -226,8 +226,10 @@ export class GameEngine {
     }
 
     private processContacts() {
-        this.pendingContacts.forEach((data, entity) => {
-            this.boat.didHitObstacle(entity, data.type, data.subtype, data.boatPart);
+        this.pendingContacts.forEach((contacts, entity) => {
+            // Prefer front (bow) hit over back/side — front hits don't penalize the player
+            const best = contacts.find(c => c.boatPart === Boat.PART_FRONT) ?? contacts[0];
+            this.boat.didHitObstacle(entity, best.type, best.subtype, best.boatPart);
         });
         this.pendingContacts.clear();
 
@@ -327,6 +329,7 @@ export class GameEngine {
 
         const currentZ = this.boat.meshes[0].position.z;
         const boundaries = riverSystem.biomeManager.getBiomeBoundaries(currentZ - 1.0);
+        if (!boundaries) return;
         const nextZ = boundaries.zMin;
 
         // ensure biomes are loaded from here to the target z
@@ -345,7 +348,8 @@ export class GameEngine {
             const currentZ = this.boat.meshes[0].position.z;
 
             // Check if we are already in the target biome
-            if (riverSystem.biomeManager.getBiomeAt(currentZ).id === targetType) {
+            const currentBiome = riverSystem.biomeManager.getBiomeAt(currentZ);
+            if (currentBiome && currentBiome.id === targetType) {
                 break;
             }
             this.skipToNextBiome();

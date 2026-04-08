@@ -3,6 +3,18 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { BiomeManager } from './BiomeManager';
 import { ProceduralBiomeGenerator } from './ProceduralBiomeGenerator';
 
+// Helper to call the private getBiomeMixture and read results from the static scratch array.
+function callGetBiomeMixture(bm: BiomeManager, worldZ: number) {
+    const count = (bm as any).getBiomeMixture(worldZ) as number;
+    const scratch = (BiomeManager as any)._mixtureScratch;
+    // Return a snapshot so tests can call getBiomeMixture again without clobbering.
+    const result = [];
+    for (let i = 0; i < count; i++) {
+        result.push({ biome: scratch[i].biome, weight: scratch[i].weight });
+    }
+    return result;
+}
+
 describe('BiomeManager Blending', () => {
     let biomeManager: BiomeManager;
 
@@ -16,7 +28,7 @@ describe('BiomeManager Blending', () => {
         const mid = (boundaries.zMin + boundaries.zMax) / 2;
 
         biomeManager.ensureWindow(mid, mid);
-        const mixture = (biomeManager as any).getBiomeMixture(mid);
+        const mixture = callGetBiomeMixture(biomeManager, mid);
 
         expect(mixture[0].weight).toBe(1.0);
         expect(mixture.length).toBe(1);
@@ -32,7 +44,7 @@ describe('BiomeManager Blending', () => {
         // We might need to ensure the neighbor exists by updating near it
         biomeManager.ensureWindow(boundaryZ - 100, boundaryZ + 100);
 
-        const mixtureAtBoundary = (biomeManager as any).getBiomeMixture(boundaryZ);
+        const mixtureAtBoundary = callGetBiomeMixture(biomeManager, boundaryZ);
         expect(mixtureAtBoundary[0].weight).toBe(0.5);
         expect(mixtureAtBoundary[1].weight).toBe(0.5);
 
@@ -41,19 +53,13 @@ describe('BiomeManager Blending', () => {
 
         // Inside first biome (near max)
         const zNeg = boundaryZ - sampleOffset;
-        const mixtureAtNeg = (biomeManager as any).getBiomeMixture(zNeg);
-        // t = (25 - 10) / 25 = 0.6
-        // weight1 = lerp(0.5, 1.0, 0.6) = 0.8  <-- Wait, I changed the lerp in getBiomeMixture
-        // weight1 = lerp(1, 0.5, 0.4) = 0.7  <-- Actually, the math depends on the implementation.
-        // Let's check the old test vs new mixture.
+        const mixtureAtNeg = callGetBiomeMixture(biomeManager, zNeg);
         expect(mixtureAtNeg[0].weight).toBeCloseTo(0.7);
         expect(mixtureAtNeg[1].weight).toBeCloseTo(0.3);
 
         // Inside second biome (near min)
         const zPos = boundaryZ + sampleOffset;
-        const mixtureAtPos = (biomeManager as any).getBiomeMixture(zPos);
-        // t = 10 / 25 = 0.4
-        // weight1 = lerp(0.5, 1.0, 0.4) = 0.7
+        const mixtureAtPos = callGetBiomeMixture(biomeManager, zPos);
         expect(mixtureAtPos[0].weight).toBeCloseTo(0.7);
         expect(mixtureAtPos[1].weight).toBeCloseTo(0.3);
     });
@@ -62,7 +68,7 @@ describe('BiomeManager Blending', () => {
         // Find a boundary where we know the types
         const z = 0;
         biomeManager.ensureWindow(z, z);
-        const mixture = (biomeManager as any).getBiomeMixture(z);
+        const mixture = callGetBiomeMixture(biomeManager, z);
         const d1 = mixture[0].biome.getFogDensity();
         const d2 = mixture[1].biome.getFogDensity();
 
@@ -73,11 +79,11 @@ describe('BiomeManager Blending', () => {
     it('should correctly blend ground color', () => {
         const z = 0;
         biomeManager.ensureWindow(z, z);
-        const mixture = (biomeManager as any).getBiomeMixture(z);
-        const c1 = mixture[0].biome.getGroundColor(0, 0, z);
-        const c2 = mixture[1].biome.getGroundColor(0, 0, z);
+        const mixture = callGetBiomeMixture(biomeManager, z);
+        const c1 = mixture[0].biome.getGroundColor(0, 0, z, 0);
+        const c2 = mixture[1].biome.getGroundColor(0, 0, z, 0);
 
-        const blendedColor = biomeManager.getBiomeGroundColor(0, 0, z);
+        const blendedColor = biomeManager.getBiomeGroundColor(0, 0, z, 0);
         expect(blendedColor.r).toBe((c1.r + c2.r) / 2);
         expect(blendedColor.g).toBe((c1.g + c2.g) / 2);
         expect(blendedColor.b).toBe((c1.b + c2.b) / 2);

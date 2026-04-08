@@ -14,11 +14,23 @@ export interface BiomeGenerator {
     putBack(type: BiomeType): void;
 }
 
+export interface BiomeMixture {
+    biome: BiomeFeatures;
+    weight: number;
+}
+
 export class BiomeManager {
 
     private readonly BIOME_TRANSITION_WIDTH = 50;
 
     private activeInstances: BiomeInstance[] = [];
+
+    // Pre-allocated scratch array for getBiomeMixture to avoid per-call allocation.
+    // Safe because all callers consume the result synchronously before the next call.
+    private static readonly _mixtureScratch: BiomeMixture[] = [
+        { biome: null!, weight: 0 },
+        { biome: null!, weight: 0 },
+    ];
 
 
     // Scratch colors for zero-allocation blending
@@ -93,7 +105,7 @@ export class BiomeManager {
      * cover the requested window plus at least one additional biome in both directions
      * for sampling safety.
      */
-    public pruneWindow(minRequiredZ: number, maxRequiredZ): void {
+    public pruneWindow(minRequiredZ: number, maxRequiredZ: number): void {
 
         // Add a little to avoid wobble causing biomes to be repeatedly added and pruned
         const minPruneZ = minRequiredZ - 200;
@@ -119,7 +131,7 @@ export class BiomeManager {
     /**
      * Finds the biome instance containing the given worldZ
      */
-    private getBiomeInstanceAt(worldZ: number): BiomeInstance {
+    private getBiomeInstanceAt(worldZ: number): BiomeInstance | null {
         this.debugCheckZ(worldZ);
 
         let low = 0;
@@ -140,17 +152,19 @@ export class BiomeManager {
         }
 
         // Fallback to closest if not found (shouldn't happen with ensureZReached)
-        if (this.activeInstances.length === 0) return null as any;
+        if (this.activeInstances.length === 0) return null;
         if (worldZ <= this.activeInstances[0].zMin) return this.activeInstances[0];
         return this.activeInstances[this.activeInstances.length - 1];
     }
 
-    public getBiomeAt(worldZ: number): BiomeFeatures {
-        return this.getBiomeInstanceAt(worldZ).features;
+    public getBiomeAt(worldZ: number): BiomeFeatures | null {
+        const instance = this.getBiomeInstanceAt(worldZ);
+        return instance ? instance.features : null;
     }
 
-    public getBiomeBoundaries(worldZ: number): { zMin: number, zMax: number } {
+    public getBiomeBoundaries(worldZ: number): { zMin: number, zMax: number } | null {
         const instance = this.getBiomeInstanceAt(worldZ);
+        if (!instance) return null;
         return {
             zMin: instance.zMin,
             zMax: instance.zMax
@@ -179,6 +193,7 @@ export class BiomeManager {
             // Sample slightly ahead to ensure we cross biome boundaries and avoid infinite loops
             const sampleZ = currentZ + direction * 0.001;
             const instance = this.getBiomeInstanceAt(sampleZ);
+            if (!instance) break;
             const segmentEnd = direction === 1 ? Math.min(zMax, instance.zMax) : Math.max(zMax, instance.zMin);
 
             segments.push({
@@ -194,9 +209,15 @@ export class BiomeManager {
         return segments;
     }
 
-    private getBiomeMixture(worldZ: number): { biome: BiomeFeatures, weight: number }[] {
+    /**
+     * Writes biome mixture into the static scratch array and returns the count (1 or 2).
+     * Callers must read results from BiomeManager._mixtureScratch before the next call.
+     */
+    private getBiomeMixture(worldZ: number): number {
+        const scratch = BiomeManager._mixtureScratch;
         const transitionWidth = this.BIOME_TRANSITION_WIDTH;
         const instance = this.getBiomeInstanceAt(worldZ);
+        if (!instance) return 0;
 
         const features1 = instance.features;
         const distFromMin = Math.abs(worldZ - instance.zMin);
@@ -206,79 +227,91 @@ export class BiomeManager {
             // near to zMin of this biome
             const otherZ = instance.zMin - 0.001;
             const otherInstance = this.getBiomeInstanceAt(otherZ);
-            const features2 = otherInstance.features;
+            if (!otherInstance) {
+                scratch[0].biome = features1; scratch[0].weight = 1;
+                return 1;
+            }
 
             const t = distFromMin / (transitionWidth / 2);
             const weight1 = this.lerp(0.5, 1.0, t);
-            const weight2 = 1.0 - weight1;
-
-            return [{ biome: features1, weight: weight1 }, { biome: features2, weight: weight2 }];
+            scratch[0].biome = features1; scratch[0].weight = weight1;
+            scratch[1].biome = otherInstance.features; scratch[1].weight = 1.0 - weight1;
+            return 2;
         } else if (distFromMax < transitionWidth / 2) {
             // near to zMax of this biome
             const otherZ = instance.zMax + 0.001;
             const otherInstance = this.getBiomeInstanceAt(otherZ);
-            const features2 = otherInstance.features;
+            if (!otherInstance) {
+                scratch[0].biome = features1; scratch[0].weight = 1;
+                return 1;
+            }
 
             const t = (transitionWidth / 2 - distFromMax) / (transitionWidth / 2);
             const weight1 = this.lerp(1.0, 0.5, t);
-            const weight2 = 1.0 - weight1;
-
-            return [{ biome: features1, weight: weight1 }, { biome: features2, weight: weight2 }];
+            scratch[0].biome = features1; scratch[0].weight = weight1;
+            scratch[1].biome = otherInstance.features; scratch[1].weight = 1.0 - weight1;
+            return 2;
         }
 
-        return [{ biome: features1, weight: 1 }];
+        scratch[0].biome = features1; scratch[0].weight = 1;
+        return 1;
     }
 
     public getBiomeFogDensity(worldZ: number): number {
-        const mixture = this.getBiomeMixture(worldZ);
-        const d1 = mixture[0].biome.getFogDensity();
-        if (mixture.length === 1) return d1;
-        const d2 = mixture[1].biome.getFogDensity();
-        return d1 * mixture[0].weight + d2 * mixture[1].weight;
+        const scratch = BiomeManager._mixtureScratch;
+        const count = this.getBiomeMixture(worldZ);
+        const d1 = scratch[0].biome.getFogDensity();
+        if (count === 1) return d1;
+        const d2 = scratch[1].biome.getFogDensity();
+        return d1 * scratch[0].weight + d2 * scratch[1].weight;
     }
 
     public getBiomeFogRange(worldZ: number): { near: number, far: number } {
-        const mixture = this.getBiomeMixture(worldZ);
-        const r1 = mixture[0].biome.getFogRange();
-        if (mixture.length === 1) return r1;
-        const r2 = mixture[1].biome.getFogRange();
+        const scratch = BiomeManager._mixtureScratch;
+        const count = this.getBiomeMixture(worldZ);
+        const r1 = scratch[0].biome.getFogRange();
+        if (count === 1) return r1;
+        const r2 = scratch[1].biome.getFogRange();
         return {
-            near: this.lerp(r1.near, r2.near, mixture[1].weight), // weight2 is t from 1 to 2
-            far: this.lerp(r1.far, r2.far, mixture[1].weight)
+            near: this.lerp(r1.near, r2.near, scratch[1].weight),
+            far: this.lerp(r1.far, r2.far, scratch[1].weight)
         };
     }
 
     public getBiomeGroundColor(worldX: number, worldY: number, worldZ: number, distFromBank: number): { r: number, g: number, b: number } {
-        const mixture = this.getBiomeMixture(worldZ);
-        const c1 = mixture[0].biome.getGroundColor(worldX, worldY, worldZ, distFromBank);
-        if (mixture.length === 1) return c1;
-        const c2 = mixture[1].biome.getGroundColor(worldX, worldY, worldZ, distFromBank);
+        const scratch = BiomeManager._mixtureScratch;
+        const count = this.getBiomeMixture(worldZ);
+        const c1 = scratch[0].biome.getGroundColor(worldX, worldY, worldZ, distFromBank);
+        if (count === 1) return c1;
+        const c2 = scratch[1].biome.getGroundColor(worldX, worldY, worldZ, distFromBank);
         return {
-            r: c1.r * mixture[0].weight + c2.r * mixture[1].weight,
-            g: c1.g * mixture[0].weight + c2.g * mixture[1].weight,
-            b: c1.b * mixture[0].weight + c2.b * mixture[1].weight
+            r: c1.r * scratch[0].weight + c2.r * scratch[1].weight,
+            g: c1.g * scratch[0].weight + c2.g * scratch[1].weight,
+            b: c1.b * scratch[0].weight + c2.b * scratch[1].weight
         };
     }
 
     public getBiomeScreenTint(worldZ: number): { r: number, g: number, b: number } {
-        const mixture = this.getBiomeMixture(worldZ);
-        const c1 = mixture[0].biome.getScreenTint();
-        if (mixture.length === 1) return c1;
-        const c2 = mixture[1].biome.getScreenTint();
+        const scratch = BiomeManager._mixtureScratch;
+        const count = this.getBiomeMixture(worldZ);
+        const c1 = scratch[0].biome.getScreenTint();
+        if (count === 1) return c1;
+        const c2 = scratch[1].biome.getScreenTint();
         return {
-            r: c1.r * mixture[0].weight + c2.r * mixture[1].weight,
-            g: c1.g * mixture[0].weight + c2.g * mixture[1].weight,
-            b: c1.b * mixture[0].weight + c2.b * mixture[1].weight
+            r: c1.r * scratch[0].weight + c2.r * scratch[1].weight,
+            g: c1.g * scratch[0].weight + c2.g * scratch[1].weight,
+            b: c1.b * scratch[0].weight + c2.b * scratch[1].weight
         };
     }
 
     public getBiomeSkyBiome(worldZ: number): SkyBiome {
-        const mixture = this.getBiomeMixture(worldZ);
-        const s1 = mixture[0].biome.getSkyBiome();
-        if (mixture.length === 1) return s1;
-        const s2 = mixture[1].biome.getSkyBiome();
+        const scratch = BiomeManager._mixtureScratch;
+        const count = this.getBiomeMixture(worldZ);
+        const s1 = scratch[0].biome.getSkyBiome();
+        if (count === 1) return s1;
+        const s2 = scratch[1].biome.getSkyBiome();
 
-        const w2 = mixture[1].weight;
+        const w2 = scratch[1].weight;
 
         return {
             noon: this.lerpSkyColors(s1.noon, s2.noon, w2),
@@ -312,35 +345,38 @@ export class BiomeManager {
     }
 
     public getAmplitudeMultiplier(wx: number, wz: number, distFromBank: number): number {
-        const mixture = this.getBiomeMixture(wz);
-        const amplitude1 = mixture[0].biome.getAmplitudeMultiplier(wx, wz, distFromBank);
-        if (mixture.length === 1) return amplitude1;
-        const amplitude2 = mixture[1].biome.getAmplitudeMultiplier(wx, wz, distFromBank);
+        const scratch = BiomeManager._mixtureScratch;
+        const count = this.getBiomeMixture(wz);
+        const amplitude1 = scratch[0].biome.getAmplitudeMultiplier(wx, wz, distFromBank);
+        if (count === 1) return amplitude1;
+        const amplitude2 = scratch[1].biome.getAmplitudeMultiplier(wx, wz, distFromBank);
 
-        const amplitudeMultiplier = amplitude1 * mixture[0].weight + amplitude2 * mixture[1].weight;
+        const amplitudeMultiplier = amplitude1 * scratch[0].weight + amplitude2 * scratch[1].weight;
         return amplitudeMultiplier;
     }
 
     public getRiverWidthMultiplier(worldZ: number): number {
-        const mixture = this.getBiomeMixture(worldZ);
-        const width1 = mixture[0].biome.getRiverWidthMultiplier();
-        if (mixture.length === 1) return width1;
-        const width2 = mixture[1].biome.getRiverWidthMultiplier();
+        const scratch = BiomeManager._mixtureScratch;
+        const count = this.getBiomeMixture(worldZ);
+        const width1 = scratch[0].biome.getRiverWidthMultiplier();
+        if (count === 1) return width1;
+        const width2 = scratch[1].biome.getRiverWidthMultiplier();
 
-        const widthMultiplier = width1 * mixture[0].weight + width2 * mixture[1].weight;
+        const widthMultiplier = width1 * scratch[0].weight + width2 * scratch[1].weight;
         return widthMultiplier;
     }
 
     public getRiverMaterialSwampFactor(worldZ: number): number {
-        const mixture = this.getBiomeMixture(worldZ);
+        const scratch = BiomeManager._mixtureScratch;
+        const count = this.getBiomeMixture(worldZ);
 
         let swampFactor = 0.0;
-        const type1 = mixture[0].biome.id;
-        if (type1 === 'swamp') swampFactor += mixture[0].weight;
-        if (mixture.length === 1) return swampFactor;
+        const type1 = scratch[0].biome.id;
+        if (type1 === 'swamp') swampFactor += scratch[0].weight;
+        if (count === 1) return swampFactor;
 
-        const type2 = mixture[1].biome.id;
-        if (type2 === 'swamp') swampFactor += mixture[1].weight;
+        const type2 = scratch[1].biome.id;
+        if (type2 === 'swamp') swampFactor += scratch[1].weight;
         return swampFactor;
     }
 

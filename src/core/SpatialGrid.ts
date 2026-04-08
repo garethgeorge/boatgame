@@ -59,7 +59,7 @@ export class SpatialGridPair implements AnySpatialGrid {
 export class SpatialGrid implements AnySpatialGrid {
     private cellSize: number;
     private cellSizeInv: number;
-    private grid: Map<string, PlacementManifest[]> = new Map();
+    private grid: Map<number, PlacementManifest[]> = new Map();
     // No more maxGroundRadius or maxCanopyRadius
 
     constructor(cellSize: number) {
@@ -71,8 +71,9 @@ export class SpatialGrid implements AnySpatialGrid {
         return this.cellSize;
     }
 
-    private getKey(icx: number, icy: number): string {
-        return icx + "," + icy;
+    private getKey(icx: number, icy: number): number {
+        // Use large prime to avoid collisions across reasonable grid dimensions
+        return icx * 1000003 + icy;
     }
 
     insert(item: PlacementManifest) {
