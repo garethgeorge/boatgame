@@ -168,8 +168,11 @@ export class TerrainManager {
         const dotBuffer = -20; // Allow slight buffer behind camera plane
 
         for (const chunk of this.chunks.values()) {
-            const z0 = chunk.zOffset;
-            const z1 = chunk.zOffset + TerrainChunk.CHUNK_SIZE;
+            // Inflate chunk bounds for culling so large objects spanning
+            // chunk boundaries don't pop out prematurely.
+            const cullPadding = TerrainChunk.CHUNK_SIZE;
+            const z0 = chunk.zOffset - cullPadding;
+            const z1 = chunk.zOffset + TerrainChunk.CHUNK_SIZE + cullPadding;
 
             // Calculate 4 corners of the chunk in world space
             const halfWidth = TerrainChunk.CHUNK_WIDTH / 2;

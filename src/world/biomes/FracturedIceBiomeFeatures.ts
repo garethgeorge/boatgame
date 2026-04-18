@@ -98,12 +98,12 @@ export class FracturedIceBiomeFeatures implements BiomeFeatures {
         if (this.layoutCache) return this.layoutCache;
 
         const riverSystem = RiverSystem.getInstance();
-        const boatWidth = 5.0; // Conservative boat width
+        const boatWidth = 7.0; // Conservative boat width
         const length = this.zMax - this.zMin;
 
         // Reduced density slightly since elongated cells cover more Z space effectively?
         // Or keep same. Let's keep same for now.
-        let numSeeds = Math.floor(length / 8);
+        let numSeeds = Math.floor(length / 10);
         const maxAttempts = 20;
 
         // Anisotropic scaling factor. 
@@ -113,7 +113,7 @@ export class FracturedIceBiomeFeatures implements BiomeFeatures {
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
             // Adjust shrink factor logic if needed. 
             // With elongated cells, gaps are anisotropic too.
-            const shrinkFactor = Math.max(0.4, 0.85 - (attempt * 0.025));
+            const shrinkFactor = Math.max(0.35, 0.75 - (attempt * 0.025));
             console.log(`[FracturedIce] Attempt ${attempt + 1}: Seeds ${numSeeds} | Shrink ${shrinkFactor.toFixed(2)}`);
 
             // 1. Generate Seeds
@@ -132,6 +132,19 @@ export class FracturedIceBiomeFeatures implements BiomeFeatures {
                 const x = banks.left + padding + Math.random() * safeWidth;
 
                 seeds.push({ x, y: z });
+            }
+
+            // Add boundary seeds at z ≈ 10 and z ≈ length-10 to ensure start/end connectivity
+            const boundaryZ = [10, length - 10];
+            for (const bz of boundaryZ) {
+                const worldBZ = bz + this.zMin;
+                const banks = riverSystem.getBankPositions(worldBZ);
+                const width = banks.right - banks.left;
+                const bCount = 8;
+                for (let bi = 0; bi < bCount; bi++) {
+                    const bx = banks.left + (width * (bi + 0.5)) / bCount;
+                    seeds.push({ x: bx, y: bz });
+                }
             }
 
             // 2. Compute Voronoi in Scaled Space
@@ -325,9 +338,10 @@ export class FracturedIceBiomeFeatures implements BiomeFeatures {
         const queue = [...startNodes];
         startNodes.forEach(n => visited.add(n));
 
+        const reachedEnd = new Set<number>();
         while (queue.length > 0) {
             const curr = queue.shift()!;
-            if (endNodes.has(curr)) return true; // Found path
+            if (endNodes.has(curr)) reachedEnd.add(curr);
 
             const neighbors = adj.get(curr);
             if (neighbors) {
@@ -340,7 +354,8 @@ export class FracturedIceBiomeFeatures implements BiomeFeatures {
             }
         }
 
-        return false;
+        console.log(`[FracturedIce] Reachable end nodes: ${reachedEnd.size}`);
+        return reachedEnd.size >= 3;
     }
 
     private isInRiver(p: Point, riverSystem: RiverSystem, zStart: number): boolean {
@@ -396,6 +411,15 @@ export class FracturedIceBiomeFeatures implements BiomeFeatures {
                     const py = cy + (p.y - cy) * shrinkFactor;
                     relativeVertices.push({ x: px - cx, y: py - cy });
                 }
+
+                // Box2D requires CCW winding. Correct if needed.
+                let area = 0;
+                for (let vi = 0; vi < relativeVertices.length; vi++) {
+                    const vj = (vi + 1) % relativeVertices.length;
+                    area += relativeVertices[vi].x * relativeVertices[vj].y;
+                    area -= relativeVertices[vj].x * relativeVertices[vi].y;
+                }
+                if (area > 0) relativeVertices.reverse(); // CW → CCW
 
                 const worldX = cx;
                 const worldZ = cy + this.zMin;

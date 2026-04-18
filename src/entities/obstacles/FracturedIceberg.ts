@@ -29,6 +29,14 @@ export class FracturedIceberg extends Entity {
         // Box2D requires CCW.
         const planckVertices = vertices.map(v => planck.Vec2(v.x, v.y));
 
+        // Compute bounding radius so the visibility culling system doesn't cull
+        // this entity while it's still partially within view.
+        let maxDistSq = 0;
+        for (const v of vertices) {
+            maxDistSq = Math.max(maxDistSq, v.x * v.x + v.y * v.y);
+        }
+        this.boundingRadius = Math.sqrt(maxDistSq);
+
         body.createFixture({
             shape: planck.Polygon(planckVertices),
             density: 5.0, // Heavy

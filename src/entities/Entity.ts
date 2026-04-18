@@ -38,6 +38,11 @@ export abstract class Entity {
 
     public isVisible: boolean = true;
 
+    // Extra radius beyond the physics body centroid used for visibility culling.
+    // Large entities (e.g. big polygon icebergs) should set this to their bounding radius
+    // so they aren't culled while still partially visible.
+    public boundingRadius: number = 0;
+
     constructor() {
     }
 

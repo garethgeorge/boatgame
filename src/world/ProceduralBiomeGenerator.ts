@@ -56,7 +56,7 @@ export class ProceduralBiomeGenerator implements BiomeGenerator {
 
     private drawFromDeck(): BiomeType {
         if (this.deck.length === 0) {
-            const otherTypes: BiomeType[] = ['desert', 'forest', 'ice', 'swamp', 'jurassic', 'tropical_shoreline', 'fantasy'];
+            const otherTypes: BiomeType[] = ['desert', 'forest', 'ice', 'swamp', 'jurassic', 'tropical_shoreline', 'fantasy', 'fractured_ice'];
             const shuffled = [...otherTypes].sort(() => Math.random() - 0.5);
 
             for (const type of shuffled) {

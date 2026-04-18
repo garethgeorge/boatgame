@@ -219,7 +219,6 @@ export class EntityManager {
         if (DesignerSettings.isDesignerMode) return;
 
         const visibilityRadius = 360;
-        const visibilityRadiusSq = visibilityRadius * visibilityRadius;
         const dotBuffer = -20; // Entities are small, smaller buffer than chunks
 
         for (const entity of this.entities) {
@@ -231,10 +230,13 @@ export class EntityManager {
             const entityZ = bodyPos.y; // Physics Y is Graphics Z
             this._scratchEntityPos.set(entityX, 0, entityZ);
 
-            // Distance check
+            // Distance check — expand threshold by entity's bounding radius so large
+            // entities (e.g. big iceberg polygons) don't pop out while still visible.
             const distSq = cameraPos.distanceToSquared(this._scratchEntityPos);
+            const effectiveRadius = visibilityRadius + entity.boundingRadius;
+            const effectiveRadiusSq = effectiveRadius * effectiveRadius;
 
-            if (distSq > visibilityRadiusSq) {
+            if (distSq > effectiveRadiusSq) {
                 entity.setVisible(false);
                 continue;
             }
@@ -248,11 +250,12 @@ export class EntityManager {
                 entity.setAnimationThrottle(6);
             }
 
-            // Direction check (dot product)
+            // Direction check (dot product) — offset by bounding radius so
+            // large entities behind the camera plane aren't culled prematurely.
             this._scratchToEntity.subVectors(this._scratchEntityPos, cameraPos);
             const dot = this._scratchToEntity.dot(cameraDir);
 
-            if (dot < dotBuffer) {
+            if (dot < dotBuffer - entity.boundingRadius) {
                 entity.setVisible(false);
             } else {
                 entity.setVisible(true);
